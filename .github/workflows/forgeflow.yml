@@ -92,13 +92,13 @@ jobs:
         run: |
           # Prefer the plugin install path; fall back to repo sync if the
           # marketplace is not reachable from CI.
-          # Marketplace: ForgeflowAI → Plugin: Forgeflow (see
+          # Marketplace: Forgeflow → Plugin: Forgeflow (see
           # .claude-plugin/marketplace.json). Names are case-sensitive; the
-          # plugin name uses underscore, not hyphen.
-          if ! claude plugin add ForgeflowAI 2>/dev/null; then
+          # plugin name uses the product spelling.
+          if ! claude plugin add Forgeflow 2>/dev/null; then
             echo "Plugin marketplace unreachable — falling back to repo sync"
             mkdir -p ~/.claude/{agents,commands,hooks,templates,project-rules,forgeflow-patterns}
-            git clone --depth 1 https://github.com/ForgeflowAI/Forgeflow.git /tmp/forgeflow-src
+            git clone --depth 1 https://github.com/BrandedTamarasu-glitch/ForgeFlow.git /tmp/forgeflow-src
             cp -r /tmp/forgeflow-src/agents/*.md ~/.claude/agents/ 2>/dev/null || true
             cp -r /tmp/forgeflow-src/agents/_shared ~/.claude/agents/ 2>/dev/null || true
             cp -r /tmp/forgeflow-src/commands/*.md ~/.claude/commands/ 2>/dev/null || true

@@ -12,7 +12,7 @@ allowed-tools:
   - AskUserQuestion
 ---
 <objective>
-When making meta-work changes to the Forgeflow itself (editing commands, agents, project-rules, or templates in `~/.claude/`), this command detects which files differ from the upstream at `~/Claude/Work/Forgeflow/`, copies them, commits with a generated message, and pushes to origin.
+When making meta-work changes to Forgeflow itself (editing commands, agents, project-rules, or templates in `~/.claude/`), this command detects which files differ from the upstream at `~/Claude/Work/Forgeflow/`, copies them, commits with a generated message, and pushes to origin.
 
 Replaces the manual `cp → git add → git commit → git push` flow done repeatedly per session.
 </objective>
@@ -28,7 +28,7 @@ No arguments: full sync (copy → commit → push).
 
 ## Gotchas
 - **Only syncs ~/.claude/ → upstream, NOT upstream → ~/.claude/.** For the reverse direction, use `/update-forgeflow` which pulls from GitHub.
-- **Commit account matters.** The Forgeflow repo is owned by ForgeflowAI. If `gh auth` active account is secondary-account, the push will 403. Command auto-switches active account for the push, then switches back.
+- **Commit account matters.** The Forgeflow repo is owned by `BrandedTamarasu-glitch`. If `gh auth` active account is different, the push may 403. Command auto-switches active account for the push, then switches back.
 - **Never force-pushes.** If upstream has diverged (someone else pushed), the push fails; command reports the divergence and asks the user to pull-rebase manually.
 - **Auto-generated commit message is based on diff.** If you want a specific message, use `--message "..."`. Auto-message format: `chore(sync): <N> file(s) synced from ~/.claude/ (<file list summary>)`.
 - **Subdir files covered.** Handles `agents/`, `commands/` (including `commands/SUBDIR/`), `project-rules/`, `templates/`, `hooks/`. Does NOT touch `services/`, `docs/`, or `.claude-plugin/` — those require manual attention.
@@ -41,7 +41,7 @@ No arguments: full sync (copy → commit → push).
 UPSTREAM="$HOME/Claude/Work/Forgeflow"
 if [ ! -d "$UPSTREAM/.git" ]; then
   echo "Upstream clone not found at $UPSTREAM"
-  echo "Clone with: git clone https://github.com/ForgeflowAI/Forgeflow.git $UPSTREAM"
+  echo "Clone with: git clone https://github.com/BrandedTamarasu-glitch/ForgeFlow.git $UPSTREAM"
   exit 1
 fi
 ```
@@ -142,11 +142,11 @@ git commit -m "<message>"
 ## Step 8: Push (unless --no-push)
 
 ```bash
-# Ensure ForgeflowAI is the active gh account for this repo
+# Ensure the ForgeFlow owner account is active for this repo
 ACTIVE_ACCOUNT=$(gh auth status 2>&1 | awk '/Active account: true/ {found=1} found && /Logged in.*account/ {print $7; exit}')
-if [ "$ACTIVE_ACCOUNT" != "ForgeflowAI" ]; then
+if [ "$ACTIVE_ACCOUNT" != "BrandedTamarasu-glitch" ]; then
   PREVIOUS_ACCOUNT="$ACTIVE_ACCOUNT"
-  gh auth switch --user ForgeflowAI
+  gh auth switch --user BrandedTamarasu-glitch
 fi
 
 git push origin main 2>&1

@@ -267,7 +267,7 @@ The Forgeflow team ran but did not emit a parseable verdict block. This is a bug
 ${REDACTED_STDERR}
 \`\`\`
 
-Please file an issue in ForgeflowAI/Forgeflow with the workflow run URL.
+Please file an issue in BrandedTamarasu-glitch/ForgeFlow with the workflow run URL.
 
 <sub>\`schema_version: 1\` · wrapper: forgeflow-pr-review.sh</sub>
 EOF
@@ -318,7 +318,7 @@ The Forgeflow team ran but emitted a verdict JSON at \`schema_version: ${JSON_SC
 
 **Expected:** \`${SCHEMA_VERSION}\`
 **Actual:** \`${JSON_SCHEMA_VERSION}\`
-**Migration contract:** [\`${MIGRATION_DOC}\`](https://github.com/ForgeflowAI/Forgeflow/blob/main/${MIGRATION_DOC})
+**Migration contract:** [\`${MIGRATION_DOC}\`](https://github.com/BrandedTamarasu-glitch/ForgeFlow/blob/main/${MIGRATION_DOC})
 
 **Next step:** update this repo's \`scripts/forgeflow-pr-review.sh\` to support \`schema_version: ${JSON_SCHEMA_VERSION}\` before the Forgeflow team can run again.
 SKEWEOF

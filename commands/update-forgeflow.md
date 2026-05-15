@@ -14,7 +14,7 @@ Pull the latest Forgeflow release from GitHub via curl and sync updated files in
 ## Step 1 — Fetch Latest SHA
 
 ```bash
-LATEST=$(curl -sf "https://api.github.com/repos/ForgeflowAI/Forgeflow/commits/main" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['sha'])")
+LATEST=$(curl -sf "https://api.github.com/repos/BrandedTamarasu-glitch/ForgeFlow/commits/main" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['sha'])")
 ```
 
 If the curl command fails or `LATEST` is empty, stop: `"Cannot reach GitHub API. Check your internet connection and try again."`
@@ -49,25 +49,28 @@ If `CURRENT` is non-empty and equals `LATEST`, print `"Already up to date ($LATE
 Use the contents API to list all tracked files:
 
 ```bash
-curl -sf "https://api.github.com/repos/ForgeflowAI/Forgeflow/contents/agents" \
+curl -sf "https://api.github.com/repos/BrandedTamarasu-glitch/ForgeFlow/contents/agents" \
   | python3 -c "import json,sys; [print('agents/'+f['name']) for f in json.load(sys.stdin) if f['type']=='file' and f['name'].endswith('.md')]"
 
-curl -sf "https://api.github.com/repos/ForgeflowAI/Forgeflow/contents/commands" \
+curl -sf "https://api.github.com/repos/BrandedTamarasu-glitch/ForgeFlow/contents/agents/_shared" \
+  | python3 -c "import json,sys; [print('agents/_shared/'+f['name']) for f in json.load(sys.stdin) if f['type']=='file' and f['name'].endswith('.md')]"
+
+curl -sf "https://api.github.com/repos/BrandedTamarasu-glitch/ForgeFlow/contents/commands" \
   | python3 -c "import json,sys; [print('commands/'+f['name']) for f in json.load(sys.stdin) if f['type']=='file' and f['name'].endswith('.md')]"
 
-curl -sf "https://api.github.com/repos/ForgeflowAI/Forgeflow/contents/project-rules" \
+curl -sf "https://api.github.com/repos/BrandedTamarasu-glitch/ForgeFlow/contents/project-rules" \
   | python3 -c "import json,sys; [print('project-rules/'+f['name']) for f in json.load(sys.stdin) if f['type']=='file' and f['name'].endswith('.md')]"
 
-curl -sf "https://api.github.com/repos/ForgeflowAI/Forgeflow/contents/forgeflow-patterns" \
+curl -sf "https://api.github.com/repos/BrandedTamarasu-glitch/ForgeFlow/contents/forgeflow-patterns" \
   | python3 -c "import json,sys; [print('forgeflow-patterns/'+f['name']) for f in json.load(sys.stdin) if f['type']=='file' and f['name'].endswith('.md')]"
 
 # Also list files in each commands subdirectory
-curl -sf "https://api.github.com/repos/ForgeflowAI/Forgeflow/contents/commands" \
+curl -sf "https://api.github.com/repos/BrandedTamarasu-glitch/ForgeFlow/contents/commands" \
   | python3 -c "
 import json, sys, urllib.request
 dirs = [f['name'] for f in json.load(sys.stdin) if f['type']=='dir']
 for d in dirs:
-    url = f'https://api.github.com/repos/ForgeflowAI/Forgeflow/contents/commands/{d}'
+    url = f'https://api.github.com/repos/BrandedTamarasu-glitch/ForgeFlow/contents/commands/{d}'
     with urllib.request.urlopen(url) as r:
         for f in json.loads(r.read()):
             if f['type']=='file' and f['name'].endswith('.md'):
@@ -85,7 +88,7 @@ Set `FIRST_RUN=true`.
 Use the compare API to get only added/modified tracked files:
 
 ```bash
-curl -sf "https://api.github.com/repos/ForgeflowAI/Forgeflow/compare/${CURRENT}...${LATEST}" \
+curl -sf "https://api.github.com/repos/BrandedTamarasu-glitch/ForgeFlow/compare/${CURRENT}...${LATEST}" \
   | python3 -c "
 import json, sys, re
 d = json.load(sys.stdin)
@@ -94,6 +97,7 @@ for f in d.get('files', []):
         continue
     name = f['filename']
     if re.match(r'^agents/[^/]+\.md$', name): print(name)
+    elif re.match(r'^agents/_shared/[^/]+\.md$', name): print(name)
     elif re.match(r'^commands/[^/]+(?:/[^/]+)?\.md$', name): print(name)
     elif re.match(r'^project-rules/[^/]+\.md$', name): print(name)
     elif re.match(r'^forgeflow-patterns/[^/]+\.md$', name): print(name)
@@ -111,7 +115,7 @@ Set `FIRST_RUN=false`.
 
 Also capture deletions for the report (do not act on them):
 ```bash
-curl -sf "https://api.github.com/repos/ForgeflowAI/Forgeflow/compare/${CURRENT}...${LATEST}" \
+curl -sf "https://api.github.com/repos/BrandedTamarasu-glitch/ForgeFlow/compare/${CURRENT}...${LATEST}" \
   | python3 -c "
 import json, sys, re
 d = json.load(sys.stdin)
@@ -129,15 +133,16 @@ Store as `DELETED_FILES`.
 
 Ensure destination directories exist:
 ```bash
-mkdir -p ~/.claude/agents ~/.claude/commands ~/.claude/templates ~/.claude/hooks ~/.claude/project-rules ~/.claude/forgeflow-patterns
+mkdir -p ~/.claude/agents ~/.claude/agents/_shared ~/.claude/commands ~/.claude/templates ~/.claude/hooks ~/.claude/project-rules ~/.claude/forgeflow-patterns
 ```
 
-Raw base URL: `https://raw.githubusercontent.com/ForgeflowAI/Forgeflow/main/`
+Raw base URL: `https://raw.githubusercontent.com/BrandedTamarasu-glitch/ForgeFlow/main/`
 
 Skip any file in the `agents/` category whose destination basename starts with `custom-` — these are user-created agents that must never be overwritten.
 
 For each file in `FILES_TO_SYNC`, download it to the matching destination. **For `agents/NAME.md` entries only: skip if NAME starts with `custom-`.**
 - `agents/NAME.md` → `~/.claude/agents/NAME.md`  *(skip if NAME starts with `custom-`)*
+- `agents/_shared/NAME.md` → `~/.claude/agents/_shared/NAME.md`
 - `commands/NAME.md` → `~/.claude/commands/NAME.md`
 - `commands/SUBDIR/NAME.md` → `~/.claude/commands/SUBDIR/NAME.md`  *(create `~/.claude/commands/SUBDIR/` if needed)*
 - `project-rules/NAME.md` → `~/.claude/project-rules/NAME.md`
@@ -197,7 +202,7 @@ Check: cat ~/.claude/settings.json | grep forgeflow
 - [ ] Reads version from ~/.claude/forgeflow-version; exits cleanly if already up to date
 - [ ] First run: downloads all tracked files via contents API (no prior version needed)
 - [ ] Incremental: uses compare API to download only added/modified tracked files
-- [ ] Tracked paths: agents/*.md (flat), commands/*.md (flat), commands/*/*.md (one-level subdirs), project-rules/*.md (flat), templates/ship-presentation.html, hooks/forgeflow-gate.js, hooks/forgeflow-context-monitor.js, hooks/forgeflow-statusline.js
+- [ ] Tracked paths: agents/*.md (flat), agents/_shared/*.md, commands/*.md (flat), commands/*/*.md (one-level subdirs), project-rules/*.md (flat), templates/ship-presentation.html, hooks/forgeflow-gate.js, hooks/forgeflow-context-monitor.js, hooks/forgeflow-statusline.js
 - [ ] Commands in subdirectories (e.g. commands/agent-chat/on.md) sync to ~/.claude/commands/SUBDIR/NAME.md — subdir created if needed
 - [ ] Never auto-deletes files from ~/.claude/ — deletions reported only
 - [ ] Never overwrites files in ~/.claude/agents/ whose basename starts with `custom-`

@@ -32,17 +32,17 @@ A repo with Phase 2 wired has only the four infrastructure files checked in. The
 
 ```bash
 cd /path/to/target-repo
-curl -sf https://raw.githubusercontent.com/ForgeflowAI/Forgeflow/main/.github/workflows/forgeflow.yml \
+curl -sf https://raw.githubusercontent.com/BrandedTamarasu-glitch/ForgeFlow/main/.github/workflows/forgeflow.yml \
   -o .github/workflows/forgeflow.yml
-curl -sf https://raw.githubusercontent.com/ForgeflowAI/Forgeflow/main/.github/forgeflow-budget.yml \
+curl -sf https://raw.githubusercontent.com/BrandedTamarasu-glitch/ForgeFlow/main/.github/forgeflow-budget.yml \
   -o .github/forgeflow-budget.yml
 mkdir -p scripts
-curl -sf https://raw.githubusercontent.com/ForgeflowAI/Forgeflow/main/scripts/forgeflow-pr-review.sh \
+curl -sf https://raw.githubusercontent.com/BrandedTamarasu-glitch/ForgeFlow/main/scripts/forgeflow-pr-review.sh \
   -o scripts/forgeflow-pr-review.sh
 chmod +x scripts/forgeflow-pr-review.sh
 ```
 
-Or reference the workflow from `ForgeflowAI/Forgeflow` directly via workflow_call once that interface is shipped (V5.1 roadmap item).
+Or reference the workflow from `BrandedTamarasu-glitch/ForgeFlow` directly via workflow_call once that interface is shipped (V5.1 roadmap item).
 
 ### 2. Add the auth secret
 
@@ -150,7 +150,7 @@ Findings carry stable IDs (`B1`, `M1`, `R1`, etc.) so PR comments referencing th
 
 ### "Plugin marketplace unreachable"
 
-The workflow falls back to a shallow clone of `ForgeflowAI/Forgeflow` and copies files directly. This is a resilience path, not a preferred path — raise a Forgeflow issue if it triggers on every run (indicates marketplace auth problem).
+The workflow falls back to a shallow clone of `BrandedTamarasu-glitch/ForgeFlow` and copies files directly. This is a resilience path, not a preferred path — raise a Forgeflow issue if it triggers on every run (indicates marketplace auth problem).
 
 ### "no verdict block found in claude output"
 

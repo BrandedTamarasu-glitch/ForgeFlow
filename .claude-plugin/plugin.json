@@ -1,17 +1,17 @@
 {
   "name": "Forgeflow",
   "version": "4.2.0",
-  "description": "6-agent review and development Forgeflow for Claude Code — full lifecycle from discussion through shipping. Code quality, security, UX, program management, architectural oversight, and product management across specialized agents. V4.2 adds /handoff, /review-auto, /fleet, /ui-iterate, /sync-upstream, /forgeflow-health, /forgeflow-metrics, /forgeflow-learnings plus cross-project pattern memory.",
+  "description": "End-to-end AI software delivery workflow for Claude Code and Codex. Forgeflow covers discussion, research, planning, implementation, review, verification, and shipping with focused agents.",
   "author": {
-    "name": "ForgeflowAI",
-    "url": "https://github.com/ForgeflowAI"
+    "name": "BrandedTamarasu-glitch",
+    "url": "https://github.com/BrandedTamarasu-glitch"
   },
-  "homepage": "https://github.com/ForgeflowAI/Forgeflow",
+  "homepage": "https://github.com/BrandedTamarasu-glitch/ForgeFlow",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ForgeflowAI/Forgeflow.git"
+    "url": "https://github.com/BrandedTamarasu-glitch/ForgeFlow.git"
   },
-  "license": "Private",
+  "license": "MIT",
   "keywords": [
     "claude-code",
     "review",
@@ -32,6 +32,7 @@
   "install": {
     "destinations": {
       "agents/*.md": "~/.claude/agents/",
+      "agents/_shared/*.md": "~/.claude/agents/_shared/",
       "commands/*.md": "~/.claude/commands/",
       "commands/*/*.md": "~/.claude/commands/",
       "hooks/*.js": "~/.claude/hooks/",

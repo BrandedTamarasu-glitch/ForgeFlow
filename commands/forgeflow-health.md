@@ -27,7 +27,7 @@ No arguments: shows only failures, summary pass/fail count.
 - **Checks current cwd's `.forgeflow/` state.** If run outside any project, skips project-local checks with a note.
 - **Version drift check is best-effort.** Compares `~/.claude/forgeflow-version` to the latest upstream SHA via `curl` to GitHub. If offline, skips the check with a note.
 - **Does not validate agent file semantics.** Only checks that files exist and have valid frontmatter — does not verify prompts are coherent or up to date. For that, run the Forgeflow on the agent files themselves via `/review agents/*.md`.
-- **Custom agent detection.** Files under `~/.claude/agents/` starting with `custom-` are NOT expected; they're user-created. Only the 25 canonical Forgeflow agents are required.
+- **Custom agent detection.** Files under `~/.claude/agents/` starting with `custom-` are NOT expected; they're user-created. Only the canonical Forgeflow agents and shared reference files are required.
 
 <process>
 
@@ -35,17 +35,21 @@ No arguments: shows only failures, summary pass/fail count.
 
 ```bash
 EXPECTED_AGENTS=(
+  aegis
   compass-discuss compass-research compass-plan compass-implement compass-review compass-present
-  smith-consult smith-implement smith-audit smith-review smith-craft
-  warden-consult warden-implement warden-audit warden-review warden-security-intelligence
-  arbiter-consult arbiter-implement arbiter-review arbiter-intelligence
+  smith-consult smith-implement smith-audit smith-review
+  warden-consult warden-implement warden-audit warden-review
+  arbiter-consult arbiter-implement arbiter-review
   atlas-early atlas-consult atlas-implement atlas-review atlas-present
-  lumen-consult lumen-implement lumen-review lumen-design-principles
+  lumen-consult lumen-implement lumen-review
+)
+EXPECTED_SHARED_AGENT_FILES=(
+  arbiter-intelligence lumen-design-principles rules smith-craft warden-security-intelligence
 )
 EXPECTED_COMMANDS=(
-  discuss research plan consult implement review review-auto ship fleet ui-iterate
-  handoff audit quick create-agent sync-upstream update-forgeflow
-  debate debate-false-positive forgeflow-metrics forgeflow-health
+  audit ci-wrapper consult create-agent dashboard debate discuss fleet
+  forgeflow-drift forgeflow-health forgeflow-learnings forgeflow-metrics forgeflow-report forgeflow-sync
+  handoff implement plan quick research review review-auto ship sync-upstream ui-iterate update-forgeflow
 )
 EXPECTED_SUBDIR_COMMANDS=(agent-chat/on agent-chat/off)
 EXPECTED_PROJECT_RULES=(commit-hygiene dev-environment)
@@ -59,6 +63,9 @@ EXPECTED_TEMPLATES=(ship-presentation.html)
 For each agent in `EXPECTED_AGENTS`:
 - Check `~/.claude/agents/<agent>.md` exists and is a regular file
 - Check frontmatter parses (first `---` line, name field, description field)
+
+For each shared reference file in `EXPECTED_SHARED_AGENT_FILES`:
+- Check `~/.claude/agents/_shared/<file>.md` exists and is a regular file
 
 ### 2b. Commands
 For each command in `EXPECTED_COMMANDS` and `EXPECTED_SUBDIR_COMMANDS`:
@@ -87,7 +94,7 @@ jq empty ~/.claude/settings.json 2>&1 || echo "INVALID JSON"
 ### 2g. Version drift
 ```bash
 CURRENT=$(cat ~/.claude/forgeflow-version 2>/dev/null)
-LATEST=$(curl -sf "https://api.github.com/repos/ForgeflowAI/Forgeflow/commits/main" 2>/dev/null \
+LATEST=$(curl -sf "https://api.github.com/repos/BrandedTamarasu-glitch/ForgeFlow/commits/main" 2>/dev/null \
   | python3 -c "import json,sys; print(json.load(sys.stdin)['sha'])" 2>/dev/null)
 ```
 If `CURRENT` != `LATEST` and both are valid SHAs, report as "Outdated — run /update-forgeflow".
@@ -96,7 +103,7 @@ If `CURRENT` != `LATEST` and both are valid SHAs, report as "Outdated — run /u
 ```bash
 gh auth status 2>&1 | grep "Logged in" | head -5
 ```
-Report the active account. Warn if pushing to `ForgeflowAI/Forgeflow` requires a different account than currently active.
+Report the active account. Warn if pushing to `BrandedTamarasu-glitch/ForgeFlow` requires a different account than currently active.
 
 ## Step 3: Report
 
