@@ -133,6 +133,36 @@ scripts/forgeflow/record-review-outcome.js --summary .forgeflow/<project>/review
 
 These records are local-first. They are meant to help you understand false positives, verifier outcomes, accepted findings, review time, and auto-fix quality.
 
+## Local Context Intelligence
+
+Forgeflow includes local-only helpers that reduce agent prompt load before review or implementation work starts:
+
+- **Context packs:** `build-context-pack.js` prepares bounded reviewer packets and a synthesis input file from the changed files.
+- **Memory index:** `index-memory.js` indexes local Forgeflow memory so agents can use compact project history instead of reading full notes.
+- **Memory context:** `build-memory-context.js` builds a compact memory summary for research, planning, consultation, and implementation.
+- **Scope manifests:** `build-scope-manifest.js` creates file ownership packets for implementation waves.
+- **Context telemetry:** context, memory, and scope helpers emit token estimates and savings telemetry.
+- **Budget checks:** `check-context-budget.js` reads `.forgeflow-budget.json` and warns when compact context exceeds configured limits.
+- **Health repair:** `health-check.js --fix --json` creates safe project-local scaffolding and seeds budget config when missing.
+- **Context advisor:** `advise-context.js --root .forgeflow --record --json` reports budget issues, low-savings packets, trimming recommendations, and previous-run trend deltas.
+
+Useful commands:
+
+```bash
+scripts/forgeflow/build-context-pack.js --json
+scripts/forgeflow/build-memory-context.js --json
+scripts/forgeflow/build-scope-manifest.js --json
+scripts/forgeflow/summarize-context-telemetry.js --root .forgeflow --json
+scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json
+scripts/forgeflow/advise-context.js --root .forgeflow --record --json
+```
+
+The context advisor appends compact history to:
+
+```text
+.forgeflow/context-advisor-history.jsonl
+```
+
 ## Dashboard
 
 The dashboard is a local read-only HTTP server for metrics and agent chat observability:
@@ -146,6 +176,7 @@ It runs on localhost and reads local telemetry files. It is optional; Forgeflow 
 ## Documentation
 
 - [Wiki source](docs/wiki/Home.md)
+- [Context intelligence](docs/wiki/Context-Intelligence.md)
 - [Codex migration notes](CODEX_MIGRATION.md)
 - [Telemetry schema](docs/forgeflow-metrics-telemetry-schema.md)
 - [Verdict JSON schema](docs/forgeflow-json-schema.md)

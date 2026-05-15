@@ -40,3 +40,15 @@ Aegis returns:
 - `BLOCKED`
 
 The goal is not to suppress specialists. The goal is to separate useful attention from final judgment.
+
+## Local Context Before Review
+
+Review mode can prepare bounded context before agents are spawned:
+
+```bash
+scripts/forgeflow/build-context-pack.js --json
+scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json
+scripts/forgeflow/advise-context.js --root .forgeflow --record --json
+```
+
+The generated reviewer packets give specialists a focused view of the change. The context advisor reports low-savings packets, budget violations, and trend deltas from previous runs so the workflow can trim context before spending tokens.

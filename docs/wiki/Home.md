@@ -14,12 +14,15 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 - [Agent Roles](Agent-Roles)
 - [Workflow Commands](Workflow-Commands)
 - [Review Routing](Review-Routing)
+- [Context Intelligence](Context-Intelligence)
 - [Local Data And Privacy](Local-Data-And-Privacy)
 - [Roadmap](Roadmap)
 
 ## Core Idea
 
 Forgeflow separates software delivery into phases and assigns each phase to agents with explicit responsibilities. This keeps planning, implementation, validation, and final judgment from collapsing into one overbroad prompt.
+
+The current build also adds local context intelligence: bounded context packets, compact memory summaries, scope manifests, context telemetry, budget checks, health repair, and trend-aware context recommendations. These helpers keep agent prompts smaller while preserving the local project memory needed for end-to-end work.
 
 ## Agent Cast
 
