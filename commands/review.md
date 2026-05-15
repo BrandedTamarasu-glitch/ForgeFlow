@@ -406,6 +406,18 @@ fi
 
 When `.forgeflow/${PROJECT_NAME}` exists, context pack generation also refreshes `.forgeflow/${PROJECT_NAME}/index/memory-index.json` and uses that local index before falling back to raw memory scans. It writes estimated context savings to `${CONTEXT_PACK_DIR}/context-telemetry.json`. Use `--no-memory-index` only when debugging index generation.
 
+If `scripts/forgeflow/check-context-budget.js` exists, run it after context pack generation. In interactive mode, use `--warn-only`; in CI mode, omit `--warn-only` so over-budget packets fail fast:
+
+```bash
+if [ -x "scripts/forgeflow/check-context-budget.js" ]; then
+  BUDGET_WARN_ARG="--warn-only"
+  if [ "$CI_MODE" = "true" ]; then
+    BUDGET_WARN_ARG=""
+  fi
+  scripts/forgeflow/check-context-budget.js --root "$FORGEFLOW_DIR" --max-compact-tokens 16000 $BUDGET_WARN_ARG --json
+fi
+```
+
 If the context pack exists, pass the matching `agent-packets/<agent>.md` file contents to each reviewer, `route.json` and `synthesis-input.json` to Arbiter, and `synthesis-input.json` plus Compass's phase artifacts to Compass.
 
 ## Step 3.5: Context Pre-Loading

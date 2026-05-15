@@ -8,17 +8,18 @@ Use this skill when the user wants the Forgeflow team to design the approach bef
 Workflow:
 1. Build compact local memory context with `scripts/forgeflow/build-memory-context.js` when available.
 2. Build first-pass file ownership packets with `scripts/forgeflow/build-scope-manifest.js` when available.
-3. Gather focused context for the requested feature.
-4. Prefer existing `CONTEXT.md` files, the lane scope packet, and the compact memory context before reading full `.forgeflow/current-*.md` artifacts.
-5. Spawn in parallel:
+3. Run `scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json` when available and surface any warnings.
+4. Gather focused context for the requested feature.
+5. Prefer existing `CONTEXT.md` files, the lane scope packet, and the compact memory context before reading full `.forgeflow/current-*.md` artifacts.
+6. Spawn in parallel:
    - `smith_consultant`
    - `warden_consultant`
    - `lumen_consultant`
    - `atlas_consultant`
-6. Wait for their briefs.
-7. Spawn `arbiter_consultant` with the task, gathered context, and all four outputs.
-8. Save the result to `.forgeflow/<project-name>/current-brief.md` when appropriate.
-9. Present the implementation brief with ownership, sequencing, interfaces, and open questions.
+7. Wait for their briefs.
+8. Spawn `arbiter_consultant` with the task, gathered context, and all four outputs.
+9. Save the result to `.forgeflow/<project-name>/current-brief.md` when appropriate.
+10. Present the implementation brief with ownership, sequencing, interfaces, and open questions.
 
 Rules:
 - Optimize for a brief that implementers can execute without ambiguity.

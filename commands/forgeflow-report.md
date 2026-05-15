@@ -121,9 +121,10 @@ When `scripts/forgeflow/summarize-context-telemetry.js` exists, run:
 
 ```bash
 scripts/forgeflow/summarize-context-telemetry.js --root .forgeflow --json
+scripts/forgeflow/check-context-budget.js --root .forgeflow --max-compact-tokens 16000 --warn-only --json
 ```
 
-Include estimated saved tokens and percent saved by telemetry kind.
+Include estimated saved tokens, percent saved by telemetry kind, and any context budget warnings.
 
 ## Step 4: Render output
 

@@ -32,28 +32,29 @@ scripts/forgeflow/build-context-pack.js --json
 ```
 
    Pass `--files`, `--lines`, `--mode`, and `--calibration` when those values were already resolved. This also refreshes `.forgeflow/<project>/index/memory-index.json` when local memory exists. Use the generated `agent-packets/<agent>.md` as the primary reviewer context and `synthesis-input.json` for Arbiter/Compass.
-4. Read only the files needed for that scope. Prefer exact files or `git diff --name-only`; avoid re-reading files already covered by the context pack unless exact source lines are needed.
-5. Spawn reviewer agents in parallel according to the route:
+4. Run `scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json` when available and surface any warnings before spawning reviewers.
+5. Read only the files needed for that scope. Prefer exact files or `git diff --name-only`; avoid re-reading files already covered by the context pack unless exact source lines are needed.
+6. Spawn reviewer agents in parallel according to the route:
    - `smith_reviewer`
    - `warden_reviewer`
    - `lumen_reviewer`
    - `atlas_reviewer`
-6. If the route is thin-mode, you may skip `lumen_reviewer` and `atlas_reviewer`.
-7. Before Arbiter synthesis, send high-risk findings through `aegis`:
+7. If the route is thin-mode, you may skip `lumen_reviewer` and `atlas_reviewer`.
+8. Before Arbiter synthesis, send high-risk findings through `aegis`:
    - security
    - auth, session, permissions, tenant isolation
    - migration, schema, data loss
    - critical correctness
    - broad refactor regression
    - accessibility blocker
-8. Wait for reviewer and verifier outputs, then spawn `arbiter_reviewer` with the collected findings, verifier decisions, routing note, and the file list.
-9. Spawn `compass_reviewer` after Arbiter with:
+9. Wait for reviewer and verifier outputs, then spawn `arbiter_reviewer` with the collected findings, verifier decisions, routing note, and the file list.
+10. Spawn `compass_reviewer` after Arbiter with:
    - Arbiter's verdict
    - reviewer outputs
    - verifier outputs
    - routing note
    - any available plan, research, or discussion notes from `.forgeflow/`
-10. Return findings first. Summaries come after findings.
+11. Return findings first. Summaries come after findings.
 
 Rules:
 - Keep review file-scoped. Do not broaden scope without evidence.
