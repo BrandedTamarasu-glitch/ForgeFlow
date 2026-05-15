@@ -51,7 +51,7 @@ fi
 **If $ARGUMENTS is a file path:** Read that file as the brief.
 **If $ARGUMENTS is a task description and no brief exists:** Tell the user to run `/consult` first, or offer to run a quick inline consultation.
 
-If `MEMORY_CONTEXT_PATH` exists, include it in implementation prompts as the first-pass prior-memory summary. Also read Compass's plan if it exists — agents should be aware of the plan's accessibility requirements and success criteria so they can implement accordingly.
+If `MEMORY_CONTEXT_PATH` exists, include it in implementation prompts as the first-pass prior-memory summary. Estimated context savings are written to `${FORGEFLOW_DIR}/context/memory-context-telemetry.json`. Also read Compass's plan if it exists — agents should be aware of the plan's accessibility requirements and success criteria so they can implement accordingly.
 
 ## Step 2: Parse the brief
 

@@ -3,6 +3,12 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { buildMemoryIndex, tokenize } = require('./index-memory');
+const {
+  contextTelemetry,
+  sum,
+  textChars,
+  writeTelemetry,
+} = require('./context-telemetry');
 
 const DEFAULT_MAX_HITS = 40;
 const DEFAULT_MAX_CHARS = 8000;
@@ -10,7 +16,8 @@ const DEFAULT_MAX_CHARS = 8000;
 function usage() {
   console.error([
     'Usage: build-memory-context.js [--query <text>] [--files <path>] [--project-dir <dir>]',
-    '       [--out <path>] [--index-out <path>] [--max-hits <n>] [--max-chars <n>] [--json]',
+    '       [--out <path>] [--index-out <path>] [--telemetry-out <path>]',
+    '       [--max-hits <n>] [--max-chars <n>] [--json]',
   ].join('\n'));
 }
 
@@ -21,6 +28,7 @@ function parseArgs(argv) {
     projectDir: '',
     out: '',
     indexOut: '',
+    telemetryOut: '',
     maxHits: DEFAULT_MAX_HITS,
     maxChars: DEFAULT_MAX_CHARS,
     json: false,
@@ -38,6 +46,8 @@ function parseArgs(argv) {
       opts.out = path.resolve(argv[++i] || '');
     } else if (arg === '--index-out') {
       opts.indexOut = path.resolve(argv[++i] || '');
+    } else if (arg === '--telemetry-out') {
+      opts.telemetryOut = path.resolve(argv[++i] || '');
     } else if (arg === '--max-hits') {
       opts.maxHits = Number.parseInt(argv[++i] || `${DEFAULT_MAX_HITS}`, 10);
     } else if (arg === '--max-chars') {
@@ -73,6 +83,10 @@ function defaultProjectDir(root) {
 
 function defaultOut(root) {
   return path.join(defaultProjectDir(root), 'context', 'memory-context.md');
+}
+
+function defaultTelemetryOut(root) {
+  return path.join(defaultProjectDir(root), 'context', 'memory-context-telemetry.json');
 }
 
 function readFileList(filesPath) {
@@ -159,13 +173,29 @@ function buildMemoryContext(opts = {}) {
 
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, `${rendered.markdown}\n`);
+  const rawMemoryChars = sum(indexResult.index.sources.map((source) => source.bytes || 0));
+  const telemetry = contextTelemetry('memory-context', {
+    baseline_chars: rawMemoryChars,
+    compact_chars: textChars(rendered.markdown),
+    detail: {
+      sources: indexResult.index.sources.length,
+      records: records.length,
+      selected_count: rendered.selected_count,
+      max_hits: opts.maxHits,
+      max_chars: opts.maxChars,
+    },
+  });
+  const telemetryOut = opts.telemetryOut || defaultTelemetryOut(root);
+  writeTelemetry(telemetryOut, telemetry);
   return {
     out,
     index_path: indexResult.out,
+    telemetry_path: telemetryOut,
     sources: indexResult.index.sources.length,
     records: records.length,
     selected_count: rendered.selected_count,
     markdown: rendered.markdown,
+    telemetry,
   };
 }
 
@@ -176,9 +206,11 @@ function main() {
     console.log(JSON.stringify({
       out: result.out,
       index_path: result.index_path,
+      telemetry_path: result.telemetry_path,
       sources: result.sources,
       records: result.records,
       selected_count: result.selected_count,
+      estimated_saved_tokens: result.telemetry.estimated_saved_tokens,
     }, null, 2));
   } else {
     console.log(result.markdown);

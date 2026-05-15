@@ -404,7 +404,7 @@ if ! echo "$ARGUMENTS" | grep -q -- '--no-context-pack' && [ -x "scripts/forgefl
 fi
 ```
 
-When `.forgeflow/${PROJECT_NAME}` exists, context pack generation also refreshes `.forgeflow/${PROJECT_NAME}/index/memory-index.json` and uses that local index before falling back to raw memory scans. Use `--no-memory-index` only when debugging index generation.
+When `.forgeflow/${PROJECT_NAME}` exists, context pack generation also refreshes `.forgeflow/${PROJECT_NAME}/index/memory-index.json` and uses that local index before falling back to raw memory scans. It writes estimated context savings to `${CONTEXT_PACK_DIR}/context-telemetry.json`. Use `--no-memory-index` only when debugging index generation.
 
 If the context pack exists, pass the matching `agent-packets/<agent>.md` file contents to each reviewer, `route.json` and `synthesis-input.json` to Arbiter, and `synthesis-input.json` plus Compass's phase artifacts to Compass.
 

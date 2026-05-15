@@ -48,7 +48,7 @@ if [ -x "scripts/forgeflow/build-memory-context.js" ]; then
 fi
 ```
 
-If `MEMORY_CONTEXT_PATH` exists, inject it into Compass and Atlas as the memory summary. Read full phase files only when the summary cites a gap or exact source text is needed.
+If `MEMORY_CONTEXT_PATH` exists, inject it into Compass and Atlas as the memory summary. Read full phase files only when the summary cites a gap or exact source text is needed. Estimated context savings are written to `${FORGEFLOW_DIR}/context/memory-context-telemetry.json`.
 
 **Discover:**
 ```bash

@@ -64,7 +64,7 @@ if [ -x "scripts/forgeflow/build-memory-context.js" ]; then
 fi
 ```
 
-If `MEMORY_CONTEXT_PATH` exists, use it as the first-pass memory summary for all consultation agents. If `current-plan.md` exists, read it — this is Compass's implementation plan and should serve as the primary input for consultation. Read discussion and research files only when the memory summary is insufficient or exact source text is needed.
+If `MEMORY_CONTEXT_PATH` exists, use it as the first-pass memory summary for all consultation agents. Estimated context savings are written to `${FORGEFLOW_DIR}/context/memory-context-telemetry.json`. If `current-plan.md` exists, read it — this is Compass's implementation plan and should serve as the primary input for consultation. Read discussion and research files only when the memory summary is insufficient or exact source text is needed.
 
 ## Step 1.5: Context Pre-Loading
 

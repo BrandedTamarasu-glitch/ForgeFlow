@@ -4,6 +4,13 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { classify, readFiles } = require('./explain-review-route');
 const { buildMemoryIndex } = require('./index-memory');
+const {
+  contextTelemetry,
+  fileChars,
+  sum,
+  textChars,
+  writeTelemetry,
+} = require('./context-telemetry');
 
 const DEFAULT_MAX_MEMORY_CHARS = 12000;
 const DEFAULT_MAX_DIFF_CHARS = 18000;
@@ -381,6 +388,14 @@ function writeJson(file, value) {
   fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`);
 }
 
+function rawChangedFileChars(root, files) {
+  return sum(files.map((file) => fileChars(path.join(root, file))));
+}
+
+function rawMemoryChars(root) {
+  return sum(memoryFiles(root).map((file) => fileChars(file)));
+}
+
 function buildContextPack(opts) {
   const root = repoRoot();
   const files = readChangedFiles(opts);
@@ -410,6 +425,22 @@ function buildContextPack(opts) {
     packets[agent] = path.relative(root, file);
   }
 
+  const packetFiles = Object.values(packets).map((file) => path.join(root, file));
+  const baselinePerAgentChars = rawChangedFileChars(root, route.files) + rawMemoryChars(root) + textChars(diffSummary);
+  const telemetry = contextTelemetry('context-pack', {
+    baseline_chars: baselinePerAgentChars * Math.max(agents.length, 1),
+    compact_chars: sum(packetFiles.map((file) => fileChars(file))),
+    detail: {
+      agents: agents.length,
+      files: route.files.length,
+      raw_changed_file_chars: rawChangedFileChars(root, route.files),
+      raw_memory_chars: rawMemoryChars(root),
+      diff_summary_chars: textChars(diffSummary),
+      packet_chars: sum(packetFiles.map((file) => fileChars(file))),
+      memory_index_used: Boolean(memoryIndexPath),
+    },
+  });
+
   const synthesisInput = {
     schema_version: '1',
     generated_at: new Date().toISOString(),
@@ -418,6 +449,7 @@ function buildContextPack(opts) {
     diff_summary_path: path.relative(root, path.join(outDir, 'diff-summary.md')),
     memory_hits_path: path.relative(root, path.join(outDir, 'memory-hits.md')),
     memory_index_path: memoryIndexPath ? path.relative(root, memoryIndexPath) : null,
+    context_telemetry_path: path.relative(root, path.join(outDir, 'context-telemetry.json')),
     file_manifest_path: path.relative(root, path.join(outDir, 'file-manifest.json')),
     agent_packets: packets,
     limits: {
@@ -430,6 +462,7 @@ function buildContextPack(opts) {
   writeJson(path.join(outDir, 'file-manifest.json'), { schema_version: '1', files: manifest });
   fs.writeFileSync(path.join(outDir, 'diff-summary.md'), `${diffSummary}\n`);
   fs.writeFileSync(path.join(outDir, 'memory-hits.md'), `${memoryHits}\n`);
+  writeTelemetry(path.join(outDir, 'context-telemetry.json'), telemetry);
   writeJson(path.join(outDir, 'synthesis-input.json'), synthesisInput);
 
   return {
@@ -437,6 +470,7 @@ function buildContextPack(opts) {
     route,
     manifest,
     synthesis_input: synthesisInput,
+    telemetry,
   };
 }
 
@@ -449,6 +483,7 @@ function main() {
       mode: result.route.mode,
       agents: result.route.agents.included,
       packet_count: Object.keys(result.synthesis_input.agent_packets).length,
+      estimated_saved_tokens: result.telemetry.estimated_saved_tokens,
     }, null, 2));
   } else {
     console.log(`Context pack: ${result.out_dir}`);

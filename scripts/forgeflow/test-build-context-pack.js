@@ -21,6 +21,7 @@ const result = buildContextPack({
 const route = JSON.parse(fs.readFileSync(path.join(outDir, 'route.json'), 'utf8'));
 const manifest = JSON.parse(fs.readFileSync(path.join(outDir, 'file-manifest.json'), 'utf8'));
 const synthesis = JSON.parse(fs.readFileSync(path.join(outDir, 'synthesis-input.json'), 'utf8'));
+const telemetry = JSON.parse(fs.readFileSync(path.join(outDir, 'context-telemetry.json'), 'utf8'));
 
 const checks = [
   ['result out dir', result.out_dir === outDir],
@@ -33,6 +34,9 @@ const checks = [
   ['aegis packet exists', Boolean(synthesis.agent_packets.aegis)],
   ['memory hits written', fs.existsSync(path.join(outDir, 'memory-hits.md'))],
   ['diff summary written', fs.existsSync(path.join(outDir, 'diff-summary.md'))],
+  ['telemetry written', fs.existsSync(path.join(outDir, 'context-telemetry.json'))],
+  ['telemetry linked', synthesis.context_telemetry_path.endsWith('context-telemetry.json')],
+  ['telemetry token estimate', Number.isInteger(telemetry.estimated_compact_tokens)],
 ];
 
 let failed = 0;
