@@ -79,7 +79,7 @@ for d in dirs:
 
 ```
 
-Add to the list: `templates/ship-presentation.html`, `hooks/forgeflow-gate.js`, `hooks/forgeflow-context-monitor.js`, and `hooks/forgeflow-statusline.js`
+Add to the list: `templates/ship-presentation.html`, `hooks/forgeflow-gate.js`, `hooks/forgeflow-context-monitor.js`, `hooks/forgeflow-statusline.js`, and `hooks/forgeflow-telemetry.js`
 
 Set `FIRST_RUN=true`.
 
@@ -202,7 +202,7 @@ Check: cat ~/.claude/settings.json | grep forgeflow
 - [ ] Reads version from ~/.claude/forgeflow-version; exits cleanly if already up to date
 - [ ] First run: downloads all tracked files via contents API (no prior version needed)
 - [ ] Incremental: uses compare API to download only added/modified tracked files
-- [ ] Tracked paths: agents/*.md (flat), agents/_shared/*.md, commands/*.md (flat), commands/*/*.md (one-level subdirs), project-rules/*.md (flat), templates/ship-presentation.html, hooks/forgeflow-gate.js, hooks/forgeflow-context-monitor.js, hooks/forgeflow-statusline.js
+- [ ] Tracked paths: agents/*.md (flat), agents/_shared/*.md, commands/*.md (flat), commands/*/*.md (one-level subdirs), project-rules/*.md (flat), templates/ship-presentation.html, hooks/forgeflow-gate.js, hooks/forgeflow-context-monitor.js, hooks/forgeflow-statusline.js, hooks/forgeflow-telemetry.js
 - [ ] Commands in subdirectories (e.g. commands/agent-chat/on.md) sync to ~/.claude/commands/SUBDIR/NAME.md — subdir created if needed
 - [ ] Never auto-deletes files from ~/.claude/ — deletions reported only
 - [ ] Never overwrites files in ~/.claude/agents/ whose basename starts with `custom-`

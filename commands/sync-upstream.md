@@ -12,7 +12,7 @@ allowed-tools:
   - AskUserQuestion
 ---
 <objective>
-When making meta-work changes to Forgeflow itself (editing commands, agents, project-rules, or templates in `~/.claude/`), this command detects which files differ from the upstream at `~/Claude/Work/Forgeflow/`, copies them, commits with a generated message, and pushes to origin.
+When making meta-work changes to Forgeflow itself (editing commands, agents, project-rules, or templates in `~/.claude/`), this command detects which files differ from the local Forgeflow repository, copies them, commits with a generated message, and pushes to origin.
 
 Replaces the manual `cp → git add → git commit → git push` flow done repeatedly per session.
 </objective>
@@ -31,6 +31,7 @@ No arguments: full sync (copy → commit → push).
 - **Commit account matters.** The Forgeflow repo is owned by `BrandedTamarasu-glitch`. If `gh auth` active account is different, the push may 403. Command auto-switches active account for the push, then switches back.
 - **Never force-pushes.** If upstream has diverged (someone else pushed), the push fails; command reports the divergence and asks the user to pull-rebase manually.
 - **Auto-generated commit message is based on diff.** If you want a specific message, use `--message "..."`. Auto-message format: `chore(sync): <N> file(s) synced from ~/.claude/ (<file list summary>)`.
+- **Repository location.** Set `FORGEFLOW_REPO=/path/to/ForgeFlow` when your local clone is not at the default `~/ForgeFlow`.
 - **Subdir files covered.** Handles `agents/`, `commands/` (including `commands/SUBDIR/`), `project-rules/`, `templates/`, `hooks/`. Does NOT touch `services/`, `docs/`, or `.claude-plugin/` — those require manual attention.
 
 <process>
@@ -38,7 +39,7 @@ No arguments: full sync (copy → commit → push).
 ## Step 1: Locate upstream
 
 ```bash
-UPSTREAM="$HOME/Claude/Work/Forgeflow"
+UPSTREAM="${FORGEFLOW_REPO:-$HOME/ForgeFlow}"
 if [ ! -d "$UPSTREAM/.git" ]; then
   echo "Upstream clone not found at $UPSTREAM"
   echo "Clone with: git clone https://github.com/BrandedTamarasu-glitch/ForgeFlow.git $UPSTREAM"
@@ -160,7 +161,7 @@ fi
 If push fails (non-fast-forward), stop and report:
 ```
 Push rejected — upstream has diverged. Pull with:
-  cd ~/Claude/Work/Forgeflow
+  cd "${FORGEFLOW_REPO:-$HOME/ForgeFlow}"
   git pull --ff-only  # or --rebase if needed
   git push origin main
 ```

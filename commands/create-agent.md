@@ -9,7 +9,7 @@ allowed-tools:
 <objective>
 Guide the user through creating a custom Claude Code agent via a 5-question Q&A. Template-first: user picks a starting template, then customises name, specialization, tone, and tools. Shows a full preview before writing anything. Outputs `~/.claude/agents/custom-{name}.md`.
 
-Custom agents use the `custom-` prefix so `/update` never overwrites them and they can be dispatched via `/quick <task> custom-{name}`.
+Custom agents use the `custom-` prefix so `/update-forgeflow` never overwrites them and they can be dispatched via `/quick <task> custom-{name}`.
 </objective>
 
 <templates>

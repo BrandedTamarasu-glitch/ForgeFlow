@@ -16,7 +16,7 @@ allowed-tools:
 source "$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)/services/chat-bridge/init-session.sh" "review" "$*"
 ```
 <objective>
-Run the 6-agent Forgeflow on changed files. Works in any project — GSD or not.
+Run the Forgeflow review team on changed files. Works in any project.
 
 The Forgeflow team: `smith-review`, `warden-review`, `lumen-review`, `atlas-review` (parallel) → `arbiter-review` (synthesis) → `compass-review` (final).
 </objective>

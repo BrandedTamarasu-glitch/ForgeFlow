@@ -102,6 +102,7 @@ jobs:
             cp -r /tmp/forgeflow-src/agents/*.md ~/.claude/agents/ 2>/dev/null || true
             cp -r /tmp/forgeflow-src/agents/_shared ~/.claude/agents/ 2>/dev/null || true
             cp -r /tmp/forgeflow-src/commands/*.md ~/.claude/commands/ 2>/dev/null || true
+            cp -r /tmp/forgeflow-src/commands/*/ ~/.claude/commands/ 2>/dev/null || true
             cp -r /tmp/forgeflow-src/hooks/*.js ~/.claude/hooks/ 2>/dev/null || true
             cp -r /tmp/forgeflow-src/templates/* ~/.claude/templates/ 2>/dev/null || true
             cp -r /tmp/forgeflow-src/project-rules/*.md ~/.claude/project-rules/ 2>/dev/null || true
