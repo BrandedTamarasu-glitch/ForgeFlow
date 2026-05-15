@@ -57,9 +57,14 @@ FORGEFLOW_DIR=".forgeflow/${PROJECT_NAME}"
 PLAN_PATH="${FORGEFLOW_DIR}/current-plan.md"
 DISCUSSION_PATH="${FORGEFLOW_DIR}/current-discussion.md"
 RESEARCH_PATH="${FORGEFLOW_DIR}/current-research.md"
+MEMORY_CONTEXT_PATH="${FORGEFLOW_DIR}/context/consult-memory.md"
+
+if [ -x "scripts/forgeflow/build-memory-context.js" ]; then
+  scripts/forgeflow/build-memory-context.js --query "${ARGUMENTS:-consult implementation brief architecture security frontend coordination}" --out "$MEMORY_CONTEXT_PATH" --json
+fi
 ```
 
-If `current-plan.md` exists, read it — this is Compass's implementation plan and should serve as the primary input for consultation. Also read discussion and research files if present for full context.
+If `MEMORY_CONTEXT_PATH` exists, use it as the first-pass memory summary for all consultation agents. If `current-plan.md` exists, read it — this is Compass's implementation plan and should serve as the primary input for consultation. Read discussion and research files only when the memory summary is insufficient or exact source text is needed.
 
 ## Step 1.5: Context Pre-Loading
 

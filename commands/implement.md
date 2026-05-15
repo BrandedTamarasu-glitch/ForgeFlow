@@ -40,13 +40,18 @@ BRIEF_PATH="${FORGEFLOW_DIR}/current-brief.md"
 PLAN_PATH="${FORGEFLOW_DIR}/current-plan.md"
 DISCUSSION_PATH="${FORGEFLOW_DIR}/current-discussion.md"
 RESEARCH_PATH="${FORGEFLOW_DIR}/current-research.md"
+MEMORY_CONTEXT_PATH="${FORGEFLOW_DIR}/context/implement-memory.md"
+
+if [ -x "scripts/forgeflow/build-memory-context.js" ]; then
+  scripts/forgeflow/build-memory-context.js --query "${ARGUMENTS:-implementation brief validation scope interfaces}" --out "$MEMORY_CONTEXT_PATH" --json
+fi
 ```
 
 **If brief exists:** Read and use it.
 **If $ARGUMENTS is a file path:** Read that file as the brief.
 **If $ARGUMENTS is a task description and no brief exists:** Tell the user to run `/consult` first, or offer to run a quick inline consultation.
 
-Also read Compass's plan if it exists — agents should be aware of the plan's accessibility requirements and success criteria so they can implement accordingly.
+If `MEMORY_CONTEXT_PATH` exists, include it in implementation prompts as the first-pass prior-memory summary. Also read Compass's plan if it exists — agents should be aware of the plan's accessibility requirements and success criteria so they can implement accordingly.
 
 ## Step 2: Parse the brief
 

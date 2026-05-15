@@ -13,7 +13,7 @@ scripts/forgeflow/ensure-forgeflow-state.sh
 
 Workflow:
 1. Load `.forgeflow/<project-name>/current-discussion.md` if present, plus any focused user questions.
-2. Gather `CONTEXT.md` files and other narrowly relevant local context.
+2. Build compact local memory context with `scripts/forgeflow/build-memory-context.js` when available, then gather `CONTEXT.md` files and other narrowly relevant local context.
 3. Spawn `compass_researcher` and `atlas_early` in parallel.
 4. Synthesize Compass's recommendations with Atlas's codebase and memory findings.
 5. Save the result to `.forgeflow/<project-name>/current-research.md` when appropriate.

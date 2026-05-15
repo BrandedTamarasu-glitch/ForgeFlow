@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-SERVER_JS="$REPO_ROOT/services/agent-chat/server.js"
+HELPER_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+SERVER_JS="$HELPER_ROOT/services/agent-chat/server.js"
 PID_FILE="/tmp/agent-chat.pid"
 LOG_FILE="/tmp/agent-chat.log"
 

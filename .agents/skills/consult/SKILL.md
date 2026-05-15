@@ -14,7 +14,7 @@ scripts/forgeflow/ensure-forgeflow-state.sh
 ```
 
 Workflow:
-1. Gather focused project context.
+1. Build compact local memory context with `scripts/forgeflow/build-memory-context.js` when available, then gather focused project context.
 2. Spawn `smith_consultant`, `warden_consultant`, `lumen_consultant`, and `atlas_consultant` in parallel.
 3. Synthesize with `arbiter_consultant`.
 4. Save the resulting brief to `.forgeflow/<project-name>/current-brief.md` when appropriate.

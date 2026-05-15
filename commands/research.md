@@ -40,6 +40,18 @@ $ARGUMENTS is provided by the user after the slash command (e.g., `/research` or
 
 Apply the security denylist before reading any file: exclude `.env`, `*.pem`, `*.key`, `*.p12`, `*.cert`, `*.secret`, and any file with `password`, `secret`, or `token` in the filename (case-insensitive).
 
+Build compact local memory context before reading phase files directly:
+```bash
+PROJECT_NAME=$(basename "$(pwd)")
+FORGEFLOW_DIR=".forgeflow/${PROJECT_NAME}"
+MEMORY_CONTEXT_PATH="${FORGEFLOW_DIR}/context/research-memory.md"
+if [ -x "scripts/forgeflow/build-memory-context.js" ]; then
+  scripts/forgeflow/build-memory-context.js --query "${ARGUMENTS:-research}" --out "$MEMORY_CONTEXT_PATH" --json
+fi
+```
+
+If `MEMORY_CONTEXT_PATH` exists, inject it into Compass and Atlas as the memory summary. Read full phase files only when the summary cites a gap or exact source text is needed.
+
 **Discover:**
 ```bash
 find . -name "CONTEXT.md" -not -path "*/node_modules/*" -not -path "*/.planning/*"

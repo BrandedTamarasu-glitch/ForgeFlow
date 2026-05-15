@@ -6,17 +6,18 @@ description: Run the Forgeflow consultation workflow to produce an implementatio
 Use this skill when the user wants the Forgeflow team to design the approach before implementation.
 
 Workflow:
-1. Gather focused context for the requested feature.
-2. Prefer existing `CONTEXT.md` files and any `.forgeflow/current-*.md` artifacts before broader exploration.
-3. Spawn in parallel:
+1. Build compact local memory context with `scripts/forgeflow/build-memory-context.js` when available.
+2. Gather focused context for the requested feature.
+3. Prefer existing `CONTEXT.md` files and the compact memory context before reading full `.forgeflow/current-*.md` artifacts.
+4. Spawn in parallel:
    - `smith_consultant`
    - `warden_consultant`
    - `lumen_consultant`
    - `atlas_consultant`
-4. Wait for their briefs.
-5. Spawn `arbiter_consultant` with the task, gathered context, and all four outputs.
-6. Save the result to `.forgeflow/<project-name>/current-brief.md` when appropriate.
-7. Present the implementation brief with ownership, sequencing, interfaces, and open questions.
+5. Wait for their briefs.
+6. Spawn `arbiter_consultant` with the task, gathered context, and all four outputs.
+7. Save the result to `.forgeflow/<project-name>/current-brief.md` when appropriate.
+8. Present the implementation brief with ownership, sequencing, interfaces, and open questions.
 
 Rules:
 - Optimize for a brief that implementers can execute without ambiguity.

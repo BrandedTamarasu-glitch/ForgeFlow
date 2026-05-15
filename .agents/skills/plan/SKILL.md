@@ -12,7 +12,7 @@ scripts/forgeflow/ensure-forgeflow-state.sh
 ```
 
 Workflow:
-1. Load current discussion and research artifacts from `.forgeflow/<project-name>/` when available.
+1. Build compact local memory context with `scripts/forgeflow/build-memory-context.js` when available, then load current discussion and research artifacts from `.forgeflow/<project-name>/` when needed.
 2. Gather focused local context such as `CONTEXT.md`.
 3. Spawn `compass_planner` and `atlas_early` in parallel.
 4. Synthesize the result into a unified implementation plan.

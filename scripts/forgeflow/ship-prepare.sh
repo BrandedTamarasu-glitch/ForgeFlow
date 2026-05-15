@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-"$REPO_ROOT/scripts/forgeflow/ensure-forgeflow-state.sh" > /tmp/forgeflow-state.env
+HELPER_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+"$HELPER_ROOT/scripts/forgeflow/ensure-forgeflow-state.sh" > /tmp/forgeflow-state.env
 # shellcheck disable=SC1091
 source /tmp/forgeflow-state.env
 
@@ -113,7 +113,7 @@ path.parent.mkdir(parents=True, exist_ok=True)
 path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf8")
 PY
 
-node "$REPO_ROOT/scripts/forgeflow/render-ship-presentation.js" \
+node "$HELPER_ROOT/scripts/forgeflow/render-ship-presentation.js" \
   "$SHIP_DIR/ship-summary.json" \
   "$SHIP_DIR/ship-presentation.html"
 
