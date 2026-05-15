@@ -139,4 +139,4 @@ Forgeflow is a local-first developer workflow. It currently targets Claude Code 
 
 ## License
 
-No license has been selected yet. Treat this repository as source-available until a license file is added.
+MIT. See [LICENSE](LICENSE).
