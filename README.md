@@ -62,6 +62,12 @@ Bootstrap local state:
 scripts/forgeflow/ensure-forgeflow-state.sh
 ```
 
+Audit and repair project-local Forgeflow state:
+
+```bash
+scripts/forgeflow/health-check.js --fix --json
+```
+
 To seed a project-local context budget config without overwriting an existing file:
 
 ```bash

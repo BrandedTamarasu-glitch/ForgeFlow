@@ -90,7 +90,9 @@ jq empty ~/.claude/settings.json 2>&1 || echo "INVALID JSON"
 - `.forgeflow/<project-name>/` directory exists
 - `.forgeflow/<project-name>/agent-notes/` exists
 - `.forgeflow/` is in `.gitignore`
-- Optional `.forgeflow-budget.json` exists when context budgets should be project-specific. If missing and `--fix` is set, run `scripts/forgeflow/seed-budget-config.js --json` when available.
+- Optional `.forgeflow-budget.json` exists when context budgets should be project-specific.
+- When available, run `scripts/forgeflow/health-check.js --json` for a machine-readable project-local report.
+- If `--fix` is set, run `scripts/forgeflow/health-check.js --fix --json` to create safe local scaffolding and seed `.forgeflow-budget.json` without overwriting an existing config.
 
 ### 2g. Version drift
 ```bash
@@ -141,6 +143,9 @@ With `--verbose`: include PASSING lines for every check.
 Safe auto-fixes:
 - Create missing dirs: `.forgeflow/<project>/agent-notes/`
 - Add `.forgeflow/` to `.gitignore` if missing
+- Seed `.forgeflow-budget.json` from the bundled template if missing
+
+Prefer `scripts/forgeflow/health-check.js --fix --json` for project-local fixes. It reports each path it changed and leaves existing budget config untouched.
 
 Never auto-fix:
 - Missing agents or commands → directs to `/update-forgeflow`
