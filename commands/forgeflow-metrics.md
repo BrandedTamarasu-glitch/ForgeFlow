@@ -151,6 +151,7 @@ When context telemetry artifacts exist:
 ```bash
 scripts/forgeflow/summarize-context-telemetry.js --root .forgeflow --json
 scripts/forgeflow/check-context-budget.js --root .forgeflow --max-compact-tokens 16000 --warn-only --json
+scripts/forgeflow/advise-context.js --root .forgeflow --json
 ```
 
 Budget defaults can be overridden with repo-local `.forgeflow-budget.json`:
@@ -181,6 +182,7 @@ Compute and include:
 - **Verdict churn** — per project, `REVISE count / total review count`. If > 50%, flag as "high churn — investigate root causes"
 - **Context savings trend** — compare estimated saved tokens by kind; if context-pack savings are low, review packet contents for over-inclusion
 - **Context budget health** — report any telemetry artifact whose compact token estimate exceeds the configured budget
+- **Context advisor actions** — include `scripts/forgeflow/advise-context.js` recommendations for low savings, budget violations, or missing telemetry
 
 </process>
 
