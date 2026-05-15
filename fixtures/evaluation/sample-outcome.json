@@ -1,0 +1,61 @@
+{
+  "schema_version": "1",
+  "recorded_at": "2026-05-15T12:30:00.000Z",
+  "change_id": "fixture-pr-001",
+  "title": "Add dashboard permissions check",
+  "review": {
+    "mode": "full-mode",
+    "agents_used": [
+      "smith_reviewer",
+      "warden_reviewer",
+      "lumen_reviewer",
+      "atlas_reviewer",
+      "aegis"
+    ],
+    "verifier_decisions": [
+      {
+        "reviewer": "warden",
+        "class": "auth/session/permissions",
+        "decision": "CONFIRMED"
+      },
+      {
+        "reviewer": "lumen",
+        "class": "accessibility",
+        "decision": "REJECTED"
+      }
+    ],
+    "route_reasons": [
+      "frontend path changed",
+      "calibration requires Aegis for noisy class: accessibility"
+    ]
+  },
+  "outcome": {
+    "findings_total": 3,
+    "findings_confirmed": 2,
+    "findings_rejected": 1,
+    "review_minutes": 18.5,
+    "auto_fix_success": true,
+    "post_merge_regression": false,
+    "finding_classes": [
+      {
+        "class": "auth/session/permissions",
+        "total": 1,
+        "confirmed": 1,
+        "rejected": 0
+      },
+      {
+        "class": "accessibility",
+        "total": 1,
+        "confirmed": 1,
+        "rejected": 0
+      },
+      {
+        "class": "missing-transaction",
+        "total": 1,
+        "confirmed": 0,
+        "rejected": 1
+      }
+    ]
+  },
+  "notes": "Fixture uses anonymized local data only."
+}

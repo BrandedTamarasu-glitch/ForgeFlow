@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SubAgents Chat</title>
+  <style>
+    /* ------------------------------------------------------------------ */
+    /* Reset + base                                                         */
+    /* ------------------------------------------------------------------ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d1117;
+      --bg-msg:    #161b22;
+      --bg-sys:    #0f1319;
+      --border:    #30363d;
+      --text:      #e6edf3;
+      --muted:     #7d8590;
+      --ts:        #484f58;
+
+      --compass:     #f9a8d4;
+      --fc:        #6ee7b7;
+      --warden:     #fbbf24;
+      --lumen:    #60a5fa;
+      --pmcory:    #c4b5fd;
+      --arbiter:     #f3f4f6;
+
+      --pill-bg:   #1f2937;
+      --pill-text: #60a5fa;
+      --radius:    6px;
+      --font-mono: 'Menlo', 'Consolas', 'Liberation Mono', monospace;
+    }
+
+    /* High-contrast mode */
+    @media (prefers-contrast: more) {
+      :root {
+        --border: #8b949e;
+        --muted:  #c9d1d9;
+        --ts:     #8b949e;
+      }
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.5;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Phase bar                                                           */
+    /* ------------------------------------------------------------------ */
+    #phase-bar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: #161b22;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+
+    #phase-bar .label {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 10px;
+    }
+
+    #phase-name {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    #ws-status {
+      margin-left: auto;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    #ws-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+
+    #ws-dot.connected    { background: #3fb950; }
+    #ws-dot.reconnecting { background: #d29922; }
+    #ws-dot.disconnected { background: #f85149; }
+
+    /* ------------------------------------------------------------------ */
+    /* Message list                                                        */
+    /* ------------------------------------------------------------------ */
+    #messages-wrap {
+      flex: 1;
+      overflow-y: auto;
+      position: relative;
+      padding: 8px 0;
+    }
+
+    #messages {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    /* Agent message */
+    .msg {
+      display: grid;
+      grid-template-columns: 90px 1fr auto;
+      align-items: baseline;
+      gap: 0 10px;
+      padding: 5px 16px;
+      border-left: 3px solid transparent;
+      background: var(--bg-msg);
+    }
+
+    .msg:hover { background: #1c2129; }
+
+    .msg .agent-name {
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .msg .body {
+      color: var(--text);
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+
+    .msg .ts {
+      color: var(--ts);
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    /* Per-agent accent colors */
+    .msg[data-agent="compass"]  { border-left-color: var(--compass); }
+    .msg[data-agent="fc"]     { border-left-color: var(--fc); }
+    .msg[data-agent="warden"]  { border-left-color: var(--warden); }
+    .msg[data-agent="lumen"] { border-left-color: var(--lumen); }
+    .msg[data-agent="atlas"]{ border-left-color: var(--pmcory); }
+    .msg[data-agent="arbiter"]  { border-left-color: var(--arbiter); }
+
+    .msg[data-agent="compass"]   .agent-name { color: var(--compass); }
+    .msg[data-agent="fc"]      .agent-name { color: var(--fc); }
+    .msg[data-agent="warden"]   .agent-name { color: var(--warden); }
+    .msg[data-agent="lumen"]  .agent-name { color: var(--lumen); }
+    .msg[data-agent="atlas"] .agent-name { color: var(--pmcory); }
+    .msg[data-agent="arbiter"]   .agent-name { color: var(--arbiter); }
+
+    /* Per-level visual weight */
+    .msg[data-level="decision"]     { opacity: 0.85; }
+    .msg[data-level="conversation"] { opacity: 0.65; }
+
+    /* System / lifecycle message */
+    .msg-sys {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 16px;
+      background: var(--bg-sys);
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .msg-sys::before,
+    .msg-sys::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* New-messages pill                                                   */
+    /* ------------------------------------------------------------------ */
+    #new-pill {
+      position: sticky;
+      bottom: 12px;
+      margin: 0 auto;
+      display: none;
+      width: fit-content;
+      background: var(--pill-bg);
+      color: var(--pill-text);
+      border: 1px solid #1d4ed8;
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+      font: inherit;
+      appearance: none;
+    }
+
+    #new-pill:hover { background: #1f3a6e; }
+
+    #new-pill:focus-visible {
+      outline: 2px solid #58a6ff;
+      outline-offset: 2px;
+    }
+
+    #messages-wrap:focus { outline: none; }
+
+    @keyframes flash-sys {
+      0%   { background: #2d333b; }
+      100% { background: var(--bg-sys); }
+    }
+    .msg-sys.flash { animation: flash-sys 0.6s ease-out; }
+
+    /* ------------------------------------------------------------------ */
+    /* Reduced motion                                                      */
+    /* ------------------------------------------------------------------ */
+    @media (prefers-reduced-motion: reduce) {
+      * { scroll-behavior: auto !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Phase indicator -->
+  <header id="phase-bar" role="banner">
+    <span class="label">room</span>
+    <span id="phase-name" aria-live="assertive" aria-atomic="true">—</span>
+    <div id="ws-status" aria-live="polite" aria-atomic="true">
+      <div id="ws-dot" class="disconnected" aria-hidden="true"></div>
+      <span id="ws-label">disconnected</span>
+    </div>
+  </header>
+
+  <!-- Messages -->
+  <div id="messages-wrap" tabindex="-1">
+    <div
+      id="messages"
+      role="log"
+      aria-live="polite"
+      aria-label="Agent chat messages"
+      aria-relevant="additions"
+    ><p style="color: var(--muted); text-align: center; padding: 2em 0; font-size: 12px;" id="empty-state">Waiting for messages…</p></div>
+    <button
+      id="new-pill"
+      aria-label="Jump to new messages"
+    >↓ <span id="new-count">0</span> new messages</button>
+  </div>
+
+  <script>
+    'use strict';
+
+    // ------------------------------------------------------------------
+    // DOM refs
+    // ------------------------------------------------------------------
+    const phaseName   = document.getElementById('phase-name');
+    const wsDot       = document.getElementById('ws-dot');
+    const wsLabel     = document.getElementById('ws-label');
+    const messageList = document.getElementById('messages');
+    const wrap        = document.getElementById('messages-wrap');
+    const newPill     = document.getElementById('new-pill');
+    const newCount    = document.getElementById('new-count');
+
+    // ------------------------------------------------------------------
+    // State
+    // ------------------------------------------------------------------
+    let autoScroll  = true;
+    let newPending  = 0;
+
+    // ------------------------------------------------------------------
+    // Scroll logic
+    // ------------------------------------------------------------------
+    function isNearBottom() {
+      return wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 80;
+    }
+
+    function scrollToBottom() {
+      const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      wrap.scrollTo({ top: wrap.scrollHeight, behavior: prefersReduced ? 'auto' : 'smooth' });
+    }
+
+    wrap.addEventListener('scroll', () => {
+      if (isNearBottom()) {
+        autoScroll = true;
+        newPending = 0;
+        newPill.style.display = 'none';
+      } else {
+        autoScroll = false;
+      }
+    }, { passive: true });
+
+    newPill.addEventListener('click', () => {
+      autoScroll = true;
+      newPending = 0;
+      newPill.style.display = 'none';
+      scrollToBottom();
+      wrap.focus({ preventScroll: true });
+    });
+
+    function afterAppend() {
+      if (autoScroll) {
+        scrollToBottom();
+      } else {
+        newPending++;
+        newCount.textContent = String(newPending);
+        newPill.style.display = 'block';
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // Rendering
+    // ------------------------------------------------------------------
+    const AGENT_LABELS = {
+      'compass':   'Compass',
+      'fc':      'Smith',
+      'warden':   'Warden',
+      'lumen':  'Lumen',
+      'atlas': 'Atlas',
+      'arbiter':   'Arbiter',
+    };
+
+    function formatTime(ts) {
+      const d = new Date(ts);
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mm = String(d.getMinutes()).padStart(2, '0');
+      const ss = String(d.getSeconds()).padStart(2, '0');
+      return `${hh}:${mm}:${ss}`;
+    }
+
+    function hideEmptyState() {
+      const es = document.getElementById('empty-state');
+      if (es) es.remove();
+    }
+
+    function renderMessage(msg) {
+      hideEmptyState();
+      const el = document.createElement('div');
+      el.className = 'msg';
+      el.setAttribute('data-agent', msg.agent);
+      el.setAttribute('data-level', msg.level);
+
+      const nameEl = document.createElement('span');
+      nameEl.className = 'agent-name';
+      // Use textContent — safe regardless of message content.
+      nameEl.textContent = AGENT_LABELS[msg.agent] ?? msg.agent;
+
+      const bodyEl = document.createElement('span');
+      bodyEl.className = 'body';
+      // Use textContent — safe even if server-side escaping were absent
+      bodyEl.textContent = msg.message;
+
+      const tsEl = document.createElement('span');
+      tsEl.className = 'ts';
+      tsEl.textContent = formatTime(msg.timestamp);
+
+      el.appendChild(nameEl);
+      el.appendChild(bodyEl);
+      el.appendChild(tsEl);
+      messageList.appendChild(el);
+    }
+
+    function renderLifecycle(evt) {
+      hideEmptyState();
+      const el = document.createElement('div');
+      el.className = 'msg-sys';
+      el.textContent = evt.event + (evt.data ? `: ${evt.data}` : '');
+      messageList.appendChild(el);
+
+      if (evt.event === 'phase_end') {
+        el.classList.add('flash');
+        el.addEventListener('animationend', () => el.classList.remove('flash'), { once: true });
+      }
+
+      // Announce phase changes assertively
+      if (evt.event === 'room-changed' && evt.room) {
+        phaseName.textContent = evt.room;
+      }
+    }
+
+    function clearMessages() {
+      messageList.replaceChildren();
+      const empty = document.createElement('p');
+      empty.id = 'empty-state';
+      empty.style.cssText = 'color: var(--muted); text-align: center; padding: 2em 0; font-size: 12px;';
+      empty.textContent = 'Waiting for messages…';
+      messageList.appendChild(empty);
+    }
+
+    function renderHistory(messages) {
+      clearMessages();
+      for (const m of messages) renderMessage(m);
+    }
+
+    // ------------------------------------------------------------------
+    // WebSocket connection
+    // ------------------------------------------------------------------
+    const WS_URL = `ws://${location.hostname}:4001`;
+    let ws = null;
+    let reconnectDelay = 1000;
+
+    function setStatus(state) {
+      wsDot.className = state;
+      wsLabel.textContent = state;
+    }
+
+    function connect() {
+      setStatus('reconnecting');
+
+      try {
+        ws = new WebSocket(WS_URL);
+      } catch (e) {
+        scheduleReconnect();
+        return;
+      }
+
+      ws.addEventListener('open', () => {
+        setStatus('connected');
+        reconnectDelay = 1000;
+      });
+
+      ws.addEventListener('message', (ev) => {
+        let payload;
+        try { payload = JSON.parse(ev.data); } catch { return; }
+
+        switch (payload.type) {
+          case 'init':
+            if (payload.room) phaseName.textContent = payload.room;
+            if (Array.isArray(payload.history)) {
+              renderHistory(payload.history);
+              scrollToBottom();
+            }
+            break;
+
+          case 'message':
+            renderMessage(payload);
+            afterAppend();
+            break;
+
+          case 'lifecycle':
+            if (payload.event === 'history-cleared') {
+              clearMessages();
+              scrollToBottom();
+            } else {
+              renderLifecycle(payload);
+              afterAppend();
+              if (payload.event === 'room-changed') scrollToBottom();
+              if (payload.event === 'phase_end') scrollToBottom();
+            }
+            break;
+        }
+      });
+
+      ws.addEventListener('close', () => {
+        setStatus('disconnected');
+        scheduleReconnect();
+      });
+
+      ws.addEventListener('error', () => {
+        // 'close' fires after 'error', reconnect handled there
+      });
+    }
+
+    function scheduleReconnect() {
+      setTimeout(() => {
+        reconnectDelay = Math.min(reconnectDelay * 2, 30000);
+        connect();
+      }, reconnectDelay);
+    }
+
+    connect();
+  </script>
+</body>
+</html>

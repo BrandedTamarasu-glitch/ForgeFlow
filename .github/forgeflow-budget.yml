@@ -1,0 +1,72 @@
+# Forgeflow — per-repo CI budget + mode config (V5.0 Phase 2)
+#
+# Consumed by scripts/forgeflow-pr-review.sh and referenced by .github/workflows/forgeflow.yml.
+# Unknown keys are ignored; missing keys fall back to the defaults shown below.
+#
+# Full reference: commands/ci-wrapper.md
+
+# ----------------------------------------------------------------------
+# Cost ceiling (USD) for a single PR review. The wrapper pre-estimates
+# cost from the routing mode + diff size BEFORE spawning the Forgeflow team and
+# aborts with a "budget-exceeded" comment if the estimate is over.
+# Set lower to fail fast on large diffs; set higher to cover more PRs.
+# ----------------------------------------------------------------------
+max_cost_per_pr_usd: "1.00"
+
+# ----------------------------------------------------------------------
+# Forgeflow behavior mode.
+#
+#   review-only    — default, conservative. Forgeflow posts a verdict comment
+#                    with findings. No writes to the repo.
+#
+#   review-and-fix — opt-in, aggressive. After posting the verdict, if
+#                    the verdict is REVISE or CONDITIONAL_APPROVE AND the
+#                    findings are in the "safe" auto-fix classes (nits,
+#                    non-security must-fix), run /review-auto which
+#                    commits chore(auto-fix) and pushes back to the PR
+#                    branch. A subsequent commit retriggers the Forgeflow team.
+# ----------------------------------------------------------------------
+mode: review-only
+
+# ----------------------------------------------------------------------
+# Routing cap. Controls how /review's Step 0.5 classifier interacts with
+# CI. ONE value is special; the others are force-modes.
+#
+#   thin  — DEFAULT and SPECIAL. The classifier runs normally. Step 0.5d.1
+#           CI cap downgrades full-mode results to thin-mode (cost saver),
+#           but deep-mode is PRESERVED so auth / migration / crypto paths
+#           still get the audit pass. Recommended starting point.
+#
+#   skip  — FORCE. Forgeflow exits with SKIPPED verdict on every PR. Used
+#           when you want the workflow to install but not run — e.g.,
+#           while debugging the wrapper itself.
+#
+#   full  — FORCE. Forgeflow runs full-mode on every PR (Smith + Warden + Lumen
+#           + Atlas + Arbiter + Compass). Deep-mode escalation DISABLED.
+#           Opt in when the Forgeflow team is proven and you want consistent
+#           coverage without the classifier's routing decisions.
+#
+#   deep  — FORCE. Full Forgeflow + Warden audit pass on every PR. Deep-mode
+#           escalation no longer adds anything since every PR is already
+#           deep-mode. Highest cost; use only when the repo is heavily
+#           security-sensitive.
+#
+# Start at "thin". Raise only when metrics from /forgeflow-report show the
+# Forgeflow landing consistently useful verdicts at the current cap.
+# ----------------------------------------------------------------------
+routing_cap: thin
+
+# ----------------------------------------------------------------------
+# Whether a REVISE or BLOCK verdict should fail the GitHub Actions check.
+# When true, the check appears red on the PR. When false, the check is
+# green but the comment still surfaces findings — useful for shadow runs.
+# ----------------------------------------------------------------------
+fail_action_on_revise: true
+
+# ----------------------------------------------------------------------
+# Whether to post a comment when the verdict is SKIPPED (classifier
+# routed to skip-mode — docs-only diff, etc.). Default: false to keep
+# PRs clean. Set to true during initial rollout to verify the classifier
+# is routing correctly.
+# ----------------------------------------------------------------------
+comment_on_skip: false

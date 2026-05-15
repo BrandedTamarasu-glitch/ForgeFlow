@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow — V3.6 Changelog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0d0d;
+      --surface:   #141414;
+      --surface-2: #1c1c1c;
+      --border:    #252525;
+      --border-2:  #303030;
+      --text:      #ddd8cc;
+      --text-dim:  #7a7670;
+      --text-faint:#3d3b38;
+      --teal:      #2dd4bf;
+      --teal-dim:  #1a7a70;
+
+      /* Feature area accent colors */
+      --monitor:   #2dd4bf;   /* teal — observability */
+      --gsd:       #94a3b8;   /* slate — removal/simplification */
+      --audit:     #818cf8;   /* indigo — persistence */
+      --chat:      #fb923c;   /* orange — real-time comms */
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      line-height: 1.7;
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.028;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, transparent 40%, rgba(0,0,0,0.4) 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 80px 40px 120px;
+    }
+
+    /* ── Header ── */
+    header {
+      margin-bottom: 72px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 48px;
+    }
+
+    .version-tag {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .version-tag::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background: var(--teal);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--teal);
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--teal); }
+      50% { opacity: 0.5; box-shadow: 0 0 3px var(--teal); }
+    }
+
+    h1 {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      color: var(--text);
+      margin-bottom: 24px;
+    }
+
+    h1 span { color: var(--teal); }
+
+    .header-meta {
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+
+    .meta-item {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .meta-item strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    /* ── Intro ── */
+    .intro {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--teal-dim);
+      padding: 24px 28px;
+      margin-bottom: 72px;
+      font-size: 15px;
+      color: var(--text);
+      line-height: 1.8;
+    }
+
+    .intro em {
+      color: var(--text-dim);
+      font-style: italic;
+    }
+
+    /* ── Section ── */
+    .section {
+      margin-bottom: 56px;
+      opacity: 0;
+      transform: translateY(16px);
+      animation: fadeUp 0.5s ease forwards;
+    }
+
+    .section:nth-child(1) { animation-delay: 0.05s; }
+    .section:nth-child(2) { animation-delay: 0.10s; }
+    .section:nth-child(3) { animation-delay: 0.15s; }
+    .section:nth-child(4) { animation-delay: 0.20s; }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .feature-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 3px 10px 3px 9px;
+      border-radius: 2px;
+      white-space: nowrap;
+    }
+
+    .badge-monitor { background: rgba(45,212,191,0.10); color: var(--monitor); border: 1px solid rgba(45,212,191,0.22); }
+    .badge-gsd     { background: rgba(148,163,184,0.10); color: var(--gsd);     border: 1px solid rgba(148,163,184,0.22); }
+    .badge-audit   { background: rgba(129,140,248,0.10); color: var(--audit);   border: 1px solid rgba(129,140,248,0.22); }
+    .badge-chat    { background: rgba(251,146,60,0.10);  color: var(--chat);    border: 1px solid rgba(251,146,60,0.22); }
+
+    .section-sub {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-style: italic;
+    }
+
+    /* ── Change items ── */
+    ul.changes {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+    }
+
+    ul.changes li {
+      position: relative;
+      padding: 14px 0 14px 28px;
+      border-bottom: 1px solid var(--text-faint);
+      font-size: 14.5px;
+      line-height: 1.75;
+    }
+
+    ul.changes li:last-child { border-bottom: none; }
+
+    ul.changes li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      top: 15px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--text-faint);
+    }
+
+    ul.changes li strong {
+      font-weight: 500;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    ul.changes li .detail {
+      color: var(--text-dim);
+      font-size: 13.5px;
+    }
+
+    code {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      background: var(--surface-2);
+      border: 1px solid var(--border-2);
+      padding: 1px 5px;
+      border-radius: 2px;
+      color: var(--text);
+    }
+
+    .section-monitor ul.changes li:hover { background: rgba(45,212,191,0.04); }
+    .section-gsd     ul.changes li:hover { background: rgba(148,163,184,0.04); }
+    .section-audit   ul.changes li:hover { background: rgba(129,140,248,0.04); }
+    .section-chat    ul.changes li:hover { background: rgba(251,146,60,0.04); }
+
+    /* ── Stat strip ── */
+    .stat-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      margin-bottom: 72px;
+    }
+
+    .stat {
+      background: var(--surface);
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stat-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--teal);
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    /* ── Divider ── */
+    .divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--border-2), transparent);
+      margin: 64px 0;
+    }
+
+    /* ── Nav ── */
+    .version-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 72px;
+      padding: 14px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+    }
+
+    .nav-link {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--text-dim);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .nav-link:hover { color: var(--teal); }
+    .nav-link.next  { color: var(--teal); }
+    .nav-link.next:hover { color: var(--text); }
+
+    .nav-current {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.1em;
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding-top: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-left {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.06em;
+    }
+
+    .footer-right {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+
+    @media (max-width: 600px) {
+      .page { padding: 48px 24px 80px; }
+      h1 { font-size: 1.8rem; }
+      .header-meta { flex-direction: column; gap: 8px; }
+      .stat-strip { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="version-tag">Forgeflow &mdash; Release Notes</div>
+    <h1>What&rsquo;s new in <span>V3.6</span></h1>
+    <div class="header-meta">
+      <div class="meta-item"><strong>Focus</strong> &nbsp; Infrastructure &amp; observability</div>
+      <div class="meta-item"><strong>Features shipped</strong> &nbsp; 4</div>
+      <div class="meta-item"><strong>Dependencies removed</strong> &nbsp; 1</div>
+    </div>
+  </header>
+
+  <div class="stat-strip">
+    <div class="stat">
+      <div class="stat-value">65%</div>
+      <div class="stat-label">WARNING threshold</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">75%</div>
+      <div class="stat-label">CRITICAL threshold</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">25</div>
+      <div class="stat-label">Agents on chat</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">0</div>
+      <div class="stat-label">External deps</div>
+    </div>
+  </div>
+
+  <div class="intro">
+    V3.6 is an infrastructure release. No new lifecycle commands, no new agents — instead, the plumbing
+    that was missing: a context monitor that tells you when to compact before the window collapses,
+    a persistent audit trail so learnings survive across sessions, and a live chat dashboard so you can
+    watch the Forgeflow team work in real time. <em>GSD workflow integration was also removed — the Forgeflow
+    is now a fully standalone tool.</em>
+  </div>
+
+  <!-- Context Monitor -->
+  <div class="section section-monitor">
+    <div class="section-header">
+      <span class="feature-badge badge-monitor">Context Monitor</span>
+      <span class="section-sub">New hook — <code>forgeflow-context-monitor.js</code></span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>WARNING at 65% context used</strong>
+        <span class="detail">A PostToolUse hook fires on every tool call and checks the current context window usage. At 65%, it surfaces a WARNING in the terminal — a reminder to run <code>/compact Focus on [active feature]</code> before the window fills.</span>
+      </li>
+      <li>
+        <strong>CRITICAL at 75% context used</strong>
+        <span class="detail">At 75%, the hook escalates to CRITICAL. This is the last safe window to compact with meaningful fidelity — waiting for auto-compaction at 95% risks losing verbatim content (stack traces, config values, function names) that doesn't survive the generic summary.</span>
+      </li>
+      <li>
+        <strong>Always use <code>/compact Focus on [feature]</code></strong>
+        <span class="detail">The hook message reinforces targeted compaction over bare <code>/compact</code>. A topic-focused prompt biases the summary toward the facts you actually need to carry forward, rather than a generic digest of everything that happened.</span>
+      </li>
+    </ul>
+  </div>
+
+  <!-- GSD Removal -->
+  <div class="section section-gsd">
+    <div class="section-header">
+      <span class="feature-badge badge-gsd">GSD Integration Removed</span>
+      <span class="section-sub">Standalone tool — zero external dependencies</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>GSD workflow integration removed</strong>
+        <span class="detail">The Forgeflow no longer has any dependency on the GSD workflow system. All cross-references, conditional logic, and shared state between the two systems have been removed. The Forgeflow team installs and runs independently.</span>
+      </li>
+      <li>
+        <strong>Self-contained installation</strong>
+        <span class="detail">A single <code>curl</code> installs <code>/update-forgeflow</code>, and that command handles everything — agents, commands, hooks, templates. No external system needs to be present or configured for any command to work.</span>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Audit Memory -->
+  <div class="section section-audit">
+    <div class="section-header">
+      <span class="feature-badge badge-audit">Audit Memory Persistence</span>
+      <span class="section-sub">Atlas saves findings after every <code>/audit</code></span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>Findings saved to <code>learnings.jsonl</code></strong>
+        <span class="detail">After each <code>/audit</code> run, Atlas appends structured findings to <code>.forgeflow/&lt;project&gt;/learnings.jsonl</code> — an append-only log that accumulates institutional knowledge across sessions. Future reviews can reference this history rather than rediscovering the same issues.</span>
+      </li>
+      <li>
+        <strong>Summary saved to <code>review-history.md</code></strong>
+        <span class="detail">A human-readable summary of each audit (date, scope, verdict, top findings) is appended to <code>.forgeflow/&lt;project&gt;/review-history.md</code>. Both files are gitignored — local to the machine, never committed.</span>
+      </li>
+      <li>
+        <strong>Atlas reads history on every review</strong>
+        <span class="detail">At the start of each review cycle, Atlas loads the learnings and review history for the current project. Recurring patterns are flagged explicitly; findings that were already addressed don't generate noise.</span>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Agent Chat -->
+  <div class="section section-chat">
+    <div class="section-header">
+      <span class="feature-badge badge-chat">Agent Chat Server</span>
+      <span class="section-sub"><code>/agent-chat:on</code> · <code>/agent-chat:off</code> · port 4001</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>All 25 agents can broadcast via <code>csend</code></strong>
+        <span class="detail">Every agent in the Forgeflow team now has the <code>csend</code> command wired in. Agents broadcast phase milestones, key decisions, and progress notes to the chat server as they work. Three message levels: <code>phase</code> (milestone), <code>decision</code> (key call), <code>conversation</code> (progress note).</span>
+      </li>
+      <li>
+        <strong>Live dashboard at <code>http://127.0.0.1:4001</code></strong>
+        <span class="detail">The chat server runs a real-time dashboard you can open in any browser while agents are running. Messages stream in as they're sent — no refresh required. The API server runs on port 4000; the dashboard on 4001.</span>
+      </li>
+      <li>
+        <strong><code>/agent-chat:on</code> — starts the server as a background daemon</strong>
+        <span class="detail">Safe to run if already running — reports status and exits cleanly rather than starting a duplicate process. Writes a PID file to <code>/tmp/agent-chat.pid</code> that agents check before broadcasting.</span>
+      </li>
+      <li>
+        <strong><code>/agent-chat:off</code> — stops the server with optional log export</strong>
+        <span class="detail">If messages were captured during the session, prompts to copy the log from <code>/tmp</code> to a permanent location before shutdown. Safe to run if not running — reports status and exits cleanly. Auto-save on dirty exit preserves the log even if the server crashes.</span>
+      </li>
+      <li>
+        <strong>Agents broadcast only when server is running</strong>
+        <span class="detail">Each agent checks for the PID file before calling <code>csend</code>. If the server is off, <code>csend</code> is a no-op — no wasted tokens, no errors, no side effects. The server is entirely optional; Forgeflow runs work identically without it.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="version-nav">
+    <a class="nav-link" href="./v3.5.html">← V3.5</a>
+    <span class="nav-current">V3.6</span>
+    <a class="nav-link next" href="./v3.7.html">V3.7 →</a>
+  </div>
+
+  <footer>
+    <div class="footer-left">Forgeflow &mdash; ForgeflowAI/Forgeflow &mdash; V3.6</div>
+    <div class="footer-right">Infrastructure release</div>
+  </footer>
+
+</div>
+</body>
+</html>

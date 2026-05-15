@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "agents": {
+    ".codex/agents/sample-reviewer.toml": {
+      "canonical": "fixtures/prompt-parity/sample-agent.md",
+      "sha256": "fixture-hash",
+      "sections": [
+        "role",
+        "Mode: Review"
+      ],
+      "manual_summary": "Review concrete correctness and accessibility evidence."
+    }
+  }
+}

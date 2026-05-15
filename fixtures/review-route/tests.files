@@ -1,0 +1,2 @@
+tests/e2e/dashboard.spec.ts
+src/auth/session.test.ts

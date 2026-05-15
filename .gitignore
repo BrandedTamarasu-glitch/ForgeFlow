@@ -1,0 +1,23 @@
+# Forgeflow memory (session-specific, not portable)
+.forgeflow/
+
+# Superpowers brainstorm cache
+.superpowers/
+
+# Session files
+/plan.md
+/progress.md
+/.claude/
+.claude/handoff.md
+
+# OS
+.DS_Store
+
+# Dependencies & build output
+node_modules/
+services/*/node_modules/
+services/chat-bridge/dist/
+
+# Playwright output
+test-results/
+playwright-report/

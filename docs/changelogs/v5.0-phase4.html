@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow — V5.0 Phase 4 Changelog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0d0d;
+      --surface:   #141414;
+      --surface-2: #1c1c1c;
+      --border:    #252525;
+      --border-2:  #303030;
+      --text:      #ddd8cc;
+      --text-dim:  #7a7670;
+      --text-faint:#3d3b38;
+      --amber:     #f0a232;
+      --amber-dim: #a06c1e;
+
+      --fc:        #5b9cf6;
+      --warden:     #e05c5c;
+      --lumen:    #7ecba1;
+      --cory:      #b07ef5;
+      --arbiter:     #f0a232;
+      --compass:     #f0c070;
+      --crosscut:  #88a4b8;
+      --debate:    #c084fc;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      line-height: 1.7;
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.028;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(240,162,50,0.03) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .page { max-width: 780px; margin: 0 auto; padding: 80px 40px 120px; }
+
+    header { margin-bottom: 64px; }
+
+    .version-tag {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 2.4rem;
+      font-weight: 300;
+      line-height: 1.15;
+      color: var(--text);
+      margin-bottom: 28px;
+    }
+
+    h1 span { color: var(--amber); }
+
+    .header-meta { display: flex; gap: 24px; flex-wrap: wrap; }
+    .meta-item { font-size: 13px; color: var(--text-dim); }
+    .meta-item strong { font-weight: 500; color: var(--text); }
+
+    .intro {
+      font-size: 15px;
+      color: var(--text-dim);
+      line-height: 1.8;
+      margin-bottom: 64px;
+      padding: 24px 28px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--amber-dim);
+    }
+
+    .intro em { color: var(--text); font-style: normal; font-weight: 500; }
+
+    .section { margin-bottom: 48px; }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .agent-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 2px;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-debate  { background: rgba(192,132,252,0.12); color: var(--debate);   border: 1px solid rgba(192,132,252,0.25); }
+    .badge-fc      { background: rgba(91,156,246,0.12); color: var(--fc);      border: 1px solid rgba(91,156,246,0.25); }
+    .badge-warden   { background: rgba(224,92,92,0.12);  color: var(--warden);   border: 1px solid rgba(224,92,92,0.25); }
+    .badge-lumen  { background: rgba(126,203,161,0.12);color: var(--lumen);  border: 1px solid rgba(126,203,161,0.25); }
+    .badge-cory    { background: rgba(176,126,245,0.12);color: var(--cory);    border: 1px solid rgba(176,126,245,0.25); }
+    .badge-arbiter   { background: rgba(240,162,50,0.12); color: var(--arbiter);   border: 1px solid rgba(240,162,50,0.25); }
+    .badge-compass   { background: rgba(240,192,112,0.12);color: var(--compass);   border: 1px solid rgba(240,192,112,0.25); }
+    .badge-cross   { background: rgba(136,164,184,0.10);color: var(--crosscut);border: 1px solid rgba(136,164,184,0.2); }
+
+    .section-role { font-size: 12px; color: var(--text-dim); font-style: italic; }
+
+    ul.changes { list-style: none; display: flex; flex-direction: column; gap: 0; }
+
+    ul.changes li {
+      position: relative;
+      padding: 14px 0 14px 20px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+
+    ul.changes li:last-child { border-bottom: none; }
+
+    ul.changes li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      top: 15px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--text-faint);
+    }
+
+    ul.changes li strong {
+      font-weight: 500;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    ul.changes li .detail { color: var(--text-dim); font-size: 13.5px; }
+
+    ul.changes li .detail code {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      background: var(--surface-2);
+      padding: 1px 5px;
+      border-radius: 2px;
+    }
+
+    .section-debate ul.changes li:hover { background: rgba(192,132,252,0.04); }
+    .section-arbiter  ul.changes li:hover { background: rgba(240,162,50,0.04); }
+    .section-cross  ul.changes li:hover { background: rgba(136,164,184,0.04); }
+    .section-warden  ul.changes li:hover { background: rgba(224,92,92,0.04); }
+    .section-compass  ul.changes li:hover { background: rgba(240,192,112,0.04); }
+    .section-lumen ul.changes li:hover { background: rgba(126,203,161,0.04); }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--border-2), transparent);
+      margin: 64px 0;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding-top: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-left, .footer-right {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.06em;
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+
+    @media (max-width: 600px) {
+      .page { padding: 48px 24px 80px; }
+      h1 { font-size: 1.8rem; }
+      .header-meta { flex-direction: column; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="version-tag">Forgeflow &mdash; Release Notes</div>
+    <h1>What&rsquo;s new in <span>V5.0 Phase 4</span></h1>
+    <div class="header-meta">
+      <div class="meta-item"><strong>Date</strong> &nbsp; 21 April 2026</div>
+      <div class="meta-item"><strong>Scope</strong> &nbsp; Dashboard MVP. Standalone read-only HTTP server at <code>127.0.0.1:4003</code> serving a three-column single-page UI over Forgeflow telemetry across all projects. Zero npm runtime dependencies.</div>
+      <div class="meta-item"><strong>Review rounds</strong> &nbsp; 5 to APPROVE + CONFIRM</div>
+      <div class="meta-item"><strong>Tests</strong> &nbsp; 9 unit + 7 E2E, all green</div>
+    </div>
+  </header>
+
+  <div class="intro">
+    Phase 3 gave the team a shared knowledge base. Phase 4 makes Forgeflow activity visually legible. A standalone Node.js HTTP server at <code>127.0.0.1:4003</code> reads <code>~/.claude/projects/*/memory/forgeflow-metrics.jsonl</code> across every project on the machine and renders a three-column dashboard: project list + filter, verdict trend chart with stats strip and drift placeholder, and a live agent-chat panel via WebSocket. Built on Node.js standard library only &mdash; no npm runtime dependencies, no build step. Complements <code>/forgeflow-metrics</code> (CLI, point-in-time queries) with a surface tuned for at-a-glance trend reads. <em>"Has my REVISE rate dropped in the last 30 days?"</em> should be answerable in five seconds without running any command.
+  </div>
+
+  <!-- The dashboard -->
+  <div class="section section-arbiter">
+    <div class="section-header">
+      <span class="agent-badge badge-arbiter">Dashboard MVP</span>
+      <span class="section-role">/dashboard + three-column UI + schema contract</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong><code>/dashboard</code> &mdash; daemon command with PID file</strong>
+        <span class="detail">Starts <code>services/dashboard/server.js</code> as a nohup daemon, writes <code>/tmp/dashboard.pid</code>, polls <code>http://127.0.0.1:4003/</code> up to five seconds for readiness (50 &times; 100ms via <code>curl -sf</code>), prints the URL. Already-running check via <code>kill -0</code> on the PID file. Stop with <code>kill $(cat /tmp/dashboard.pid)</code>. Only one instance can bind port 4003; second start exits 1 with a <code>lsof -i :4003</code> hint.</span>
+      </li>
+      <li>
+        <strong>Three-column UI &mdash; projects / metrics / agent chat</strong>
+        <span class="detail"><strong>Left:</strong> project list with per-project APPROVE / REVISE / BLOCK badges, keyboard-navigable with <code>aria-current="true"</code> on selection; separate <code>&lt;select&gt;</code> filter for keyboard-first users. <strong>Center:</strong> hand-authored SVG stacked bar chart of the last 8 ISO weeks (no chart library), pattern fills (diagonal hatch / vertical lines / dots) differentiate APPROVE / REVISE / BLOCK without relying on color; window toggle <code>7d</code> / <code>30d</code> / <code>All</code> filters client-side on already-loaded data; summary stats strip; drift-status panel as a labeled empty state reserved for Phase 4C. <strong>Right:</strong> WebSocket feed from port 4001 (agent-chat) with exponential backoff reconnect (1s &rarr; 30s cap, &plusmn;500ms jitter), protocol derived from <code>location.protocol</code> so HTTPS deployments upgrade to <code>wss:</code> automatically.</span>
+      </li>
+      <li>
+        <strong>Worktree deduplication</strong>
+        <span class="detail">Multiple worktrees of the same project produce separate JSONL files (one per sanitized <code>cwd</code>). The dashboard strips <code>(--worktrees-.+|-.worktrees-.+)$</code> from the directory name and groups under the root &mdash; both patterns necessary because path sanitization of <code>/.worktrees/</code> produces <code>-.worktrees-</code>, and projects whose name already contains a hyphen produce <code>--worktrees-</code>. Badges and verdict counts reflect the merged root.</span>
+      </li>
+      <li>
+        <strong><code>docs/forgeflow-metrics-telemetry-schema.md</code> &mdash; v1 JSONL contract</strong>
+        <span class="detail">Formalizes the JSONL shape for all seven event types (<code>verdict</code>, <code>auto-fix-round</code>, <code>auto-fix-applied</code>, <code>command-invoked</code>, <code>command-completed</code>, <code>fleet-shard-complete</code>, <code>finding-overturned</code>) with per-event <code>detail</code> field shapes. Documents additive-vs-breaking change rules. Implicit-v1 reader rule specifies that records without <code>schema_version</code> are treated as v1 for backfill compatibility with pre-V5.0 records. Consumer list (dashboard <code>/api/metrics</code>, <code>/forgeflow-metrics</code> CLI, future CI tooling) makes the contract's reach explicit.</span>
+      </li>
+      <li>
+        <strong><code>hooks/forgeflow-telemetry.js</code> &mdash; schema tagging + APPROVED normalisation</strong>
+        <span class="detail">Adds <code>schema_version: "1"</code> to every new record written. Normalizes the legacy <code>APPROVED</code> verdict form to <code>APPROVE</code> at the emission boundary &mdash; prevents silent data loss in the aggregator, which only knows <code>APPROVE</code>. Unrecognized schema versions are skipped by consumers and counted in <code>parse_warnings</code> exposed to the UI as a yellow pill in the header when non-zero.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Accessibility -->
+  <div class="section section-lumen">
+    <div class="section-header">
+      <span class="agent-badge badge-lumen">Accessibility</span>
+      <span class="section-role">WCAG 2.1 AA &mdash; compliant after five review rounds</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>SVG chart accessible across every render</strong>
+        <span class="detail"><code>role="img"</code> + <code>aria-labelledby="trend-title trend-desc"</code> + <code>focusable="false"</code> on the <code>&lt;svg&gt;</code> wrapper. <code>&lt;title id="trend-title"&gt;</code> and <code>&lt;desc id="trend-desc"&gt;</code> are the first SVG children and are preserved by <code>renderTrend()</code>&rsquo;s clear-and-rebuild loop &mdash; captured before the <code>while (svg.firstChild)</code> wipe and re-appended alongside <code>&lt;defs&gt;</code>. Round 4 caught the case where only <code>&lt;defs&gt;</code> was restored, leaving <code>aria-labelledby</code> referencing orphaned IDs after the first render. An E2E assertion (<code>await expect(page.locator('#trend-title')).toBeAttached()</code>) guards against regression.</span>
+      </li>
+      <li>
+        <strong>Pattern fills differentiate verdicts without color</strong>
+        <span class="detail">APPROVE is diagonal hatch, REVISE is vertical lines, BLOCK is dots. Color-blind users see the same distinctions as color-sighted users; high-contrast mode users do too. A paired <code>visually-hidden</code> data table mirrors the SVG chart contents for screen readers &mdash; populated via <code>tbody.insertRow()</code> + <code>insertCell().textContent</code> on every render (Round 3 fix replacing the initial <code>tr.innerHTML</code> pattern).</span>
+      </li>
+      <li>
+        <strong>Heading landmarks and focus rings</strong>
+        <span class="detail"><code>&lt;section aria-labelledby="trend-heading"&gt;</code> + visually-hidden <code>&lt;h2 id="trend-heading"&gt;Metrics&lt;/h2&gt;</code> gives the metrics column a screen-reader-navigable heading. Selected project row uses <code>aria-current="true"</code> (not orphaned <code>aria-selected</code> &mdash; Round 4 caught that <code>aria-selected</code> is only valid within listbox/grid/tab roles). <code>:focus-visible</code> outlines are explicit 2px accent-blue rings on every focusable element &mdash; no <code>outline: none</code> anywhere in the stylesheet.</span>
+      </li>
+      <li>
+        <strong>Contrast token lifted to WCAG AA</strong>
+        <span class="detail"><code>--text-muted</code> moved from <code>#484f58</code> (2.43:1 on <code>#0d1117</code>, failing AA) to <code>#768390</code> (5.1:1, passing AA for normal text). Affects every informational label in the UI: panel titles, stat labels, scope notes, empty-state copy, scrollbar thumbs. Lumen caught a hardcoded <code>#484f58</code> on the empty-state SVG text that missed the token migration mid-Round 5; fixed in-round before the final APPROVE.</span>
+      </li>
+      <li>
+        <strong>Media query pairs replicated from agent-chat</strong>
+        <span class="detail"><code>prefers-reduced-motion: reduce</code> disables bar entry animation and the WebSocket-connecting pulse. <code>prefers-contrast: more</code> hardens borders to system <code>ButtonText</code>. Both inherit verbatim from the existing <code>services/agent-chat/public/index.html</code> patterns to prevent divergence between the two surfaces.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Security -->
+  <div class="section section-warden">
+    <div class="section-header">
+      <span class="agent-badge badge-warden">Security</span>
+      <span class="section-role">Local-only hardening, loopback threat model</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>Loopback bind only, DNS rebinding guard</strong>
+        <span class="detail">Server binds <code>127.0.0.1:4003</code> exclusively &mdash; no <code>0.0.0.0</code>. The <code>Host</code> header must be <code>127.0.0.1:4003</code> or <code>localhost:4003</code>; anything else returns 400. Prevents a malicious local webpage from binding a DNS name to <code>127.0.0.1</code> and issuing fetches that reach the dashboard from the user's browser.</span>
+      </li>
+      <li>
+        <strong>Symlink rejection + path-traversal guard</strong>
+        <span class="detail">JSONL paths are resolved via <code>fs.promises.realpath</code> and checked against <code>metricsRoot + path.sep</code>. A symlink pointing outside the expected base is dropped silently; the oversized-file check (<code>&gt; 5 MB</code>) runs on the resolved path (Round 5 tightening &mdash; the original code statted the unresolved path). <code>Object.prototype.hasOwnProperty.call</code> guards every key lookup from parsed JSONL, defending against prototype pollution from malicious telemetry records.</span>
+      </li>
+      <li>
+        <strong>Response hardening</strong>
+        <span class="detail">All responses set <code>X-Content-Type-Options: nosniff</code> and <code>Cache-Control: no-store</code>. HTML route additionally sets <code>X-Frame-Options: DENY</code>. Method gate returns 405 with <code>Allow: GET</code> on non-GET methods. No <code>cwd</code> leak: the <code>cwd</code> field from telemetry records is used internally to resolve file paths but never appears in any API response &mdash; including nested objects.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Review process -->
+  <div class="section section-cross">
+    <div class="section-header">
+      <span class="agent-badge badge-cross">Forgeflow self-review</span>
+      <span class="section-role">5 rounds to APPROVE + CONFIRM</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>Round 1 &mdash; scope</strong>
+        <span class="detail">Phase 4B-1 through 4B-4 deliverables mapped. Server routes defined, UI layout approved, schema contract drafted, command ergonomics agreed.</span>
+      </li>
+      <li>
+        <strong>Round 2 &mdash; five nits cleared</strong>
+        <span class="detail">TOCTOU fix (<code>createReadStream(resolved)</code> instead of <code>filePath</code>), dead <code>opts.port</code> removed, empty <code>tbody</code> population wired to the SVG render, <code>applied_failed</code> snake_case normalization, four new E2E assertions landed.</span>
+      </li>
+      <li>
+        <strong>Round 3 &mdash; REVISE, six must-fix items</strong>
+        <span class="detail">SVG wrapper was missing <code>role="img"</code> / <code>aria-labelledby</code> / <code>focusable="false"</code>. <code>tr.innerHTML</code> was a latent XSS surface even on machine-generated content. <code>role="listbox"</code> declared without arrow-key navigation (broken ARIA is worse than no ARIA). E2E test 5 asserted the wrong element. <code>:focus-visible { outline: none }</code> was a WCAG 2.4.11 violation. <code>CONTEXT.md</code> had <code>appliedFailed</code> where the code used <code>applied_failed</code>.</span>
+      </li>
+      <li>
+        <strong>Round 4 &mdash; REVISE, nine items (three blockers)</strong>
+        <span class="detail">SVG title/desc destroyed on every render (fix only held in static HTML). <code>aria-selected</code> on plain <code>&lt;li&gt;</code> without widget role. <code>--text-muted</code> contrast failing WCAG AA at 2.43:1 across every informational label. <code>#parse-warning aria-label</code> silencing the dynamic count. Telemetry <code>APPROVED</code> emission silently dropping in the aggregator. Missing <code>&lt;h2&gt;</code> landmark per plan 4B-2. <code>scanMetrics</code> at 100 lines exceeding the project's 40-line hard limit. Port-conflict test absent (plan 4B-3 success criterion). E2E survival check missing.</span>
+      </li>
+      <li>
+        <strong>Round 5 &mdash; APPROVE + CONFIRM</strong>
+        <span class="detail">Four reviewers independently verified the nine Round 4 fixes against source. Lumen caught one residual <code>#484f58</code> on the empty-state SVG text that missed the token migration; fixed in-round. Smith flagged an unguarded <code>svg.appendChild(defs)</code> for symmetry; fixed in-round. Arbiter APPROVE with three Recommended (WebSocket protocol derivation, exponential backoff, plan-doc reconciliation of the 3-button window toggle). Compass CONFIRM after running both test suites green: 9/9 unit, 7/7 E2E. All three Recommended items applied in a follow-up pass before commit.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Code quality -->
+  <div class="section section-fc">
+    <div class="section-header">
+      <span class="agent-badge badge-fc">Code quality</span>
+      <span class="section-role">scanMetrics refactored into five single-responsibility helpers</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong><code>scanMetrics</code> reduced from 100 lines to ~35</strong>
+        <span class="detail">The monolith extracted into five named helpers, each under the project's 40-line hard limit: <code>bumpVerdict(target, reviewer, verdict)</code> (reviewer-keyed bucket increment with <code>hasOwnProperty</code> guard), <code>createZeroWeekBucket(week)</code> (fresh bucket factory), <code>applyRecord(record, summary, weekMap)</code> (event-type dispatch), <code>aggregateProjectFile(resolved, summary, weekMap)</code> (readline loop + JSONL parse + parse-warnings accumulation), <code>resolveProjectFile(metricsRoot, dirName, base)</code> (path resolution + size cap with a discriminated return shape: <code>null | {oversize:true} | {resolved}</code>). Main function is now pure orchestration.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Deferred -->
+  <div class="section section-compass">
+    <div class="section-header">
+      <span class="agent-badge badge-compass">Deferred &mdash; Phase 4C</span>
+      <span class="section-role">Scope boundary for the MVP</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>Functional drift panel</strong>
+        <span class="detail">Requires a <code>/forgeflow-drift --cache</code> output writer. The dashboard ships a labeled empty state ("Drift analysis coming in Phase 4C") with the <code>aria-live</code> structure intact so the panel can be wired later without markup changes.</span>
+      </li>
+      <li>
+        <strong>Team-level aggregation view</strong>
+        <span class="detail">Reuses Phase 3 <code>/forgeflow-sync</code> shared state. Deferred until the shared-state format stabilizes across more than one team using it.</span>
+      </li>
+      <li>
+        <strong>False-positive leaderboard</strong>
+        <span class="detail">Reactivates when <code>finding-overturned</code> event count crosses three per class. Today the live dataset has zero such events &mdash; premature to render.</span>
+      </li>
+      <li>
+        <strong>90-day window toggle</strong>
+        <span class="detail">Reactivates when any project crosses 100 verdict events. Current dataset total is 43 verdict events across all projects; a 90d toggle would display the same bars as All.</span>
+      </li>
+      <li>
+        <strong>Out of scope permanently</strong>
+        <span class="detail">Auth, mobile / responsive below 1024px, write endpoints, CSV/export, backfilling <code>schema_version</code> onto legacy records. The implicit-v1 reader rule handles legacy records without requiring a migration pass.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:64px;padding:14px 20px;background:#141414;border:1px solid #252525;">
+    <a href="./v5.0-phase3.html" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#f0a232;text-decoration:none;">&larr; V5.0 Phase 3</a>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#3d3b38;letter-spacing:0.1em;">V5.0 PHASE 4</span>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#3d3b38;cursor:default;">Latest</span>
+  </div>
+
+  <footer>
+    <div class="footer-left">Forgeflow &mdash; ForgeflowAI/Forgeflow &mdash; V5.0 Phase 4</div>
+    <div class="footer-right">21 Apr 2026</div>
+  </footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow — V3.4 Changelog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0d0d;
+      --surface:   #141414;
+      --surface-2: #1c1c1c;
+      --border:    #252525;
+      --border-2:  #303030;
+      --text:      #ddd8cc;
+      --text-dim:  #7a7670;
+      --text-faint:#3d3b38;
+      --amber:     #f0a232;
+      --amber-dim: #a06c1e;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      line-height: 1.7;
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.028;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, transparent 40%, rgba(0,0,0,0.4) 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 80px 40px 120px;
+    }
+
+    header {
+      margin-bottom: 72px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 48px;
+    }
+
+    .version-tag {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--amber);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .version-tag::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background: var(--amber);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--amber);
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--amber); }
+      50% { opacity: 0.5; box-shadow: 0 0 3px var(--amber); }
+    }
+
+    h1 {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      color: var(--text);
+      margin-bottom: 24px;
+    }
+
+    h1 span { color: var(--amber); }
+
+    .header-meta {
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+
+    .meta-item {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .meta-item strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .intro {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--amber-dim);
+      padding: 24px 28px;
+      margin-bottom: 72px;
+      font-size: 15px;
+      color: var(--text);
+      line-height: 1.8;
+    }
+
+    .intro em {
+      color: var(--text-dim);
+      font-style: italic;
+    }
+
+    .section {
+      margin-bottom: 56px;
+      opacity: 0;
+      transform: translateY(16px);
+      animation: fadeUp 0.5s ease forwards;
+    }
+
+    .section:nth-child(1) { animation-delay: 0.05s; }
+    .section:nth-child(2) { animation-delay: 0.10s; }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .feature-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 3px 10px 3px 9px;
+      border-radius: 2px;
+      white-space: nowrap;
+    }
+
+    .badge-install {
+      background: rgba(240,162,50,0.10);
+      color: var(--amber);
+      border: 1px solid rgba(240,162,50,0.22);
+    }
+
+    .section-sub {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-style: italic;
+    }
+
+    ul.changes {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+    }
+
+    ul.changes li {
+      position: relative;
+      padding: 14px 0 14px 28px;
+      border-bottom: 1px solid var(--text-faint);
+      font-size: 14.5px;
+      line-height: 1.75;
+    }
+
+    ul.changes li:last-child { border-bottom: none; }
+
+    ul.changes li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      top: 15px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--text-faint);
+    }
+
+    ul.changes li strong {
+      font-weight: 500;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    ul.changes li .detail {
+      color: var(--text-dim);
+      font-size: 13.5px;
+    }
+
+    ul.changes li:hover { background: rgba(240,162,50,0.04); }
+
+    code {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      background: var(--surface-2);
+      border: 1px solid var(--border-2);
+      padding: 1px 5px;
+      border-radius: 2px;
+      color: var(--text);
+    }
+
+    .stat-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      margin-bottom: 72px;
+    }
+
+    .stat {
+      background: var(--surface);
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stat-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--amber);
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--border-2), transparent);
+      margin: 64px 0;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding-top: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-left {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.06em;
+    }
+
+    .footer-right {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+
+    @media (max-width: 600px) {
+      .page { padding: 48px 24px 80px; }
+      h1 { font-size: 1.8rem; }
+      .header-meta { flex-direction: column; gap: 8px; }
+      .stat-strip { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="version-tag">Forgeflow &mdash; Release Notes</div>
+    <h1>What&rsquo;s new in <span>V3.4</span></h1>
+    <div class="header-meta">
+      <div class="meta-item"><strong>Focus</strong> &nbsp; Zero-dependency installation</div>
+      <div class="meta-item"><strong>Local clone required</strong> &nbsp; No</div>
+      <div class="meta-item"><strong>Incremental sync</strong> &nbsp; Yes</div>
+    </div>
+  </header>
+
+  <div class="stat-strip">
+    <div class="stat">
+      <div class="stat-value">1</div>
+      <div class="stat-label">curl to install</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">0</div>
+      <div class="stat-label">Local clones needed</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">∆</div>
+      <div class="stat-label">Incremental updates</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">v</div>
+      <div class="stat-label">Version file tracked</div>
+    </div>
+  </div>
+
+  <div class="intro">
+    V3.4 rewrites the update mechanism from scratch. Previously, keeping the Forgeflow team up to date
+    required a local clone of the repository. Now a single <code>curl</code> installs the
+    <code>/update-forgeflow</code> command, and that command handles everything — pulling agents,
+    commands, templates, and hooks directly from GitHub. <em>No local repo. No manual file copying.
+    Incremental runs sync only what changed.</em>
+  </div>
+
+  <!-- Curl Update -->
+  <div class="section">
+    <div class="section-header">
+      <span class="feature-badge badge-install">Curl-based update</span>
+      <span class="section-sub"><code>/update-forgeflow</code> &mdash; no local clone required</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>/update rewritten to use curl</strong>
+        <span class="detail">The update command no longer requires a local clone of <code>ForgeflowAI/Forgeflow</code>. It fetches each file individually from the GitHub raw content API using <code>curl</code>. One command, no git setup, no manual file management.</span>
+      </li>
+      <li>
+        <strong>One curl to bootstrap</strong>
+        <span class="detail">Installing the Forgeflow team for the first time (or installing the update command on a new machine) is a single curl command that fetches <code>update-forgeflow.md</code> to <code>~/.claude/commands/</code>. From there, <code>/update-forgeflow</code> handles the full install: all 25 agents, all commands, hooks, and templates.</span>
+      </li>
+      <li>
+        <strong>Version tracking via <code>~/.claude/forgeflow-version</code></strong>
+        <span class="detail">The update command writes the current version tag to <code>~/.claude/forgeflow-version</code> after each successful sync. The version file is read on the next run to determine whether an update is available and which files have changed since the last sync.</span>
+      </li>
+      <li>
+        <strong>First run syncs all files; incremental runs sync only what changed</strong>
+        <span class="detail">On the initial install (no version file present), every agent, command, hook, and template is fetched. On subsequent runs, the command compares the current version to the latest release tag and fetches only the files that differ. This makes incremental updates fast — a patch release that only changes two agents fetches two files, not twenty-five.</span>
+      </li>
+      <li>
+        <strong>Custom agents never overwritten</strong>
+        <span class="detail">Any agent file prefixed with <code>custom-</code> is skipped by the update command. Custom agents created via <code>/create-agent</code> (introduced in V3.5) live in <code>~/.claude/agents/custom-*.md</code> and are never touched by <code>/update-forgeflow</code>, regardless of what changed in the upstream repo.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:64px;padding:14px 20px;background:#141414;border:1px solid #252525;">
+    <a href="./v3.3.html" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#f0a232;text-decoration:none;">← V3.3</a>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#3d3b38;letter-spacing:0.1em;">V3.4</span>
+    <a href="./v3.5.html" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#f0a232;text-decoration:none;">V3.5 →</a>
+  </div>
+
+  <footer>
+    <div class="footer-left">Forgeflow &mdash; ForgeflowAI/Forgeflow &mdash; V3.4</div>
+    <div class="footer-right">Tooling release</div>
+  </footer>
+
+</div>
+</body>
+</html>

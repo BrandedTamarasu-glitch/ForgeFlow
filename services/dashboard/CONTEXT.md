@@ -1,0 +1,117 @@
+# dashboard — Service Context
+
+## Architecture
+
+Read-only local dashboard. Reads Forgeflow metrics from the JSONL telemetry file and exposes them via a single HTTP server. Zero npm runtime dependencies — standard Node.js built-ins only.
+
+| Attribute | Value |
+|---|---|
+| Port | 4003 (hardcoded, no env var) |
+| Protocol | HTTP only — no WebSocket |
+| Access | `127.0.0.1` only |
+| Data source | `~/.claude/projects/<sanitized-cwd>/memory/forgeflow-metrics.jsonl` |
+
+The chat panel in the dashboard UI connects to port 4001 (agent-chat), not this server.
+
+---
+
+## Files
+
+| File | Purpose |
+|---|---|
+| `server.js` | HTTP server — routes requests, serves static files, enforces security headers |
+| `metrics.js` | Reads and aggregates the JSONL telemetry file into the `/api/metrics` response shape |
+| `team.js` | Stub — reserved for `/forgeflow-sync` team aggregation in Phase 4C. Currently exports a `readTeamSync` that returns `[]`; not yet imported by `server.js`. |
+| `public/index.html` | Dashboard UI — single-page, no build step required |
+
+---
+
+## `/api/metrics` Response Shape
+
+This shape is locked. All consumers (dashboard UI, future CI tooling) code against this contract. Do not change field names, remove fields, or reorder top-level keys without a coordinated update to all consumers.
+
+```json
+{
+  "schema_version": "1",
+  "generated_at": "<ISO8601>",
+  "window": "all",
+  "parse_warnings": 0,
+  "projects": [
+    {
+      "project": "<rootProjectKey>",
+      "file_count": 1,
+      "event_totals": {
+        "verdict": 2,
+        "auto-fix-round": 1,
+        "command-invoked": 1,
+        "finding-overturned": 1,
+        "fleet-shard-complete": 0,
+        "command-completed": 0,
+        "auto-fix-applied": 0
+      },
+      "verdicts": {
+        "arbiter": { "APPROVE": 1, "CONDITIONAL APPROVE": 0, "REVISE": 0, "BLOCK": 0 },
+        "compass": { "CONFIRM": 1, "CHALLENGE": 0 }
+      },
+      "auto_fix": { "rounds": 1, "applied": 0, "applied_failed": 0 }
+    }
+  ],
+  "verdicts": [
+    {
+      "week": "2024-W01",
+      "arbiter": { "APPROVE": 1, "CONDITIONAL APPROVE": 0, "REVISE": 0, "BLOCK": 0 },
+      "compass": { "CONFIRM": 1, "CHALLENGE": 0 }
+    }
+  ]
+}
+```
+
+### Field Notes
+
+| Field | Description |
+|---|---|
+| `schema_version` | Always `"1"` (string). |
+| `generated_at` | ISO8601 timestamp of when this response was generated. |
+| `window` | Currently always `"all"`. Reserved for future time-window filtering. |
+| `parse_warnings` | Count of JSONL records that were skipped due to unrecognized `schema_version`. |
+| `projects` | Per-project aggregation. One entry per `rootProjectKey`. |
+| `project` | The `rootProjectKey` — see dedup rule below. |
+| `file_count` | Number of distinct JSONL files that contributed data for this project. |
+| `event_totals` | Total count of each event type across all records for this project. |
+| `verdicts` (in project) | Per-reviewer verdict counts for this project. |
+| `auto_fix` | Aggregated auto-fix stats: total rounds, total applied, total applied_failed. |
+| `verdicts` (top-level) | Weekly rollup of verdict counts across all projects, keyed by ISO week string. |
+
+---
+
+## `rootProjectKey` Dedup Rule
+
+Multiple worktrees for the same project produce separate JSONL paths but should be merged into a single project entry. The dedup rule is:
+
+**Key on the filesystem directory name, stripping the worktree suffix:**
+
+```
+(--worktrees-.+|-.worktrees-.+)$
+```
+
+Two patterns are required: `-.worktrees-` matches the standard `.worktrees` directory after path sanitization (`/` → `-`), and `--worktrees-` matches projects whose CWD already contains a hyphen before the worktrees segment (e.g. `my-app` → `my-app--worktrees-feature`).
+
+Examples:
+
+| Raw directory name | rootProjectKey |
+|---|---|
+| `Forgeflow` | `Forgeflow` |
+| `Forgeflow-.worktrees-feature-x` | `Forgeflow` |
+| `my-app-.worktrees-main` | `my-app` |
+| `my-app--worktrees-main` | `my-app` |
+
+---
+
+## Security
+
+- **`cwd` field is NEVER present in any API response.** The `cwd` value from telemetry records is used only internally to resolve file paths. It must not appear in any field of the HTTP response — including nested objects.
+- **Symlink rejection:** The server must refuse to follow symlinks when resolving the JSONL file path. If the resolved path is not identical to the canonical real path, the request is rejected with 403.
+- **Response headers:** All API responses must include:
+  - `Content-Type: application/json`
+  - `X-Content-Type-Options: nosniff`
+  - `Cache-Control: no-store`

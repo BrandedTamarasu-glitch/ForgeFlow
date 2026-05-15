@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow — V4.0 Changelog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0d0d;
+      --surface:   #141414;
+      --surface-2: #1c1c1c;
+      --border:    #252525;
+      --border-2:  #303030;
+      --text:      #ddd8cc;
+      --text-dim:  #7a7670;
+      --text-faint:#3d3b38;
+      --amber:     #f0a232;
+      --amber-dim: #a06c1e;
+
+      --fc:        #5b9cf6;
+      --warden:     #e05c5c;
+      --lumen:    #7ecba1;
+      --cory:      #b07ef5;
+      --arbiter:     #f0a232;
+      --compass:     #f0c070;
+      --crosscut:  #88a4b8;
+      --debate:    #c084fc;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      line-height: 1.7;
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.028;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(91,156,246,0.03) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .page {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 80px 40px 120px;
+    }
+
+    header { margin-bottom: 64px; }
+
+    .version-tag {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 2.4rem;
+      font-weight: 300;
+      line-height: 1.15;
+      color: var(--text);
+      margin-bottom: 28px;
+    }
+
+    h1 span { color: var(--fc); }
+
+    .header-meta {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .meta-item {
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    .meta-item strong {
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .intro {
+      font-size: 15px;
+      color: var(--text-dim);
+      line-height: 1.8;
+      margin-bottom: 64px;
+      padding: 24px 28px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid rgba(91,156,246,0.4);
+    }
+
+    .intro em { color: var(--text); font-style: normal; font-weight: 500; }
+
+    .section {
+      margin-bottom: 48px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .agent-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 2px;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-fc      { background: rgba(91,156,246,0.12); color: var(--fc);      border: 1px solid rgba(91,156,246,0.25); }
+    .badge-cross   { background: rgba(136,164,184,0.10);color: var(--crosscut);border: 1px solid rgba(136,164,184,0.2); }
+
+    .section-role {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-style: italic;
+    }
+
+    ul.changes {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    ul.changes li {
+      position: relative;
+      padding: 14px 0 14px 20px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+
+    ul.changes li:last-child {
+      border-bottom: none;
+    }
+
+    ul.changes li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      top: 15px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--text-faint);
+    }
+
+    ul.changes li strong {
+      font-weight: 500;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    ul.changes li .detail {
+      color: var(--text-dim);
+      font-size: 13.5px;
+    }
+
+    ul.changes li .detail code {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      background: var(--surface-2);
+      padding: 1px 5px;
+      border-radius: 2px;
+    }
+
+    .section-fc ul.changes li:hover { background: rgba(91,156,246,0.04); }
+    .section-cross ul.changes li:hover { background: rgba(136,164,184,0.04); }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--border-2), transparent);
+      margin: 64px 0;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding-top: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-left {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.06em;
+    }
+
+    .footer-right {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+
+    @media (max-width: 600px) {
+      .page { padding: 48px 24px 80px; }
+      h1 { font-size: 1.8rem; }
+      .header-meta { flex-direction: column; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="version-tag">Forgeflow &mdash; Release Notes</div>
+    <h1>What&rsquo;s new in <span>V4.0</span></h1>
+    <div class="header-meta">
+      <div class="meta-item"><strong>Date</strong> &nbsp; 1 April 2026</div>
+      <div class="meta-item"><strong>Scope</strong> &nbsp; Smith Craft Intelligence</div>
+      <div class="meta-item"><strong>Agents updated</strong> &nbsp; Smith (4 modes) + canonical craft reference</div>
+    </div>
+  </header>
+
+  <div class="intro">
+    V4.0 adds <em>Craft Intelligence</em> to Smith — a structured knowledge layer covering
+    code smell taxonomy, naming precision, structure standards, error handling philosophy, quality
+    enforcement tiers (REJECT/WARN/NOTE), SOLID deep cuts, design pattern intelligence, and elegance
+    heuristics. The layer also extends Database Authority with formal rules on query patterns, index
+    intelligence, schema design, migration safety, and integrity patterns. A three-part finding reporting
+    standard is enforced across all Smith findings. Seven precision fixes were applied following a Review
+    Forgeflow audit: cyclomatic complexity formula corrected, idempotency pre-check added to integrity
+    patterns, quality gates template structured, FK REJECT rule scoped, finding reporting standard
+    mode-qualified for consult, role block drive ordering aligned with spec, and thoughtfulness check
+    expanded to the full code smell taxonomy.
+  </div>
+
+  <!-- Smith Craft Intelligence -->
+  <div class="section section-fc">
+    <div class="section-header">
+      <span class="agent-badge badge-fc">Smith</span>
+      <span class="section-role">Craft Intelligence — all four modes</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>Code Smell Taxonomy — 8 named smells</strong>
+        <span class="detail">Feature Envy, Shotgun Surgery, Data Clumps, Primitive Obsession, Long Method, God Object, Refused Bequest, Divergent Change. Each entry includes: signature (how to recognise it in code) and fix (concrete remedy). Smith now names the specific smell rather than generic "bad design" findings.</span>
+      </li>
+      <li>
+        <strong>Naming Precision rules</strong>
+        <span class="detail">Verb phrases for functions, <code>is/has/can/should/was</code> prefix for booleans, plural nouns for collections, predicate naming for boolean-returning functions, <code>on</code>/<code>handle</code> prefix for event handlers, <code>SCREAMING_SNAKE_CASE</code> for module-level constants, typed generic parameters, and a banned-standalone-names list: <code>data</code>, <code>info</code>, <code>manager</code>, <code>processor</code>, <code>handler</code>, <code>helper</code>, <code>utils</code>.</span>
+      </li>
+      <li>
+        <strong>Structure Standards with hard limits</strong>
+        <span class="detail">Function length: 20-line soft limit, 40-line hard limit. File length: 300-line soft, 500-line hard. Cyclomatic complexity: ≤10 clean, 11–14 warning, ≥15 REJECT. Nesting depth: ≤3 levels. Parameter count: ≤3, introduce a param object at 4+.</span>
+      </li>
+      <li>
+        <strong>Quality Enforcement Tiers: REJECT / WARN / NOTE</strong>
+        <span class="detail">REJECT (block the PR): swallowed exceptions, N+1 in production paths, missing transaction on multi-table mutations, cyclomatic complexity ≥15, missing FK constraint (same-schema, same-database, non-polymorphic; audit/event log tables exempt), <code>SELECT *</code> in production queries, Primitive Obsession on cross-domain identifiers. WARN (address before next release): function &gt;40 lines, file &gt;500 lines, param count &gt;3, naming violations, missing indexes, SOLID violations, missing <code>created_at</code>/<code>updated_at</code>. NOTE (informational): soft-limit breaches, minor naming improvements, elegance opportunities.</span>
+      </li>
+      <li>
+        <strong>SOLID Deep Cuts — all five principles with violation examples</strong>
+        <span class="detail">Each principle includes: the real test (not the textbook definition), a classic violation with concrete code example, and a fix. SRP framed as reason-to-change, not "does one thing." OCP: switch/if-else dispatch = OCP violation. LSP: Square extends Rectangle as the canonical example. ISP: read/write interface segregation. DIP: inject abstractions, never instantiate concretions.</span>
+      </li>
+      <li>
+        <strong>Design Pattern Intelligence — use / don't-use guidance</strong>
+        <span class="detail">Repository, Factory, Strategy, Observer/Event Emitter, Decorator. Each includes an explicit don't-use case to prevent over-engineering — a Repository on a solo CRUD service is indirection for no gain; one Strategy is just a function.</span>
+      </li>
+      <li>
+        <strong>Elegance Heuristics — five named tests</strong>
+        <span class="detail">The naming test, the comment test (WHAT comments are naming failures; WHY comments belong), the indirection test, the cleverness test, and the extraction test. These give Smith a vocabulary for elegance findings that isn't "I'd write it differently."</span>
+      </li>
+      <li>
+        <strong>Database Authority — Query Patterns</strong>
+        <span class="detail">N+1 with explicit not-N+1 rule (chunked batch loops are O(n/CHUNK), not N+1). <code>SELECT *</code> prohibition. OFFSET pagination degradation with keyset/cursor fix. Implicit Cartesian product detection.</span>
+      </li>
+      <li>
+        <strong>Database Authority — Index Intelligence</strong>
+        <span class="detail">Coverage rule for WHERE/JOIN ON/ORDER BY columns. Composite index column ordering for point lookups vs. range scans. Partial indexes for soft-delete patterns. CONCURRENTLY requirement on live tables. UUID vs sequential ID tradeoffs for high-insert tables.</span>
+      </li>
+      <li>
+        <strong>Database Authority — Migration Safety</strong>
+        <span class="detail">NOT NULL addition: 3-step pattern (add nullable, backfill, add constraint). Column rename: 4-step pattern (add, dual-write, backfill+migrate reads, drop). Idempotent migrations always: <code>IF NOT EXISTS</code> / <code>IF EXISTS</code> guards on every DDL statement.</span>
+      </li>
+      <li>
+        <strong>Three-part Finding Reporting Standard</strong>
+        <span class="detail">Every Smith finding must include: (1) pattern/smell name — named issue from the taxonomy, (2) exact citation — <code>file:line</code> in review/audit; proposed design component in consult (mode-qualified), (3) concrete fix — replacement code or schema change. A finding that cannot satisfy all three is a phantom finding and must not be raised.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Precision fixes -->
+  <div class="section section-cross">
+    <div class="section-header">
+      <span class="agent-badge badge-cross">Precision Fixes</span>
+      <span class="section-role">Forgeflow audit — 7 required corrections</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>Cyclomatic complexity formula corrected</strong>
+        <span class="detail">Removed bare <code>else</code> from the token list. McCabe complexity counts decision points — <code>if</code>, <code>else if</code>, loop keywords, logical operators — not bare <code>else</code> branches. The previous formula would over-count by 1 for every if/else pair. Applied to canonical and all four agent modes.</span>
+      </li>
+      <li>
+        <strong>Idempotency pre-check added to Integrity Patterns</strong>
+        <span class="detail">New pattern in Integrity Patterns section of Craft Intelligence: before flagging a missing transaction, verify whether every mutation is idempotent. Upserts, SET to fixed values, and timestamp fields are idempotent — a re-run after partial failure reaches the correct final state without a transaction. Flag missing transactions only when at least one mutation is non-idempotent. Previously this rule existed only as a review-mode enforcement bullet; it now lives in the shared knowledge layer.</span>
+      </li>
+      <li>
+        <strong>Consult quality gates template structured</strong>
+        <span class="detail">The Quality Gates section of the Smith Architecture Brief output template previously had a single generic placeholder. It now explicitly structures output as REJECT / WARN / NOTE — matching the enforcement tier vocabulary established in Craft Intelligence and preventing vague quality gate statements.</span>
+      </li>
+      <li>
+        <strong>FK REJECT rule scoped</strong>
+        <span class="detail">Missing FK constraint rule now includes scoping: <em>same-schema, same-database, non-polymorphic; audit/event log tables exempt</em>. This prevents false positives on cross-database references (where FKs are architecturally impossible), polymorphic associations (already addressed separately in Schema Design), and append-only audit/event tables where FK constraints add write overhead without integrity benefit.</span>
+      </li>
+      <li>
+        <strong>Finding Reporting Standard mode-qualified for consult</strong>
+        <span class="detail">The "exact citation" requirement in the Finding Reporting Standard was unqualified — it demanded a <code>file:line</code> even in consult mode where no code exists yet. The standard now specifies: in consult mode, cite the proposed interface, component, or design decision being assessed; in review/audit modes, <code>file:line</code> is required.</span>
+      </li>
+      <li>
+        <strong>Role block drive ordering corrected</strong>
+        <span class="detail">The role block in all four agent definitions listed Database Authority first, Quality Absolutist second, Creative Craftsman third — contradicting the Drive 1/2/3 numbering in the Craft Intelligence layer. Reordered to match the spec: Quality Absolutist (Drive 1), Creative Craftsman (Drive 2), Database Authority (Drive 3).</span>
+      </li>
+      <li>
+        <strong>Thoughtfulness check expanded to full taxonomy</strong>
+        <span class="detail">The Thoughtfulness check in review mode previously cited five of the eight code smells parenthetically (Feature Envy, God Object, Refused Bequest, Primitive Obsession, Shotgun Surgery), leaving Data Clumps, Long Method, and Divergent Change unmentioned. Updated to reference the full taxonomy of eight smells and to require <code>file:line</code> citation alongside smell naming.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:64px;padding:14px 20px;background:#141414;border:1px solid #252525;">
+    <a href="./v3.9.html" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#f0a232;text-decoration:none;">← V3.9</a>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#3d3b38;letter-spacing:0.1em;">V4.0</span>
+    <a href="./v4.1.html" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#f0a232;text-decoration:none;">V4.1 →</a>
+  </div>
+
+  <footer>
+    <div class="footer-left">Forgeflow &mdash; ForgeflowAI/Forgeflow &mdash; V4.0</div>
+    <div class="footer-right">1 Apr 2026</div>
+  </footer>
+
+</div>
+</body>
+</html>

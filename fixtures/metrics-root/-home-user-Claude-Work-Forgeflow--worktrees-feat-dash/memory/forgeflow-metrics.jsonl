@@ -1,0 +1,2 @@
+{"schema_version":"1","ts":"2026-04-14T10:07:00.000Z","session_id":"sess-002","project":"Forgeflow","cwd":"/home/user/Forgeflow--worktrees-feat-dash","event":"verdict","command":"/review","detail":{"reviewer":"arbiter","verdict":"APPROVE"}}
+{"schema_version":"1","ts":"2026-04-14T10:08:00.000Z","session_id":"sess-002","project":"Forgeflow","cwd":"/home/user/Forgeflow--worktrees-feat-dash","event":"verdict","command":"/review","detail":{"reviewer":"compass","verdict":"CONFIRM"}}

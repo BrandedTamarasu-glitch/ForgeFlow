@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow — V3.3 Changelog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0d0d;
+      --surface:   #141414;
+      --surface-2: #1c1c1c;
+      --border:    #252525;
+      --border-2:  #303030;
+      --text:      #ddd8cc;
+      --text-dim:  #7a7670;
+      --text-faint:#3d3b38;
+      --violet:    #a78bfa;
+      --violet-dim:#5b3fb5;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      line-height: 1.7;
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.028;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, transparent 40%, rgba(0,0,0,0.4) 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 80px 40px 120px;
+    }
+
+    header {
+      margin-bottom: 72px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 48px;
+    }
+
+    .version-tag {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--violet);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .version-tag::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background: var(--violet);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--violet);
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--violet); }
+      50% { opacity: 0.5; box-shadow: 0 0 3px var(--violet); }
+    }
+
+    h1 {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      color: var(--text);
+      margin-bottom: 24px;
+    }
+
+    h1 span { color: var(--violet); }
+
+    .header-meta {
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+
+    .meta-item {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .meta-item strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .intro {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--violet-dim);
+      padding: 24px 28px;
+      margin-bottom: 72px;
+      font-size: 15px;
+      color: var(--text);
+      line-height: 1.8;
+    }
+
+    .intro em {
+      color: var(--text-dim);
+      font-style: italic;
+    }
+
+    .section {
+      margin-bottom: 56px;
+      opacity: 0;
+      transform: translateY(16px);
+      animation: fadeUp 0.5s ease forwards;
+    }
+
+    .section:nth-child(1) { animation-delay: 0.05s; }
+    .section:nth-child(2) { animation-delay: 0.10s; }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .feature-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 3px 10px 3px 9px;
+      border-radius: 2px;
+      white-space: nowrap;
+    }
+
+    .badge-preload {
+      background: rgba(167,139,250,0.10);
+      color: var(--violet);
+      border: 1px solid rgba(167,139,250,0.22);
+    }
+
+    .section-sub {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-style: italic;
+    }
+
+    ul.changes {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+    }
+
+    ul.changes li {
+      position: relative;
+      padding: 14px 0 14px 28px;
+      border-bottom: 1px solid var(--text-faint);
+      font-size: 14.5px;
+      line-height: 1.75;
+    }
+
+    ul.changes li:last-child { border-bottom: none; }
+
+    ul.changes li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      top: 15px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--text-faint);
+    }
+
+    ul.changes li strong {
+      font-weight: 500;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    ul.changes li .detail {
+      color: var(--text-dim);
+      font-size: 13.5px;
+    }
+
+    ul.changes li:hover { background: rgba(167,139,250,0.04); }
+
+    code {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      background: var(--surface-2);
+      border: 1px solid var(--border-2);
+      padding: 1px 5px;
+      border-radius: 2px;
+      color: var(--text);
+    }
+
+    .stat-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      margin-bottom: 72px;
+    }
+
+    .stat {
+      background: var(--surface);
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stat-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--violet);
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--border-2), transparent);
+      margin: 64px 0;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding-top: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-left {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.06em;
+    }
+
+    .footer-right {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+
+    @media (max-width: 600px) {
+      .page { padding: 48px 24px 80px; }
+      h1 { font-size: 1.8rem; }
+      .header-meta { flex-direction: column; gap: 8px; }
+      .stat-strip { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="version-tag">Forgeflow &mdash; Release Notes</div>
+    <h1>What&rsquo;s new in <span>V3.3</span></h1>
+    <div class="header-meta">
+      <div class="meta-item"><strong>Focus</strong> &nbsp; Context pre-loading &amp; token efficiency</div>
+      <div class="meta-item"><strong>Commands updated</strong> &nbsp; 7</div>
+      <div class="meta-item"><strong>Read passes eliminated</strong> &nbsp; (N&minus;1) &times; 6 per review</div>
+    </div>
+  </header>
+
+  <div class="stat-strip">
+    <div class="stat">
+      <div class="stat-value">6N→1</div>
+      <div class="stat-label">File reads in /review</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">7</div>
+      <div class="stat-label">Commands updated</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">0</div>
+      <div class="stat-label">Redundant agent reads</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">1</div>
+      <div class="stat-label">Orchestrator read pass</div>
+    </div>
+  </div>
+
+  <div class="intro">
+    V3.3 is a performance release. The orchestrator now reads every relevant file once before
+    spawning any agent, injecting the contents verbatim into each agent&rsquo;s prompt. Agents
+    that receive pre-loaded context are barred from re-reading those files. In <code>/review</code>,
+    6 agents &times; N files collapses from 6N independent reads to a single orchestrator pass.
+    <em>Every command in the Forgeflow team is updated — the pre-loading protocol applies across the full lifecycle.</em>
+  </div>
+
+  <!-- Context Pre-Loading -->
+  <div class="section">
+    <div class="section-header">
+      <span class="feature-badge badge-preload">Context Pre-Loading Protocol</span>
+      <span class="section-sub">Orchestrator pre-loads · agents execute from injected context</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>Orchestrator reads files once before spawning any agent</strong>
+        <span class="detail">For every command, the orchestrator now performs a single read pass over all relevant files (changed files, plan, brief, research output, etc.) before any agent is launched. File contents are collected and injected verbatim into each agent's prompt inside an <code>&lt;injected-context&gt;</code> block.</span>
+      </li>
+      <li>
+        <strong>Agents barred from re-reading pre-loaded files</strong>
+        <span class="detail">Each agent definition now carries a rule: if a file is present in <code>&lt;injected-context&gt;</code>, the agent must not re-read it via a tool call. Agents that ignore the injected context and issue redundant reads are violating the protocol. The rule is enforced by explicit instruction in the agent prompt, not by tooling.</span>
+      </li>
+      <li>
+        <strong>/review collapses from 6N reads to 1 orchestrator pass</strong>
+        <span class="detail">Previously, all six review agents independently read the same changed files — for a 5-file change, that's 30 file reads doing identical I/O. Now: the orchestrator reads those 5 files once, injects the contents into all six agent prompts, and the agents work from the injected text. 30 reads becomes 5.</span>
+      </li>
+      <li>
+        <strong>Atlas memory files exempted</strong>
+        <span class="detail">The pre-loading prohibition has a carve-out for Atlas's own memory files in <code>.forgeflow/&lt;project&gt;/</code>. Atlas is always permitted to read its own session state regardless of what the orchestrator pre-loaded — those files are ephemeral and the orchestrator doesn't know which memory files are relevant before Atlas does.</span>
+      </li>
+      <li>
+        <strong>All 7 commands updated</strong>
+        <span class="detail"><code>/discuss</code>, <code>/research</code>, <code>/plan</code>, <code>/consult</code>, <code>/implement</code>, <code>/review</code>, and <code>/quick</code> all receive the pre-loading treatment. Each command defines which files to pre-load for its phase: <code>/review</code> pre-loads changed files; <code>/consult</code> pre-loads the plan and codebase summary; <code>/implement</code> pre-loads the brief.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:64px;padding:14px 20px;background:#141414;border:1px solid #252525;">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#3d3b38;cursor:default;opacity:0.4;">← V3.2</span>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#3d3b38;letter-spacing:0.1em;">V3.3</span>
+    <a href="./v3.4.html" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#a78bfa;text-decoration:none;">V3.4 →</a>
+  </div>
+
+  <footer>
+    <div class="footer-left">Forgeflow &mdash; ForgeflowAI/Forgeflow &mdash; V3.3</div>
+    <div class="footer-right">Token efficiency release</div>
+  </footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,158 @@
+name: Forgeflow
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# Allow only one Forgeflow run per PR at a time. New commits cancel in-progress runs.
+concurrency:
+  group: forgeflow-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+# Permissions needed to comment on PRs.
+#
+# LEAST-PRIVILEGE NOTE: `contents: write` is ONLY required for
+# `mode: review-and-fix` in .github/forgeflow-budget.yml (pushes chore(auto-fix)
+# commits). Default mode is `review-only` — tighten to `contents: read`
+# before merging if you are not using auto-fix. Actions doesn't allow
+# dynamic permissions per job, so this is a workflow-level decision.
+#
+# For repos defaulting to review-only, change the next line to `read`:
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  review:
+    name: Run the Forgeflow team
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout PR branch with full history
+        uses: actions/checkout@v4
+        with:
+          # Needed so Step 0.5 classifier can diff against the base branch
+          # and Step 1.5 --incremental can enumerate commits.
+          fetch-depth: 0
+          # Check out the PR branch by REF (not SHA) so subsequent auto-fix
+          # pushes from /review-auto have a branch to push to. Using head.sha
+          # would leave the runner on detached HEAD, making
+          # `git branch --show-current` return empty and the push fail.
+          ref: ${{ github.event.pull_request.head.ref }}
+          # Token with write perms for review-and-fix mode pushes.
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Skip re-run on auto-fix commits
+        # Break the loop where /review-auto pushes chore(auto-fix) commits
+        # that trigger a new synchronize event → new Forgeflow run → potential
+        # infinite loop (capped only by max-iterations per invocation).
+        # MUST run BEFORE subsequent gated steps so their `if:` can read the output.
+        id: skip-check
+        run: |
+          MSG=$(git log -1 --format=%s HEAD)
+          echo "head commit subject: ${MSG}"
+          if [[ "$MSG" == chore\(auto-fix\)* ]]; then
+            echo "::notice::Skipping Forgeflow — HEAD commit is auto-fix (loop break)"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fetch base branch for diff
+        if: steps.skip-check.outputs.skip != 'true'
+        # GITHUB_BASE_REF is auto-set by Actions on pull_request events, so we
+        # only need to ensure the ref is fetched locally (actions/checkout
+        # shallow-clones the PR head; the base branch may not be present).
+        run: |
+          git fetch origin "${GITHUB_BASE_REF}:refs/remotes/origin/${GITHUB_BASE_REF}"
+
+      - name: Install system dependencies
+        if: steps.skip-check.outputs.skip != 'true'
+        # jq is preinstalled on ubuntu-latest; guard is defensive. Node is
+        # required for the claude npm install.
+        run: |
+          if ! command -v jq >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y jq
+          fi
+          node --version
+
+      - name: Install Claude Code CLI
+        if: steps.skip-check.outputs.skip != 'true'
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          claude --version
+
+      - name: Install Forgeflow plugin
+        if: steps.skip-check.outputs.skip != 'true'
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          # Prefer the plugin install path; fall back to repo sync if the
+          # marketplace is not reachable from CI.
+          # Marketplace: ForgeflowAI → Plugin: Forgeflow (see
+          # .claude-plugin/marketplace.json). Names are case-sensitive; the
+          # plugin name uses underscore, not hyphen.
+          if ! claude plugin add ForgeflowAI 2>/dev/null; then
+            echo "Plugin marketplace unreachable — falling back to repo sync"
+            mkdir -p ~/.claude/{agents,commands,hooks,templates,project-rules,forgeflow-patterns}
+            git clone --depth 1 https://github.com/ForgeflowAI/Forgeflow.git /tmp/forgeflow-src
+            cp -r /tmp/forgeflow-src/agents/*.md ~/.claude/agents/ 2>/dev/null || true
+            cp -r /tmp/forgeflow-src/agents/_shared ~/.claude/agents/ 2>/dev/null || true
+            cp -r /tmp/forgeflow-src/commands/*.md ~/.claude/commands/ 2>/dev/null || true
+            cp -r /tmp/forgeflow-src/hooks/*.js ~/.claude/hooks/ 2>/dev/null || true
+            cp -r /tmp/forgeflow-src/templates/* ~/.claude/templates/ 2>/dev/null || true
+            cp -r /tmp/forgeflow-src/project-rules/*.md ~/.claude/project-rules/ 2>/dev/null || true
+            cp -r /tmp/forgeflow-src/forgeflow-patterns/*.md ~/.claude/forgeflow-patterns/ 2>/dev/null || true
+          else
+            claude plugin install Forgeflow
+          fi
+
+      - name: Configure git identity (required for review-and-fix mode)
+        if: steps.skip-check.outputs.skip != 'true'
+        # Only consulted when /review-auto pushes chore(auto-fix) commits back.
+        # Safe to set even in review-only mode — it's just identity metadata.
+        run: |
+          git config --global user.name  "forgeflow[bot]"
+          git config --global user.email "forgeflow@users.noreply.github.com"
+
+      - name: Run Forgeflow on PR
+        id: Forgeflow
+        if: steps.skip-check.outputs.skip != 'true'
+        env:
+          # Pass both auth styles; the wrapper requires at least one.
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          CLAUDE_CODE_HEADLESS: '1'
+          # Optional model pin — omit to use the Forgeflow team default (claude-opus-4-7).
+          CLAUDE_MODEL: ${{ vars.FORGEFLOW_CLAUDE_MODEL || 'claude-opus-4-7' }}
+          # Path to the per-repo budget config. Override via repo variable.
+          FORGEFLOW_BUDGET_FILE: ${{ vars.FORGEFLOW_BUDGET_FILE || '.github/forgeflow-budget.yml' }}
+        run: |
+          # The wrapper script is bundled with the Forgeflow repo; it was
+          # either installed via plugin or copied to /tmp/forgeflow-src.
+          if [ -x scripts/forgeflow-pr-review.sh ]; then
+            WRAPPER=scripts/forgeflow-pr-review.sh
+          elif [ -x /tmp/forgeflow-src/scripts/forgeflow-pr-review.sh ]; then
+            WRAPPER=/tmp/forgeflow-src/scripts/forgeflow-pr-review.sh
+          else
+            echo "::error::forgeflow-pr-review.sh not found"
+            exit 2
+          fi
+          bash "$WRAPPER"
+
+      - name: Upload raw verdict artifact
+        # The wrapper writes the parsed verdict JSON to a known path for
+        # artifact capture; this step survives wrapper cleanup on exit.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forgeflow-verdict-${{ github.event.pull_request.number }}-${{ github.run_attempt }}
+          path: /tmp/forgeflow-verdict-final-*.json
+          retention-days: 14
+          if-no-files-found: ignore

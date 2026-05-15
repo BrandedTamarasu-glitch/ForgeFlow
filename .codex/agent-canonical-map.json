@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "description": "Maps Codex agent TOML files to the canonical Forgeflow markdown prompts they were ported from. Optional sections/manual_summary fields guide scripts/forgeflow/generate-codex-agent-stubs.js. Run scripts/forgeflow/check-codex-agent-drift.js after changing agents/*.md.",
+  "agents": {
+    ".codex/agents/compass-debate-validator.toml": {
+      "canonical": "agents/compass-review.md",
+      "sha256": "1a91040ef5040eac512fbd2f3a199450979dc1f39cdbbda685c6f96b6bca9ffb"
+    },
+    ".codex/agents/compass-discusser.toml": {
+      "canonical": "agents/compass-discuss.md",
+      "sha256": "66c73fb4a00a91464175ef2138c3715fe3dff80efa4ca00418ffc12e8e14aeae"
+    },
+    ".codex/agents/compass-planner.toml": {
+      "canonical": "agents/compass-plan.md",
+      "sha256": "46193a40acd6e9a88bd314bfc7a163768e2242b83e298b3820986c7b180b1da1"
+    },
+    ".codex/agents/compass-researcher.toml": {
+      "canonical": "agents/compass-research.md",
+      "sha256": "ded8eaed0e804689ee4c45e646df6587c0b11b88c97210ed0014dce2bd1272ae"
+    },
+    ".codex/agents/compass-reviewer.toml": {
+      "canonical": "agents/compass-review.md",
+      "sha256": "1a91040ef5040eac512fbd2f3a199450979dc1f39cdbbda685c6f96b6bca9ffb"
+    },
+    ".codex/agents/compass-validator.toml": {
+      "canonical": "agents/compass-implement.md",
+      "sha256": "6ece436410989629816cc29ccd3f92118e31bb5a4b84f8d3fc6887b3a35c6393"
+    },
+    ".codex/agents/smith-auditor.toml": {
+      "canonical": "agents/smith-audit.md",
+      "sha256": "a7e714342d4a534968ad3ba1490874d6f188802c3beeb8c61dda83d0f08d952c"
+    },
+    ".codex/agents/smith-consultant.toml": {
+      "canonical": "agents/smith-consult.md",
+      "sha256": "d6398407a7ba43504feb795a81fe4cbd98cd36609dff23087272322c1e8defac"
+    },
+    ".codex/agents/smith-implementer.toml": {
+      "canonical": "agents/smith-implement.md",
+      "sha256": "a6a93ca0088b63c627e7f6b5143f226b9696bcae742cecaa3ae66632113777c7"
+    },
+    ".codex/agents/smith-reviewer.toml": {
+      "canonical": "agents/smith-review.md",
+      "sha256": "f2984df25310db4298953d85b676fe7e06c9e5ec73b4031ca7e33ab80a5d9571"
+    },
+    ".codex/agents/warden-auditor.toml": {
+      "canonical": "agents/warden-audit.md",
+      "sha256": "ea04b85897f2093350786e6e1c1156a992a26edd01c97c350dccfe2948e96da8"
+    },
+    ".codex/agents/warden-consultant.toml": {
+      "canonical": "agents/warden-consult.md",
+      "sha256": "cc0f28f04caf16956e7c959c39549788990df510b6e29111471c49219b5e733d"
+    },
+    ".codex/agents/warden-implementer.toml": {
+      "canonical": "agents/warden-implement.md",
+      "sha256": "9caa5ec8214c9ca7183d515690ab65faa49da600bae7d1692061d20c9ebe4c2b"
+    },
+    ".codex/agents/warden-reviewer.toml": {
+      "canonical": "agents/warden-review.md",
+      "sha256": "c880341f3b8710f9e6968c244fa1be8d86b178d626f59b461e894025726b22c2"
+    },
+    ".codex/agents/arbiter-consultant.toml": {
+      "canonical": "agents/arbiter-consult.md",
+      "sha256": "acc28bb463e7b58dc19d3ff6621b63cd722a731986667c8391770d10e322f491"
+    },
+    ".codex/agents/arbiter-debate-judge.toml": {
+      "canonical": "agents/arbiter-review.md",
+      "sha256": "f5aee7dd00197c34283e26069ad4457b59d74f2cc29e21ab957b3677783dbe26"
+    },
+    ".codex/agents/arbiter-implementer.toml": {
+      "canonical": "agents/arbiter-implement.md",
+      "sha256": "b4a8981feb6ce8210b76ca780454873c24d898b52cb790488ac2f932f7892dd9"
+    },
+    ".codex/agents/arbiter-reviewer.toml": {
+      "canonical": "agents/arbiter-review.md",
+      "sha256": "f5aee7dd00197c34283e26069ad4457b59d74f2cc29e21ab957b3677783dbe26"
+    },
+    ".codex/agents/aegis.toml": {
+      "codex_native": true,
+      "rationale": "Evidence-only PRISM-inspired verifier. No canonical Claude persona source exists."
+    },
+    ".codex/agents/atlas-consultant.toml": {
+      "canonical": "agents/atlas-consult.md",
+      "sha256": "173a1d568c998d3a6d6b5f817968e43c684c89cdff1db089868ae94ad2bae22f"
+    },
+    ".codex/agents/atlas-early.toml": {
+      "canonical": "agents/atlas-early.md",
+      "sha256": "41e57d2ae25ceeadd644295f80d9df4ae6dd3f2ab9cdf90a5d6ebc3a3d65d7e0"
+    },
+    ".codex/agents/atlas-implementer.toml": {
+      "canonical": "agents/atlas-implement.md",
+      "sha256": "cc7eed613d477749a15a43b0fdaa8a158924db513eb1961b785d6b6d34e991a0"
+    },
+    ".codex/agents/atlas-reviewer.toml": {
+      "canonical": "agents/atlas-review.md",
+      "sha256": "d072d875b7fc7f4bee8493da108ab5b9ecfb3cbfa558e7b9ba8d2d371f4329b0"
+    },
+    ".codex/agents/lumen-consultant.toml": {
+      "canonical": "agents/lumen-consult.md",
+      "sha256": "805ea812c3bd77dc4bf25fba4babf38cfd72acf43c0cea0580b5ad59f6e9a55d"
+    },
+    ".codex/agents/lumen-implementer.toml": {
+      "canonical": "agents/lumen-implement.md",
+      "sha256": "951f529ae05d622af3aa5139cbaf5827e91f405b0399b5eaa059e22cd3c8fdc9"
+    },
+    ".codex/agents/lumen-reviewer.toml": {
+      "canonical": "agents/lumen-review.md",
+      "sha256": "48b72fdb4cfd42ad72d7b3ebbd3c6baaff8b5f07359258363372452575942a1c"
+    }
+  }
+}

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow — V4.1.1 Changelog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0d0d;
+      --surface:   #141414;
+      --surface-2: #1c1c1c;
+      --border:    #252525;
+      --border-2:  #303030;
+      --text:      #ddd8cc;
+      --text-dim:  #7a7670;
+      --text-faint:#3d3b38;
+      --amber:     #f0a232;
+      --amber-dim: #a06c1e;
+
+      --fc:        #5b9cf6;
+      --warden:     #e05c5c;
+      --lumen:    #7ecba1;
+      --cory:      #b07ef5;
+      --arbiter:     #f0a232;
+      --compass:     #f0c070;
+      --crosscut:  #88a4b8;
+      --debate:    #c084fc;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      line-height: 1.7;
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.028;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(240,162,50,0.03) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .page {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 80px 40px 120px;
+    }
+
+    header { margin-bottom: 64px; }
+
+    .version-tag {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 2.4rem;
+      font-weight: 300;
+      line-height: 1.15;
+      color: var(--text);
+      margin-bottom: 28px;
+    }
+
+    h1 span { color: var(--arbiter); }
+
+    .header-meta {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .meta-item {
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    .meta-item strong {
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .intro {
+      font-size: 15px;
+      color: var(--text-dim);
+      line-height: 1.8;
+      margin-bottom: 64px;
+      padding: 24px 28px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid rgba(240,162,50,0.4);
+    }
+
+    .intro em { color: var(--text); font-style: normal; font-weight: 500; }
+
+    .section {
+      margin-bottom: 48px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .agent-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 2px;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-arbiter   { background: rgba(240,162,50,0.12); color: var(--arbiter);   border: 1px solid rgba(240,162,50,0.25); }
+    .badge-cross   { background: rgba(136,164,184,0.10);color: var(--crosscut);border: 1px solid rgba(136,164,184,0.2); }
+
+    .section-role {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-style: italic;
+    }
+
+    ul.changes {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    ul.changes li {
+      position: relative;
+      padding: 14px 0 14px 20px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+
+    ul.changes li:last-child {
+      border-bottom: none;
+    }
+
+    ul.changes li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      top: 15px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--text-faint);
+    }
+
+    ul.changes li strong {
+      font-weight: 500;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    ul.changes li .detail {
+      color: var(--text-dim);
+      font-size: 13.5px;
+    }
+
+    ul.changes li .detail code {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      background: var(--surface-2);
+      padding: 1px 5px;
+      border-radius: 2px;
+    }
+
+    .section-arbiter ul.changes li:hover { background: rgba(240,162,50,0.04); }
+    .section-cross ul.changes li:hover { background: rgba(136,164,184,0.04); }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--border-2), transparent);
+      margin: 64px 0;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding-top: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-left {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.06em;
+    }
+
+    .footer-right {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+
+    @media (max-width: 600px) {
+      .page { padding: 48px 24px 80px; }
+      h1 { font-size: 1.8rem; }
+      .header-meta { flex-direction: column; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="version-tag">Forgeflow &mdash; Release Notes</div>
+    <h1>What&rsquo;s new in <span>V4.1.1</span></h1>
+    <div class="header-meta">
+      <div class="meta-item"><strong>Date</strong> &nbsp; 1 April 2026</div>
+      <div class="meta-item"><strong>Scope</strong> &nbsp; Arbiter precision fixes — Forgeflow REVISE verdict</div>
+      <div class="meta-item"><strong>Agents updated</strong> &nbsp; Arbiter (all modes) + canonical intelligence reference + docs</div>
+    </div>
+  </header>
+
+  <div class="intro">
+    V4.1.1 applies <em>eight precision fixes</em> to Arbiter following a Forgeflow REVISE verdict on V4.1.
+    All changes are mechanical corrections to mode-context accuracy, process step numbering, comment
+    attribution, and documentation completeness. No new behaviour is introduced.
+  </div>
+
+  <!-- Precision fixes -->
+  <div class="section section-arbiter">
+    <div class="section-header">
+      <span class="agent-badge badge-arbiter">Arbiter</span>
+      <span class="section-role">Eight precision fixes — REVISE verdict corrections</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>Protocol 1 grounding check adapted for consult mode</strong>
+        <span class="detail">The grounding check in <code>arbiter-consult.md</code> previously asked "is this grounded in a specific <code>file:line</code> in the code under review?" — meaningless in consult where the code hasn't been written yet. Updated to: "Is this finding grounded in a named file, symbol, or interface in the agent brief — or a general heuristic applied to unwritten work?" The resolvability check was similarly updated to reference "the agent brief" rather than "the reviewed code."</span>
+      </li>
+      <li>
+        <strong>Implement-mode Fail check 3 routes correctly</strong>
+        <span class="detail"><code>arbiter-implement.md</code> Protocol 1 previously instructed Fail check 3 to route to <code>## Blocked Findings — Awaiting Context</code> — a section that doesn't exist in implement-mode output. Fixed to: "escalate via Path 3 deviation protocol (per Blocked Findings mode-behavior table)," which is the correct implement-mode action.</span>
+      </li>
+      <li>
+        <strong>Canonical preamble made mode-neutral</strong>
+        <span class="detail"><code>arbiter-intelligence.md</code> Lead Architect Intelligence preamble previously read "Applied in order: Finding Validity Pre-Check first, then Cross-Agent Convergence Check during pressure-testing, then Verdict Integrity Check before outputting the verdict" — implying all three protocols run in every mode. Updated to: "Three named protocols. Arbiter applies the subset relevant to the active mode."</span>
+      </li>
+      <li>
+        <strong><code>&lt;!-- sourced from --&gt;</code> comments replaced with mode-specific attribution</strong>
+        <span class="detail">The <code>&lt;!-- sourced from _shared/arbiter-intelligence.md — update canonical first --&gt;</code> comment on the Lead Architect Intelligence section in both <code>arbiter-consult.md</code> and <code>arbiter-implement.md</code> implied verbatim paste — incorrect, as both blocks are mode-adapted. Replaced with <code>&lt;!-- adapted from _shared/arbiter-intelligence.md — [consult/implement]-mode application context; update canonical, then manually re-adapt --&gt;</code> to signal that a canonical update requires manual re-adaptation, not a blind paste.</span>
+      </li>
+      <li>
+        <strong>"Commit atomically" rule removed from consult mode</strong>
+        <span class="detail"><code>arbiter-consult.md</code> rules contained "Commit each logical unit of work atomically" — a rule appropriate for implement mode (where Arbiter writes integration glue) but not for consult mode (where Arbiter produces a brief, not commits). Removed from consult; the rule already exists correctly in <code>arbiter-implement.md</code>.</span>
+      </li>
+      <li>
+        <strong>Fractional process step numbers renumbered to whole integers</strong>
+        <span class="detail">Both <code>arbiter-consult.md</code> and <code>arbiter-review.md</code> process step lists used fractional numbering (1.5, 1.75) inconsistent with every other step in the list. Renumbered to sequential whole integers: consult steps 1–8, review steps 1–6.</span>
+      </li>
+      <li>
+        <strong>docs/arbiter.md consult process updated</strong>
+        <span class="detail">The Consult Mode process list in <code>docs/arbiter.md</code> was missing the Scope Gate (step 2) and Finding Validity Pre-Check (step 3) that were added in V4.1. Both steps are now documented with brief descriptions. Process renumbered from 6 steps to 8 to reflect the current agent definition.</span>
+      </li>
+      <li>
+        <strong>Lead Architect Intelligence bullet rewritten to distinguish mode scope</strong>
+        <span class="detail">The hard rules bullet in <code>docs/arbiter.md</code> previously listed all three protocols as a review-mode-only block. Rewritten to clarify: Protocol 1 (Finding Validity Pre-Check) runs in all three modes; Protocols 2 and 3 (Cross-Agent Convergence Check, Verdict Integrity Check) are review-specific. Each mode's application context is stated explicitly.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Files changed -->
+  <div class="section section-cross">
+    <div class="section-header">
+      <span class="agent-badge badge-cross">Files Changed</span>
+      <span class="section-role">5 agent files + 1 doc</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>agents/_shared/arbiter-intelligence.md</strong>
+        <span class="detail">Canonical preamble made mode-neutral (fix 3).</span>
+      </li>
+      <li>
+        <strong>agents/arbiter-consult.md</strong>
+        <span class="detail">Protocol 1 grounding check (fix 1), adapted-from comment (fix 4), commit atomic rule removed (fix 5), process steps renumbered (fix 6).</span>
+      </li>
+      <li>
+        <strong>agents/arbiter-implement.md</strong>
+        <span class="detail">Fail check 3 routing (fix 2), adapted-from comment (fix 4).</span>
+      </li>
+      <li>
+        <strong>agents/arbiter-review.md</strong>
+        <span class="detail">Process steps renumbered (fix 6); frontmatter description updated to include CONDITIONAL APPROVE verdict.</span>
+      </li>
+      <li>
+        <strong>docs/arbiter.md</strong>
+        <span class="detail">Consult process updated with Scope Gate + Finding Validity Pre-Check steps (fix 7); Lead Architect Intelligence bullet rewritten for mode scope (fix 8).</span>
+      </li>
+    </ul>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:64px;padding:14px 20px;background:#141414;border:1px solid #252525;">
+    <a href="./v4.1.html" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#f0a232;text-decoration:none;">← V4.1</a>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#3d3b38;letter-spacing:0.1em;">V4.1.1</span>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#3d3b38;cursor:default;">Next →</span>
+  </div>
+
+  <footer>
+    <div class="footer-left">Forgeflow &mdash; ForgeflowAI/Forgeflow &mdash; V4.1.1</div>
+    <div class="footer-right">1 Apr 2026</div>
+  </footer>
+
+</div>
+</body>
+</html>

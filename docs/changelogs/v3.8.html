@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow — V3.8 Changelog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0d0d;
+      --surface:   #141414;
+      --surface-2: #1c1c1c;
+      --border:    #252525;
+      --border-2:  #303030;
+      --text:      #ddd8cc;
+      --text-dim:  #7a7670;
+      --text-faint:#3d3b38;
+      --amber:     #f0a232;
+      --amber-dim: #a06c1e;
+
+      --fc:        #5b9cf6;
+      --warden:     #e05c5c;
+      --lumen:    #7ecba1;
+      --cory:      #b07ef5;
+      --arbiter:     #f0a232;
+      --compass:     #f0c070;
+      --crosscut:  #88a4b8;
+      --debate:    #c084fc;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      line-height: 1.7;
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.028;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(240,162,50,0.03) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .page {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 80px 40px 120px;
+    }
+
+    header { margin-bottom: 64px; }
+
+    .version-tag {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 2.4rem;
+      font-weight: 300;
+      line-height: 1.15;
+      color: var(--text);
+      margin-bottom: 28px;
+    }
+
+    h1 span { color: var(--amber); }
+
+    .header-meta {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .meta-item {
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    .meta-item strong {
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .intro {
+      font-size: 15px;
+      color: var(--text-dim);
+      line-height: 1.8;
+      margin-bottom: 64px;
+      padding: 24px 28px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--amber-dim);
+    }
+
+    .intro em { color: var(--text); font-style: normal; font-weight: 500; }
+
+    .section {
+      margin-bottom: 48px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .agent-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 2px;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-debate  { background: rgba(192,132,252,0.12); color: var(--debate);   border: 1px solid rgba(192,132,252,0.25); }
+    .badge-fc      { background: rgba(91,156,246,0.12); color: var(--fc);      border: 1px solid rgba(91,156,246,0.25); }
+    .badge-warden   { background: rgba(224,92,92,0.12);  color: var(--warden);   border: 1px solid rgba(224,92,92,0.25); }
+    .badge-lumen  { background: rgba(126,203,161,0.12);color: var(--lumen);  border: 1px solid rgba(126,203,161,0.25); }
+    .badge-cory    { background: rgba(176,126,245,0.12);color: var(--cory);    border: 1px solid rgba(176,126,245,0.25); }
+    .badge-arbiter   { background: rgba(240,162,50,0.12); color: var(--arbiter);   border: 1px solid rgba(240,162,50,0.25); }
+    .badge-compass   { background: rgba(240,192,112,0.12);color: var(--compass);   border: 1px solid rgba(240,192,112,0.25); }
+    .badge-cross   { background: rgba(136,164,184,0.10);color: var(--crosscut);border: 1px solid rgba(136,164,184,0.2); }
+
+    .section-role {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-style: italic;
+    }
+
+    ul.changes {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    ul.changes li {
+      position: relative;
+      padding: 14px 0 14px 20px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+
+    ul.changes li:last-child {
+      border-bottom: none;
+    }
+
+    ul.changes li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      top: 15px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--text-faint);
+    }
+
+    ul.changes li strong {
+      font-weight: 500;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    ul.changes li .detail {
+      color: var(--text-dim);
+      font-size: 13.5px;
+    }
+
+    ul.changes li .detail code {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      background: var(--surface-2);
+      padding: 1px 5px;
+      border-radius: 2px;
+    }
+
+    .section-debate ul.changes li:hover { background: rgba(192,132,252,0.04); }
+    .section-fc     ul.changes li:hover { background: rgba(91,156,246,0.04); }
+    .section-arbiter  ul.changes li:hover { background: rgba(240,162,50,0.04); }
+    .section-lumen ul.changes li:hover { background: rgba(126,203,161,0.04); }
+    .section-cory   ul.changes li:hover { background: rgba(176,126,245,0.04); }
+    .section-compass  ul.changes li:hover { background: rgba(240,192,112,0.04); }
+    .section-cross  ul.changes li:hover { background: rgba(136,164,184,0.04); }
+
+    .result-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      margin: 16px 0 4px;
+    }
+
+    .result-table th {
+      text-align: left;
+      color: var(--text-faint);
+      font-weight: 400;
+      padding: 4px 12px 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .result-table td {
+      padding: 6px 12px 6px 0;
+      color: var(--text-dim);
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    .result-table tr:last-child td { border-bottom: none; }
+
+    .result-table .pass { color: #7ecba1; }
+    .result-table .fail { color: #e05c5c; }
+    .result-table .num  { color: var(--amber); font-weight: 500; }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--border-2), transparent);
+      margin: 64px 0;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding-top: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-left {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.06em;
+    }
+
+    .footer-right {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+
+    @media (max-width: 600px) {
+      .page { padding: 48px 24px 80px; }
+      h1 { font-size: 1.8rem; }
+      .header-meta { flex-direction: column; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="version-tag">Forgeflow &mdash; Release Notes</div>
+    <h1>What&rsquo;s new in <span>V3.8</span></h1>
+    <div class="header-meta">
+      <div class="meta-item"><strong>Date</strong> &nbsp; 27 March 2026</div>
+      <div class="meta-item"><strong>Scope</strong> &nbsp; Debate system + pre-flight calibration</div>
+      <div class="meta-item"><strong>Agents updated</strong> &nbsp; 5 review agents + debate command</div>
+    </div>
+  </header>
+
+  <div class="intro">
+    We ran 11 iterations of a structured multi-agent debate stress test — a scenario where the code is
+    correct and all expected concerns are false positives. Starting from 1 of 6 cleared and 5 phantom
+    claims in Run 1, the system reached <em>7 of 7 cleared and 0 phantoms</em> in Run 11. The core
+    finding: structural intervention in the command prompt overrides behavioral priors more reliably
+    than rules in agent definition files. <em>V3.8 ships the calibrated debate command and the
+    pre-flight gate system that achieved it.</em>
+  </div>
+
+  <!-- Debate system -->
+  <div class="section section-debate">
+    <div class="section-header">
+      <span class="agent-badge badge-debate">/debate-false-positive</span>
+      <span class="section-role">New command</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>3-round structured debate command</strong>
+        <span class="detail">A new slash command that stress-tests the Forgeflow team's false positive calibration. Round 1: four agents review code independently in parallel. Round 2: four agents rebut the strongest finding they disagree with. Round 3: Arbiter synthesizes all findings with explicit verdicts on each concern. Compass validates against a sealed answer key the debate agents never see.</span>
+      </li>
+      <li>
+        <strong>Sealed answer key protocol</strong>
+        <span class="detail">The answer key lives only in the command file and Compass's final prompt. No debate agent receives it at any point. The orchestrator is instructed never to quote, paraphrase, or leak it into agent prompts — ensuring the debate is a genuine blind test.</span>
+      </li>
+      <li>
+        <strong>Debate reports output</strong>
+        <span class="detail">Full debate transcripts — all four R1 openings, all four R2 rebuttals, Arbiter's synthesis, and Compass's scorecard — are assembled and written to <code>.forgeflow/debate-reports/YYYY-MM-DD-false-positive.md</code> at the end of each run.</span>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Pre-flight gates -->
+  <div class="section section-cross">
+    <div class="section-header">
+      <span class="agent-badge badge-cross">Pre-flight gate system</span>
+      <span class="section-role">Core methodology</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>Mandatory verification gates before findings</strong>
+        <span class="detail">Each R1 agent prompt now contains named pre-flight checks that must be completed before any finding in that category can be raised. A gate has three parts: (1) a named check triggered by intent, (2) an explicit question about the specific code, (3) a conditional instruction — if you cannot identify a scenario the code does not handle, do not raise the concern. This is structurally distinct from a rule: it fires in the context of the specific code and requires a positive answer, not just rule recall.</span>
+      </li>
+      <li>
+        <strong>Transaction / idempotency gate (all five agents)</strong>
+        <span class="detail">Before flagging a missing transaction wrapper, agents must explicitly confirm whether each mutation is idempotent — tracing ON CONFLICT DO UPDATE and SET active=false specifically. If both are idempotent and partial runs are retry-recoverable, the agent must name an unrecoverable failure scenario before proceeding. If it cannot, the concern is dropped. This gate is applied to all four R1 agents and to Arbiter's synthesis prompt.</span>
+      </li>
+      <li>
+        <strong>Return value semantics gate (Smith, Lumen, Atlas, Arbiter)</strong>
+        <span class="detail">Before flagging return value inaccuracy due to ON CONFLICT reactivations, agents must confirm what the return contract actually promises — reconciliation intent counts (emails processed for activation/deactivation), not net-new DB row counts. Reactivation via ON CONFLICT is a successful sync outcome and correctly increments the count. Only raised if the return type explicitly promises net-new insertions.</span>
+      </li>
+      <li>
+        <strong>Batch / loop pattern gate (Smith, Warden, Lumen)</strong>
+        <span class="detail">Before flagging inefficient looping or N+1 patterns, agents must verify whether calls are per-item or per-chunk. Chunked calls at CHUNK_SIZE rows per call are O(n/CHUNK_SIZE), not O(n). Before flagging dual-loop structure, agents must verify whether the two loops operate on different SQL — if so, the separation is intentional and combining would require a CTE.</span>
+      </li>
+      <li>
+        <strong>Arbiter pre-flight added (critical fix)</strong>
+        <span class="detail">R1 agents were correctly clearing the transaction concern via pre-flight from Run 10 onward, but Arbiter was overriding their clearances in synthesis. Adding the idempotency and return value pre-flights to Arbiter's synthesis prompt resolved this in one run — Arbiter must now apply the same gates before upholding any finding the R1 agents cleared.</span>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Compass -->
+  <div class="section section-compass">
+    <div class="section-header">
+      <span class="agent-badge badge-compass">Compass</span>
+      <span class="section-role">Validation</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>Phantom definition narrowed</strong>
+        <span class="detail">Compass's phantom count was previously defined as "any concern not in the answer key." This swept in legitimate real-world concerns (input validation, unbounded SELECT at scale, missing logging) that agents are correct to raise even when out of scope for the unit under test. The definition is now: a phantom is a claim that is <em>objectively false about what the code actually does</em> — e.g., claiming normalization is asymmetric when both sides call toLowerCase(), claiming placeholder indices collide when each db.query is independent. Correct-but-out-of-scope findings do not count as phantoms.</span>
+      </li>
+      <li>
+        <strong>Scorecard format stabilized</strong>
+        <span class="detail">Compass produces a fixed-format scorecard per run: per-FP table (Flagged R1, Challenged R2, Cleared by Arbiter), aggregate counts (FPs correctly cleared, phantoms invented, rounds to self-correct), and a PASS / PARTIAL / FAIL verdict. Followed by a 1–2 paragraph debrief.</span>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Calibration results -->
+  <div class="section section-arbiter">
+    <div class="section-header">
+      <span class="agent-badge badge-arbiter">Calibration results</span>
+      <span class="section-role">11-run progression</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>Run progression: 1/6 → 7/7 cleared, 5 → 0 phantoms</strong>
+        <span class="detail">
+          <table class="result-table">
+            <thead>
+              <tr>
+                <th>Run</th>
+                <th>Key intervention</th>
+                <th>FPs cleared</th>
+                <th>Phantoms</th>
+                <th>Txn cleared</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>1</td><td>Baseline</td><td class="fail">1/6</td><td class="fail">5</td><td class="fail">No</td></tr>
+              <tr><td>7</td><td>Cite-the-line rules</td><td class="fail">1/6</td><td class="fail">3</td><td class="fail">No</td></tr>
+              <tr><td>9</td><td>Narrowed phantom definition</td><td class="fail">1/7</td><td class="pass">0</td><td class="fail">No</td></tr>
+              <tr><td>10</td><td>R1 pre-flight gates</td><td>3/7</td><td class="pass">0</td><td class="fail">No — Arbiter override</td></tr>
+              <tr><td class="num">11</td><td>Arbiter pre-flight added</td><td class="pass num">7/7</td><td class="pass num">0</td><td class="pass num">Yes — PASS</td></tr>
+            </tbody>
+          </table>
+        </span>
+      </li>
+      <li>
+        <strong>Key finding: structural prompt intervention > agent-level rules</strong>
+        <span class="detail">Explicit rules added to agent definition files were ineffective against behavioral priors trained at depth (transaction = required, N+1 = bad). Pre-flight gates injected into the orchestration command — forcing agents to answer specific questions about the specific code — consistently overrode priors that rules could not touch. The gate must be at both the opener and synthesizer levels.</span>
+      </li>
+      <li>
+        <strong>The debate self-correction mechanism works within rounds</strong>
+        <span class="detail">When R1 agents raise a false claim (phantom), R2 agents catch it within one round. Run 9 achieved 100% phantom catch rate once the phantom definition was precise enough. The mechanism breaks down for <em>plausible-but-incorrect</em> concerns — findings that feel like real patterns (N+1, missing transaction) but don't apply to this specific code. Those require pre-flight gates, not self-correction.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section section-cross">
+    <div class="section-header">
+      <span class="agent-badge badge-cross">Research documentation</span>
+      <span class="section-role">Methodology</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>Full calibration methodology documented</strong>
+        <span class="detail">Complete research findings, run-by-run progression, pre-flight gate design rationale, phantom vs. false positive distinction, and generalization outlook documented in <code>docs/superpowers/methodology/false-positive-debate-calibration.md</code>.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:64px;padding:14px 20px;background:#141414;border:1px solid #252525;">
+    <a href="./v3.7.html" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#f0a232;text-decoration:none;">← V3.7</a>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#3d3b38;letter-spacing:0.1em;">V3.8</span>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#3d3b38;cursor:default;">V3.9 →</span>
+  </div>
+
+  <footer>
+    <div class="footer-left">Forgeflow &mdash; ForgeflowAI/Forgeflow &mdash; V3.8</div>
+    <div class="footer-right">27 Mar 2026</div>
+  </footer>
+
+</div>
+</body>
+</html>

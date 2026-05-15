@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow — V4.2 Changelog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0d0d;
+      --surface:   #141414;
+      --surface-2: #1c1c1c;
+      --border:    #252525;
+      --border-2:  #303030;
+      --text:      #ddd8cc;
+      --text-dim:  #7a7670;
+      --text-faint:#3d3b38;
+      --amber:     #f0a232;
+      --amber-dim: #a06c1e;
+
+      --fc:        #5b9cf6;
+      --warden:     #e05c5c;
+      --lumen:    #7ecba1;
+      --cory:      #b07ef5;
+      --arbiter:     #f0a232;
+      --compass:     #f0c070;
+      --crosscut:  #88a4b8;
+      --debate:    #c084fc;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      line-height: 1.7;
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.028;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(240,162,50,0.03) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .page {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 80px 40px 120px;
+    }
+
+    header { margin-bottom: 64px; }
+
+    .version-tag {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 2.4rem;
+      font-weight: 300;
+      line-height: 1.15;
+      color: var(--text);
+      margin-bottom: 28px;
+    }
+
+    h1 span { color: var(--amber); }
+
+    .header-meta {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .meta-item {
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    .meta-item strong {
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .intro {
+      font-size: 15px;
+      color: var(--text-dim);
+      line-height: 1.8;
+      margin-bottom: 64px;
+      padding: 24px 28px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--amber-dim);
+    }
+
+    .intro em { color: var(--text); font-style: normal; font-weight: 500; }
+
+    .section {
+      margin-bottom: 48px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .agent-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 2px;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-debate  { background: rgba(192,132,252,0.12); color: var(--debate);   border: 1px solid rgba(192,132,252,0.25); }
+    .badge-fc      { background: rgba(91,156,246,0.12); color: var(--fc);      border: 1px solid rgba(91,156,246,0.25); }
+    .badge-warden   { background: rgba(224,92,92,0.12);  color: var(--warden);   border: 1px solid rgba(224,92,92,0.25); }
+    .badge-lumen  { background: rgba(126,203,161,0.12);color: var(--lumen);  border: 1px solid rgba(126,203,161,0.25); }
+    .badge-cory    { background: rgba(176,126,245,0.12);color: var(--cory);    border: 1px solid rgba(176,126,245,0.25); }
+    .badge-arbiter   { background: rgba(240,162,50,0.12); color: var(--arbiter);   border: 1px solid rgba(240,162,50,0.25); }
+    .badge-compass   { background: rgba(240,192,112,0.12);color: var(--compass);   border: 1px solid rgba(240,192,112,0.25); }
+    .badge-cross   { background: rgba(136,164,184,0.10);color: var(--crosscut);border: 1px solid rgba(136,164,184,0.2); }
+
+    .section-role {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-style: italic;
+    }
+
+    ul.changes {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    ul.changes li {
+      position: relative;
+      padding: 14px 0 14px 20px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+
+    ul.changes li:last-child {
+      border-bottom: none;
+    }
+
+    ul.changes li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      top: 15px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--text-faint);
+    }
+
+    ul.changes li strong {
+      font-weight: 500;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    ul.changes li .detail {
+      color: var(--text-dim);
+      font-size: 13.5px;
+    }
+
+    ul.changes li .detail code {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      background: var(--surface-2);
+      padding: 1px 5px;
+      border-radius: 2px;
+    }
+
+    .section-debate ul.changes li:hover { background: rgba(192,132,252,0.04); }
+    .section-arbiter  ul.changes li:hover { background: rgba(240,162,50,0.04); }
+    .section-cross  ul.changes li:hover { background: rgba(136,164,184,0.04); }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--border-2), transparent);
+      margin: 64px 0;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding-top: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-left {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.06em;
+    }
+
+    .footer-right {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+
+    @media (max-width: 600px) {
+      .page { padding: 48px 24px 80px; }
+      h1 { font-size: 1.8rem; }
+      .header-meta { flex-direction: column; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="version-tag">Forgeflow &mdash; Release Notes</div>
+    <h1>What&rsquo;s new in <span>V4.2</span></h1>
+    <div class="header-meta">
+      <div class="meta-item"><strong>Date</strong> &nbsp; 17 April 2026</div>
+      <div class="meta-item"><strong>Scope</strong> &nbsp; Lifecycle extensions driven by <code>/insights</code> friction analysis</div>
+      <div class="meta-item"><strong>Files updated</strong> &nbsp; 5 new commands, review.md, ship.md, compass-review.md, lumen-review.md, forgeflow-gate.js, update-forgeflow.md, new project-rules/ dir</div>
+    </div>
+  </header>
+
+  <div class="intro">
+    V4.2 closes the gaps surfaced by <code>/insights</code> session analysis: multi-session REVISE cycles, wrong-branch reports, context exhaustion mid-handoff, unreviewed fleet merges, and forgeflow-self-reviewing meta-work. Five new commands extend the lifecycle without replacing it &mdash; each composes with the existing Forgeflow persistent state (<code>.forgeflow/&lt;project&gt;/</code>) and uses the same implement-agent dispatch pattern. <em>The guiding rule: don&rsquo;t add manual steps to close the loop &mdash; automate the loop and keep the gates.</em>
+  </div>
+
+  <!-- Five new commands -->
+  <div class="section section-cory">
+    <div class="section-header">
+      <span class="agent-badge badge-cory">Five new commands</span>
+      <span class="section-role">Extensions that compose with the core lifecycle</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong><code>/handoff</code> &mdash; structured session-state snapshot</strong>
+        <span class="detail">Captures branch, PR, last commit, this-session-accomplished, pending blockers from latest review verdict, validation status (typecheck/lint), and a single concrete next action. Writes to <code>.claude/handoff.md</code> as a rolling overwrite. Auto-invoked by <code>/review</code> on REVISE or BLOCK when context is constrained or the blocker list is substantial. Ensures <code>.claude/handoff.md</code> is gitignored. Enforces verb-leading next-action language &mdash; vague output is a signal the session state wasn&rsquo;t clear.</span>
+      </li>
+      <li>
+        <strong><code>/review-auto</code> &mdash; closed-loop auto-fix cycle</strong>
+        <span class="detail">Runs <code>/review</code>, classifies findings by tier (NIT / MUST-FIX-SAFE / MUST-FIX-RISKY / BLOCKER) AND by source reviewer, dispatches the matching Forgeflow implement agent per finding (Smith-flagged &rarr; <code>smith-implement</code>, Lumen-flagged &rarr; <code>lumen-implement</code>, etc.), validates via typecheck + lint with timeout guards, commits auto-fixes as <code>chore(auto-fix): round N</code>, re-runs <code>/review</code>. Iteration cap 2 (max 3 via <code>--max-iterations</code>). Hard safeguards: never touches migrations, secrets, <code>package.json</code> dependencies; <em>Warden-flagged items always surface, never auto-apply</em> &mdash; security-adjacent safe is an oxymoron. Agent pre-check at Step 1.5 verifies the four expected implement agents exist; missing agents prompt for user-picked replacements or skip. Appends a round-N entry to <code>review-history.md</code> so <code>/ship</code>&rsquo;s gate reads the post-auto-fix verdict.</span>
+      </li>
+      <li>
+        <strong><code>/fleet</code> &mdash; parallel worktree orchestration</strong>
+        <span class="detail">Decomposes a phased markdown spec (<code>## Phase N: &lt;title&gt;</code> headers with <code>**Target agent:**</code> and <code>**Files:**</code> metadata) into N shards (max 10), creates per-worktree Postgres DBs (<code>gsd_wt1</code>, <code>gsd_wt2</code>, &hellip;), links <code>.forgeflow/</code> via symlink so Atlas context is shared, dispatches Forgeflow implement agents in parallel scoped to one phase each, then sequentially rebase-merges onto main with typecheck + lint validation between merges. Trivial import/formatting conflicts auto-resolve via prettier; non-trivial conflicts halt the chain. Auto-invokes <code>/review</code> on the merged range (Step 6.5). Standard ports &mdash; only ONE worktree runs dev services at a time; fleet enables parallel AGENT work (edits, unit tests), not parallel SERVICE operation.</span>
+      </li>
+      <li>
+        <strong><code>/ui-iterate</code> &mdash; test-driven theme iteration</strong>
+        <span class="detail">Converts subjective theme tuning into a measurable loop. <code>lumen-implement</code> proposes N palette variants per round. Each gets applied to the theme file, the fitness suite runs (Playwright visual snapshot + axe-core accessibility + WCAG contrast check + palette-proximity to a target hex set), composite score is computed (weighted sum: contrast 0.35, palette 0.25, visual diff 0.15, axe 0.25), top 3 feed round R+1 as seeds. After K rounds, produces a ranked markdown report to <code>.forgeflow/&lt;project&gt;/ui-iterations/</code>. Bootstraps Playwright <code>toHaveScreenshot</code> and installs <code>@axe-core/playwright</code> on first run. Always reverts the theme file to baseline &mdash; user applies a winner manually from the report&rsquo;s palette diff.</span>
+      </li>
+      <li>
+        <strong><code>/sync-upstream</code> &mdash; Forgeflow meta-work sync</strong>
+        <span class="detail">Automates the <code>cp &rarr; git add &rarr; git commit &rarr; git push</code> flow for Forgeflow meta-work. Detects changed files in <code>~/.claude/</code> across <code>agents/</code>, <code>commands/</code> (incl. subdirs), <code>project-rules/</code>, <code>templates/</code>, <code>hooks/</code>. Auto-switches the active <code>gh</code> account to the repo owner for the push, switches back after. Never force-pushes. Stages files by name &mdash; never <code>git add .</code>. Supports <code>--dry-run</code>, <code>--no-push</code>, <code>--message</code>. Replaces the repeat pattern of manually copying + committing after each meta-edit.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Gate & assertion additions -->
+  <div class="section section-arbiter">
+    <div class="section-header">
+      <span class="agent-badge badge-arbiter">Gates and assertions</span>
+      <span class="section-role">New pre-flight checks on <code>/review</code> and <code>/ship</code></span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong><code>/review</code> Step 0 pre-flight gate</strong>
+        <span class="detail">Before any reviewer agent spawns, the command verifies: session context (<code>pwd</code>, <code>git branch --show-current</code>, <code>git status -sb</code>, <code>gh pr view</code>), branch assertion against any linked PR (<code>--pr N</code> flag or auto-detected <code>headRefName</code>), and a validation gate that runs <code>pnpm typecheck</code> + <code>pnpm lint</code> if the project has those scripts. If typecheck or lint fails, the Forgeflow team is NOT dispatched &mdash; user gets first 10 lines of the error output with a one-line override path (<code>--skip-preflight</code>). Reason: the Forgeflow is expensive; it should not be invoked on code that doesn&rsquo;t compile or lint clean.</span>
+      </li>
+      <li>
+        <strong><code>/ship</code> Step 1b.1 branch assertion</strong>
+        <span class="detail">After the review gate but before any PR creation, compares <code>git branch --show-current</code> to <code>gh pr view --json headRefName</code>. On mismatch, exits immediately with the expected vs actual branch. Also detects stale review verdicts (HEAD has advanced beyond the reviewed commits); requires explicit <code>--stale-ok</code> override in that case. Closes the recurring friction where Claude reported on the wrong PR branch mid-session.</span>
+      </li>
+      <li>
+        <strong><code>/ship</code> Step 1g commit hygiene validation</strong>
+        <span class="detail">Opt-in via <code>@~/.claude/project-rules/commit-hygiene.md</code> in the project&rsquo;s <code>CLAUDE.md</code>. Hard gate on commit body lines exceeding 72 characters (pre-commit hooks on many repos reject these). Soft gate on prettier pass across changed files &mdash; offers auto-fix via follow-up commit. Advisory scan for stale imports after <code>export</code> removals (grep for consumers). Cross-references the Step 1f secret scan. Override with <code>--skip-hygiene</code> when justified. Fail-open behavior: if <code>git log</code> or <code>git diff</code> errors out, logs and continues &mdash; hygiene validation itself never blocks ship.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Infrastructure -->
+  <div class="section section-fc">
+    <div class="section-header">
+      <span class="agent-badge badge-fc">Infrastructure</span>
+      <span class="section-role">Hook noise filter, project-rules/, update-forgeflow sync expansion</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong><code>forgeflow-gate.js</code> &mdash; three new skip paths</strong>
+        <span class="detail">The PostToolUse advisory now suppresses in three high-noise cases: (1) cwd is the Forgeflow repo itself (detected via <code>git remote get-url origin</code> matching <code>/Forgeflow(\.git)?$</code>) &mdash; the Forgeflow team reviewing its own changes produces no useful verdict; (2) every edited file is under <code>~/.claude/</code> &mdash; personal harness config, not project code; (3) every edited file is pure docs (README, CHANGELOG, <code>/docs/</code>, <code>*.txt</code>) &mdash; markdown files in code paths (<code>/commands/</code>, <code>/agents/</code>, <code>/skills/</code>, <code>/hooks/</code>, <code>/templates/</code>, <code>/project-rules/</code>, <code>/src/</code>, <code>/scripts/</code>) still count as code. All three skips fail-open.</span>
+      </li>
+      <li>
+        <strong>New <code>project-rules/</code> directory &mdash; opt-in per-project rules</strong>
+        <span class="detail">Rules that apply to <em>some</em> projects, not globally. Reference via <code>@~/.claude/project-rules/&lt;name&gt;.md</code> from a project&rsquo;s <code>CLAUDE.md</code>. Two rules ship: <code>commit-hygiene.md</code> (72-char body, prettier before stage, stale-imports cleanup, never-commit list, one-logical-change-per-commit, conventional-commit format) and <code>dev-environment.md</code> (worktree verification, <code>lsof</code> port checks, correct backgrounding, required-env checklist, workspace-scoped pnpm commands). The keep-global-small principle: <code>CLAUDE.md</code> holds always-true rules; <code>project-rules/</code> holds opt-in-when-relevant rules.</span>
+      </li>
+      <li>
+        <strong><code>/update-forgeflow</code> now syncs <code>project-rules/*.md</code></strong>
+        <span class="detail">The sync mechanism was extended to include <code>project-rules/*.md</code> in both first-run (contents API) and incremental (compare API) modes. Destination directory <code>~/.claude/project-rules/</code> is created if missing. Without this, <code>/ship</code>&rsquo;s Step 1g reference to <code>commit-hygiene.md</code> would be a broken pointer for anyone who installed the Forgeflow team fresh.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Agent integrations -->
+  <div class="section section-lumen">
+    <div class="section-header">
+      <span class="agent-badge badge-lumen">Agent integrations</span>
+      <span class="section-role">Gotchas sections + UI Iteration grounding</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>Gotchas sections added to five commands</strong>
+        <span class="detail">Per Anthropic&rsquo;s internal data showing skills-with-Gotchas measurably improve LLM accuracy, every V4.2 command has a <code>## Gotchas</code> section with 4&ndash;6 specific pitfalls: <code>/handoff</code> (rolling overwrite, cwd-sensitive), <code>/review-auto</code> (Warden-flagged never auto-apply, separate commit per iteration, iteration 2+ re-prompt rules), <code>/fleet</code> (one worktree runs services at a time, Postgres admin required, Files metadata accuracy matters), <code>/ui-iterate</code> (reverts at end, HMR required, composite weights hardcoded), <code>/sync-upstream</code> (local-to-upstream only, account switching, never force-pushes).</span>
+      </li>
+      <li>
+        <strong>Compass &mdash; UI Iteration History section</strong>
+        <span class="detail">Compass&rsquo;s review output template now includes a <em>UI Iteration History</em> section. When reviewing changes that apply a <code>/ui-iterate</code>-selected variant, Compass checks <code>.forgeflow/&lt;project&gt;/ui-iterations/</code> for recent fitness reports and grounds her UX verdict in the measured composite score plus the rubric dimensions that drove selection. Rather than assessing aesthetics alone.</span>
+      </li>
+      <li>
+        <strong>Lumen &mdash; UI Iteration Grounding check</strong>
+        <span class="detail">In Frontend Review, when the changeset touches theme tokens or palette files, Lumen verifies the change matches a recent <code>/ui-iterate</code> winning variant. Missing iteration report is a soft signal (not a block); applying a different variant than the report recommended gets called out. Theme work backed by measured fitness scores much higher than theme work by vibe.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Documentation -->
+  <div class="section section-compass">
+    <div class="section-header">
+      <span class="agent-badge badge-compass">Documentation</span>
+      <span class="section-role">README, wiki, and changelog updates</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>README lifecycle table expanded</strong>
+        <span class="detail">Five new command entries added with their Forgeflow agent involvement. Repository structure updated to show <code>project-rules/</code> directory and the V4.2-tagged commands. Version header block follows the existing changelog pattern.</span>
+      </li>
+      <li>
+        <strong>Wiki pages added and updated</strong>
+        <span class="detail">New <em>Lifecycle Extensions</em> page covers all five V4.2 commands with flow diagrams, usage examples, constraints, and gotchas. New <em>Project Rules</em> page explains the opt-in pattern and the two shipped rules. <em>Home</em> quick-start table and navigation updated. <em>_Sidebar</em> adds both new pages under Commands and Guides. <em>Review Hook</em> page documents the three new skip conditions.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:64px;padding:14px 20px;background:#141414;border:1px solid #252525;">
+    <a href="./v4.1.4.html" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#f0a232;text-decoration:none;">&larr; V4.1.4</a>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#3d3b38;letter-spacing:0.1em;">V4.2</span>
+    <a href="./v4.3.html" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#f0a232;text-decoration:none;">V4.3 &rarr;</a>
+  </div>
+
+  <footer>
+    <div class="footer-left">Forgeflow &mdash; ForgeflowAI/Forgeflow &mdash; V4.2</div>
+    <div class="footer-right">17 Apr 2026</div>
+  </footer>
+
+</div>
+</body>
+</html>

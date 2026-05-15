@@ -1,0 +1,17 @@
+{
+  "name": "chat-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/bridge.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/ws": "^8.5.10",
+    "@types/node": "^20.12.0"
+  }
+}

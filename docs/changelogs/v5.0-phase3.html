@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow — V5.0 Phase 3 Changelog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0d0d;
+      --surface:   #141414;
+      --surface-2: #1c1c1c;
+      --border:    #252525;
+      --border-2:  #303030;
+      --text:      #ddd8cc;
+      --text-dim:  #7a7670;
+      --text-faint:#3d3b38;
+      --amber:     #f0a232;
+      --amber-dim: #a06c1e;
+
+      --fc:        #5b9cf6;
+      --warden:     #e05c5c;
+      --lumen:    #7ecba1;
+      --cory:      #b07ef5;
+      --arbiter:     #f0a232;
+      --compass:     #f0c070;
+      --crosscut:  #88a4b8;
+      --debate:    #c084fc;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      line-height: 1.7;
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.028;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(240,162,50,0.03) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .page { max-width: 780px; margin: 0 auto; padding: 80px 40px 120px; }
+
+    header { margin-bottom: 64px; }
+
+    .version-tag {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 2.4rem;
+      font-weight: 300;
+      line-height: 1.15;
+      color: var(--text);
+      margin-bottom: 28px;
+    }
+
+    h1 span { color: var(--amber); }
+
+    .header-meta { display: flex; gap: 24px; flex-wrap: wrap; }
+    .meta-item { font-size: 13px; color: var(--text-dim); }
+    .meta-item strong { font-weight: 500; color: var(--text); }
+
+    .intro {
+      font-size: 15px;
+      color: var(--text-dim);
+      line-height: 1.8;
+      margin-bottom: 64px;
+      padding: 24px 28px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--amber-dim);
+    }
+
+    .intro em { color: var(--text); font-style: normal; font-weight: 500; }
+
+    .section { margin-bottom: 48px; }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .agent-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 2px;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-debate  { background: rgba(192,132,252,0.12); color: var(--debate);   border: 1px solid rgba(192,132,252,0.25); }
+    .badge-fc      { background: rgba(91,156,246,0.12); color: var(--fc);      border: 1px solid rgba(91,156,246,0.25); }
+    .badge-warden   { background: rgba(224,92,92,0.12);  color: var(--warden);   border: 1px solid rgba(224,92,92,0.25); }
+    .badge-lumen  { background: rgba(126,203,161,0.12);color: var(--lumen);  border: 1px solid rgba(126,203,161,0.25); }
+    .badge-cory    { background: rgba(176,126,245,0.12);color: var(--cory);    border: 1px solid rgba(176,126,245,0.25); }
+    .badge-arbiter   { background: rgba(240,162,50,0.12); color: var(--arbiter);   border: 1px solid rgba(240,162,50,0.25); }
+    .badge-compass   { background: rgba(240,192,112,0.12);color: var(--compass);   border: 1px solid rgba(240,192,112,0.25); }
+    .badge-cross   { background: rgba(136,164,184,0.10);color: var(--crosscut);border: 1px solid rgba(136,164,184,0.2); }
+
+    .section-role { font-size: 12px; color: var(--text-dim); font-style: italic; }
+
+    ul.changes { list-style: none; display: flex; flex-direction: column; gap: 0; }
+
+    ul.changes li {
+      position: relative;
+      padding: 14px 0 14px 20px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+
+    ul.changes li:last-child { border-bottom: none; }
+
+    ul.changes li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      top: 15px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--text-faint);
+    }
+
+    ul.changes li strong {
+      font-weight: 500;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    ul.changes li .detail { color: var(--text-dim); font-size: 13.5px; }
+
+    ul.changes li .detail code {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      background: var(--surface-2);
+      padding: 1px 5px;
+      border-radius: 2px;
+    }
+
+    .section-debate ul.changes li:hover { background: rgba(192,132,252,0.04); }
+    .section-arbiter  ul.changes li:hover { background: rgba(240,162,50,0.04); }
+    .section-cross  ul.changes li:hover { background: rgba(136,164,184,0.04); }
+    .section-warden  ul.changes li:hover { background: rgba(224,92,92,0.04); }
+    .section-compass  ul.changes li:hover { background: rgba(240,192,112,0.04); }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--border-2), transparent);
+      margin: 64px 0;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding-top: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-left, .footer-right {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.06em;
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+
+    @media (max-width: 600px) {
+      .page { padding: 48px 24px 80px; }
+      h1 { font-size: 1.8rem; }
+      .header-meta { flex-direction: column; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="version-tag">Forgeflow &mdash; Release Notes</div>
+    <h1>What&rsquo;s new in <span>V5.0 Phase 3</span></h1>
+    <div class="header-meta">
+      <div class="meta-item"><strong>Date</strong> &nbsp; 21 April 2026</div>
+      <div class="meta-item"><strong>Scope</strong> &nbsp; Theme D &mdash; team shared state. <code>/forgeflow-sync</code> with five subcommands (<code>--init</code>, <code>--push</code>, <code>--pull</code>, <code>--status</code>, <code>--merge</code>) synchronising the four shared Forgeflow files with a team-owned git remote.</div>
+      <div class="meta-item"><strong>Review rounds</strong> &nbsp; 8 (before merge) + final round-8 hardening</div>
+    </div>
+  </header>
+
+  <div class="intro">
+    Phase 2 made the Forgeflow team run on every PR. Phase 3 makes a team share a single growing knowledge base. <code>/forgeflow-sync</code> synchronises <code>learnings.jsonl</code>, <code>patterns.md</code>, <code>codebase-map.md</code>, and <code>review-history.md</code> with a team-owned git remote so multiple developers collaborate through shared Forgeflow intelligence. <code>agent-notes/</code> remains per-user and is never synced. <em>Security is the hardest part: URLs, schemes, credentials, and fork-push safety must all fail closed before any write reaches disk or any command reaches the remote.</em>
+  </div>
+
+  <!-- Theme D: Team Shared State -->
+  <div class="section section-arbiter">
+    <div class="section-header">
+      <span class="agent-badge badge-arbiter">Theme D &mdash; Team Shared State</span>
+      <span class="section-role">/forgeflow-sync with five subcommands</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong><code>/forgeflow-sync --init &lt;remote-url&gt;</code> &mdash; one-time bootstrap</strong>
+        <span class="detail">Validates the URL before anything is written: rejects credential-embedded forms (<code>https://user:pass@host</code>) and non-<code>https</code> / <code>git</code> / <code>git@</code> schemes. Verifies <code>.forgeflow/</code> is in <code>.gitignore</code> as a blocking step zero (appends if missing). Creates a private <code>forgeflow-state-&lt;project&gt;</code> GitHub repo via API with a 10-second timeout and a single 5xx retry. Writes <code>.forgeflow/&lt;project&gt;/config.json</code> with all four schema fields (<code>remote_url</code>, <code>strategy</code>, <code>sync_branch</code>, <code>team_members</code>). Registers the <code>forgeflow-state</code> git remote idempotently: same URL exits silently, different URL requires confirmation.</span>
+      </li>
+      <li>
+        <strong><code>/forgeflow-sync --push</code> &mdash; publish local state</strong>
+        <span class="detail">Re-reads and re-validates <code>config.json</code> (SSRF-safe &mdash; never trusts the original <code>--init</code> argument). Fork push safety check aborts if <code>config.remote_url</code> &ne; <code>git remote get-url forgeflow-state</code>. Clones into a <code>chmod 700</code> temp dir with <code>trap ... EXIT</code> cleanup. Copies only the four shared files by name &mdash; <strong>never</strong> <code>git add .</code>. Commits with an explicit <code>user.name=forgeflow-sync</code> / <code>user.email=forgeflow-sync@local</code> identity. Writes a <code>.last-push</code> sentinel for reliable timestamp reporting.</span>
+      </li>
+      <li>
+        <strong><code>/forgeflow-sync --pull</code> &mdash; apply remote state</strong>
+        <span class="detail">Re-validates config; performs fork safety check. Clones the remote into a second <code>chmod 700</code> temp dir. Runs union dedup on <code>learnings.jsonl</code> &mdash; full-line string match, <code>git merge</code> is <strong>never</strong> used on this file (merge conflicts on append-only JSONL produce garbage). Remote-wins overwrite for <code>patterns.md</code>, <code>codebase-map.md</code>, <code>review-history.md</code>. Writes a <code>.last-pull</code> sentinel on completion.</span>
+      </li>
+      <li>
+        <strong><code>/forgeflow-sync --status</code> &mdash; honest sync state</strong>
+        <span class="detail">Reads <code>.last-push</code> and <code>.last-pull</code> sentinels for timestamps that don&rsquo;t lie. <code>git fetch forgeflow-state main</code> populates the local tracking ref before comparison (this was the round-8 fix: the tracking ref was never populated by the <code>mktemp</code>-clone operations, so the status output was always <code>never synced</code> even after a successful push). Reports one of four states: <code>[synced]</code> / <code>[remote has changes &mdash; run --pull]</code> / <code>[never synced &mdash; run --pull]</code> / <code>[remote unreachable]</code>.</span>
+      </li>
+      <li>
+        <strong><code>/forgeflow-sync --merge</code> &mdash; conflict remediation guide</strong>
+        <span class="detail">Scans <code>patterns.md</code>, <code>codebase-map.md</code>, <code>review-history.md</code> for conflict markers (<code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code>, <code>=======</code>, <code>&gt;&gt;&gt;&gt;&gt;&gt;&gt;</code>) with precise line numbers. Prints step-by-step resolution instructions (keep both, keep remote, keep local) with the exact shell commands the developer needs to run. Does not attempt automatic resolution &mdash; humans decide which knowledge wins.</span>
+      </li>
+      <li>
+        <strong><code>docs/forgeflow-sync-config-schema.md</code> &mdash; formal config contract</strong>
+        <span class="detail">Documents the <code>config.json</code> schema, the <code>strategy</code> enum values (<code>remote-wins</code> / <code>local-wins</code> / <code>prompt</code>), the <code>team_members</code> structure (object keyed by GitHub username with display names), the per-user <code>agent-notes/&lt;user&gt;/</code> naming convention introduced to prevent cross-developer memory pollution, and the migration path from earlier installs that used flat <code>agent-notes/</code>.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Security -->
+  <div class="section section-warden">
+    <div class="section-header">
+      <span class="agent-badge badge-warden">Security</span>
+      <span class="section-role">URL / scheme / credential / fork-push hardening</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong><code>GITHUB_TOKEN</code> is environment-only</strong>
+        <span class="detail">Never prompted at the terminal. Never stored on disk. Never logged. The single scope is "create repo" &mdash; once <code>--init</code> has written <code>config.json</code>, the token is no longer read. Subsequent <code>--push</code> / <code>--pull</code> use <code>gh</code>&rsquo;s own credential cache.</span>
+      </li>
+      <li>
+        <strong>Credential-embedded URLs rejected before any config write</strong>
+        <span class="detail">The scheme validator runs on the initial <code>--init</code> argument AND on every <code>--push</code> / <code>--pull</code> re-read of <code>config.json</code> &mdash; defense against a tampered config file replacing the safe URL with a credential-embedded one. Rejection happens before any git operation or config persistence.</span>
+      </li>
+      <li>
+        <strong><code>agent-notes/</code> is never synced</strong>
+        <span class="detail">Per-user content stays local. The copy-list in <code>--push</code> names the four shared files explicitly; <code>agent-notes/</code> is not in that list and cannot be added without a code change. This is how Atlas&rsquo;s memory of one developer&rsquo;s style doesn&rsquo;t leak across the team.</span>
+      </li>
+      <li>
+        <strong>Fork push safety check on every <code>--push</code></strong>
+        <span class="detail">If <code>config.remote_url</code> doesn&rsquo;t match <code>git remote get-url forgeflow-state</code>, the push aborts. Prevents the scenario where a developer forks the forgeflow-state repo, points their local <code>forgeflow-state</code> remote at the fork, then pushes &mdash; which would appear to succeed while sending team knowledge to an unauthorized place.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Review process -->
+  <div class="section section-cross">
+    <div class="section-header">
+      <span class="agent-badge badge-cross">Forgeflow self-review</span>
+      <span class="section-role">8 rounds to APPROVE + CONFIRM</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>Rounds 1&ndash;7: blockers cleared across security, connectivity, and craft</strong>
+        <span class="detail">Early rounds caught URL validator gaps (the first implementation accepted <code>https://u:p@host</code>), copy-list drift (a <code>git add .</code> was proposed and shot down by Warden), confirmation UX on <code>--init</code> with an existing remote, sentinel file timing, and the discriminated <code>strategy</code> enum. Each round produced findings with file:line citations; none were phantom.</span>
+      </li>
+      <li>
+        <strong>Round 8 &mdash; three hardening fixes before merge</strong>
+        <span class="detail"><strong>Tracking ref fix:</strong> <code>--status</code> compared <code>refs/remotes/forgeflow-state/main</code> without first running <code>git fetch forgeflow-state main</code> &mdash; the ref was never populated, so <code>--status</code> always reported <code>never synced</code> even after a successful push. Added the fetch step. <strong>jq null guard:</strong> <code>jq -r '.remote_url'</code> on a malformed config emits the literal string <code>null</code>, which downstream bash code then treated as a URL &mdash; changed to <code>jq -r '.remote_url // empty'</code> in all three call sites (Gotcha #3 compliance). <strong>Safe arithmetic:</strong> <code>((n++))</code> post-increment evaluates to 0 on the first call, which under <code>set -e</code> aborts the entire shell script. Replaced with <code>n=$((n + 1))</code> throughout.</span>
+      </li>
+      <li>
+        <strong>Meta observation: forgeflow-self-review on forgeflow-modifying meta-work pays for itself</strong>
+        <span class="detail">Same pattern as Phase 2: eight rounds of review on a team-infrastructure change caught real issues each round. The standing preference to skip forgeflow-self-review on meta-work explicitly does not apply when the meta-work changes how developers store and share Forgeflow knowledge &mdash; bugs there would cascade across every future sync, silently.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Files shipped -->
+  <div class="section section-compass">
+    <div class="section-header">
+      <span class="agent-badge badge-compass">Files shipped</span>
+      <span class="section-role">New command, schema doc, README + gitignore updates</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong><code>commands/forgeflow-sync.md</code></strong>
+        <span class="detail">New slash command with five subcommands. Includes a Gotchas section per the V4.2+ convention.</span>
+      </li>
+      <li>
+        <strong><code>docs/forgeflow-sync-config-schema.md</code></strong>
+        <span class="detail">New schema reference covering config fields, strategy enum, team_members structure, per-user agent-notes naming, and migration path.</span>
+      </li>
+      <li>
+        <strong><code>README.md</code></strong>
+        <span class="detail">V5.0 Phase 3 callout added to the top; <code>/forgeflow-sync</code> row added to the commands table; <code>.forgeflow/config.json</code> + <code>agent-notes/&lt;user&gt;/</code> added to the repo structure map.</span>
+      </li>
+      <li>
+        <strong><code>.gitignore</code></strong>
+        <span class="detail">Removed duplicate <code>.forgeflow/</code> entry and a redundant <code>.claude/handoff.md</code> line surfaced during the cleanup pass.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:64px;padding:14px 20px;background:#141414;border:1px solid #252525;">
+    <a href="./v5.0-phase2.html" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#f0a232;text-decoration:none;">&larr; V5.0 Phase 2</a>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#3d3b38;letter-spacing:0.1em;">V5.0 PHASE 3</span>
+    <a href="./v5.0-phase4.html" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#f0a232;text-decoration:none;">V5.0 Phase 4 &rarr;</a>
+  </div>
+
+  <footer>
+    <div class="footer-left">Forgeflow &mdash; ForgeflowAI/Forgeflow &mdash; V5.0 Phase 3</div>
+    <div class="footer-right">21 Apr 2026</div>
+  </footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,74 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-05-15T12:00:00.000Z",
+  "source_files": [
+    "fixtures"
+  ],
+  "agents": {
+    "warden": {
+      "overturned": 0,
+      "verified": 3,
+      "confirmed": 3,
+      "rejected": 0,
+      "blocked": 0,
+      "auto_fix_applied": 0,
+      "auto_fix_failed": 0
+    },
+    "lumen": {
+      "overturned": 0,
+      "verified": 3,
+      "confirmed": 0,
+      "rejected": 3,
+      "blocked": 0,
+      "auto_fix_applied": 0,
+      "auto_fix_failed": 0
+    }
+  },
+  "classes": {
+    "accessibility": {
+      "overturned": 0,
+      "verified": 3,
+      "confirmed": 0,
+      "rejected": 3,
+      "blocked": 0,
+      "auto_fix_applied": 0,
+      "auto_fix_failed": 0
+    },
+    "auth/session/permissions": {
+      "overturned": 0,
+      "verified": 3,
+      "confirmed": 3,
+      "rejected": 0,
+      "blocked": 0,
+      "auto_fix_applied": 0,
+      "auto_fix_failed": 0
+    },
+    "ux/connectivity": {
+      "overturned": 0,
+      "verified": 2,
+      "confirmed": 2,
+      "rejected": 0,
+      "blocked": 0,
+      "auto_fix_applied": 1,
+      "auto_fix_failed": 0
+    },
+    "migration/schema/data-loss": {
+      "overturned": 0,
+      "verified": 1,
+      "confirmed": 0,
+      "rejected": 1,
+      "blocked": 0,
+      "auto_fix_applied": 0,
+      "auto_fix_failed": 0
+    }
+  },
+  "totals": {
+    "finding_overturned": 0,
+    "finding_verified": 9,
+    "verifier_confirmed": 5,
+    "verifier_rejected": 4,
+    "verifier_blocked": 0,
+    "auto_fix_applied": 1,
+    "auto_fix_failed": 0
+  }
+}

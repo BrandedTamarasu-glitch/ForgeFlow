@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Forgeflow — Dashboard</title>
+  <style>
+    /* ── Reset & Variables ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gap: 16px;
+      --panel-padding: 16px;
+
+      --bg:          #0d1117;
+      --bg-panel:    #161b22;
+      --bg-surface:  #1c2128;
+      --bg-hover:    #21262d;
+      --border:      #30363d;
+      --text-primary:   #e6edf3;
+      --text-secondary: #8b949e;
+      --text-muted:     #768390;
+      --accent-green:   #3fb950;
+      --accent-yellow:  #d29922;
+      --accent-red:     #f85149;
+      --accent-blue:    #58a6ff;
+      --accent-purple:  #bc8cff;
+      --radius:      6px;
+      --radius-lg:   8px;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Header ────────────────────────────────────────────────── */
+    header {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: var(--gap);
+      padding: 10px var(--panel-padding);
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+    }
+
+    header h1 {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+    }
+
+    header h1 span {
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    #parse-warning {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      background: rgba(210, 153, 34, 0.15);
+      border: 1px solid rgba(210, 153, 34, 0.4);
+      border-radius: var(--radius);
+      color: var(--accent-yellow);
+      font-size: 12px;
+    }
+
+    #parse-warning.visible { display: flex; }
+
+    .header-spacer { flex: 1; }
+
+    #fetch-status {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* ── Window toggles ────────────────────────────────────────── */
+    .window-controls {
+      display: flex;
+      gap: 4px;
+    }
+
+    .window-controls button {
+      padding: 4px 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 150ms ease-out, color 150ms ease-out, border-color 150ms ease-out;
+    }
+
+    .window-controls button:hover,
+    .window-controls button:focus-visible {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+      border-color: var(--accent-blue);
+      outline: 2px solid var(--accent-blue);
+      outline-offset: 2px;
+    }
+
+    .window-controls button[aria-pressed="true"] {
+      background: var(--accent-blue);
+      border-color: var(--accent-blue);
+      color: #ffffff;
+    }
+
+    /* ── Main layout ───────────────────────────────────────────── */
+    main {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      gap: var(--gap);
+      padding: var(--panel-padding);
+      overflow: hidden;
+    }
+
+    /* ── Columns ───────────────────────────────────────────────── */
+    .col-left {
+      flex-basis: 220px;
+      flex-shrink: 0;
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap);
+      overflow-y: auto;
+    }
+
+    .col-center {
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap);
+      overflow-y: auto;
+    }
+
+    .col-right {
+      flex-basis: 300px;
+      flex-shrink: 0;
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap);
+      overflow-y: auto;
+    }
+
+    /* ── Panel card ────────────────────────────────────────────── */
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--panel-padding);
+    }
+
+    .panel-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    /* ── Project list ──────────────────────────────────────────── */
+    #project-filter-wrap {
+      margin-bottom: 10px;
+    }
+
+    #project-filter-wrap select {
+      width: 100%;
+      padding: 6px 8px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-primary);
+      font-size: 12px;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b949e'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      padding-right: 24px;
+    }
+
+    #project-filter-wrap select:focus-visible {
+      outline: 2px solid var(--accent-blue);
+      outline-offset: 1px;
+    }
+
+    #project-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    #project-list li {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 8px 10px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background 150ms ease-out, border-color 150ms ease-out;
+    }
+
+    #project-list li:hover,
+    #project-list li:focus-visible {
+      background: var(--bg-hover);
+      outline: 2px solid var(--accent-blue);
+      outline-offset: -2px;
+    }
+
+    #project-list li[aria-current="true"] {
+      background: var(--bg-surface);
+      border-color: var(--accent-blue);
+    }
+
+    .project-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .project-counts {
+      display: flex;
+      gap: 8px;
+      font-size: 11px;
+    }
+
+    .badge-approve { color: var(--accent-green); }
+    .badge-revise  { color: var(--accent-yellow); }
+    .badge-block   { color: var(--accent-red); }
+
+    #project-empty {
+      color: var(--text-muted);
+      font-size: 12px;
+      text-align: center;
+      padding: 24px 0;
+    }
+
+    /* ── Loading / Error overlay ───────────────────────────────── */
+    #loading-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 48px 0;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    #loading-state.hidden { display: none; }
+
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent-blue);
+      border-radius: 50%;
+      animation: spin 700ms linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    #error-banner {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: rgba(248, 81, 73, 0.12);
+      border: 1px solid rgba(248, 81, 73, 0.3);
+      border-radius: var(--radius);
+      color: var(--accent-red);
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    #error-banner.visible { display: flex; }
+
+    /* ── Chart area ────────────────────────────────────────────── */
+    #chart-wrap {
+      flex-shrink: 0;
+    }
+
+    #chart-wrap svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* ── Stats strip ───────────────────────────────────────────── */
+    #stats-strip {
+      flex-shrink: 0;
+    }
+
+    .stats-grid {
+      display: flex;
+      gap: var(--gap);
+      flex-wrap: wrap;
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 80px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+
+    .stat-value.approve { color: var(--accent-green); }
+    .stat-value.revise  { color: var(--accent-yellow); }
+    .stat-value.block   { color: var(--accent-red); }
+    .stat-value.neutral { color: var(--text-primary); }
+
+    .stat-context {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* ── Drift panel ───────────────────────────────────────────── */
+    #drift-panel {
+      flex-shrink: 0;
+    }
+
+    #drift-panel p {
+      color: var(--text-muted);
+      font-size: 13px;
+      font-style: italic;
+    }
+
+    /* ── Chat panel ────────────────────────────────────────────── */
+    #chat-panel {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .chat-status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .ws-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      transition: background 300ms ease-out;
+      flex-shrink: 0;
+    }
+
+    .ws-dot.connecting { background: var(--accent-yellow); animation: pulse 1.2s ease-in-out infinite; }
+    .ws-dot.connected  { background: var(--accent-green); animation: none; }
+    .ws-dot.error      { background: var(--accent-red); animation: none; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .ws-label {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    #chat-messages {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px;
+      font-family: "SF Mono", "Consolas", "Menlo", monospace;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .chat-msg {
+      padding: 3px 0;
+      border-bottom: 1px solid transparent;
+      word-break: break-word;
+    }
+
+    .chat-msg + .chat-msg {
+      border-top: 1px solid var(--bg-hover);
+    }
+
+    .chat-msg-time {
+      color: var(--text-muted);
+      font-size: 10px;
+      user-select: none;
+    }
+
+    .chat-msg-body {
+      color: var(--text-secondary);
+    }
+
+    .chat-empty {
+      color: var(--text-muted);
+      font-size: 12px;
+      text-align: center;
+      padding: 24px 0;
+    }
+
+    /* ── Scrollbar styling ─────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+    /* ── Visually hidden (screen-reader only) ──────────────────── */
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ── Reduced motion ────────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+    }
+
+    /* ── High contrast ─────────────────────────────────────────── */
+    @media (prefers-contrast: more) {
+      :root {
+        --border: #000;
+      }
+      * {
+        border-color: ButtonText !important;
+      }
+      a, button {
+        outline: 2px solid ButtonText;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Header ──────────────────────────────────────────────── -->
+  <header>
+    <h1>Forgeflow <span>/ Dashboard</span></h1>
+
+    <div id="parse-warning" role="alert">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M8 1L15 14H1L8 1Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+        <path d="M8 6v4M8 12v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span id="parse-warning-count">0 parse warnings</span>
+    </div>
+
+    <div class="header-spacer"></div>
+
+    <span id="fetch-status" aria-live="polite" aria-atomic="true">Loading…</span>
+
+    <nav class="window-controls" aria-label="Time window">
+      <button aria-pressed="false" data-window="7d">7d</button>
+      <button aria-pressed="false" data-window="30d">30d</button>
+      <button aria-pressed="true"  data-window="all">All</button>
+    </nav>
+  </header>
+
+  <!-- ── Main ────────────────────────────────────────────────── -->
+  <main>
+
+    <!-- Left column: project list -->
+    <aside class="col-left" aria-label="Projects">
+      <div class="panel" style="flex: 1;">
+        <p class="panel-title">Projects</p>
+
+        <div id="project-filter-wrap">
+          <select aria-label="Filter by project" id="project-select">
+            <option value="">All projects</option>
+          </select>
+        </div>
+
+        <ul id="project-list" aria-label="Project list">
+          <li id="project-empty" aria-disabled="true">No data yet</li>
+        </ul>
+      </div>
+    </aside>
+
+    <!-- Center column: chart + stats + drift -->
+    <section class="col-center" aria-labelledby="trend-heading">
+      <h2 id="trend-heading" class="visually-hidden">Metrics</h2>
+
+      <div id="error-banner" role="alert">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M8 5v4M8 11v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span id="error-text">Failed to load metrics.</span>
+      </div>
+
+      <div class="panel" id="chart-wrap">
+        <p class="panel-title">Cross-project verdict trend</p>
+        <p id="chart-scope-note" hidden style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">
+          Chart shows all projects · filter applies to stats only
+        </p>
+
+        <div id="loading-state" aria-label="Loading metrics">
+          <div class="spinner" aria-hidden="true"></div>
+          <span>Fetching metrics…</span>
+        </div>
+
+        <svg id="trend-chart" viewBox="0 0 500 200" role="img" aria-labelledby="trend-title trend-desc" focusable="false"
+             xmlns="http://www.w3.org/2000/svg">
+          <title id="trend-title">Review trend chart</title>
+          <desc id="trend-desc">Weekly approve/revise/block verdict counts</desc>
+          <defs>
+            <!-- APPROVE: diagonal hatch, green -->
+            <pattern id="pat-approve" x="0" y="0" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <line x1="0" y1="0" x2="0" y2="6" stroke="#3fb950" stroke-width="2.5"/>
+            </pattern>
+            <!-- REVISE: vertical lines, yellow -->
+            <pattern id="pat-revise" x="0" y="0" width="6" height="6" patternUnits="userSpaceOnUse">
+              <line x1="0" y1="0" x2="0" y2="6" stroke="#d29922" stroke-width="2.5"/>
+            </pattern>
+            <!-- BLOCK: dots, red -->
+            <pattern id="pat-block" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">
+              <circle cx="2" cy="2" r="1.5" fill="#f85149"/>
+              <circle cx="6" cy="6" r="1.5" fill="#f85149"/>
+            </pattern>
+          </defs>
+          <!-- Chart bars rendered by JS -->
+        </svg>
+
+        <!-- Legend -->
+        <div id="chart-legend" style="display:flex; gap:16px; margin-top:8px; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text-secondary);">
+            <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+              <rect width="12" height="12" fill="url(#pat-approve)" rx="2"/>
+            </svg>
+            Approve
+          </div>
+          <div style="display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text-secondary);">
+            <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+              <rect width="12" height="12" fill="url(#pat-revise)" rx="2"/>
+            </svg>
+            Revise
+          </div>
+          <div style="display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text-secondary);">
+            <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+              <rect width="12" height="12" fill="url(#pat-block)" rx="2"/>
+            </svg>
+            Block
+          </div>
+        </div>
+
+        <!-- Accessible text equivalent for the SVG trend chart (screen readers) -->
+        <!-- TODO: populate #verdict-table-body from the same JS that renders the chart bars -->
+        <table class="visually-hidden" aria-label="Verdict distribution data">
+          <thead>
+            <tr>
+              <th scope="col">Period</th>
+              <th scope="col">APPROVE</th>
+              <th scope="col">CONDITIONAL APPROVE</th>
+              <th scope="col">REVISE</th>
+              <th scope="col">BLOCK</th>
+            </tr>
+          </thead>
+          <tbody id="verdict-table-body">
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Stats strip -->
+      <div class="panel" id="stats-strip" aria-label="Summary statistics">
+        <p class="panel-title">Summary</p>
+        <div class="stats-grid" id="stats-grid">
+          <div class="stat-item">
+            <span class="stat-label">Approve</span>
+            <span class="stat-value approve" id="stat-approve">—</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Revise</span>
+            <span class="stat-value revise" id="stat-revise">—</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Block</span>
+            <span class="stat-value block" id="stat-block">—</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Auto-fix rounds <abbr title="across all time; not windowed" style="font-size:10px; color:var(--text-muted); text-decoration:none;">*</abbr></span>
+            <span class="stat-value neutral" id="stat-autofix">—</span>
+          </div>
+        </div>
+        <p class="stat-context" id="stat-context"></p>
+      </div>
+
+      <!-- Drift panel -->
+      <section id="drift-panel" class="panel" role="status" aria-live="polite" aria-atomic="false" aria-label="Drift status">
+        <p class="panel-title">Drift</p>
+        <p>Drift analysis coming in Phase 4C.</p>
+      </section>
+
+    </section>
+
+    <!-- Right column: chat -->
+    <aside class="col-right" aria-label="Agent chat">
+      <div class="panel" id="chat-panel">
+        <p class="panel-title">Agent chat</p>
+
+        <div class="chat-status-bar">
+          <div class="ws-dot connecting" id="ws-dot" aria-hidden="true"></div>
+          <span class="ws-label" id="ws-label" aria-live="polite" aria-atomic="true">Connecting…</span>
+        </div>
+
+        <div id="chat-messages"
+             role="log"
+             aria-live="polite"
+             aria-label="Agent chat messages"
+             aria-relevant="additions">
+          <p class="chat-empty" id="chat-empty">No messages yet.</p>
+        </div>
+      </div>
+    </aside>
+
+  </main>
+
+  <script>
+    /* ── State ──────────────────────────────────────────────────── */
+    let metricsData = null;
+    let activeWindow = 'all';
+    let activeProject = '';
+
+    /* ── ISO week → Date ────────────────────────────────────────── */
+    /**
+     * Returns the Monday of the given ISO week string ("2024-W01").
+     * Uses the ISO 8601 definition: week 1 is the week containing Jan 4.
+     */
+    function weekToDate(weekStr) {
+      const m = /^(\d{4})-W(\d{2})$/.exec(weekStr);
+      if (!m) return new Date(0);
+      const year = parseInt(m[1], 10);
+      const week = parseInt(m[2], 10);
+      // Jan 4 is always in ISO week 1
+      const jan4 = new Date(Date.UTC(year, 0, 4));
+      // Shift back to Monday of that week
+      const dayOfWeek = jan4.getUTCDay() || 7; // make Sunday = 7
+      const week1Monday = new Date(jan4);
+      week1Monday.setUTCDate(jan4.getUTCDate() - (dayOfWeek - 1));
+      // Advance to target week
+      const result = new Date(week1Monday);
+      result.setUTCDate(week1Monday.getUTCDate() + (week - 1) * 7);
+      return result;
+    }
+
+    /* ── Metrics fetch ──────────────────────────────────────────── */
+    async function loadMetrics() {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      try {
+        const res = await fetch('/api/metrics', { signal: controller.signal });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        metricsData = await res.json();
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+
+    /* ── Render trend chart ─────────────────────────────────────── */
+    function renderTrend(data, windowKey, projectKey) {
+      if (!data) return;
+
+      // Show/hide the cross-project scope note when a project filter is active
+      const scopeNote = document.getElementById('chart-scope-note');
+      if (scopeNote) scopeNote.hidden = !projectKey;
+
+      const svg = document.getElementById('trend-chart');
+
+      // -- Window filter (operates on a copy, never mutates metricsData)
+      let verdicts = data.verdicts.slice();
+      const now = new Date();
+      if (windowKey === '7d') {
+        const cutoff = new Date(now - 7 * 86400000);
+        verdicts = verdicts.filter(v => weekToDate(v.week) >= cutoff);
+      } else if (windowKey === '30d') {
+        const cutoff = new Date(now - 30 * 86400000);
+        verdicts = verdicts.filter(v => weekToDate(v.week) >= cutoff);
+      }
+      // Project filter: top-level verdicts are cross-project — show all regardless.
+      // Per-project breakdown is in metricsData.projects and is reflected in stats strip only.
+
+      // Take last 8 weeks
+      const recent = verdicts.slice(-8);
+
+      // -- Compute max for scale
+      let maxTotal = 0;
+      recent.forEach(v => {
+        const a = (v.arbiter && v.arbiter.APPROVE) || 0;
+        const r = (v.arbiter && v.arbiter.REVISE) || 0;
+        const b = (v.arbiter && v.arbiter.BLOCK) || 0;
+        const total = a + r + b;
+        if (total > maxTotal) maxTotal = total;
+      });
+      if (maxTotal === 0) maxTotal = 1; // prevent divide-by-zero
+
+      // -- Layout constants
+      const chartW   = 500;
+      const chartH   = 200;
+      const padTop   = 10;
+      const padBot   = 28;   // room for week labels
+      const padLeft  = 8;
+      const barW     = 48;
+      const groupGap = 14;
+      const usableH  = chartH - padTop - padBot;
+      // Total groups: we pad to 8 so empty weeks show a zero-height bar
+      const totalGroups = 8;
+      const usableW = chartW - padLeft * 2;
+      // Slot width = (usableW - (totalGroups-1)*groupGap) / totalGroups
+      const slotW = (usableW - (totalGroups - 1) * groupGap) / totalGroups;
+
+      // Build 8-slot array (oldest first, padding with empty at start if needed)
+      const slots = [];
+      for (let i = 0; i < totalGroups; i++) {
+        const dataIdx = i - (totalGroups - recent.length);
+        if (dataIdx >= 0 && dataIdx < recent.length) {
+          slots.push(recent[dataIdx]);
+        } else {
+          slots.push(null); // empty week
+        }
+      }
+
+      // -- Pause live region during batch update
+      svg.setAttribute('aria-live', 'off');
+
+      // Clear previous content (preserve <title>, <desc>, and <defs> — title/desc
+      // are targets of aria-labelledby and must survive every render)
+      const defs  = svg.querySelector('defs');
+      const title = svg.querySelector('title');
+      const desc  = svg.querySelector('desc');
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+      if (title) svg.appendChild(title);
+      if (desc)  svg.appendChild(desc);
+      if (defs)  svg.appendChild(defs);
+
+      if (recent.length === 0) {
+        const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        txt.setAttribute('x', '250');
+        txt.setAttribute('y', '100');
+        txt.setAttribute('text-anchor', 'middle');
+        txt.setAttribute('fill', '#768390');
+        txt.setAttribute('font-size', '13');
+        txt.textContent = 'No data for this window';
+        svg.appendChild(txt);
+        svg.removeAttribute('aria-live');
+        return;
+      }
+
+      // -- Draw baseline
+      const baseline = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      baseline.setAttribute('x1', String(padLeft));
+      baseline.setAttribute('y1', String(padTop + usableH));
+      baseline.setAttribute('x2', String(chartW - padLeft));
+      baseline.setAttribute('y2', String(padTop + usableH));
+      baseline.setAttribute('stroke', '#30363d');
+      baseline.setAttribute('stroke-width', '1');
+      svg.appendChild(baseline);
+
+      // -- Draw bars
+      slots.forEach((v, i) => {
+        const groupX = padLeft + i * (slotW + groupGap) + (slotW - barW) / 2;
+        const baseY  = padTop + usableH;
+
+        const approve = v ? ((v.arbiter && v.arbiter.APPROVE) || 0) : 0;
+        const revise  = v ? ((v.arbiter && v.arbiter.REVISE)  || 0) : 0;
+        const block   = v ? ((v.arbiter && v.arbiter.BLOCK)   || 0) : 0;
+        const total   = approve + revise + block;
+        const weekLabel = v ? v.week : '';
+
+        // Build stacked bar from bottom: BLOCK → REVISE → APPROVE (top)
+        // Scale: px per unit
+        const scale = usableH / maxTotal;
+
+        const pxApprove = Math.round(approve * scale);
+        const pxRevise  = Math.round(revise  * scale);
+        const pxBlock   = Math.round(block   * scale);
+
+        const ariaLabel = v
+          ? `Week ${v.week}: ${approve} APPROVE, ${revise} REVISE, ${block} BLOCK`
+          : `Empty week`;
+
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('role', 'img');
+        g.setAttribute('tabindex', '0');
+        g.setAttribute('aria-label', ariaLabel);
+
+        // Always render a zero-height placeholder rect for empty-week alignment
+        // (ensures axis label position is consistent)
+        if (total === 0) {
+          const placeholder = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          placeholder.setAttribute('x', String(groupX));
+          placeholder.setAttribute('y', String(baseY));
+          placeholder.setAttribute('width', String(barW));
+          placeholder.setAttribute('height', '0');
+          placeholder.setAttribute('fill', 'none');
+          g.appendChild(placeholder);
+        }
+
+        // Block (bottom)
+        if (block > 0 || total === 0) {
+          if (block > 0) {
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            const h = pxBlock;
+            const y = baseY - pxBlock;
+            rect.setAttribute('x', String(groupX));
+            rect.setAttribute('y', String(y));
+            rect.setAttribute('width', String(barW));
+            rect.setAttribute('height', String(h));
+            rect.setAttribute('fill', 'url(#pat-block)');
+            rect.setAttribute('aria-hidden', 'true');
+            // scaleY animation — fill-box + center bottom for cross-browser SVG transform consistency
+            rect.style.transformBox = 'fill-box';
+            rect.style.transformOrigin = 'center bottom';
+            rect.style.transform = 'scaleY(0)';
+            g.appendChild(rect);
+            // Trigger animation next frame
+            requestAnimationFrame(() => {
+              rect.style.transition = 'transform 400ms ease-out';
+              rect.style.transform = 'scaleY(1)';
+            });
+          }
+        }
+
+        // Revise (middle)
+        if (revise > 0) {
+          const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          const y = baseY - pxBlock - pxRevise;
+          rect.setAttribute('x', String(groupX));
+          rect.setAttribute('y', String(y));
+          rect.setAttribute('width', String(barW));
+          rect.setAttribute('height', String(pxRevise));
+          rect.setAttribute('fill', 'url(#pat-revise)');
+          rect.setAttribute('aria-hidden', 'true');
+          rect.style.transformBox = 'fill-box';
+          rect.style.transformOrigin = 'center bottom';
+          rect.style.transform = 'scaleY(0)';
+          g.appendChild(rect);
+          requestAnimationFrame(() => {
+            rect.style.transition = 'transform 400ms ease-out 50ms';
+            rect.style.transform = 'scaleY(1)';
+          });
+        }
+
+        // Approve (top)
+        if (approve > 0) {
+          const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          const y = baseY - pxBlock - pxRevise - pxApprove;
+          rect.setAttribute('x', String(groupX));
+          rect.setAttribute('y', String(y));
+          rect.setAttribute('width', String(barW));
+          rect.setAttribute('height', String(pxApprove));
+          rect.setAttribute('fill', 'url(#pat-approve)');
+          rect.setAttribute('aria-hidden', 'true');
+          rect.style.transformBox = 'fill-box';
+          rect.style.transformOrigin = 'center bottom';
+          rect.style.transform = 'scaleY(0)';
+          g.appendChild(rect);
+          requestAnimationFrame(() => {
+            rect.style.transition = 'transform 400ms ease-out 100ms';
+            rect.style.transform = 'scaleY(1)';
+          });
+        }
+
+        svg.appendChild(g);
+
+        // Week label
+        if (weekLabel) {
+          const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          label.setAttribute('x', String(groupX + barW / 2));
+          label.setAttribute('y', String(baseY + 16));
+          label.setAttribute('text-anchor', 'middle');
+          label.setAttribute('fill', '#8b949e');
+          label.setAttribute('font-size', '9');
+          label.setAttribute('aria-hidden', 'true');
+          label.textContent = v.week.replace(/^\d{4}-/, ''); // "W01"
+          svg.appendChild(label);
+        }
+      });
+
+      // Populate accessible table equivalent
+      const tbody = document.getElementById('verdict-table-body');
+      if (tbody) {
+        tbody.replaceChildren();
+        recent.forEach(v => {
+          const row = tbody.insertRow();
+          const approve = (v.arbiter && v.arbiter.APPROVE) || 0;
+          const ca = (v.arbiter && v.arbiter['CONDITIONAL APPROVE']) || 0;
+          const revise = (v.arbiter && v.arbiter.REVISE) || 0;
+          const block = (v.arbiter && v.arbiter.BLOCK) || 0;
+          row.insertCell().textContent = v.week;
+          row.insertCell().textContent = String(approve);
+          row.insertCell().textContent = String(ca);
+          row.insertCell().textContent = String(revise);
+          row.insertCell().textContent = String(block);
+        });
+      }
+
+      // Restore aria-live
+      svg.removeAttribute('aria-live');
+    }
+
+    /* ── Render stats strip ─────────────────────────────────────── */
+    function renderStats(data, windowKey, projectKey) {
+      const elApprove = document.getElementById('stat-approve');
+      const elRevise  = document.getElementById('stat-revise');
+      const elBlock   = document.getElementById('stat-block');
+      const elAutofix = document.getElementById('stat-autofix');
+      const elCtx     = document.getElementById('stat-context');
+
+      if (!data) {
+        elApprove.textContent = '—';
+        elRevise.textContent  = '—';
+        elBlock.textContent   = '—';
+        elAutofix.textContent = '—';
+        elCtx.textContent     = '';
+        return;
+      }
+
+      if (projectKey) {
+        // Per-project totals (unwindowed — projects[] does not carry windowed data)
+        const proj = (data.projects || []).find(p => p.project === projectKey);
+        if (proj) {
+          const v = proj.verdicts || {};
+          const arbiter = v.arbiter || {};
+          elApprove.textContent = (arbiter.APPROVE || 0).toString();
+          elRevise.textContent  = (arbiter.REVISE  || 0).toString();
+          elBlock.textContent   = (arbiter.BLOCK   || 0).toString();
+          const af = proj.auto_fix || {};
+          elAutofix.textContent = (af.rounds || 0).toString();
+          elCtx.textContent     = `Totals for ${projectKey} (all time)`;
+        } else {
+          elApprove.textContent = '0';
+          elRevise.textContent  = '0';
+          elBlock.textContent   = '0';
+          elAutofix.textContent = '0';
+          elCtx.textContent     = '';
+        }
+        return;
+      }
+
+      // Cross-project: sum windowed verdicts
+      let verdicts = (data.verdicts || []).slice();
+      const now = new Date();
+      if (windowKey === '7d') {
+        const cutoff = new Date(now - 7 * 86400000);
+        verdicts = verdicts.filter(v => weekToDate(v.week) >= cutoff);
+      } else if (windowKey === '30d') {
+        const cutoff = new Date(now - 30 * 86400000);
+        verdicts = verdicts.filter(v => weekToDate(v.week) >= cutoff);
+      }
+
+      let totApprove = 0, totRevise = 0, totBlock = 0;
+      verdicts.forEach(v => {
+        const n = v.arbiter || {};
+        totApprove += n.APPROVE || 0;
+        totRevise  += n.REVISE  || 0;
+        totBlock   += n.BLOCK   || 0;
+      });
+
+      // Auto-fix rounds: sum from all projects (not windowed in API)
+      let totAutofix = 0;
+      (data.projects || []).forEach(p => {
+        totAutofix += (p.auto_fix && p.auto_fix.rounds) || 0;
+      });
+
+      elApprove.textContent = totApprove.toString();
+      elRevise.textContent  = totRevise.toString();
+      elBlock.textContent   = totBlock.toString();
+      elAutofix.textContent = totAutofix.toString();
+
+      const windowLabel = windowKey === 'all' ? 'all time' : `last ${windowKey}`;
+      elCtx.textContent = `All projects · ${windowLabel}`;
+    }
+
+    /* ── Render project list ────────────────────────────────────── */
+    function makeBadge(cls, value, kind) {
+      const s = document.createElement('span');
+      s.className = cls;
+      s.setAttribute('aria-label', `${value} ${kind}`);
+      s.textContent = `${value} ${kind.charAt(0).toUpperCase()}`;
+      return s;
+    }
+
+    function renderProjectList(data, selectedProject) {
+      const list   = document.getElementById('project-list');
+      const select = document.getElementById('project-select');
+      const empty  = document.getElementById('project-empty');
+
+      if (!data || !data.projects || data.projects.length === 0) {
+        list.replaceChildren(empty);
+        return;
+      }
+
+      // Rebuild <select> options
+      // Preserve position for accessibility
+      while (select.options.length > 1) select.remove(1);
+      data.projects.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.project;
+        opt.textContent = p.project;
+        if (p.project === selectedProject) opt.selected = true;
+        select.appendChild(opt);
+      });
+
+      // Rebuild list items
+      list.replaceChildren();
+      data.projects.forEach(p => {
+        const v = (p.verdicts && p.verdicts.arbiter) || {};
+        const approve = v.APPROVE || 0;
+        const revise  = v.REVISE  || 0;
+        const block   = v.BLOCK   || 0;
+
+        const li = document.createElement('li');
+        li.setAttribute('tabindex', '0');
+        if (p.project === selectedProject) li.setAttribute('aria-current', 'true');
+        li.dataset.project = p.project;
+
+        const nameEl = document.createElement('span');
+        nameEl.className = 'project-name';
+        nameEl.textContent = p.project;
+
+        const countsEl = document.createElement('span');
+        countsEl.className = 'project-counts';
+
+        countsEl.appendChild(makeBadge('badge-approve', approve, 'approve'));
+        countsEl.appendChild(makeBadge('badge-revise',  revise,  'revise'));
+        countsEl.appendChild(makeBadge('badge-block',   block,   'block'));
+
+        li.appendChild(nameEl);
+        li.appendChild(countsEl);
+
+        li.addEventListener('click', () => selectProject(p.project === activeProject ? '' : p.project));
+        li.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            selectProject(p.project === activeProject ? '' : p.project);
+          }
+        });
+
+        list.appendChild(li);
+      });
+    }
+
+    /* ── Select project ─────────────────────────────────────────── */
+    function selectProject(key) {
+      activeProject = key;
+      document.getElementById('project-select').value = key;
+      renderProjectList(metricsData, key);
+      renderTrend(metricsData, activeWindow, key);
+      renderStats(metricsData, activeWindow, key);
+    }
+
+    /* ── Full render ────────────────────────────────────────────── */
+    function renderAll() {
+      renderProjectList(metricsData, activeProject);
+      renderTrend(metricsData, activeWindow, activeProject);
+      renderStats(metricsData, activeWindow, activeProject);
+    }
+
+    /* ── Init ───────────────────────────────────────────────────── */
+    document.addEventListener('DOMContentLoaded', async () => {
+      const loadingEl = document.getElementById('loading-state');
+      const errorBanner = document.getElementById('error-banner');
+      const errorText   = document.getElementById('error-text');
+      const fetchStatus = document.getElementById('fetch-status');
+      const parseWarn   = document.getElementById('parse-warning');
+      const parseCount  = document.getElementById('parse-warning-count');
+
+      // -- Window toggle buttons
+      document.querySelectorAll('.window-controls button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.window-controls button').forEach(b => {
+            b.setAttribute('aria-pressed', 'false');
+          });
+          btn.setAttribute('aria-pressed', 'true');
+          activeWindow = btn.dataset.window;
+          renderTrend(metricsData, activeWindow, activeProject);
+          renderStats(metricsData, activeWindow, activeProject);
+        });
+      });
+
+      // -- Project select
+      document.getElementById('project-select').addEventListener('change', e => {
+        activeProject = e.target.value;
+        renderProjectList(metricsData, activeProject);
+        renderTrend(metricsData, activeWindow, activeProject);
+        renderStats(metricsData, activeWindow, activeProject);
+        // Does NOT re-render chat panel
+      });
+
+      // -- Load metrics
+      try {
+        await loadMetrics();
+        loadingEl.classList.add('hidden');
+        fetchStatus.textContent = 'Updated ' + new Date().toLocaleTimeString();
+
+        // parse_warnings indicator
+        if (metricsData.parse_warnings && metricsData.parse_warnings > 0) {
+          parseCount.textContent = `${metricsData.parse_warnings} parse warning${metricsData.parse_warnings === 1 ? '' : 's'}`;
+          parseWarn.classList.add('visible');
+        }
+
+        renderAll();
+      } catch (err) {
+        loadingEl.classList.add('hidden');
+        fetchStatus.textContent = 'Load failed';
+        const msg = err.name === 'AbortError'
+          ? 'Request timed out (10 s). Is the dashboard server running?'
+          : `Failed to load metrics: ${err.message}`;
+        errorText.textContent = msg;
+        errorBanner.classList.add('visible');
+      }
+
+      // -- WebSocket chat panel
+      initChat();
+    });
+
+    /* ── Chat / WebSocket ───────────────────────────────────────── */
+    function initChat() {
+      const dot      = document.getElementById('ws-dot');
+      const label    = document.getElementById('ws-label');
+      const messages = document.getElementById('chat-messages');
+      const emptyEl  = document.getElementById('chat-empty');
+
+      const MAX_MESSAGES = 100;
+      const RECONNECT_INITIAL_MS = 1000;
+      const RECONNECT_MAX_MS = 30000;
+      let msgCount = 0;
+      let reconnectDelay = RECONNECT_INITIAL_MS;
+
+      function setStatus(state, text) {
+        dot.className = `ws-dot ${state}`;
+        label.textContent = text;
+      }
+
+      let ws;
+
+      function connect() {
+        setStatus('connecting', 'Connecting…');
+
+        const wsProto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        ws = new WebSocket(`${wsProto}//${location.hostname}:4001`);
+
+        const connectTimeout = setTimeout(() => {
+          if (ws.readyState === WebSocket.CONNECTING) {
+            ws.close();
+            setStatus('error', 'Connection timed out');
+          }
+        }, 5000);
+
+        ws.addEventListener('open', () => {
+          clearTimeout(connectTimeout);
+          setStatus('connected', 'Connected');
+          reconnectDelay = RECONNECT_INITIAL_MS;
+        });
+
+        ws.addEventListener('message', e => {
+          // Remove empty state placeholder
+          if (emptyEl && emptyEl.parentNode === messages) {
+            messages.removeChild(emptyEl);
+          }
+
+          // Pause live region during batch (inserting + pruning)
+          messages.setAttribute('aria-live', 'off');
+
+          // Append message — textContent only (never innerHTML — XSS safe)
+          const msgEl = document.createElement('div');
+          msgEl.className = 'chat-msg';
+
+          const timeEl = document.createElement('span');
+          timeEl.className = 'chat-msg-time';
+          timeEl.textContent = new Date().toLocaleTimeString() + ' ';
+
+          const bodyEl = document.createElement('span');
+          bodyEl.className = 'chat-msg-body';
+          bodyEl.textContent = typeof e.data === 'string' ? e.data : '[binary]';
+
+          msgEl.appendChild(timeEl);
+          msgEl.appendChild(bodyEl);
+          messages.appendChild(msgEl);
+          msgCount++;
+
+          // Prune to MAX_MESSAGES
+          while (msgCount > MAX_MESSAGES) {
+            const first = messages.querySelector('.chat-msg');
+            if (first) { messages.removeChild(first); msgCount--; }
+            else break;
+          }
+
+          // Restore live region — announce new messages to screen readers
+          messages.setAttribute('aria-live', 'polite');
+
+          // Scroll to bottom
+          messages.scrollTop = messages.scrollHeight;
+        });
+
+        ws.addEventListener('close', () => {
+          clearTimeout(connectTimeout);
+          const jitter = Math.round(Math.random() * 1000) - 500;
+          const wait = Math.max(0, reconnectDelay + jitter);
+          setStatus('error', `Disconnected — retrying in ${Math.round(wait / 1000)} s`);
+          setTimeout(connect, wait);
+          reconnectDelay = Math.min(reconnectDelay * 2, RECONNECT_MAX_MS);
+        });
+
+        ws.addEventListener('error', () => {
+          // close event fires after error, retry handled there
+          setStatus('error', 'Connection error');
+        });
+      }
+
+      connect();
+    }
+  </script>
+
+</body>
+</html>

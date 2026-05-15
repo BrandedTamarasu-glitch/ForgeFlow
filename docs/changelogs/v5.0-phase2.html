@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow — V5.0 Phase 2 Changelog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0d0d;
+      --surface:   #141414;
+      --surface-2: #1c1c1c;
+      --border:    #252525;
+      --border-2:  #303030;
+      --text:      #ddd8cc;
+      --text-dim:  #7a7670;
+      --text-faint:#3d3b38;
+      --amber:     #f0a232;
+      --amber-dim: #a06c1e;
+
+      --fc:        #5b9cf6;
+      --warden:     #e05c5c;
+      --lumen:    #7ecba1;
+      --cory:      #b07ef5;
+      --arbiter:     #f0a232;
+      --compass:     #f0c070;
+      --crosscut:  #88a4b8;
+      --debate:    #c084fc;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      line-height: 1.7;
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.028;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(240,162,50,0.03) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .page {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 80px 40px 120px;
+    }
+
+    header { margin-bottom: 64px; }
+
+    .version-tag {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 2.4rem;
+      font-weight: 300;
+      line-height: 1.15;
+      color: var(--text);
+      margin-bottom: 28px;
+    }
+
+    h1 span { color: var(--amber); }
+
+    .header-meta {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .meta-item {
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    .meta-item strong {
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .intro {
+      font-size: 15px;
+      color: var(--text-dim);
+      line-height: 1.8;
+      margin-bottom: 64px;
+      padding: 24px 28px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--amber-dim);
+    }
+
+    .intro em { color: var(--text); font-style: normal; font-weight: 500; }
+
+    .section {
+      margin-bottom: 48px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .agent-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 2px;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-debate  { background: rgba(192,132,252,0.12); color: var(--debate);   border: 1px solid rgba(192,132,252,0.25); }
+    .badge-fc      { background: rgba(91,156,246,0.12); color: var(--fc);      border: 1px solid rgba(91,156,246,0.25); }
+    .badge-warden   { background: rgba(224,92,92,0.12);  color: var(--warden);   border: 1px solid rgba(224,92,92,0.25); }
+    .badge-lumen  { background: rgba(126,203,161,0.12);color: var(--lumen);  border: 1px solid rgba(126,203,161,0.25); }
+    .badge-cory    { background: rgba(176,126,245,0.12);color: var(--cory);    border: 1px solid rgba(176,126,245,0.25); }
+    .badge-arbiter   { background: rgba(240,162,50,0.12); color: var(--arbiter);   border: 1px solid rgba(240,162,50,0.25); }
+    .badge-compass   { background: rgba(240,192,112,0.12);color: var(--compass);   border: 1px solid rgba(240,192,112,0.25); }
+    .badge-cross   { background: rgba(136,164,184,0.10);color: var(--crosscut);border: 1px solid rgba(136,164,184,0.2); }
+
+    .section-role {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-style: italic;
+    }
+
+    ul.changes {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    ul.changes li {
+      position: relative;
+      padding: 14px 0 14px 20px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+
+    ul.changes li:last-child {
+      border-bottom: none;
+    }
+
+    ul.changes li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      top: 15px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--text-faint);
+    }
+
+    ul.changes li strong {
+      font-weight: 500;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    ul.changes li .detail {
+      color: var(--text-dim);
+      font-size: 13.5px;
+    }
+
+    ul.changes li .detail code {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      background: var(--surface-2);
+      padding: 1px 5px;
+      border-radius: 2px;
+    }
+
+    .section-debate ul.changes li:hover { background: rgba(192,132,252,0.04); }
+    .section-arbiter  ul.changes li:hover { background: rgba(240,162,50,0.04); }
+    .section-cross  ul.changes li:hover { background: rgba(136,164,184,0.04); }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--border-2), transparent);
+      margin: 64px 0;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding-top: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-left {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.06em;
+    }
+
+    .footer-right {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+
+    @media (max-width: 600px) {
+      .page { padding: 48px 24px 80px; }
+      h1 { font-size: 1.8rem; }
+      .header-meta { flex-direction: column; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="version-tag">Forgeflow &mdash; Release Notes</div>
+    <h1>What&rsquo;s new in <span>V5.0 Phase 2</span></h1>
+    <div class="header-meta">
+      <div class="meta-item"><strong>Date</strong> &nbsp; 20 April 2026</div>
+      <div class="meta-item"><strong>Scope</strong> &nbsp; Theme A &mdash; CI + headless Forgeflow. GitHub Actions workflow, bash wrapper, verdict JSON schema, <code>--ci</code> flags on <code>/review</code> and <code>/review-auto</code>, per-repo budget config, wiring guide.</div>
+      <div class="meta-item"><strong>Files updated</strong> &nbsp; 7 (2 new commands, 1 new schema, 1 new script, 1 new workflow, 1 new config, 2 modified commands). 1603 insertions.</div>
+    </div>
+  </header>
+
+  <div class="intro">
+    Phase 1 taught the Forgeflow team to learn from itself. Phase 2 lets it run on every PR without a human watching. A GitHub Actions workflow invokes <code>/review --ci</code> headlessly via <code>claude -p</code>, a bash wrapper parses a structured verdict JSON, posts a PR comment with findings tagged by severity and reviewer, and optionally triggers <code>/review-auto</code> to apply safe fixes back to the PR branch. Cost-budget gate runs before every review; routing cap keeps CI aggressive on cost while preserving deep-mode escalation for security-sensitive diffs. <em>The guiding rule: the Forgeflow team becomes team infrastructure by existing without being invoked.</em>
+  </div>
+
+  <!-- Theme A: CI + Headless Forgeflow -->
+  <div class="section section-arbiter">
+    <div class="section-header">
+      <span class="agent-badge badge-arbiter">Theme A &mdash; CI + Headless Forgeflow</span>
+      <span class="section-role">GitHub Actions workflow, bash wrapper, verdict JSON schema</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong><code>/review --ci</code> &mdash; headless mode with structured verdict</strong>
+        <span class="detail">New <code>--ci</code> flag (auto-enabled when <code>CLAUDE_CODE_HEADLESS=1</code>) suppresses the usual markdown narrative and emits a single <code>&lt;forgeflow-verdict-json&gt;...&lt;/forgeflow-verdict-json&gt;</code> block per <code>docs/forgeflow-json-schema.md</code> v1. Step 0.4 CI_MODE detection. Step 0.5d.1 CI routing cap downgrades <code>full-mode</code> to <code>thin-mode</code> for cost savings but PRESERVES <code>deep-mode</code> for auth / migration / crypto paths &mdash; security matters even in CI. Step 1 + 0.5a fork on <code>GITHUB_BASE_REF</code> or <code>--pr</code> to diff against <code>origin/&lt;base&gt;..HEAD</code> because CI checkouts produce a clean working tree (the original Phase 2 draft had this wrong; the Forgeflow team caught it on round 1). Step 7.5 emits JSON with authoritative findings parsing rules (section-to-tier mapping, bullet extraction, stable IDs like <code>B1</code>, <code>M1</code>, parse warnings channel). Exit codes aligned to schema: APPROVE/CONDITIONAL/SKIPPED&rarr;0, REVISE/BLOCK&rarr;1, ABORTED&rarr;2.</span>
+      </li>
+      <li>
+        <strong><code>/review-auto --ci --from-verdict-json &lt;path&gt;</code> &mdash; CI-mode auto-fix with verdict reuse</strong>
+        <span class="detail">Skips the initial <code>/review</code> call when <code>--from-verdict-json</code> supplies a pre-computed verdict, saving the cost of two reviews per auto-fix cycle. Step 3 CI carve-out auto-proceeds when no finding has an UNSAFE class tag; aborts otherwise. Step 6.2 pushes commits back using <code>${GITHUB_HEAD_REF:-$(git branch --show-current)}</code> &mdash; falls back gracefully when the workflow checked out a branch ref instead of a SHA. Step 7.5 emits post-fix verdict JSON with auto-fix augmentation keys: <code>auto_fix_applied</code>, <code>auto_fix_rounds</code>, <code>auto_fix_items_applied</code>, <code>auto_fix_commits</code>, <code>auto_fix_status</code>.</span>
+      </li>
+      <li>
+        <strong><code>docs/forgeflow-json-schema.md</code> &mdash; v1 machine-parseable verdict schema</strong>
+        <span class="detail">Canonical contract for the <code>&lt;forgeflow-verdict-json&gt;</code> block. Top-level: <code>verdict</code>, <code>summary</code>, <code>routing_mode</code>, <code>routing_override</code>, <code>arbiter</code>, <code>compass</code>, <code>findings</code>, <code>overturned_findings</code>, <code>chunking</code>, <code>files_reviewed</code>, <code>metadata</code>, <code>reason</code>. SKIPPED / ABORTED envelope shape fully specified with fixed reason enum (<code>classifier-skip-mode</code>, <code>preflight-typecheck-failed</code>, <code>budget-exceeded</code>, and more). Findings carry stable IDs, nullable class tags, severity tiers (blocker / must-fix / recommended / nits / boyscout). Consumer contract explicit: reject unknown <code>schema_version</code>, preserve IDs, never mutate the emitted object. <code>metadata.parse_warnings</code> and <code>metadata.push_error</code> always emitted (never absent) so consumers can rely on presence. Schema evolution policy: additive changes do not bump version; renames or removals do.</span>
+      </li>
+      <li>
+        <strong><code>scripts/forgeflow-pr-review.sh</code> &mdash; bash wrapper (600 lines)</strong>
+        <span class="detail">Validates config (enum / bool / number) on load. Cap-aware cost pre-estimate (thin $0.15, full $0.60, deep $0.90, 4x multiplier above 30 files). Claude invocation uses <code>set +e</code> / <code>set -e</code> block with separate <code>mktemp</code> stdout + stderr captures &mdash; avoids the process-substitution race that was the original design. Python regex extraction of the verdict block (robust across single-line and multi-line sentinels). Five-pattern sed redaction for <code>sk-ant-*</code>, <code>Bearer *</code>, <code>ghp_*</code>, <code>gho_*</code>, <code>ghs_*</code> on every stderr surface that reaches PR comments. PR comment renders verdict with icon + heading + severity-tier findings tables; truncates <code>detail</code> at 600 chars with named-artifact breadcrumb; escapes <code>&lt;details&gt;</code> / <code>&lt;/details&gt;</code> tokens in user-supplied finding text to prevent markdown-collapse escape. Follow-up auto-fix comment links back to primary comment via captured URL (strict regex anchored to <code>github.com#issuecomment-&lt;digits&gt;</code>). Schema-version mismatch writes a machine-readable failure JSON to the artifact AND posts a PR comment with expected/actual versions + migration doc anchor.</span>
+      </li>
+      <li>
+        <strong><code>.github/workflows/forgeflow.yml</code> &mdash; Actions workflow</strong>
+        <span class="detail">Triggers on <code>pull_request</code> opened / synchronize / reopened. Concurrency group per PR number with <code>cancel-in-progress: true</code> &mdash; rapid pushes cancel stale runs. <strong>Skip-check step runs first</strong> and sets an output if the HEAD commit subject matches <code>chore(auto-fix)*</code> &mdash; breaks the loop where <code>/review-auto</code> pushes would trigger new workflow runs indefinitely. All downstream steps gate on the skip output. Checkout uses <code>ref: github.event.pull_request.head.ref</code> (branch name, not SHA) so the runner is on a non-detached HEAD and auto-fix pushes succeed. Plugin install via <code>claude plugin install Forgeflow</code> with repo-clone fallback. Permissions: <code>contents: write</code> + <code>pull-requests: write</code>, documented with a least-privilege path for repos on <code>review-only</code> mode to tighten to <code>contents: read</code>.</span>
+      </li>
+      <li>
+        <strong><code>.github/forgeflow-budget.yml</code> &mdash; per-repo CI config</strong>
+        <span class="detail">Five keys: <code>max_cost_per_pr_usd</code>, <code>mode</code>, <code>routing_cap</code>, <code>fail_action_on_revise</code>, <code>comment_on_skip</code>. Conservative defaults (thin cap, review-only, $1.00 ceiling, fail on REVISE, no comment on skip). Inline comments explain the <code>thin is special</code> semantics: <code>thin</code> activates the CI cap that downgrades full but preserves deep; <code>full</code> / <code>deep</code> / <code>skip</code> are force-modes that disable deep-mode escalation. Wrapper rejects any value outside the enum / bool / positive-number shape with a clear error message.</span>
+      </li>
+      <li>
+        <strong><code>commands/ci-wrapper.md</code> &mdash; wiring guide</strong>
+        <span class="detail">Two-sided install model: target repo commits the 4 infrastructure files; runner installs the Forgeflow team into <code>~/.claude/</code> on every job. Four-step one-time repo setup (curl + gh secret set + budget edit + commit + PR). Four-week rollout sequence (shadow &rarr; gate &rarr; full-cap &rarr; review-and-fix) with concrete advancement criteria. Cost table per routing mode with and without chunking. PR comment anatomy. Troubleshooting section covers the likely failure modes: plugin marketplace unreachable, schema version mismatch, budget exceeded, fork PR permission downgrade. Auto-fix safe-class gate mechanism documented with the HARD-UNSAFE class list (<code>sql-injection, auth, secret, token, jwt, permission, rbac, crypto, password, csrf, xss, ssrf</code>). Local-testing note using <code>act</code>.</span>
+      </li>
+      <li>
+        <strong>Decision-gate metric &mdash; 3-criterion rollout exit</strong>
+        <span class="detail">Before advancing past shadow mode to gate mode, the Forgeflow team must satisfy ALL three criteria across 5 consecutive PRs: (1) maintainer agrees with Arbiter&rsquo;s verdict within &plusmn;1 tier on 5/5, (2) median <code>cost_estimate_usd</code> &le; 80% of <code>max_cost_per_pr_usd</code>, (3) zero silent failures (no run exits 0 while actually crashed). If any criterion fails on any of the 5, restart the window &mdash; the next PR becomes PR 1 of a fresh window, no averaging, no cherry-picking. Same three criteria apply across the next 10 PRs for gate &rarr; full-cap advancement.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Forgeflow self-review meta -->
+  <div class="section section-cross">
+    <div class="section-header">
+      <span class="agent-badge badge-cross">Forgeflow self-review</span>
+      <span class="section-role">3 rounds to APPROVE + CONFIRM</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>Round 1: 15 genuine findings across all four reviewers</strong>
+        <span class="detail">Smith REVISE: <code>set -e</code> + process-substitution race, schema example drift, apt-get precedence bug, plugin install fallback untested, auto-fix loop trigger. Warden REVISE: path-predictable <code>/tmp</code> files, unconditional <code>contents: write</code> permission, unredacted stderr in PR comments. Lumen REVISE: all seven connectivity blockers &mdash; classifier file resolution broken in CI (every PR would have skipped), detached-HEAD push failure, <code>/review-auto</code> verdict JSON never consumed, cost pre-estimate ignored routing cap, 65KB comment cap, Compass CI-skipped invisible, <code>&lt;/details&gt;</code> injection from finding text. Atlas APPROVE with 3 carry-forward questions for Arbiter.</span>
+      </li>
+      <li>
+        <strong>Round 2: 1 regression caught</strong>
+        <span class="detail">An over-broad <code>replace_all</code> on <code>${RAW_OUT}.stderr</code> accidentally matched the <code>STDERR_OUT="${RAW_OUT}.stderr"</code> definition line itself, producing <code>STDERR_OUT="${STDERR_OUT}"</code> &mdash; an unset-variable crash under <code>set -u</code>. Both Smith and Warden flagged the same <code>line 203</code> anchor independently. One-line fix: <code>STDERR_OUT=$(mktemp)</code>.</span>
+      </li>
+      <li>
+        <strong>Round 3: clean across all four reviewers</strong>
+        <span class="detail">Smith APPROVE (Quality A, Craft Solid). Warden APPROVE (Security/Efficiency/Reuse PASS). Lumen APPROVE (7/7 blockers resolved with file:line evidence). Atlas APPROVE (plan coverage complete). Arbiter synthesized APPROVE. Compass CONFIRM.</span>
+      </li>
+      <li>
+        <strong>V5.1 backlog cleared into this release</strong>
+        <span class="detail">Arbiter and Compass flagged 4 carry-forward items as Recommended (not blockers). User requested a final iteration loop to clear them before commit: (1) decision-gate metric locked in <code>ci-wrapper.md</code>, (2) schema-skew wrapper emits machine-readable failure JSON + PR comment with expected/actual versions and migration doc anchor, (3) stderr redaction applied to <code>/review-auto</code> invocation (defense-in-depth), (4) follow-up auto-fix comment links to primary comment via captured URL. Warden + Lumen re-reviewed, both APPROVE. Lumen caught two polish items (3-space indent that would render as a detached code block in GitHub; dangling &ldquo;prior Forgeflow comment&rdquo; text on URL-capture failure) &mdash; both resolved.</span>
+      </li>
+      <li>
+        <strong>Meta observation: forgeflow-self-review on meta-work IS worthwhile when the meta-work modifies the Forgeflow team&rsquo;s execution path</strong>
+        <span class="detail">The user&rsquo;s standing preference (<code>feedback_skip_forgeflow_meta.md</code>) was that forgeflow-self-review on meta-work produces no signal. For V5.0 Phase 2, the Forgeflow team produced 15 real findings in round 1 and caught a regression introduced in round 2. Arbiter proposed a documented exception: forgeflow-self-review is worthwhile when meta-work modifies the Forgeflow team&rsquo;s own execution path (CI runner, wrapper, agent dispatch) because bugs there cascade across every future review. This release captures that exception in the Forgeflow team&rsquo;s institutional memory.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- What's next -->
+  <div class="section section-compass">
+    <div class="section-header">
+      <span class="agent-badge badge-compass">Still pending &mdash; V5.0 Phases 3-4</span>
+      <span class="section-role">Team shared state, dashboard MVP</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>Phase 3 &mdash; Theme D (team shared state)</strong>
+        <span class="detail"><code>/forgeflow-sync</code> synchronizes team state (learnings, patterns, codebase map, review history) across a configured remote &mdash; git repo, S3 bucket, or HTTP endpoint. Per-user state (Atlas&rsquo;s memory of each developer&rsquo;s style) stays local; shared state syncs per-push or on a schedule. Three-way merge for pattern files. <code>.forgeflow/config.json</code> declares the sync remote + strategy. <code>forgeflow-sync --init</code> migrates single-user installs without data loss. Auth uses existing git credentials for git-backed sync.</span>
+      </li>
+      <li>
+        <strong>Phase 4 &mdash; Dashboard MVP (vanilla JS)</strong>
+        <span class="detail">Local dev server extending agent-chat at <code>:4001</code>, reusing existing WebSocket lifecycle events. Static export via <code>/forgeflow-dashboard --export</code>. Four sections: multi-project home, chronological timeline (Chart.js), per-reviewer performance stats, pattern library browser with citation graph. Vanilla JS over Svelte (zero build step, matches <code>/ship</code> and changelog HTML patterns).</span>
+      </li>
+      <li>
+        <strong>Rollout criterion for downstream repos</strong>
+        <span class="detail">Phase 2 does NOT auto-enable on any downstream repo. Adoption requires the 3-criterion decision gate to pass across 5 consecutive PRs on this repo (ForgeflowAI/Forgeflow) first. Real-world signal before real-world rollout.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:64px;padding:14px 20px;background:#141414;border:1px solid #252525;">
+    <a href="./v5.0-phase1.html" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#f0a232;text-decoration:none;">&larr; V5.0 Phase 1</a>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#3d3b38;letter-spacing:0.1em;">V5.0 PHASE 2</span>
+    <a href="./v5.0-phase3.html" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#f0a232;text-decoration:none;">V5.0 Phase 3 &rarr;</a>
+  </div>
+
+  <footer>
+    <div class="footer-left">Forgeflow &mdash; ForgeflowAI/Forgeflow &mdash; V5.0 Phase 2</div>
+    <div class="footer-right">20 Apr 2026</div>
+  </footer>
+
+</div>
+</body>
+</html>

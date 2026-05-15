@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow — V5.0 Phase 1 Changelog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0d0d;
+      --surface:   #141414;
+      --surface-2: #1c1c1c;
+      --border:    #252525;
+      --border-2:  #303030;
+      --text:      #ddd8cc;
+      --text-dim:  #7a7670;
+      --text-faint:#3d3b38;
+      --amber:     #f0a232;
+      --amber-dim: #a06c1e;
+
+      --fc:        #5b9cf6;
+      --warden:     #e05c5c;
+      --lumen:    #7ecba1;
+      --cory:      #b07ef5;
+      --arbiter:     #f0a232;
+      --compass:     #f0c070;
+      --crosscut:  #88a4b8;
+      --debate:    #c084fc;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      line-height: 1.7;
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.028;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(240,162,50,0.03) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .page {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 80px 40px 120px;
+    }
+
+    header { margin-bottom: 64px; }
+
+    .version-tag {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 2.4rem;
+      font-weight: 300;
+      line-height: 1.15;
+      color: var(--text);
+      margin-bottom: 28px;
+    }
+
+    h1 span { color: var(--amber); }
+
+    .header-meta {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .meta-item {
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    .meta-item strong {
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .intro {
+      font-size: 15px;
+      color: var(--text-dim);
+      line-height: 1.8;
+      margin-bottom: 64px;
+      padding: 24px 28px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--amber-dim);
+    }
+
+    .intro em { color: var(--text); font-style: normal; font-weight: 500; }
+
+    .section {
+      margin-bottom: 48px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .agent-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 2px;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-debate  { background: rgba(192,132,252,0.12); color: var(--debate);   border: 1px solid rgba(192,132,252,0.25); }
+    .badge-fc      { background: rgba(91,156,246,0.12); color: var(--fc);      border: 1px solid rgba(91,156,246,0.25); }
+    .badge-warden   { background: rgba(224,92,92,0.12);  color: var(--warden);   border: 1px solid rgba(224,92,92,0.25); }
+    .badge-lumen  { background: rgba(126,203,161,0.12);color: var(--lumen);  border: 1px solid rgba(126,203,161,0.25); }
+    .badge-cory    { background: rgba(176,126,245,0.12);color: var(--cory);    border: 1px solid rgba(176,126,245,0.25); }
+    .badge-arbiter   { background: rgba(240,162,50,0.12); color: var(--arbiter);   border: 1px solid rgba(240,162,50,0.25); }
+    .badge-compass   { background: rgba(240,192,112,0.12);color: var(--compass);   border: 1px solid rgba(240,192,112,0.25); }
+    .badge-cross   { background: rgba(136,164,184,0.10);color: var(--crosscut);border: 1px solid rgba(136,164,184,0.2); }
+
+    .section-role {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-style: italic;
+    }
+
+    ul.changes {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    ul.changes li {
+      position: relative;
+      padding: 14px 0 14px 20px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+
+    ul.changes li:last-child {
+      border-bottom: none;
+    }
+
+    ul.changes li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      top: 15px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--text-faint);
+    }
+
+    ul.changes li strong {
+      font-weight: 500;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    ul.changes li .detail {
+      color: var(--text-dim);
+      font-size: 13.5px;
+    }
+
+    ul.changes li .detail code {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      background: var(--surface-2);
+      padding: 1px 5px;
+      border-radius: 2px;
+    }
+
+    .section-debate ul.changes li:hover { background: rgba(192,132,252,0.04); }
+    .section-arbiter  ul.changes li:hover { background: rgba(240,162,50,0.04); }
+    .section-cross  ul.changes li:hover { background: rgba(136,164,184,0.04); }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--border-2), transparent);
+      margin: 64px 0;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding-top: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-left {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.06em;
+    }
+
+    .footer-right {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+
+    @media (max-width: 600px) {
+      .page { padding: 48px 24px 80px; }
+      h1 { font-size: 1.8rem; }
+      .header-meta { flex-direction: column; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="version-tag">Forgeflow &mdash; Release Notes</div>
+    <h1>What&rsquo;s new in <span>V5.0 Phase 1</span></h1>
+    <div class="header-meta">
+      <div class="meta-item"><strong>Date</strong> &nbsp; 18 April 2026</div>
+      <div class="meta-item"><strong>Scope</strong> &nbsp; Self-improving Forgeflow (Theme B) + diff classifier, chunking, incremental review (Theme C)</div>
+      <div class="meta-item"><strong>Files updated</strong> &nbsp; 3 new commands (forgeflow-learnings, forgeflow-drift, forgeflow-report), forgeflow-telemetry.js extended for finding-overturned events, arbiter-review.md adds Overturned Findings tag section, review.md adds Step 0.5 / 1.5 / 3.6, fleet.md notes inheritance</div>
+    </div>
+  </header>
+
+  <div class="intro">
+    V5.0 moves the Forgeflow team from a personal tool to team infrastructure. Four themes total: self-improving (Theme B), pre-filter + chunking (Theme C), CI headless (Theme A), team shared state (Theme D), plus a vanilla-JS dashboard in Phase 4. This release ships <em>Phase 1</em> &mdash; Themes B and C &mdash; laying the foundations before CI deployment and team scaling. <em>The guiding rule: before distributing the Forgeflow team to a team, make sure it can teach itself and scale to large diffs without degrading.</em>
+  </div>
+
+  <!-- Theme B: Self-Improving Forgeflow -->
+  <div class="section section-cory">
+    <div class="section-header">
+      <span class="agent-badge badge-cory">Theme B &mdash; Self-Improving Forgeflow</span>
+      <span class="section-role">Auto-promoted patterns, drift detection, false-positive tracking</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong><code>/forgeflow-learnings</code> &mdash; cross-project pattern promotion</strong>
+        <span class="detail">Reads <code>.forgeflow/&lt;project&gt;/learnings.jsonl</code> across the filesystem, clusters findings by keyword affinity to existing canonical patterns in <code>forgeflow-patterns/recurring-blockers.md</code>, and auto-applies new project citations to the existing <strong>Seen in:</strong> blocks when a pattern appears in 2+ projects with 3+ occurrences. Genuinely new clusters surface as <code>## Candidates for promotion</code> with citation lists and suggested classification &mdash; never auto-written, always human-curated. <code>--dry-run</code> previews every change. <code>--json</code> output for the future dashboard. Logs each run to <code>forgeflow-patterns/.learnings-log.jsonl</code> so <code>/forgeflow-report</code> can show last-run without re-scanning.</span>
+      </li>
+      <li>
+        <strong><code>/forgeflow-drift</code> &mdash; agent vs canonical reference drift</strong>
+        <span class="detail">Compares each agent file against its canonical reference in <code>agents/_shared/</code> &mdash; 4 canonicals (smith-craft, warden-security-intelligence, arbiter-intelligence, lumen-design-principles) mapped to 14 consuming agents. Per-section status: <code>SYNCED</code> (verbatim), <code>MODIFIED</code> (adapted, similarity above threshold), <code>DRIFTED</code> (below threshold), <code>MISSING</code> (heading absent). Reports actionable drift with specific fix instructions (<em>&ldquo;copy X section from Y into Z&rdquo;</em>). Exit code 1 on actionable drift so CI can gate on it. Scoring is line-set Jaccard &mdash; fast, transparent, false-positive-tolerant (adjust threshold via <code>--threshold N</code>).</span>
+      </li>
+      <li>
+        <strong><code>/forgeflow-report</code> &mdash; monthly executive summary</strong>
+        <span class="detail">Single report combining five signals: invocations &amp; verdicts (from <code>forgeflow-metrics.jsonl</code>), auto-fix effectiveness, false-positive leaders (from finding-overturned events &mdash; see below), pattern promotions (from <code>/forgeflow-learnings</code> log), and drift status (invokes <code>/forgeflow-drift --json</code> unless <code>--no-drift</code>). Auto-derives <em>&ldquo;This-month priorities&rdquo;</em> from the data &mdash; not a placeholder. Trend-vs-prior-period column activates after the second run via <code>.report-log.jsonl</code> self-history.</span>
+      </li>
+      <li>
+        <strong>False-positive tracking &mdash; Arbiter tag + telemetry capture</strong>
+        <span class="detail"><code>agents/arbiter-review.md</code> adds a new <code>## Overturned Findings (telemetry)</code> section requiring exact-format tag lines (<code>- REVIEWER: &lt;agent&gt; | CLASS: &lt;class&gt; | FINDING: &lt;brief&gt;</code>) when Arbiter dismisses a reviewer's finding as a false positive. <code>hooks/forgeflow-telemetry.js</code> captures these as <code>finding-overturned</code> events. <code>/forgeflow-report</code> aggregates: a reviewer getting overturned on the same class 3+ times flags that agent's prompt for refinement &mdash; precise surgical target instead of guessing which pre-flight gate needs tightening.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Theme C: Scale -->
+  <div class="section section-arbiter">
+    <div class="section-header">
+      <span class="agent-badge badge-arbiter">Theme C &mdash; Pre-Filter + Chunking</span>
+      <span class="section-role">Diff classifier, per-chunk review, per-commit incremental</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong><code>/review</code> Step 0.5 &mdash; diff classifier with four modes</strong>
+        <span class="detail">Routes every diff to one of four modes before spawning reviewers. <strong>deep-mode</strong>: migrations, auth, crypto, RBAC, JWT code paths, or commits mentioning security &mdash; spawns full Forgeflow plus dedicated Warden audit pass. <strong>skip-mode</strong>: docs-only, under 200 lines, no code surface &mdash; exits cleanly with no Forgeflow spawn. <strong>thin-mode</strong>: test-only, lockfile bumps, or 2 small files with no frontend &mdash; Smith + Warden only. <strong>full-mode</strong>: default. <code>--mode skip|thin|full|deep</code> overrides the classifier. In CI (<code>CLAUDE_CODE_HEADLESS=1</code>), classification can delegate to <code>claude-haiku-4-5</code> with a 10-token max.</span>
+      </li>
+      <li>
+        <strong><code>/review</code> Step 3.6 &mdash; chunking for diffs over 30 files</strong>
+        <span class="detail">Large diffs no longer exhaust orchestrator context. At <code>FILE_COUNT &gt; 30</code>, the review splits into chunks. <strong>Monorepo-aware</strong>: detects <code>pnpm-workspace.yaml</code>, <code>lerna.json</code>, <code>turbo.json</code>, <code>nx.json</code>, <code>rush.json</code> and groups files by workspace package. <strong>Fallback</strong>: first-level path segment. <strong>Rebalance</strong>: re-split any chunk that still exceeds 30. <strong>Cap</strong>: maximum 8 chunks, merge smallest if over. Each chunk gets its own <code>&lt;shared-files&gt;</code> block and its own roster (re-classified via Step 0.5). Chunks iterate sequentially; within each chunk, reviewers run in parallel. Arbiter synthesizes with a two-pass protocol: per-chunk verdicts, then cross-chunk pattern detection (systemic issues across 3+ chunks auto-promote to BLOCKER).</span>
+      </li>
+      <li>
+        <strong><code>/review --incremental</code> &mdash; per-commit review with carry-forward</strong>
+        <span class="detail">When the argument is a commit range (<code>HEAD~3..HEAD</code> or <code>main..HEAD</code>), each commit gets its own review pass with a <code>&lt;prior-findings&gt;</code> block summarizing earlier-commit findings. Reviewers look for regressions (current commit undoing an earlier fix), repeated patterns (same class of mistake across commits), and cross-commit incoherence (conflicting architectural decisions). Aggregate verdict takes the weakest per-commit verdict. Compass's final review runs once at end-state, not per-commit. User is prompted if range exceeds 10 commits.</span>
+      </li>
+      <li>
+        <strong><code>/fleet</code> &mdash; automatic chunking inheritance</strong>
+        <span class="detail">Fleet's merged-range review (<code>/review &lt;base&gt;..HEAD</code> at Step 6.5b) automatically picks up Step 0.5 classification and Step 3.6 chunking. No fleet-side changes needed &mdash; a 50-file fleet merge now chunks cleanly instead of overwhelming the orchestrator.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Decisions -->
+  <div class="section section-cross">
+    <div class="section-header">
+      <span class="agent-badge badge-cross">Decisions locked</span>
+      <span class="section-role">Research settled before implementation</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>Output format: markdown + <code>--json</code> flag</strong>
+        <span class="detail">Mirrors the <code>/forgeflow-metrics</code> pattern shipped in V4.3. Primary interface is human-readable markdown; <code>--json</code> unlocks CI integration (Phase 2) and dashboard (Phase 4) without forcing JSON as the default.</span>
+      </li>
+      <li>
+        <strong>Chunking threshold: 30 files (fixed, not configurable)</strong>
+        <span class="detail">Sits above the existing 20-file advisory threshold in Step 3.5 &mdash; creates a two-tier system: advisory at 20, automatic chunking at 30. One canonical default rather than per-project configuration &mdash; reduces surface area and matches the Forgeflow team's &ldquo;sensible default, escape hatch available&rdquo; design pattern. <code>--mode</code> is the escape hatch when the heuristic is wrong.</span>
+      </li>
+      <li>
+        <strong>Classifier model: <code>claude-haiku-4-5</code></strong>
+        <span class="detail">Verified current via Anthropic docs on 2026-04-18. 200k context, $1 / $5 per MTok, ideal for fast pre-filter routing. Interactive runs use orchestrator judgment (cheaper than a Haiku round-trip for a user already in session). CI runs delegate to Haiku as the cost-aware path.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Gate -->
+  <div class="section section-compass">
+    <div class="section-header">
+      <span class="agent-badge badge-compass">Phase 1 decision gate</span>
+      <span class="section-role">PASS</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>Theme B promotes patterns on real telemetry</strong>
+        <span class="detail">Spot-check across campaign-management (303 learnings), llama.cpp (54), and SubAgents (173) projects. Keyword clusters matched cleanly: Type Safety at 72 hits in 2 projects, Null-Safety at 107 hits in 3 projects, Unimplemented at 23 hits in 3 projects. All three canonical patterns are correctly identified by the clustering heuristic from real labeled data.</span>
+      </li>
+      <li>
+        <strong>Theme C classifier routes 10 of 10 sample diffs correctly</strong>
+        <span class="detail">Walk-through scenarios: README-only edit (skip), lockfile bump (thin), mixed test + component (full), migration SQL (deep), auth middleware (deep), small refactor (thin), e2e test (thin), 45-file multi-workspace (full + chunking), JWT lib (deep), 250-line changelog (full &mdash; conservative but not wrong). All routed per Step 0.5b rules without a miscategorization.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Remaining V5.0 roadmap -->
+  <div class="section section-lumen">
+    <div class="section-header">
+      <span class="agent-badge badge-lumen">Still pending &mdash; V5.0 Phases 2-4</span>
+      <span class="section-role">CI headless, team shared state, dashboard</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>Phase 2 &mdash; Theme A (CI + headless)</strong>
+        <span class="detail">GitHub Actions workflow triggering on PR open/update, <code>claude -p</code> headless wrapper, verdict JSON schema, cost-budget gate that invokes Step 0.5 pre-filter and escalates for approval past threshold. Two modes: <code>review-only</code> (default, conservative &mdash; posts verdict comment) and <code>review-and-fix</code> (opt-in &mdash; runs <code>/review-auto</code>, commits as <code>chore(auto-fix)</code>). Depends on Theme C chunking shipped here. Decision gate: 5 consecutive PRs on this repo with sensible verdicts before proceeding.</span>
+      </li>
+      <li>
+        <strong>Phase 3 &mdash; Theme D (team shared state)</strong>
+        <span class="detail">Confirmed IN for V5.0. <code>/forgeflow-sync</code> synchronizes team state (learnings.jsonl, patterns.md, codebase-map.md) across configured remote (git, S3, or HTTP). Per-user state (Atlas's memory of each developer's style) stays local. Three-way merge for patterns. <code>.forgeflow/config.json</code> declares sync remote + strategy. <code>forgeflow-sync --init</code> migrates single-user installs without data loss.</span>
+      </li>
+      <li>
+        <strong>Phase 4 &mdash; Dashboard MVP (vanilla JS)</strong>
+        <span class="detail">Local dev server extending agent-chat at :4001, reusing existing WebSocket lifecycle events. Static export via <code>/forgeflow-dashboard --export</code>. Sections: multi-project home, chronological timeline (Chart.js), per-reviewer performance stats, pattern library browser with citation graph. Vanilla JS confirmed over Svelte &mdash; zero build step, matches <code>/ship</code> and changelog HTML patterns.</span>
+      </li>
+      <li>
+        <strong>Breaking changes planned at V5.0 release cut</strong>
+        <span class="detail">Plugin-only install (deprecate curl). Command namespace consolidated to <code>/forgeflow-*</code> prefix (rename <code>/update-forgeflow</code> to <code>/forgeflow-update</code>). New <code>forgeflow</code> top-level key in <code>~/.claude/settings.json</code>. One-time <code>forgeflow-sync --migrate</code> for legacy <code>.forgeflow/</code> format if Theme D ships &mdash; back-compat shim for one version, drop in V5.1.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:64px;padding:14px 20px;background:#141414;border:1px solid #252525;">
+    <a href="./v4.3.html" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#f0a232;text-decoration:none;">&larr; V4.3</a>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#3d3b38;letter-spacing:0.1em;">V5.0 PHASE 1</span>
+    <a href="./v5.0-phase2.html" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#f0a232;text-decoration:none;">V5.0 Phase 2 &rarr;</a>
+  </div>
+
+  <footer>
+    <div class="footer-left">Forgeflow &mdash; ForgeflowAI/Forgeflow &mdash; V5.0 Phase 1</div>
+    <div class="footer-right">18 Apr 2026</div>
+  </footer>
+
+</div>
+</body>
+</html>

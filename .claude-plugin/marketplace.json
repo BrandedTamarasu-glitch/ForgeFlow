@@ -1,0 +1,19 @@
+{
+  "name": "ForgeflowAI",
+  "description": "Forgeflow — 6-agent development and review system for Claude Code. Full lifecycle from discuss through ship plus V4.2 extensions (handoff, review-auto, fleet, ui-iterate, sync-upstream, forgeflow-health, forgeflow-metrics).",
+  "owner": {
+    "name": "ForgeflowAI",
+    "url": "https://github.com/ForgeflowAI"
+  },
+  "plugins": [
+    {
+      "name": "Forgeflow",
+      "description": "The full Forgeflow — agents, commands, hooks, project-rules, and cross-project pattern memory.",
+      "version": "4.2.0",
+      "source": {
+        "source": "github",
+        "repo": "ForgeflowAI/Forgeflow"
+      }
+    }
+  ]
+}

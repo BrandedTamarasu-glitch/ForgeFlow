@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow — V3.9 Changelog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0d0d;
+      --surface:   #141414;
+      --surface-2: #1c1c1c;
+      --border:    #252525;
+      --border-2:  #303030;
+      --text:      #ddd8cc;
+      --text-dim:  #7a7670;
+      --text-faint:#3d3b38;
+      --amber:     #f0a232;
+      --amber-dim: #a06c1e;
+
+      --fc:        #5b9cf6;
+      --warden:     #e05c5c;
+      --lumen:    #7ecba1;
+      --cory:      #b07ef5;
+      --arbiter:     #f0a232;
+      --compass:     #f0c070;
+      --crosscut:  #88a4b8;
+      --debate:    #c084fc;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      line-height: 1.7;
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.028;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(240,162,50,0.03) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .page {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 80px 40px 120px;
+    }
+
+    header { margin-bottom: 64px; }
+
+    .version-tag {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 2.4rem;
+      font-weight: 300;
+      line-height: 1.15;
+      color: var(--text);
+      margin-bottom: 28px;
+    }
+
+    h1 span { color: var(--amber); }
+
+    .header-meta {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .meta-item {
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    .meta-item strong {
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .intro {
+      font-size: 15px;
+      color: var(--text-dim);
+      line-height: 1.8;
+      margin-bottom: 64px;
+      padding: 24px 28px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--amber-dim);
+    }
+
+    .intro em { color: var(--text); font-style: normal; font-weight: 500; }
+
+    .section {
+      margin-bottom: 48px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .agent-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 2px;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-debate  { background: rgba(192,132,252,0.12); color: var(--debate);   border: 1px solid rgba(192,132,252,0.25); }
+    .badge-fc      { background: rgba(91,156,246,0.12); color: var(--fc);      border: 1px solid rgba(91,156,246,0.25); }
+    .badge-warden   { background: rgba(224,92,92,0.12);  color: var(--warden);   border: 1px solid rgba(224,92,92,0.25); }
+    .badge-lumen  { background: rgba(126,203,161,0.12);color: var(--lumen);  border: 1px solid rgba(126,203,161,0.25); }
+    .badge-cory    { background: rgba(176,126,245,0.12);color: var(--cory);    border: 1px solid rgba(176,126,245,0.25); }
+    .badge-arbiter   { background: rgba(240,162,50,0.12); color: var(--arbiter);   border: 1px solid rgba(240,162,50,0.25); }
+    .badge-compass   { background: rgba(240,192,112,0.12);color: var(--compass);   border: 1px solid rgba(240,192,112,0.25); }
+    .badge-cross   { background: rgba(136,164,184,0.10);color: var(--crosscut);border: 1px solid rgba(136,164,184,0.2); }
+
+    .section-role {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-style: italic;
+    }
+
+    ul.changes {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    ul.changes li {
+      position: relative;
+      padding: 14px 0 14px 20px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+
+    ul.changes li:last-child {
+      border-bottom: none;
+    }
+
+    ul.changes li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      top: 15px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--text-faint);
+    }
+
+    ul.changes li strong {
+      font-weight: 500;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    ul.changes li .detail {
+      color: var(--text-dim);
+      font-size: 13.5px;
+    }
+
+    ul.changes li .detail code {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      background: var(--surface-2);
+      padding: 1px 5px;
+      border-radius: 2px;
+    }
+
+    .section-warden  ul.changes li:hover { background: rgba(224,92,92,0.04); }
+    .section-lumen ul.changes li:hover { background: rgba(126,203,161,0.04); }
+    .section-cross  ul.changes li:hover { background: rgba(136,164,184,0.04); }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--border-2), transparent);
+      margin: 64px 0;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding-top: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-left {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.06em;
+    }
+
+    .footer-right {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-faint);
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+
+    @media (max-width: 600px) {
+      .page { padding: 48px 24px 80px; }
+      h1 { font-size: 1.8rem; }
+      .header-meta { flex-direction: column; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="version-tag">Forgeflow &mdash; Release Notes</div>
+    <h1>What&rsquo;s new in <span>V3.9</span></h1>
+    <div class="header-meta">
+      <div class="meta-item"><strong>Date</strong> &nbsp; 1 April 2026</div>
+      <div class="meta-item"><strong>Scope</strong> &nbsp; Design Voice + Security Intelligence</div>
+      <div class="meta-item"><strong>Agents updated</strong> &nbsp; Lumen (3 modes) + Warden (3 modes)</div>
+    </div>
+  </header>
+
+  <div class="intro">
+    V3.9 adds two canonical intelligence layers to the Forgeflow team's specialist agents. Lumen gains a
+    <em>Design Voice</em> — greenfield/adaptive mode detection, aesthetic frameworks, current design
+    vocabulary with shelf-life signals, craft depth across typography/color/motion/spatial composition,
+    and a comprehensive anti-pattern list. Warden gains <em>Security Intelligence</em> — a structured
+    threat taxonomy covering 12 Tier 1 OWASP vectors and 11 Tier 2 advanced vectors, each with exploit
+    path, code signature, and hardened fix. A three-part finding reporting standard is enforced across
+    all security findings. Both layers live as canonical reference files in <code>agents/_shared/</code>
+    and are referenced by all three modes of each agent.
+  </div>
+
+  <!-- Lumen Design Voice -->
+  <div class="section section-lumen">
+    <div class="section-header">
+      <span class="agent-badge badge-lumen">Lumen</span>
+      <span class="section-role">Design Voice — all three modes</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>Greenfield / adaptive mode detection</strong>
+        <span class="detail">Lumen now opens every engagement by detecting whether the project is greenfield (no established design language) or adaptive (extending an existing system). Greenfield mode: propose a cohesive visual direction and justify aesthetic choices. Adaptive mode: audit and extend existing patterns without imposing a new language. Mode is declared explicitly in consult output.</span>
+      </li>
+      <li>
+        <strong>Aesthetic frameworks: hierarchy, tension, rhythm, gestalt</strong>
+        <span class="detail">Four design frameworks are now operational in all three modes. <em>Hierarchy</em>: typographic scale and weight contrast to guide visual priority. <em>Tension</em>: deliberate asymmetry and contrast to create visual interest without noise. <em>Rhythm</em>: consistent spacing tokens and motion timing to build cadence. <em>Gestalt</em>: proximity, similarity, and continuity to communicate grouping and flow at a glance.</span>
+      </li>
+      <li>
+        <strong>Design vocabulary with shelf-life signals</strong>
+        <span class="detail">Lumen tracks current design vocabulary — bento grids, layered depth, monochromatic brutalism, micro-interaction choreography — and flags dated patterns before implementing them. <em>Glassmorphism</em> and <em>claymorphism</em> are explicitly flagged as dated; use requires a strong aesthetic justification. This prevents aesthetic drift into patterns that age poorly without deliberate intent.</span>
+      </li>
+      <li>
+        <strong>Craft depth: typography pairing</strong>
+        <span class="detail">Display/body pairing rules: serif display + grotesque body for editorial feel; geometric mono for technical brand; humanist sans throughout for approachable product. Weight contrast ≥ 2 steps for hierarchy. Optical sizing for display text at 48px+. Line-height contracts per context: 1.1–1.2 for display, 1.5–1.7 for body, 1.4 for UI labels.</span>
+      </li>
+      <li>
+        <strong>Craft depth: color theory</strong>
+        <span class="detail">Temperature contrast: pair a warm primary with a cool neutral for energy without loudness. Tint stacking: use 5–10% opacity tints of brand color on surface layers to build depth without full saturation. Accent economy: one high-chroma accent maximum per screen — everything else neutral or low-chroma. Semantic color separation from brand color.</span>
+      </li>
+      <li>
+        <strong>Craft depth: motion choreography</strong>
+        <span class="detail">Easing contract: ease-out for entrances (natural deceleration), ease-in for exits (natural acceleration), ease-in-out for state transitions. Duration contract: 150–200ms micro-interactions, 250–350ms page transitions, 400–600ms orchestrated sequences. Stagger: 30–60ms between sibling elements. Motion must reinforce spatial model — never decorative-only.</span>
+      </li>
+      <li>
+        <strong>Craft depth: spatial composition</strong>
+        <span class="detail">8px base grid; all spacing tokens are multiples. Section breathing room: 96–128px between major sections. Content density ladder: spacious (marketing/hero) → comfortable (dashboard) → compact (data tables) — pick one per context, don't mix. White space is a design element, not absence of content.</span>
+      </li>
+      <li>
+        <strong>Anti-pattern registry</strong>
+        <span class="detail">Lumen now flags: MUI defaults without customization (token overrides and sx prop are not optional), generic card grids (every grid needs a reason — rhythm, not repetition), rainbow color palettes (semantic color ≠ decoration), hover-only affordances (touch users are real), animation-on-every-element (motion must have hierarchy), and icon-only actions without labels (accessibility and discoverability).</span>
+      </li>
+      <li>
+        <strong>Mode-specific activation: consult → Design Direction</strong>
+        <span class="detail">Consult output now includes a <em>Design Direction</em> sub-section: detected mode (greenfield/adaptive), active aesthetic frameworks, proposed visual direction with justification, and anti-patterns to avoid for this specific project.</span>
+      </li>
+      <li>
+        <strong>Mode-specific activation: implement → Aesthetic Decisions</strong>
+        <span class="detail">Implement output now includes an <em>Aesthetic Decisions</em> sub-section: design vocabulary in use, typography choices with pairing rationale, color decisions with temperature/tint strategy, motion timing contract, and spatial composition choices.</span>
+      </li>
+      <li>
+        <strong>Mode-specific activation: review → Visual Design (5)→(7)</strong>
+        <span class="detail">Visual Design review checklist expanded from 5 to 7 items. Two new checks: <em>Design vocabulary currency</em> (are any patterns dated or shelf-expired?) and <em>Anti-pattern presence</em> (MUI defaults unmodified, icon-only actions, hover-only affordances, rainbow palette). Existing 5 checks preserved.</span>
+      </li>
+      <li>
+        <strong>Canonical reference: <code>agents/_shared/lumen-design-principles.md</code></strong>
+        <span class="detail">Full Design Voice content lives in a single canonical file. All three lumen agent definitions reference it. Updates to the design vocabulary, anti-patterns, or craft rules are made in one place and take effect across consult, implement, and review simultaneously.</span>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Warden Security Intelligence -->
+  <div class="section section-warden">
+    <div class="section-header">
+      <span class="agent-badge badge-warden">Warden</span>
+      <span class="section-role">Security Intelligence — all three modes</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>Tier 1 OWASP Core — 12 vectors</strong>
+        <span class="detail">Full structured taxonomy: SQL injection, NoSQL injection, command injection, stored XSS, reflected XSS, DOM XSS, broken authentication, JWT misconfiguration, IDOR, path traversal, mass assignment, insecure deserialization, security misconfiguration, sensitive data exposure. Each entry includes: exploit path, code signature to grep for, and a hardened fix with inline code example.</span>
+      </li>
+      <li>
+        <strong>Tier 2 Advanced Vectors — 11 vectors</strong>
+        <span class="detail">SSRF (internal network access via user-controlled URLs), JWT algorithm confusion (<code>alg: none</code> and RS256→HS256 downgrade), CSRF (state-changing requests without CSRF token), prototype pollution (untrusted key merge reaching Object.prototype), race condition/TOCTOU (check-then-act on shared state), ReDoS (unbounded backtracking regexes on user input), GraphQL attacks (introspection enabled in production, unbounded depth/complexity), open redirect (unvalidated redirect destinations), clickjacking (missing X-Frame-Options/CSP frame-ancestors), supply chain (dependency confusion, compromised transitive deps). Each entry same structure: exploit path + code signature + hardened fix.</span>
+      </li>
+      <li>
+        <strong>Three-part finding reporting standard</strong>
+        <span class="detail">All security findings must be structured as: (1) <em>Vector</em> — named threat category from Tier 1 or Tier 2 taxonomy, (2) <em>Evidence</em> — exact file, line number, and code fragment that demonstrates the vulnerability, (3) <em>Fix</em> — specific remediation with code. Findings that cannot satisfy all three parts must not be raised. This enforces the same standard as the pre-flight gate system: no speculative security claims.</span>
+      </li>
+      <li>
+        <strong>Mode-specific activation: consult → Threat Surface</strong>
+        <span class="detail">Consult output now includes a <em>Threat Surface</em> sub-section in the Security Requirements block: applicable Tier 1 vectors for this feature, any Tier 2 vectors warranted by the architecture, and specific hardening requirements derived from the taxonomy. Surfaces security requirements early so Smith and Lumen can design against them.</span>
+      </li>
+      <li>
+        <strong>Mode-specific activation: implement</strong>
+        <span class="detail">Security Intelligence is active during implementation — Warden writes against the taxonomy rather than from intuition. Input validation, parameterized queries, auth checks, and error handling are implemented with specific vectors in mind. JWT implementations explicitly address algorithm confusion. Mass assignment protection applied at every model boundary.</span>
+      </li>
+      <li>
+        <strong>Mode-specific activation: review → Tier 1 (8) + Tier 2 (10) checklist</strong>
+        <span class="detail">Security review checklist restructured. Previous (4) generic checks replaced with: <em>Tier 1 mandatory</em> (8 items — injection, XSS, auth, IDOR, path traversal, mass assignment, deserialization, misconfiguration) applied to every review, <em>Tier 2 conditional</em> (10 items) applied when the changeset touches relevant surface areas (external HTTP calls trigger SSRF check, JWT code triggers algorithm confusion check, etc.). SQL injection phantom-finding rule from V3.7 preserved: confirmed injection patterns require parameterized query evidence or it doesn't get raised.</span>
+      </li>
+      <li>
+        <strong>Canonical reference: <code>agents/_shared/warden-security-intelligence.md</code></strong>
+        <span class="detail">Full Security Intelligence content — both tiers, all exploit paths, all hardened fixes — lives in a single canonical file. All three warden agent definitions reference it. Adding a new vector or updating a fix pattern requires editing one file.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Shared infrastructure -->
+  <div class="section section-cross">
+    <div class="section-header">
+      <span class="agent-badge badge-cross">agents/_shared/</span>
+      <span class="section-role">New canonical reference infrastructure</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong>Canonical reference pattern established</strong>
+        <span class="detail">V3.9 introduces <code>agents/_shared/</code> as the home for canonical intelligence references that span multiple agent modes. The existing <code>rules.md</code> remains. Two new files added: <code>lumen-design-principles.md</code> and <code>warden-security-intelligence.md</code>. Pattern: agent definition files reference canonical files rather than duplicating content — a single edit propagates to all modes. Available for future Forgeflow members requiring multi-mode shared intelligence.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:64px;padding:14px 20px;background:#141414;border:1px solid #252525;">
+    <a href="./v3.8.html" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#f0a232;text-decoration:none;">← V3.8</a>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#3d3b38;letter-spacing:0.1em;">V3.9</span>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#3d3b38;cursor:default;">V4.0 →</span>
+  </div>
+
+  <footer>
+    <div class="footer-left">Forgeflow &mdash; ForgeflowAI/Forgeflow &mdash; V3.9</div>
+    <div class="footer-right">1 Apr 2026</div>
+  </footer>
+
+</div>
+</body>
+</html>
