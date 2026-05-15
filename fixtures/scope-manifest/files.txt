@@ -1,0 +1,8 @@
+src/services/user-service.ts
+src/auth/session.ts
+src/components/LoginForm.tsx
+src/components/LoginForm.test.tsx
+docs/login-plan.md
+commands/review.md
+.env
+config/api-token.txt

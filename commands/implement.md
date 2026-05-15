@@ -41,9 +41,14 @@ PLAN_PATH="${FORGEFLOW_DIR}/current-plan.md"
 DISCUSSION_PATH="${FORGEFLOW_DIR}/current-discussion.md"
 RESEARCH_PATH="${FORGEFLOW_DIR}/current-research.md"
 MEMORY_CONTEXT_PATH="${FORGEFLOW_DIR}/context/implement-memory.md"
+SCOPE_MANIFEST_PATH="${FORGEFLOW_DIR}/context/implement-scope-manifest.json"
 
 if [ -x "scripts/forgeflow/build-memory-context.js" ]; then
   scripts/forgeflow/build-memory-context.js --query "${ARGUMENTS:-implementation brief validation scope interfaces}" --out "$MEMORY_CONTEXT_PATH" --json
+fi
+
+if [ -x "scripts/forgeflow/build-scope-manifest.js" ]; then
+  scripts/forgeflow/build-scope-manifest.js --query "${ARGUMENTS:-implementation brief validation scope interfaces}" --out "$SCOPE_MANIFEST_PATH" --json
 fi
 ```
 
@@ -51,7 +56,7 @@ fi
 **If $ARGUMENTS is a file path:** Read that file as the brief.
 **If $ARGUMENTS is a task description and no brief exists:** Tell the user to run `/consult` first, or offer to run a quick inline consultation.
 
-If `MEMORY_CONTEXT_PATH` exists, include it in implementation prompts as the first-pass prior-memory summary. Estimated context savings are written to `${FORGEFLOW_DIR}/context/memory-context-telemetry.json`. Also read Compass's plan if it exists — agents should be aware of the plan's accessibility requirements and success criteria so they can implement accordingly.
+If `MEMORY_CONTEXT_PATH` exists, include it in implementation prompts as the first-pass prior-memory summary. Estimated context savings are written to `${FORGEFLOW_DIR}/context/memory-context-telemetry.json`. If `SCOPE_MANIFEST_PATH` exists, use it as the first-pass ownership map before asking Atlas to resolve gaps. Also read Compass's plan if it exists — agents should be aware of the plan's accessibility requirements and success criteria so they can implement accordingly.
 
 ## Step 2: Parse the brief
 
@@ -69,7 +74,9 @@ If Compass's plan exists, also extract:
 
 ## Step 2.5: Pre-resolve file scopes
 
-Before spawning any implementation agent, spawn `atlas-implement` with a targeted scope resolution task:
+Before spawning any implementation agent, prefer the local `implement-scope-manifest.json` generated in Step 1. Use it to seed exact file lists for Smith, Warden, Lumen, Compass, shared files, and Atlas. Then spawn `atlas-implement` only to validate unresolved or ambiguous scope, not to perform first-pass broad discovery.
+
+If no scope manifest exists, spawn `atlas-implement` with a targeted scope resolution task:
 
 ```
 Given this Implementation Brief, resolve each agent's scope into an exact file list, then read each file's contents.

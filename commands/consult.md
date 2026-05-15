@@ -58,21 +58,27 @@ PLAN_PATH="${FORGEFLOW_DIR}/current-plan.md"
 DISCUSSION_PATH="${FORGEFLOW_DIR}/current-discussion.md"
 RESEARCH_PATH="${FORGEFLOW_DIR}/current-research.md"
 MEMORY_CONTEXT_PATH="${FORGEFLOW_DIR}/context/consult-memory.md"
+SCOPE_MANIFEST_PATH="${FORGEFLOW_DIR}/context/consult-scope-manifest.json"
 
 if [ -x "scripts/forgeflow/build-memory-context.js" ]; then
   scripts/forgeflow/build-memory-context.js --query "${ARGUMENTS:-consult implementation brief architecture security frontend coordination}" --out "$MEMORY_CONTEXT_PATH" --json
 fi
+
+if [ -x "scripts/forgeflow/build-scope-manifest.js" ]; then
+  scripts/forgeflow/build-scope-manifest.js --query "${ARGUMENTS:-consult implementation brief architecture security frontend coordination}" --out "$SCOPE_MANIFEST_PATH" --json
+fi
 ```
 
 If `MEMORY_CONTEXT_PATH` exists, use it as the first-pass memory summary for all consultation agents. Estimated context savings are written to `${FORGEFLOW_DIR}/context/memory-context-telemetry.json`. If `current-plan.md` exists, read it — this is Compass's implementation plan and should serve as the primary input for consultation. Read discussion and research files only when the memory summary is insufficient or exact source text is needed.
+If `SCOPE_MANIFEST_PATH` exists, use it as the first-pass file ownership map. Read only the files listed for each agent lane unless the manifest marks the scope incomplete or an agent needs a precise extra source line.
 
 ## Step 1.5: Context Pre-Loading
 
 Apply the security denylist before reading any file: exclude `.env`, `*.pem`, `*.key`, `*.p12`, `*.cert`, `*.secret`, and any file with `password`, `secret`, or `token` in the filename (case-insensitive).
 
-**Discover:** CONTEXT.md files (from Step 1) + Compass's plan/discussion/research files (from Step 1).
+**Discover:** CONTEXT.md files (from Step 1) + Compass's plan/discussion/research files (from Step 1) + `SCOPE_MANIFEST_PATH` when present.
 
-**Resolve:** Split by agent domain using these heuristics:
+**Resolve:** Prefer `SCOPE_MANIFEST_PATH` when present. Otherwise split by agent domain using these heuristics:
 - Smith → data layer, service, business logic, model files
 - Warden → auth, API, validation, security-related files
 - Lumen → frontend, component, stylesheet files
@@ -120,7 +126,7 @@ Each agent prompt must include:
 - CONTEXT.md content (if found in Step 1) — passed verbatim so agents don't need to re-read service files
 - Relevant codebase context (file structure, existing patterns) — only if CONTEXT.md not available
 - Working directory path
-- A `<file-scope>` block listing the files each agent should focus on (derived from CONTEXT.md file lists or grep/glob pre-resolution):
+- A `<file-scope>` block listing the files each agent should focus on (derived from `consult-scope-manifest.json`, CONTEXT.md file lists, or grep/glob pre-resolution):
 
 Each agent prompt must also begin with: `Context is pre-loaded in <injected-context> below. Do not re-read those files.`
 

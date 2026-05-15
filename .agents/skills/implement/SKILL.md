@@ -15,7 +15,7 @@ scripts/forgeflow/ensure-forgeflow-state.sh
 
 Workflow:
 1. Load `.forgeflow/<project-name>/current-brief.md` unless another brief is specified.
-2. Build compact local memory context with `scripts/forgeflow/build-memory-context.js` when available, then resolve file ownership before edits.
+2. Build compact local memory context with `scripts/forgeflow/build-memory-context.js` and a first-pass file ownership map with `scripts/forgeflow/build-scope-manifest.js` when available, then resolve remaining file ownership gaps before edits.
 3. Spawn the needed implementers plus `compass_validator`.
 4. Finish with `arbiter_implementer` for integration checking.
 
