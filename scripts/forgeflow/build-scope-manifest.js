@@ -2,6 +2,13 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const {
+  contextTelemetry,
+  fileChars,
+  sum,
+  textChars,
+  writeTelemetry,
+} = require('./context-telemetry');
 
 const DEFAULT_MAX_FILES_PER_LANE = 40;
 const LANES = ['shared', 'smith', 'warden', 'lumen', 'compass', 'atlas'];
@@ -9,7 +16,8 @@ const LANES = ['shared', 'smith', 'warden', 'lumen', 'compass', 'atlas'];
 function usage() {
   console.error([
     'Usage: build-scope-manifest.js [--query <text>] [--files <path>] [--root <dir>]',
-    '       [--out <path>] [--max-files-per-lane <n>] [--json]',
+    '       [--out <path>] [--packet-dir <dir>] [--telemetry-out <path>]',
+    '       [--max-files-per-lane <n>] [--json]',
   ].join('\n'));
 }
 
@@ -19,6 +27,8 @@ function parseArgs(argv) {
     filesPath: '',
     root: '',
     out: '',
+    packetDir: '',
+    telemetryOut: '',
     maxFilesPerLane: DEFAULT_MAX_FILES_PER_LANE,
     json: false,
   };
@@ -33,6 +43,10 @@ function parseArgs(argv) {
       opts.root = path.resolve(argv[++i] || '');
     } else if (arg === '--out') {
       opts.out = path.resolve(argv[++i] || '');
+    } else if (arg === '--packet-dir') {
+      opts.packetDir = path.resolve(argv[++i] || '');
+    } else if (arg === '--telemetry-out') {
+      opts.telemetryOut = path.resolve(argv[++i] || '');
     } else if (arg === '--max-files-per-lane') {
       opts.maxFilesPerLane = Number.parseInt(argv[++i] || `${DEFAULT_MAX_FILES_PER_LANE}`, 10);
     } else if (arg === '--json') {
@@ -62,6 +76,14 @@ function repoRoot(cwd = process.cwd()) {
 
 function defaultOut(root) {
   return path.join(root, '.forgeflow', path.basename(root), 'context', 'scope-manifest.json');
+}
+
+function defaultPacketDir(root) {
+  return path.join(root, '.forgeflow', path.basename(root), 'context', 'scope-packets');
+}
+
+function defaultTelemetryOut(root) {
+  return path.join(root, '.forgeflow', path.basename(root), 'context', 'scope-telemetry.json');
 }
 
 function tokenize(value) {
@@ -159,6 +181,50 @@ function laneList(entry) {
   return Object.keys(entry.signals).filter((lane) => lane !== 'atlas');
 }
 
+function entryLine(entry) {
+  const signalText = Object.entries(entry.signals || {})
+    .map(([lane, reasons]) => `${lane}:${reasons.join('+')}`)
+    .join(', ') || 'none';
+  const status = entry.exists ? `${entry.size_bytes} bytes` : 'missing';
+  return `- ${entry.path} (${entry.kind}, ${status}, score ${entry.score}, signals ${signalText})`;
+}
+
+function renderScopePacket(lane, manifest) {
+  const laneFiles = manifest.lanes[lane] || [];
+  const sharedFiles = lane === 'shared' ? [] : manifest.lanes.shared || [];
+  return [
+    `# Forgeflow Scope Packet: ${lane}`,
+    '',
+    `Query: ${manifest.query || '(none)'}`,
+    `Query tokens: ${manifest.query_tokens.join(', ') || '(none)'}`,
+    '',
+    '## Shared Files',
+    ...(sharedFiles.length > 0 ? sharedFiles.map(entryLine) : ['(none)']),
+    '',
+    '## Lane Files',
+    ...(laneFiles.length > 0 ? laneFiles.map(entryLine) : ['(none)']),
+    '',
+    '## Denied Files',
+    ...(manifest.denied.length > 0 ? manifest.denied.map((entry) => `- ${entry.path}: ${entry.reason}`) : ['(none)']),
+    '',
+    '## Scope Rules',
+    '- Treat this packet as the first-pass file ownership map.',
+    '- Read listed files before broad discovery.',
+    '- Ask Atlas or Arbiter to resolve gaps before editing unlisted files.',
+  ].join('\n');
+}
+
+function writeScopePackets(manifest, packetDir) {
+  fs.mkdirSync(packetDir, { recursive: true });
+  const packets = {};
+  for (const lane of LANES) {
+    const file = path.join(packetDir, `${lane}.md`);
+    fs.writeFileSync(file, `${renderScopePacket(lane, manifest)}\n`);
+    packets[lane] = file;
+  }
+  return packets;
+}
+
 function buildScopeManifest(opts = {}) {
   const root = opts.root || repoRoot();
   const out = opts.out || defaultOut(root);
@@ -207,7 +273,24 @@ function buildScopeManifest(opts = {}) {
 
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, `${JSON.stringify(manifest, null, 2)}\n`);
-  return { out, manifest };
+  const packetDir = opts.packetDir || defaultPacketDir(root);
+  const packets = writeScopePackets(manifest, packetDir);
+  const packetChars = sum(Object.values(packets).map((file) => fileChars(file)));
+  const manifestChars = textChars(JSON.stringify(manifest, null, 2));
+  const telemetry = contextTelemetry('scope-manifest', {
+    baseline_chars: manifestChars * LANES.length,
+    compact_chars: packetChars,
+    detail: {
+      lanes: LANES.length,
+      denied: denied.length,
+      manifest_chars: manifestChars,
+      packet_chars: packetChars,
+      counts: manifest.counts,
+    },
+  });
+  const telemetryOut = opts.telemetryOut || defaultTelemetryOut(root);
+  writeTelemetry(telemetryOut, telemetry);
+  return { out, packet_dir: packetDir, packets, telemetry_path: telemetryOut, telemetry, manifest };
 }
 
 function main() {
@@ -216,8 +299,11 @@ function main() {
   if (opts.json) {
     console.log(JSON.stringify({
       out: result.out,
+      packet_dir: result.packet_dir,
+      telemetry_path: result.telemetry_path,
       counts: result.manifest.counts,
       denied: result.manifest.denied.length,
+      estimated_saved_tokens: result.telemetry.estimated_saved_tokens,
     }, null, 2));
   } else {
     console.log(`Scope manifest: ${result.out}`);
@@ -238,5 +324,6 @@ module.exports = {
   deniedPath,
   fileKind,
   laneSignals,
+  renderScopePacket,
   tokenize,
 };

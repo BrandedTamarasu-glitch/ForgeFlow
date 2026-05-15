@@ -77,7 +77,7 @@ Aggregate bins:
 - **Verifier metrics** — `finding-verified` counts by CONFIRMED / REJECTED / BLOCKED
 - **Calibration summary** — when `--calibration` is passed and the helper exists, include per-agent/per-class overturned, verified, confirmed, rejected, blocked, and auto-fix counts
 - **Outcome summary** — when `--outcomes <jsonl>` is passed and the helper exists, include accepted/rejected finding totals, verifier decisions, review minutes, auto-fix success, and post-merge regression signal
-- **Context savings** — include local `context-telemetry.json` and `memory-context-telemetry.json` artifacts when present under `.forgeflow/<project>/context/`
+- **Context savings** — include local `context-telemetry.json`, `memory-context-telemetry.json`, and `scope-telemetry.json` artifacts when present under `.forgeflow/<project>/context/`
 - **Fleet metrics** — shard-complete counts
 - **Per-project breakdown** — top 5 projects by invocation count
 

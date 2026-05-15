@@ -7,9 +7,9 @@ Use this skill when the user wants the Forgeflow team to design the approach bef
 
 Workflow:
 1. Build compact local memory context with `scripts/forgeflow/build-memory-context.js` when available.
-2. Build a first-pass file ownership map with `scripts/forgeflow/build-scope-manifest.js` when available.
+2. Build first-pass file ownership packets with `scripts/forgeflow/build-scope-manifest.js` when available.
 3. Gather focused context for the requested feature.
-4. Prefer existing `CONTEXT.md` files, the scope manifest, and the compact memory context before reading full `.forgeflow/current-*.md` artifacts.
+4. Prefer existing `CONTEXT.md` files, the lane scope packet, and the compact memory context before reading full `.forgeflow/current-*.md` artifacts.
 5. Spawn in parallel:
    - `smith_consultant`
    - `warden_consultant`

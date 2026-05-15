@@ -7,7 +7,7 @@ Use this skill when the user wants Codex to execute work using the Forgeflow str
 
 Workflow:
 1. Load the implementation brief from `.forgeflow/<project-name>/current-brief.md` unless the user points at another brief.
-2. Build compact local memory context with `scripts/forgeflow/build-memory-context.js` and a first-pass file ownership map with `scripts/forgeflow/build-scope-manifest.js` when available.
+2. Build compact local memory context with `scripts/forgeflow/build-memory-context.js` and first-pass file ownership packets with `scripts/forgeflow/build-scope-manifest.js` when available.
 3. If no brief exists, either stop and ask for consultation or run a brief inline consultation if the user explicitly wants that shortcut.
 4. Resolve remaining file ownership gaps before edits. No two implementers should own the same file in the same wave.
 5. Spawn targeted implementers based on the brief:

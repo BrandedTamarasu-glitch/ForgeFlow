@@ -14,7 +14,7 @@ scripts/forgeflow/ensure-forgeflow-state.sh
 ```
 
 Workflow:
-1. Build compact local memory context with `scripts/forgeflow/build-memory-context.js` when available, and build a first-pass file ownership map with `scripts/forgeflow/build-scope-manifest.js` when available.
+1. Build compact local memory context with `scripts/forgeflow/build-memory-context.js` when available, and build first-pass file ownership packets with `scripts/forgeflow/build-scope-manifest.js` when available.
 2. Spawn `smith_consultant`, `warden_consultant`, `lumen_consultant`, and `atlas_consultant` in parallel.
 3. Synthesize with `arbiter_consultant`.
 4. Save the resulting brief to `.forgeflow/<project-name>/current-brief.md` when appropriate.

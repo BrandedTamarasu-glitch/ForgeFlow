@@ -70,13 +70,13 @@ fi
 ```
 
 If `MEMORY_CONTEXT_PATH` exists, use it as the first-pass memory summary for all consultation agents. Estimated context savings are written to `${FORGEFLOW_DIR}/context/memory-context-telemetry.json`. If `current-plan.md` exists, read it — this is Compass's implementation plan and should serve as the primary input for consultation. Read discussion and research files only when the memory summary is insufficient or exact source text is needed.
-If `SCOPE_MANIFEST_PATH` exists, use it as the first-pass file ownership map. Read only the files listed for each agent lane unless the manifest marks the scope incomplete or an agent needs a precise extra source line.
+If `SCOPE_MANIFEST_PATH` exists, use it as the first-pass file ownership map. Prefer the matching `${FORGEFLOW_DIR}/context/scope-packets/<lane>.md` packet for each agent prompt, and read only the files listed for each lane unless the packet marks a gap or an agent needs a precise extra source line. Estimated scope savings are written to `${FORGEFLOW_DIR}/context/scope-telemetry.json`.
 
 ## Step 1.5: Context Pre-Loading
 
 Apply the security denylist before reading any file: exclude `.env`, `*.pem`, `*.key`, `*.p12`, `*.cert`, `*.secret`, and any file with `password`, `secret`, or `token` in the filename (case-insensitive).
 
-**Discover:** CONTEXT.md files (from Step 1) + Compass's plan/discussion/research files (from Step 1) + `SCOPE_MANIFEST_PATH` when present.
+**Discover:** CONTEXT.md files (from Step 1) + Compass's plan/discussion/research files (from Step 1) + `SCOPE_MANIFEST_PATH` and `scope-packets/<lane>.md` when present.
 
 **Resolve:** Prefer `SCOPE_MANIFEST_PATH` when present. Otherwise split by agent domain using these heuristics:
 - Smith → data layer, service, business logic, model files
@@ -126,7 +126,7 @@ Each agent prompt must include:
 - CONTEXT.md content (if found in Step 1) — passed verbatim so agents don't need to re-read service files
 - Relevant codebase context (file structure, existing patterns) — only if CONTEXT.md not available
 - Working directory path
-- A `<file-scope>` block listing the files each agent should focus on (derived from `consult-scope-manifest.json`, CONTEXT.md file lists, or grep/glob pre-resolution):
+- A `<file-scope>` block listing the files each agent should focus on (derived from `scope-packets/<lane>.md`, `consult-scope-manifest.json`, CONTEXT.md file lists, or grep/glob pre-resolution):
 
 Each agent prompt must also begin with: `Context is pre-loaded in <injected-context> below. Do not re-read those files.`
 
