@@ -376,9 +376,44 @@ RESEARCH_PATH="${FORGEFLOW_DIR}/current-research.md"
 
 If each path exists, read the file and store its contents as `plan_content`, `discussion_content`, `research_content` respectively. Pass the file contents (not the paths) to Compass's prompt.
 
+## Step 3.4: Build local context pack
+
+Prefer the local context compiler when available. It pre-computes route, file manifest, diff summary, memory hits, and bounded per-agent packets so reviewer prompts do not need to carry the same full context repeatedly.
+
+Skip this step only when `$ARGUMENTS` contains `--no-context-pack`.
+
+```bash
+CONTEXT_PACK_DIR="${FORGEFLOW_DIR}/context/latest"
+CONTEXT_PACK_ARG=""
+
+if ! echo "$ARGUMENTS" | grep -q -- '--no-context-pack' && [ -x "scripts/forgeflow/build-context-pack.js" ]; then
+  TASK_ARGS=()
+  if [ -n "${ARGUMENTS:-}" ]; then
+    TASK_ARGS=(--task "$ARGUMENTS")
+  fi
+  scripts/forgeflow/build-context-pack.js \
+    --files /tmp/_review_files_unique_$$ \
+    --lines "$LINES_CHANGED" \
+    $MODE_ARG \
+    $CI_ARG \
+    $CALIBRATION_ARG \
+    "${TASK_ARGS[@]}" \
+    --out "$CONTEXT_PACK_DIR" \
+    --json
+  CONTEXT_PACK_ARG="Use the local Forgeflow context packet for this agent from ${CONTEXT_PACK_DIR}/agent-packets/ when present. Treat it as the primary context and request expanded context only when the packet cites an unresolved gap."
+fi
+```
+
+If the context pack exists, pass the matching `agent-packets/<agent>.md` file contents to each reviewer, `route.json` and `synthesis-input.json` to Arbiter, and `synthesis-input.json` plus Compass's phase artifacts to Compass.
+
 ## Step 3.5: Context Pre-Loading
 
 Apply the security denylist before reading any file: exclude `.env`, `*.pem`, `*.key`, `*.p12`, `*.cert`, `*.secret`, and any file with `password`, `secret`, or `token` in the filename (case-insensitive).
+
+If Step 3.4 produced a context pack, use it as the default context source and only pre-load full file contents when one of these is true:
+- `$ARGUMENTS` contains `--full-context`
+- a reviewer explicitly needs an uncompressed source excerpt
+- the file count is under 5 and total changed lines are under 100
 
 **Discover:** All changed files identified in Step 1 (already resolved — no additional discovery needed).
 
@@ -505,11 +540,11 @@ If `CHUNKED=true`:
 - After all chunks complete, proceed to Step 5.
 
 Each agent prompt must include:
-- `Context is pre-loaded in <injected-context> below. Do not re-read those files.` at the top of the task description
+- `Use the Forgeflow context packet first. Do not re-read packeted files unless the packet cites a gap or you need exact source lines for a finding.` at the top of the task description
 - The complete list of files to review
 - Working directory path
 - Brief context on what the changes are for (from git log or user description)
-- The assembled `<injected-context>` block from Step 3.5 (with `agent="{agent-name}"` filled in for each agent)
+- The matching context packet from `${CONTEXT_PACK_DIR}/agent-packets/{agent}.md` when present; otherwise the assembled `<injected-context>` block from Step 3.5 (with `agent="{agent-name}"` filled in for each agent)
 - A `<file-scope>` block hard-constraining the agent to the changed files:
 
 ```
@@ -555,8 +590,8 @@ Do not broaden scope. `CONFIRMED` requires concrete cited evidence. `REJECTED` a
 After all parallel agents complete, spawn `arbiter-review` with all their outputs concatenated.
 
 Arbiter receives:
-- `Context is pre-loaded in <injected-context> below. Do not re-read those files.` at the top of the task description
-- The assembled `<injected-context>` block from Step 3.5 (with `agent="arbiter-review"`)
+- `Use the Forgeflow synthesis packet first. Do not re-read packeted files unless exact source evidence is needed for a final finding.` at the top of the task description
+- `synthesis-input.json`, `route.json`, and `file-manifest.json` from `${CONTEXT_PACK_DIR}` when present; otherwise the assembled `<injected-context>` block from Step 3.5 (with `agent="arbiter-review"`)
 - All agent outputs
 - All Aegis outputs from Step 4.5
 - The routing note from Step 0.5, including telemetry hints when present
@@ -601,9 +636,9 @@ After Arbiter completes, spawn `compass-review` with:
 
 Compass's prompt:
 ```
-Context is pre-loaded in <injected-context> below. Do not re-read those files.
+Use the Forgeflow context packet and synthesis input first. Do not re-read packeted files unless exact source evidence is needed for validation.
 
-{injected-context block from Step 3.5 with agent="compass-review"}
+{synthesis-input.json + relevant phase artifacts when context pack exists, otherwise injected-context block from Step 3.5 with agent="compass-review"}
 
 You are performing your final review after Arbiter's technical verdict.
 This includes E2E feature validation and pressure testing — not just code review.

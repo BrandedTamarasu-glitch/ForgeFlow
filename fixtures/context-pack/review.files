@@ -1,0 +1,3 @@
+src/auth/session.ts
+src/components/LoginForm.tsx
+docs/security-notes.md

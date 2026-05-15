@@ -25,28 +25,35 @@ scripts/forgeflow/explain-review-route.js --json
 scripts/forgeflow/explain-review-route.js --json --calibration .forgeflow/Forgeflow/calibration-summary.json
 ```
 
-3. Read only the files needed for that scope. Prefer exact files or `git diff --name-only`.
-4. Spawn reviewer agents in parallel according to the route:
+3. Build a local context pack when the helper exists:
+
+```bash
+scripts/forgeflow/build-context-pack.js --json
+```
+
+   Pass `--files`, `--lines`, `--mode`, and `--calibration` when those values were already resolved. Use the generated `agent-packets/<agent>.md` as the primary reviewer context and `synthesis-input.json` for Arbiter/Compass.
+4. Read only the files needed for that scope. Prefer exact files or `git diff --name-only`; avoid re-reading files already covered by the context pack unless exact source lines are needed.
+5. Spawn reviewer agents in parallel according to the route:
    - `smith_reviewer`
    - `warden_reviewer`
    - `lumen_reviewer`
    - `atlas_reviewer`
-5. If the route is thin-mode, you may skip `lumen_reviewer` and `atlas_reviewer`.
-6. Before Arbiter synthesis, send high-risk findings through `aegis`:
+6. If the route is thin-mode, you may skip `lumen_reviewer` and `atlas_reviewer`.
+7. Before Arbiter synthesis, send high-risk findings through `aegis`:
    - security
    - auth, session, permissions, tenant isolation
    - migration, schema, data loss
    - critical correctness
    - broad refactor regression
    - accessibility blocker
-7. Wait for reviewer and verifier outputs, then spawn `arbiter_reviewer` with the collected findings, verifier decisions, routing note, and the file list.
-8. Spawn `compass_reviewer` after Arbiter with:
+8. Wait for reviewer and verifier outputs, then spawn `arbiter_reviewer` with the collected findings, verifier decisions, routing note, and the file list.
+9. Spawn `compass_reviewer` after Arbiter with:
    - Arbiter's verdict
    - reviewer outputs
    - verifier outputs
    - routing note
    - any available plan, research, or discussion notes from `.forgeflow/`
-9. Return findings first. Summaries come after findings.
+10. Return findings first. Summaries come after findings.
 
 Rules:
 - Keep review file-scoped. Do not broaden scope without evidence.
