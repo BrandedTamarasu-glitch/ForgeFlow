@@ -146,12 +146,19 @@ When `--outcomes <jsonl>` is passed:
 scripts/forgeflow/record-review-outcome.js --summary <jsonl> --json
 ```
 
+When context telemetry artifacts exist:
+
+```bash
+scripts/forgeflow/summarize-context-telemetry.js --root .forgeflow --json
+```
+
 ## Step 5: Signals section (interpretation)
 
 Compute and include:
 - **Closed-loop effectiveness** — `(auto-fix rounds that led to APPROVE) / (total auto-fix rounds)`
 - **Command adoption** — for each V4.2 command, is count > 5 in the period? If no, flag as "under-adopted — reassess"
 - **Verdict churn** — per project, `REVISE count / total review count`. If > 50%, flag as "high churn — investigate root causes"
+- **Context savings trend** — compare estimated saved tokens by kind; if context-pack savings are low, review packet contents for over-inclusion
 
 </process>
 

@@ -17,7 +17,8 @@ Single report pulling together everything the self-improving Forgeflow machinery
 3. **False-positive leaders** (from `finding-overturned` events) — which reviewer got overturned most, on which class
 4. **Pattern promotions** (from `forgeflow-patterns/.learnings-log.jsonl`) — what `/forgeflow-learnings` added to the canonical library
 5. **Drift status** (from `/forgeflow-drift --json`) — which agents lag their canonical reference
-6. **Recommendations** — specific agent prompts that need refinement based on the above
+6. **Context savings** (from `.forgeflow/**/context-telemetry.json`) — whether local context packing is reducing prompt load
+7. **Recommendations** — specific agent prompts that need refinement based on the above
 
 Answers: "Is the Forgeflow team getting smarter, and where is it getting stupider?"
 
@@ -113,6 +114,16 @@ Unless `--no-drift`, invoke (captured stdout):
 ```
 
 Parse; extract agents with any MISSING or DRIFTED sections. Report by drift_score.
+
+### 3e. Context savings
+
+When `scripts/forgeflow/summarize-context-telemetry.js` exists, run:
+
+```bash
+scripts/forgeflow/summarize-context-telemetry.js --root .forgeflow --json
+```
+
+Include estimated saved tokens and percent saved by telemetry kind.
 
 ## Step 4: Render output
 
