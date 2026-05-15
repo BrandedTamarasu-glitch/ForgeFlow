@@ -77,7 +77,7 @@ scripts/forgeflow/seed-budget-config.js --json
 To inspect local context savings and get trimming recommendations:
 
 ```bash
-scripts/forgeflow/advise-context.js --root .forgeflow --json
+scripts/forgeflow/advise-context.js --root .forgeflow --record --json
 ```
 
 Run a first review from Claude Code:

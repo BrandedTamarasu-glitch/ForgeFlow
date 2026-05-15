@@ -38,12 +38,55 @@ const empty = adviseContext({
   warnOnlySet: true,
 });
 
+const historyPath = path.join(root, 'history', 'context-advisor.jsonl');
+const firstRecorded = adviseContext({
+  root,
+  history: historyPath,
+  record: true,
+  now: new Date('2026-05-15T12:00:00.000Z'),
+  maxCompactTokens: 3000,
+  maxCompactTokensSet: true,
+  kindLimits: {},
+  warnOnly: true,
+  warnOnlySet: true,
+});
+
+fs.writeFileSync(telemetryFile, `${JSON.stringify({
+  schema_version: '1',
+  kind: 'context-pack',
+  baseline_chars: 16000,
+  compact_chars: 8000,
+  saved_chars: 8000,
+  estimated_baseline_tokens: 4000,
+  estimated_compact_tokens: 2000,
+  estimated_saved_tokens: 2000,
+})}\n`);
+
+const secondRecorded = adviseContext({
+  root,
+  history: historyPath,
+  record: true,
+  now: new Date('2026-05-15T13:00:00.000Z'),
+  maxCompactTokens: 3000,
+  maxCompactTokensSet: true,
+  kindLimits: {},
+  warnOnly: true,
+  warnOnlySet: true,
+});
+
+const historyLines = fs.readFileSync(historyPath, 'utf8').trim().split(/\r?\n/);
+
 const checks = [
   ['files summarized', result.summary.files === 1],
   ['budget warns', result.budget.status === 'warn'],
   ['budget recommendation', result.recommendations.some((item) => item.action === 'trim-budget-violation')],
   ['compaction recommendation', result.recommendations.some((item) => item.action === 'improve-compaction')],
   ['empty recommendation', empty.recommendations.some((item) => item.action === 'generate-context-telemetry')],
+  ['history first recorded', firstRecorded.history.recorded === true],
+  ['history compared', secondRecorded.history.trend.status === 'compared'],
+  ['history compact delta', secondRecorded.history.trend.compact_token_delta === -500],
+  ['history saved delta', secondRecorded.history.trend.saved_token_delta === 1500],
+  ['history has two lines', historyLines.length === 2],
 ];
 
 let failed = 0;

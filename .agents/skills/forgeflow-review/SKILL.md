@@ -32,7 +32,7 @@ scripts/forgeflow/build-context-pack.js --json
 ```
 
    Pass `--files`, `--lines`, `--mode`, and `--calibration` when those values were already resolved. This also refreshes `.forgeflow/<project>/index/memory-index.json` when local memory exists. Use the generated `agent-packets/<agent>.md` as the primary reviewer context and `synthesis-input.json` for Arbiter/Compass.
-4. Run `scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json` and `scripts/forgeflow/advise-context.js --root .forgeflow --json` when available. Surface budget warnings and trim recommendations before spawning reviewers.
+4. Run `scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json` and `scripts/forgeflow/advise-context.js --root .forgeflow --record --json` when available. Surface budget warnings, trend deltas, and trim recommendations before spawning reviewers.
 5. Read only the files needed for that scope. Prefer exact files or `git diff --name-only`; avoid re-reading files already covered by the context pack unless exact source lines are needed.
 6. Spawn reviewer agents in parallel according to the route:
    - `smith_reviewer`

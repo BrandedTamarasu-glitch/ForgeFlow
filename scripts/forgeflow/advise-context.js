@@ -14,8 +14,8 @@ const {
 
 function usage() {
   console.error([
-    'Usage: advise-context.js [--root <dir>] [--config <json>] [--json]',
-    '       [--max-compact-tokens <n>] [--max-kind <kind=n>]',
+    'Usage: advise-context.js [--root <dir>] [--config <json>] [--json] [--record]',
+    '       [--history <jsonl>] [--max-compact-tokens <n>] [--max-kind <kind=n>]',
   ].join('\n'));
 }
 
@@ -28,6 +28,8 @@ function parseArgs(argv) {
     kindLimits: {},
     warnOnly: true,
     warnOnlySet: true,
+    history: '',
+    record: false,
     json: false,
   };
 
@@ -48,6 +50,10 @@ function parseArgs(argv) {
         process.exit(2);
       }
       opts.kindLimits[kind] = limit;
+    } else if (arg === '--history') {
+      opts.history = path.resolve(argv[++i] || '');
+    } else if (arg === '--record') {
+      opts.record = true;
     } else if (arg === '--json') {
       opts.json = true;
     } else if (arg === '--help' || arg === '-h') {
@@ -74,6 +80,67 @@ function loadConfig(opts, cwd = process.cwd()) {
   const applied = applyConfig(opts, config);
   applied.configPath = exists ? configPath : '';
   return applied;
+}
+
+function defaultHistoryPath(root) {
+  return path.join(root, 'context-advisor-history.jsonl');
+}
+
+function readHistory(historyPath) {
+  if (!historyPath || !fs.existsSync(historyPath)) return [];
+  const records = [];
+  for (const line of fs.readFileSync(historyPath, 'utf8').split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    try {
+      const record = JSON.parse(line);
+      if (record && record.schema_version === '1') records.push(record);
+    } catch (_err) {
+      // Ignore corrupt history lines; this file is advisory telemetry.
+    }
+  }
+  return records;
+}
+
+function historyRecord(result, now = new Date()) {
+  return {
+    schema_version: '1',
+    ts: now.toISOString(),
+    root: result.root,
+    files: result.summary.files,
+    estimated_compact_tokens: result.summary.totals.estimated_compact_tokens,
+    estimated_saved_tokens: result.summary.totals.estimated_saved_tokens,
+    percent_saved: result.summary.percent_saved,
+    budget_status: result.budget.status,
+    budget_violations: result.budget.violations.length,
+    recommendation_actions: result.recommendations.map((item) => item.action),
+  };
+}
+
+function compareTrend(current, previous) {
+  if (!previous) {
+    return {
+      status: 'insufficient-history',
+      previous_ts: '',
+      compact_token_delta: 0,
+      saved_token_delta: 0,
+      percent_saved_delta: 0,
+      budget_violation_delta: 0,
+    };
+  }
+
+  return {
+    status: 'compared',
+    previous_ts: previous.ts || '',
+    compact_token_delta: current.estimated_compact_tokens - Number(previous.estimated_compact_tokens || 0),
+    saved_token_delta: current.estimated_saved_tokens - Number(previous.estimated_saved_tokens || 0),
+    percent_saved_delta: Number((current.percent_saved - Number(previous.percent_saved || 0)).toFixed(2)),
+    budget_violation_delta: current.budget_violations - Number(previous.budget_violations || 0),
+  };
+}
+
+function appendHistory(historyPath, record) {
+  fs.mkdirSync(path.dirname(historyPath), { recursive: true });
+  fs.appendFileSync(historyPath, `${JSON.stringify(record)}\n`);
 }
 
 function recommend(summary, budget) {
@@ -130,7 +197,7 @@ function adviseContext(opts = {}) {
   const config = loadConfig(opts);
   const summary = summarize(files);
   const budget = checkBudget(files, config);
-  return {
+  const result = {
     schema_version: '1',
     root,
     files: files.slice().sort(),
@@ -138,6 +205,21 @@ function adviseContext(opts = {}) {
     budget,
     recommendations: recommend(summary, budget),
   };
+  const historyPath = opts.history || defaultHistoryPath(root);
+  const history = readHistory(historyPath);
+  const record = historyRecord(result, opts.now || new Date());
+  result.history = {
+    path: historyPath,
+    recorded: false,
+    previous_runs: history.length,
+    current: record,
+    trend: compareTrend(record, history[history.length - 1]),
+  };
+  if (opts.record) {
+    appendHistory(historyPath, record);
+    result.history.recorded = true;
+  }
+  return result;
 }
 
 function renderMarkdown(result) {
@@ -149,6 +231,7 @@ function renderMarkdown(result) {
     `Estimated saved tokens: ${result.summary.totals.estimated_saved_tokens}`,
     `Percent saved: ${result.summary.percent_saved}%`,
     `Budget violations: ${result.budget.violations.length}`,
+    `Trend: ${result.history.trend.status}`,
     '',
     '## Recommendations',
     '',
@@ -161,6 +244,14 @@ function renderMarkdown(result) {
       lines.push(`- ${item.severity.toUpperCase()}: ${item.reason}`);
       lines.push(`  Action: ${item.command}`);
     }
+  }
+
+  if (result.history.trend.status === 'compared') {
+    lines.push('', '## Trend', '');
+    lines.push(`- Compact token delta: ${result.history.trend.compact_token_delta}`);
+    lines.push(`- Saved token delta: ${result.history.trend.saved_token_delta}`);
+    lines.push(`- Percent saved delta: ${result.history.trend.percent_saved_delta}`);
+    lines.push(`- Budget violation delta: ${result.history.trend.budget_violation_delta}`);
   }
 
   return lines.join('\n');
@@ -188,6 +279,8 @@ if (require.main === module) {
 
 module.exports = {
   adviseContext,
+  compareTrend,
+  historyRecord,
   recommend,
   renderMarkdown,
 };
