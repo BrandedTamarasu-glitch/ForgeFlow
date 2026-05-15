@@ -167,6 +167,12 @@ Budget defaults can be overridden with repo-local `.forgeflow-budget.json`:
 }
 ```
 
+To seed the config in a project without overwriting an existing file:
+
+```bash
+scripts/forgeflow/seed-budget-config.js --json
+```
+
 ## Step 5: Signals section (interpretation)
 
 Compute and include:

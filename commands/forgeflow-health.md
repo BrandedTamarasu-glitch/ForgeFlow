@@ -90,6 +90,7 @@ jq empty ~/.claude/settings.json 2>&1 || echo "INVALID JSON"
 - `.forgeflow/<project-name>/` directory exists
 - `.forgeflow/<project-name>/agent-notes/` exists
 - `.forgeflow/` is in `.gitignore`
+- Optional `.forgeflow-budget.json` exists when context budgets should be project-specific. If missing and `--fix` is set, run `scripts/forgeflow/seed-budget-config.js --json` when available.
 
 ### 2g. Version drift
 ```bash

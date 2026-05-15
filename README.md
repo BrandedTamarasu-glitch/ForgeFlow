@@ -62,6 +62,12 @@ Bootstrap local state:
 scripts/forgeflow/ensure-forgeflow-state.sh
 ```
 
+To seed a project-local context budget config without overwriting an existing file:
+
+```bash
+scripts/forgeflow/seed-budget-config.js --json
+```
+
 Run a first review from Claude Code:
 
 ```text
