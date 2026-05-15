@@ -153,6 +153,20 @@ scripts/forgeflow/summarize-context-telemetry.js --root .forgeflow --json
 scripts/forgeflow/check-context-budget.js --root .forgeflow --max-compact-tokens 16000 --warn-only --json
 ```
 
+Budget defaults can be overridden with repo-local `.forgeflow-budget.json`:
+
+```json
+{
+  "max_compact_tokens": 16000,
+  "warn_only": true,
+  "kind_limits": {
+    "context-pack": 16000,
+    "memory-context": 8000,
+    "scope-manifest": 6000
+  }
+}
+```
+
 ## Step 5: Signals section (interpretation)
 
 Compute and include:

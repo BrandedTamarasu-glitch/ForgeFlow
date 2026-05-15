@@ -7,7 +7,7 @@ const DEFAULT_MAX_COMPACT_TOKENS = 16000;
 
 function usage() {
   console.error([
-    'Usage: check-context-budget.js [--root <dir>] [--file <json>]',
+    'Usage: check-context-budget.js [--root <dir>] [--file <json>] [--config <json>]',
     '       [--max-compact-tokens <n>] [--max-kind <kind=n>] [--warn-only] [--json]',
   ].join('\n'));
 }
@@ -16,8 +16,11 @@ function parseArgs(argv) {
   const opts = {
     root: '',
     files: [],
+    config: '',
     maxCompactTokens: DEFAULT_MAX_COMPACT_TOKENS,
+    maxCompactTokensSet: false,
     kindLimits: {},
+    warnOnlySet: false,
     warnOnly: false,
     json: false,
   };
@@ -28,8 +31,11 @@ function parseArgs(argv) {
       opts.root = path.resolve(argv[++i] || '');
     } else if (arg === '--file') {
       opts.files.push(path.resolve(argv[++i] || ''));
+    } else if (arg === '--config') {
+      opts.config = path.resolve(argv[++i] || '');
     } else if (arg === '--max-compact-tokens') {
       opts.maxCompactTokens = Number.parseInt(argv[++i] || `${DEFAULT_MAX_COMPACT_TOKENS}`, 10);
+      opts.maxCompactTokensSet = true;
     } else if (arg === '--max-kind') {
       const [kind, rawLimit] = String(argv[++i] || '').split('=');
       const limit = Number.parseInt(rawLimit || '', 10);
@@ -40,6 +46,7 @@ function parseArgs(argv) {
       opts.kindLimits[kind] = limit;
     } else if (arg === '--warn-only') {
       opts.warnOnly = true;
+      opts.warnOnlySet = true;
     } else if (arg === '--json') {
       opts.json = true;
     } else if (arg === '--help' || arg === '-h') {
@@ -59,6 +66,45 @@ function defaultRoot(cwd = process.cwd()) {
   return path.join(cwd, '.forgeflow');
 }
 
+function defaultConfigPath(cwd = process.cwd()) {
+  return path.join(cwd, '.forgeflow-budget.json');
+}
+
+function readConfig(configPath) {
+  if (!configPath || !fs.existsSync(configPath)) return {};
+  const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  if (!config || typeof config !== 'object' || Array.isArray(config)) {
+    throw new Error('budget config must be a JSON object');
+  }
+  return config;
+}
+
+function normalizeKindLimits(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const limits = {};
+  for (const [kind, rawLimit] of Object.entries(value)) {
+    const limit = Number(rawLimit);
+    if (kind && Number.isFinite(limit)) limits[kind] = limit;
+  }
+  return limits;
+}
+
+function applyConfig(opts, config) {
+  const configured = { ...opts };
+  if (Number.isFinite(Number(config.max_compact_tokens)) && !opts.maxCompactTokensSet) {
+    configured.maxCompactTokens = Number(config.max_compact_tokens);
+  }
+  configured.kindLimits = {
+    ...normalizeKindLimits(config.kind_limits),
+    ...opts.kindLimits,
+  };
+  if (!opts.warnOnlySet && typeof config.warn_only === 'boolean') {
+    configured.warnOnly = config.warn_only;
+  }
+  configured.configPath = opts.config || '';
+  return configured;
+}
+
 function readTelemetry(file) {
   const telemetry = JSON.parse(fs.readFileSync(file, 'utf8'));
   if (!telemetry || telemetry.schema_version !== '1') return null;
@@ -70,13 +116,21 @@ function limitFor(opts, kind) {
 }
 
 function checkBudget(files, opts) {
+  const options = {
+    maxCompactTokens: DEFAULT_MAX_COMPACT_TOKENS,
+    kindLimits: {},
+    warnOnly: false,
+    configPath: '',
+    ...opts,
+  };
   const result = {
     schema_version: '1',
     status: 'pass',
     files: 0,
     skipped: 0,
-    max_compact_tokens: opts.maxCompactTokens,
-    kind_limits: opts.kindLimits,
+    config_path: options.configPath || '',
+    max_compact_tokens: options.maxCompactTokens,
+    kind_limits: options.kindLimits,
     violations: [],
   };
 
@@ -95,7 +149,7 @@ function checkBudget(files, opts) {
     result.files += 1;
     const kind = telemetry.kind || 'unknown';
     const compactTokens = Number(telemetry.estimated_compact_tokens || 0);
-    const limit = limitFor(opts, kind);
+    const limit = limitFor(options, kind);
     if (compactTokens > limit) {
       result.violations.push({
         file,
@@ -108,7 +162,7 @@ function checkBudget(files, opts) {
   }
 
   if (result.violations.length > 0) {
-    result.status = opts.warnOnly ? 'warn' : 'fail';
+    result.status = options.warnOnly ? 'warn' : 'fail';
   }
   return result;
 }
@@ -135,7 +189,10 @@ function renderMarkdown(result) {
 }
 
 function main() {
-  const opts = parseArgs(process.argv.slice(2));
+  const parsed = parseArgs(process.argv.slice(2));
+  const configPath = parsed.config || defaultConfigPath();
+  const opts = applyConfig(parsed, readConfig(configPath));
+  opts.configPath = fs.existsSync(configPath) ? configPath : '';
   const files = opts.files.length > 0 ? opts.files : walk(opts.root || defaultRoot());
   const result = checkBudget(files, opts);
   if (opts.json) {
@@ -156,7 +213,10 @@ if (require.main === module) {
 }
 
 module.exports = {
+  applyConfig,
   checkBudget,
+  defaultConfigPath,
   limitFor,
+  readConfig,
   renderMarkdown,
 };

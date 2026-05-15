@@ -71,7 +71,7 @@ fi
 
 If `MEMORY_CONTEXT_PATH` exists, use it as the first-pass memory summary for all consultation agents. Estimated context savings are written to `${FORGEFLOW_DIR}/context/memory-context-telemetry.json`. If `current-plan.md` exists, read it — this is Compass's implementation plan and should serve as the primary input for consultation. Read discussion and research files only when the memory summary is insufficient or exact source text is needed.
 If `SCOPE_MANIFEST_PATH` exists, use it as the first-pass file ownership map. Prefer the matching `${FORGEFLOW_DIR}/context/scope-packets/<lane>.md` packet for each agent prompt, and read only the files listed for each lane unless the packet marks a gap or an agent needs a precise extra source line. Estimated scope savings are written to `${FORGEFLOW_DIR}/context/scope-telemetry.json`.
-If `scripts/forgeflow/check-context-budget.js` exists, run `scripts/forgeflow/check-context-budget.js --root "$FORGEFLOW_DIR" --max-compact-tokens 16000 --warn-only --json` and surface warnings before spawning agents.
+If `scripts/forgeflow/check-context-budget.js` exists, run `scripts/forgeflow/check-context-budget.js --root "$FORGEFLOW_DIR" --max-compact-tokens 16000 --warn-only --json` and surface warnings before spawning agents. The checker reads `.forgeflow-budget.json` from the repo root when present.
 
 ## Step 1.5: Context Pre-Loading
 

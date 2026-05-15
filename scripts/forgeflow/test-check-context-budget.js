@@ -2,7 +2,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { checkBudget } = require('./check-context-budget');
+const { applyConfig, checkBudget, readConfig } = require('./check-context-budget');
 const { walk } = require('./summarize-context-telemetry');
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-budget-'));
@@ -44,6 +44,20 @@ const kindPass = checkBudget(files, {
   kindLimits: { 'scope-manifest': 1300 },
   warnOnly: false,
 });
+const configFile = path.join(root, '.forgeflow-budget.json');
+fs.writeFileSync(configFile, `${JSON.stringify({
+  max_compact_tokens: 500,
+  kind_limits: { 'scope-manifest': 1400 },
+  warn_only: true,
+})}\n`);
+const configured = applyConfig({
+  maxCompactTokens: 16000,
+  maxCompactTokensSet: false,
+  kindLimits: {},
+  warnOnly: false,
+  warnOnlySet: false,
+}, readConfig(configFile));
+const configPass = checkBudget(files, configured);
 
 const checks = [
   ['walk includes scope telemetry', files.includes(scopeFile)],
@@ -52,6 +66,9 @@ const checks = [
   ['fail violation', fail.violations[0].kind === 'scope-manifest'],
   ['warn status', warn.status === 'warn'],
   ['kind override pass', kindPass.status === 'pass'],
+  ['config limit applied', configured.maxCompactTokens === 500],
+  ['config warn applied', configured.warnOnly === true],
+  ['config kind override pass', configPass.status === 'pass'],
 ];
 
 let failed = 0;

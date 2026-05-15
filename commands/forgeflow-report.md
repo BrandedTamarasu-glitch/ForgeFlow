@@ -124,7 +124,7 @@ scripts/forgeflow/summarize-context-telemetry.js --root .forgeflow --json
 scripts/forgeflow/check-context-budget.js --root .forgeflow --max-compact-tokens 16000 --warn-only --json
 ```
 
-Include estimated saved tokens, percent saved by telemetry kind, and any context budget warnings.
+Include estimated saved tokens, percent saved by telemetry kind, and any context budget warnings. The budget checker reads `.forgeflow-budget.json` from the repo root when present.
 
 ## Step 4: Render output
 

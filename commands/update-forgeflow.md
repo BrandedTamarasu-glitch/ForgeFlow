@@ -79,7 +79,7 @@ for d in dirs:
 
 ```
 
-Add to the list: `templates/ship-presentation.html`, `hooks/forgeflow-gate.js`, `hooks/forgeflow-context-monitor.js`, `hooks/forgeflow-statusline.js`, and `hooks/forgeflow-telemetry.js`
+Add to the list: `templates/ship-presentation.html`, `templates/forgeflow-budget.json`, `hooks/forgeflow-gate.js`, `hooks/forgeflow-context-monitor.js`, `hooks/forgeflow-statusline.js`, and `hooks/forgeflow-telemetry.js`
 
 Set `FIRST_RUN=true`.
 
@@ -101,7 +101,7 @@ for f in d.get('files', []):
     elif re.match(r'^commands/[^/]+(?:/[^/]+)?\.md$', name): print(name)
     elif re.match(r'^project-rules/[^/]+\.md$', name): print(name)
     elif re.match(r'^forgeflow-patterns/[^/]+\.md$', name): print(name)
-    elif name in ('templates/ship-presentation.html', 'hooks/forgeflow-gate.js', 'hooks/forgeflow-context-monitor.js', 'hooks/forgeflow-statusline.js', 'hooks/forgeflow-telemetry.js'): print(name)
+    elif name in ('templates/ship-presentation.html', 'templates/forgeflow-budget.json', 'hooks/forgeflow-gate.js', 'hooks/forgeflow-context-monitor.js', 'hooks/forgeflow-statusline.js', 'hooks/forgeflow-telemetry.js'): print(name)
 "
 ```
 
@@ -148,6 +148,7 @@ For each file in `FILES_TO_SYNC`, download it to the matching destination. **For
 - `project-rules/NAME.md` → `~/.claude/project-rules/NAME.md`
 - `forgeflow-patterns/NAME.md` → `~/.claude/forgeflow-patterns/NAME.md`
 - `templates/ship-presentation.html` → `~/.claude/templates/ship-presentation.html`
+- `templates/forgeflow-budget.json` → `~/.claude/templates/forgeflow-budget.json`
 - `hooks/forgeflow-gate.js` → `~/.claude/hooks/forgeflow-gate.js`
 - `hooks/forgeflow-context-monitor.js` → `~/.claude/hooks/forgeflow-context-monitor.js`
 - `hooks/forgeflow-statusline.js` → `~/.claude/hooks/forgeflow-statusline.js`
@@ -202,7 +203,7 @@ Check: cat ~/.claude/settings.json | grep forgeflow
 - [ ] Reads version from ~/.claude/forgeflow-version; exits cleanly if already up to date
 - [ ] First run: downloads all tracked files via contents API (no prior version needed)
 - [ ] Incremental: uses compare API to download only added/modified tracked files
-- [ ] Tracked paths: agents/*.md (flat), agents/_shared/*.md, commands/*.md (flat), commands/*/*.md (one-level subdirs), project-rules/*.md (flat), templates/ship-presentation.html, hooks/forgeflow-gate.js, hooks/forgeflow-context-monitor.js, hooks/forgeflow-statusline.js, hooks/forgeflow-telemetry.js
+- [ ] Tracked paths: agents/*.md (flat), agents/_shared/*.md, commands/*.md (flat), commands/*/*.md (one-level subdirs), project-rules/*.md (flat), templates/ship-presentation.html, templates/forgeflow-budget.json, hooks/forgeflow-gate.js, hooks/forgeflow-context-monitor.js, hooks/forgeflow-statusline.js, hooks/forgeflow-telemetry.js
 - [ ] Commands in subdirectories (e.g. commands/agent-chat/on.md) sync to ~/.claude/commands/SUBDIR/NAME.md — subdir created if needed
 - [ ] Never auto-deletes files from ~/.claude/ — deletions reported only
 - [ ] Never overwrites files in ~/.claude/agents/ whose basename starts with `custom-`

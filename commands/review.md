@@ -406,7 +406,7 @@ fi
 
 When `.forgeflow/${PROJECT_NAME}` exists, context pack generation also refreshes `.forgeflow/${PROJECT_NAME}/index/memory-index.json` and uses that local index before falling back to raw memory scans. It writes estimated context savings to `${CONTEXT_PACK_DIR}/context-telemetry.json`. Use `--no-memory-index` only when debugging index generation.
 
-If `scripts/forgeflow/check-context-budget.js` exists, run it after context pack generation. In interactive mode, use `--warn-only`; in CI mode, omit `--warn-only` so over-budget packets fail fast:
+If `scripts/forgeflow/check-context-budget.js` exists, run it after context pack generation. It reads `.forgeflow-budget.json` from the repo root when present. In interactive mode, use `--warn-only`; in CI mode, omit `--warn-only` so over-budget packets fail fast:
 
 ```bash
 if [ -x "scripts/forgeflow/check-context-budget.js" ]; then
