@@ -378,7 +378,7 @@ If each path exists, read the file and store its contents as `plan_content`, `di
 
 ## Step 3.4: Build local context pack
 
-Prefer the local context compiler when available. It pre-computes route, file manifest, diff summary, memory hits, and bounded per-agent packets so reviewer prompts do not need to carry the same full context repeatedly.
+Prefer the local context compiler when available. It pre-computes route, file manifest, diff summary, indexed memory hits, and bounded per-agent packets so reviewer prompts do not need to carry the same full context repeatedly.
 
 Skip this step only when `$ARGUMENTS` contains `--no-context-pack`.
 
@@ -403,6 +403,8 @@ if ! echo "$ARGUMENTS" | grep -q -- '--no-context-pack' && [ -x "scripts/forgefl
   CONTEXT_PACK_ARG="Use the local Forgeflow context packet for this agent from ${CONTEXT_PACK_DIR}/agent-packets/ when present. Treat it as the primary context and request expanded context only when the packet cites an unresolved gap."
 fi
 ```
+
+When `.forgeflow/${PROJECT_NAME}` exists, context pack generation also refreshes `.forgeflow/${PROJECT_NAME}/index/memory-index.json` and uses that local index before falling back to raw memory scans. Use `--no-memory-index` only when debugging index generation.
 
 If the context pack exists, pass the matching `agent-packets/<agent>.md` file contents to each reviewer, `route.json` and `synthesis-input.json` to Arbiter, and `synthesis-input.json` plus Compass's phase artifacts to Compass.
 

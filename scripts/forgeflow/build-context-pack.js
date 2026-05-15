@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { classify, readFiles } = require('./explain-review-route');
+const { buildMemoryIndex } = require('./index-memory');
 
 const DEFAULT_MAX_MEMORY_CHARS = 12000;
 const DEFAULT_MAX_DIFF_CHARS = 18000;
@@ -11,7 +12,7 @@ function usage() {
   console.error([
     'Usage: build-context-pack.js [--out <dir>] [--files <path>] [--lines <n>]',
     '       [--mode skip|thin|full|deep] [--calibration <path>] [--task <text>]',
-    '       [--max-memory-chars <n>] [--max-diff-chars <n>] [--ci] [--json]',
+    '       [--max-memory-chars <n>] [--max-diff-chars <n>] [--no-memory-index] [--ci] [--json]',
   ].join('\n'));
 }
 
@@ -25,6 +26,7 @@ function parseArgs(argv) {
     task: '',
     maxMemoryChars: DEFAULT_MAX_MEMORY_CHARS,
     maxDiffChars: DEFAULT_MAX_DIFF_CHARS,
+    memoryIndex: true,
     ci: false,
     json: false,
   };
@@ -47,6 +49,8 @@ function parseArgs(argv) {
       opts.maxMemoryChars = Number.parseInt(argv[++i] || `${DEFAULT_MAX_MEMORY_CHARS}`, 10);
     } else if (arg === '--max-diff-chars') {
       opts.maxDiffChars = Number.parseInt(argv[++i] || `${DEFAULT_MAX_DIFF_CHARS}`, 10);
+    } else if (arg === '--no-memory-index') {
+      opts.memoryIndex = false;
     } else if (arg === '--ci') {
       opts.ci = true;
     } else if (arg === '--json') {
@@ -190,8 +194,6 @@ function keywords(files, route, task) {
 }
 
 function memoryFiles(root) {
-  const project = path.basename(root);
-  const dir = path.join(root, '.forgeflow', project);
   return [
     'current-discussion.md',
     'current-research.md',
@@ -201,10 +203,77 @@ function memoryFiles(root) {
     'codebase-map.md',
     'review-history.md',
     'learnings.jsonl',
-  ].map((name) => path.join(dir, name));
+  ].map((name) => path.join(defaultProjectDir(root), name));
 }
 
-function buildMemoryHits(root, files, route, task, maxChars) {
+function defaultProjectDir(root) {
+  return path.join(root, '.forgeflow', path.basename(root));
+}
+
+function defaultMemoryIndexPath(root) {
+  return path.join(defaultProjectDir(root), 'index', 'memory-index.json');
+}
+
+function ensureMemoryIndex(root, enabled) {
+  if (!enabled) return null;
+  const projectDir = defaultProjectDir(root);
+  if (!fs.existsSync(projectDir)) return null;
+  try {
+    const result = buildMemoryIndex({
+      projectDir,
+      out: defaultMemoryIndexPath(root),
+    });
+    return result.out;
+  } catch (_err) {
+    return null;
+  }
+}
+
+function buildMemoryHitsFromIndex(root, indexPath, files, route, task, maxChars) {
+  if (!indexPath || !fs.existsSync(indexPath)) return null;
+  const index = readJson(indexPath);
+  if (!index || !Array.isArray(index.records)) return null;
+  const keys = keywords(files, route, task);
+  const hits = [];
+
+  for (const item of index.records) {
+    const text = String(item.text || '');
+    const haystack = `${text} ${item.source || ''} ${(item.keywords || []).join(' ')}`.toLowerCase();
+    const score = keys.reduce((sum, key) => sum + (haystack.includes(key) ? 1 : 0), 0);
+    if (score > 0 || item.kind === 'heading') {
+      hits.push({
+        source: item.source || '(unknown)',
+        line: item.line || 1,
+        score,
+        kind: item.kind || 'memory',
+        text,
+      });
+    }
+  }
+
+  const selected = hits
+    .sort((a, b) => b.score - a.score || a.source.localeCompare(b.source) || a.line - b.line)
+    .slice(0, 80);
+  const rendered = [
+    '# Memory Hits',
+    '',
+    `Index: ${path.relative(root, indexPath)}`,
+    `Keywords: ${keys.join(', ') || '(none)'}`,
+    '',
+  ];
+  for (const hit of selected) {
+    rendered.push(`- ${hit.source}:${hit.line} [${hit.kind}] ${hit.text}`);
+  }
+  if (selected.length === 0) {
+    rendered.push('(no local memory hits)');
+  }
+  return truncate(rendered.join('\n'), maxChars);
+}
+
+function buildMemoryHits(root, files, route, task, maxChars, indexPath = null) {
+  const indexed = buildMemoryHitsFromIndex(root, indexPath, files, route, task, maxChars);
+  if (indexed) return indexed;
+
   const keys = keywords(files, route, task);
   const hits = [];
   for (const file of memoryFiles(root)) {
@@ -329,7 +398,8 @@ function buildContextPack(opts) {
 
   const manifest = buildFileManifest(route.files, root);
   const diffSummary = buildDiffSummary(route.files, root, opts);
-  const memoryHits = buildMemoryHits(root, route.files, route, opts.task, opts.maxMemoryChars);
+  const memoryIndexPath = ensureMemoryIndex(root, opts.memoryIndex !== false);
+  const memoryHits = buildMemoryHits(root, route.files, route, opts.task, opts.maxMemoryChars, memoryIndexPath);
   const agents = route.agents.included || [];
   const packets = {};
 
@@ -347,6 +417,7 @@ function buildContextPack(opts) {
     route_path: path.relative(root, path.join(outDir, 'route.json')),
     diff_summary_path: path.relative(root, path.join(outDir, 'diff-summary.md')),
     memory_hits_path: path.relative(root, path.join(outDir, 'memory-hits.md')),
+    memory_index_path: memoryIndexPath ? path.relative(root, memoryIndexPath) : null,
     file_manifest_path: path.relative(root, path.join(outDir, 'file-manifest.json')),
     agent_packets: packets,
     limits: {
@@ -397,6 +468,7 @@ if (require.main === module) {
 
 module.exports = {
   buildContextPack,
+  buildMemoryHits,
   fileKind,
   rulePack,
 };

@@ -31,7 +31,7 @@ scripts/forgeflow/explain-review-route.js --json --calibration .forgeflow/Forgef
 scripts/forgeflow/build-context-pack.js --json
 ```
 
-   Pass `--files`, `--lines`, `--mode`, and `--calibration` when those values were already resolved. Use the generated `agent-packets/<agent>.md` as the primary reviewer context and `synthesis-input.json` for Arbiter/Compass.
+   Pass `--files`, `--lines`, `--mode`, and `--calibration` when those values were already resolved. This also refreshes `.forgeflow/<project>/index/memory-index.json` when local memory exists. Use the generated `agent-packets/<agent>.md` as the primary reviewer context and `synthesis-input.json` for Arbiter/Compass.
 4. Read only the files needed for that scope. Prefer exact files or `git diff --name-only`; avoid re-reading files already covered by the context pack unless exact source lines are needed.
 5. Spawn reviewer agents in parallel according to the route:
    - `smith_reviewer`

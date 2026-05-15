@@ -1,0 +1,2 @@
+{"summary":"Session token reviews need prior memory hits before reviewer prompts expand to full files.","tags":["auth","session","tokens"]}
+{"pattern":"Prefer local memory index records over raw memory scans for repeated review runs.","tags":["memory","index"]}
