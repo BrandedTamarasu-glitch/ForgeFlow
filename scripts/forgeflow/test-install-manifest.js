@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const {
+  RUNTIME_HELPERS,
   categoryFor,
   destinationFor,
   isManagedSource,
@@ -16,6 +17,7 @@ const checks = [
   ['script category', categoryFor('scripts/forgeflow/health-check.js') === 'runtime-script'],
   ['script destination', destinationFor('scripts/forgeflow/health-check.js', home) === '/tmp/claude-home/forgeflow/scripts/forgeflow/health-check.js'],
   ['shell script executable', manifestEntry('scripts/forgeflow/ensure-forgeflow-state.sh', home).executable === true],
+  ['runtime helpers include updater', RUNTIME_HELPERS.includes('scripts/forgeflow/update-forgeflow.js')],
   ['test helper not consumer managed', !isManagedSource('scripts/forgeflow/test-health-check.js')],
   ['non managed rejected', !isManagedSource('services/dashboard/server.js')],
   ['path escape rejected', !isManagedSource('../scripts/forgeflow/health-check.js')],

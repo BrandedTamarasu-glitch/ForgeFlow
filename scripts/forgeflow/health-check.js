@@ -3,14 +3,20 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { seedBudgetConfig } = require('./seed-budget-config');
+const {
+  RUNTIME_HELPERS,
+  isManagedSource,
+  manifestEntry,
+} = require('./install-manifest');
 
 function usage() {
-  console.error('Usage: health-check.js [--root <dir>] [--fix] [--json]');
+  console.error('Usage: health-check.js [--root <dir>] [--install-root <dir>] [--fix] [--json]');
 }
 
 function parseArgs(argv) {
   const opts = {
     root: '',
+    installRoot: '',
     fix: false,
     json: false,
   };
@@ -19,6 +25,8 @@ function parseArgs(argv) {
     const arg = argv[i];
     if (arg === '--root') {
       opts.root = path.resolve(argv[++i] || '');
+    } else if (arg === '--install-root') {
+      opts.installRoot = path.resolve(argv[++i] || '');
     } else if (arg === '--fix') {
       opts.fix = true;
     } else if (arg === '--json') {
@@ -86,6 +94,23 @@ function safeMkdir(dir) {
   fs.mkdirSync(dir, { recursive: true });
 }
 
+function expectedRuntimeSources() {
+  return RUNTIME_HELPERS.filter(isManagedSource).sort();
+}
+
+function addInstallChecks(checks, installRoot) {
+  if (!installRoot) return;
+  for (const source of expectedRuntimeSources()) {
+    const entry = manifestEntry(source, installRoot);
+    if (!entry) continue;
+    const exists = fs.existsSync(entry.destination);
+    const executable = exists ? ((fs.statSync(entry.destination).mode & 0o111) !== 0) : false;
+    checks.push(check(`runtime helper ${path.basename(source)}`, exists && executable, `run update-forgeflow to install ${source}`, {
+      path: entry.destination,
+    }));
+  }
+}
+
 function runHealthCheck(opts = {}) {
   const root = opts.root || repoRoot();
   const ffDir = forgeflowDir(root);
@@ -117,6 +142,7 @@ function runHealthCheck(opts = {}) {
     if (seeded.written) changes.push({ path: budgetPath, action: 'seeded budget config' });
   }
   checks.push(check('budget config', fs.existsSync(budgetPath), 'run seed-budget-config.js'));
+  addInstallChecks(checks, opts.installRoot);
 
   const failures = checks.filter((item) => item.status === 'fail');
   return {
@@ -183,4 +209,5 @@ module.exports = {
   hasGitignoreEntry,
   renderMarkdown,
   runHealthCheck,
+  expectedRuntimeSources,
 };

@@ -17,11 +17,24 @@ const result = buildContextPack({
   maxMemoryChars: 12000,
   maxDiffChars: 18000,
 });
+const noisyOutDir = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-noisy-'));
+const noisyResult = buildContextPack({
+  filesPath: path.join(repoRoot, 'fixtures/review-route/noisy.files'),
+  linesChanged: 20,
+  task: 'Review noisy file list handling',
+  out: noisyOutDir,
+  modeOverride: '',
+  calibrationPath: '',
+  ci: false,
+  maxMemoryChars: 12000,
+  maxDiffChars: 18000,
+});
 
 const route = JSON.parse(fs.readFileSync(path.join(outDir, 'route.json'), 'utf8'));
 const manifest = JSON.parse(fs.readFileSync(path.join(outDir, 'file-manifest.json'), 'utf8'));
 const synthesis = JSON.parse(fs.readFileSync(path.join(outDir, 'synthesis-input.json'), 'utf8'));
 const telemetry = JSON.parse(fs.readFileSync(path.join(outDir, 'context-telemetry.json'), 'utf8'));
+const noisyManifest = JSON.parse(fs.readFileSync(path.join(noisyOutDir, 'file-manifest.json'), 'utf8'));
 
 const checks = [
   ['result out dir', result.out_dir === outDir],
@@ -37,6 +50,9 @@ const checks = [
   ['telemetry written', fs.existsSync(path.join(outDir, 'context-telemetry.json'))],
   ['telemetry linked', synthesis.context_telemetry_path.endsWith('context-telemetry.json')],
   ['telemetry token estimate', Number.isInteger(telemetry.estimated_compact_tokens)],
+  ['noisy manifest sanitized', noisyManifest.files.length === 3],
+  ['no noisy decoration in manifest', !noisyManifest.files.some((file) => file.path.includes('Changes') || file.path.includes('|'))],
+  ['noisy result full mode', noisyResult.route.mode === 'full-mode'],
 ];
 
 let failed = 0;

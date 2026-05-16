@@ -50,17 +50,14 @@ function parseArgs(argv) {
 
 function readFiles(opts) {
   if (opts.filesPath) {
-    return fs.readFileSync(opts.filesPath, 'utf8')
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean);
+    return sanitizeFileList(fs.readFileSync(opts.filesPath, 'utf8').split(/\r?\n/));
   }
 
   const output = runGit(['diff', '--name-only', 'HEAD'])
     .concat(runGit(['diff', '--name-only', '--cached']))
     .concat(runGit(['ls-files', '--others', '--exclude-standard']));
 
-  return [...new Set(output)].sort();
+  return sanitizeFileList(output);
 }
 
 function runGit(args) {
@@ -70,6 +67,36 @@ function runGit(args) {
     return [];
   }
   return result.stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+}
+
+function sanitizeFileLine(line) {
+  let value = String(line || '').trim();
+  if (!value) return '';
+  if (/^(---|\+\+\+|===|##\s|#\s|```)/.test(value)) return '';
+  if (/^(Changes|Changed files|Files changed|Output|Summary):?$/i.test(value)) return '';
+  if (/^\d+\s+files?\s+changed\b/i.test(value)) return '';
+  if (/^\d+\s+\d+\s+/.test(value)) return '';
+  if (/^[-+]{3,}$/.test(value)) return '';
+
+  const nameStatus = value.match(/^(?:A|C|D|M|R|T|U|X|B|\?)(?:\d+)?\s+(.+)$/);
+  if (nameStatus) {
+    value = nameStatus[1].trim();
+  }
+  if (value.includes('\t')) {
+    const parts = value.split('\t').map((part) => part.trim()).filter(Boolean);
+    value = parts[parts.length - 1] || '';
+  }
+  value = value.replace(/^["']|["']$/g, '');
+  if (!value || path.isAbsolute(value)) return '';
+  if (value.includes('\0')) return '';
+  if (value.split('/').includes('..')) return '';
+  if (/^(---|\+\+\+|@@|\*)/.test(value)) return '';
+  if (/\s+\|\s+\d+/.test(value)) return '';
+  return value;
+}
+
+function sanitizeFileList(lines) {
+  return [...new Set(lines.map(sanitizeFileLine).filter(Boolean))].sort();
 }
 
 function countChangedLines(filesPath) {
@@ -350,4 +377,6 @@ module.exports = {
   parseArgs,
   readCalibration,
   readFiles,
+  sanitizeFileLine,
+  sanitizeFileList,
 };

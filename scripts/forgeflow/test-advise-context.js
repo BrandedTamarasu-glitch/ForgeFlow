@@ -38,6 +38,28 @@ const empty = adviseContext({
   warnOnlySet: true,
 });
 
+const smallRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-advisor-small-'));
+const smallContextDir = path.join(smallRoot, 'Forgeflow', 'context');
+fs.mkdirSync(smallContextDir, { recursive: true });
+fs.writeFileSync(path.join(smallContextDir, 'memory-context-telemetry.json'), `${JSON.stringify({
+  schema_version: '1',
+  kind: 'memory-context',
+  baseline_chars: 4000,
+  compact_chars: 3600,
+  saved_chars: 400,
+  estimated_baseline_tokens: 1000,
+  estimated_compact_tokens: 900,
+  estimated_saved_tokens: 100,
+})}\n`);
+const smallLowSavings = adviseContext({
+  root: smallRoot,
+  maxCompactTokens: 2000,
+  maxCompactTokensSet: true,
+  kindLimits: {},
+  warnOnly: true,
+  warnOnlySet: true,
+});
+
 const historyPath = path.join(root, 'history', 'context-advisor.jsonl');
 const firstRecorded = adviseContext({
   root,
@@ -81,6 +103,7 @@ const checks = [
   ['budget warns', result.budget.status === 'warn'],
   ['budget recommendation', result.recommendations.some((item) => item.action === 'trim-budget-violation')],
   ['compaction recommendation', result.recommendations.some((item) => item.action === 'improve-compaction')],
+  ['small low savings not noisy', !smallLowSavings.recommendations.some((item) => item.action === 'improve-compaction')],
   ['empty recommendation', empty.recommendations.some((item) => item.action === 'generate-context-telemetry')],
   ['history first recorded', firstRecorded.history.recorded === true],
   ['history compared', secondRecorded.history.trend.status === 'compared'],

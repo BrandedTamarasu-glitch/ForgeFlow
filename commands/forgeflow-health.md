@@ -61,7 +61,7 @@ EXPECTED_RUNTIME_HELPERS=(
   ensure-forgeflow-state.sh explain-review-route.js generate-codex-agent-stubs.js health-check.js
   index-memory.js install-manifest.js record-review-outcome.js render-ship-presentation.js
   seed-budget-config.js ship-ci-status.sh ship-open-pr.sh ship-prepare.sh summarize-calibration.js
-  summarize-context-telemetry.js
+  summarize-context-telemetry.js update-forgeflow.js
 )
 ```
 
@@ -99,6 +99,7 @@ For each helper in `EXPECTED_RUNTIME_HELPERS`:
 - Check `~/.claude/forgeflow/scripts/forgeflow/<helper>` exists
 - For `.js` helpers, check `node --check` succeeds when node is available
 - For `.sh` helpers, check `bash -n` succeeds
+When the installed helper is available, `scripts/forgeflow/health-check.js --install-root ~/.claude --json` can run the runtime-helper portion from the manifest-backed helper list.
 
 ### 2f. Project-local state (if cwd is a repo)
 - `.forgeflow/<project-name>/` directory exists
@@ -146,7 +147,7 @@ Default (without `--verbose`):
 - Project rules: 2/2
 - Hooks: 3/4 installed, 3/4 wired
 - Settings.json: valid
-- Runtime helpers: 23/23
+- Runtime helpers: 24/24
 - Current project (.forgeflow/): 3/3
 
 Summary: 4 failures, 28 passing. Run /forgeflow-health --fix to auto-repair safe items.

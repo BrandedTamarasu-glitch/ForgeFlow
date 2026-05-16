@@ -10,6 +10,32 @@ const STATIC_FILES = new Set([
   'hooks/forgeflow-statusline.js',
   'hooks/forgeflow-telemetry.js',
 ]);
+const RUNTIME_HELPERS = [
+  'scripts/forgeflow/advise-context.js',
+  'scripts/forgeflow/agent-chat-off.sh',
+  'scripts/forgeflow/agent-chat-on.sh',
+  'scripts/forgeflow/build-context-pack.js',
+  'scripts/forgeflow/build-memory-context.js',
+  'scripts/forgeflow/build-scope-manifest.js',
+  'scripts/forgeflow/check-codex-agent-drift.js',
+  'scripts/forgeflow/check-context-budget.js',
+  'scripts/forgeflow/context-telemetry.js',
+  'scripts/forgeflow/ensure-forgeflow-state.sh',
+  'scripts/forgeflow/explain-review-route.js',
+  'scripts/forgeflow/generate-codex-agent-stubs.js',
+  'scripts/forgeflow/health-check.js',
+  'scripts/forgeflow/index-memory.js',
+  'scripts/forgeflow/install-manifest.js',
+  'scripts/forgeflow/record-review-outcome.js',
+  'scripts/forgeflow/render-ship-presentation.js',
+  'scripts/forgeflow/seed-budget-config.js',
+  'scripts/forgeflow/ship-ci-status.sh',
+  'scripts/forgeflow/ship-open-pr.sh',
+  'scripts/forgeflow/ship-prepare.sh',
+  'scripts/forgeflow/summarize-calibration.js',
+  'scripts/forgeflow/summarize-context-telemetry.js',
+  'scripts/forgeflow/update-forgeflow.js',
+];
 
 function usage() {
   console.error('Usage: install-manifest.js [--source <path>] [--dest <home>] [--json]');
@@ -55,9 +81,7 @@ function categoryFor(source) {
   if (/^project-rules\/[^/]+\.md$/.test(file)) return 'project-rule';
   if (/^forgeflow-patterns\/[^/]+\.md$/.test(file)) return 'pattern';
   if (STATIC_FILES.has(file)) return file.split('/')[0].slice(0, -1);
-  if (/^scripts\/forgeflow\/[^/]+$/.test(file)
-    && SCRIPT_EXTENSIONS.has(path.extname(file))
-    && !path.basename(file).startsWith('test-')) return 'runtime-script';
+  if (RUNTIME_HELPERS.includes(file) && SCRIPT_EXTENSIONS.has(path.extname(file))) return 'runtime-script';
   return '';
 }
 
@@ -121,6 +145,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  RUNTIME_HELPERS,
   categoryFor,
   destinationFor,
   isManagedSource,

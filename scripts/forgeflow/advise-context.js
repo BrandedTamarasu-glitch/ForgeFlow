@@ -168,7 +168,7 @@ function recommend(summary, budget) {
   }
 
   for (const [kind, bucket] of Object.entries(summary.by_kind)) {
-    if (bucket.files > 0 && bucket.percent_saved < 20) {
+    if (bucket.files > 0 && bucket.percent_saved < 20 && bucket.estimated_compact_tokens >= 2000) {
       recommendations.push({
         severity: 'warn',
         action: 'improve-compaction',

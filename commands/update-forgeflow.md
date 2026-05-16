@@ -11,6 +11,23 @@ Pull the latest Forgeflow release from GitHub via curl and sync updated files in
 
 <process>
 
+## Preferred Engine
+
+When the installed or repo-local runtime helper exists, prefer the script-backed installer because it enforces the same manifest used by health checks:
+
+```bash
+HELPER_DIR="scripts/forgeflow"
+if [ ! -x "${HELPER_DIR}/update-forgeflow.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/update-forgeflow.js" ]; then
+  HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
+fi
+if [ -x "${HELPER_DIR}/update-forgeflow.js" ]; then
+  "${HELPER_DIR}/update-forgeflow.js"
+  exit $?
+fi
+```
+
+The remaining steps are the command contract and fallback procedure for environments where the helper is not available yet.
+
 ## Step 1 — Fetch Latest SHA
 
 ```bash
@@ -252,4 +269,5 @@ Commands should prefer that installed helper root when project-local scripts/for
 - [ ] Summary lists every file synced with before/after SHAs
 - [ ] Hook-changed warning appears when hooks/forgeflow-gate.js is in the diff
 - [ ] No local clone required — works from curl alone
+- [ ] Script-backed path uses the same manifest mapping as health/install smoke tests
 </success_criteria>
