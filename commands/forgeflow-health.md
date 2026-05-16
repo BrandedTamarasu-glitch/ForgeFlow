@@ -55,6 +55,14 @@ EXPECTED_SUBDIR_COMMANDS=(agent-chat/on agent-chat/off)
 EXPECTED_PROJECT_RULES=(commit-hygiene dev-environment)
 EXPECTED_HOOKS=(forgeflow-gate forgeflow-context-monitor forgeflow-statusline forgeflow-telemetry)
 EXPECTED_TEMPLATES=(ship-presentation.html)
+EXPECTED_RUNTIME_HELPERS=(
+  advise-context.js agent-chat-off.sh agent-chat-on.sh build-context-pack.js build-memory-context.js
+  build-scope-manifest.js check-codex-agent-drift.js check-context-budget.js context-telemetry.js
+  ensure-forgeflow-state.sh explain-review-route.js generate-codex-agent-stubs.js health-check.js
+  index-memory.js install-manifest.js record-review-outcome.js render-ship-presentation.js
+  seed-budget-config.js ship-ci-status.sh ship-open-pr.sh ship-prepare.sh summarize-calibration.js
+  summarize-context-telemetry.js
+)
 ```
 
 ## Step 2: Run checks
@@ -86,13 +94,20 @@ For each hook in `EXPECTED_HOOKS`:
 jq empty ~/.claude/settings.json 2>&1 || echo "INVALID JSON"
 ```
 
+### 2e.1. Runtime helpers
+For each helper in `EXPECTED_RUNTIME_HELPERS`:
+- Check `~/.claude/forgeflow/scripts/forgeflow/<helper>` exists
+- For `.js` helpers, check `node --check` succeeds when node is available
+- For `.sh` helpers, check `bash -n` succeeds
+
 ### 2f. Project-local state (if cwd is a repo)
 - `.forgeflow/<project-name>/` directory exists
 - `.forgeflow/<project-name>/agent-notes/` exists
 - `.forgeflow/` is in `.gitignore`
 - Optional `.forgeflow-budget.json` exists when context budgets should be project-specific.
-- When available, run `scripts/forgeflow/health-check.js --json` for a machine-readable project-local report.
-- If `--fix` is set, run `scripts/forgeflow/health-check.js --fix --json` to create safe local scaffolding and seed `.forgeflow-budget.json` without overwriting an existing config.
+- Resolve `HELPER_DIR` to `scripts/forgeflow` when present, otherwise `$HOME/.claude/forgeflow/scripts/forgeflow`.
+- When available, run `${HELPER_DIR}/health-check.js --json` for a machine-readable project-local report.
+- If `--fix` is set, run `${HELPER_DIR}/health-check.js --fix --json` to create safe local scaffolding and seed `.forgeflow-budget.json` without overwriting an existing config.
 
 ### 2g. Version drift
 ```bash
@@ -131,6 +146,7 @@ Default (without `--verbose`):
 - Project rules: 2/2
 - Hooks: 3/4 installed, 3/4 wired
 - Settings.json: valid
+- Runtime helpers: 23/23
 - Current project (.forgeflow/): 3/3
 
 Summary: 4 failures, 28 passing. Run /forgeflow-health --fix to auto-repair safe items.
@@ -145,7 +161,7 @@ Safe auto-fixes:
 - Add `.forgeflow/` to `.gitignore` if missing
 - Seed `.forgeflow-budget.json` from the bundled template if missing
 
-Prefer `scripts/forgeflow/health-check.js --fix --json` for project-local fixes. It reports each path it changed and leaves existing budget config untouched.
+Prefer `${HELPER_DIR}/health-check.js --fix --json` for project-local fixes. It reports each path it changed and leaves existing budget config untouched.
 
 Never auto-fix:
 - Missing agents or commands → directs to `/update-forgeflow`

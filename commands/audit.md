@@ -13,7 +13,16 @@ allowed-tools:
   - AskUserQuestion
 ---
 ```bash
-source "$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)/services/chat-bridge/init-session.sh" "audit" "$*"
+FORGEFLOW_REPO_ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null || true)"
+FORGEFLOW_INIT_SESSION="${FORGEFLOW_REPO_ROOT}/services/chat-bridge/init-session.sh"
+if [ -f "$FORGEFLOW_INIT_SESSION" ]; then
+  source "$FORGEFLOW_INIT_SESSION" "audit" "$*"
+else
+  CHAT_AVAILABLE=false
+  CHAT_SEND=""
+  ROOM_NAME="audit"
+  export CHAT_AVAILABLE CHAT_SEND ROOM_NAME
+fi
 ```
 <objective>
 Run Smith and Warden in deep audit mode to surface security vulnerabilities, architectural debt, schema health issues, dead code, and reuse opportunities. Arbiter synthesizes findings into a prioritized action list.

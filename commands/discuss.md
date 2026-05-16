@@ -13,7 +13,16 @@ allowed-tools:
   - AskUserQuestion
 ---
 ```bash
-source "$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)/services/chat-bridge/init-session.sh" "discuss" "$*"
+FORGEFLOW_REPO_ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null || true)"
+FORGEFLOW_INIT_SESSION="${FORGEFLOW_REPO_ROOT}/services/chat-bridge/init-session.sh"
+if [ -f "$FORGEFLOW_INIT_SESSION" ]; then
+  source "$FORGEFLOW_INIT_SESSION" "discuss" "$*"
+else
+  CHAT_AVAILABLE=false
+  CHAT_SEND=""
+  ROOM_NAME="discuss"
+  export CHAT_AVAILABLE CHAT_SEND ROOM_NAME
+fi
 ```
 <objective>
 Run Compass and Atlas in discussion mode to explore the problem space, gather requirements, define success criteria, and identify open questions for research.

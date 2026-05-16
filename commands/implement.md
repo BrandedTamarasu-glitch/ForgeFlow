@@ -13,7 +13,16 @@ allowed-tools:
   - AskUserQuestion
 ---
 ```bash
-source "$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)/services/chat-bridge/init-session.sh" "implement" "$*"
+FORGEFLOW_REPO_ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null || true)"
+FORGEFLOW_INIT_SESSION="${FORGEFLOW_REPO_ROOT}/services/chat-bridge/init-session.sh"
+if [ -f "$FORGEFLOW_INIT_SESSION" ]; then
+  source "$FORGEFLOW_INIT_SESSION" "implement" "$*"
+else
+  CHAT_AVAILABLE=false
+  CHAT_SEND=""
+  ROOM_NAME="implement"
+  export CHAT_AVAILABLE CHAT_SEND ROOM_NAME
+fi
 ```
 <objective>
 Execute parallel implementation using the Forgeflow team. Each agent writes code in their domain following the Implementation Brief produced by `/consult`. Compass designs validation tests in parallel. Atlas coordinates. Arbiter oversees integration.
@@ -42,13 +51,17 @@ DISCUSSION_PATH="${FORGEFLOW_DIR}/current-discussion.md"
 RESEARCH_PATH="${FORGEFLOW_DIR}/current-research.md"
 MEMORY_CONTEXT_PATH="${FORGEFLOW_DIR}/context/implement-memory.md"
 SCOPE_MANIFEST_PATH="${FORGEFLOW_DIR}/context/implement-scope-manifest.json"
-
-if [ -x "scripts/forgeflow/build-memory-context.js" ]; then
-  scripts/forgeflow/build-memory-context.js --query "${ARGUMENTS:-implementation brief validation scope interfaces}" --out "$MEMORY_CONTEXT_PATH" --json
+HELPER_DIR="scripts/forgeflow"
+if [ ! -x "${HELPER_DIR}/build-memory-context.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/build-memory-context.js" ]; then
+  HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
 
-if [ -x "scripts/forgeflow/build-scope-manifest.js" ]; then
-  scripts/forgeflow/build-scope-manifest.js --query "${ARGUMENTS:-implementation brief validation scope interfaces}" --out "$SCOPE_MANIFEST_PATH" --json
+if [ -x "${HELPER_DIR}/build-memory-context.js" ]; then
+  "${HELPER_DIR}/build-memory-context.js" --query "${ARGUMENTS:-implementation brief validation scope interfaces}" --out "$MEMORY_CONTEXT_PATH" --json
+fi
+
+if [ -x "${HELPER_DIR}/build-scope-manifest.js" ]; then
+  "${HELPER_DIR}/build-scope-manifest.js" --query "${ARGUMENTS:-implementation brief validation scope interfaces}" --out "$SCOPE_MANIFEST_PATH" --json
 fi
 ```
 
@@ -57,7 +70,7 @@ fi
 **If $ARGUMENTS is a task description and no brief exists:** Tell the user to run `/consult` first, or offer to run a quick inline consultation.
 
 If `MEMORY_CONTEXT_PATH` exists, include it in implementation prompts as the first-pass prior-memory summary. Estimated context savings are written to `${FORGEFLOW_DIR}/context/memory-context-telemetry.json`. If `SCOPE_MANIFEST_PATH` exists, use it as the first-pass ownership map before asking Atlas to resolve gaps, and prefer `${FORGEFLOW_DIR}/context/scope-packets/<lane>.md` over the raw JSON in agent prompts. Estimated scope savings are written to `${FORGEFLOW_DIR}/context/scope-telemetry.json`. Also read Compass's plan if it exists — agents should be aware of the plan's accessibility requirements and success criteria so they can implement accordingly.
-If `scripts/forgeflow/check-context-budget.js` exists, run `scripts/forgeflow/check-context-budget.js --root "$FORGEFLOW_DIR" --max-compact-tokens 16000 --warn-only --json` and surface warnings before spawning implementation agents. The checker reads `.forgeflow-budget.json` from the repo root when present.
+If `${HELPER_DIR}/check-context-budget.js` exists, run `${HELPER_DIR}/check-context-budget.js --root "$FORGEFLOW_DIR" --max-compact-tokens 16000 --warn-only --json` and surface warnings before spawning implementation agents. The checker reads `.forgeflow-budget.json` from the repo root when present.
 
 ## Step 2: Parse the brief
 

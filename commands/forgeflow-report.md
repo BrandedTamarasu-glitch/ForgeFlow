@@ -117,12 +117,12 @@ Parse; extract agents with any MISSING or DRIFTED sections. Report by drift_scor
 
 ### 3e. Context savings
 
-When `scripts/forgeflow/summarize-context-telemetry.js` exists, run:
+Resolve `HELPER_DIR` to `scripts/forgeflow` when present, otherwise `$HOME/.claude/forgeflow/scripts/forgeflow`. When `${HELPER_DIR}/summarize-context-telemetry.js` exists, run:
 
 ```bash
-scripts/forgeflow/summarize-context-telemetry.js --root .forgeflow --json
-scripts/forgeflow/check-context-budget.js --root .forgeflow --max-compact-tokens 16000 --warn-only --json
-scripts/forgeflow/advise-context.js --root .forgeflow --record --json
+${HELPER_DIR}/summarize-context-telemetry.js --root .forgeflow --json
+${HELPER_DIR}/check-context-budget.js --root .forgeflow --max-compact-tokens 16000 --warn-only --json
+${HELPER_DIR}/advise-context.js --root .forgeflow --record --json
 ```
 
 Include estimated saved tokens, percent saved by telemetry kind, any context budget warnings, advisor recommendations for low savings, over-budget packets, or missing telemetry, and previous-run trend deltas. The budget checker reads `.forgeflow-budget.json` from the repo root when present. The advisor appends compact history to `.forgeflow/context-advisor-history.jsonl`.

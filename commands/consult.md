@@ -13,7 +13,16 @@ allowed-tools:
   - AskUserQuestion
 ---
 ```bash
-source "$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)/services/chat-bridge/init-session.sh" "consult" "$*"
+FORGEFLOW_REPO_ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null || true)"
+FORGEFLOW_INIT_SESSION="${FORGEFLOW_REPO_ROOT}/services/chat-bridge/init-session.sh"
+if [ -f "$FORGEFLOW_INIT_SESSION" ]; then
+  source "$FORGEFLOW_INIT_SESSION" "consult" "$*"
+else
+  CHAT_AVAILABLE=false
+  CHAT_SEND=""
+  ROOM_NAME="consult"
+  export CHAT_AVAILABLE CHAT_SEND ROOM_NAME
+fi
 ```
 <objective>
 Run the Forgeflow team in consultation mode before implementation begins. Each agent analyzes the task from their specialty, then Arbiter synthesizes an Implementation Brief that guides parallel implementation. If Compass's plan exists from a prior `/plan` run, it serves as the input for consultation.
@@ -59,19 +68,23 @@ DISCUSSION_PATH="${FORGEFLOW_DIR}/current-discussion.md"
 RESEARCH_PATH="${FORGEFLOW_DIR}/current-research.md"
 MEMORY_CONTEXT_PATH="${FORGEFLOW_DIR}/context/consult-memory.md"
 SCOPE_MANIFEST_PATH="${FORGEFLOW_DIR}/context/consult-scope-manifest.json"
-
-if [ -x "scripts/forgeflow/build-memory-context.js" ]; then
-  scripts/forgeflow/build-memory-context.js --query "${ARGUMENTS:-consult implementation brief architecture security frontend coordination}" --out "$MEMORY_CONTEXT_PATH" --json
+HELPER_DIR="scripts/forgeflow"
+if [ ! -x "${HELPER_DIR}/build-memory-context.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/build-memory-context.js" ]; then
+  HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
 
-if [ -x "scripts/forgeflow/build-scope-manifest.js" ]; then
-  scripts/forgeflow/build-scope-manifest.js --query "${ARGUMENTS:-consult implementation brief architecture security frontend coordination}" --out "$SCOPE_MANIFEST_PATH" --json
+if [ -x "${HELPER_DIR}/build-memory-context.js" ]; then
+  "${HELPER_DIR}/build-memory-context.js" --query "${ARGUMENTS:-consult implementation brief architecture security frontend coordination}" --out "$MEMORY_CONTEXT_PATH" --json
+fi
+
+if [ -x "${HELPER_DIR}/build-scope-manifest.js" ]; then
+  "${HELPER_DIR}/build-scope-manifest.js" --query "${ARGUMENTS:-consult implementation brief architecture security frontend coordination}" --out "$SCOPE_MANIFEST_PATH" --json
 fi
 ```
 
 If `MEMORY_CONTEXT_PATH` exists, use it as the first-pass memory summary for all consultation agents. Estimated context savings are written to `${FORGEFLOW_DIR}/context/memory-context-telemetry.json`. If `current-plan.md` exists, read it — this is Compass's implementation plan and should serve as the primary input for consultation. Read discussion and research files only when the memory summary is insufficient or exact source text is needed.
 If `SCOPE_MANIFEST_PATH` exists, use it as the first-pass file ownership map. Prefer the matching `${FORGEFLOW_DIR}/context/scope-packets/<lane>.md` packet for each agent prompt, and read only the files listed for each lane unless the packet marks a gap or an agent needs a precise extra source line. Estimated scope savings are written to `${FORGEFLOW_DIR}/context/scope-telemetry.json`.
-If `scripts/forgeflow/check-context-budget.js` exists, run `scripts/forgeflow/check-context-budget.js --root "$FORGEFLOW_DIR" --max-compact-tokens 16000 --warn-only --json` and surface warnings before spawning agents. The checker reads `.forgeflow-budget.json` from the repo root when present.
+If `${HELPER_DIR}/check-context-budget.js` exists, run `${HELPER_DIR}/check-context-budget.js --root "$FORGEFLOW_DIR" --max-compact-tokens 16000 --warn-only --json` and surface warnings before spawning agents. The checker reads `.forgeflow-budget.json` from the repo root when present.
 
 ## Step 1.5: Context Pre-Loading
 

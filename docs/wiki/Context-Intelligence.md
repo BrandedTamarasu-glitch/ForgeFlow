@@ -2,6 +2,12 @@
 
 Forgeflow now includes local-only context helpers that reduce token load before agents are spawned. The goal is to give each agent the smallest useful packet of current files, project memory, and scope constraints.
 
+In a repo checkout, examples use `scripts/forgeflow/`. A Claude install from `/update-forgeflow` places the same runtime helpers under:
+
+```text
+~/.claude/forgeflow/scripts/forgeflow/
+```
+
 ## What It Adds
 
 | Capability | Helper | Purpose |

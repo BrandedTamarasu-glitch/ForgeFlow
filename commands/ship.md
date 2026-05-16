@@ -13,7 +13,16 @@ allowed-tools:
   - AskUserQuestion
 ---
 ```bash
-source "$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)/services/chat-bridge/init-session.sh" "ship" "$*"
+FORGEFLOW_REPO_ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null || true)"
+FORGEFLOW_INIT_SESSION="${FORGEFLOW_REPO_ROOT}/services/chat-bridge/init-session.sh"
+if [ -f "$FORGEFLOW_INIT_SESSION" ]; then
+  source "$FORGEFLOW_INIT_SESSION" "ship" "$*"
+else
+  CHAT_AVAILABLE=false
+  CHAT_SEND=""
+  ROOM_NAME="ship"
+  export CHAT_AVAILABLE CHAT_SEND ROOM_NAME
+fi
 ```
 <objective>
 Ship the current branch. This is the final command in the lifecycle: `/discuss` -> `/research` -> `/plan` -> `/consult` -> `/implement` -> `/review` -> `/ship`. It generates a stakeholder presentation (HTML), creates or updates a pull request, monitors CI, and auto-fixes failures.

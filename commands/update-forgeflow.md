@@ -1,12 +1,12 @@
 ---
 name: update-forgeflow
-description: Pull the latest Forgeflow from the source repo and sync agents, commands, templates, and hooks to ~/.claude/
+description: Pull the latest Forgeflow from the source repo and sync agents, commands, project rules, patterns, runtime helpers, templates, and hooks to ~/.claude/
 argument-hint: ""
 allowed-tools:
   - Bash
 ---
 <objective>
-Pull the latest Forgeflow release from GitHub via curl and sync updated files into ~/.claude/. Shows exactly which files changed. Never touches custom agents or any non-Forgeflow files. No local clone required.
+Pull the latest Forgeflow release from GitHub via curl and sync updated files into ~/.claude/. Shows exactly which files changed. Never touches custom agents or any non-Forgeflow files. Runtime helpers are installed under `~/.claude/forgeflow/scripts/forgeflow/` so commands can work without a local Forgeflow clone.
 </objective>
 
 <process>
@@ -64,6 +64,15 @@ curl -sf "https://api.github.com/repos/BrandedTamarasu-glitch/ForgeFlow/contents
 curl -sf "https://api.github.com/repos/BrandedTamarasu-glitch/ForgeFlow/contents/forgeflow-patterns" \
   | python3 -c "import json,sys; [print('forgeflow-patterns/'+f['name']) for f in json.load(sys.stdin) if f['type']=='file' and f['name'].endswith('.md')]"
 
+curl -sf "https://api.github.com/repos/BrandedTamarasu-glitch/ForgeFlow/contents/scripts/forgeflow" \
+  | python3 -c "
+import json, sys
+for f in json.load(sys.stdin):
+    name = f['name']
+    if f['type'] == 'file' and (name.endswith('.js') or name.endswith('.sh')) and not name.startswith('test-'):
+        print('scripts/forgeflow/'+name)
+"
+
 # Also list files in each commands subdirectory
 curl -sf "https://api.github.com/repos/BrandedTamarasu-glitch/ForgeFlow/contents/commands" \
   | python3 -c "
@@ -101,6 +110,7 @@ for f in d.get('files', []):
     elif re.match(r'^commands/[^/]+(?:/[^/]+)?\.md$', name): print(name)
     elif re.match(r'^project-rules/[^/]+\.md$', name): print(name)
     elif re.match(r'^forgeflow-patterns/[^/]+\.md$', name): print(name)
+    elif re.match(r'^scripts/forgeflow/(?!test-)[^/]+\.(js|sh)$', name): print(name)
     elif name in ('templates/ship-presentation.html', 'templates/forgeflow-budget.json', 'hooks/forgeflow-gate.js', 'hooks/forgeflow-context-monitor.js', 'hooks/forgeflow-statusline.js', 'hooks/forgeflow-telemetry.js'): print(name)
 "
 ```
@@ -124,6 +134,7 @@ for f in d.get('files', []):
         continue
     name = f['filename']
     if re.match(r'^(agents|commands|templates|hooks|project-rules|forgeflow-patterns)/', name): print(name)
+    elif re.match(r'^scripts/forgeflow/(?!test-)[^/]+\.(js|sh)$', name): print(name)
 "
 ```
 
@@ -133,10 +144,14 @@ Store as `DELETED_FILES`.
 
 Ensure destination directories exist:
 ```bash
-mkdir -p ~/.claude/agents ~/.claude/agents/_shared ~/.claude/commands ~/.claude/templates ~/.claude/hooks ~/.claude/project-rules ~/.claude/forgeflow-patterns
+mkdir -p ~/.claude/agents ~/.claude/agents/_shared ~/.claude/commands ~/.claude/templates ~/.claude/hooks ~/.claude/project-rules ~/.claude/forgeflow-patterns ~/.claude/forgeflow/scripts/forgeflow
 ```
 
-Raw base URL: `https://raw.githubusercontent.com/BrandedTamarasu-glitch/ForgeFlow/main/`
+Raw base URL must be pinned to the exact SHA fetched in Step 1:
+
+```bash
+RAW_BASE_URL="https://raw.githubusercontent.com/BrandedTamarasu-glitch/ForgeFlow/${LATEST}/"
+```
 
 Skip any file in the `agents/` category whose destination basename starts with `custom-` — these are user-created agents that must never be overwritten.
 
@@ -153,17 +168,34 @@ For each file in `FILES_TO_SYNC`, download it to the matching destination. **For
 - `hooks/forgeflow-context-monitor.js` → `~/.claude/hooks/forgeflow-context-monitor.js`
 - `hooks/forgeflow-statusline.js` → `~/.claude/hooks/forgeflow-statusline.js`
 - `hooks/forgeflow-telemetry.js` → `~/.claude/hooks/forgeflow-telemetry.js`
+- `scripts/forgeflow/NAME.js` → `~/.claude/forgeflow/scripts/forgeflow/NAME.js`  *(skip `test-*`)*
+- `scripts/forgeflow/NAME.sh` → `~/.claude/forgeflow/scripts/forgeflow/NAME.sh`  *(skip `test-*`)*
 
-Use `curl -sf` with `-o` for each download. If any download fails (non-zero exit), report the failure and continue with the remaining files — do not abort the entire sync.
+Use `curl -sf` with `-o` for each download. If any download fails (non-zero exit), report the failure and continue with the remaining files — do not abort the entire sync. Track failures as `FAILED_FILES`.
+
+For every successfully downloaded `scripts/forgeflow/*.js` and `scripts/forgeflow/*.sh`, run:
+
+```bash
+chmod 755 "$DEST"
+```
 
 Set `HOOK_CHANGED=true` if `hooks/forgeflow-gate.js` was in `FILES_TO_SYNC`.
+Set `SCRIPT_CHANGED=true` if any `scripts/forgeflow/*` file was in `FILES_TO_SYNC`.
 
-Track count of files successfully downloaded as `N`.
+Track count of files successfully downloaded as `N`. For each successful file, record:
+- source path
+- destination path
+- before SHA-256 of the destination, or `new` when it did not exist
+- after SHA-256 of the destination
 
 ## Step 5 — Save Version
 
+If `FAILED_FILES` is non-empty, do not update `~/.claude/forgeflow-version`. Report the failed files and instruct the user to re-run `/update-forgeflow` after fixing network or permission issues.
+
 ```bash
-printf '%s\n' "$LATEST" > ~/.claude/forgeflow-version
+if [ -z "${FAILED_FILES:-}" ]; then
+  printf '%s\n' "$LATEST" > ~/.claude/forgeflow-version
+fi
 ```
 
 ## Step 6 — Report
@@ -173,8 +205,8 @@ printf '%s\n' "$LATEST" > ~/.claude/forgeflow-version
 Forgeflow updated  ($CURRENT_SHORT → $LATEST_SHORT)
 
 Files synced (N):
-  {file 1}
-  {file 2}
+  {file 1}  {before-sha} → {after-sha}
+  {file 2}  {before-sha} → {after-sha}
   ...
 ```
 
@@ -196,6 +228,12 @@ still points to the correct path. Hook wiring is NOT auto-updated by /update-for
 Check: cat ~/.claude/settings.json | grep forgeflow
 ```
 
+If `SCRIPT_CHANGED=true`, append:
+```
+Runtime helpers updated under ~/.claude/forgeflow/scripts/forgeflow/.
+Commands should prefer that installed helper root when project-local scripts/forgeflow/ is absent.
+```
+
 </process>
 
 <success_criteria>
@@ -203,13 +241,14 @@ Check: cat ~/.claude/settings.json | grep forgeflow
 - [ ] Reads version from ~/.claude/forgeflow-version; exits cleanly if already up to date
 - [ ] First run: downloads all tracked files via contents API (no prior version needed)
 - [ ] Incremental: uses compare API to download only added/modified tracked files
-- [ ] Tracked paths: agents/*.md (flat), agents/_shared/*.md, commands/*.md (flat), commands/*/*.md (one-level subdirs), project-rules/*.md (flat), templates/ship-presentation.html, templates/forgeflow-budget.json, hooks/forgeflow-gate.js, hooks/forgeflow-context-monitor.js, hooks/forgeflow-statusline.js, hooks/forgeflow-telemetry.js
+- [ ] Tracked paths: agents/*.md (flat), agents/_shared/*.md, commands/*.md (flat), commands/*/*.md (one-level subdirs), project-rules/*.md (flat), forgeflow-patterns/*.md, scripts/forgeflow/*.js and *.sh except test-*, templates/ship-presentation.html, templates/forgeflow-budget.json, hooks/forgeflow-gate.js, hooks/forgeflow-context-monitor.js, hooks/forgeflow-statusline.js, hooks/forgeflow-telemetry.js
 - [ ] Commands in subdirectories (e.g. commands/agent-chat/on.md) sync to ~/.claude/commands/SUBDIR/NAME.md — subdir created if needed
+- [ ] Runtime helpers sync to ~/.claude/forgeflow/scripts/forgeflow/ and are chmod 755
 - [ ] Never auto-deletes files from ~/.claude/ — deletions reported only
 - [ ] Never overwrites files in ~/.claude/agents/ whose basename starts with `custom-`
 - [ ] Never touches GSD agents or other non-Forgeflow files
 - [ ] Individual download failures are reported but do not abort the sync
-- [ ] Saves new SHA to ~/.claude/forgeflow-version after sync
+- [ ] Saves new SHA to ~/.claude/forgeflow-version only after all required downloads succeed
 - [ ] Summary lists every file synced with before/after SHAs
 - [ ] Hook-changed warning appears when hooks/forgeflow-gate.js is in the diff
 - [ ] No local clone required — works from curl alone

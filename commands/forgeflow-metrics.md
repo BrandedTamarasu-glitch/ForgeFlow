@@ -149,9 +149,13 @@ scripts/forgeflow/record-review-outcome.js --summary <jsonl> --json
 When context telemetry artifacts exist:
 
 ```bash
-scripts/forgeflow/summarize-context-telemetry.js --root .forgeflow --json
-scripts/forgeflow/check-context-budget.js --root .forgeflow --max-compact-tokens 16000 --warn-only --json
-scripts/forgeflow/advise-context.js --root .forgeflow --record --json
+HELPER_DIR="scripts/forgeflow"
+if [ ! -x "${HELPER_DIR}/summarize-context-telemetry.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/summarize-context-telemetry.js" ]; then
+  HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
+fi
+${HELPER_DIR}/summarize-context-telemetry.js --root .forgeflow --json
+${HELPER_DIR}/check-context-budget.js --root .forgeflow --max-compact-tokens 16000 --warn-only --json
+${HELPER_DIR}/advise-context.js --root .forgeflow --record --json
 ```
 
 Budget defaults can be overridden with repo-local `.forgeflow-budget.json`:
@@ -171,7 +175,7 @@ Budget defaults can be overridden with repo-local `.forgeflow-budget.json`:
 To seed the config in a project without overwriting an existing file:
 
 ```bash
-scripts/forgeflow/seed-budget-config.js --json
+${HELPER_DIR}/seed-budget-config.js --json
 ```
 
 ## Step 5: Signals section (interpretation)

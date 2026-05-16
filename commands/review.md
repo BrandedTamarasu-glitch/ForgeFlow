@@ -13,7 +13,16 @@ allowed-tools:
   - AskUserQuestion
 ---
 ```bash
-source "$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)/services/chat-bridge/init-session.sh" "review" "$*"
+FORGEFLOW_REPO_ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null || true)"
+FORGEFLOW_INIT_SESSION="${FORGEFLOW_REPO_ROOT}/services/chat-bridge/init-session.sh"
+if [ -f "$FORGEFLOW_INIT_SESSION" ]; then
+  source "$FORGEFLOW_INIT_SESSION" "review" "$*"
+else
+  CHAT_AVAILABLE=false
+  CHAT_SEND=""
+  ROOM_NAME="review"
+  export CHAT_AVAILABLE CHAT_SEND ROOM_NAME
+fi
 ```
 <objective>
 Run the Forgeflow review team on changed files. Works in any project.
@@ -124,10 +133,14 @@ FILE_COUNT=$(echo "$FILES" | grep -c . || echo 0)
 
 ### 0.5a.1. Prefer shared route helper
 
-If `scripts/forgeflow/explain-review-route.js` exists, use it as the authoritative classifier so Claude and Codex reviews share the same routing policy:
+If a Forgeflow route helper exists in project-local `scripts/forgeflow/` or the installed `$HOME/.claude/forgeflow/scripts/forgeflow/` helper root, use it as the authoritative classifier so Claude and Codex reviews share the same routing policy:
 
 ```bash
 PROJECT_NAME=$(basename "$(pwd)")
+HELPER_DIR="scripts/forgeflow"
+if [ ! -x "${HELPER_DIR}/explain-review-route.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/explain-review-route.js" ]; then
+  HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
+fi
 DEFAULT_CALIBRATION=".forgeflow/${PROJECT_NAME}/calibration-summary.json"
 CALIBRATION_ARG=""
 
@@ -154,7 +167,7 @@ if [ "$CI_MODE" = "true" ]; then
   CI_ARG="--ci"
 fi
 
-ROUTING_JSON=$(scripts/forgeflow/explain-review-route.js --json --files /tmp/_review_files_unique_$$ --lines "$LINES_CHANGED" $MODE_ARG $CI_ARG $CALIBRATION_ARG)
+ROUTING_JSON=$("${HELPER_DIR}/explain-review-route.js" --json --files /tmp/_review_files_unique_$$ --lines "$LINES_CHANGED" $MODE_ARG $CI_ARG $CALIBRATION_ARG)
 ROUTING_MODE=$(printf '%s' "$ROUTING_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log(JSON.parse(s).mode))')
 ROUTING_VERIFIER=$(printf '%s' "$ROUTING_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log(JSON.parse(s).verifier||"not-required"))')
 ROUTING_TELEMETRY_HINTS=$(printf '%s' "$ROUTING_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log((JSON.parse(s).telemetry_hints||[]).map(h=>`${h.type}:${h.class}`).join(", ")))')
@@ -386,12 +399,12 @@ Skip this step only when `$ARGUMENTS` contains `--no-context-pack`.
 CONTEXT_PACK_DIR="${FORGEFLOW_DIR}/context/latest"
 CONTEXT_PACK_ARG=""
 
-if ! echo "$ARGUMENTS" | grep -q -- '--no-context-pack' && [ -x "scripts/forgeflow/build-context-pack.js" ]; then
+if ! echo "$ARGUMENTS" | grep -q -- '--no-context-pack' && [ -x "${HELPER_DIR}/build-context-pack.js" ]; then
   TASK_ARGS=()
   if [ -n "${ARGUMENTS:-}" ]; then
     TASK_ARGS=(--task "$ARGUMENTS")
   fi
-  scripts/forgeflow/build-context-pack.js \
+  "${HELPER_DIR}/build-context-pack.js" \
     --files /tmp/_review_files_unique_$$ \
     --lines "$LINES_CHANGED" \
     $MODE_ARG \
@@ -406,15 +419,15 @@ fi
 
 When `.forgeflow/${PROJECT_NAME}` exists, context pack generation also refreshes `.forgeflow/${PROJECT_NAME}/index/memory-index.json` and uses that local index before falling back to raw memory scans. It writes estimated context savings to `${CONTEXT_PACK_DIR}/context-telemetry.json`. Use `--no-memory-index` only when debugging index generation.
 
-If `scripts/forgeflow/check-context-budget.js` exists, run it after context pack generation. It reads `.forgeflow-budget.json` from the repo root when present. In interactive mode, use `--warn-only`; in CI mode, omit `--warn-only` so over-budget packets fail fast:
+If `${HELPER_DIR}/check-context-budget.js` exists, run it after context pack generation. It reads `.forgeflow-budget.json` from the repo root when present. In interactive mode, use `--warn-only`; in CI mode, omit `--warn-only` so over-budget packets fail fast:
 
 ```bash
-if [ -x "scripts/forgeflow/check-context-budget.js" ]; then
+if [ -x "${HELPER_DIR}/check-context-budget.js" ]; then
   BUDGET_WARN_ARG="--warn-only"
   if [ "$CI_MODE" = "true" ]; then
     BUDGET_WARN_ARG=""
   fi
-  scripts/forgeflow/check-context-budget.js --root "$FORGEFLOW_DIR" --max-compact-tokens 16000 $BUDGET_WARN_ARG --json
+  "${HELPER_DIR}/check-context-budget.js" --root "$FORGEFLOW_DIR" --max-compact-tokens 16000 $BUDGET_WARN_ARG --json
 fi
 ```
 

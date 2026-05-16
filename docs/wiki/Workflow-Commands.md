@@ -52,3 +52,9 @@ scripts/forgeflow/advise-context.js --root .forgeflow --record --json
 ```
 
 These helpers produce bounded context packets, compact memory summaries, file ownership packets, budget warnings, trimming recommendations, and trend history.
+
+For a Claude install created by `/update-forgeflow`, the helper root is:
+
+```text
+~/.claude/forgeflow/scripts/forgeflow/
+```

@@ -7,10 +7,35 @@ git clone https://github.com/BrandedTamarasu-glitch/ForgeFlow.git
 cd ForgeFlow
 ```
 
+## Claude Install
+
+From Claude Code, run:
+
+```text
+/update-forgeflow
+```
+
+This syncs Claude agents, commands, hooks, templates, project rules, patterns, and runtime helpers into `~/.claude/`.
+
+Runtime helpers are installed at:
+
+```text
+~/.claude/forgeflow/scripts/forgeflow/
+```
+
+Set a helper root before running project-local helpers:
+
+```bash
+HELPER_ROOT="scripts/forgeflow"
+if [ ! -x "${HELPER_ROOT}/ensure-forgeflow-state.sh" ]; then
+  HELPER_ROOT="$HOME/.claude/forgeflow/scripts/forgeflow"
+fi
+```
+
 ## Bootstrap State
 
 ```bash
-scripts/forgeflow/ensure-forgeflow-state.sh
+${HELPER_ROOT}/ensure-forgeflow-state.sh
 ```
 
 This creates local workflow state under:
@@ -24,13 +49,13 @@ The state directory is ignored by git.
 Audit and repair missing project-local state:
 
 ```bash
-scripts/forgeflow/health-check.js --fix --json
+${HELPER_ROOT}/health-check.js --fix --json
 ```
 
 Seed context budget config without overwriting an existing file:
 
 ```bash
-scripts/forgeflow/seed-budget-config.js --json
+${HELPER_ROOT}/seed-budget-config.js --json
 ```
 
 ## Claude Code
@@ -70,4 +95,10 @@ scripts/forgeflow/build-scope-manifest.js --json
 scripts/forgeflow/summarize-context-telemetry.js --root .forgeflow --json
 scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json
 scripts/forgeflow/advise-context.js --root .forgeflow --record --json
+```
+
+If you installed through `/update-forgeflow` and do not have a local checkout, replace `scripts/forgeflow/` with:
+
+```text
+~/.claude/forgeflow/scripts/forgeflow/
 ```

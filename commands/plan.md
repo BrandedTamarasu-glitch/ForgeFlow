@@ -13,7 +13,16 @@ allowed-tools:
   - AskUserQuestion
 ---
 ```bash
-source "$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)/services/chat-bridge/init-session.sh" "plan" "$*"
+FORGEFLOW_REPO_ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null || true)"
+FORGEFLOW_INIT_SESSION="${FORGEFLOW_REPO_ROOT}/services/chat-bridge/init-session.sh"
+if [ -f "$FORGEFLOW_INIT_SESSION" ]; then
+  source "$FORGEFLOW_INIT_SESSION" "plan" "$*"
+else
+  CHAT_AVAILABLE=false
+  CHAT_SEND=""
+  ROOM_NAME="plan"
+  export CHAT_AVAILABLE CHAT_SEND ROOM_NAME
+fi
 ```
 <objective>
 Run Compass and Atlas in planning mode to create a structured implementation plan that guides the technical consultation phase.
@@ -43,8 +52,12 @@ Build compact local memory context before reading phase files directly:
 PROJECT_NAME=$(basename "$(pwd)")
 FORGEFLOW_DIR=".forgeflow/${PROJECT_NAME}"
 MEMORY_CONTEXT_PATH="${FORGEFLOW_DIR}/context/plan-memory.md"
-if [ -x "scripts/forgeflow/build-memory-context.js" ]; then
-  scripts/forgeflow/build-memory-context.js --query "${ARGUMENTS:-planning scope dependencies risks accessibility}" --out "$MEMORY_CONTEXT_PATH" --json
+HELPER_DIR="scripts/forgeflow"
+if [ ! -x "${HELPER_DIR}/build-memory-context.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/build-memory-context.js" ]; then
+  HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
+fi
+if [ -x "${HELPER_DIR}/build-memory-context.js" ]; then
+  "${HELPER_DIR}/build-memory-context.js" --query "${ARGUMENTS:-planning scope dependencies risks accessibility}" --out "$MEMORY_CONTEXT_PATH" --json
 fi
 ```
 

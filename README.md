@@ -56,28 +56,49 @@ git clone https://github.com/BrandedTamarasu-glitch/ForgeFlow.git
 cd ForgeFlow
 ```
 
+Claude users can also install or update the command and helper bundle from inside Claude Code:
+
+```text
+/update-forgeflow
+```
+
+That syncs Claude agents, commands, hooks, templates, project rules, patterns, and runtime helpers into `~/.claude/`. Runtime helpers are installed at:
+
+```text
+~/.claude/forgeflow/scripts/forgeflow/
+```
+
+For commands below, use the repo-local helper path when working from a checkout, or the installed helper root when using the no-clone Claude install:
+
+```bash
+HELPER_ROOT="scripts/forgeflow"
+if [ ! -x "${HELPER_ROOT}/ensure-forgeflow-state.sh" ]; then
+  HELPER_ROOT="$HOME/.claude/forgeflow/scripts/forgeflow"
+fi
+```
+
 Bootstrap local state:
 
 ```bash
-scripts/forgeflow/ensure-forgeflow-state.sh
+${HELPER_ROOT}/ensure-forgeflow-state.sh
 ```
 
 Audit and repair project-local Forgeflow state:
 
 ```bash
-scripts/forgeflow/health-check.js --fix --json
+${HELPER_ROOT}/health-check.js --fix --json
 ```
 
 To seed a project-local context budget config without overwriting an existing file:
 
 ```bash
-scripts/forgeflow/seed-budget-config.js --json
+${HELPER_ROOT}/seed-budget-config.js --json
 ```
 
 To inspect local context savings and get trimming recommendations:
 
 ```bash
-scripts/forgeflow/advise-context.js --root .forgeflow --record --json
+${HELPER_ROOT}/advise-context.js --root .forgeflow --record --json
 ```
 
 Run a first review from Claude Code:
@@ -155,6 +176,12 @@ scripts/forgeflow/build-scope-manifest.js --json
 scripts/forgeflow/summarize-context-telemetry.js --root .forgeflow --json
 scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json
 scripts/forgeflow/advise-context.js --root .forgeflow --record --json
+```
+
+When Forgeflow is installed through `/update-forgeflow` without a local repo checkout, use the installed helper root instead:
+
+```bash
+~/.claude/forgeflow/scripts/forgeflow/advise-context.js --root .forgeflow --record --json
 ```
 
 The context advisor appends compact history to:

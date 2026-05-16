@@ -27,7 +27,8 @@
     "hooks": "hooks/",
     "templates": "templates/",
     "project-rules": "project-rules/",
-    "forgeflow-patterns": "forgeflow-patterns/"
+    "forgeflow-patterns": "forgeflow-patterns/",
+    "runtime-helpers": "scripts/forgeflow/"
   },
   "install": {
     "destinations": {
@@ -38,13 +39,18 @@
       "hooks/*.js": "~/.claude/hooks/",
       "templates/*": "~/.claude/templates/",
       "project-rules/*.md": "~/.claude/project-rules/",
-      "forgeflow-patterns/*.md": "~/.claude/forgeflow-patterns/"
+      "forgeflow-patterns/*.md": "~/.claude/forgeflow-patterns/",
+      "scripts/forgeflow/*.js": "~/.claude/forgeflow/scripts/forgeflow/",
+      "scripts/forgeflow/*.sh": "~/.claude/forgeflow/scripts/forgeflow/"
     },
     "preserve": [
       "~/.claude/agents/custom-*.md"
     ],
+    "exclude": [
+      "scripts/forgeflow/test-*"
+    ],
     "post-install": {
-      "description": "After install, add the four hooks to ~/.claude/settings.json PostToolUse array. See README Installation section.",
+      "description": "After install, add the three PostToolUse hooks to ~/.claude/settings.json and wire the statusline separately. See README Installation section.",
       "hooks-to-wire": [
         "forgeflow-gate.js",
         "forgeflow-context-monitor.js",
