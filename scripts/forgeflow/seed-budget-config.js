@@ -56,7 +56,11 @@ function helperRoot() {
 }
 
 function defaultTemplate() {
-  return path.join(helperRoot(), 'templates', 'forgeflow-budget.json');
+  const candidates = [
+    path.join(helperRoot(), 'templates', 'forgeflow-budget.json'),
+    path.resolve(helperRoot(), '..', 'templates', 'forgeflow-budget.json'),
+  ];
+  return candidates.find((file) => fs.existsSync(file)) || candidates[0];
 }
 
 function defaultOut(root) {

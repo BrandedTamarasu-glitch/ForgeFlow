@@ -2,7 +2,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { seedBudgetConfig } = require('./seed-budget-config');
+const { defaultTemplate, seedBudgetConfig } = require('./seed-budget-config');
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-budget-seed-'));
 const template = path.join(tmpDir, 'template.json');
@@ -29,6 +29,7 @@ const checks = [
   ['no overwrite', secondContent.max_compact_tokens === 9999],
   ['force written', forced.written === true],
   ['force restored template', forcedContent.max_compact_tokens === 1234],
+  ['default template exists', fs.existsSync(defaultTemplate())],
 ];
 
 let failed = 0;
