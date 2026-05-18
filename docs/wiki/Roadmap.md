@@ -4,11 +4,15 @@ Forgeflow is currently a local-first developer workflow for Claude Code and Code
 
 ## Current Focus
 
-Forgeflow now has the local install, health, repair, rollback, release, docs, demo, template-installer, evaluation, adoption, and field-validation guidance needed for broader use. The next phase is distribution readiness: making the release path easy to verify, package, and hand to new users without relying on project-local context.
+Forgeflow now has the local install, health, repair, rollback, release, docs, demo, template-installer, evaluation, adoption, field-validation, and distribution-readiness guidance needed for broader use. The next phase is team trial readiness: preparing a small-team rollout path with clear success criteria, privacy boundaries, support triage, and evidence collection.
 
-## Distribution Readiness Work
+## Team Trial Readiness Work
 
-No active distribution-readiness item is currently selected.
+- Define a maintainer pilot checklist for trying Forgeflow on a real team branch.
+- Document team rollout privacy boundaries for local state, summaries, and optional sharing.
+- Add support triage guidance for install, health, routing, context, and review-quality issues.
+- Capture adoption criteria for when a trial is ready to expand beyond one maintainer.
+- Decide which CI or headless-review ideas stay deferred until team trials show demand.
 
 ## Recently Added
 
@@ -54,3 +58,4 @@ No active distribution-readiness item is currently selected.
 - package and release onboarding guide for new users arriving from public distribution surfaces
 - release gate guide tying release checks to public-summary examples before tagging
 - release-facing settings and recovery guide for manual wiring, restarts, repair, and rollback
+- completed distribution-readiness guidance for install verification, metadata alignment, onboarding, release gates, and recovery
