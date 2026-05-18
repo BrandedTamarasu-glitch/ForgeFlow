@@ -19,6 +19,7 @@ const checks = [
   ['shell script executable', manifestEntry('scripts/forgeflow/ensure-forgeflow-state.sh', home).executable === true],
   ['runtime helpers include updater', RUNTIME_HELPERS.includes('scripts/forgeflow/update-forgeflow.js')],
   ['runtime helpers include version helper', RUNTIME_HELPERS.includes('scripts/forgeflow/forgeflow-version.js')],
+  ['runtime helpers include template installer', RUNTIME_HELPERS.includes('scripts/forgeflow/install-template.js')],
   ['test helper not consumer managed', !isManagedSource('scripts/forgeflow/test-health-check.js')],
   ['non managed rejected', !isManagedSource('services/dashboard/server.js')],
   ['path escape rejected', !isManagedSource('../scripts/forgeflow/health-check.js')],

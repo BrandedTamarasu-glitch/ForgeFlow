@@ -26,6 +26,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/generate-codex-agent-stubs.js',
   'scripts/forgeflow/health-check.js',
   'scripts/forgeflow/index-memory.js',
+  'scripts/forgeflow/install-template.js',
   'scripts/forgeflow/install-manifest.js',
   'scripts/forgeflow/record-review-outcome.js',
   'scripts/forgeflow/render-ship-presentation.js',

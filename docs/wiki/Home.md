@@ -22,6 +22,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 - [Common Stack Examples](Common-Stack-Examples)
 - [Migration Guide](Migration-Guide)
 - [Release Process](Release-Process)
+- [Template Installer](Template-Installer)
 - [Local Data And Privacy](Local-Data-And-Privacy)
 - [Roadmap](Roadmap)
 
