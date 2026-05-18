@@ -106,6 +106,15 @@ Read each of these if present -- do not fail if missing:
 
 Also check for `CONTEXT.md` in the working directory. If it exists, read it and pass to Compass and Atlas — it provides service-specific context that improves presentation quality.
 
+### 1d.1 Implementation notes quality check
+If `scripts/forgeflow/check-implementation-notes.js` is available, run:
+
+```bash
+scripts/forgeflow/check-implementation-notes.js --project-dir "${FORGEFLOW_DIR}" --json
+```
+
+Treat `warn` as a visible ship note, not a blocker. Treat `fail` as a hard stop because it means sensitive content or another release-blocking notes problem was detected. Include the checker status in the PR body and ship artifacts when using `ship-prepare.sh`.
+
 ### 1e. Detect frontend files
 Check `git diff ${BASE_BRANCH} --name-only` for frontend files. Frontend detection (same as /review):
 files in `frontend/`, `src/components/`, `src/pages/`, `public/`, or with extensions `.tsx`, `.jsx`, `.vue`, `.svelte`, `.css`, `.scss`, `.html`.

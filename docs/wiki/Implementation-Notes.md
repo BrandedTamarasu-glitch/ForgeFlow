@@ -49,6 +49,8 @@ For a specific project-local state directory:
 scripts/forgeflow/check-implementation-notes.js --project-dir .forgeflow/<project-name> --json
 ```
 
+During ship prep, Forgeflow writes the checker result to `.forgeflow/<project-name>/ship/implementation-notes-check.json` and includes its status in the generated PR body. Warnings remain visible; failures stop shipping.
+
 ## Suggested Format
 
 ```markdown

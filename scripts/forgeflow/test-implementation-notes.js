@@ -137,6 +137,12 @@ fs.writeFileSync(path.join(shipNotesDir, 'implementation-notes.md'), [
   '',
   '- 2026-05-18T00:00:00Z | Arbiter | spec-gap | Ship helper needed a summary bridge',
   '',
+  '## Tradeoffs',
+  '',
+  '## Deviations',
+  '',
+  '## Follow-ups',
+  '',
   '## Validation Notes',
   '',
   '- Manual validation note without pipe metadata',
@@ -148,10 +154,16 @@ const shipPrepareResult = spawnSync(path.join(repoRoot, 'scripts/forgeflow/ship-
 });
 const preparedSummaryPath = path.join(shipNotesDir, 'ship', 'ship-summary.json');
 const preparedHtmlPath = path.join(shipNotesDir, 'ship', 'ship-presentation.html');
+const preparedCheckPath = path.join(shipNotesDir, 'ship', 'implementation-notes-check.json');
+const preparedBodyPath = path.join(shipNotesDir, 'ship', 'pr-body.md');
 const preparedSummary = fs.existsSync(preparedSummaryPath)
   ? JSON.parse(fs.readFileSync(preparedSummaryPath, 'utf8'))
   : {};
 const preparedHtml = fs.existsSync(preparedHtmlPath) ? fs.readFileSync(preparedHtmlPath, 'utf8') : '';
+const preparedCheck = fs.existsSync(preparedCheckPath)
+  ? JSON.parse(fs.readFileSync(preparedCheckPath, 'utf8'))
+  : {};
+const preparedBody = fs.existsSync(preparedBodyPath) ? fs.readFileSync(preparedBodyPath, 'utf8') : '';
 
 const checks = [
   ['state seeds notes', files.ensure.includes('implementation-notes.md') && files.ensure.includes('## Spec Gaps')],
@@ -171,6 +183,8 @@ const checks = [
   ['ship prepare emits canonical notes schema', shipPrepareResult.status === 0 && preparedSummary.implementation_notes && !preparedSummary.implementationNotes],
   ['ship prepare summarizes log entries', preparedSummary.implementation_notes?.decisions?.[0] === 'Markdown stays canonical - user asked for html or markdown'],
   ['ship prepare renders notes html', preparedHtml.includes('Implementation Notes') && preparedHtml.includes('Ship helper needed a summary bridge')],
+  ['ship prepare writes notes check', preparedCheck.status === 'pass' && preparedCheck.ship_summary === preparedSummaryPath],
+  ['ship prepare body includes notes check', preparedBody.includes('## Implementation Notes Check') && preparedBody.includes('implementation-notes-check.json')],
   ['atlas present schema includes notes', files.atlasPresent.includes('"implementation_notes"')],
   ['arbiter consult brief requires notes', files.arbiterConsult.includes('## Implementation Notes Requirements')],
   ['arbiter implement verifies notes', files.arbiterImplement.includes('## Implementation Notes') && files.arbiterImplement.includes('Redaction check')],

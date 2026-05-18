@@ -159,6 +159,13 @@ node "$HELPER_ROOT/scripts/forgeflow/render-ship-presentation.js" \
   "$SHIP_DIR/ship-summary.json" \
   "$SHIP_DIR/ship-presentation.html"
 
+NOTES_CHECK_JSON="$SHIP_DIR/implementation-notes-check.json"
+node "$HELPER_ROOT/scripts/forgeflow/check-implementation-notes.js" \
+  --project-dir "$FORGEFLOW_DIR" \
+  --ship-summary "$SHIP_DIR/ship-summary.json" \
+  --json > "$NOTES_CHECK_JSON"
+NOTES_CHECK_STATUS="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("status", "unknown"))' "$NOTES_CHECK_JSON")"
+
 BODY_FILE="$SHIP_DIR/pr-body.md"
 cat > "$BODY_FILE" <<EOF
 ## Summary
@@ -172,12 +179,19 @@ $SUMMARY_TEXT
 - Status: $REVIEW_GATE
 - Note: $REVIEW_GATE_NOTE
 
+## Implementation Notes Check
+
+- Status: $NOTES_CHECK_STATUS
+- Report: $NOTES_CHECK_JSON
+
 ## Generated Artifacts
 
 - $SHIP_DIR/ship-summary.json
 - $SHIP_DIR/ship-presentation.html
+- $NOTES_CHECK_JSON
 EOF
 
 printf 'SUMMARY_JSON=%s\n' "$SHIP_DIR/ship-summary.json"
 printf 'PRESENTATION_HTML=%s\n' "$SHIP_DIR/ship-presentation.html"
 printf 'PR_BODY_MD=%s\n' "$BODY_FILE"
+printf 'IMPLEMENTATION_NOTES_CHECK_JSON=%s\n' "$NOTES_CHECK_JSON"
