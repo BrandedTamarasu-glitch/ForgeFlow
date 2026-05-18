@@ -54,6 +54,12 @@ To include context savings and budget status:
 scripts/forgeflow/render-evaluation-report.js --outcomes .forgeflow/Forgeflow/review-outcomes.jsonl --context-root .forgeflow --budget-config .forgeflow-budget.json --out .forgeflow/Forgeflow/evaluation-report.md
 ```
 
+To create a lightweight publishable summary:
+
+```bash
+scripts/forgeflow/render-evaluation-report.js --outcomes .forgeflow/Forgeflow/review-outcomes.jsonl --context-root .forgeflow --budget-config .forgeflow-budget.json --public --out .forgeflow/Forgeflow/evaluation-summary.md
+```
+
 ## Metrics
 
 Track:
@@ -67,7 +73,7 @@ Track:
 - post-merge regressions when known
 - accessibility findings as a first-class finding class
 
-The generated report includes confirmation rate, false positive rate, verifier rejection rate, auto-fix success and failure rates, regression rate, average review minutes, finding rates per review and per hour, mode counts, workflow comparison rows, context savings, budget violations, and per-class finding totals.
+The generated report includes confirmation rate, false positive rate, verifier rejection rate, auto-fix success and failure rates, regression rate, average review minutes, finding rates per review and per hour, mode counts, workflow comparison rows, context savings, budget violations, and per-class finding totals. Use `--public` for a shorter aggregate report with privacy-safe notes and no raw record rows.
 
 ## Privacy Rules
 

@@ -9,6 +9,7 @@ const {
   buildContextEvaluation,
   readOutcomes,
   renderMarkdown,
+  renderPublicMarkdown,
 } = require('./render-evaluation-report');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
@@ -36,9 +37,14 @@ fs.writeFileSync(contextFile, `${JSON.stringify({
 const context = buildContextEvaluation([contextFile]);
 const reportWithContext = attachContextEvaluation(report, context);
 const markdown = renderMarkdown(reportWithContext);
+const publicMarkdown = renderPublicMarkdown(reportWithContext);
 const outFile = path.join(tmpDir, 'evaluation.md');
+const publicOutFile = path.join(tmpDir, 'public-evaluation.md');
 const script = path.join(repoRoot, 'scripts/forgeflow/render-evaluation-report.js');
 const result = spawnSync(process.execPath, [script, '--outcomes', fixture, '--context-file', contextFile, '--out', outFile], {
+  encoding: 'utf8',
+});
+const publicResult = spawnSync(process.execPath, [script, '--outcomes', fixture, '--context-file', contextFile, '--public', '--out', publicOutFile], {
   encoding: 'utf8',
 });
 
@@ -63,9 +69,13 @@ const checks = [
   ['markdown workflow table', markdown.includes('## Workflow Comparison')],
   ['markdown efficiency table', markdown.includes('## Efficiency')],
   ['markdown context table', markdown.includes('## Context Efficiency')],
+  ['public markdown title', publicMarkdown.includes('# Forgeflow Evaluation Summary')],
+  ['public markdown privacy note', publicMarkdown.includes('without exposing source code')],
   ['markdown class table', markdown.includes('| accessibility | 1 | 1 | 0 |')],
   ['cli exit', result.status === 0],
   ['cli wrote report', fs.existsSync(outFile) && fs.readFileSync(outFile, 'utf8').includes('False positive rate')],
+  ['public cli exit', publicResult.status === 0],
+  ['public cli wrote report', fs.existsSync(publicOutFile) && fs.readFileSync(publicOutFile, 'utf8').includes('Quality Summary')],
 ];
 
 const failed = checks.filter(([, ok]) => !ok).map(([name]) => name);

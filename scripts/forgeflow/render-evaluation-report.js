@@ -19,7 +19,7 @@ const {
 
 function usage() {
   console.error([
-    'Usage: render-evaluation-report.js --outcomes <jsonl> [--out <md>] [--json]',
+    'Usage: render-evaluation-report.js --outcomes <jsonl> [--out <md>] [--json] [--public]',
     '       [--context-root <dir>] [--context-file <json>] [--budget-config <json>]',
   ].join('\n'));
 }
@@ -32,6 +32,7 @@ function parseArgs(argv) {
     budgetConfig: '',
     out: '',
     json: false,
+    public: false,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -48,6 +49,8 @@ function parseArgs(argv) {
       opts.out = path.resolve(argv[++i] || '');
     } else if (arg === '--json') {
       opts.json = true;
+    } else if (arg === '--public') {
+      opts.public = true;
     } else if (arg === '--help' || arg === '-h') {
       usage();
       process.exit(0);
@@ -313,8 +316,84 @@ function renderMarkdown(report) {
   return `${lines.join(os.EOL)}${os.EOL}`;
 }
 
+function renderPublicMarkdown(report) {
+  const lines = [
+    '# Forgeflow Evaluation Summary',
+    '',
+    'This lightweight report is generated from local, anonymized Forgeflow review outcome records. It is intended for sharing aggregate quality and context-efficiency results without exposing source code, private URLs, customer data, or raw telemetry rows.',
+    '',
+    '## Scope',
+    '',
+    renderTable([
+      ['Metric', 'Value'],
+      ['---', '---:'],
+      ['Reviewed changes', String(report.records)],
+      ['Invalid or skipped outcome rows', String(report.rejected_records)],
+      ['Confirmed findings', String(report.totals.findings_confirmed)],
+      ['Rejected findings', String(report.totals.findings_rejected)],
+      ['Post-merge regressions', String(report.totals.post_merge_regression)],
+    ]),
+    '',
+    '## Quality Summary',
+    '',
+    renderTable([
+      ['Metric', 'Value'],
+      ['---', '---:'],
+      ['Confirmation rate', `${report.rates.confirmation_rate_pct}%`],
+      ['False positive rate', `${report.rates.false_positive_rate_pct}%`],
+      ['Verifier rejection rate', `${report.rates.verifier_rejection_rate_pct}%`],
+      ['Auto-fix success rate', `${report.rates.auto_fix_success_rate_pct}%`],
+      ['Regression rate', `${report.rates.regression_rate_pct}%`],
+      ['Average review minutes', String(report.rates.average_review_minutes)],
+    ]),
+    '',
+    '## Workflow Comparison',
+    '',
+    renderTable([
+      ['Workflow', 'Reviews', 'Confirmed', 'Rejected', 'False Positives', 'Avg Minutes'],
+      ['---', '---:', '---:', '---:', '---:', '---:'],
+      ...Object.entries(report.workflows).map(([workflow, item]) => [
+        workflow,
+        String(item.records),
+        String(item.findings_confirmed),
+        String(item.findings_rejected),
+        `${item.false_positive_rate_pct}%`,
+        String(item.average_review_minutes),
+      ]),
+    ]),
+    '',
+    '## Context Efficiency',
+    '',
+    renderTable([
+      ['Metric', 'Value'],
+      ['---', '---:'],
+      ['Telemetry files', String(report.context?.files || 0)],
+      ['Estimated saved tokens', String(report.context?.estimated_saved_tokens || 0)],
+      ['Percent saved', `${report.context?.percent_saved || 0}%`],
+      ['Budget status', report.context?.budget_status || 'not-run'],
+      ['Budget violations', String(report.context?.budget_violations || 0)],
+    ]),
+    '',
+    '## Notes',
+    '',
+    '- Records are local-first and should be anonymized before sharing.',
+    '- Rates are descriptive, not statistically significant, until enough comparable changes are collected.',
+    '- Workflow comparisons are most useful when the same change is reviewed by each workflow label.',
+  ];
+  return `${lines.join(os.EOL)}${os.EOL}`;
+}
+
 function writeReport(report, outPath, json = false) {
   const output = json ? `${JSON.stringify(report, null, 2)}\n` : renderMarkdown(report);
+  if (outPath) {
+    fs.mkdirSync(path.dirname(outPath), { recursive: true });
+    fs.writeFileSync(outPath, output);
+  }
+  return output;
+}
+
+function writeMarkdown(report, outPath, publicReport = false) {
+  const output = publicReport ? renderPublicMarkdown(report) : renderMarkdown(report);
   if (outPath) {
     fs.mkdirSync(path.dirname(outPath), { recursive: true });
     fs.writeFileSync(outPath, output);
@@ -330,7 +409,9 @@ function main() {
     : (opts.contextRoot ? walkContext(opts.contextRoot) : []);
   const context = buildContextEvaluation(contextFiles, opts.budgetConfig);
   const report = attachContextEvaluation(buildEvaluation(records, rejected), context);
-  const output = writeReport(report, opts.out, opts.json);
+  const output = opts.json
+    ? writeReport(report, opts.out, true)
+    : writeMarkdown(report, opts.out, opts.public);
   if (opts.json || !opts.out) process.stdout.write(output);
   else console.log(`Evaluation report written to ${opts.out}`);
 }
@@ -350,6 +431,8 @@ module.exports = {
   buildContextEvaluation,
   readOutcomes,
   renderMarkdown,
+  renderPublicMarkdown,
   workflowComparisons,
   writeReport,
+  writeMarkdown,
 };

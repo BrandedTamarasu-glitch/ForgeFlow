@@ -40,3 +40,4 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 - workflow comparison metrics for no-agent, single-agent, and Forgeflow reviews
 - evaluation quality and efficiency rates for findings, false positives, review time, and auto-fix outcomes
 - evaluation context savings and budget-violation metrics
+- publishable lightweight evaluation summary format
