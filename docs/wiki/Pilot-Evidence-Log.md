@@ -72,6 +72,8 @@ scripts/forgeflow/render-evaluation-report.js \
   --out ".forgeflow/$(basename "$PWD")/evaluation-summary.md"
 ```
 
+For timestamped summary storage and inspection steps, use [Pilot Public Summary](Pilot-Public-Summary).
+
 ## Closeout
 
 Classify the pilot result:

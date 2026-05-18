@@ -2,6 +2,8 @@
 
 Use this workflow to collect public-safe evaluation summaries from real reviews during field validation. It keeps raw records local while making aggregate evidence easy to compare.
 
+For maintainer pilot trials, use [Pilot Public Summary](Pilot-Public-Summary) before adding summaries to a broader collection.
+
 ## Collection Folder
 
 Store shareable summaries outside source control by default:

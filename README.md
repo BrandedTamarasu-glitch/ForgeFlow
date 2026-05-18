@@ -241,6 +241,7 @@ It runs on `http://127.0.0.1:4003` and reads local telemetry files from `~/.clau
 - [Team adoption criteria](docs/wiki/Team-Adoption-Criteria.md)
 - [CI and headless deferrals](docs/wiki/CI-Headless-Deferrals.md)
 - [Pilot evidence log](docs/wiki/Pilot-Evidence-Log.md)
+- [Pilot public summary](docs/wiki/Pilot-Public-Summary.md)
 - [Package and release onboarding](docs/wiki/Package-Release-Onboarding.md)
 - [Branch trial](docs/wiki/Branch-Trial.md)
 - [Public-safe examples](docs/wiki/Public-Examples.md)
