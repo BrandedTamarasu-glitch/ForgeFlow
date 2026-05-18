@@ -57,6 +57,8 @@ Forgeflow separates software delivery into phases and assigns each phase to agen
 
 The current build also adds local context intelligence: bounded context packets, compact memory summaries, scope manifests, context telemetry, budget checks, health repair, and trend-aware context recommendations. These helpers keep agent prompts smaller while preserving the local project memory needed for end-to-end work.
 
+Forgeflow also carries implementation context and pilot evidence forward. `/implement` maintains local implementation notes, `/ship` checks and summarizes those notes, and pilot helpers record maintainer-trial evidence plus support/adoption rollups under `.forgeflow/<project-name>/`.
+
 ## Agent Cast
 
 - **Smith:** backend craft, data, code quality

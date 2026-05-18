@@ -12,7 +12,9 @@ Most AI coding workflows collapse three different jobs into one prompt: deciding
 - **Use specialists where they help:** backend craft, security, UX, coordination, architecture, validation, and verification each get their own agent.
 - **Keep verdicts grounded:** high-risk findings can pass through Aegis, an evidence-only verifier.
 - **Explain routing decisions:** review mode records why agents were included or skipped.
+- **Carry implementation context forward:** `/implement` maintains local implementation notes for decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes, then `/ship` checks and summarizes them.
 - **Learn locally:** calibration and outcome records stay on your machine unless you choose to share them.
+- **Pilot with evidence:** local pilot helpers capture maintainer-trial notes, roll up repeated support categories, and surface the latest rollup in health output.
 
 If you are coming from Review Squad or ad hoc agent review, Forgeflow keeps specialist review agents but adds the workflow around them: lifecycle commands, Codex-native agents and skills, install health checks, repair and rollback, local context budgets, release checks, and evaluation reports. See [Why Forgeflow](docs/wiki/Why-Forgeflow.md) for the short positioning.
 
@@ -219,6 +221,29 @@ The context advisor appends compact history to:
 ```text
 .forgeflow/context-advisor-history.jsonl
 ```
+
+## Implementation Notes And Pilot Evidence
+
+During implementation, Forgeflow keeps a local notes file at:
+
+```text
+.forgeflow/<project-name>/implementation-notes.md
+```
+
+The notes checker catches empty notes, missing sections, sensitive-content patterns, and ship-summary rendering drift:
+
+```bash
+scripts/forgeflow/check-implementation-notes.js --json
+```
+
+For maintainer trials, Forgeflow can record local pilot evidence and refresh a rollup automatically:
+
+```bash
+scripts/forgeflow/record-pilot-evidence.js --runtime codex --health-result pass --json
+scripts/forgeflow/rollup-pilot-evidence.js --json
+```
+
+The rollup stays local under `.forgeflow/<project-name>/` and summarizes pilot count, support categories, findings, review minutes, and the next recommended action.
 
 ## Dashboard
 
