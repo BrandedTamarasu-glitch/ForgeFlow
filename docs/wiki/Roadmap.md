@@ -8,7 +8,6 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 
 ## Field Validation Work
 
-- run branch trials across representative project types
 - collect public-safe evaluation summaries from real reviews
 - compare no-agent, single-agent, and Forgeflow results on the same changes
 - record first-run friction for Claude Code and Codex installs
@@ -47,3 +46,4 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 - public-safe example outputs for install, health, review, context, and evaluation reports
 - Codex first-run guidance for installing agents and skills from a local checkout
 - local-first evaluation sharing guidance for aggregate public summaries
+- field validation plan for branch trials across representative project types
