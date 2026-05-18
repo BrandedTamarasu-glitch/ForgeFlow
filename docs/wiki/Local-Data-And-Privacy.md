@@ -57,6 +57,14 @@ This file is compact local telemetry. It records token estimates, savings, budge
 
 Nothing in the local workflow requires hosted telemetry. If you enable team sync, review what state files are copied and use a private remote.
 
+For evaluation output, share aggregate summaries by default:
+
+```bash
+scripts/forgeflow/render-evaluation-report.js --outcomes .forgeflow/<project>/review-outcomes.jsonl --context-root .forgeflow --public --out .forgeflow/<project>/evaluation-summary.md
+```
+
+Keep raw `review-outcomes.jsonl`, context packets, memory summaries, and telemetry rows local unless the receiving audience is allowed to see the underlying project context. See [Evaluation Sharing](Evaluation-Sharing) and [Public-Safe Examples](Public-Examples).
+
 ## Sensitive Files
 
 Forgeflow commands are designed to avoid reading secrets such as `.env`, keys, certificates, and token-like filenames during review context loading.

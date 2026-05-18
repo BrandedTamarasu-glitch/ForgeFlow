@@ -14,6 +14,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 - [Why Forgeflow](Why-Forgeflow)
 - [Branch Trial](Branch-Trial)
 - [Public-Safe Examples](Public-Examples)
+- [Evaluation Sharing](Evaluation-Sharing)
 - [Quick Start](Quick-Start)
 - [Codex First Run](Codex-First-Run)
 - [Demos](Demos)

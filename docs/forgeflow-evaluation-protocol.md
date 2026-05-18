@@ -60,6 +60,8 @@ To create a lightweight publishable summary:
 scripts/forgeflow/render-evaluation-report.js --outcomes .forgeflow/Forgeflow/review-outcomes.jsonl --context-root .forgeflow --budget-config .forgeflow-budget.json --public --out .forgeflow/Forgeflow/evaluation-summary.md
 ```
 
+For sharing rules and review steps before posting a summary, see [Evaluation Sharing](wiki/Evaluation-Sharing.md).
+
 ## Metrics
 
 Track:
@@ -77,4 +79,4 @@ The generated report includes confirmation rate, false positive rate, verifier r
 
 ## Privacy Rules
 
-Keep records anonymized unless the repo is already public and the user asks for richer attribution. Do not include secrets, customer data, private URLs, access tokens, or large code snippets in outcome records.
+Keep records anonymized unless the repo is already public and the user asks for richer attribution. Do not include secrets, customer data, private URLs, access tokens, or large code snippets in outcome records. Share `--public` summaries by default; keep raw `review-outcomes.jsonl` files local unless the receiving audience is allowed to see the underlying project context.

@@ -4,11 +4,15 @@ Forgeflow is currently a local-first developer workflow for Claude Code and Code
 
 ## Current Focus
 
-Forgeflow now has the local install, health, repair, rollback, release, docs, demo, template-installer, and evaluation pieces needed for broader use. The next phase is adoption: making it easier to explain, trial, and compare Forgeflow on real branches.
+Forgeflow now has the local install, health, repair, rollback, release, docs, demo, template-installer, evaluation, and adoption guidance needed for broader use. The next phase is field validation: running the workflow on real branches, collecting aggregate evidence, and tightening the first-run path from observed friction.
 
-## Adoption Work
+## Field Validation Work
 
-- keep evaluation records local-first while making aggregate summaries easy to share
+- run branch trials across representative project types
+- collect public-safe evaluation summaries from real reviews
+- compare no-agent, single-agent, and Forgeflow results on the same changes
+- record first-run friction for Claude Code and Codex installs
+- turn repeated friction into install, health, docs, or template-installer fixes
 
 ## Recently Added
 
@@ -42,3 +46,4 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 - branch trial guide for running Forgeflow without committing local state
 - public-safe example outputs for install, health, review, context, and evaluation reports
 - Codex first-run guidance for installing agents and skills from a local checkout
+- local-first evaluation sharing guidance for aggregate public summaries
