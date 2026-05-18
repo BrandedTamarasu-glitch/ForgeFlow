@@ -2,51 +2,13 @@
 
 Forgeflow is currently a local-first developer workflow for Claude Code and Codex.
 
-## Near Term
+## Current Focus
 
-### Phase 1: Version And Release Status
+Forgeflow now has the local install, health, repair, rollback, release, docs, demo, and template-installer pieces needed for broader use. The next phase is measuring review quality and context efficiency across real projects.
 
-- add `/forgeflow-version` for installed SHA, upstream `main`, latest release, helper paths, and next action
-- expose a JSON mode so health checks, docs, and future support scripts can consume the same status
-- use it during smoke tests before deeper health checks
+## Evaluation Work
 
-### Phase 2: Onboarding Diagnostics
-
-- make `/forgeflow-health` first-run output more prescriptive
-- detect non-git directories and suggest running from a real project path
-- print exact manual settings snippets for hook and statusline wiring drift
-- distinguish "installed but Claude needs restart" from missing files
-
-### Phase 3: Install Repair And Rollback
-
-- add update repair mode for missing or corrupted managed files
-- preserve one previous managed-file snapshot before update
-- add rollback command or flag that restores the previous snapshot without touching custom agents
-- keep `settings.json` manual by default, with explicit opt-in only if a settings mutator is ever added
-
-### Phase 4: Command Coverage Tests
-
-- add manifest coverage checks for every installed slash command
-- validate command frontmatter, helper references, and installed-path assumptions
-- run representative no-network smoke tests for install, health, version, metrics, and context helpers
-- add a release checklist command that runs the command coverage suite before tagging
-
-### Consumer Polish
-
-- improve plugin packaging
-- add screenshots or short demos
-- tighten dashboard positioning for consumer users
-- expand examples for context budgets and trimming workflows
-
-## Productization
-
-- hosted documentation site
-- clearer migration path from existing local installs
-- improved examples for common stacks
-
-## Evaluation
-
-- collect anonymized review outcome records
+- collect local review outcome records
 - compare no-agent, single-agent, and Forgeflow reviews
 - measure false positives, accepted findings, review time, and auto-fix quality
 - measure context-pack savings and budget violations across real projects
