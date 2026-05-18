@@ -162,6 +162,7 @@ When the installed helper is available, `scripts/forgeflow/health-check.js --ins
 - `.forgeflow/<project-name>/agent-notes/` exists
 - `.forgeflow/` is in `.gitignore`
 - Optional `.forgeflow-budget.json` exists when context budgets should be project-specific.
+- If `.forgeflow/<project-name>/ship/implementation-notes-check.json` exists, report its latest status, warning count, failure count, and report path. This is informational; do not fail health solely because the latest notes check was a warning or failure.
 - Resolve `HELPER_DIR` to `scripts/forgeflow` when present, otherwise `$HOME/.claude/forgeflow/scripts/forgeflow`.
 - When available, run `${HELPER_DIR}/health-check.js --json` for a machine-readable project-local report.
 - If `--fix` is set, run `${HELPER_DIR}/health-check.js --fix --json` to create safe local scaffolding and seed `.forgeflow-budget.json` without overwriting an existing config.

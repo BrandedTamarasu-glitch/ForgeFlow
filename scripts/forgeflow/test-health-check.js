@@ -2,12 +2,18 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { expectedRuntimeSources, expectedTemplateSources, runHealthCheck } = require('./health-check');
+const {
+  expectedRuntimeSources,
+  expectedTemplateSources,
+  renderMarkdown,
+  runHealthCheck,
+} = require('./health-check');
 const { manifestEntry } = require('./install-manifest');
 const { spawnSync } = require('child_process');
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-health-'));
 spawnSync('git', ['init'], { cwd: root, encoding: 'utf8' });
+const project = path.basename(root);
 const installRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-health-install-'));
 const nonGitRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-health-nongit-'));
 fs.writeFileSync(path.join(root, '.gitignore'), 'node_modules/\n');
@@ -25,6 +31,17 @@ for (const source of expectedTemplateSources()) {
 
 const before = runHealthCheck({ root, fix: false });
 const fixed = runHealthCheck({ root, fix: true });
+const notesCheckPath = path.join(root, '.forgeflow', project, 'ship', 'implementation-notes-check.json');
+fs.mkdirSync(path.dirname(notesCheckPath), { recursive: true });
+fs.writeFileSync(notesCheckPath, JSON.stringify({
+  status: 'warn',
+  issues: [
+    { severity: 'warn', code: 'notes-empty' },
+    { severity: 'fail', code: 'sensitive-content' },
+  ],
+}, null, 2));
+const withNotesCheck = runHealthCheck({ root, fix: false });
+const withNotesCheckMarkdown = renderMarkdown(withNotesCheck);
 const again = runHealthCheck({ root, fix: true });
 const installed = runHealthCheck({ root, installRoot, fix: false });
 fs.unlinkSync(manifestEntry('scripts/forgeflow/health-check.js', installRoot).destination);
@@ -35,7 +52,6 @@ fs.unlinkSync(manifestEntry('templates/ship-presentation.html', installRoot).des
 const missingTemplate = runHealthCheck({ root, installRoot, fix: false });
 const nonGit = runHealthCheck({ root: nonGitRoot, fix: true });
 
-const project = path.basename(root);
 const checks = [
   ['before fails', before.status === 'fail'],
   ['fixed passes', fixed.status === 'pass'],
@@ -43,6 +59,9 @@ const checks = [
   ['agent notes created', fs.existsSync(path.join(root, '.forgeflow', project, 'agent-notes'))],
   ['gitignore updated', fs.readFileSync(path.join(root, '.gitignore'), 'utf8').includes('.forgeflow/')],
   ['budget seeded', fs.existsSync(path.join(root, '.forgeflow-budget.json'))],
+  ['latest notes check summarized', withNotesCheck.latest_notes_check.status === 'warn' && withNotesCheck.latest_notes_check.issues === 2],
+  ['latest notes check counts failures', withNotesCheck.latest_notes_check.failures === 1 && withNotesCheck.latest_notes_check.warnings === 1],
+  ['latest notes check renders', withNotesCheckMarkdown.includes('## Latest Implementation Notes Check') && withNotesCheckMarkdown.includes('Status: warn')],
   ['idempotent no changes', again.changes.length === 0],
   ['installed runtime passes', installed.status === 'pass'],
   ['missing runtime fails', missingInstalled.status === 'fail'],

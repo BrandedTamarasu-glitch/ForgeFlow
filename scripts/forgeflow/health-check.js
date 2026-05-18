@@ -137,6 +137,38 @@ function addInstallChecks(checks, installRoot) {
   }
 }
 
+function latestImplementationNotesCheck(ffDir) {
+  const file = path.join(ffDir, 'ship', 'implementation-notes-check.json');
+  if (!fs.existsSync(file)) {
+    return {
+      status: 'missing',
+      path: file,
+      issues: 0,
+      failures: 0,
+      warnings: 0,
+    };
+  }
+  try {
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const issues = Array.isArray(parsed.issues) ? parsed.issues : [];
+    return {
+      status: parsed.status || 'unknown',
+      path: file,
+      issues: issues.length,
+      failures: issues.filter((item) => item.severity === 'fail').length,
+      warnings: issues.filter((item) => item.severity === 'warn').length,
+    };
+  } catch (_err) {
+    return {
+      status: 'invalid',
+      path: file,
+      issues: 0,
+      failures: 0,
+      warnings: 0,
+    };
+  }
+}
+
 function runHealthCheck(opts = {}) {
   const requestedRoot = opts.root || process.cwd();
   const gitRepo = isGitRepo(requestedRoot);
@@ -188,6 +220,7 @@ function runHealthCheck(opts = {}) {
     status: failures.length === 0 ? 'pass' : 'fail',
     checks,
     changes,
+    latest_notes_check: latestImplementationNotesCheck(ffDir),
   };
 }
 
@@ -212,6 +245,14 @@ function renderMarkdown(result) {
     for (const item of result.changes) {
       lines.push(`- ${item.action}: ${item.path}`);
     }
+    lines.push('');
+  }
+  if (result.latest_notes_check && result.latest_notes_check.status !== 'missing') {
+    const latest = result.latest_notes_check;
+    lines.push('## Latest Implementation Notes Check', '');
+    lines.push(`- Status: ${latest.status}`);
+    lines.push(`- Issues: ${latest.issues} (${latest.failures} fail, ${latest.warnings} warn)`);
+    lines.push(`- Report: ${latest.path}`);
     lines.push('');
   }
   lines.push('## Checks', '');
@@ -249,4 +290,5 @@ module.exports = {
   runHealthCheck,
   expectedRuntimeSources,
   expectedTemplateSources,
+  latestImplementationNotesCheck,
 };
