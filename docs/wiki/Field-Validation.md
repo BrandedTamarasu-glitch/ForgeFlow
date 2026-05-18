@@ -33,7 +33,8 @@ scripts/forgeflow/render-evaluation-report.js \
 ```
 
 5. Review the summary using [Evaluation Sharing](Evaluation-Sharing).
-6. Record first-run friction separately from review quality.
+6. Store the summary using [Evaluation Summary Collection](Evaluation-Summary-Collection).
+7. Record first-run friction separately from review quality.
 
 ## Friction Log
 
@@ -68,6 +69,8 @@ For each project type, keep only aggregate values in shareable notes:
 - first-run blockers by category
 
 Raw `review-outcomes.jsonl`, context packets, and telemetry rows should stay local unless the receiving audience is allowed to see the underlying project context.
+
+Use [Evaluation Summary Collection](Evaluation-Summary-Collection) to keep summaries organized during field validation.
 
 ## Exit Criteria
 

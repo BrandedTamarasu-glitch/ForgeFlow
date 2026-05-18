@@ -238,6 +238,7 @@ It runs on `http://127.0.0.1:4003` and reads local telemetry files from `~/.clau
 - [Branch trial](docs/wiki/Branch-Trial.md)
 - [Public-safe examples](docs/wiki/Public-Examples.md)
 - [Evaluation sharing](docs/wiki/Evaluation-Sharing.md)
+- [Evaluation summary collection](docs/wiki/Evaluation-Summary-Collection.md)
 - [Field validation](docs/wiki/Field-Validation.md)
 - [Demos](docs/wiki/Demos.md)
 - [Codex first run](docs/wiki/Codex-First-Run.md)
