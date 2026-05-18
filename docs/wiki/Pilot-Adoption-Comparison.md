@@ -75,4 +75,4 @@ evidence_links:
 known_deferrals:
 ```
 
-If the decision is `stop-and-fix`, create the smallest fix using [Friction To Fix](Friction-To-Fix). If the decision is `expand-small-team`, keep CI and headless automation deferred until [CI And Headless Deferrals](CI-Headless-Deferrals) says there is demand.
+Use [Pilot Next Action Decision](Pilot-Next-Action-Decision) to turn this comparison into the next action. If the decision is `stop-and-fix`, create the smallest fix using [Friction To Fix](Friction-To-Fix). If the decision is `expand-small-team`, keep CI and headless automation deferred until [CI And Headless Deferrals](CI-Headless-Deferrals) says there is demand.

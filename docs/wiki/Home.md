@@ -21,6 +21,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 - [Pilot Public Summary](Pilot-Public-Summary)
 - [Pilot Support Rollup](Pilot-Support-Rollup)
 - [Pilot Adoption Comparison](Pilot-Adoption-Comparison)
+- [Pilot Next Action Decision](Pilot-Next-Action-Decision)
 - [Branch Trial](Branch-Trial)
 - [Public-Safe Examples](Public-Examples)
 - [Package And Release Onboarding](Package-Release-Onboarding)
