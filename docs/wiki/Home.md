@@ -18,6 +18,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 - [Evaluation Summary Collection](Evaluation-Summary-Collection)
 - [Workflow Comparison](Workflow-Comparison)
 - [First-Run Friction](First-Run-Friction)
+- [Friction To Fix](Friction-To-Fix)
 - [Field Validation](Field-Validation)
 - [Quick Start](Quick-Start)
 - [Codex First Run](Codex-First-Run)

@@ -78,6 +78,8 @@ Use repeated categories to drive the next change. For example:
 - repeated `codex-discovery` issues should become stronger Codex verification docs or installer checks
 - repeated `context-budget` issues should become better defaults, examples, or advisor recommendations
 
+Use [Friction To Fix](Friction-To-Fix) when a repeated category is ready to become an install, health, docs, routing, context, or template-installer change.
+
 ## Sharing
 
 Share only aggregate friction counts by default. If a specific failure needs debugging, sanitize paths, account names, branch names, and settings content before sending it outside the project.

@@ -82,4 +82,4 @@ Field validation is ready to turn into product fixes when repeated friction appe
 - public summaries need manual cleanup every time
 - routing misses a class of files in more than one project
 
-When that happens, create a targeted fix in the relevant install, health, docs, routing, or context helper.
+When that happens, create a targeted fix in the relevant install, health, docs, routing, or context helper. Use [Friction To Fix](Friction-To-Fix) to classify the issue and choose the smallest fix layer.

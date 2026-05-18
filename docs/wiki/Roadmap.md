@@ -8,7 +8,7 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 
 ## Field Validation Work
 
-- turn repeated friction into install, health, docs, or template-installer fixes
+No active field-validation item is currently selected.
 
 ## Recently Added
 
@@ -47,3 +47,4 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 - evaluation summary collection workflow for real-review field validation
 - workflow comparison guide for no-agent, single-agent, and Forgeflow reviews
 - first-run friction log for Claude Code and Codex field validation
+- friction-to-fix playbook for turning repeated field-validation issues into targeted changes
