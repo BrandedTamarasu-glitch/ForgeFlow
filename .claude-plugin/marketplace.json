@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "Forgeflow",
-      "description": "The full Forgeflow workflow — agents, commands, hooks, project-rules, and cross-project pattern memory.",
+      "description": "End-to-end AI software delivery workflow with agents, commands, hooks, project rules, runtime helpers, and local pattern memory.",
       "version": "4.2.0",
       "source": {
         "source": "github",

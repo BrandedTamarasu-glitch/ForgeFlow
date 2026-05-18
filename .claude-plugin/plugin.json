@@ -50,13 +50,25 @@
       "scripts/forgeflow/test-*"
     ],
     "post-install": {
-      "description": "After install, add the three PostToolUse hooks to ~/.claude/settings.json and wire the statusline separately. See README Installation section.",
+      "description": "After install, wire the PostToolUse hooks and statusline in ~/.claude/settings.json, then restart Claude Code so commands and hooks reload.",
       "hooks-to-wire": [
         "forgeflow-gate.js",
         "forgeflow-context-monitor.js",
         "forgeflow-telemetry.js"
       ],
-      "statusline-to-wire": "forgeflow-statusline.js"
+      "statusline-to-wire": "forgeflow-statusline.js",
+      "verify": [
+        "/forgeflow-version",
+        "/forgeflow-health"
+      ],
+      "manual-settings": {
+        "statusLine.command": "node \"~/.claude/hooks/forgeflow-statusline.js\"",
+        "PostToolUse": [
+          "node \"~/.claude/hooks/forgeflow-context-monitor.js\"",
+          "node \"~/.claude/hooks/forgeflow-gate.js\"",
+          "node \"~/.claude/hooks/forgeflow-telemetry.js\""
+        ]
+      }
     }
   },
   "claude-code": {

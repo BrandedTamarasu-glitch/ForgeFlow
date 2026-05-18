@@ -67,3 +67,4 @@ Forgeflow is currently a local-first developer workflow for Claude Code and Code
 - context advisor with trimming recommendations and trend history
 - `/forgeflow-version` status command and helper
 - command coverage test and `/forgeflow-release-check`
+- plugin manifest validation and clearer post-install verification

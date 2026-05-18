@@ -18,6 +18,13 @@ From Claude Code, run:
 This syncs Claude agents, commands, hooks, templates, project rules, patterns, and runtime helpers into `~/.claude/`.
 The updater is script-backed and pins downloads to the fetched commit SHA so the installed version file describes the files that were actually installed.
 
+After installing or updating, restart Claude Code, then verify:
+
+```text
+/forgeflow-version
+/forgeflow-health
+```
+
 Runtime helpers are installed at:
 
 ```text
