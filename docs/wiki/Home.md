@@ -15,6 +15,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 - [Maintainer Pilot](Maintainer-Pilot)
 - [Team Privacy Boundaries](Team-Privacy-Boundaries)
 - [Support Triage](Support-Triage)
+- [Team Adoption Criteria](Team-Adoption-Criteria)
 - [Branch Trial](Branch-Trial)
 - [Public-Safe Examples](Public-Examples)
 - [Package And Release Onboarding](Package-Release-Onboarding)

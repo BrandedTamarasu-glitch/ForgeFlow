@@ -89,6 +89,7 @@ A maintainer pilot is successful enough to repeat when:
 - no private raw records need to be shared to explain the result
 - setup friction is captured in [First-Run Friction](First-Run-Friction) or [Friction To Fix](Friction-To-Fix)
 - support issues are classified with [Support Triage](Support-Triage)
+- expansion is decided with [Team Adoption Criteria](Team-Adoption-Criteria)
 
 ## Stop Criteria
 
@@ -99,6 +100,7 @@ Stop and fix before expanding the trial when:
 - findings repeatedly lack file evidence
 - routing is obviously wrong for the branch risk
 - raw local records would need to be shared outside the project to explain the outcome
+- [Team Adoption Criteria](Team-Adoption-Criteria) would classify the pilot as `stop-and-fix`
 
 ## Pilot Summary
 
