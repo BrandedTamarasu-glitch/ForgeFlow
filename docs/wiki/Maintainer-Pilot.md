@@ -35,6 +35,7 @@ $ship
 
 4. Make sure `.forgeflow/` and `.forgeflow-budget.json` are ignored or intentionally local.
 5. Tell the branch owner that the pilot is evaluating review quality, friction, and time, not replacing maintainer judgment.
+6. Choose a sharing level with [Team Privacy Boundaries](Team-Privacy-Boundaries).
 
 ## Run The Pilot
 

@@ -13,6 +13,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 - [Hosted Docs Entry](../index.html)
 - [Why Forgeflow](Why-Forgeflow)
 - [Maintainer Pilot](Maintainer-Pilot)
+- [Team Privacy Boundaries](Team-Privacy-Boundaries)
 - [Branch Trial](Branch-Trial)
 - [Public-Safe Examples](Public-Examples)
 - [Package And Release Onboarding](Package-Release-Onboarding)

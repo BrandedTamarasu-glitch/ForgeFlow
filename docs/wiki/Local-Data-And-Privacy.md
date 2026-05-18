@@ -63,7 +63,7 @@ For evaluation output, share aggregate summaries by default:
 scripts/forgeflow/render-evaluation-report.js --outcomes .forgeflow/<project>/review-outcomes.jsonl --context-root .forgeflow --public --out .forgeflow/<project>/evaluation-summary.md
 ```
 
-Keep raw `review-outcomes.jsonl`, context packets, memory summaries, and telemetry rows local unless the receiving audience is allowed to see the underlying project context. See [Evaluation Sharing](Evaluation-Sharing) and [Public-Safe Examples](Public-Examples).
+Keep raw `review-outcomes.jsonl`, context packets, memory summaries, and telemetry rows local unless the receiving audience is allowed to see the underlying project context. For team trials, use [Team Privacy Boundaries](Team-Privacy-Boundaries) to choose between local-maintainer, private-team, and public sharing levels. See [Evaluation Sharing](Evaluation-Sharing) and [Public-Safe Examples](Public-Examples).
 
 ## Sensitive Files
 
