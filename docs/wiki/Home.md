@@ -14,6 +14,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 - [Why Forgeflow](Why-Forgeflow)
 - [Branch Trial](Branch-Trial)
 - [Public-Safe Examples](Public-Examples)
+- [Package And Release Onboarding](Package-Release-Onboarding)
 - [Evaluation Sharing](Evaluation-Sharing)
 - [Evaluation Summary Collection](Evaluation-Summary-Collection)
 - [Workflow Comparison](Workflow-Comparison)

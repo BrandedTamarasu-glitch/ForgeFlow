@@ -235,6 +235,7 @@ It runs on `http://127.0.0.1:4003` and reads local telemetry files from `~/.clau
 - [Hosted docs entry](docs/index.html)
 - [Wiki source](docs/wiki/Home.md)
 - [Why Forgeflow](docs/wiki/Why-Forgeflow.md)
+- [Package and release onboarding](docs/wiki/Package-Release-Onboarding.md)
 - [Branch trial](docs/wiki/Branch-Trial.md)
 - [Public-safe examples](docs/wiki/Public-Examples.md)
 - [Evaluation sharing](docs/wiki/Evaluation-Sharing.md)
