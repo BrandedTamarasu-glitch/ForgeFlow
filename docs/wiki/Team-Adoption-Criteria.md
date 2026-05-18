@@ -74,4 +74,5 @@ If the decision is `expand-small-team`:
 2. Reuse [Maintainer Pilot](Maintainer-Pilot).
 3. Keep [Team Privacy Boundaries](Team-Privacy-Boundaries) unchanged unless the team explicitly revises them.
 4. Track support with [Support Triage](Support-Triage).
-5. Revisit this decision after the next two reviews.
+5. Keep CI and headless review deferred with [CI And Headless Deferrals](CI-Headless-Deferrals) until maintainers ask for automation.
+6. Revisit this decision after the next two reviews.

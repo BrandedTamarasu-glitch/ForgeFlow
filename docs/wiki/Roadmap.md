@@ -8,7 +8,7 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 
 ## Team Trial Readiness Work
 
-- Decide which CI or headless-review ideas stay deferred until team trials show demand.
+No active team-trial readiness item is currently selected.
 
 ## Recently Added
 
@@ -59,3 +59,4 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 - team privacy boundaries for local state, private-team sharing, and public-safe summaries
 - support triage guide for install, health, routing, context, and review-quality issues
 - team adoption criteria for repeat, expand, stop-and-fix, and defer decisions
+- CI and headless-review deferral guidance gated on team-trial demand
