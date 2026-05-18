@@ -18,6 +18,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 - [Review Routing](Review-Routing)
 - [Context Intelligence](Context-Intelligence)
 - [Context Budget Examples](Context-Budget-Examples)
+- [Common Stack Examples](Common-Stack-Examples)
 - [Local Data And Privacy](Local-Data-And-Privacy)
 - [Roadmap](Roadmap)
 
