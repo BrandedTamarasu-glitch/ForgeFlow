@@ -47,7 +47,9 @@ const checks = [
   ['release process mentions marketplace manifest', releaseProcess.includes('.claude-plugin/marketplace.json')],
   ['release process mentions changelog path', releaseProcess.includes('docs/changelogs/')],
   ['release process mentions release check command', releaseProcess.includes('/forgeflow-release-check')],
+  ['release process mentions public summary rendering', releaseProcess.includes('render-evaluation-report.js --public')],
   ['release check runs version drift test', releaseCheck.includes('node scripts/forgeflow/test-release-version.js')],
+  ['release check runs evaluation report test', releaseCheck.includes('node scripts/forgeflow/test-render-evaluation-report.js')],
 ];
 
 let failed = 0;

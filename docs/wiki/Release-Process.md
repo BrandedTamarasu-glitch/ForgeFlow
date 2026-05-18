@@ -23,7 +23,8 @@ Both files must use the same semver value. For example, a package version of `4.
 6. Confirm the marketplace entry description still names both Claude Code and Codex.
 7. Confirm the README current status still reflects the active distribution-readiness work.
 8. Run `/forgeflow-release-check` from Claude Code.
-9. Fix any failed check before tagging.
+9. Render the public summary example with `render-evaluation-report.js --public`, or follow [Release Gate](Release-Gate).
+10. Fix any failed check before tagging.
 
 ## Command-Line Checks
 
@@ -40,10 +41,17 @@ node scripts/forgeflow/test-install-smoke.js
 node scripts/forgeflow/test-update-forgeflow.js
 node scripts/forgeflow/test-health-check.js
 node scripts/forgeflow/test-forgeflow-version.js
+node scripts/forgeflow/test-render-evaluation-report.js
 node scripts/forgeflow/test-seed-budget-config.js
 node scripts/forgeflow/test-check-context-budget.js
 node scripts/forgeflow/test-advise-context.js
 git diff --check
+```
+
+Render the public-summary example before release notes claim evaluation evidence:
+
+```bash
+node scripts/forgeflow/render-evaluation-report.js --outcomes fixtures/evaluation/sample-outcomes.jsonl --public --out /tmp/forgeflow-public-evaluation-summary.md
 ```
 
 ## Tag And Publish

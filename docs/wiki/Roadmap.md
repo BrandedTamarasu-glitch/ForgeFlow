@@ -8,7 +8,6 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 
 ## Distribution Readiness Work
 
-- Run release checks and public-summary examples before tagging the next release.
 - Document known manual settings steps, shell restart requirements, and rollback paths in release-facing guidance.
 
 ## Recently Added
@@ -53,3 +52,4 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 - clean-checkout install verification guide for Claude Code and Codex release handoff
 - release metadata alignment checks for plugin, marketplace, README, and hosted release notes
 - package and release onboarding guide for new users arriving from public distribution surfaces
+- release gate guide tying release checks to public-summary examples before tagging
