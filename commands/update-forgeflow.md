@@ -1,13 +1,21 @@
 ---
 name: update-forgeflow
 description: Pull the latest Forgeflow from the source repo and sync agents, commands, project rules, patterns, runtime helpers, templates, and hooks to ~/.claude/
-argument-hint: ""
+argument-hint: "[--repair] [--rollback] [--json] [--dry-run]"
 allowed-tools:
   - Bash
 ---
 <objective>
 Pull the latest Forgeflow release from GitHub via curl and sync updated files into ~/.claude/. Shows exactly which files changed. Never touches custom agents or any non-Forgeflow files. Runtime helpers are installed under `~/.claude/forgeflow/scripts/forgeflow/` so commands can work without a local Forgeflow clone.
 </objective>
+
+<context>
+$ARGUMENTS:
+- `--repair` — reinstall all managed Forgeflow files from upstream `main`, even when the installed SHA is already current. Use this when a managed command, agent, hook, template, pattern, or runtime helper is missing or corrupted.
+- `--rollback` — restore the previous managed-file snapshot from `~/.claude/forgeflow/backups/previous`. This only covers Forgeflow-managed files and never touches `custom-*` agents.
+- `--json` — emit machine-readable helper output.
+- `--dry-run` — plan without writing files.
+</context>
 
 <process>
 
@@ -21,7 +29,7 @@ if [ ! -x "${HELPER_DIR}/update-forgeflow.js" ] && [ -x "$HOME/.claude/forgeflow
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
 if [ -x "${HELPER_DIR}/update-forgeflow.js" ]; then
-  "${HELPER_DIR}/update-forgeflow.js"
+  "${HELPER_DIR}/update-forgeflow.js" $ARGUMENTS
   exit $?
 fi
 ```
@@ -159,6 +167,14 @@ Store as `DELETED_FILES`.
 
 ## Step 4 — Download Files
 
+Before writing managed files, the script-backed updater preserves one rollback snapshot at:
+
+```text
+~/.claude/forgeflow/backups/previous/
+```
+
+The snapshot contains the previous contents and file modes for managed files that are about to be overwritten, plus a manifest with the prior `~/.claude/forgeflow-version`. If a managed file did not exist before the update, rollback removes that file. Custom agents and non-Forgeflow files are never included.
+
 Ensure destination directories exist:
 ```bash
 mkdir -p ~/.claude/agents ~/.claude/agents/_shared ~/.claude/commands ~/.claude/templates ~/.claude/hooks ~/.claude/project-rules ~/.claude/forgeflow-patterns ~/.claude/forgeflow/scripts/forgeflow
@@ -251,6 +267,39 @@ Runtime helpers updated under ~/.claude/forgeflow/scripts/forgeflow/.
 Commands should prefer that installed helper root when project-local scripts/forgeflow/ is absent.
 ```
 
+## Repair mode
+
+When `--repair` is set:
+
+- Fetch the upstream `main` tree for the latest SHA.
+- Resolve all managed files through the same manifest as normal install.
+- Reinstall every managed file, not just files changed since the installed SHA.
+- Preserve a rollback snapshot before writing.
+- Save `~/.claude/forgeflow-version` only if every required file sync succeeds.
+
+Report header:
+
+```text
+Forgeflow repaired (<latest-short-sha>)
+```
+
+## Rollback mode
+
+When `--rollback` is set:
+
+- Do not contact GitHub.
+- Read `~/.claude/forgeflow/backups/previous/manifest.json`.
+- Restore files that existed before the previous update.
+- Remove managed files that were newly created by the previous update.
+- Restore `~/.claude/forgeflow-version` to the snapshot version after a clean rollback.
+- Never touch `settings.json`, custom agents, or non-Forgeflow files.
+
+If no snapshot exists, report:
+
+```text
+No Forgeflow rollback snapshot found at ~/.claude/forgeflow/backups/previous.
+```
+
 </process>
 
 <success_criteria>
@@ -266,6 +315,9 @@ Commands should prefer that installed helper root when project-local scripts/for
 - [ ] Never touches GSD agents or other non-Forgeflow files
 - [ ] Individual download failures are reported but do not abort the sync
 - [ ] Saves new SHA to ~/.claude/forgeflow-version only after all required downloads succeed
+- [ ] `--repair` reinstalls all managed files from upstream `main`
+- [ ] Before writes, one previous managed-file snapshot is saved under ~/.claude/forgeflow/backups/previous
+- [ ] `--rollback` restores the previous snapshot without touching custom agents or settings.json
 - [ ] Summary lists every file synced with before/after SHAs
 - [ ] Hook-changed warning appears when hooks/forgeflow-gate.js is in the diff
 - [ ] No local clone required — works from curl alone

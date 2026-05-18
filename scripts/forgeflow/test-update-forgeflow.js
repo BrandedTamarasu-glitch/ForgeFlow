@@ -3,6 +3,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const {
+  rollbackForgeflow,
   updateForgeflow,
   versionPath,
 } = require('./update-forgeflow');
@@ -65,6 +66,42 @@ async function run() {
     fetcher: localFetcher,
   });
 
+  const repairHome = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-update-repair-'));
+  fs.writeFileSync(versionPath(repairHome), `${latest}\n`);
+  const repaired = await updateForgeflow({
+    home: repairHome,
+    repo: 'local/repo',
+    current: latest,
+    latest,
+    repair: true,
+    plan: {
+      firstRun: false,
+      files: ['scripts/forgeflow/health-check.js'],
+      deleted: [],
+    },
+    fetcher: localFetcher,
+  });
+
+  const rollbackHome = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-update-rollback-'));
+  fs.mkdirSync(path.join(rollbackHome, 'commands'), { recursive: true });
+  fs.mkdirSync(path.join(rollbackHome, 'agents'), { recursive: true });
+  fs.writeFileSync(versionPath(rollbackHome), `${previous}\n`);
+  fs.writeFileSync(path.join(rollbackHome, 'commands', 'review.md'), 'old review\n');
+  fs.writeFileSync(path.join(rollbackHome, 'agents', 'custom-local.md'), 'custom\n');
+  const rollbackUpdate = await updateForgeflow({
+    home: rollbackHome,
+    repo: 'local/repo',
+    current: previous,
+    latest,
+    plan: {
+      firstRun: false,
+      files: ['commands/review.md', 'commands/quick.md'],
+      deleted: [],
+    },
+    fetcher: localFetcher,
+  });
+  const rollback = rollbackForgeflow({ home: rollbackHome });
+
   const checks = [
     ['first updated', first.status === 'updated'],
     ['version written', fs.readFileSync(versionPath(home), 'utf8').trim() === latest],
@@ -76,6 +113,15 @@ async function run() {
     ['partial version not advanced', fs.readFileSync(versionPath(partialHome), 'utf8').trim() === previous],
     ['partial deleted reported', partial.deleted.includes('commands/old.md')],
     ['up to date', upToDate.status === 'up-to-date'],
+    ['repair status', repaired.status === 'repaired'],
+    ['repair installs missing file', fs.existsSync(path.join(repairHome, 'forgeflow', 'scripts', 'forgeflow', 'health-check.js'))],
+    ['repair writes version', fs.readFileSync(versionPath(repairHome), 'utf8').trim() === latest],
+    ['rollback update created backup', rollbackUpdate.backup.created === true],
+    ['rollback status', rollback.status === 'rolled-back'],
+    ['rollback restored prior file', fs.readFileSync(path.join(rollbackHome, 'commands', 'review.md'), 'utf8') === 'old review\n'],
+    ['rollback removed newly created file', !fs.existsSync(path.join(rollbackHome, 'commands', 'quick.md'))],
+    ['rollback restored version', fs.readFileSync(versionPath(rollbackHome), 'utf8').trim() === previous],
+    ['rollback preserved custom agent', fs.readFileSync(path.join(rollbackHome, 'agents', 'custom-local.md'), 'utf8') === 'custom\n'],
   ];
 
   let failed = 0;

@@ -12,7 +12,7 @@ const {
 const DEFAULT_REPO = 'BrandedTamarasu-glitch/ForgeFlow';
 
 function usage() {
-  console.error('Usage: update-forgeflow.js [--home <dir>] [--repo owner/name] [--json] [--dry-run]');
+  console.error('Usage: update-forgeflow.js [--home <dir>] [--repo owner/name] [--json] [--dry-run] [--repair] [--rollback]');
 }
 
 function parseArgs(argv) {
@@ -21,6 +21,8 @@ function parseArgs(argv) {
     repo: DEFAULT_REPO,
     json: false,
     dryRun: false,
+    repair: false,
+    rollback: false,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -33,6 +35,10 @@ function parseArgs(argv) {
       opts.json = true;
     } else if (arg === '--dry-run') {
       opts.dryRun = true;
+    } else if (arg === '--repair') {
+      opts.repair = true;
+    } else if (arg === '--rollback') {
+      opts.rollback = true;
     } else if (arg === '--help' || arg === '-h') {
       usage();
       process.exit(0);
@@ -78,6 +84,14 @@ function sha256File(file) {
 
 function versionPath(home) {
   return path.join(home, 'forgeflow-version');
+}
+
+function backupRoot(home) {
+  return path.join(home, 'forgeflow', 'backups', 'previous');
+}
+
+function backupManifestPath(home) {
+  return path.join(backupRoot(home), 'manifest.json');
 }
 
 function readCurrentVersion(home) {
@@ -135,6 +149,16 @@ async function filesForInstall(repo, current, latest) {
   };
 }
 
+async function filesForRepair(repo, latest) {
+  const data = await request(`https://api.github.com/repos/${repo}/git/trees/${latest}?recursive=1`, 'json');
+  return {
+    files: managedFilesFromTree(data.tree || []),
+    deleted: [],
+    firstRun: false,
+    repair: true,
+  };
+}
+
 async function fetchRaw(repo, sha, source) {
   return request(`https://raw.githubusercontent.com/${repo}/${sha}/${source}`, 'text');
 }
@@ -145,6 +169,64 @@ function writeAtomic(file, content, executable) {
   fs.writeFileSync(tmp, content);
   fs.chmodSync(tmp, executable ? 0o755 : 0o644);
   fs.renameSync(tmp, file);
+}
+
+function snapshotPathForSource(root, source) {
+  return path.join(root, 'files', source);
+}
+
+function createBackup({ home, files, current, dryRun = false }) {
+  if (dryRun || files.length === 0) {
+    return {
+      path: backupRoot(home),
+      files: [],
+      version: current || '',
+      created: false,
+    };
+  }
+
+  const root = backupRoot(home);
+  fs.rmSync(root, { recursive: true, force: true });
+  fs.mkdirSync(path.join(root, 'files'), { recursive: true });
+
+  const manifest = {
+    schema_version: '1',
+    created_at: new Date().toISOString(),
+    version: current || '',
+    files: [],
+  };
+
+  const uniqueFiles = [...new Set(files)].sort();
+  for (const source of uniqueFiles) {
+    const entry = manifestEntry(source, home);
+    if (!entry || entry.preserve) continue;
+
+    const item = {
+      source,
+      destination: entry.destination,
+      existed: fs.existsSync(entry.destination),
+      mode: null,
+      backup: null,
+    };
+
+    if (item.existed) {
+      const stat = fs.statSync(entry.destination);
+      item.mode = stat.mode & 0o777;
+      item.backup = snapshotPathForSource(root, source);
+      fs.mkdirSync(path.dirname(item.backup), { recursive: true });
+      fs.copyFileSync(entry.destination, item.backup);
+    }
+
+    manifest.files.push(item);
+  }
+
+  fs.writeFileSync(backupManifestPath(home), `${JSON.stringify(manifest, null, 2)}\n`);
+  return {
+    path: root,
+    files: manifest.files,
+    version: manifest.version,
+    created: true,
+  };
 }
 
 async function installFiles({ repo, sha, home, files, fetcher = fetchRaw, dryRun = false }) {
@@ -171,12 +253,68 @@ async function installFiles({ repo, sha, home, files, fetcher = fetchRaw, dryRun
   return { synced, failed };
 }
 
+function rollbackForgeflow(opts = {}) {
+  const home = opts.home || path.join(os.homedir(), '.claude');
+  const manifestPath = backupManifestPath(home);
+  if (!fs.existsSync(manifestPath)) {
+    return {
+      schema_version: '1',
+      status: 'no-backup',
+      restored: [],
+      removed: [],
+      failed: [],
+      version_written: false,
+      backup: backupRoot(home),
+    };
+  }
+
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  const restored = [];
+  const removed = [];
+  const failed = [];
+
+  for (const item of manifest.files || []) {
+    try {
+      if (item.existed) {
+        fs.mkdirSync(path.dirname(item.destination), { recursive: true });
+        fs.copyFileSync(item.backup, item.destination);
+        if (item.mode !== null && item.mode !== undefined) fs.chmodSync(item.destination, item.mode);
+        restored.push({ source: item.source, destination: item.destination });
+      } else if (fs.existsSync(item.destination)) {
+        fs.unlinkSync(item.destination);
+        removed.push({ source: item.source, destination: item.destination });
+      }
+    } catch (err) {
+      failed.push({ source: item.source, error: err.message });
+    }
+  }
+
+  let versionWritten = false;
+  if (failed.length === 0 && manifest.version) {
+    fs.writeFileSync(versionPath(home), `${manifest.version}\n`);
+    versionWritten = true;
+  }
+
+  return {
+    schema_version: '1',
+    status: failed.length === 0 ? 'rolled-back' : 'rollback-partial',
+    restored,
+    removed,
+    failed,
+    version: manifest.version || '',
+    version_written: versionWritten,
+    backup: backupRoot(home),
+  };
+}
+
 async function updateForgeflow(opts = {}) {
   const home = opts.home || path.join(os.homedir(), '.claude');
   const repo = opts.repo || DEFAULT_REPO;
+  if (opts.rollback) return rollbackForgeflow({ home });
+
   const current = opts.current !== undefined ? opts.current : readCurrentVersion(home);
   const latest = opts.latest || await latestSha(repo);
-  if (current === latest) {
+  if (current === latest && !opts.repair) {
     return {
       schema_version: '1',
       status: 'up-to-date',
@@ -190,7 +328,15 @@ async function updateForgeflow(opts = {}) {
     };
   }
 
-  const plan = opts.plan || await filesForInstall(repo, current, latest);
+  const plan = opts.plan || (opts.repair
+    ? await filesForRepair(repo, latest)
+    : await filesForInstall(repo, current, latest));
+  const backup = createBackup({
+    home,
+    files: plan.files,
+    current,
+    dryRun: opts.dryRun,
+  });
   const installed = await installFiles({
     repo,
     sha: latest,
@@ -207,24 +353,50 @@ async function updateForgeflow(opts = {}) {
 
   return {
     schema_version: '1',
-    status: installed.failed.length === 0 ? 'updated' : 'partial',
+    status: installed.failed.length === 0 ? (opts.repair ? 'repaired' : 'updated') : 'partial',
     current,
     latest,
     first_run: plan.firstRun,
+    repair: Boolean(opts.repair),
     files: plan.files,
     synced: installed.synced,
     failed: installed.failed,
     deleted: plan.deleted,
     version_written: versionWritten,
+    backup,
   };
 }
 
 function renderMarkdown(result) {
+  if (result.status === 'no-backup') {
+    return `No Forgeflow rollback snapshot found at ${result.backup}.`;
+  }
+  if (result.status === 'rolled-back' || result.status === 'rollback-partial') {
+    const lines = [
+      result.status === 'rolled-back' ? 'Forgeflow rolled back.' : 'Forgeflow rollback partially completed.',
+      '',
+      `Files restored (${result.restored.length}):`,
+    ];
+    for (const item of result.restored) lines.push(`  ${item.source}`);
+    if (result.removed.length > 0) {
+      lines.push('', `Files removed (${result.removed.length}):`);
+      for (const item of result.removed) lines.push(`  ${item.source}`);
+    }
+    if (result.failed.length > 0) {
+      lines.push('', 'Rollback failures:');
+      for (const item of result.failed) lines.push(`  ${item.source}: ${item.error}`);
+    }
+    if (result.version_written) lines.push('', `Version restored to ${result.version.slice(0, 7)}.`);
+    return lines.join('\n');
+  }
+
   const latestShort = result.latest.slice(0, 7);
   const currentShort = result.current ? result.current.slice(0, 7) : 'none';
   if (result.status === 'up-to-date') return `Already up to date (${latestShort}).`;
   const lines = [
-    result.first_run ? `Forgeflow installed (${latestShort})` : `Forgeflow updated (${currentShort} -> ${latestShort})`,
+    result.repair
+      ? `Forgeflow repaired (${latestShort})`
+      : (result.first_run ? `Forgeflow installed (${latestShort})` : `Forgeflow updated (${currentShort} -> ${latestShort})`),
     '',
     `Files synced (${result.synced.length}):`,
   ];
@@ -239,6 +411,9 @@ function renderMarkdown(result) {
   if (result.deleted.length > 0) {
     lines.push('', 'Removed upstream, not deleted locally:');
     for (const item of result.deleted) lines.push(`  ${item}`);
+  }
+  if (result.backup?.created) {
+    lines.push('', `Rollback snapshot: ${result.backup.path}`);
   }
   return lines.join('\n');
 }
@@ -260,8 +435,10 @@ if (require.main === module) {
 
 module.exports = {
   filesForInstall,
+  filesForRepair,
   installFiles,
   renderMarkdown,
+  rollbackForgeflow,
   updateForgeflow,
   versionPath,
 };
