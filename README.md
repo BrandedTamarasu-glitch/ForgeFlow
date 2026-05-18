@@ -56,19 +56,28 @@ git clone https://github.com/BrandedTamarasu-glitch/ForgeFlow.git
 cd ForgeFlow
 ```
 
-Claude users can also install or update the command and helper bundle from inside Claude Code:
+From Claude Code, install or update the Forgeflow command and helper bundle:
 
 ```text
 /update-forgeflow
 ```
 
-That syncs Claude agents, commands, hooks, templates, project rules, patterns, and runtime helpers into `~/.claude/`. Runtime helpers are installed at:
+That syncs agents, commands, hooks, templates, project rules, patterns, and runtime helpers into `~/.claude/`. The installer is script-backed, pins the installed version to the fetched commit SHA, and can be re-run safely when a new release is available.
+
+Expected result:
+
+```text
+Forgeflow installed  (<commit>)
+Runtime helpers: ~/.claude/forgeflow/scripts/forgeflow/
+```
+
+Runtime helpers are installed at:
 
 ```text
 ~/.claude/forgeflow/scripts/forgeflow/
 ```
 
-For commands below, use the repo-local helper path when working from a checkout, or the installed helper root when using the no-clone Claude install:
+For terminal commands below, use the repo-local helper path when working from a checkout, or the installed helper root when using the no-clone Claude install:
 
 ```bash
 HELPER_ROOT="scripts/forgeflow"
@@ -77,19 +86,20 @@ if [ ! -x "${HELPER_ROOT}/ensure-forgeflow-state.sh" ]; then
 fi
 ```
 
-Bootstrap local state:
+Bootstrap and verify project-local state:
 
 ```bash
 ${HELPER_ROOT}/ensure-forgeflow-state.sh
-```
-
-Audit and repair project-local Forgeflow state:
-
-```bash
 ${HELPER_ROOT}/health-check.js --fix --json
 ```
 
-To seed a project-local context budget config without overwriting an existing file:
+Expected health-check result:
+
+```json
+{"status":"pass"}
+```
+
+Seed a project-local context budget config without overwriting an existing file:
 
 ```bash
 ${HELPER_ROOT}/seed-budget-config.js --json
@@ -107,10 +117,28 @@ Run a first review from Claude Code:
 /review
 ```
 
-Or from Codex:
+Or start the full delivery workflow:
 
 ```text
+/discuss
+/research
+/plan
+/consult
+/implement
+/review
+/ship
+```
+
+Codex users can run the same workflow through skills:
+
+```text
+$discuss frame the feature
+$research evaluate options
+$plan create the implementation plan
+$consult produce the implementation brief
+$implement execute the brief
 $forge-review review the current changes
+$ship prepare the branch
 ```
 
 Forgeflow stores local workflow memory in:
@@ -211,7 +239,7 @@ It runs on localhost and reads local telemetry files. It is optional; Forgeflow 
 
 ## Current Status
 
-Forgeflow is a local-first developer workflow. It currently targets Claude Code and Codex users who are comfortable installing command/agent files and running local scripts. Hosted onboarding, marketplace packaging, and broader consumer polish are the next productization steps.
+Forgeflow is a local-first developer workflow for turning product intent into shipped code with explicit planning, implementation, review, verification, and release handoff. It currently targets Claude Code and Codex users who are comfortable installing command/agent files and running local scripts. Hosted onboarding, marketplace packaging, and broader consumer polish are next.
 
 ## License
 
