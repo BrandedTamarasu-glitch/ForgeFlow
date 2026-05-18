@@ -20,8 +20,10 @@ Both files must use the same semver value. For example, a package version of `4.
 3. Update the matching Forgeflow entry in `.claude-plugin/marketplace.json`.
 4. Add or update the release notes under `docs/changelogs/`.
 5. If the latest packaged changelog changed, update the Release Notes link in `docs/index.html`.
-6. Run `/forgeflow-release-check` from Claude Code.
-7. Fix any failed check before tagging.
+6. Confirm the marketplace entry description still names both Claude Code and Codex.
+7. Confirm the README current status still reflects the active distribution-readiness work.
+8. Run `/forgeflow-release-check` from Claude Code.
+9. Fix any failed check before tagging.
 
 ## Command-Line Checks
 

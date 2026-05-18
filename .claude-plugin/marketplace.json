@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "Forgeflow",
-      "description": "End-to-end AI software delivery workflow with agents, commands, hooks, project rules, runtime helpers, and local pattern memory.",
+      "description": "End-to-end AI software delivery workflow for Claude Code and Codex with agents, commands, hooks, project rules, runtime helpers, and local pattern memory.",
       "version": "4.2.0",
       "source": {
         "source": "github",

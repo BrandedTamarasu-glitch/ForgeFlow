@@ -25,16 +25,24 @@ const marketplace = readJson('.claude-plugin/marketplace.json');
 const marketplaceEntry = marketplace.plugins.find((entry) => entry.name === plugin.name);
 const releaseProcess = fs.readFileSync(path.join(repoRoot, 'docs/wiki/Release-Process.md'), 'utf8');
 const releaseCheck = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-release-check.md'), 'utf8');
+const readme = fs.readFileSync(path.join(repoRoot, 'README.md'), 'utf8');
+const hostedDocs = fs.readFileSync(path.join(repoRoot, 'docs/index.html'), 'utf8');
 
 const semver = /^\d+\.\d+\.\d+$/;
 const changelogs = changelogCandidates(plugin.version);
 const matchingChangelog = changelogs.find(fileExists);
+const matchingChangelogLink = matchingChangelog && `./${matchingChangelog.replace(/^docs\//, '')}`;
 
 const checks = [
   ['plugin version is semver', semver.test(plugin.version)],
   ['marketplace entry present', Boolean(marketplaceEntry)],
   ['marketplace version matches plugin', marketplaceEntry && marketplaceEntry.version === plugin.version],
+  ['marketplace description mentions Claude Code', marketplaceEntry?.description?.includes('Claude Code')],
+  ['marketplace description mentions Codex', marketplaceEntry?.description?.includes('Codex')],
   ['matching changelog exists', Boolean(matchingChangelog)],
+  ['hosted docs link matching changelog', matchingChangelogLink && hostedDocs.includes(`href="${matchingChangelogLink}"`)],
+  ['README mentions distribution readiness', readme.includes('distribution-readiness work')],
+  ['README mentions marketplace metadata', readme.includes('marketplace metadata alignment')],
   ['release process mentions plugin manifest', releaseProcess.includes('.claude-plugin/plugin.json')],
   ['release process mentions marketplace manifest', releaseProcess.includes('.claude-plugin/marketplace.json')],
   ['release process mentions changelog path', releaseProcess.includes('docs/changelogs/')],
