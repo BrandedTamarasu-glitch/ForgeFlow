@@ -220,18 +220,19 @@ The context advisor appends compact history to:
 
 ## Dashboard
 
-The dashboard is a local read-only HTTP server for metrics and agent chat observability:
+The metrics dashboard is an optional local read-only HTTP server:
 
 ```text
 /dashboard
 ```
 
-It runs on localhost and reads local telemetry files. It is optional; Forgeflow works without it.
+It runs on `http://127.0.0.1:4003` and reads local telemetry files from `~/.claude/projects/`. For live agent-message observability, use `/agent-chat:on`, which runs a separate local dashboard on port `4001`. Forgeflow works without either dashboard.
 
 ## Documentation
 
 - [Wiki source](docs/wiki/Home.md)
 - [Demos](docs/wiki/Demos.md)
+- [Dashboard](docs/wiki/Dashboard.md)
 - [Context intelligence](docs/wiki/Context-Intelligence.md)
 - [Codex migration notes](CODEX_MIGRATION.md)
 - [Telemetry schema](docs/forgeflow-metrics-telemetry-schema.md)

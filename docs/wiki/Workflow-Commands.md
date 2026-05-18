@@ -20,6 +20,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands.
 | `/review` | Review changed files with explainable routing and multi-agent synthesis. |
 | `/review-auto` | Apply conservative safe fixes, then re-review. |
 | `/audit` | Run a deeper systems/security/craft audit. |
+| `/dashboard` | Start the optional local metrics dashboard on port 4003. |
 | `/forgeflow-health` | Audit installation and project-local state; can safely repair `.forgeflow/` scaffolding and budget config. |
 | `/forgeflow-metrics` | Summarize telemetry, calibration, outcomes, context savings, budget health, and advisor actions. |
 | `/forgeflow-report` | Produce a broader status report including drift, context trends, and local metrics. |
