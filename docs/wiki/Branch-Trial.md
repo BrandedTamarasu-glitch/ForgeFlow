@@ -100,7 +100,7 @@ scripts/forgeflow/record-review-outcome.js --input outcome.json --out .forgeflow
 scripts/forgeflow/render-evaluation-report.js --outcomes .forgeflow/$(basename "$PWD")/review-outcomes.jsonl --context-root .forgeflow --public
 ```
 
-For a side-by-side comparison, repeat the same change with `review.workflow` set to `no-agent`, `single-agent`, and `forgeflow`.
+For a side-by-side comparison, repeat the same change with `review.workflow` set to `no-agent`, `single-agent`, and `forgeflow`. See [Workflow Comparison](Workflow-Comparison) for the full comparison flow.
 
 ## Clean Up
 

@@ -20,7 +20,7 @@ For each branch:
 
 1. Run [Branch Trial](Branch-Trial).
 2. Save a local outcome record with `review.workflow` set to `forgeflow`.
-3. If possible, record comparable `no-agent` and `single-agent` outcomes for the same change.
+3. If possible, record comparable `no-agent` and `single-agent` outcomes for the same change using [Workflow Comparison](Workflow-Comparison).
 4. Generate a public-safe evaluation summary:
 
 ```bash

@@ -16,6 +16,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 - [Public-Safe Examples](Public-Examples)
 - [Evaluation Sharing](Evaluation-Sharing)
 - [Evaluation Summary Collection](Evaluation-Summary-Collection)
+- [Workflow Comparison](Workflow-Comparison)
 - [Field Validation](Field-Validation)
 - [Quick Start](Quick-Start)
 - [Codex First Run](Codex-First-Run)
