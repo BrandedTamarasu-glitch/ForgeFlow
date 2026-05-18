@@ -46,3 +46,5 @@ For Claude Code, wire `~/.claude/settings.json` manually for hooks and statuslin
 ```
 
 For Codex, keep existing local config in place. If you need the sample settings, merge the relevant values from `.codex/config.toml` instead of overwriting your current Codex config.
+
+For a complete Codex first-run flow, including dry-run install, restart, skill checks, and drift checks, see [Codex First Run](Codex-First-Run).

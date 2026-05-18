@@ -15,6 +15,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 - [Branch Trial](Branch-Trial)
 - [Public-Safe Examples](Public-Examples)
 - [Quick Start](Quick-Start)
+- [Codex First Run](Codex-First-Run)
 - [Demos](Demos)
 - [Dashboard](Dashboard)
 - [Agent Roles](Agent-Roles)

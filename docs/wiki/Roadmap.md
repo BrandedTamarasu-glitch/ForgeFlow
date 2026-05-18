@@ -8,7 +8,6 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 
 ## Adoption Work
 
-- tighten first-run guidance for Codex users installing agents and skills from a local checkout
 - keep evaluation records local-first while making aggregate summaries easy to share
 
 ## Recently Added
@@ -42,3 +41,4 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 - concise positioning for Review Squad and ad hoc agent review users
 - branch trial guide for running Forgeflow without committing local state
 - public-safe example outputs for install, health, review, context, and evaluation reports
+- Codex first-run guidance for installing agents and skills from a local checkout

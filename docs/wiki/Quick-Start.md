@@ -84,6 +84,15 @@ Or run the full workflow:
 
 ## Codex
 
+For first-time local installation, use the template installer and follow [Codex First Run](Codex-First-Run):
+
+```bash
+node scripts/forgeflow/install-template.js --target codex --dry-run --json
+node scripts/forgeflow/install-template.js --target codex
+```
+
+Restart Codex after installing so agents and skills are discovered.
+
 Use the repo skills:
 
 ```text
@@ -92,6 +101,8 @@ $implement execute the brief
 $forge-review review the current changes
 $ship prepare the branch
 ```
+
+Use `$forge-review` instead of `/review`; `/review` is a Codex built-in.
 
 ## Useful Helpers
 
