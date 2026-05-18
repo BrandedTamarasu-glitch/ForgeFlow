@@ -34,11 +34,11 @@ scripts/forgeflow/render-evaluation-report.js \
 
 5. Review the summary using [Evaluation Sharing](Evaluation-Sharing).
 6. Store the summary using [Evaluation Summary Collection](Evaluation-Summary-Collection).
-7. Record first-run friction separately from review quality.
+7. Record first-run friction separately from review quality using [First-Run Friction](First-Run-Friction).
 
 ## Friction Log
 
-Track friction in a local note, issue, or spreadsheet. Use these fields:
+Track friction in a local note, issue, or spreadsheet. Use the fuller template in [First-Run Friction](First-Run-Friction), or start with these fields:
 
 ```text
 project_type:
