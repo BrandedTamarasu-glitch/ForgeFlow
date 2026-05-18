@@ -4,9 +4,12 @@ const os = require('os');
 const path = require('path');
 const { expectedRuntimeSources, runHealthCheck } = require('./health-check');
 const { manifestEntry } = require('./install-manifest');
+const { spawnSync } = require('child_process');
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-health-'));
+spawnSync('git', ['init'], { cwd: root, encoding: 'utf8' });
 const installRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-health-install-'));
+const nonGitRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-health-nongit-'));
 fs.writeFileSync(path.join(root, '.gitignore'), 'node_modules/\n');
 for (const source of expectedRuntimeSources()) {
   const entry = manifestEntry(source, installRoot);
@@ -21,6 +24,7 @@ const again = runHealthCheck({ root, fix: true });
 const installed = runHealthCheck({ root, installRoot, fix: false });
 fs.unlinkSync(manifestEntry('scripts/forgeflow/health-check.js', installRoot).destination);
 const missingInstalled = runHealthCheck({ root, installRoot, fix: false });
+const nonGit = runHealthCheck({ root: nonGitRoot, fix: true });
 
 const project = path.basename(root);
 const checks = [
@@ -34,6 +38,9 @@ const checks = [
   ['installed runtime passes', installed.status === 'pass'],
   ['missing runtime fails', missingInstalled.status === 'fail'],
   ['runtime check included', installed.checks.some((item) => item.name === 'runtime helper health-check.js')],
+  ['non git passes with skip', nonGit.status === 'pass'],
+  ['non git project check skipped', nonGit.checks.some((item) => item.status === 'skip' && item.name === 'project-local .forgeflow/')],
+  ['non git fix does not create forgeflow', !fs.existsSync(path.join(nonGitRoot, '.forgeflow'))],
 ];
 
 let failed = 0;

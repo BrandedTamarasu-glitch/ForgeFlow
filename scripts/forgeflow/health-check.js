@@ -50,6 +50,10 @@ function git(args, cwd) {
   return result.stdout.trimEnd();
 }
 
+function isGitRepo(cwd = process.cwd()) {
+  return git(['rev-parse', '--is-inside-work-tree'], cwd) === 'true';
+}
+
 function repoRoot(cwd = process.cwd()) {
   return git(['rev-parse', '--show-toplevel'], cwd) || cwd;
 }
@@ -90,6 +94,14 @@ function check(name, ok, fix, detail = {}) {
   };
 }
 
+function skip(name, detail = {}) {
+  return {
+    name,
+    status: 'skip',
+    ...detail,
+  };
+}
+
 function safeMkdir(dir) {
   fs.mkdirSync(dir, { recursive: true });
 }
@@ -112,36 +124,45 @@ function addInstallChecks(checks, installRoot) {
 }
 
 function runHealthCheck(opts = {}) {
-  const root = opts.root || repoRoot();
+  const requestedRoot = opts.root || process.cwd();
+  const gitRepo = isGitRepo(requestedRoot);
+  const root = opts.root ? path.resolve(opts.root) : repoRoot(requestedRoot);
   const ffDir = forgeflowDir(root);
   const notesDir = path.join(ffDir, 'agent-notes');
   const budgetPath = path.join(root, '.forgeflow-budget.json');
   const checks = [];
   const changes = [];
 
-  if (opts.fix && !fs.existsSync(ffDir)) {
-    safeMkdir(ffDir);
-    changes.push({ path: ffDir, action: 'created-dir' });
-  }
-  checks.push(check('project forgeflow dir', fs.existsSync(ffDir), 'create .forgeflow/<project>/'));
+  if (!gitRepo) {
+    checks.push(skip('project-local .forgeflow/', {
+      reason: `${requestedRoot} is not inside a git worktree`,
+      fix: 'cd into a git project, then rerun health-check.js',
+    }));
+  } else {
+    if (opts.fix && !fs.existsSync(ffDir)) {
+      safeMkdir(ffDir);
+      changes.push({ path: ffDir, action: 'created-dir' });
+    }
+    checks.push(check('project forgeflow dir', fs.existsSync(ffDir), 'create .forgeflow/<project>/'));
 
-  if (opts.fix && !fs.existsSync(notesDir)) {
-    safeMkdir(notesDir);
-    changes.push({ path: notesDir, action: 'created-dir' });
-  }
-  checks.push(check('agent notes dir', fs.existsSync(notesDir), 'create agent-notes dir'));
+    if (opts.fix && !fs.existsSync(notesDir)) {
+      safeMkdir(notesDir);
+      changes.push({ path: notesDir, action: 'created-dir' });
+    }
+    checks.push(check('agent notes dir', fs.existsSync(notesDir), 'create agent-notes dir'));
 
-  if (opts.fix && !hasGitignoreEntry(root)) {
-    addGitignoreEntry(root);
-    changes.push({ path: gitignorePath(root), action: 'added .forgeflow/' });
-  }
-  checks.push(check('gitignore .forgeflow/', hasGitignoreEntry(root), 'add .forgeflow/ to .gitignore'));
+    if (opts.fix && !hasGitignoreEntry(root)) {
+      addGitignoreEntry(root);
+      changes.push({ path: gitignorePath(root), action: 'added .forgeflow/' });
+    }
+    checks.push(check('gitignore .forgeflow/', hasGitignoreEntry(root), 'add .forgeflow/ to .gitignore'));
 
-  if (opts.fix && !fs.existsSync(budgetPath)) {
-    const seeded = seedBudgetConfig({ root, out: budgetPath });
-    if (seeded.written) changes.push({ path: budgetPath, action: 'seeded budget config' });
+    if (opts.fix && !fs.existsSync(budgetPath)) {
+      const seeded = seedBudgetConfig({ root, out: budgetPath });
+      if (seeded.written) changes.push({ path: budgetPath, action: 'seeded budget config' });
+    }
+    checks.push(check('budget config', fs.existsSync(budgetPath), 'run seed-budget-config.js'));
   }
-  checks.push(check('budget config', fs.existsSync(budgetPath), 'run seed-budget-config.js'));
   addInstallChecks(checks, opts.installRoot);
 
   const failures = checks.filter((item) => item.status === 'fail');
@@ -149,6 +170,7 @@ function runHealthCheck(opts = {}) {
     schema_version: '1',
     root,
     project: projectName(root),
+    git_repo: gitRepo,
     status: failures.length === 0 ? 'pass' : 'fail',
     checks,
     changes,
@@ -180,7 +202,8 @@ function renderMarkdown(result) {
   }
   lines.push('## Checks', '');
   for (const item of result.checks) {
-    lines.push(`- ${item.status.toUpperCase()}: ${item.name}`);
+    const suffix = item.reason ? ` (${item.reason})` : '';
+    lines.push(`- ${item.status.toUpperCase()}: ${item.name}${suffix}`);
   }
   return lines.join('\n');
 }
@@ -207,6 +230,7 @@ if (require.main === module) {
 
 module.exports = {
   hasGitignoreEntry,
+  isGitRepo,
   renderMarkdown,
   runHealthCheck,
   expectedRuntimeSources,

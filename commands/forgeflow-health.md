@@ -24,8 +24,9 @@ No arguments: shows only failures, summary pass/fail count.
 
 ## Gotchas
 - **Never modifies settings.json.** Hook wiring issues are reported but user fixes them manually — settings.json is too load-bearing to mutate silently.
-- **Checks current cwd's `.forgeflow/` state.** If run outside any project, skips project-local checks with a note.
+- **Checks current cwd's `.forgeflow/` state only inside a git worktree.** If run outside a git repo, skip project-local checks and say exactly which cwd was skipped. Do not count that skip as a failure.
 - **Version drift check is best-effort.** Compares `~/.claude/forgeflow-version` to the latest upstream SHA via `curl` to GitHub. If offline, skips the check with a note.
+- **Restart detection is indirect.** If files exist on disk but a slash command or hook behavior is unavailable in the current Claude session, report "installed on disk; restart Claude Code to reload commands/hooks."
 - **Does not validate agent file semantics.** Only checks that files exist and have valid frontmatter — does not verify prompts are coherent or up to date. For that, run the Forgeflow on the agent files themselves via `/review agents/*.md`.
 - **Custom agent detection.** Files under `~/.claude/agents/` starting with `custom-` are NOT expected; they're user-created. Only the canonical Forgeflow agents and shared reference files are required.
 
@@ -88,6 +89,51 @@ For each rule in `EXPECTED_PROJECT_RULES`:
 For each hook in `EXPECTED_HOOKS`:
 - Check `~/.claude/hooks/<hook>.js` exists
 - Check it's referenced in `~/.claude/settings.json` (grep for the filename)
+- For wiring drift, print the exact manual JSON snippet or command string. Never say only "see docs."
+
+Manual statusline fix snippet:
+
+```json
+"statusLine": {
+  "type": "command",
+  "command": "node \"/home/corye/.claude/hooks/forgeflow-statusline.js\""
+}
+```
+
+Manual PostToolUse hook snippets:
+
+```json
+{
+  "hooks": [
+    {
+      "type": "command",
+      "command": "node \"/home/corye/.claude/hooks/forgeflow-context-monitor.js\""
+    }
+  ]
+}
+```
+
+```json
+{
+  "hooks": [
+    {
+      "type": "command",
+      "command": "node \"/home/corye/.claude/hooks/forgeflow-gate.js\""
+    }
+  ]
+}
+```
+
+```json
+{
+  "hooks": [
+    {
+      "type": "command",
+      "command": "node \"/home/corye/.claude/hooks/forgeflow-telemetry.js\""
+    }
+  ]
+}
+```
 
 ### 2e. Settings.json validity
 ```bash
@@ -102,6 +148,11 @@ For each helper in `EXPECTED_RUNTIME_HELPERS`:
 When the installed helper is available, `scripts/forgeflow/health-check.js --install-root ~/.claude --json` can run the runtime-helper portion from the manifest-backed helper list.
 
 ### 2f. Project-local state (if cwd is a repo)
+- First run `git rev-parse --is-inside-work-tree`.
+- If not inside a git worktree, mark project-local state as `skipped`, not failed. Output:
+  - `Project-local .forgeflow/: skipped`
+  - `Reason: cwd <path> is not inside a git worktree`
+  - `Next: cd into a git project, then rerun /forgeflow-health --fix`
 - `.forgeflow/<project-name>/` directory exists
 - `.forgeflow/<project-name>/agent-notes/` exists
 - `.forgeflow/` is in `.gitignore`
@@ -111,6 +162,17 @@ When the installed helper is available, `scripts/forgeflow/health-check.js --ins
 - If `--fix` is set, run `${HELPER_DIR}/health-check.js --fix --json` to create safe local scaffolding and seed `.forgeflow-budget.json` without overwriting an existing config.
 
 ### 2g. Version drift
+Prefer the installed `/forgeflow-version` helper when present because it reports local paths and latest release in addition to upstream drift:
+
+```bash
+HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
+if [ -x "${HELPER_DIR}/forgeflow-version.js" ]; then
+  "${HELPER_DIR}/forgeflow-version.js" --json
+fi
+```
+
+If the helper is unavailable, fall back to:
+
 ```bash
 CURRENT=$(cat ~/.claude/forgeflow-version 2>/dev/null)
 LATEST=$(curl -sf "https://api.github.com/repos/BrandedTamarasu-glitch/ForgeFlow/commits/main" 2>/dev/null \
@@ -137,7 +199,11 @@ Default (without `--verbose`):
 - [ ] MISSING: `~/.claude/hooks/forgeflow-telemetry.js`
       Fix: /update-forgeflow
 - [ ] settings.json hook: forgeflow-telemetry.js not referenced in PostToolUse
-      Fix: add the hook entry manually (see Review Hook wiki page)
+      Fix: add this entry under hooks.PostToolUse in ~/.claude/settings.json:
+      {"hooks":[{"type":"command","command":"node \"/home/corye/.claude/hooks/forgeflow-telemetry.js\""}]}
+- [ ] settings.json statusLine: points to gsd-statusline.js, not forgeflow-statusline.js
+      Fix: set statusLine.command to:
+      node "/home/corye/.claude/hooks/forgeflow-statusline.js"
 - [ ] Outdated: local at abc1234, latest at def5678 (3 commits behind)
       Fix: /update-forgeflow
 
@@ -149,6 +215,7 @@ Default (without `--verbose`):
 - Settings.json: valid
 - Runtime helpers: 24/24
 - Current project (.forgeflow/): 3/3
+- Project-local .forgeflow/: skipped — cwd /path is not inside a git worktree
 
 Summary: 4 failures, 28 passing. Run /forgeflow-health --fix to auto-repair safe items.
 ```
@@ -166,7 +233,7 @@ Prefer `${HELPER_DIR}/health-check.js --fix --json` for project-local fixes. It 
 
 Never auto-fix:
 - Missing agents or commands → directs to `/update-forgeflow`
-- settings.json changes → directs user to Review Hook wiki
+- settings.json changes → prints exact manual JSON snippet
 - Version drift → directs to `/update-forgeflow`
 - gh auth → directs to `gh auth switch`
 
@@ -178,7 +245,9 @@ After auto-fix, re-run all checks and report remaining failures.
 - [ ] Every agent, command, project-rule, hook, and template checked against expected inventory
 - [ ] Missing files reported with concrete fix instructions (which command to run)
 - [ ] Settings.json JSON validity verified
-- [ ] Project-local .forgeflow/ state audited when in a repo
+- [ ] Project-local .forgeflow/ state audited when in a repo, skipped without failure outside a repo
+- [ ] Hook/statusline wiring failures include exact manual settings snippets
+- [ ] Installed-but-not-loaded cases tell the user to restart Claude Code
 - [ ] Version drift detected against upstream SHA
 - [ ] gh auth state reported for push clarity
 - [ ] Auto-fix never mutates settings.json
