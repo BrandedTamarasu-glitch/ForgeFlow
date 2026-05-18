@@ -11,6 +11,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 ## Start Here
 
 - [Quick Start](Quick-Start)
+- [Demos](Demos)
 - [Agent Roles](Agent-Roles)
 - [Workflow Commands](Workflow-Commands)
 - [Review Routing](Review-Routing)

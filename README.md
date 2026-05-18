@@ -231,6 +231,7 @@ It runs on localhost and reads local telemetry files. It is optional; Forgeflow 
 ## Documentation
 
 - [Wiki source](docs/wiki/Home.md)
+- [Demos](docs/wiki/Demos.md)
 - [Context intelligence](docs/wiki/Context-Intelligence.md)
 - [Codex migration notes](CODEX_MIGRATION.md)
 - [Telemetry schema](docs/forgeflow-metrics-telemetry-schema.md)
