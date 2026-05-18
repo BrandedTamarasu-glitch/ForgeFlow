@@ -8,7 +8,6 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 
 ## Distribution Readiness Work
 
-- Verify tagged-release install paths for Claude Code and Codex from a clean checkout.
 - Keep plugin, marketplace, and README metadata aligned with the release notes.
 - Prepare public docs copy for users arriving from a package, release, or marketplace listing.
 - Run release checks and public-summary examples before tagging the next release.
@@ -53,3 +52,4 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 - first-run friction log for Claude Code and Codex field validation
 - friction-to-fix playbook for turning repeated field-validation issues into targeted changes
 - completed field-validation guidance for trials, comparisons, friction logging, and targeted fixes
+- clean-checkout install verification guide for Claude Code and Codex release handoff

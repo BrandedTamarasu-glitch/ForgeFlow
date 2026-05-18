@@ -243,6 +243,7 @@ It runs on `http://127.0.0.1:4003` and reads local telemetry files from `~/.clau
 - [First-run friction](docs/wiki/First-Run-Friction.md)
 - [Friction to fix](docs/wiki/Friction-To-Fix.md)
 - [Field validation](docs/wiki/Field-Validation.md)
+- [Clean checkout install verification](docs/wiki/Clean-Checkout-Install-Verification.md)
 - [Demos](docs/wiki/Demos.md)
 - [Codex first run](docs/wiki/Codex-First-Run.md)
 - [Dashboard](docs/wiki/Dashboard.md)
@@ -259,7 +260,7 @@ It runs on `http://127.0.0.1:4003` and reads local telemetry files from `~/.clau
 
 ## Current Status
 
-Forgeflow is a local-first developer workflow for turning product intent into shipped code with explicit planning, implementation, review, verification, and release handoff. It currently targets Claude Code and Codex users who are comfortable installing command/agent files and running local scripts. Hosted onboarding, marketplace packaging, and broader consumer polish are next.
+Forgeflow is a local-first developer workflow for turning product intent into shipped code with explicit planning, implementation, review, verification, and release handoff. It currently targets Claude Code and Codex users who are comfortable installing command/agent files and running local scripts. The current distribution-readiness work focuses on clean install verification, marketplace metadata alignment, and release-facing docs.
 
 ## License
 
