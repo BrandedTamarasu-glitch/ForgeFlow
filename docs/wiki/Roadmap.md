@@ -73,3 +73,4 @@ Forgeflow is currently a local-first developer workflow for Claude Code and Code
 - context budget and trimming workflow examples
 - common stack examples for frontend apps, APIs, Rails, Python, monorepos, docs, and release prep
 - migration guide for existing local Claude installs
+- static hosted documentation entry point under `docs/index.html`

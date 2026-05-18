@@ -230,6 +230,7 @@ It runs on `http://127.0.0.1:4003` and reads local telemetry files from `~/.clau
 
 ## Documentation
 
+- [Hosted docs entry](docs/index.html)
 - [Wiki source](docs/wiki/Home.md)
 - [Demos](docs/wiki/Demos.md)
 - [Dashboard](docs/wiki/Dashboard.md)

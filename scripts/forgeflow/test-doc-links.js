@@ -5,6 +5,7 @@ const path = require('path');
 const repoRoot = path.resolve(__dirname, '..', '..');
 const docs = [
   'README.md',
+  'docs/index.html',
   ...fs.readdirSync(path.join(repoRoot, 'docs', 'wiki'))
     .filter((file) => file.endsWith('.md'))
     .map((file) => `docs/wiki/${file}`),
@@ -12,15 +13,21 @@ const docs = [
 
 function localLinks(markdown) {
   const links = [];
-  const regex = /\[[^\]]+\]\(([^)]+)\)/g;
-  let match;
-  while ((match = regex.exec(markdown)) !== null) {
-    const target = match[1].trim();
-    if (!target || target.startsWith('http') || target.startsWith('#') || target.startsWith('mailto:')) continue;
-    if (target.includes('://')) continue;
-    links.push(target.split('#')[0]);
+  const markdownRegex = /\[[^\]]+\]\(([^)]+)\)/g;
+  const hrefRegex = /\shref="([^"]+)"/g;
+  for (const regex of [markdownRegex, hrefRegex]) {
+    let match;
+    while ((match = regex.exec(markdown)) !== null) {
+      links.push(match[1].trim());
+    }
   }
-  return links;
+  return links
+    .filter((target) => target
+      && !target.startsWith('http')
+      && !target.startsWith('#')
+      && !target.startsWith('mailto:')
+      && !target.includes('://'))
+    .map((target) => target.split('#')[0]);
 }
 
 function resolveTarget(source, target) {

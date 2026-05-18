@@ -10,6 +10,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 
 ## Start Here
 
+- [Hosted Docs Entry](../index.html)
 - [Quick Start](Quick-Start)
 - [Demos](Demos)
 - [Dashboard](Dashboard)
