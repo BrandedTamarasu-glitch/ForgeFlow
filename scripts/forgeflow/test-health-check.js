@@ -42,6 +42,17 @@ fs.writeFileSync(notesCheckPath, JSON.stringify({
 }, null, 2));
 const withNotesCheck = runHealthCheck({ root, fix: false });
 const withNotesCheckMarkdown = renderMarkdown(withNotesCheck);
+const pilotRollupPath = path.join(root, '.forgeflow', project, 'pilot-evidence-rollup.md');
+fs.writeFileSync(pilotRollupPath, [
+  '# Pilot Evidence Rollup',
+  '',
+  'Pilot count: 2',
+  'Decision: fix-now',
+  'Next fix layer: improve /forgeflow-health diagnostics or settings docs',
+  '',
+].join('\n'));
+const withPilotRollup = runHealthCheck({ root, fix: false });
+const withPilotRollupMarkdown = renderMarkdown(withPilotRollup);
 const again = runHealthCheck({ root, fix: true });
 const installed = runHealthCheck({ root, installRoot, fix: false });
 fs.unlinkSync(manifestEntry('scripts/forgeflow/health-check.js', installRoot).destination);
@@ -62,6 +73,8 @@ const checks = [
   ['latest notes check summarized', withNotesCheck.latest_notes_check.status === 'warn' && withNotesCheck.latest_notes_check.issues === 2],
   ['latest notes check counts failures', withNotesCheck.latest_notes_check.failures === 1 && withNotesCheck.latest_notes_check.warnings === 1],
   ['latest notes check renders', withNotesCheckMarkdown.includes('## Latest Implementation Notes Check') && withNotesCheckMarkdown.includes('Status: warn')],
+  ['latest pilot rollup summarized', withPilotRollup.latest_pilot_rollup.pilot_count === 2 && withPilotRollup.latest_pilot_rollup.decision === 'fix-now'],
+  ['latest pilot rollup renders', withPilotRollupMarkdown.includes('## Latest Pilot Evidence Rollup') && withPilotRollupMarkdown.includes('Decision: fix-now')],
   ['idempotent no changes', again.changes.length === 0],
   ['installed runtime passes', installed.status === 'pass'],
   ['missing runtime fails', missingInstalled.status === 'fail'],

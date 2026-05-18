@@ -169,6 +169,28 @@ function latestImplementationNotesCheck(ffDir) {
   }
 }
 
+function latestPilotRollup(ffDir) {
+  const file = path.join(ffDir, 'pilot-evidence-rollup.md');
+  if (!fs.existsSync(file)) {
+    return {
+      status: 'missing',
+      path: file,
+      pilot_count: 0,
+      decision: '',
+      next_fix_layer: '',
+    };
+  }
+  const content = fs.readFileSync(file, 'utf8');
+  const pilotCount = Number.parseInt((content.match(/^Pilot count:\s*(\d+)/m) || [])[1] || '0', 10);
+  return {
+    status: 'present',
+    path: file,
+    pilot_count: Number.isFinite(pilotCount) ? pilotCount : 0,
+    decision: (content.match(/^Decision:\s*(.+)$/m) || [])[1] || '',
+    next_fix_layer: (content.match(/^Next fix layer:\s*(.+)$/m) || [])[1] || '',
+  };
+}
+
 function runHealthCheck(opts = {}) {
   const requestedRoot = opts.root || process.cwd();
   const gitRepo = isGitRepo(requestedRoot);
@@ -221,6 +243,7 @@ function runHealthCheck(opts = {}) {
     checks,
     changes,
     latest_notes_check: latestImplementationNotesCheck(ffDir),
+    latest_pilot_rollup: latestPilotRollup(ffDir),
   };
 }
 
@@ -252,6 +275,15 @@ function renderMarkdown(result) {
     lines.push('## Latest Implementation Notes Check', '');
     lines.push(`- Status: ${latest.status}`);
     lines.push(`- Issues: ${latest.issues} (${latest.failures} fail, ${latest.warnings} warn)`);
+    lines.push(`- Report: ${latest.path}`);
+    lines.push('');
+  }
+  if (result.latest_pilot_rollup && result.latest_pilot_rollup.status !== 'missing') {
+    const latest = result.latest_pilot_rollup;
+    lines.push('## Latest Pilot Evidence Rollup', '');
+    lines.push(`- Pilot count: ${latest.pilot_count}`);
+    if (latest.decision) lines.push(`- Decision: ${latest.decision}`);
+    if (latest.next_fix_layer) lines.push(`- Next fix layer: ${latest.next_fix_layer}`);
     lines.push(`- Report: ${latest.path}`);
     lines.push('');
   }
@@ -291,4 +323,5 @@ module.exports = {
   expectedRuntimeSources,
   expectedTemplateSources,
   latestImplementationNotesCheck,
+  latestPilotRollup,
 };
