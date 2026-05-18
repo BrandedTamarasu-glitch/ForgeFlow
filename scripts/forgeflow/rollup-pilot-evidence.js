@@ -198,8 +198,33 @@ function renderMarkdown(rollup) {
     '',
     `Pilot count: ${rollup.pilot_count}`,
     `Decision: ${rollup.decision}`,
+    `Blocked first reviews: ${rollup.blocked_first_review_count}`,
+    `Repeated issue categories: ${rollup.repeat_issue_count}`,
+    `Review minutes: ${rollup.review_minutes}`,
+    `Findings: ${rollup.findings.confirmed} confirmed, ${rollup.findings.rejected} rejected, ${rollup.findings.deferred} deferred`,
   ];
   if (rollup.next_fix_layer) lines.push(`Next fix layer: ${rollup.next_fix_layer}`);
+  lines.push('', '## Health Results', '');
+  const healthResults = Object.entries(rollup.health_results);
+  if (healthResults.length === 0) {
+    lines.push('- none recorded');
+  } else {
+    for (const [name, count] of healthResults) lines.push(`- ${name}: ${count}`);
+  }
+  lines.push('', '## Runtimes', '');
+  const runtimes = Object.entries(rollup.runtimes);
+  if (runtimes.length === 0) {
+    lines.push('- none recorded');
+  } else {
+    for (const [name, count] of runtimes) lines.push(`- ${name}: ${count}`);
+  }
+  lines.push('', '## Project Types', '');
+  const projectTypes = Object.entries(rollup.project_types);
+  if (projectTypes.length === 0) {
+    lines.push('- none recorded');
+  } else {
+    for (const [name, count] of projectTypes) lines.push(`- ${name}: ${count}`);
+  }
   lines.push('', '## Support Categories', '');
   const categories = Object.entries(rollup.support_categories);
   if (categories.length === 0) {

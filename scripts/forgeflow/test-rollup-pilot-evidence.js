@@ -69,6 +69,8 @@ const checks = [
   ['recommends fix now for blocker', result.decision === 'fix-now'],
   ['maps next fix layer', result.next_fix_layer.includes('/forgeflow-health')],
   ['writes markdown rollup', rendered.includes('# Pilot Evidence Rollup') && rendered.includes('- health: 2')],
+  ['markdown includes summary metrics', rendered.includes('Blocked first reviews: 1') && rendered.includes('Findings: 3 confirmed, 1 rejected, 1 deferred')],
+  ['markdown includes health and runtime counts', rendered.includes('## Health Results') && rendered.includes('- codex: 1')],
   ['empty evidence is safe', empty.pilot_count === 0 && empty.decision === 'run-another-pilot'],
   ['parses quoted scalar', parsed.next_action === 'Contains # marker'],
   ['splits category strings', splitCategories('docs, health settings').length === 3],
