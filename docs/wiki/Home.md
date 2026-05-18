@@ -19,6 +19,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 - [Context Intelligence](Context-Intelligence)
 - [Context Budget Examples](Context-Budget-Examples)
 - [Common Stack Examples](Common-Stack-Examples)
+- [Migration Guide](Migration-Guide)
 - [Local Data And Privacy](Local-Data-And-Privacy)
 - [Roadmap](Roadmap)
 

@@ -25,6 +25,8 @@ After installing or updating, restart Claude Code, then verify:
 /forgeflow-health
 ```
 
+For an existing local install, see [Migration Guide](Migration-Guide).
+
 Runtime helpers are installed at:
 
 ```text
