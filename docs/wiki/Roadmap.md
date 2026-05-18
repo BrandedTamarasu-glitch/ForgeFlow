@@ -4,15 +4,15 @@ Forgeflow is currently a local-first developer workflow for Claude Code and Code
 
 ## Current Focus
 
-Forgeflow now has the local install, health, repair, rollback, release, docs, demo, and template-installer pieces needed for broader use. The next phase is measuring review quality and context efficiency across real projects.
+Forgeflow now has the local install, health, repair, rollback, release, docs, demo, template-installer, and evaluation pieces needed for broader use. The next phase is adoption: making it easier to explain, trial, and compare Forgeflow on real branches.
 
-## Evaluation Work
+## Adoption Work
 
-- collect local review outcome records
-- compare no-agent, single-agent, and Forgeflow reviews
-- measure false positives, accepted findings, review time, and auto-fix quality
-- measure context-pack savings and budget violations across real projects
-- publish a lightweight evaluation report when enough data exists
+- write concise positioning for users moving from Review Squad or ad hoc agent review
+- add trial scripts or docs for running Forgeflow on one real branch without committing local state
+- collect public-safe example outputs from install, health, review, evaluation, and context reports
+- tighten first-run guidance for Codex users installing agents and skills from a local checkout
+- keep evaluation records local-first while making aggregate summaries easy to share
 
 ## Recently Added
 
@@ -41,3 +41,4 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 - evaluation quality and efficiency rates for findings, false positives, review time, and auto-fix outcomes
 - evaluation context savings and budget-violation metrics
 - publishable lightweight evaluation summary format
+- completed local-first evaluation tooling for review quality and context efficiency
