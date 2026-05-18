@@ -37,3 +37,4 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 - versioned release process and release-version drift check
 - template installer for Claude Code and Codex
 - local evaluation report generator for review outcome JSONL
+- workflow comparison metrics for no-agent, single-agent, and Forgeflow reviews

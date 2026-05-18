@@ -99,8 +99,42 @@ function buildEvaluation(records, rejected = []) {
       average_review_minutes: summary.records ? round(totals.review_minutes / summary.records) : 0,
     },
     classes: summary.classes,
+    workflows: workflowComparisons(records),
   };
   return evaluation;
+}
+
+function workflowFor(record) {
+  const value = String(record?.review?.workflow || '').trim().toLowerCase();
+  if (['no-agent', 'single-agent', 'forgeflow'].includes(value)) return value;
+  return 'forgeflow';
+}
+
+function workflowComparisons(records) {
+  const groups = {};
+  for (const record of records) {
+    const workflow = workflowFor(record);
+    if (!groups[workflow]) groups[workflow] = [];
+    groups[workflow].push(record);
+  }
+
+  return Object.fromEntries(Object.entries(groups)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([workflow, items]) => {
+      const summary = summarize(items);
+      const totals = summary.totals;
+      const evaluatedFindings = totals.findings_confirmed + totals.findings_rejected;
+      return [workflow, {
+        records: summary.records,
+        findings_total: totals.findings_total,
+        findings_confirmed: totals.findings_confirmed,
+        findings_rejected: totals.findings_rejected,
+        confirmation_rate_pct: percent(totals.findings_confirmed, evaluatedFindings),
+        false_positive_rate_pct: percent(totals.findings_rejected, evaluatedFindings),
+        average_review_minutes: summary.records ? round(totals.review_minutes / summary.records) : 0,
+        post_merge_regression: totals.post_merge_regression,
+      }];
+    }));
 }
 
 function renderTable(rows) {
@@ -137,6 +171,23 @@ function renderMarkdown(report) {
       ['Mode', 'Reviews'],
       ['---', '---:'],
       ...Object.entries(report.modes).map(([mode, count]) => [mode, String(count)]),
+    ]),
+    '',
+    '## Workflow Comparison',
+    '',
+    renderTable([
+      ['Workflow', 'Reviews', 'Confirmed', 'Rejected', 'Confirmation', 'False Positives', 'Avg Minutes', 'Regressions'],
+      ['---', '---:', '---:', '---:', '---:', '---:', '---:', '---:'],
+      ...Object.entries(report.workflows).map(([workflow, item]) => [
+        workflow,
+        String(item.records),
+        String(item.findings_confirmed),
+        String(item.findings_rejected),
+        `${item.confirmation_rate_pct}%`,
+        `${item.false_positive_rate_pct}%`,
+        String(item.average_review_minutes),
+        String(item.post_merge_regression),
+      ]),
     ]),
     '',
     '## Finding Classes',
@@ -186,5 +237,6 @@ module.exports = {
   buildEvaluation,
   readOutcomes,
   renderMarkdown,
+  workflowComparisons,
   writeReport,
 };

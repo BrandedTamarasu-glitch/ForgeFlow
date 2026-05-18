@@ -15,6 +15,7 @@ Required fields:
 - `schema_version`: `"1"`
 - `change_id`: local PR, branch, commit, or fixture id
 - `review.mode`: `skip-mode`, `thin-mode`, `full-mode`, or `deep-mode`
+- `review.workflow`: optional comparison label, one of `no-agent`, `single-agent`, or `forgeflow`; omitted records default to `forgeflow`
 - `review.agents_used`: agents that actually ran
 - `review.verifier_decisions`: Aegis decisions, if any
 - `outcome.findings_total`: total surfaced findings
@@ -60,7 +61,7 @@ Track:
 - post-merge regressions when known
 - accessibility findings as a first-class finding class
 
-The generated report includes confirmation rate, false positive rate, verifier rejection rate, auto-fix success rate, regression rate, average review minutes, mode counts, and per-class finding totals.
+The generated report includes confirmation rate, false positive rate, verifier rejection rate, auto-fix success rate, regression rate, average review minutes, mode counts, workflow comparison rows, and per-class finding totals.
 
 ## Privacy Rules
 

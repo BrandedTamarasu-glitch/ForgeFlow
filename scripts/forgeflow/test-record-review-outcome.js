@@ -16,6 +16,8 @@ if (errors.length > 0) {
 }
 
 const summary = summarize([record]);
+const invalidWorkflow = JSON.parse(JSON.stringify(record));
+invalidWorkflow.review.workflow = 'many-agents';
 const checks = [
   ['records', summary.records === 1],
   ['mode', summary.modes['full-mode'] === 1],
@@ -23,6 +25,7 @@ const checks = [
   ['rejected', summary.totals.findings_rejected === 1],
   ['verifier confirmed', summary.totals.verifier_confirmed === 1],
   ['accessibility class', summary.classes.accessibility.findings_confirmed === 1],
+  ['invalid workflow rejected', validateOutcome(invalidWorkflow).some((error) => error.includes('review.workflow'))],
 ];
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'review-outcome-'));

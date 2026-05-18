@@ -64,6 +64,9 @@ function validateOutcome(record) {
   if (!['skip-mode', 'thin-mode', 'full-mode', 'deep-mode'].includes(review.mode)) {
     errors.push('review.mode must be skip-mode, thin-mode, full-mode, or deep-mode');
   }
+  if (review.workflow !== undefined && !['no-agent', 'single-agent', 'forgeflow'].includes(review.workflow)) {
+    errors.push('review.workflow must be no-agent, single-agent, or forgeflow');
+  }
   if (!Array.isArray(review.agents_used)) errors.push('review.agents_used must be an array');
   if (!Array.isArray(review.verifier_decisions)) errors.push('review.verifier_decisions must be an array');
 

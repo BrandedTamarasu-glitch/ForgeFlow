@@ -11,9 +11,12 @@ const {
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 const fixture = path.join(repoRoot, 'fixtures/evaluation/sample-outcomes.jsonl');
+const comparisonFixture = path.join(repoRoot, 'fixtures/evaluation/comparison-outcomes.jsonl');
 const { records, rejected } = readOutcomes(fixture);
 const report = buildEvaluation(records, rejected);
 const markdown = renderMarkdown(report);
+const comparisonInput = readOutcomes(comparisonFixture);
+const comparison = buildEvaluation(comparisonInput.records, comparisonInput.rejected);
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-eval-report-'));
 const outFile = path.join(tmpDir, 'evaluation.md');
@@ -29,7 +32,12 @@ const checks = [
   ['confirmation rate', report.rates.confirmation_rate_pct === 66.7],
   ['false positive rate', report.rates.false_positive_rate_pct === 33.3],
   ['average minutes', report.rates.average_review_minutes === 18.5],
+  ['default workflow', report.workflows.forgeflow.records === 1],
+  ['comparison no-agent', comparison.workflows['no-agent'].average_review_minutes === 31],
+  ['comparison single-agent', comparison.workflows['single-agent'].false_positive_rate_pct === 50],
+  ['comparison forgeflow', comparison.workflows.forgeflow.confirmation_rate_pct === 66.7],
   ['markdown title', markdown.includes('# Forgeflow Evaluation Report')],
+  ['markdown workflow table', markdown.includes('## Workflow Comparison')],
   ['markdown class table', markdown.includes('| accessibility | 1 | 1 | 0 |')],
   ['cli exit', result.status === 0],
   ['cli wrote report', fs.existsSync(outFile) && fs.readFileSync(outFile, 'utf8').includes('False positive rate')],
