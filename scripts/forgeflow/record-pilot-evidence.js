@@ -38,6 +38,14 @@ const CHOICES = {
   adoption_decision: new Set(['repeat-pilot', 'expand-small-team', 'stop-and-fix', 'defer']),
 };
 
+const SENSITIVE_PATTERNS = [
+  ['private-key', /-----BEGIN [A-Z ]*PRIVATE KEY-----/i],
+  ['assignment-secret', /\b(api[_-]?key|password|passwd|secret|token)\s*[:=]/i],
+  ['long-token-like-value', /\b[A-Z0-9]{20,}\b/],
+  ['private-url', /\b(?:https?|ssh|git):\/\/(?:[^/\s:@]+:[^/\s@]+@|[^/\s]*(?:localhost|127\.0\.0\.1|10\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.|\.internal\b|\.local\b|internal\.|intranet\.|corp\.))/i],
+  ['scp-private-repo-url', /\bgit@[^:\s]*(?:\.internal\b|\.local\b|internal\.|intranet\.|corp\.)[^:\s]*:[^\s]+/i],
+];
+
 function usage() {
   console.error([
     'Usage: record-pilot-evidence.js [--project-dir <dir>] [--out <path>] [--json]',
@@ -149,6 +157,13 @@ function validate(values) {
   for (const [key, allowed] of Object.entries(CHOICES)) {
     if (values[key] && !allowed.has(values[key])) {
       errors.push(`Invalid ${key}: ${values[key]}`);
+    }
+  }
+  for (const [field, value] of Object.entries(values)) {
+    for (const [label, pattern] of SENSITIVE_PATTERNS) {
+      if (pattern.test(String(value || ''))) {
+        errors.push(`Potential sensitive content in ${field} (${label})`);
+      }
     }
   }
   return errors;

@@ -66,6 +66,8 @@ scripts/forgeflow/record-pilot-evidence.js \
   --json
 ```
 
+The recorder rejects obvious secret assignments, private key headers, long token-like values, private/internal URLs, and scp-style internal repo URLs before writing the note.
+
 Record the review outcome after triage:
 
 ```bash

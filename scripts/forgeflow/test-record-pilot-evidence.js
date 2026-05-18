@@ -29,6 +29,8 @@ const content = fs.readFileSync(result.path, 'utf8');
 const defaultRecord = buildRecord({ runtime: 'claude-code' });
 const quotedYaml = renderYaml({ pilot_id: 'quote-test', next_action: 'Contains # marker', date: '2026-05-18' });
 const invalid = validate({ runtime: 'cursor', extra: 'bad' });
+const sensitive = validate({ setup_friction: 'debug token=SHOULD_NOT_PRINT' });
+const privateUrl = validate({ next_action: 'Review https://confluence.company.internal/pilot' });
 const cliResult = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-pilot-evidence.js'), [
   '--project-dir',
   projectDir,
@@ -47,6 +49,12 @@ const invalidCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-pilot
   '--runtime',
   'cursor',
 ], { encoding: 'utf8' });
+const sensitiveCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-pilot-evidence.js'), [
+  '--project-dir',
+  projectDir,
+  '--set',
+  'setup_friction=api_key=SHOULD_NOT_PRINT',
+], { encoding: 'utf8' });
 const cliJson = cliResult.status === 0 ? JSON.parse(cliResult.stdout) : {};
 
 const checks = [
@@ -57,9 +65,12 @@ const checks = [
   ['defaults date and pilot id', defaultRecord.date.length === 10 && defaultRecord.pilot_id.includes('claude-code')],
   ['quotes unsafe yaml scalar', quotedYaml.includes('next_action: "Contains # marker"')],
   ['validates unknown and invalid choices', invalid.length === 2],
+  ['validates sensitive content', sensitive.some((item) => item.includes('Potential sensitive content in setup_friction'))],
+  ['validates private urls', privateUrl.some((item) => item.includes('Potential sensitive content in next_action'))],
   ['cli writes json result', cliResult.status === 0 && cliJson.record?.sharing_level === 'local-maintainer'],
   ['missing option value exits usage', missingValue.status === 2 && missingValue.stderr.includes('Missing value for --runtime')],
   ['invalid choice exits failure', invalidCli.status === 1 && invalidCli.stderr.includes('Invalid runtime: cursor')],
+  ['sensitive cli fails redacted', sensitiveCli.status === 1 && sensitiveCli.stderr.includes('Potential sensitive content in setup_friction') && !sensitiveCli.stderr.includes('SHOULD_NOT_PRINT')],
 ];
 
 let failed = 0;
