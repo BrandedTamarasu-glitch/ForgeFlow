@@ -268,7 +268,7 @@ It runs on `http://127.0.0.1:4003` and reads local telemetry files from `~/.clau
 
 ## Current Status
 
-Forgeflow is a local-first developer workflow for turning product intent into shipped code with explicit planning, implementation, review, verification, and release handoff. It currently targets Claude Code and Codex users who are comfortable installing command/agent files and running local scripts. The current team-trial work focuses on maintainer pilots, privacy boundaries, support triage, and evidence collection before broader rollout.
+Forgeflow is a local-first developer workflow for turning product intent into shipped code with explicit planning, implementation, review, verification, and release handoff. It currently targets Claude Code and Codex users who are comfortable installing command/agent files and running local scripts. The current pilot-evidence work focuses on real maintainer trials, public-safe summaries, support-triage rollups, and rollout decisions based on observed results.
 
 ## License
 

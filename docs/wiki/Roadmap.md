@@ -4,11 +4,15 @@ Forgeflow is currently a local-first developer workflow for Claude Code and Code
 
 ## Current Focus
 
-Forgeflow now has the local install, health, repair, rollback, release, docs, demo, template-installer, evaluation, adoption, field-validation, and distribution-readiness guidance needed for broader use. The next phase is team trial readiness: preparing a small-team rollout path with clear success criteria, privacy boundaries, support triage, and evidence collection.
+Forgeflow now has the local install, health, repair, rollback, release, docs, demo, template-installer, evaluation, adoption, field-validation, distribution-readiness, and team-trial guidance needed for broader use. The next phase is pilot evidence collection: running bounded maintainer trials, collecting public-safe summaries, and deciding what product fixes or rollout steps the evidence supports.
 
-## Team Trial Readiness Work
+## Pilot Evidence Collection Work
 
-No active team-trial readiness item is currently selected.
+- Run the maintainer pilot checklist on one real branch and capture the local pilot summary.
+- Generate a public-safe evaluation summary from a real trial when privacy rules allow it.
+- Roll up support triage categories across pilots to find repeated blockers.
+- Compare pilot outcomes against team adoption criteria.
+- Decide whether the next action is a product fix, another pilot, small-team expansion, or continued deferral of CI/headless automation.
 
 ## Recently Added
 
@@ -60,3 +64,4 @@ No active team-trial readiness item is currently selected.
 - support triage guide for install, health, routing, context, and review-quality issues
 - team adoption criteria for repeat, expand, stop-and-fix, and defer decisions
 - CI and headless-review deferral guidance gated on team-trial demand
+- completed team-trial readiness guidance for pilots, privacy, support triage, adoption criteria, and CI deferrals
