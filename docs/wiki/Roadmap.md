@@ -8,7 +8,6 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 
 ## Team Trial Readiness Work
 
-- Define a maintainer pilot checklist for trying Forgeflow on a real team branch.
 - Document team rollout privacy boundaries for local state, summaries, and optional sharing.
 - Add support triage guidance for install, health, routing, context, and review-quality issues.
 - Capture adoption criteria for when a trial is ready to expand beyond one maintainer.
@@ -59,3 +58,4 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 - release gate guide tying release checks to public-summary examples before tagging
 - release-facing settings and recovery guide for manual wiring, restarts, repair, and rollback
 - completed distribution-readiness guidance for install verification, metadata alignment, onboarding, release gates, and recovery
+- maintainer pilot checklist for the first small-team trial on a real branch
