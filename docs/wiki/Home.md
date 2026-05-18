@@ -33,6 +33,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 - [Context Budget Examples](Context-Budget-Examples)
 - [Common Stack Examples](Common-Stack-Examples)
 - [Migration Guide](Migration-Guide)
+- [Settings And Recovery](Settings-And-Recovery)
 - [Release Process](Release-Process)
 - [Release Gate](Release-Gate)
 - [Template Installer](Template-Installer)

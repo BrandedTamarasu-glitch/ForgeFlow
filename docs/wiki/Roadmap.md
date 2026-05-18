@@ -8,7 +8,7 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 
 ## Distribution Readiness Work
 
-- Document known manual settings steps, shell restart requirements, and rollback paths in release-facing guidance.
+No active distribution-readiness item is currently selected.
 
 ## Recently Added
 
@@ -53,3 +53,4 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 - release metadata alignment checks for plugin, marketplace, README, and hosted release notes
 - package and release onboarding guide for new users arriving from public distribution surfaces
 - release gate guide tying release checks to public-summary examples before tagging
+- release-facing settings and recovery guide for manual wiring, restarts, repair, and rollback

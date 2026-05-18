@@ -64,7 +64,9 @@ release_checks: pass | fail
 public_summary_example: pass | fail
 clean_checkout_verification: pass | warn | fail
 manual_settings_deferrals:
+restart_requirements_verified: yes | no
+rollback_path_verified: yes | no
 known_deferrals:
 ```
 
-Do not tag or publish if release checks fail. Treat public-summary failures as release blockers when release notes rely on evaluation evidence.
+Do not tag or publish if release checks fail. Treat public-summary failures as release blockers when release notes rely on evaluation evidence. Use [Settings And Recovery](Settings-And-Recovery) to record any manual settings, restart, repair, or rollback deferrals.

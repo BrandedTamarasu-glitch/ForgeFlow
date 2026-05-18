@@ -27,7 +27,7 @@ Restart Claude Code after the installer finishes. Then verify:
 /forgeflow-health
 ```
 
-If `/forgeflow-health` reports a manual settings issue, edit `~/.claude/settings.json` and rerun the health check. Forgeflow intentionally does not auto-edit `settings.json`.
+If `/forgeflow-health` reports a manual settings issue, edit `~/.claude/settings.json` and rerun the health check. Forgeflow intentionally does not auto-edit `settings.json`. See [Settings And Recovery](Settings-And-Recovery) for statusline, hook, restart, repair, and rollback guidance.
 
 The installed runtime helpers live at:
 
@@ -82,3 +82,4 @@ Pass criteria:
 - [Workflow Commands](Workflow-Commands) for the full command list.
 - [Public-Safe Examples](Public-Examples) for example install, health, review, and evaluation output.
 - [Migration Guide](Migration-Guide) for existing Claude installs.
+- [Settings And Recovery](Settings-And-Recovery) for manual settings, restarts, repair, and rollback.

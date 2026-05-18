@@ -252,6 +252,7 @@ It runs on `http://127.0.0.1:4003` and reads local telemetry files from `~/.clau
 - [Context budget examples](docs/wiki/Context-Budget-Examples.md)
 - [Common stack examples](docs/wiki/Common-Stack-Examples.md)
 - [Migration guide](docs/wiki/Migration-Guide.md)
+- [Settings and recovery](docs/wiki/Settings-And-Recovery.md)
 - [Release process](docs/wiki/Release-Process.md)
 - [Release gate](docs/wiki/Release-Gate.md)
 - [Template installer](docs/wiki/Template-Installer.md)
