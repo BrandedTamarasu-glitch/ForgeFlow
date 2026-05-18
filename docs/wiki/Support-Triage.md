@@ -117,4 +117,4 @@ repeat_issue: yes | no
 follow_up:
 ```
 
-Create a fix when the same category repeats across two trials or one issue blocks first review entirely.
+Create a fix when the same category repeats across two trials or one issue blocks first review entirely. Use [Pilot Support Rollup](Pilot-Support-Rollup) to compare categories across pilots.

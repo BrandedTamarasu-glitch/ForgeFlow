@@ -85,4 +85,4 @@ Classify the pilot result:
 | stop-and-fix | setup, privacy, routing, context, or quality blocked trust | create a targeted fix |
 | defer | useful locally, but no team rollout demand yet | keep Forgeflow opt-in |
 
-Move repeated issues into [Friction To Fix](Friction-To-Fix). Keep CI and headless review deferred unless [CI And Headless Deferrals](CI-Headless-Deferrals) says there is enough demand.
+Move repeated issues into [Friction To Fix](Friction-To-Fix) and use [Pilot Support Rollup](Pilot-Support-Rollup) once there is more than one pilot. Keep CI and headless review deferred unless [CI And Headless Deferrals](CI-Headless-Deferrals) says there is enough demand.
