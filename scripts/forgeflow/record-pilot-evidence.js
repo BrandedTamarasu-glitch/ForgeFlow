@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { rollupPilotEvidence } = require('./rollup-pilot-evidence');
 
 const FIELDS = [
   'pilot_id',
@@ -48,7 +49,7 @@ const SENSITIVE_PATTERNS = [
 
 function usage() {
   console.error([
-    'Usage: record-pilot-evidence.js [--project-dir <dir>] [--out <path>] [--json]',
+    'Usage: record-pilot-evidence.js [--project-dir <dir>] [--out <path>] [--no-rollup] [--json]',
     '       [--set <field=value>] [--pilot-id <id>] [--runtime <runtime>]',
     '       [--project-type <type>] [--health-result <result>] [--adoption-decision <decision>]',
   ].join('\n'));
@@ -68,6 +69,7 @@ function parseArgs(argv) {
   const opts = {
     projectDir: '',
     out: '',
+    rollup: true,
     json: false,
     values: {},
   };
@@ -102,6 +104,8 @@ function parseArgs(argv) {
       i += 1;
     } else if (arg === '--json') {
       opts.json = true;
+    } else if (arg === '--no-rollup') {
+      opts.rollup = false;
     } else if (arg === '--help' || arg === '-h') {
       usage();
       process.exit(0);
@@ -196,11 +200,18 @@ function recordPilotEvidence(opts = {}) {
   const out = opts.out || path.join(evidenceDir, `${slug(record.pilot_id)}.yml`);
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, renderYaml(record), 'utf8');
+  let rollup = null;
+  if (opts.rollup !== false) {
+    const rollupPath = path.join(projectDir, 'pilot-evidence-rollup.md');
+    rollup = rollupPilotEvidence({ projectDir, out: rollupPath });
+  }
   return {
     schema_version: '1',
     status: 'written',
     path: out,
     project_dir: projectDir,
+    rollup_path: rollup ? rollup.out : '',
+    rollup_decision: rollup ? rollup.decision : '',
     record,
   };
 }
@@ -212,6 +223,7 @@ function main() {
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   } else {
     console.log(`Pilot evidence written to ${result.path}`);
+    if (result.rollup_path) console.log(`Pilot evidence rollup refreshed at ${result.rollup_path}`);
   }
 }
 

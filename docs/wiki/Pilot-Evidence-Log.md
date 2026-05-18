@@ -68,6 +68,8 @@ scripts/forgeflow/record-pilot-evidence.js \
 
 The recorder rejects obvious secret assignments, private key headers, long token-like values, private/internal URLs, and scp-style internal repo URLs before writing the note.
 
+After writing a note, the recorder refreshes `.forgeflow/<project-name>/pilot-evidence-rollup.md` unless `--no-rollup` is passed.
+
 Record the review outcome after triage:
 
 ```bash
