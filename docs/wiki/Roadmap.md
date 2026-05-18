@@ -4,11 +4,15 @@ Forgeflow is currently a local-first developer workflow for Claude Code and Code
 
 ## Current Focus
 
-Forgeflow now has the local install, health, repair, rollback, release, docs, demo, template-installer, evaluation, and adoption guidance needed for broader use. The next phase is field validation: running the workflow on real branches, collecting aggregate evidence, and tightening the first-run path from observed friction.
+Forgeflow now has the local install, health, repair, rollback, release, docs, demo, template-installer, evaluation, adoption, and field-validation guidance needed for broader use. The next phase is distribution readiness: making the release path easy to verify, package, and hand to new users without relying on project-local context.
 
-## Field Validation Work
+## Distribution Readiness Work
 
-No active field-validation item is currently selected.
+- Verify tagged-release install paths for Claude Code and Codex from a clean checkout.
+- Keep plugin, marketplace, and README metadata aligned with the release notes.
+- Prepare public docs copy for users arriving from a package, release, or marketplace listing.
+- Run release checks and public-summary examples before tagging the next release.
+- Document known manual settings steps, shell restart requirements, and rollback paths in release-facing guidance.
 
 ## Recently Added
 
@@ -48,3 +52,4 @@ No active field-validation item is currently selected.
 - workflow comparison guide for no-agent, single-agent, and Forgeflow reviews
 - first-run friction log for Claude Code and Codex field validation
 - friction-to-fix playbook for turning repeated field-validation issues into targeted changes
+- completed field-validation guidance for trials, comparisons, friction logging, and targeted fixes
