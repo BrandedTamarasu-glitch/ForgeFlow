@@ -66,3 +66,4 @@ Forgeflow is currently a local-first developer workflow for Claude Code and Code
 - project-local health repair helper
 - context advisor with trimming recommendations and trend history
 - `/forgeflow-version` status command and helper
+- command coverage test and `/forgeflow-release-check`

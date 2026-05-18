@@ -49,7 +49,7 @@ EXPECTED_SHARED_AGENT_FILES=(
 )
 EXPECTED_COMMANDS=(
   audit ci-wrapper consult create-agent dashboard debate discuss fleet
-  forgeflow-drift forgeflow-health forgeflow-learnings forgeflow-metrics forgeflow-report forgeflow-sync forgeflow-version
+  forgeflow-drift forgeflow-health forgeflow-learnings forgeflow-metrics forgeflow-release-check forgeflow-report forgeflow-sync forgeflow-version
   handoff implement plan quick research review review-auto ship sync-upstream ui-iterate update-forgeflow
 )
 EXPECTED_SUBDIR_COMMANDS=(agent-chat/on agent-chat/off)

@@ -1,3 +1,13 @@
+---
+name: debate
+description: Run a structured multi-agent false-positive stress test against a code sample and sealed answer key
+argument-hint: "<CODE and ANSWER KEY sections>"
+allowed-tools:
+  - Read
+  - Write
+  - Bash
+  - Agent
+---
 # /debate — Code Review False Positive Stress Test
 
 A 3-round structured debate to stress-test the Forgeflow against any code sample with a known answer key.
