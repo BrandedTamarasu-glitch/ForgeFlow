@@ -8,7 +8,6 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 
 ## Team Trial Readiness Work
 
-- Add support triage guidance for install, health, routing, context, and review-quality issues.
 - Capture adoption criteria for when a trial is ready to expand beyond one maintainer.
 - Decide which CI or headless-review ideas stay deferred until team trials show demand.
 
@@ -59,3 +58,4 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 - completed distribution-readiness guidance for install verification, metadata alignment, onboarding, release gates, and recovery
 - maintainer pilot checklist for the first small-team trial on a real branch
 - team privacy boundaries for local state, private-team sharing, and public-safe summaries
+- support triage guide for install, health, routing, context, and review-quality issues

@@ -14,6 +14,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 - [Why Forgeflow](Why-Forgeflow)
 - [Maintainer Pilot](Maintainer-Pilot)
 - [Team Privacy Boundaries](Team-Privacy-Boundaries)
+- [Support Triage](Support-Triage)
 - [Branch Trial](Branch-Trial)
 - [Public-Safe Examples](Public-Examples)
 - [Package And Release Onboarding](Package-Release-Onboarding)

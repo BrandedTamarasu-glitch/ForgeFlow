@@ -17,6 +17,7 @@ Classify each issue by the first layer that could have prevented it:
 | `codex-discovery` | Codex docs, installer verification | agents copied but not visible after restart |
 | `agent-routing` | route helper, review docs | wrong review mode, missing specialist |
 | `context-budget` | budget defaults, advisor, examples | repeated over-budget packets or low-savings packets |
+| `review-quality` | reviewer prompts, routing docs, examples | findings lack evidence, repeated false positives, unclear severity |
 | `docs` | quick start, branch trial, examples | user needed to search for the next step |
 
 ## Fix Shape
@@ -50,3 +51,5 @@ After the fix:
 4. Move the repeated issue from "observed" to "fixed" in local field-validation notes.
 
 Do not commit raw field-validation logs unless the project explicitly wants them versioned.
+
+Use [Support Triage](Support-Triage) for the first response path during team trials.

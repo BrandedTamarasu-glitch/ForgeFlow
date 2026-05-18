@@ -88,6 +88,7 @@ A maintainer pilot is successful enough to repeat when:
 - false positives are low enough that the maintainer would run Forgeflow again
 - no private raw records need to be shared to explain the result
 - setup friction is captured in [First-Run Friction](First-Run-Friction) or [Friction To Fix](Friction-To-Fix)
+- support issues are classified with [Support Triage](Support-Triage)
 
 ## Stop Criteria
 
