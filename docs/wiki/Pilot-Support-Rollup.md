@@ -89,4 +89,4 @@ linked_categories:
 validation_needed:
 ```
 
-Use [Team Adoption Criteria](Team-Adoption-Criteria) to decide whether the rollup supports expansion.
+Use [Pilot Adoption Comparison](Pilot-Adoption-Comparison) and [Team Adoption Criteria](Team-Adoption-Criteria) to decide whether the rollup supports expansion.

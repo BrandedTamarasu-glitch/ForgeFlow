@@ -243,6 +243,7 @@ It runs on `http://127.0.0.1:4003` and reads local telemetry files from `~/.clau
 - [Pilot evidence log](docs/wiki/Pilot-Evidence-Log.md)
 - [Pilot public summary](docs/wiki/Pilot-Public-Summary.md)
 - [Pilot support rollup](docs/wiki/Pilot-Support-Rollup.md)
+- [Pilot adoption comparison](docs/wiki/Pilot-Adoption-Comparison.md)
 - [Package and release onboarding](docs/wiki/Package-Release-Onboarding.md)
 - [Branch trial](docs/wiki/Branch-Trial.md)
 - [Public-safe examples](docs/wiki/Public-Examples.md)

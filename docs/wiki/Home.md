@@ -20,6 +20,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 - [Pilot Evidence Log](Pilot-Evidence-Log)
 - [Pilot Public Summary](Pilot-Public-Summary)
 - [Pilot Support Rollup](Pilot-Support-Rollup)
+- [Pilot Adoption Comparison](Pilot-Adoption-Comparison)
 - [Branch Trial](Branch-Trial)
 - [Public-Safe Examples](Public-Examples)
 - [Package And Release Onboarding](Package-Release-Onboarding)

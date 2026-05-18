@@ -8,7 +8,6 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 
 ## Pilot Evidence Collection Work
 
-- Compare pilot outcomes against team adoption criteria.
 - Decide whether the next action is a product fix, another pilot, small-team expansion, or continued deferral of CI/headless automation.
 
 ## Recently Added
@@ -65,3 +64,4 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 - pilot evidence log for capturing one real maintainer trial without exposing raw local state
 - pilot public-summary runbook for privacy-gated aggregate evidence from real trials
 - pilot support rollup for repeated blocker categories across maintainer trials
+- pilot adoption comparison worksheet for repeat, expand, stop-and-fix, and defer decisions

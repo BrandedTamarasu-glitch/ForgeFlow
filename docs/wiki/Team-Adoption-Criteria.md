@@ -2,6 +2,8 @@
 
 Use this after one or more maintainer pilots to decide whether Forgeflow is ready to expand beyond one maintainer.
 
+For a decision worksheet that compares pilot evidence against these criteria, use [Pilot Adoption Comparison](Pilot-Adoption-Comparison).
+
 ## Decision States
 
 | State | Meaning | Next Step |
