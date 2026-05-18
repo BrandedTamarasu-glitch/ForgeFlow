@@ -4,7 +4,9 @@ const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const {
+  attachContextEvaluation,
   buildEvaluation,
+  buildContextEvaluation,
   readOutcomes,
   renderMarkdown,
 } = require('./render-evaluation-report');
@@ -14,14 +16,29 @@ const fixture = path.join(repoRoot, 'fixtures/evaluation/sample-outcomes.jsonl')
 const comparisonFixture = path.join(repoRoot, 'fixtures/evaluation/comparison-outcomes.jsonl');
 const { records, rejected } = readOutcomes(fixture);
 const report = buildEvaluation(records, rejected);
-const markdown = renderMarkdown(report);
 const comparisonInput = readOutcomes(comparisonFixture);
 const comparison = buildEvaluation(comparisonInput.records, comparisonInput.rejected);
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-eval-report-'));
+const contextDir = path.join(tmpDir, 'context');
+fs.mkdirSync(contextDir, { recursive: true });
+const contextFile = path.join(contextDir, 'context-telemetry.json');
+fs.writeFileSync(contextFile, `${JSON.stringify({
+  schema_version: '1',
+  kind: 'context-pack',
+  baseline_chars: 400,
+  compact_chars: 100,
+  saved_chars: 300,
+  estimated_baseline_tokens: 100,
+  estimated_compact_tokens: 25,
+  estimated_saved_tokens: 75,
+})}\n`);
+const context = buildContextEvaluation([contextFile]);
+const reportWithContext = attachContextEvaluation(report, context);
+const markdown = renderMarkdown(reportWithContext);
 const outFile = path.join(tmpDir, 'evaluation.md');
 const script = path.join(repoRoot, 'scripts/forgeflow/render-evaluation-report.js');
-const result = spawnSync(process.execPath, [script, '--outcomes', fixture, '--out', outFile], {
+const result = spawnSync(process.execPath, [script, '--outcomes', fixture, '--context-file', contextFile, '--out', outFile], {
   encoding: 'utf8',
 });
 
@@ -35,6 +52,9 @@ const checks = [
   ['findings per review', report.rates.findings_per_review === 3],
   ['confirmed per hour', report.rates.confirmed_findings_per_hour === 6.49],
   ['auto fix failure rate', report.rates.auto_fix_failure_rate_pct === 0],
+  ['context files', context.files === 1],
+  ['context saved tokens', context.estimated_saved_tokens === 75],
+  ['context budget status', context.budget_status === 'pass'],
   ['default workflow', report.workflows.forgeflow.records === 1],
   ['comparison no-agent', comparison.workflows['no-agent'].average_review_minutes === 31],
   ['comparison single-agent', comparison.workflows['single-agent'].false_positive_rate_pct === 50],
@@ -42,6 +62,7 @@ const checks = [
   ['markdown title', markdown.includes('# Forgeflow Evaluation Report')],
   ['markdown workflow table', markdown.includes('## Workflow Comparison')],
   ['markdown efficiency table', markdown.includes('## Efficiency')],
+  ['markdown context table', markdown.includes('## Context Efficiency')],
   ['markdown class table', markdown.includes('| accessibility | 1 | 1 | 0 |')],
   ['cli exit', result.status === 0],
   ['cli wrote report', fs.existsSync(outFile) && fs.readFileSync(outFile, 'utf8').includes('False positive rate')],

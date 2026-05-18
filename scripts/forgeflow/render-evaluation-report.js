@@ -6,14 +6,30 @@ const {
   summarize,
   validateOutcome,
 } = require('./record-review-outcome');
+const {
+  applyConfig,
+  checkBudget,
+  defaultConfigPath,
+  readConfig,
+} = require('./check-context-budget');
+const {
+  summarize: summarizeContext,
+  walk: walkContext,
+} = require('./summarize-context-telemetry');
 
 function usage() {
-  console.error('Usage: render-evaluation-report.js --outcomes <jsonl> [--out <md>] [--json]');
+  console.error([
+    'Usage: render-evaluation-report.js --outcomes <jsonl> [--out <md>] [--json]',
+    '       [--context-root <dir>] [--context-file <json>] [--budget-config <json>]',
+  ].join('\n'));
 }
 
 function parseArgs(argv) {
   const opts = {
     outcomes: '',
+    contextRoot: '',
+    contextFiles: [],
+    budgetConfig: '',
     out: '',
     json: false,
   };
@@ -22,6 +38,12 @@ function parseArgs(argv) {
     const arg = argv[i];
     if (arg === '--outcomes') {
       opts.outcomes = path.resolve(argv[++i] || '');
+    } else if (arg === '--context-root') {
+      opts.contextRoot = path.resolve(argv[++i] || '');
+    } else if (arg === '--context-file') {
+      opts.contextFiles.push(path.resolve(argv[++i] || ''));
+    } else if (arg === '--budget-config') {
+      opts.budgetConfig = path.resolve(argv[++i] || '');
     } else if (arg === '--out') {
       opts.out = path.resolve(argv[++i] || '');
     } else if (arg === '--json') {
@@ -112,6 +134,55 @@ function buildEvaluation(records, rejected = []) {
   return evaluation;
 }
 
+function buildContextEvaluation(files, budgetConfigPath = '') {
+  if (!files || files.length === 0) {
+    return {
+      files: 0,
+      skipped: 0,
+      percent_saved: 0,
+      estimated_baseline_tokens: 0,
+      estimated_compact_tokens: 0,
+      estimated_saved_tokens: 0,
+      budget_status: 'not-run',
+      budget_violations: 0,
+      budget_over_by_tokens: 0,
+      by_kind: {},
+    };
+  }
+
+  const summary = summarizeContext(files);
+  const configPath = budgetConfigPath || defaultConfigPath();
+  const budgetOpts = applyConfig({
+    files,
+    maxCompactTokens: 16000,
+    maxCompactTokensSet: false,
+    kindLimits: {},
+    warnOnly: true,
+    warnOnlySet: true,
+  }, readConfig(configPath));
+  budgetOpts.configPath = fs.existsSync(configPath) ? configPath : '';
+  const budget = checkBudget(files, budgetOpts);
+  return {
+    files: summary.files,
+    skipped: summary.skipped,
+    percent_saved: summary.percent_saved,
+    estimated_baseline_tokens: summary.totals.estimated_baseline_tokens,
+    estimated_compact_tokens: summary.totals.estimated_compact_tokens,
+    estimated_saved_tokens: summary.totals.estimated_saved_tokens,
+    budget_status: budget.status,
+    budget_violations: budget.violations.length,
+    budget_over_by_tokens: budget.violations.reduce((sum, item) => sum + item.over_by, 0),
+    by_kind: summary.by_kind,
+  };
+}
+
+function attachContextEvaluation(report, context) {
+  return {
+    ...report,
+    context,
+  };
+}
+
 function workflowFor(record) {
   const value = String(record?.review?.workflow || '').trim().toLowerCase();
   if (['no-agent', 'single-agent', 'forgeflow'].includes(value)) return value;
@@ -186,6 +257,21 @@ function renderMarkdown(report) {
       ['Rejected findings per hour', String(report.rates.rejected_findings_per_hour)],
     ]),
     '',
+    '## Context Efficiency',
+    '',
+    renderTable([
+      ['Metric', 'Value'],
+      ['---', '---:'],
+      ['Telemetry files', String(report.context?.files || 0)],
+      ['Estimated baseline tokens', String(report.context?.estimated_baseline_tokens || 0)],
+      ['Estimated compact tokens', String(report.context?.estimated_compact_tokens || 0)],
+      ['Estimated saved tokens', String(report.context?.estimated_saved_tokens || 0)],
+      ['Percent saved', `${report.context?.percent_saved || 0}%`],
+      ['Budget status', report.context?.budget_status || 'not-run'],
+      ['Budget violations', String(report.context?.budget_violations || 0)],
+      ['Budget over by tokens', String(report.context?.budget_over_by_tokens || 0)],
+    ]),
+    '',
     '## Modes',
     '',
     renderTable([
@@ -239,7 +325,11 @@ function writeReport(report, outPath, json = false) {
 function main() {
   const opts = parseArgs(process.argv.slice(2));
   const { records, rejected } = readOutcomes(opts.outcomes);
-  const report = buildEvaluation(records, rejected);
+  const contextFiles = opts.contextFiles.length > 0
+    ? opts.contextFiles
+    : (opts.contextRoot ? walkContext(opts.contextRoot) : []);
+  const context = buildContextEvaluation(contextFiles, opts.budgetConfig);
+  const report = attachContextEvaluation(buildEvaluation(records, rejected), context);
   const output = writeReport(report, opts.out, opts.json);
   if (opts.json || !opts.out) process.stdout.write(output);
   else console.log(`Evaluation report written to ${opts.out}`);
@@ -255,7 +345,9 @@ if (require.main === module) {
 }
 
 module.exports = {
+  attachContextEvaluation,
   buildEvaluation,
+  buildContextEvaluation,
   readOutcomes,
   renderMarkdown,
   workflowComparisons,
