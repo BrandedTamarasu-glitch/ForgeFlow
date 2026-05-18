@@ -23,6 +23,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands.
 | `/forgeflow-health` | Audit installation and project-local state; can safely repair `.forgeflow/` scaffolding and budget config. |
 | `/forgeflow-metrics` | Summarize telemetry, calibration, outcomes, context savings, budget health, and advisor actions. |
 | `/forgeflow-report` | Produce a broader status report including drift, context trends, and local metrics. |
+| `/forgeflow-version` | Show installed commit, upstream status, latest release, helper paths, and the next update action. |
 | `/ship` | Prepare presentation, PR, CI checks, and release handoff. |
 
 ## Codex Skills

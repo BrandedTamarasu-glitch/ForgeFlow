@@ -48,7 +48,7 @@ EXPECTED_SHARED_AGENT_FILES=(
 )
 EXPECTED_COMMANDS=(
   audit ci-wrapper consult create-agent dashboard debate discuss fleet
-  forgeflow-drift forgeflow-health forgeflow-learnings forgeflow-metrics forgeflow-report forgeflow-sync
+  forgeflow-drift forgeflow-health forgeflow-learnings forgeflow-metrics forgeflow-report forgeflow-sync forgeflow-version
   handoff implement plan quick research review review-auto ship sync-upstream ui-iterate update-forgeflow
 )
 EXPECTED_SUBDIR_COMMANDS=(agent-chat/on agent-chat/off)
@@ -58,7 +58,7 @@ EXPECTED_TEMPLATES=(ship-presentation.html)
 EXPECTED_RUNTIME_HELPERS=(
   advise-context.js agent-chat-off.sh agent-chat-on.sh build-context-pack.js build-memory-context.js
   build-scope-manifest.js check-codex-agent-drift.js check-context-budget.js context-telemetry.js
-  ensure-forgeflow-state.sh explain-review-route.js generate-codex-agent-stubs.js health-check.js
+  ensure-forgeflow-state.sh explain-review-route.js forgeflow-version.js generate-codex-agent-stubs.js health-check.js
   index-memory.js install-manifest.js record-review-outcome.js render-ship-presentation.js
   seed-budget-config.js ship-ci-status.sh ship-open-pr.sh ship-prepare.sh summarize-calibration.js
   summarize-context-telemetry.js update-forgeflow.js

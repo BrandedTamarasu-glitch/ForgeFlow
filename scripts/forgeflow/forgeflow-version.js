@@ -1,0 +1,252 @@
+#!/usr/bin/env node
+const fs = require('fs');
+const https = require('https');
+const os = require('os');
+const path = require('path');
+
+const DEFAULT_REPO = 'BrandedTamarasu-glitch/ForgeFlow';
+
+function usage() {
+  console.error('Usage: forgeflow-version.js [--home <dir>] [--repo owner/name] [--json] [--offline]');
+}
+
+function parseArgs(argv) {
+  const opts = {
+    home: path.join(os.homedir(), '.claude'),
+    repo: DEFAULT_REPO,
+    json: false,
+    offline: false,
+  };
+
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    if (arg === '--home') {
+      opts.home = path.resolve(argv[++i] || '');
+    } else if (arg === '--repo') {
+      opts.repo = argv[++i] || DEFAULT_REPO;
+    } else if (arg === '--json') {
+      opts.json = true;
+    } else if (arg === '--offline') {
+      opts.offline = true;
+    } else if (arg === '--help' || arg === '-h') {
+      usage();
+      process.exit(0);
+    } else {
+      console.error(`Unknown argument: ${arg}`);
+      usage();
+      process.exit(2);
+    }
+  }
+
+  return opts;
+}
+
+function request(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, {
+      headers: {
+        'User-Agent': 'Forgeflow version',
+        Accept: 'application/vnd.github+json',
+      },
+    }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => {
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          reject(new Error(`HTTP ${res.statusCode} for ${url}`));
+          return;
+        }
+        try {
+          resolve(JSON.parse(body));
+        } catch (err) {
+          reject(err);
+        }
+      });
+    }).on('error', reject);
+  });
+}
+
+function versionFile(home) {
+  return path.join(home, 'forgeflow-version');
+}
+
+function readInstalledVersion(home) {
+  const file = versionFile(home);
+  if (!fs.existsSync(file)) {
+    return { status: 'missing', sha: '', path: file };
+  }
+
+  const sha = fs.readFileSync(file, 'utf8').trim();
+  if (!/^[0-9a-f]{40}$/i.test(sha)) {
+    return { status: 'corrupt', sha, path: file };
+  }
+
+  return { status: 'present', sha, path: file };
+}
+
+function existsWithPath(file) {
+  return {
+    path: file,
+    exists: fs.existsSync(file),
+  };
+}
+
+async function latestMain(repo) {
+  const data = await request(`https://api.github.com/repos/${repo}/commits/main`);
+  const sha = data.sha || '';
+  if (!/^[0-9a-f]{40}$/i.test(sha)) throw new Error('Unexpected latest SHA from GitHub');
+  return {
+    sha,
+    html_url: data.html_url || '',
+    date: data.commit?.committer?.date || data.commit?.author?.date || '',
+  };
+}
+
+async function latestRelease(repo) {
+  const data = await request(`https://api.github.com/repos/${repo}/releases/latest`);
+  return {
+    tag_name: data.tag_name || '',
+    name: data.name || '',
+    html_url: data.html_url || '',
+    published_at: data.published_at || '',
+    target_commitish: data.target_commitish || '',
+  };
+}
+
+async function getVersionStatus(opts = {}) {
+  const home = opts.home || path.join(os.homedir(), '.claude');
+  const repo = opts.repo || DEFAULT_REPO;
+  const installed = readInstalledVersion(home);
+  const installedHelper = existsWithPath(path.join(home, 'forgeflow', 'scripts', 'forgeflow'));
+  const installedUpdater = existsWithPath(path.join(home, 'forgeflow', 'scripts', 'forgeflow', 'update-forgeflow.js'));
+  const installedCommand = existsWithPath(path.join(home, 'commands', 'update-forgeflow.md'));
+  const installedVersionCommand = existsWithPath(path.join(home, 'commands', 'forgeflow-version.md'));
+  const statusline = existsWithPath(path.join(home, 'hooks', 'forgeflow-statusline.js'));
+
+  const result = {
+    schema_version: '1',
+    repo,
+    home,
+    installed,
+    upstream: {
+      status: opts.offline ? 'skipped-offline' : 'unknown',
+      main: null,
+      latest_release: null,
+      error: '',
+    },
+    paths: {
+      helper_root: installedHelper,
+      updater: installedUpdater,
+      update_command: installedCommand,
+      version_command: installedVersionCommand,
+      statusline_hook: statusline,
+    },
+    status: 'unknown',
+    action: '',
+  };
+
+  if (!opts.offline) {
+    try {
+      const [main, release] = await Promise.all([
+        latestMain(repo),
+        latestRelease(repo).catch((err) => ({ error: err.message })),
+      ]);
+      result.upstream.status = 'ok';
+      result.upstream.main = main;
+      result.upstream.latest_release = release.error ? null : release;
+      if (release.error) result.upstream.release_error = release.error;
+    } catch (err) {
+      result.upstream.status = 'error';
+      result.upstream.error = err.message;
+    }
+  }
+
+  if (installed.status === 'missing') {
+    result.status = 'not-installed';
+    result.action = 'Run /update-forgeflow, or run scripts/forgeflow/update-forgeflow.js from a local checkout.';
+  } else if (installed.status === 'corrupt') {
+    result.status = 'corrupt-version';
+    result.action = `Delete ${installed.path}, then run /update-forgeflow.`;
+  } else if (result.upstream.status === 'ok' && result.upstream.main?.sha) {
+    if (installed.sha === result.upstream.main.sha) {
+      result.status = 'up-to-date';
+      result.action = 'No update needed.';
+    } else {
+      result.status = 'outdated';
+      result.action = '/update-forgeflow';
+    }
+  } else if (result.upstream.status === 'skipped-offline') {
+    result.status = 'installed-offline';
+    result.action = 'Run without --offline to compare against upstream main.';
+  } else {
+    result.status = 'installed-unknown-upstream';
+    result.action = 'Network check failed. Re-run when GitHub is reachable, or run /update-forgeflow directly.';
+  }
+
+  return result;
+}
+
+function shortSha(sha) {
+  return sha ? sha.slice(0, 7) : 'none';
+}
+
+function yesNo(value) {
+  return value ? 'yes' : 'no';
+}
+
+function renderMarkdown(result) {
+  const lines = [
+    '# Forgeflow Version',
+    '',
+    `Status: ${result.status}`,
+    `Installed: ${result.installed.status === 'present' ? shortSha(result.installed.sha) : result.installed.status}`,
+  ];
+
+  if (result.upstream.main?.sha) {
+    lines.push(`Upstream main: ${shortSha(result.upstream.main.sha)}`);
+  } else {
+    lines.push(`Upstream main: ${result.upstream.status}`);
+  }
+
+  if (result.upstream.latest_release) {
+    const release = result.upstream.latest_release;
+    lines.push(`Latest release: ${release.tag_name || 'unknown'}${release.published_at ? ` (${release.published_at})` : ''}`);
+  } else if (result.upstream.release_error) {
+    lines.push(`Latest release: unavailable (${result.upstream.release_error})`);
+  }
+
+  lines.push('', '## Paths', '');
+  lines.push(`- Home: ${result.home}`);
+  lines.push(`- Version file: ${result.installed.path}`);
+  lines.push(`- Runtime helpers: ${result.paths.helper_root.path} (${yesNo(result.paths.helper_root.exists)})`);
+  lines.push(`- Updater helper: ${result.paths.updater.path} (${yesNo(result.paths.updater.exists)})`);
+  lines.push(`- /update-forgeflow command: ${result.paths.update_command.path} (${yesNo(result.paths.update_command.exists)})`);
+  lines.push(`- /forgeflow-version command: ${result.paths.version_command.path} (${yesNo(result.paths.version_command.exists)})`);
+  lines.push(`- Statusline hook: ${result.paths.statusline_hook.path} (${yesNo(result.paths.statusline_hook.exists)})`);
+
+  lines.push('', '## Next Step', '', result.action);
+  return lines.join('\n');
+}
+
+async function main() {
+  const opts = parseArgs(process.argv.slice(2));
+  const result = await getVersionStatus(opts);
+  if (opts.json) console.log(JSON.stringify(result, null, 2));
+  else console.log(renderMarkdown(result));
+  if (['corrupt-version'].includes(result.status)) process.exit(1);
+}
+
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(err.message);
+    process.exit(1);
+  });
+}
+
+module.exports = {
+  getVersionStatus,
+  readInstalledVersion,
+  renderMarkdown,
+  shortSha,
+};

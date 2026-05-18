@@ -22,6 +22,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/context-telemetry.js',
   'scripts/forgeflow/ensure-forgeflow-state.sh',
   'scripts/forgeflow/explain-review-route.js',
+  'scripts/forgeflow/forgeflow-version.js',
   'scripts/forgeflow/generate-codex-agent-stubs.js',
   'scripts/forgeflow/health-check.js',
   'scripts/forgeflow/index-memory.js',

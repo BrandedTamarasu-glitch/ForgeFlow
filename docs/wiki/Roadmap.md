@@ -4,7 +4,35 @@ Forgeflow is currently a local-first developer workflow for Claude Code and Code
 
 ## Near Term
 
-- polish installation and onboarding
+### Phase 1: Version And Release Status
+
+- add `/forgeflow-version` for installed SHA, upstream `main`, latest release, helper paths, and next action
+- expose a JSON mode so health checks, docs, and future support scripts can consume the same status
+- use it during smoke tests before deeper health checks
+
+### Phase 2: Onboarding Diagnostics
+
+- make `/forgeflow-health` first-run output more prescriptive
+- detect non-git directories and suggest running from a real project path
+- print exact manual settings snippets for hook and statusline wiring drift
+- distinguish "installed but Claude needs restart" from missing files
+
+### Phase 3: Install Repair And Rollback
+
+- add update repair mode for missing or corrupted managed files
+- preserve one previous managed-file snapshot before update
+- add rollback command or flag that restores the previous snapshot without touching custom agents
+- keep `settings.json` manual by default, with explicit opt-in only if a settings mutator is ever added
+
+### Phase 4: Command Coverage Tests
+
+- add manifest coverage checks for every installed slash command
+- validate command frontmatter, helper references, and installed-path assumptions
+- run representative no-network smoke tests for install, health, version, metrics, and context helpers
+- add a release checklist command that runs the command coverage suite before tagging
+
+### Consumer Polish
+
 - improve plugin packaging
 - add screenshots or short demos
 - tighten dashboard positioning for consumer users
@@ -37,3 +65,4 @@ Forgeflow is currently a local-first developer workflow for Claude Code and Code
 - configurable context budgets and budget seeding
 - project-local health repair helper
 - context advisor with trimming recommendations and trend history
+- `/forgeflow-version` status command and helper
