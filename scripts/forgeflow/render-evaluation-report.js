@@ -82,6 +82,8 @@ function buildEvaluation(records, rejected = []) {
   const totals = summary.totals;
   const evaluatedFindings = totals.findings_confirmed + totals.findings_rejected;
   const verifierTotal = totals.verifier_confirmed + totals.verifier_rejected + totals.verifier_blocked;
+  const reviewHours = totals.review_minutes / 60;
+  const autoFixTotal = totals.auto_fix_success + totals.auto_fix_failed;
   const evaluation = {
     schema_version: '1',
     generated_at: new Date().toISOString(),
@@ -94,9 +96,15 @@ function buildEvaluation(records, rejected = []) {
       confirmation_rate_pct: percent(totals.findings_confirmed, evaluatedFindings),
       false_positive_rate_pct: percent(totals.findings_rejected, evaluatedFindings),
       verifier_rejection_rate_pct: percent(totals.verifier_rejected, verifierTotal),
-      auto_fix_success_rate_pct: percent(totals.auto_fix_success, totals.auto_fix_success + totals.auto_fix_failed),
+      auto_fix_success_rate_pct: percent(totals.auto_fix_success, autoFixTotal),
+      auto_fix_failure_rate_pct: percent(totals.auto_fix_failed, autoFixTotal),
       regression_rate_pct: percent(totals.post_merge_regression, summary.records),
       average_review_minutes: summary.records ? round(totals.review_minutes / summary.records) : 0,
+      findings_per_review: summary.records ? round(totals.findings_total / summary.records) : 0,
+      confirmed_findings_per_review: summary.records ? round(totals.findings_confirmed / summary.records) : 0,
+      rejected_findings_per_review: summary.records ? round(totals.findings_rejected / summary.records) : 0,
+      confirmed_findings_per_hour: reviewHours ? round(totals.findings_confirmed / reviewHours) : 0,
+      rejected_findings_per_hour: reviewHours ? round(totals.findings_rejected / reviewHours) : 0,
     },
     classes: summary.classes,
     workflows: workflowComparisons(records),
@@ -161,8 +169,21 @@ function renderMarkdown(report) {
       ['False positive rate', `${report.rates.false_positive_rate_pct}%`],
       ['Verifier rejection rate', `${report.rates.verifier_rejection_rate_pct}%`],
       ['Auto-fix success rate', `${report.rates.auto_fix_success_rate_pct}%`],
+      ['Auto-fix failure rate', `${report.rates.auto_fix_failure_rate_pct}%`],
       ['Post-merge regression rate', `${report.rates.regression_rate_pct}%`],
       ['Average review minutes', String(report.rates.average_review_minutes)],
+    ]),
+    '',
+    '## Efficiency',
+    '',
+    renderTable([
+      ['Metric', 'Value'],
+      ['---', '---:'],
+      ['Findings per review', String(report.rates.findings_per_review)],
+      ['Confirmed findings per review', String(report.rates.confirmed_findings_per_review)],
+      ['Rejected findings per review', String(report.rates.rejected_findings_per_review)],
+      ['Confirmed findings per hour', String(report.rates.confirmed_findings_per_hour)],
+      ['Rejected findings per hour', String(report.rates.rejected_findings_per_hour)],
     ]),
     '',
     '## Modes',

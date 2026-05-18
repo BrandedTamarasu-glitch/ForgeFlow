@@ -38,3 +38,4 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 - template installer for Claude Code and Codex
 - local evaluation report generator for review outcome JSONL
 - workflow comparison metrics for no-agent, single-agent, and Forgeflow reviews
+- evaluation quality and efficiency rates for findings, false positives, review time, and auto-fix outcomes

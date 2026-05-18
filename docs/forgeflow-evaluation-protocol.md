@@ -61,7 +61,7 @@ Track:
 - post-merge regressions when known
 - accessibility findings as a first-class finding class
 
-The generated report includes confirmation rate, false positive rate, verifier rejection rate, auto-fix success rate, regression rate, average review minutes, mode counts, workflow comparison rows, and per-class finding totals.
+The generated report includes confirmation rate, false positive rate, verifier rejection rate, auto-fix success and failure rates, regression rate, average review minutes, finding rates per review and per hour, mode counts, workflow comparison rows, and per-class finding totals.
 
 ## Privacy Rules
 
