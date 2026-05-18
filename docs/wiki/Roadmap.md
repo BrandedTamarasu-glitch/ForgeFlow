@@ -41,7 +41,6 @@ Forgeflow is currently a local-first developer workflow for Claude Code and Code
 ## Productization
 
 - hosted documentation site
-- versioned releases
 - template installer for Claude Code and Codex
 - clearer migration path from existing local installs
 - improved examples for common stacks
@@ -74,3 +73,4 @@ Forgeflow is currently a local-first developer workflow for Claude Code and Code
 - common stack examples for frontend apps, APIs, Rails, Python, monorepos, docs, and release prep
 - migration guide for existing local Claude installs
 - static hosted documentation entry point under `docs/index.html`
+- versioned release process and release-version drift check

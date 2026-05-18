@@ -1,0 +1,58 @@
+#!/usr/bin/env node
+const fs = require('fs');
+const path = require('path');
+
+const repoRoot = path.resolve(__dirname, '..', '..');
+
+function readJson(relativePath) {
+  return JSON.parse(fs.readFileSync(path.join(repoRoot, relativePath), 'utf8'));
+}
+
+function fileExists(relativePath) {
+  return fs.existsSync(path.join(repoRoot, relativePath));
+}
+
+function changelogCandidates(version) {
+  const exact = `docs/changelogs/v${version}.html`;
+  const patchZero = version.endsWith('.0')
+    ? `docs/changelogs/v${version.replace(/\.0$/, '')}.html`
+    : null;
+  return patchZero ? [exact, patchZero] : [exact];
+}
+
+const plugin = readJson('.claude-plugin/plugin.json');
+const marketplace = readJson('.claude-plugin/marketplace.json');
+const marketplaceEntry = marketplace.plugins.find((entry) => entry.name === plugin.name);
+const releaseProcess = fs.readFileSync(path.join(repoRoot, 'docs/wiki/Release-Process.md'), 'utf8');
+const releaseCheck = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-release-check.md'), 'utf8');
+
+const semver = /^\d+\.\d+\.\d+$/;
+const changelogs = changelogCandidates(plugin.version);
+const matchingChangelog = changelogs.find(fileExists);
+
+const checks = [
+  ['plugin version is semver', semver.test(plugin.version)],
+  ['marketplace entry present', Boolean(marketplaceEntry)],
+  ['marketplace version matches plugin', marketplaceEntry && marketplaceEntry.version === plugin.version],
+  ['matching changelog exists', Boolean(matchingChangelog)],
+  ['release process mentions plugin manifest', releaseProcess.includes('.claude-plugin/plugin.json')],
+  ['release process mentions marketplace manifest', releaseProcess.includes('.claude-plugin/marketplace.json')],
+  ['release process mentions changelog path', releaseProcess.includes('docs/changelogs/')],
+  ['release process mentions release check command', releaseProcess.includes('/forgeflow-release-check')],
+  ['release check runs version drift test', releaseCheck.includes('node scripts/forgeflow/test-release-version.js')],
+];
+
+let failed = 0;
+for (const [name, ok] of checks) {
+  if (!ok) {
+    failed += 1;
+    console.error(`FAIL ${name}`);
+  }
+}
+
+if (failed > 0) {
+  console.error(`Expected changelog: ${changelogs.join(' or ')}`);
+  process.exit(1);
+}
+
+console.log(`release version: ok (${plugin.version}, ${matchingChangelog})`);

@@ -21,6 +21,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 - [Context Budget Examples](Context-Budget-Examples)
 - [Common Stack Examples](Common-Stack-Examples)
 - [Migration Guide](Migration-Guide)
+- [Release Process](Release-Process)
 - [Local Data And Privacy](Local-Data-And-Privacy)
 - [Roadmap](Roadmap)
 
