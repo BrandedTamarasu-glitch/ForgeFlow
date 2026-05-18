@@ -5,6 +5,7 @@ const { spawnSync } = require('child_process');
 const { seedBudgetConfig } = require('./seed-budget-config');
 const {
   RUNTIME_HELPERS,
+  STATIC_FILES,
   isManagedSource,
   manifestEntry,
 } = require('./install-manifest');
@@ -110,8 +111,21 @@ function expectedRuntimeSources() {
   return RUNTIME_HELPERS.filter(isManagedSource).sort();
 }
 
+function expectedTemplateSources() {
+  return Array.from(STATIC_FILES)
+    .filter((source) => source.startsWith('templates/'))
+    .sort();
+}
+
 function addInstallChecks(checks, installRoot) {
   if (!installRoot) return;
+  for (const source of expectedTemplateSources()) {
+    const entry = manifestEntry(source, installRoot);
+    if (!entry) continue;
+    checks.push(check(`template ${path.basename(source)}`, fs.existsSync(entry.destination), `run update-forgeflow to install ${source}`, {
+      path: entry.destination,
+    }));
+  }
   for (const source of expectedRuntimeSources()) {
     const entry = manifestEntry(source, installRoot);
     if (!entry) continue;
@@ -234,4 +248,5 @@ module.exports = {
   renderMarkdown,
   runHealthCheck,
   expectedRuntimeSources,
+  expectedTemplateSources,
 };

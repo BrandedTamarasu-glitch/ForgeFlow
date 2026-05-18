@@ -33,6 +33,22 @@ Do not record secrets, raw settings JSON, tokens, keys, certificates, private UR
 
 `/review` may use implementation notes as context for spec drift and tradeoffs, but notes are not proof that the code is correct. `/ship` summarizes the notes for handoff and presentation; it does not dump the raw log.
 
+## Quality Check
+
+Run the local checker when piloting or auditing the notes workflow:
+
+```bash
+scripts/forgeflow/check-implementation-notes.js --json
+```
+
+The checker reports missing files, missing sections, empty notes, obvious sensitive-content patterns, legacy ship-summary keys, and raw log metadata that leaked into `ship-summary.json`. By default, missing or empty notes are warnings; obvious sensitive content is a failure. Use `--strict` when missing or empty notes should fail a pilot run.
+
+For a specific project-local state directory:
+
+```bash
+scripts/forgeflow/check-implementation-notes.js --project-dir .forgeflow/<project-name> --json
+```
+
 ## Suggested Format
 
 ```markdown

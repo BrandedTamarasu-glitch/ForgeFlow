@@ -19,6 +19,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/build-scope-manifest.js',
   'scripts/forgeflow/check-codex-agent-drift.js',
   'scripts/forgeflow/check-context-budget.js',
+  'scripts/forgeflow/check-implementation-notes.js',
   'scripts/forgeflow/context-telemetry.js',
   'scripts/forgeflow/ensure-forgeflow-state.sh',
   'scripts/forgeflow/explain-review-route.js',
@@ -150,6 +151,7 @@ if (require.main === module) {
 
 module.exports = {
   RUNTIME_HELPERS,
+  STATIC_FILES,
   categoryFor,
   destinationFor,
   isManagedSource,

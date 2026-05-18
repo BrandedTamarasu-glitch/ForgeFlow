@@ -58,7 +58,7 @@ EXPECTED_HOOKS=(forgeflow-gate forgeflow-context-monitor forgeflow-statusline fo
 EXPECTED_TEMPLATES=(ship-presentation.html)
 EXPECTED_RUNTIME_HELPERS=(
   advise-context.js agent-chat-off.sh agent-chat-on.sh build-context-pack.js build-memory-context.js
-  build-scope-manifest.js check-codex-agent-drift.js check-context-budget.js context-telemetry.js
+  build-scope-manifest.js check-codex-agent-drift.js check-context-budget.js check-implementation-notes.js context-telemetry.js
   ensure-forgeflow-state.sh explain-review-route.js forgeflow-version.js generate-codex-agent-stubs.js health-check.js
   index-memory.js install-manifest.js install-template.js record-review-outcome.js render-evaluation-report.js render-ship-presentation.js
   seed-budget-config.js ship-ci-status.sh ship-open-pr.sh ship-prepare.sh summarize-calibration.js
@@ -139,6 +139,11 @@ Manual PostToolUse hook snippets:
 ```bash
 jq empty ~/.claude/settings.json 2>&1 || echo "INVALID JSON"
 ```
+
+### 2e.0. Templates
+For each template in `EXPECTED_TEMPLATES`:
+- Check `~/.claude/templates/<template>` exists and is a regular file
+When the installed helper is available, `scripts/forgeflow/health-check.js --install-root ~/.claude --json` can run the template and runtime-helper portions from the manifest-backed helper list.
 
 ### 2e.1. Runtime helpers
 For each helper in `EXPECTED_RUNTIME_HELPERS`:

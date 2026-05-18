@@ -2,7 +2,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { expectedRuntimeSources, runHealthCheck } = require('./health-check');
+const { expectedRuntimeSources, expectedTemplateSources, runHealthCheck } = require('./health-check');
 const { manifestEntry } = require('./install-manifest');
 const { spawnSync } = require('child_process');
 
@@ -17,6 +17,11 @@ for (const source of expectedRuntimeSources()) {
   fs.writeFileSync(entry.destination, 'helper\n');
   fs.chmodSync(entry.destination, 0o755);
 }
+for (const source of expectedTemplateSources()) {
+  const entry = manifestEntry(source, installRoot);
+  fs.mkdirSync(path.dirname(entry.destination), { recursive: true });
+  fs.writeFileSync(entry.destination, 'template\n');
+}
 
 const before = runHealthCheck({ root, fix: false });
 const fixed = runHealthCheck({ root, fix: true });
@@ -24,6 +29,10 @@ const again = runHealthCheck({ root, fix: true });
 const installed = runHealthCheck({ root, installRoot, fix: false });
 fs.unlinkSync(manifestEntry('scripts/forgeflow/health-check.js', installRoot).destination);
 const missingInstalled = runHealthCheck({ root, installRoot, fix: false });
+fs.writeFileSync(manifestEntry('scripts/forgeflow/health-check.js', installRoot).destination, 'helper\n');
+fs.chmodSync(manifestEntry('scripts/forgeflow/health-check.js', installRoot).destination, 0o755);
+fs.unlinkSync(manifestEntry('templates/ship-presentation.html', installRoot).destination);
+const missingTemplate = runHealthCheck({ root, installRoot, fix: false });
 const nonGit = runHealthCheck({ root: nonGitRoot, fix: true });
 
 const project = path.basename(root);
@@ -38,6 +47,8 @@ const checks = [
   ['installed runtime passes', installed.status === 'pass'],
   ['missing runtime fails', missingInstalled.status === 'fail'],
   ['runtime check included', installed.checks.some((item) => item.name === 'runtime helper health-check.js')],
+  ['template check included', installed.checks.some((item) => item.name === 'template ship-presentation.html')],
+  ['missing template fails', missingTemplate.status === 'fail'],
   ['non git passes with skip', nonGit.status === 'pass'],
   ['non git project check skipped', nonGit.checks.some((item) => item.status === 'skip' && item.name === 'project-local .forgeflow/')],
   ['non git fix does not create forgeflow', !fs.existsSync(path.join(nonGitRoot, '.forgeflow'))],

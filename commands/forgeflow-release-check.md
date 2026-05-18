@@ -39,10 +39,12 @@ node scripts/forgeflow/test-update-forgeflow.js
 node scripts/forgeflow/test-health-check.js
 node scripts/forgeflow/test-forgeflow-version.js
 node scripts/forgeflow/test-render-evaluation-report.js
+node scripts/forgeflow/render-evaluation-report.js --outcomes fixtures/evaluation/sample-outcomes.jsonl --public --out /tmp/forgeflow-public-evaluation-summary.md
 node scripts/forgeflow/test-seed-budget-config.js
 node scripts/forgeflow/test-check-context-budget.js
 node scripts/forgeflow/test-advise-context.js
 node scripts/forgeflow/test-implementation-notes.js
+node scripts/forgeflow/test-check-implementation-notes.js
 git diff --check
 ```
 
@@ -66,8 +68,8 @@ If any command fails, stop and report the failed command plus its output. Do not
 - [ ] Template installer test passes
 - [ ] Install manifest and install smoke tests pass
 - [ ] Update, health, and version helper tests pass
-- [ ] Evaluation report smoke test passes
+- [ ] Evaluation report smoke test and public-summary render pass
 - [ ] Context budget/advisor smoke tests pass
-- [ ] Implementation notes wiring test passes
+- [ ] Implementation notes wiring and quality-check tests pass
 - [ ] `git diff --check` passes
 </success_criteria>
