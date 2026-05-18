@@ -70,3 +70,4 @@ Forgeflow is currently a local-first developer workflow for Claude Code and Code
 - plugin manifest validation and clearer post-install verification
 - short demo sessions for install, review, context advisor, repair, rollback, and release checks
 - dashboard positioning for metrics vs live agent-chat observability
+- context budget and trimming workflow examples

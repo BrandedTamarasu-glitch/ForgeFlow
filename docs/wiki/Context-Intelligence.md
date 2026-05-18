@@ -71,6 +71,8 @@ The default template supports global and per-kind limits:
 }
 ```
 
+See [Context Budget Examples](Context-Budget-Examples) for review, implementation, strict release-gate, large-diff, low-savings, and trend workflows.
+
 ## Health Repair
 
 Run the project-local health helper when a repo is missing Forgeflow state:

@@ -17,6 +17,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 - [Workflow Commands](Workflow-Commands)
 - [Review Routing](Review-Routing)
 - [Context Intelligence](Context-Intelligence)
+- [Context Budget Examples](Context-Budget-Examples)
 - [Local Data And Privacy](Local-Data-And-Privacy)
 - [Roadmap](Roadmap)
 

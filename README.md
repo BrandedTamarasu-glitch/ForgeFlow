@@ -234,6 +234,7 @@ It runs on `http://127.0.0.1:4003` and reads local telemetry files from `~/.clau
 - [Demos](docs/wiki/Demos.md)
 - [Dashboard](docs/wiki/Dashboard.md)
 - [Context intelligence](docs/wiki/Context-Intelligence.md)
+- [Context budget examples](docs/wiki/Context-Budget-Examples.md)
 - [Codex migration notes](CODEX_MIGRATION.md)
 - [Telemetry schema](docs/forgeflow-metrics-telemetry-schema.md)
 - [Verdict JSON schema](docs/forgeflow-json-schema.md)
