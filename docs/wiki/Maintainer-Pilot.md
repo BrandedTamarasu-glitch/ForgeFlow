@@ -121,3 +121,5 @@ privacy_notes:
 repeat_trial: yes | no
 next_fix:
 ```
+
+For repeatable local evidence capture, use [Pilot Evidence Log](Pilot-Evidence-Log).

@@ -17,6 +17,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 - [Support Triage](Support-Triage)
 - [Team Adoption Criteria](Team-Adoption-Criteria)
 - [CI And Headless Deferrals](CI-Headless-Deferrals)
+- [Pilot Evidence Log](Pilot-Evidence-Log)
 - [Branch Trial](Branch-Trial)
 - [Public-Safe Examples](Public-Examples)
 - [Package And Release Onboarding](Package-Release-Onboarding)
