@@ -13,6 +13,12 @@ Use local or sanitized summaries from:
 
 Do not include raw review records, source snippets, full reviewer comments, or raw context artifacts in the comparison note.
 
+When local pilot evidence notes exist, generate the support/adoption counts first:
+
+```bash
+scripts/forgeflow/rollup-pilot-evidence.js --json
+```
+
 ## Comparison Worksheet
 
 ```yaml

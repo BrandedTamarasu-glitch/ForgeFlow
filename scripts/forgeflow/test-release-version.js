@@ -52,6 +52,7 @@ const checks = [
   ['release check runs evaluation report test', releaseCheck.includes('node scripts/forgeflow/test-render-evaluation-report.js')],
   ['release check renders public evaluation summary', releaseCheck.includes('render-evaluation-report.js --outcomes fixtures/evaluation/sample-outcomes.jsonl --public')],
   ['release check runs pilot evidence test', releaseCheck.includes('node scripts/forgeflow/test-record-pilot-evidence.js')],
+  ['release check runs pilot evidence rollup test', releaseCheck.includes('node scripts/forgeflow/test-rollup-pilot-evidence.js')],
   ['release check runs implementation notes test', releaseCheck.includes('node scripts/forgeflow/test-implementation-notes.js')],
   ['release check runs implementation notes quality test', releaseCheck.includes('node scripts/forgeflow/test-check-implementation-notes.js')],
 ];

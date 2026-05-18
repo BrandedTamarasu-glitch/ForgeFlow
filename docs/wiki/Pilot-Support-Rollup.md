@@ -13,6 +13,19 @@ Use local notes from:
 
 Do not copy raw `.forgeflow/` artifacts, full settings files, source snippets, or private branch names into the rollup.
 
+Generate a local rollup from pilot evidence notes:
+
+```bash
+scripts/forgeflow/rollup-pilot-evidence.js \
+  --out ".forgeflow/$(basename "$PWD")/pilot-evidence-rollup.md"
+```
+
+For machine-readable output:
+
+```bash
+scripts/forgeflow/rollup-pilot-evidence.js --json
+```
+
 ## Rollup Template
 
 ```yaml
