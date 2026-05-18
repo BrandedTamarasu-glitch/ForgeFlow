@@ -57,6 +57,12 @@ Record the review outcome after human triage:
 scripts/forgeflow/record-review-outcome.js --summary .forgeflow/$(basename "$PWD")/review-outcomes.jsonl --json
 ```
 
+Create the local pilot evidence note:
+
+```bash
+scripts/forgeflow/record-pilot-evidence.js --runtime codex --health-result pass --json
+```
+
 If context telemetry is available, generate a public-safe summary:
 
 ```bash

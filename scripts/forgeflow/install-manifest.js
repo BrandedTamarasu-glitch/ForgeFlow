@@ -29,6 +29,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/index-memory.js',
   'scripts/forgeflow/install-template.js',
   'scripts/forgeflow/install-manifest.js',
+  'scripts/forgeflow/record-pilot-evidence.js',
   'scripts/forgeflow/record-review-outcome.js',
   'scripts/forgeflow/record-implementation-notes.js',
   'scripts/forgeflow/render-ship-presentation.js',

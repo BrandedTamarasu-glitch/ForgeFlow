@@ -54,6 +54,18 @@ Do not paste raw `settings.json`, source snippets, full reviewer comments, secre
 
 ## Commands
 
+Create a local pilot evidence note:
+
+```bash
+scripts/forgeflow/record-pilot-evidence.js \
+  --runtime codex \
+  --project-type docs-config \
+  --health-result pass \
+  --adoption-decision repeat-pilot \
+  --next-action "Run one more bounded branch" \
+  --json
+```
+
 Record the review outcome after triage:
 
 ```bash
