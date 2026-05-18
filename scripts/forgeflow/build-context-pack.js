@@ -206,6 +206,7 @@ function memoryFiles(root) {
     'current-research.md',
     'current-plan.md',
     'current-brief.md',
+    'implementation-notes.md',
     'patterns.md',
     'codebase-map.md',
     'review-history.md',

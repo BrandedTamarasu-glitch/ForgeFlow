@@ -66,6 +66,14 @@ Produce ONLY the JSON object. No markdown wrapping, no commentary.
     ]
   },
   "architecture_notes": "Key technical decisions, patterns used, notable implementation details",
+  "implementation_notes": {
+    "decisions": ["Notable implementation decision in plain engineering language"],
+    "spec_gaps": ["Spec gap or ambiguous requirement resolved during implementation"],
+    "tradeoffs": ["Tradeoff made and why"],
+    "deviations": ["Approved deviation from the plan or brief"],
+    "follow_ups": ["Follow-up the team should know about"],
+    "validation_notes": ["Validation detail that matters for handoff"]
+  },
   "risks_mitigated": [
     "Risk identified in plan -> how it was addressed in implementation"
   ],
@@ -87,6 +95,7 @@ Produce ONLY the JSON object. No markdown wrapping, no commentary.
 - `files_changed`: from `git diff ${BASE_BRANCH} --name-status`, categorized by status letter (A/M/D)
 - `testing.results`: from test runner output in session, or from review notes if no test output available
 - `architecture_notes`: from Implementation Brief + your own observations
+- `implementation_notes`: summarized from `.forgeflow/<project-name>/implementation-notes.md` if present; use empty arrays when missing
 - `review_verdict`: from `.forgeflow/<project-name>/review-history.md`, most recent entry
 - `branch`: from `git branch --show-current`
 - `base`: from the base branch used in review (typically `main`)
@@ -98,6 +107,7 @@ Produce ONLY the JSON object. No markdown wrapping, no commentary.
 - Use basename of working directory as `<project-name>`.
 - `files_changed` must be derived from actual diff, not guessed.
 - `review_verdict` must be parsed from review-history.md, not fabricated.
+- `implementation_notes` must summarize the notes file without dumping raw markdown, secrets, raw settings JSON, tokens, private URLs, customer names, or large source snippets.
 - For testing, run test commands if a runner is configured. If not, provide best-effort from test file analysis.
 - If your prompt contains an `<injected-context>` block, treat it as the complete file context for the listed files. Do NOT call Read, Grep, or Glob for any file already present in it. If you encounter a reference to an unlisted file during your work, note it in your output — do not self-expand scope.
 - Chat: `[ -f /tmp/agent-chat.pid ] && csend atlas <level> "<message>"` — level: `phase` (milestone), `decision` (key call), `conversation` (progress note)

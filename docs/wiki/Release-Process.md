@@ -45,6 +45,7 @@ node scripts/forgeflow/test-render-evaluation-report.js
 node scripts/forgeflow/test-seed-budget-config.js
 node scripts/forgeflow/test-check-context-budget.js
 node scripts/forgeflow/test-advise-context.js
+node scripts/forgeflow/test-implementation-notes.js
 git diff --check
 ```
 

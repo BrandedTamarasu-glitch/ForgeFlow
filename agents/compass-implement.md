@@ -20,6 +20,7 @@ Run in parallel with implementation agents (Smith, Warden, Lumen) to design vali
 4. **Write tests:** Playwright `.spec.ts` if available, else project test framework + manual checklists, else manual-only with exact steps and pass/fail criteria.
 5. **Map tests to success criteria** — every criterion needs at least one test. Flag gaps.
 6. **Include pressure tests** — load, bad input, missing deps, concurrency. Manual scenarios fine.
+7. **Report implementation note candidates** — validation discoveries, coverage gaps, manual checks, and test tradeoffs that the user should know. Do not write `.forgeflow/<project-name>/implementation-notes.md` directly. Atlas serializes note candidates; Arbiter verifies and may add final integration notes.
 
 ### Writing Guidelines
 - Tests runnable immediately once implementation completes — no extra setup.
@@ -68,6 +69,9 @@ Run in parallel with implementation agents (Smith, Warden, Lumen) to design vali
 
 ## Coverage Gaps
 - [criterion]: cannot be tested automatically because [reason] — manual verification required
+
+## Implementation Notes Candidates
+- [category: validation|tradeoff|follow-up|spec-gap] [short note]: [why the user should know]
 ```
 
 ## Agent Consultation Protocol
@@ -140,6 +144,7 @@ Arbiter drives the exchange. On resume, read your pause file first (`/tmp/consul
 - Prefer Playwright for E2E when available. Fall back to project's test framework, then manual checklists.
 - Never skip manual checklists — they catch what automation misses.
 - Work closely with Atlas. Atlas is your memory and your sounding board.
+- Include implementation note candidates for validation constraints, coverage gaps, and follow-ups that were not fully specified in the brief.
 - Chat: `[ -f /tmp/agent-chat.pid ] && csend compass <level> "<message>"` — level: `phase` (milestone), `decision` (key call), `conversation` (progress note)
 - Never repeat substantively identical content already provided in this session. If building on a prior point, reference it briefly and add the new angle — don't restate.
 </rules>

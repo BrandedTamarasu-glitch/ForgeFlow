@@ -37,7 +37,7 @@ If you are coming from Review Squad or ad hoc agent review, Forgeflow keeps spec
 You can also enter at the point you need:
 
 - `/consult` for an implementation brief before coding.
-- `/implement` to execute a prepared brief.
+- `/implement` to execute a prepared brief and maintain `.forgeflow/<project>/implementation-notes.md`.
 - `/review` for a multi-agent review of a branch, diff, or file list.
 - `/review-auto` to apply conservative safe fixes and re-review.
 - `/audit` for a deeper system/security/craft pass.

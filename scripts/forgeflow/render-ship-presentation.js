@@ -39,6 +39,34 @@ function renderFiles(files) {
   }).join('\n');
 }
 
+function implementationNotes(summary) {
+  return summary.implementationNotes || summary.implementation_notes || {};
+}
+
+function noteSections(notes) {
+  return [
+    ['Decisions', notes.decisions],
+    ['Spec Gaps', notes.spec_gaps || notes.specGaps],
+    ['Tradeoffs', notes.tradeoffs],
+    ['Deviations', notes.deviations],
+    ['Follow-ups', notes.follow_ups || notes.followUps],
+    ['Validation Notes', notes.validation_notes || notes.validationNotes],
+  ].filter(([, items]) => Array.isArray(items) && items.length > 0);
+}
+
+function renderImplementationNotes(notes) {
+  const sections = noteSections(notes);
+  if (sections.length === 0) return '';
+  return `<section>
+          <h2>Implementation Notes</h2>
+          <div class="card">
+            ${sections.map(([label, items]) => `<h3>${escapeHtml(label)}</h3>\n<ul>${renderList(items, 'No notes recorded.')}</ul>`).join('\n')}
+          </div>
+        </section>`;
+}
+
+const renderedImplementationNotes = renderImplementationNotes(implementationNotes(summary));
+
 const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -105,6 +133,12 @@ const html = `<!DOCTYPE html>
       color: var(--muted);
       margin: 0 0 10px;
     }
+    h3 {
+      margin: 14px 0 6px;
+      font-size: 14px;
+      color: var(--accent-2);
+    }
+    h3:first-child { margin-top: 0; }
     p, li { font-size: 16px; line-height: 1.65; }
     ul { margin: 0; padding-left: 18px; }
     .card {
@@ -185,6 +219,7 @@ const html = `<!DOCTYPE html>
             <ul>${renderList(summary.risksMitigated, 'No mitigated risks recorded.')}</ul>
           </div>
         </section>
+        ${renderedImplementationNotes}
         <section>
           <h2>Notes</h2>
           <div class="card">

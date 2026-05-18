@@ -38,6 +38,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 - [Dashboard](Dashboard)
 - [Agent Roles](Agent-Roles)
 - [Workflow Commands](Workflow-Commands)
+- [Implementation Notes](Implementation-Notes)
 - [Review Routing](Review-Routing)
 - [Context Intelligence](Context-Intelligence)
 - [Context Budget Examples](Context-Budget-Examples)

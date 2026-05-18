@@ -12,6 +12,7 @@ Keep raw Forgeflow state local unless the project explicitly decides otherwise. 
 |---|---|---|
 | `.forgeflow/<project>/review-outcomes.jsonl` | local only | Can include branch details, review notes, finding classes, and triage outcomes |
 | context packets and memory summaries | local only | May contain source-derived context, file paths, task details, and implementation notes |
+| implementation notes | local only | May contain decisions, spec gaps, tradeoffs, deviations, follow-ups, validation notes, and project-specific context |
 | telemetry JSONL rows | local only | Can reveal project paths, workflow timing, and repeated issue classes |
 | generated public summaries | share after review | Designed for aggregate quality and context-efficiency evidence |
 | screenshots of public summaries | share after review | Useful for pilots when raw files should not leave the machine |

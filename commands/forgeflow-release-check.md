@@ -42,6 +42,7 @@ node scripts/forgeflow/test-render-evaluation-report.js
 node scripts/forgeflow/test-seed-budget-config.js
 node scripts/forgeflow/test-check-context-budget.js
 node scripts/forgeflow/test-advise-context.js
+node scripts/forgeflow/test-implementation-notes.js
 git diff --check
 ```
 
@@ -67,5 +68,6 @@ If any command fails, stop and report the failed command plus its output. Do not
 - [ ] Update, health, and version helper tests pass
 - [ ] Evaluation report smoke test passes
 - [ ] Context budget/advisor smoke tests pass
+- [ ] Implementation notes wiring test passes
 - [ ] `git diff --check` passes
 </success_criteria>

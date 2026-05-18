@@ -43,6 +43,7 @@ Derive project paths:
 ```bash
 PROJECT_NAME=$(basename "$(pwd)")
 FORGEFLOW_DIR=".forgeflow/${PROJECT_NAME}"
+NOTES_PATH="${FORGEFLOW_DIR}/implementation-notes.md"
 ```
 </context>
 
@@ -101,6 +102,7 @@ Read each of these if present -- do not fail if missing:
 - `${FORGEFLOW_DIR}/current-discussion.md`
 - `${FORGEFLOW_DIR}/current-research.md`
 - `${FORGEFLOW_DIR}/current-brief.md`
+- `${FORGEFLOW_DIR}/implementation-notes.md`
 
 Also check for `CONTEXT.md` in the working directory. If it exists, read it and pass to Compass and Atlas — it provides service-specific context that improves presentation quality.
 
@@ -249,6 +251,7 @@ Rules:
   - `git diff ${BASE_BRANCH}` output (FULL diff)
   - `git diff ${BASE_BRANCH} --stat` output
   - Plan, discussion, research, and brief artifacts if they exist
+  - Implementation notes artifact if it exists
   - FORGEFLOW_DIR path
 - **Instruction:**
 
@@ -271,8 +274,10 @@ Context:
 - Research findings: {research_content}
 {If brief exists:}
 - Implementation brief: {brief_content}
+{If implementation notes exist:}
+- Implementation notes: {implementation_notes_content}
 
-Also read ${FORGEFLOW_DIR}/review-history.md to extract the review verdict details.
+Also read ${FORGEFLOW_DIR}/review-history.md to extract the review verdict details. Summarize implementation notes into decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes; do not dump raw notes or include secrets.
 
 Produce ONLY valid JSON matching this exact schema. No markdown, no explanation, no preamble.
 Just the JSON object:
@@ -291,6 +296,14 @@ Just the JSON object:
     ]
   },
   "architecture_notes": "1-3 sentences on significant architectural decisions or patterns used.",
+  "implementation_notes": {
+    "decisions": ["Notable implementation decision in plain engineering language."],
+    "spec_gaps": ["Spec gap or ambiguous requirement resolved during implementation."],
+    "tradeoffs": ["Tradeoff made and why."],
+    "deviations": ["Approved deviation from the plan or brief."],
+    "follow_ups": ["Follow-up the team should know about."],
+    "validation_notes": ["Validation detail that matters for handoff."]
+  },
   "risks_mitigated": ["Each risk as a complete sentence describing the risk and how it was addressed."],
   "learnings": ["Noteworthy things the team should remember from this implementation."],
   "review_verdict": {
@@ -311,6 +324,7 @@ Rules:
 - "branch" must come from: git branch --show-current
 - "base" should match `${BASE_BRANCH}` -- verify with: git rev-parse --verify ${BASE_BRANCH} 2>/dev/null
 - "review_verdict" must be parsed from review-history.md, not fabricated.
+- "implementation_notes" must be summarized from `${NOTES_PATH}` when present. Use empty arrays when no notes exist.
 ```
 
 ### Agent 3 -- Screenshot Agent (conditional -- only if HAS_FRONTEND is true)
@@ -446,11 +460,14 @@ Construct the final HTML file section by section:
 13. **Risks Mitigated section:** (OMIT if `risks_mitigated` is empty)
     Map to `.risk-list` items.
 
-14. **Learnings section:** (OMIT if `learnings` is empty)
+14. **Implementation Notes section:** (OMIT if all `implementation_notes` arrays are empty)
+    Render compact grouped lists for decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes. Do not render the raw markdown log.
+
+15. **Learnings section:** (OMIT if `learnings` is empty)
     Map Atlas's `learnings` array to a `.risk-list` styled list (reuse same styling).
     Section title: "Session Learnings".
 
-15. **Review Verdict section:** Atlas's `review_verdict` rendered as `.verdict-card`.
+16. **Review Verdict section:** Atlas's `review_verdict` rendered as `.verdict-card`.
     - Arbiter row with verdict badge
     - Compass row with verdict badge
     - Blockers resolved count

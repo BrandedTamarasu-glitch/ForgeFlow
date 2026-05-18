@@ -16,7 +16,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands.
 | `/research` | Evaluate options, prior art, codebase patterns, and risks. |
 | `/plan` | Produce a phased implementation plan with validation criteria. |
 | `/consult` | Produce an implementation brief across architecture, security, UX, and coordination. |
-| `/implement` | Execute the current brief with coordinated agents. |
+| `/implement` | Execute the current brief with coordinated agents and maintain `.forgeflow/<project>/implementation-notes.md`. |
 | `/review` | Review changed files with explainable routing and multi-agent synthesis. |
 | `/review-auto` | Apply conservative safe fixes, then re-review. |
 | `/audit` | Run a deeper systems/security/craft audit. |
@@ -50,11 +50,16 @@ The review and implementation skills use local helpers when available:
 scripts/forgeflow/build-context-pack.js --json
 scripts/forgeflow/build-memory-context.js --json
 scripts/forgeflow/build-scope-manifest.js --json
+scripts/forgeflow/record-implementation-notes.js --json
 scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json
 scripts/forgeflow/advise-context.js --root .forgeflow --record --json
 ```
 
 These helpers produce bounded context packets, compact memory summaries, file ownership packets, budget warnings, trimming recommendations, and trend history.
+
+## Implementation Notes
+
+During `/implement`, Forgeflow keeps a local Markdown log at `.forgeflow/<project-name>/implementation-notes.md`. It captures decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes that arise while building. See [Implementation Notes](Implementation-Notes) for the artifact contract and privacy rules.
 
 For a Claude install created by `/update-forgeflow`, the helper root is:
 

@@ -50,6 +50,7 @@ const checks = [
   ['release process mentions public summary rendering', releaseProcess.includes('render-evaluation-report.js --public')],
   ['release check runs version drift test', releaseCheck.includes('node scripts/forgeflow/test-release-version.js')],
   ['release check runs evaluation report test', releaseCheck.includes('node scripts/forgeflow/test-render-evaluation-report.js')],
+  ['release check runs implementation notes test', releaseCheck.includes('node scripts/forgeflow/test-implementation-notes.js')],
 ];
 
 let failed = 0;

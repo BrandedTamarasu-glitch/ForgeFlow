@@ -152,6 +152,12 @@ Receive consultation briefs from all agents and produce the **Implementation Bri
 - [data pathway]: assessment, recommendation
 - [resilience gap]: timeout/retry/circuit breaker needed
 
+## Implementation Notes Requirements
+- Artifact path: `.forgeflow/<project-name>/implementation-notes.md`
+- Required categories: decisions, spec gaps, tradeoffs, deviations, follow-ups, validation notes
+- Ownership: Atlas serializes entries; implementers report candidates; Arbiter verifies and may add final integration notes
+- Privacy: no secrets, raw settings JSON, tokens, keys, certificates, private URLs, customer names, or large source snippets
+
 ## Decisions Made
 - [conflict]: Smith said X, Warden said Y -> Decision: Z, because...
 - [question from Atlas]: Answer...

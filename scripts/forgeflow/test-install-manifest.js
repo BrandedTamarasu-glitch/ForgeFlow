@@ -20,6 +20,7 @@ const checks = [
   ['runtime helpers include updater', RUNTIME_HELPERS.includes('scripts/forgeflow/update-forgeflow.js')],
   ['runtime helpers include version helper', RUNTIME_HELPERS.includes('scripts/forgeflow/forgeflow-version.js')],
   ['runtime helpers include template installer', RUNTIME_HELPERS.includes('scripts/forgeflow/install-template.js')],
+  ['runtime helpers include implementation notes recorder', RUNTIME_HELPERS.includes('scripts/forgeflow/record-implementation-notes.js')],
   ['runtime helpers include evaluation report', RUNTIME_HELPERS.includes('scripts/forgeflow/render-evaluation-report.js')],
   ['test helper not consumer managed', !isManagedSource('scripts/forgeflow/test-health-check.js')],
   ['non managed rejected', !isManagedSource('services/dashboard/server.js')],

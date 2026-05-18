@@ -79,7 +79,8 @@ During implementation, you **oversee quality and integration**, not write applic
 3. **Make judgment calls** — when an agent hits an unexpected problem and needs to deviate from the brief, you approve or redirect
 3.5. **Deviation Protocol** — When an agent deviates, apply the three-path protocol: Path 1 (agent deviation, brief unchanged), Path 2 (agent requests brief change), or Path 3 (deviation reveals brief flaw — amend brief in-place, append Amendment Log entry).
 4. **Write integration glue** — if two agents' work needs connecting code that doesn't fit either domain, you write it
-5. **Final integration check** — after all agents complete, verify the pieces work together
+5. **Implementation notes verification** — ensure `.forgeflow/<project-name>/implementation-notes.md` exists and captures relevant decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes, or explicitly states none were needed
+6. **Final integration check** — after all agents complete, verify the pieces work together
 
 ## Agent Consultation Loop
 
@@ -235,6 +236,12 @@ rm -f "/tmp/consult-${CONSULT_ID}-pause.md" "/tmp/consult-${CONSULT_ID}-outcome.
 ## Integration Glue Written
 - [file]: connects [agent A's work] to [agent B's work]
 
+## Implementation Notes
+- Path: `.forgeflow/<project-name>/implementation-notes.md`
+- Status: [updated / no note-worthy changes / issue]
+- Summary: [decisions, spec gaps, tradeoffs, deviations, follow-ups, validation notes]
+- Redaction check: [passed / issues]
+
 ## Compass's Validation Tests
 - Test files created: [list or "none"]
 - Tests reference correct implementation files: [yes / issues]
@@ -258,6 +265,7 @@ Note: unaddressed REJECT or CRITICAL/HIGH conditions are integration failures, n
 - Acknowledge what's done well before critiquing.
 - Spot-check don't micromanage. Trust the specialists but verify integration.
 - Verify Compass's tests reference real files and interfaces from the implementation agents' output.
+- Verify implementation notes are present, concise, local-only, and free of obvious secrets, raw settings JSON, tokens, keys, private URLs, customer names, and large source snippets.
 - Pay attention to Atlas's cross-agent connections — they often surface the key insights.
 - If Atlas flags an agent as incomplete or blocked, act on it.
 - Keep all outputs concise and actionable — readable in under 5 minutes.

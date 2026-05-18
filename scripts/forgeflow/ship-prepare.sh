@@ -69,8 +69,9 @@ fi
 
 SUMMARY_TEXT="Prepared from the current branch diff against $BASE_REF."
 IMPACT_TEXT="This branch changes $(git diff --name-only "$MERGE_BASE"..HEAD | wc -l | tr -d ' ') file(s) and is staged for shipping review."
+IMPLEMENTATION_NOTES_PATH="$FORGEFLOW_DIR/implementation-notes.md"
 
-python3 - <<'PY' "$SHIP_DIR/ship-summary.json" "$SUMMARY_TITLE" "$SUMMARY_TEXT" "$IMPACT_TEXT" "$BRANCH" "$BASE_BRANCH" "$DATE_ISO" "$FILE_LIST_JSON" "$TESTS_JSON" "$REVIEW_GATE" "$REVIEW_GATE_NOTE"
+python3 - <<'PY' "$SHIP_DIR/ship-summary.json" "$SUMMARY_TITLE" "$SUMMARY_TEXT" "$IMPACT_TEXT" "$BRANCH" "$BASE_BRANCH" "$DATE_ISO" "$FILE_LIST_JSON" "$TESTS_JSON" "$REVIEW_GATE" "$REVIEW_GATE_NOTE" "$IMPLEMENTATION_NOTES_PATH"
 import json, pathlib, sys
 (
   out_path,
@@ -84,7 +85,47 @@ import json, pathlib, sys
   tests_json,
   review_gate,
   review_gate_note,
+  implementation_notes_path,
 ) = sys.argv[1:]
+
+def implementation_notes(path):
+  sections = {
+    "decisions": [],
+    "spec_gaps": [],
+    "tradeoffs": [],
+    "deviations": [],
+    "follow_ups": [],
+    "validation_notes": [],
+  }
+  headings = {
+    "decisions": "decisions",
+    "spec gaps": "spec_gaps",
+    "tradeoffs": "tradeoffs",
+    "deviations": "deviations",
+    "follow-ups": "follow_ups",
+    "follow ups": "follow_ups",
+    "validation notes": "validation_notes",
+  }
+  notes_file = pathlib.Path(path)
+  if not notes_file.exists():
+    return sections
+  def summarize_note(line):
+    text = line[2:].strip()
+    parts = [part.strip() for part in text.split("|")]
+    if len(parts) >= 4:
+      text = " | ".join(parts[3:]).strip()
+    text = text.replace(" Why: ", " - ")
+    return text
+  current = ""
+  for raw in notes_file.read_text(encoding="utf8").splitlines():
+    line = raw.strip()
+    if line.startswith("## "):
+      current = headings.get(line[3:].strip().lower(), "")
+      continue
+    if current and line.startswith("- "):
+      sections[current].append(summarize_note(line))
+  return sections
+
 payload = {
   "title": title,
   "summary": summary,
@@ -103,6 +144,7 @@ payload = {
   "risksMitigated": [
     "Shipping summary tied to current diff rather than hand-written release notes.",
   ],
+  "implementation_notes": implementation_notes(implementation_notes_path),
   "notes": [
     f"Base ref: {base_branch}",
     "Run the review workflow before pushing if the gate is not clearly passed.",

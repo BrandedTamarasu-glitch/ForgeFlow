@@ -42,6 +42,29 @@ create_file "$FORGEFLOW_DIR/current-plan.md" "# Current Plan
 create_file "$FORGEFLOW_DIR/current-brief.md" "# Current Brief
 "
 
+create_file "$FORGEFLOW_DIR/implementation-notes.md" "# Implementation Notes
+
+Running notes for decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation details discovered during implementation.
+
+## At a Glance
+
+- Artifact: .forgeflow/$PROJECT_NAME/implementation-notes.md
+- Format: append-only Markdown
+- Owner: Atlas serializes note candidates from implement agents; Arbiter verifies and may add final integration notes
+
+## Decisions
+
+## Spec Gaps
+
+## Tradeoffs
+
+## Deviations
+
+## Follow-ups
+
+## Validation Notes
+"
+
 if [ ! -f "$FORGEFLOW_DIR/learnings.jsonl" ]; then
   : > "$FORGEFLOW_DIR/learnings.jsonl"
 fi

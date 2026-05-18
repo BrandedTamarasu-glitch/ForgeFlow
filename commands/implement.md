@@ -51,9 +51,37 @@ DISCUSSION_PATH="${FORGEFLOW_DIR}/current-discussion.md"
 RESEARCH_PATH="${FORGEFLOW_DIR}/current-research.md"
 MEMORY_CONTEXT_PATH="${FORGEFLOW_DIR}/context/implement-memory.md"
 SCOPE_MANIFEST_PATH="${FORGEFLOW_DIR}/context/implement-scope-manifest.json"
+NOTES_PATH="${FORGEFLOW_DIR}/implementation-notes.md"
 HELPER_DIR="scripts/forgeflow"
 if [ ! -x "${HELPER_DIR}/build-memory-context.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/build-memory-context.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
+fi
+
+mkdir -p "$FORGEFLOW_DIR"
+if [ ! -f "$NOTES_PATH" ]; then
+  cat > "$NOTES_PATH" <<'EOF'
+# Implementation Notes
+
+Running notes for decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation details discovered during implementation.
+
+## At a Glance
+
+- Artifact: .forgeflow/<project-name>/implementation-notes.md
+- Format: append-only Markdown
+- Owner: Atlas serializes note candidates from implement agents; Arbiter verifies and may add final integration notes
+
+## Decisions
+
+## Spec Gaps
+
+## Tradeoffs
+
+## Deviations
+
+## Follow-ups
+
+## Validation Notes
+EOF
 fi
 
 if [ -x "${HELPER_DIR}/build-memory-context.js" ]; then
@@ -80,6 +108,7 @@ Extract from the Implementation Brief:
 - Shared interfaces (contracts between agents)
 - Security requirements
 - Quality gates
+- Implementation notes requirements: decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes to capture in `implementation-notes.md`
 
 If Compass's plan exists, also extract:
 - Accessibility requirements per phase
@@ -177,16 +206,20 @@ Each agent prompt must include:
 - The full Implementation Brief for context
 - Compass's accessibility requirements relevant to their scope (if plan exists)
 - Instruction to commit each logical unit atomically
+- Instruction to report implementation note candidates without writing the shared notes file directly
+- The implementation notes path: `${NOTES_PATH}`
 - Working directory path
 
-Spawn `atlas-implement` alongside to coordinate and track.
+Spawn `atlas-implement` alongside to coordinate and track. Atlas owns serializing note candidates into `${NOTES_PATH}` so parallel implementers do not race on the same file.
 
 ## Step 4: Verify Wave 1, spawn Wave 2
 
 After Wave 1 completes:
 1. Read the files created by Wave 1 agents
-2. Verify shared interfaces were defined correctly
-3. If issues found, fix before proceeding
+2. Hand Smith/Warden/Lumen/Compass/Atlas reports from the completed wave back to `atlas-implement` with this instruction:
+   "Extract every `Implementation Notes Candidates` item from the completed agent reports. Append the entries to `${NOTES_PATH}` under the matching category. Prefer `${HELPER_DIR}/record-implementation-notes.js` with a temporary JSON input when available. Do not rewrite existing notes. Return the entries appended and any rejected sensitive entries."
+3. Verify shared interfaces were defined correctly
+4. If issues found, fix before proceeding
 
 Spawn Wave 2 agents **in parallel** — they can work simultaneously now that foundations exist.
 
@@ -204,6 +237,39 @@ Each Wave 2 agent prompt must include:
 - Their scope from the brief
 - Wave 1 outputs they depend on (exact file paths and interface definitions)
 - Instruction to consume the interfaces defined in Wave 1
+- Instruction to report implementation note candidates under the categories `decision`, `spec-gap`, `tradeoff`, `deviation`, `follow-up`, or `validation`
+
+## Step 4.5: Consolidate implementation notes
+
+After Wave 2 and Compass complete, hand all Wave 2 agent reports and Compass's validation plan to `atlas-implement` before Arbiter runs:
+
+```
+Implementation note consolidation checkpoint.
+
+Working directory: {cwd}
+Implementation notes path: {notes_path}
+Recorder helper: {helper_dir}/record-implementation-notes.js
+
+Read the reports below, extract every `Implementation Notes Candidates` item, and append them to `{notes_path}`. Use the recorder helper with a temporary JSON input when available. Categories must be one of: decision, spec-gap, tradeoff, deviation, follow-up, validation.
+
+Reject and report any candidate that contains secrets, raw settings JSON, tokens, keys, certificates, private URLs, customer names, or large source snippets.
+
+=== Smith ===
+{smith_report}
+
+=== JARED ===
+{warden_report}
+
+=== STEVEY ===
+{lumen_report}
+
+=== EMILY ===
+{compass_test_plan}
+
+Return the entries appended, entries rejected, and the final notes path.
+```
+
+Read the updated `${NOTES_PATH}` before spawning Arbiter.
 
 ## Step 5: Post-implementation integration check
 
@@ -229,6 +295,10 @@ Working directory: {cwd}
 === PM CORY ===
 {atlas_coordination_report}
 
+=== IMPLEMENTATION NOTES ===
+Path: {notes_path}
+{implementation_notes_content_or_missing}
+
 {If Compass's plan exists:}
 === EMILY'S PLAN (for reference) ===
 {plan_content}
@@ -237,6 +307,7 @@ Spot-check the implementation against the brief.
 Verify integration points work together.
 Write any integration glue needed.
 Check Compass's validation tests reference real files and interfaces from the implementation.
+Verify `${NOTES_PATH}` exists, includes relevant decisions/spec gaps/tradeoffs/deviations/follow-ups/validation notes or explicitly says none were needed, and does not contain obvious secrets, raw settings JSON, tokens, keys, private URLs, customer names, or large source snippets.
 Report overall status.
 If Compass's plan exists, note whether the implementation
 addresses her accessibility requirements and success criteria.
@@ -257,6 +328,9 @@ Display the combined implementation report.
 ### Integration Status
 {Arbiter's integration check results}
 
+### Implementation Notes
+{Path to `${NOTES_PATH}` and a short summary of notable decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes}
+
 ### Files Created/Modified
 {Combined file list — including test files}
 
@@ -273,6 +347,7 @@ Next: `/review` to run the full Forgeflow on these changes (Compass will execute
 - [ ] Compass designed validation tests in parallel with Wave 2
 - [ ] Compass's tests map to success criteria from the plan
 - [ ] Atlas tracked coordination and persisted learnings
+- [ ] Implementation notes initialized and maintained at `.forgeflow/<project-name>/implementation-notes.md`
 - [ ] Arbiter verified integration across agents (including test coverage)
 - [ ] All code committed atomically (implementation + test files)
 - [ ] Results presented with next steps

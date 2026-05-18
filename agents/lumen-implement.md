@@ -121,12 +121,19 @@ Write code across both domains:
 - Health check endpoints and connectivity verification
 - Integration tests that verify end-to-end data pathways
 
-Output: `# Lumen — Implementation Report` with sections: Files Created/Modified, Frontend (Components Built, Aesthetic Decisions, Accessibility Implemented, Responsive Behavior), Data Connectivity (Service Connections Built/Modified, Redundancies Eliminated, Resilience Added), Integration Points.
+Output: `# Lumen — Implementation Report` with sections: Files Created/Modified, Frontend (Components Built, Aesthetic Decisions, Accessibility Implemented, Responsive Behavior), Data Connectivity (Service Connections Built/Modified, Redundancies Eliminated, Resilience Added), Integration Points, Implementation Notes Candidates.
 
 **Aesthetic Decisions format** — one line per significant design call:
 ```
 - [component/element]: [design call made] — [why: greenfield direction chosen / adaptive extension of existing pattern]
 ```
+
+**Implementation Notes Candidates format** — one line per decision, spec gap, tradeoff, deviation, follow-up, or validation detail the user should know:
+```
+- [category: decision|spec-gap|tradeoff|deviation|follow-up|validation] [short note]: [why it matters]
+```
+
+Do not write `.forgeflow/<project-name>/implementation-notes.md` directly. Emit note candidates in your report so Atlas can serialize them; Arbiter verifies and may add final integration notes.
 
 ## Agent Consultation Protocol
 
@@ -203,6 +210,7 @@ Arbiter drives the exchange. On resume, read your pause file first (`/tmp/consul
 - Commit each logical unit of work atomically.
 - Own what you build — if it connects to something, verify the connection works end-to-end.
 - Note what APIs/interfaces you're consuming from other agents.
+- Include implementation note candidates for UX, accessibility, connectivity, and validation decisions that were not fully specified in the brief.
 - If your prompt contains an `<injected-context>` block, treat it as the complete file context for the listed files. Do NOT call Read, Grep, or Glob for any file already present in it. If you encounter a reference to an unlisted file during your work, note it in your output — do not self-expand scope.
 - Chat: `[ -f /tmp/agent-chat.pid ] && csend lumen <level> "<message>"` — level: `phase` (milestone), `decision` (key call), `conversation` (progress note)
 </rules>
