@@ -11,6 +11,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 ## Start Here
 
 - [Hosted Docs Entry](../index.html)
+- [Why Forgeflow](Why-Forgeflow)
 - [Quick Start](Quick-Start)
 - [Demos](Demos)
 - [Dashboard](Dashboard)

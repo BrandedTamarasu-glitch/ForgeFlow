@@ -42,3 +42,4 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 - evaluation context savings and budget-violation metrics
 - publishable lightweight evaluation summary format
 - completed local-first evaluation tooling for review quality and context efficiency
+- concise positioning for Review Squad and ad hoc agent review users

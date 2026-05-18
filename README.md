@@ -14,6 +14,8 @@ Most AI coding workflows collapse three different jobs into one prompt: deciding
 - **Explain routing decisions:** review mode records why agents were included or skipped.
 - **Learn locally:** calibration and outcome records stay on your machine unless you choose to share them.
 
+If you are coming from Review Squad or ad hoc agent review, Forgeflow keeps specialist review agents but adds the workflow around them: lifecycle commands, Codex-native agents and skills, install health checks, repair and rollback, local context budgets, release checks, and evaluation reports. See [Why Forgeflow](docs/wiki/Why-Forgeflow.md) for the short positioning.
+
 ## The Agents
 
 | Agent | Focus | Typical Work |
@@ -232,6 +234,7 @@ It runs on `http://127.0.0.1:4003` and reads local telemetry files from `~/.clau
 
 - [Hosted docs entry](docs/index.html)
 - [Wiki source](docs/wiki/Home.md)
+- [Why Forgeflow](docs/wiki/Why-Forgeflow.md)
 - [Demos](docs/wiki/Demos.md)
 - [Dashboard](docs/wiki/Dashboard.md)
 - [Context intelligence](docs/wiki/Context-Intelligence.md)
