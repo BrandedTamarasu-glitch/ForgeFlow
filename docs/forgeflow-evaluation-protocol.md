@@ -41,6 +41,12 @@ scripts/forgeflow/record-review-outcome.js --input outcome.json
 scripts/forgeflow/record-review-outcome.js --summary .forgeflow/Forgeflow/review-outcomes.jsonl --json
 ```
 
+5. Render a local evaluation report:
+
+```bash
+scripts/forgeflow/render-evaluation-report.js --outcomes .forgeflow/Forgeflow/review-outcomes.jsonl --out .forgeflow/Forgeflow/evaluation-report.md
+```
+
 ## Metrics
 
 Track:
@@ -53,6 +59,8 @@ Track:
 - auto-fix success/failure
 - post-merge regressions when known
 - accessibility findings as a first-class finding class
+
+The generated report includes confirmation rate, false positive rate, verifier rejection rate, auto-fix success rate, regression rate, average review minutes, mode counts, and per-class finding totals.
 
 ## Privacy Rules
 

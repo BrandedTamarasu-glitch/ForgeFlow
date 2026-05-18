@@ -38,6 +38,7 @@ node scripts/forgeflow/test-install-smoke.js
 node scripts/forgeflow/test-update-forgeflow.js
 node scripts/forgeflow/test-health-check.js
 node scripts/forgeflow/test-forgeflow-version.js
+node scripts/forgeflow/test-render-evaluation-report.js
 node scripts/forgeflow/test-seed-budget-config.js
 node scripts/forgeflow/test-check-context-budget.js
 node scripts/forgeflow/test-advise-context.js
@@ -64,6 +65,7 @@ If any command fails, stop and report the failed command plus its output. Do not
 - [ ] Template installer test passes
 - [ ] Install manifest and install smoke tests pass
 - [ ] Update, health, and version helper tests pass
+- [ ] Evaluation report smoke test passes
 - [ ] Context budget/advisor smoke tests pass
 - [ ] `git diff --check` passes
 </success_criteria>

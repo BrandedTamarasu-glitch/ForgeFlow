@@ -36,3 +36,4 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 - static hosted documentation entry point under `docs/index.html`
 - versioned release process and release-version drift check
 - template installer for Claude Code and Codex
+- local evaluation report generator for review outcome JSONL
