@@ -13,6 +13,7 @@ Most AI coding workflows collapse three different jobs into one prompt: deciding
 - **Keep verdicts grounded:** high-risk findings can pass through Aegis, an evidence-only verifier.
 - **Explain routing decisions:** review mode records why agents were included or skipped.
 - **Carry implementation context forward:** `/implement` maintains local implementation notes for decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes, then `/ship` checks and summarizes them.
+- **Learn from the project itself:** project learnings summarize recurring pitfalls, stable decisions, risk areas, validation patterns, hot files, and recommended approaches across work items.
 - **Learn locally:** calibration and outcome records stay on your machine unless you choose to share them.
 - **Pilot with evidence:** local pilot helpers capture maintainer-trial notes, roll up repeated support categories, and surface the latest rollup in health output.
 
@@ -245,6 +246,14 @@ scripts/forgeflow/rollup-pilot-evidence.js --json
 
 The rollup stays local under `.forgeflow/<project-name>/` and summarizes pilot count, support categories, findings, review minutes, and the next recommended action.
 
+Project learning rollups are planned around:
+
+```text
+.forgeflow/<project-name>/project-learnings.md
+```
+
+They capture durable project patterns across work items so future planning, implementation, review, and ship phases can account for recurring pitfalls and stable decisions. See [Project Learnings](docs/wiki/Project-Learnings.md).
+
 ## Dashboard
 
 The metrics dashboard is an optional local read-only HTTP server:
@@ -260,6 +269,7 @@ It runs on `http://127.0.0.1:4003` and reads local telemetry files from `~/.clau
 - [Hosted docs entry](docs/index.html)
 - [Wiki source](docs/wiki/Home.md)
 - [Why Forgeflow](docs/wiki/Why-Forgeflow.md)
+- [Project learnings](docs/wiki/Project-Learnings.md)
 - [Maintainer pilot](docs/wiki/Maintainer-Pilot.md)
 - [Team privacy boundaries](docs/wiki/Team-Privacy-Boundaries.md)
 - [Support triage](docs/wiki/Support-Triage.md)

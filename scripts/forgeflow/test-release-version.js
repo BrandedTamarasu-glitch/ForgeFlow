@@ -43,6 +43,8 @@ const checks = [
   ['hosted docs link matching changelog', matchingChangelogLink && hostedDocs.includes(`href="${matchingChangelogLink}"`)],
   ['README links release process', readme.includes('docs/wiki/Release-Process.md')],
   ['README links release gate', readme.includes('docs/wiki/Release-Gate.md')],
+  ['README links project learnings', readme.includes('docs/wiki/Project-Learnings.md')],
+  ['hosted docs links project learnings', hostedDocs.includes('./wiki/Project-Learnings.md')],
   ['release process mentions plugin manifest', releaseProcess.includes('.claude-plugin/plugin.json')],
   ['release process mentions marketplace manifest', releaseProcess.includes('.claude-plugin/marketplace.json')],
   ['release process mentions changelog path', releaseProcess.includes('docs/changelogs/')],
