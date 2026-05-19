@@ -221,6 +221,7 @@ function latestProjectLearnings(ffDir) {
       recurring_pitfalls: 0,
       risk_areas: 0,
       recommended_approach: '',
+      command: 'forgeflow-learnings --project',
     };
   }
   const content = fs.readFileSync(file, 'utf8');
@@ -230,6 +231,9 @@ function latestProjectLearnings(ffDir) {
     recurring_pitfalls: countBulletsInSection(content, 'Recurring Pitfalls'),
     risk_areas: countBulletsInSection(content, 'Risk Areas'),
     recommended_approach: firstBulletInSection(content, 'Recommended Approach For Next Work'),
+    validation_pattern: firstBulletInSection(content, 'Validation Patterns'),
+    hot_file: firstBulletInSection(content, 'Hot Files And Modules'),
+    command: 'forgeflow-learnings --project',
   };
 }
 
@@ -332,10 +336,13 @@ function renderMarkdown(result) {
   }
   if (result.latest_project_learnings && result.latest_project_learnings.status !== 'missing') {
     const latest = result.latest_project_learnings;
-    lines.push('## Latest Project Learnings', '');
+    lines.push('## Latest Insights', '');
     lines.push(`- Recurring pitfalls: ${latest.recurring_pitfalls}`);
     lines.push(`- Risk areas: ${latest.risk_areas}`);
     if (latest.recommended_approach) lines.push(`- Recommended approach: ${latest.recommended_approach}`);
+    if (latest.validation_pattern) lines.push(`- Validation pattern: ${latest.validation_pattern}`);
+    if (latest.hot_file) lines.push(`- Hot file/module: ${latest.hot_file}`);
+    lines.push(`- Refresh/view: ${latest.command}`);
     lines.push(`- Report: ${latest.path}`);
     lines.push('');
   }

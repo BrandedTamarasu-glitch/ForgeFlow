@@ -69,6 +69,14 @@ fs.writeFileSync(projectLearningsPath, [
   '',
   '- Check docs-drift risks early.',
   '',
+  '## Validation Patterns',
+  '',
+  '- Run docs checks before release checks.',
+  '',
+  '## Hot Files And Modules',
+  '',
+  '- scripts/forgeflow/health-check.js',
+  '',
 ].join('\n'));
 const withProjectLearnings = runHealthCheck({ root, fix: false });
 const withProjectLearningsMarkdown = renderMarkdown(withProjectLearnings);
@@ -95,7 +103,9 @@ const checks = [
   ['latest pilot rollup summarized', withPilotRollup.latest_pilot_rollup.pilot_count === 2 && withPilotRollup.latest_pilot_rollup.decision === 'fix-now'],
   ['latest pilot rollup renders', withPilotRollupMarkdown.includes('## Latest Pilot Evidence Rollup') && withPilotRollupMarkdown.includes('Decision: fix-now')],
   ['latest project learnings summarized', withProjectLearnings.latest_project_learnings.recurring_pitfalls === 1 && withProjectLearnings.latest_project_learnings.risk_areas === 1],
-  ['latest project learnings renders', withProjectLearningsMarkdown.includes('## Latest Project Learnings') && withProjectLearningsMarkdown.includes('Check docs-drift risks early.')],
+  ['latest project learnings renders', withProjectLearningsMarkdown.includes('## Latest Insights') && withProjectLearningsMarkdown.includes('Check docs-drift risks early.')],
+  ['latest insights includes command', withProjectLearningsMarkdown.includes('Refresh/view: forgeflow-learnings --project')],
+  ['latest insights includes validation and hot file', withProjectLearningsMarkdown.includes('Run docs checks before release checks.') && withProjectLearningsMarkdown.includes('scripts/forgeflow/health-check.js')],
   ['idempotent no changes', again.changes.length === 0],
   ['installed runtime passes', installed.status === 'pass'],
   ['missing runtime fails', missingInstalled.status === 'fail'],

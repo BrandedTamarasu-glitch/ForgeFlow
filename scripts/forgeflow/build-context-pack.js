@@ -4,6 +4,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { classify, readFiles } = require('./explain-review-route');
 const { buildMemoryIndex } = require('./index-memory');
+const { showProjectLearnings } = require('./show-project-learnings');
 const {
   contextTelemetry,
   fileChars,
@@ -313,6 +314,17 @@ function buildMemoryHits(root, files, route, task, maxChars, indexPath = null) {
   return truncate(rendered.join('\n'), maxChars);
 }
 
+function buildLatestInsights(root, maxChars = 3000) {
+  const projectDir = defaultProjectDir(root);
+  if (!fs.existsSync(projectDir)) return '';
+  try {
+    const result = showProjectLearnings({ projectDir });
+    return truncate(result.markdown, maxChars);
+  } catch (_err) {
+    return '';
+  }
+}
+
 function truncate(text, maxChars) {
   if (!Number.isFinite(maxChars) || maxChars <= 0 || text.length <= maxChars) return text;
   return `${text.slice(0, Math.max(0, maxChars - 80)).trimEnd()}\n\n[truncated to ${maxChars} chars]`;
@@ -352,7 +364,7 @@ function relevantFilesForAgent(agent, manifest) {
   return selected.length > 0 ? selected : manifest.slice(0, 10);
 }
 
-function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, task) {
+function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, task) {
   const relevant = relevantFilesForAgent(agent, manifest);
   const rules = rulePack(agent, route, manifest);
   return [
@@ -375,6 +387,9 @@ function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, task) {
     '',
     '## Memory Hits',
     memoryHits.replace(/^# Memory Hits\s*/u, '').trim() || '(none)',
+    '',
+    '## Latest Insights',
+    latestInsights.replace(/^# Forgeflow Project Learnings[^\n]*\s*/u, '').trim() || '(none)',
     '',
     '## Diff Summary',
     diffSummary.replace(/^# Diff Summary\s*/u, '').trim() || '(none)',
@@ -417,11 +432,12 @@ function buildContextPack(opts) {
   const diffSummary = buildDiffSummary(route.files, root, opts);
   const memoryIndexPath = ensureMemoryIndex(root, opts.memoryIndex !== false);
   const memoryHits = buildMemoryHits(root, route.files, route, opts.task, opts.maxMemoryChars, memoryIndexPath);
+  const latestInsights = buildLatestInsights(root);
   const agents = route.agents.included || [];
   const packets = {};
 
   for (const agent of agents) {
-    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, opts.task);
+    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, opts.task);
     const file = path.join(packetDir, `${agent}.md`);
     fs.writeFileSync(file, content);
     packets[agent] = path.relative(root, file);
@@ -450,6 +466,7 @@ function buildContextPack(opts) {
     route_path: path.relative(root, path.join(outDir, 'route.json')),
     diff_summary_path: path.relative(root, path.join(outDir, 'diff-summary.md')),
     memory_hits_path: path.relative(root, path.join(outDir, 'memory-hits.md')),
+    latest_insights_path: path.relative(root, path.join(outDir, 'latest-insights.md')),
     memory_index_path: memoryIndexPath ? path.relative(root, memoryIndexPath) : null,
     context_telemetry_path: path.relative(root, path.join(outDir, 'context-telemetry.json')),
     file_manifest_path: path.relative(root, path.join(outDir, 'file-manifest.json')),
@@ -464,6 +481,7 @@ function buildContextPack(opts) {
   writeJson(path.join(outDir, 'file-manifest.json'), { schema_version: '1', files: manifest });
   fs.writeFileSync(path.join(outDir, 'diff-summary.md'), `${diffSummary}\n`);
   fs.writeFileSync(path.join(outDir, 'memory-hits.md'), `${memoryHits}\n`);
+  fs.writeFileSync(path.join(outDir, 'latest-insights.md'), `${latestInsights || '# Latest Insights\n\n(none)'}\n`);
   writeTelemetry(path.join(outDir, 'context-telemetry.json'), telemetry);
   writeJson(path.join(outDir, 'synthesis-input.json'), synthesisInput);
 
@@ -505,6 +523,7 @@ if (require.main === module) {
 
 module.exports = {
   buildContextPack,
+  buildLatestInsights,
   buildMemoryHits,
   fileKind,
   rulePack,

@@ -271,6 +271,8 @@ From Claude Code, use the command view:
 /forgeflow-learnings --project
 ```
 
+Review context packets include the latest insights so agents can account for recurring project patterns while still verifying every finding against current artifacts.
+
 ## Dashboard
 
 The metrics dashboard is an optional local read-only HTTP server:

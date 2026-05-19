@@ -35,6 +35,7 @@ const manifest = JSON.parse(fs.readFileSync(path.join(outDir, 'file-manifest.jso
 const synthesis = JSON.parse(fs.readFileSync(path.join(outDir, 'synthesis-input.json'), 'utf8'));
 const telemetry = JSON.parse(fs.readFileSync(path.join(outDir, 'context-telemetry.json'), 'utf8'));
 const noisyManifest = JSON.parse(fs.readFileSync(path.join(noisyOutDir, 'file-manifest.json'), 'utf8'));
+const wardenPacket = fs.readFileSync(path.join(repoRoot, synthesis.agent_packets.warden_reviewer), 'utf8');
 
 const checks = [
   ['result out dir', result.out_dir === outDir],
@@ -46,9 +47,12 @@ const checks = [
   ['warden packet exists', Boolean(synthesis.agent_packets.warden_reviewer)],
   ['aegis packet exists', Boolean(synthesis.agent_packets.aegis)],
   ['memory hits written', fs.existsSync(path.join(outDir, 'memory-hits.md'))],
+  ['latest insights written', fs.existsSync(path.join(outDir, 'latest-insights.md'))],
   ['diff summary written', fs.existsSync(path.join(outDir, 'diff-summary.md'))],
   ['telemetry written', fs.existsSync(path.join(outDir, 'context-telemetry.json'))],
   ['telemetry linked', synthesis.context_telemetry_path.endsWith('context-telemetry.json')],
+  ['latest insights linked', synthesis.latest_insights_path.endsWith('latest-insights.md')],
+  ['agent packet includes latest insights', wardenPacket.includes('## Latest Insights')],
   ['telemetry token estimate', Number.isInteger(telemetry.estimated_compact_tokens)],
   ['noisy manifest sanitized', noisyManifest.files.length === 3],
   ['no noisy decoration in manifest', !noisyManifest.files.some((file) => file.path.includes('Changes') || file.path.includes('|'))],

@@ -393,7 +393,7 @@ If each path exists, read the file and store its contents as `plan_content`, `di
 
 ## Step 3.4: Build local context pack
 
-Prefer the local context compiler when available. It pre-computes route, file manifest, diff summary, indexed memory hits, and bounded per-agent packets so reviewer prompts do not need to carry the same full context repeatedly.
+Prefer the local context compiler when available. It pre-computes route, file manifest, diff summary, indexed memory hits, latest project insights, and bounded per-agent packets so reviewer prompts do not need to carry the same full context repeatedly.
 
 Skip this step only when `$ARGUMENTS` contains `--no-context-pack`.
 
@@ -433,7 +433,7 @@ if [ -x "${HELPER_DIR}/check-context-budget.js" ]; then
 fi
 ```
 
-If the context pack exists, pass the matching `agent-packets/<agent>.md` file contents to each reviewer, `route.json` and `synthesis-input.json` to Arbiter, and `synthesis-input.json` plus Compass's phase artifacts to Compass.
+If the context pack exists, pass the matching `agent-packets/<agent>.md` file contents to each reviewer, `route.json` and `synthesis-input.json` to Arbiter, and `synthesis-input.json` plus Compass's phase artifacts to Compass. The packet includes a **Latest Insights** section from project learnings; agents may use it to anticipate recurring risks and validation patterns, but every finding still needs current evidence.
 
 ## Step 3.5: Context Pre-Loading
 
