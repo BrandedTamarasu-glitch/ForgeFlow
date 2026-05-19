@@ -252,10 +252,13 @@ Implementation note consolidation checkpoint.
 Working directory: {cwd}
 Implementation notes path: {notes_path}
 Recorder helper: {helper_dir}/record-implementation-notes.js
+Project learning recorder: {helper_dir}/record-project-learning.js
 Project learnings helper: {helper_dir}/rollup-project-learnings.js
 Project learnings path: {project_learnings_path}
 
 Read the reports below, extract every `Implementation Notes Candidates` item, and append them to `{notes_path}`. Also add concise note candidates for durable project patterns that should shape the next work item: repeated pitfalls, stable decisions, validation patterns, hot files/modules, or recurring follow-ups. Use the recorder helper with a temporary JSON input when available. Categories must be one of: decision, spec-gap, tradeoff, deviation, follow-up, validation.
+
+When a durable project pattern is clearer as a structured learning, record it with the project learning recorder. Categories must be one of: recurring-pitfall, stable-decision, risk-area, validation-pattern, hot-file, repeated-follow-up, recommended-approach.
 
 Reject and report any candidate that contains secrets, raw settings JSON, tokens, keys, certificates, private URLs, customer names, or large source snippets.
 

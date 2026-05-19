@@ -41,6 +41,7 @@ node scripts/forgeflow/test-forgeflow-version.js
 node scripts/forgeflow/test-render-evaluation-report.js
 node scripts/forgeflow/render-evaluation-report.js --outcomes fixtures/evaluation/sample-outcomes.jsonl --public --out /tmp/forgeflow-public-evaluation-summary.md
 node scripts/forgeflow/test-record-pilot-evidence.js
+node scripts/forgeflow/test-record-project-learning.js
 node scripts/forgeflow/test-rollup-pilot-evidence.js
 node scripts/forgeflow/test-rollup-project-learnings.js
 node scripts/forgeflow/test-seed-budget-config.js
@@ -73,6 +74,7 @@ If any command fails, stop and report the failed command plus its output. Do not
 - [ ] Update, health, and version helper tests pass
 - [ ] Evaluation report smoke test and public-summary render pass
 - [ ] Pilot evidence recorder test passes
+- [ ] Project learning recorder test passes
 - [ ] Pilot evidence rollup test passes
 - [ ] Project learnings rollup test passes
 - [ ] Context budget/advisor smoke tests pass

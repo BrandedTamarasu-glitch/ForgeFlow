@@ -262,6 +262,7 @@ scripts/forgeflow/rollup-project-learnings.js --json
 
 `/ship` refreshes the file during handoff prep, and `/forgeflow-health` surfaces the latest local summary when it exists.
 During `/implement`, Atlas refreshes project learnings after implementation-note consolidation when the helper is available.
+Structured candidates are stored locally in `.forgeflow/<project-name>/project-learning-candidates.jsonl` when Atlas records explicit learning categories.
 
 From Claude Code, use the command view:
 

@@ -186,6 +186,7 @@ function buildRollup(inputs = {}, opts = {}) {
   const maxItems = Number.isFinite(opts.maxItems) && opts.maxItems > 0 ? opts.maxItems : DEFAULT_MAX_ITEMS;
   const notes = inputs.notes || {};
   const reviewOutcomes = Array.isArray(inputs.reviewOutcomes) ? inputs.reviewOutcomes : [];
+  const learningCandidates = Array.isArray(inputs.learningCandidates) ? inputs.learningCandidates : [];
   const shipSummary = inputs.shipSummary || {};
   const classCounts = {};
   const hotFiles = {};
@@ -211,21 +212,37 @@ function buildRollup(inputs = {}, opts = {}) {
   for (const entry of Array.isArray(shipSummary.files) ? shipSummary.files : []) {
     increment(hotFiles, filePathFromEntry(entry));
   }
+  for (const candidate of learningCandidates) {
+    if (candidate.category === 'risk-area') increment(classCounts, candidate.learning);
+    if (candidate.category === 'hot-file') increment(hotFiles, candidate.learning);
+  }
 
   const recurringPitfalls = [];
   for (const note of notes.spec_gaps || []) addUnique(recurringPitfalls, note);
   for (const note of notes.deviations || []) addUnique(recurringPitfalls, note);
+  for (const candidate of learningCandidates.filter((item) => item.category === 'recurring-pitfall')) {
+    addUnique(recurringPitfalls, candidate.learning);
+  }
   for (const item of topCounts(classCounts, maxItems)) addUnique(recurringPitfalls, `${item.name} findings recurred ${item.count} time(s).`);
 
   const stableDecisions = [];
   for (const note of notes.decisions || []) addUnique(stableDecisions, note);
   for (const note of notes.tradeoffs || []) addUnique(stableDecisions, note);
+  for (const candidate of learningCandidates.filter((item) => item.category === 'stable-decision')) {
+    addUnique(stableDecisions, candidate.learning);
+  }
 
   const validationPatterns = [];
   for (const note of notes.validation_notes || []) addUnique(validationPatterns, note);
+  for (const candidate of learningCandidates.filter((item) => item.category === 'validation-pattern')) {
+    addUnique(validationPatterns, candidate.learning);
+  }
 
   const repeatedFollowUps = [];
   for (const note of notes.follow_ups || []) addUnique(repeatedFollowUps, note);
+  for (const candidate of learningCandidates.filter((item) => item.category === 'repeated-follow-up')) {
+    addUnique(repeatedFollowUps, candidate.learning);
+  }
 
   const hotFileItems = topCounts(hotFiles, maxItems).map((item) => item.count > 1 ? `${item.name} (${item.count} changes)` : item.name);
   const topRisk = topCounts(classCounts, 1)[0];
@@ -234,12 +251,16 @@ function buildRollup(inputs = {}, opts = {}) {
   if (topFile) addUnique(recommended, `Inspect ${topFile.replace(/\s+\(\d+ changes\)$/, '')} first when it is in scope.`);
   if (validationPatterns.length > 0) addUnique(recommended, 'Reuse the recorded validation pattern before ship.');
   if (repeatedFollowUps.length > 0) addUnique(recommended, 'Resolve repeated follow-ups before expanding scope.');
+  for (const candidate of learningCandidates.filter((item) => item.category === 'recommended-approach')) {
+    addUnique(recommended, candidate.learning);
+  }
   if (recommended.length === 0) addUnique(recommended, 'Run a few more work items, then refresh this rollup with new notes and review outcomes.');
 
   return {
     schema_version: '1',
     sources: {
       implementation_notes: Boolean(inputs.hasImplementationNotes),
+      learning_candidates: learningCandidates.length,
       review_outcomes: reviewOutcomes.length,
       ship_summary: Boolean(inputs.hasShipSummary),
     },
@@ -273,6 +294,7 @@ function renderMarkdown(rollup) {
     '## Sources',
     '',
     `- Implementation notes: ${rollup.sources.implementation_notes ? 'present' : 'missing'}`,
+    `- Learning candidates: ${rollup.sources.learning_candidates}`,
     `- Review outcomes: ${rollup.sources.review_outcomes}`,
     `- Ship summary: ${rollup.sources.ship_summary ? 'present' : 'missing'}`,
     '',
@@ -313,10 +335,12 @@ function rollupProjectLearnings(opts = {}) {
   const out = opts.out || defaultOut(projectDir);
   const implementationNotesPath = path.join(projectDir, 'implementation-notes.md');
   const reviewOutcomesPath = path.join(projectDir, 'review-outcomes.jsonl');
+  const learningCandidatesPath = path.join(projectDir, 'project-learning-candidates.jsonl');
   const shipSummaryPath = path.join(projectDir, 'ship', 'ship-summary.json');
   const inputs = {
     notes: readImplementationNotes(projectDir),
     reviewOutcomes: readJsonl(reviewOutcomesPath),
+    learningCandidates: readJsonl(learningCandidatesPath),
     shipSummary: readJson(shipSummaryPath) || {},
     hasImplementationNotes: fs.existsSync(implementationNotesPath),
     hasShipSummary: fs.existsSync(shipSummaryPath),

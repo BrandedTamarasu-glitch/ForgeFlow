@@ -52,6 +52,7 @@ scripts/forgeflow/build-context-pack.js --json
 scripts/forgeflow/build-memory-context.js --json
 scripts/forgeflow/build-scope-manifest.js --json
 scripts/forgeflow/record-implementation-notes.js --json
+scripts/forgeflow/record-project-learning.js --json
 scripts/forgeflow/check-implementation-notes.js --json
 scripts/forgeflow/rollup-project-learnings.js --json
 scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json

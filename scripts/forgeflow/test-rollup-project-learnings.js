@@ -67,6 +67,27 @@ fs.writeFileSync(path.join(projectDir, 'review-outcomes.jsonl'), `${JSON.stringi
     ],
   },
 })}\n`);
+fs.writeFileSync(path.join(projectDir, 'project-learning-candidates.jsonl'), [
+  JSON.stringify({
+    schema_version: '1',
+    category: 'validation-pattern',
+    learning: 'Record structured candidates before refreshing project learnings',
+    source: 'Atlas',
+  }),
+  JSON.stringify({
+    schema_version: '1',
+    category: 'recommended-approach',
+    learning: 'Review structured candidates before expanding learning automation',
+    source: 'Arbiter',
+  }),
+  JSON.stringify({
+    schema_version: '1',
+    category: 'hot-file',
+    learning: 'scripts/forgeflow/rollup-project-learnings.js',
+    source: 'Atlas',
+  }),
+  '',
+].join('\n'));
 
 fs.writeFileSync(path.join(shipDir, 'ship-summary.json'), JSON.stringify({
   files: [
@@ -102,12 +123,15 @@ const checks = [
   ['redacts sensitive implementation note', !notes.spec_gaps.some((line) => line.includes('SHOULD_NOT_RENDER'))],
   ['detects sensitive content', containsSensitiveContent('token: SHOULD_NOT_RENDER')],
   ['rolls up sources', result.sources.implementation_notes === true && result.sources.review_outcomes === 1 && result.sources.ship_summary === true],
+  ['rolls up learning candidates source', result.sources.learning_candidates === 3],
   ['captures recurring pitfall', result.recurring_pitfalls.some((line) => line.includes('Release-helper changes'))],
   ['captures review risk area', result.risk_areas.some((item) => item.name === 'docs-drift' && item.count === 2)],
   ['captures auto-fix risk area', result.risk_areas.some((item) => item.name === 'auto-fix-failed')],
   ['captures hot files', result.hot_files_and_modules[0].includes('scripts/forgeflow/install-manifest.js')],
   ['captures validation pattern', result.validation_patterns.some((line) => line.includes('focused helper tests'))],
+  ['captures structured validation pattern', result.validation_patterns.some((line) => line.includes('structured candidates'))],
   ['writes markdown artifact', rendered.includes('# Project Learnings') && rendered.includes('## Recommended Approach For Next Work')],
+  ['captures structured recommendation', result.recommended_approach_for_next_work.some((line) => line.includes('expanding learning automation'))],
   ['markdown omits sensitive note', !rendered.includes('SHOULD_NOT_RENDER')],
   ['manual rollup uses notes', manual.stable_decisions.some((line) => line.includes('Markdown stays canonical'))],
   ['cli emits json', cliJson.status === 0 && cliResult.out === out],

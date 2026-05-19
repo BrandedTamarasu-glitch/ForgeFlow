@@ -25,6 +25,14 @@ scripts/forgeflow/rollup-project-learnings.js --json
 
 During `/implement`, Atlas refreshes project learnings after implementation-note consolidation when the helper is available. This lets the artifact accumulate signal during long work items instead of waiting for the final ship handoff.
 
+Atlas can also record structured candidates in:
+
+```text
+.forgeflow/<project-name>/project-learning-candidates.jsonl
+```
+
+Use `scripts/forgeflow/record-project-learning.js` for explicit categories: `recurring-pitfall`, `stable-decision`, `risk-area`, `validation-pattern`, `hot-file`, `repeated-follow-up`, and `recommended-approach`.
+
 From Claude Code, run:
 
 ```text
