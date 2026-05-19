@@ -44,6 +44,7 @@ node scripts/forgeflow/test-record-pilot-evidence.js
 node scripts/forgeflow/test-record-project-learning.js
 node scripts/forgeflow/test-rollup-pilot-evidence.js
 node scripts/forgeflow/test-rollup-project-learnings.js
+node scripts/forgeflow/test-show-project-learnings.js
 node scripts/forgeflow/test-seed-budget-config.js
 node scripts/forgeflow/test-check-context-budget.js
 node scripts/forgeflow/test-advise-context.js
@@ -77,6 +78,7 @@ If any command fails, stop and report the failed command plus its output. Do not
 - [ ] Project learning recorder test passes
 - [ ] Pilot evidence rollup test passes
 - [ ] Project learnings rollup test passes
+- [ ] Project learnings display test passes
 - [ ] Context budget/advisor smoke tests pass
 - [ ] Implementation notes wiring and quality-check tests pass
 - [ ] `git diff --check` passes

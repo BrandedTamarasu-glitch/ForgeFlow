@@ -26,6 +26,7 @@ const checks = [
   ['runtime helpers include project learning recorder', RUNTIME_HELPERS.includes('scripts/forgeflow/record-project-learning.js')],
   ['runtime helpers include pilot evidence rollup', RUNTIME_HELPERS.includes('scripts/forgeflow/rollup-pilot-evidence.js')],
   ['runtime helpers include project learnings rollup', RUNTIME_HELPERS.includes('scripts/forgeflow/rollup-project-learnings.js')],
+  ['runtime helpers include project learnings display', RUNTIME_HELPERS.includes('scripts/forgeflow/show-project-learnings.js')],
   ['runtime helpers include evaluation report', RUNTIME_HELPERS.includes('scripts/forgeflow/render-evaluation-report.js')],
   ['test helper not consumer managed', !isManagedSource('scripts/forgeflow/test-health-check.js')],
   ['non managed rejected', !isManagedSource('services/dashboard/server.js')],

@@ -258,6 +258,7 @@ Refresh the local rollup after several work items:
 
 ```bash
 scripts/forgeflow/rollup-project-learnings.js --json
+scripts/forgeflow/show-project-learnings.js
 ```
 
 `/ship` refreshes the file during handoff prep, and `/forgeflow-health` surfaces the latest local summary when it exists.

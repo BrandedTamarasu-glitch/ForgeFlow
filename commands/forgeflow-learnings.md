@@ -68,61 +68,24 @@ Resolve paths:
 PROJECT_NAME=$(basename "$(pwd)")
 FORGEFLOW_DIR=".forgeflow/${PROJECT_NAME}"
 HELPER_DIR="scripts/forgeflow"
-if [ ! -x "${HELPER_DIR}/rollup-project-learnings.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/rollup-project-learnings.js" ]; then
+if [ ! -x "${HELPER_DIR}/show-project-learnings.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/show-project-learnings.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
 ```
 
-If `${HELPER_DIR}/rollup-project-learnings.js` is missing, stop with:
+If `${HELPER_DIR}/show-project-learnings.js` is missing, stop with:
 
 ```text
 Project learnings helper is not installed. Run /update-forgeflow, then retry /forgeflow-learnings.
 ```
 
-Refresh the local artifact:
+Refresh the local artifact and render the user-facing insight view:
 
 ```bash
-"${HELPER_DIR}/rollup-project-learnings.js" --project-dir "${FORGEFLOW_DIR}" --json
+"${HELPER_DIR}/show-project-learnings.js" --project-dir "${FORGEFLOW_DIR}"
 ```
 
-If `--json` is present, print the helper JSON directly.
-
-If markdown output is requested, read `.forgeflow/<project>/project-learnings.md` and print:
-
-```markdown
-# Forgeflow Project Learnings — <project>
-
-Artifact: .forgeflow/<project>/project-learnings.md
-
-## Recommended Approach For Next Work
-<section bullets>
-
-## Recurring Pitfalls
-<section bullets>
-
-## Risk Areas
-<section bullets>
-
-## Validation Patterns
-<section bullets>
-
-## Hot Files And Modules
-<section bullets>
-
-## Stable Decisions
-<section bullets>
-
-## Repeated Follow-ups
-<section bullets>
-```
-
-If a section contains only the generated placeholder `No repeated pattern recorded yet.`, keep it visible. That tells the user the project needs more real work-item data before insights become meaningful.
-
-End with:
-
-```text
-Use these as guidance only. Verify every current decision against the current code, tests, and review artifacts.
-```
+If `--json` is present, pass `--json` and print the helper JSON directly.
 
 Do not modify canonical `forgeflow-patterns/` files in current-project mode.
 
