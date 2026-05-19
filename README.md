@@ -262,6 +262,12 @@ scripts/forgeflow/rollup-project-learnings.js --json
 
 `/ship` refreshes the file during handoff prep, and `/forgeflow-health` surfaces the latest local summary when it exists.
 
+From Claude Code, use the command view:
+
+```text
+/forgeflow-learnings --project
+```
+
 ## Dashboard
 
 The metrics dashboard is an optional local read-only HTTP server:

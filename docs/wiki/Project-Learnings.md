@@ -23,6 +23,14 @@ scripts/forgeflow/rollup-project-learnings.js --json
 
 `/ship` also refreshes the file and writes `.forgeflow/<project-name>/ship/project-learnings-rollup.json` for the shipping handoff. `/forgeflow-health` reports the latest local project-learnings summary when the Markdown artifact exists.
 
+From Claude Code, run:
+
+```text
+/forgeflow-learnings --project
+```
+
+That refreshes the artifact and prints the insight sections in a user-facing order.
+
 ## What Goes In
 
 Use project learnings for patterns that should shape future work:

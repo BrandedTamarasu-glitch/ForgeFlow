@@ -22,6 +22,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands.
 | `/audit` | Run a deeper systems/security/craft audit. |
 | `/dashboard` | Start the optional local metrics dashboard on port 4003. |
 | `/forgeflow-health` | Audit installation and project-local state; can safely repair `.forgeflow/` scaffolding and budget config. |
+| `/forgeflow-learnings --project` | Refresh and print current-project learnings from implementation notes, review outcomes, and ship metadata. |
 | `/forgeflow-metrics` | Summarize telemetry, calibration, outcomes, context savings, budget health, and advisor actions. |
 | `/forgeflow-report` | Produce a broader status report including drift, context trends, and local metrics. |
 | `/forgeflow-release-check` | Run local pre-release checks for command coverage, install, update, health, version, and context helpers. |
@@ -52,6 +53,7 @@ scripts/forgeflow/build-memory-context.js --json
 scripts/forgeflow/build-scope-manifest.js --json
 scripts/forgeflow/record-implementation-notes.js --json
 scripts/forgeflow/check-implementation-notes.js --json
+scripts/forgeflow/rollup-project-learnings.js --json
 scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json
 scripts/forgeflow/advise-context.js --root .forgeflow --record --json
 ```

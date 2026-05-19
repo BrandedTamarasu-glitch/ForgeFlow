@@ -1,7 +1,7 @@
 ---
 name: forgeflow-learnings
-description: Aggregate learnings.jsonl across projects. Auto-promote recurring blocker classes to forgeflow-patterns/recurring-blockers.md when seen in 2+ projects with 3+ occurrences. Surface NEW pattern candidates for manual review.
-argument-hint: "[--period week|month|all (default all)] [--min-projects N (default 2)] [--min-occurrences N (default 3)] [--dry-run] [--json]"
+description: Show current-project learning insights, or aggregate learnings.jsonl across projects for pattern promotion.
+argument-hint: "[--project] [--period week|month|all] [--min-projects N] [--min-occurrences N] [--dry-run] [--json]"
 allowed-tools:
   - Read
   - Write
@@ -12,7 +12,9 @@ allowed-tools:
 ---
 
 <objective>
-Read per-project `.forgeflow/<project>/learnings.jsonl` files across the user's tree, cluster findings by type and keyword affinity to existing patterns, and either auto-update `forgeflow-patterns/recurring-blockers.md` (known patterns gaining new citations) or surface NEW pattern candidates for user promotion.
+Default current-project mode refreshes `.forgeflow/<project>/project-learnings.md` and prints the actionable project insight summary: recurring pitfalls, stable decisions, risk areas, validation patterns, hot files, repeated follow-ups, and recommended next approach.
+
+Cross-project mode reads per-project `.forgeflow/<project>/learnings.jsonl` files across the user's tree, clusters findings by type and keyword affinity to existing patterns, and either auto-updates `forgeflow-patterns/recurring-blockers.md` or surfaces NEW pattern candidates for user promotion.
 
 Answers: "What failure modes are the Forgeflow team catching repeatedly, and which ones have grown into generalizable patterns worth writing into the canonical pattern library?"
 
@@ -21,6 +23,7 @@ Self-improving Forgeflow mechanic: runs monthly. `recurring-blockers.md`, `tooli
 
 <context>
 $ARGUMENTS:
+- `--project` — force current-project mode. This is the default when no cross-project promotion flags are present.
 - `--period week|month|all` — window to include (default: all — this command is for rare, curated promotion, not weekly churn)
 - `--min-projects N` — minimum distinct projects a cluster must appear in (default: 2)
 - `--min-occurrences N` — minimum total occurrences across all projects (default: 3)
@@ -55,7 +58,75 @@ Telemetry aggregate (supplementary, not primary):
 
 <process>
 
-## Step 1: Discover learning sources
+## Step 0: Current-project insight mode
+
+Use this mode when the user wants to understand the current project after a few work items. It is the default unless the user passes cross-project promotion flags such as `--period`, `--min-projects`, or `--min-occurrences`.
+
+Resolve paths:
+
+```bash
+PROJECT_NAME=$(basename "$(pwd)")
+FORGEFLOW_DIR=".forgeflow/${PROJECT_NAME}"
+HELPER_DIR="scripts/forgeflow"
+if [ ! -x "${HELPER_DIR}/rollup-project-learnings.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/rollup-project-learnings.js" ]; then
+  HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
+fi
+```
+
+If `${HELPER_DIR}/rollup-project-learnings.js` is missing, stop with:
+
+```text
+Project learnings helper is not installed. Run /update-forgeflow, then retry /forgeflow-learnings.
+```
+
+Refresh the local artifact:
+
+```bash
+"${HELPER_DIR}/rollup-project-learnings.js" --project-dir "${FORGEFLOW_DIR}" --json
+```
+
+If `--json` is present, print the helper JSON directly.
+
+If markdown output is requested, read `.forgeflow/<project>/project-learnings.md` and print:
+
+```markdown
+# Forgeflow Project Learnings — <project>
+
+Artifact: .forgeflow/<project>/project-learnings.md
+
+## Recommended Approach For Next Work
+<section bullets>
+
+## Recurring Pitfalls
+<section bullets>
+
+## Risk Areas
+<section bullets>
+
+## Validation Patterns
+<section bullets>
+
+## Hot Files And Modules
+<section bullets>
+
+## Stable Decisions
+<section bullets>
+
+## Repeated Follow-ups
+<section bullets>
+```
+
+If a section contains only the generated placeholder `No repeated pattern recorded yet.`, keep it visible. That tells the user the project needs more real work-item data before insights become meaningful.
+
+End with:
+
+```text
+Use these as guidance only. Verify every current decision against the current code, tests, and review artifacts.
+```
+
+Do not modify canonical `forgeflow-patterns/` files in current-project mode.
+
+## Step 1: Discover cross-project learning sources
 
 ```bash
 find "$HOME" -name "learnings.jsonl" -path "*/.forgeflow/*" -type f 2>/dev/null
