@@ -15,6 +15,12 @@ They answer a different question than pilot evidence:
 
 The file is local project state. It should stay under `.forgeflow/` and should not be committed unless the project explicitly chooses to share a sanitized version.
 
+Refresh it from local implementation notes, review outcomes, and ship metadata:
+
+```bash
+scripts/forgeflow/rollup-project-learnings.js --json
+```
+
 ## What Goes In
 
 Use project learnings for patterns that should shape future work:

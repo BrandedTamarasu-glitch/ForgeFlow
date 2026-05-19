@@ -254,6 +254,12 @@ Project learning rollups are planned around:
 
 They capture durable project patterns across work items so future planning, implementation, review, and ship phases can account for recurring pitfalls and stable decisions. See [Project Learnings](docs/wiki/Project-Learnings.md).
 
+Refresh the local rollup after several work items:
+
+```bash
+scripts/forgeflow/rollup-project-learnings.js --json
+```
+
 ## Dashboard
 
 The metrics dashboard is an optional local read-only HTTP server:

@@ -1,0 +1,129 @@
+#!/usr/bin/env node
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const { spawnSync } = require('child_process');
+const {
+  buildRollup,
+  containsSensitiveContent,
+  parseImplementationNotes,
+  rollupProjectLearnings,
+} = require('./rollup-project-learnings');
+
+const repoRoot = path.resolve(__dirname, '..', '..');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-project-learnings-'));
+const projectDir = path.join(tmp, '.forgeflow', 'Demo');
+const shipDir = path.join(projectDir, 'ship');
+fs.mkdirSync(shipDir, { recursive: true });
+
+fs.writeFileSync(path.join(projectDir, 'implementation-notes.md'), [
+  '# Implementation Notes',
+  '',
+  '## Decisions',
+  '',
+  '- 2026-05-19T00:00:00Z | Atlas | decision | Markdown stays canonical Why: local state should stay editable',
+  '',
+  '## Spec Gaps',
+  '',
+  '- 2026-05-19T00:00:00Z | Compass | spec-gap | Release-helper changes needed matching manifest and docs updates',
+  '- token: SHOULD_NOT_RENDER',
+  '',
+  '## Tradeoffs',
+  '',
+  '- Manual rollups are deterministic instead of model-generated',
+  '',
+  '## Deviations',
+  '',
+  '- Ship metadata was missing for one trial',
+  '',
+  '## Follow-ups',
+  '',
+  '- Keep README and wiki entry points aligned',
+  '',
+  '## Validation Notes',
+  '',
+  '- Run focused helper tests plus the release-check equivalent',
+  '',
+].join('\n'));
+
+fs.writeFileSync(path.join(projectDir, 'review-outcomes.jsonl'), `${JSON.stringify({
+  schema_version: '1',
+  change_id: 'one',
+  review: {
+    mode: 'full-mode',
+    workflow: 'forgeflow',
+    agents_used: ['smith'],
+    verifier_decisions: [],
+  },
+  outcome: {
+    findings_total: 2,
+    findings_confirmed: 2,
+    findings_rejected: 0,
+    review_minutes: 15,
+    auto_fix_success: false,
+    post_merge_regression: false,
+    finding_classes: [
+      { class: 'docs-drift', total: 2, confirmed: 2, rejected: 0 },
+    ],
+  },
+})}\n`);
+
+fs.writeFileSync(path.join(shipDir, 'ship-summary.json'), JSON.stringify({
+  files: [
+    { status: 'M', path: 'scripts/forgeflow/install-manifest.js' },
+    { status: 'M', path: 'scripts/forgeflow/install-manifest.js' },
+    { status: 'M', path: 'README.md' },
+  ],
+}, null, 2));
+
+const notes = parseImplementationNotes(fs.readFileSync(path.join(projectDir, 'implementation-notes.md'), 'utf8'));
+const out = path.join(projectDir, 'project-learnings.md');
+const result = rollupProjectLearnings({ projectDir, out });
+const rendered = fs.readFileSync(out, 'utf8');
+const manual = buildRollup({
+  notes,
+  reviewOutcomes: [],
+  shipSummary: {},
+  hasImplementationNotes: true,
+  hasShipSummary: false,
+}, { maxItems: 2 });
+const cliJson = spawnSync(path.join(repoRoot, 'scripts/forgeflow/rollup-project-learnings.js'), [
+  '--project-dir',
+  projectDir,
+  '--json',
+], { encoding: 'utf8' });
+const missingValue = spawnSync(path.join(repoRoot, 'scripts/forgeflow/rollup-project-learnings.js'), [
+  '--project-dir',
+], { encoding: 'utf8' });
+const cliResult = cliJson.status === 0 ? JSON.parse(cliJson.stdout) : {};
+
+const checks = [
+  ['parses decision pipe metadata', notes.decisions[0] === 'Markdown stays canonical - local state should stay editable'],
+  ['redacts sensitive implementation note', !notes.spec_gaps.some((line) => line.includes('SHOULD_NOT_RENDER'))],
+  ['detects sensitive content', containsSensitiveContent('token: SHOULD_NOT_RENDER')],
+  ['rolls up sources', result.sources.implementation_notes === true && result.sources.review_outcomes === 1 && result.sources.ship_summary === true],
+  ['captures recurring pitfall', result.recurring_pitfalls.some((line) => line.includes('Release-helper changes'))],
+  ['captures review risk area', result.risk_areas.some((item) => item.name === 'docs-drift' && item.count === 2)],
+  ['captures auto-fix risk area', result.risk_areas.some((item) => item.name === 'auto-fix-failed')],
+  ['captures hot files', result.hot_files_and_modules[0].includes('scripts/forgeflow/install-manifest.js')],
+  ['captures validation pattern', result.validation_patterns.some((line) => line.includes('focused helper tests'))],
+  ['writes markdown artifact', rendered.includes('# Project Learnings') && rendered.includes('## Recommended Approach For Next Work')],
+  ['markdown omits sensitive note', !rendered.includes('SHOULD_NOT_RENDER')],
+  ['manual rollup uses notes', manual.stable_decisions.some((line) => line.includes('Markdown stays canonical'))],
+  ['cli emits json', cliJson.status === 0 && cliResult.out === out],
+  ['missing option value exits usage', missingValue.status === 2 && missingValue.stderr.includes('Missing value for --project-dir')],
+];
+
+let failed = 0;
+for (const [name, ok] of checks) {
+  if (!ok) {
+    failed += 1;
+    console.error(`FAIL ${name}`);
+  }
+}
+
+if (failed > 0) {
+  process.exit(1);
+}
+
+console.log('project learnings rollup: ok');

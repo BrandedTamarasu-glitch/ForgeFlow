@@ -35,6 +35,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/render-ship-presentation.js',
   'scripts/forgeflow/render-evaluation-report.js',
   'scripts/forgeflow/rollup-pilot-evidence.js',
+  'scripts/forgeflow/rollup-project-learnings.js',
   'scripts/forgeflow/seed-budget-config.js',
   'scripts/forgeflow/ship-ci-status.sh',
   'scripts/forgeflow/ship-open-pr.sh',
