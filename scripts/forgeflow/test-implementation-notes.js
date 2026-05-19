@@ -155,6 +155,7 @@ const shipPrepareResult = spawnSync(path.join(repoRoot, 'scripts/forgeflow/ship-
 const preparedSummaryPath = path.join(shipNotesDir, 'ship', 'ship-summary.json');
 const preparedHtmlPath = path.join(shipNotesDir, 'ship', 'ship-presentation.html');
 const preparedCheckPath = path.join(shipNotesDir, 'ship', 'implementation-notes-check.json');
+const preparedLearningsPath = path.join(shipNotesDir, 'ship', 'project-learnings-rollup.json');
 const preparedBodyPath = path.join(shipNotesDir, 'ship', 'pr-body.md');
 const preparedSummary = fs.existsSync(preparedSummaryPath)
   ? JSON.parse(fs.readFileSync(preparedSummaryPath, 'utf8'))
@@ -162,6 +163,9 @@ const preparedSummary = fs.existsSync(preparedSummaryPath)
 const preparedHtml = fs.existsSync(preparedHtmlPath) ? fs.readFileSync(preparedHtmlPath, 'utf8') : '';
 const preparedCheck = fs.existsSync(preparedCheckPath)
   ? JSON.parse(fs.readFileSync(preparedCheckPath, 'utf8'))
+  : {};
+const preparedLearnings = fs.existsSync(preparedLearningsPath)
+  ? JSON.parse(fs.readFileSync(preparedLearningsPath, 'utf8'))
   : {};
 const preparedBody = fs.existsSync(preparedBodyPath) ? fs.readFileSync(preparedBodyPath, 'utf8') : '';
 
@@ -185,6 +189,8 @@ const checks = [
   ['ship prepare renders notes html', preparedHtml.includes('Implementation Notes') && preparedHtml.includes('Ship helper needed a summary bridge')],
   ['ship prepare writes notes check', preparedCheck.status === 'pass' && preparedCheck.ship_summary === preparedSummaryPath],
   ['ship prepare body includes notes check', preparedBody.includes('## Implementation Notes Check') && preparedBody.includes('implementation-notes-check.json')],
+  ['ship prepare refreshes project learnings', preparedLearnings.out === path.join(shipNotesDir, 'project-learnings.md')],
+  ['ship prepare body includes project learnings', preparedBody.includes('## Project Learnings') && preparedBody.includes('project-learnings-rollup.json')],
   ['atlas present schema includes notes', files.atlasPresent.includes('"implementation_notes"')],
   ['arbiter consult brief requires notes', files.arbiterConsult.includes('## Implementation Notes Requirements')],
   ['arbiter implement verifies notes', files.arbiterImplement.includes('## Implementation Notes') && files.arbiterImplement.includes('Redaction check')],

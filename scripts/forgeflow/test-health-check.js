@@ -53,6 +53,25 @@ fs.writeFileSync(pilotRollupPath, [
 ].join('\n'));
 const withPilotRollup = runHealthCheck({ root, fix: false });
 const withPilotRollupMarkdown = renderMarkdown(withPilotRollup);
+const projectLearningsPath = path.join(root, '.forgeflow', project, 'project-learnings.md');
+fs.writeFileSync(projectLearningsPath, [
+  '# Project Learnings',
+  '',
+  '## Recurring Pitfalls',
+  '',
+  '- Release-helper changes need matching manifest and docs updates.',
+  '',
+  '## Risk Areas',
+  '',
+  '- docs-drift: 2',
+  '',
+  '## Recommended Approach For Next Work',
+  '',
+  '- Check docs-drift risks early.',
+  '',
+].join('\n'));
+const withProjectLearnings = runHealthCheck({ root, fix: false });
+const withProjectLearningsMarkdown = renderMarkdown(withProjectLearnings);
 const again = runHealthCheck({ root, fix: true });
 const installed = runHealthCheck({ root, installRoot, fix: false });
 fs.unlinkSync(manifestEntry('scripts/forgeflow/health-check.js', installRoot).destination);
@@ -75,6 +94,8 @@ const checks = [
   ['latest notes check renders', withNotesCheckMarkdown.includes('## Latest Implementation Notes Check') && withNotesCheckMarkdown.includes('Status: warn')],
   ['latest pilot rollup summarized', withPilotRollup.latest_pilot_rollup.pilot_count === 2 && withPilotRollup.latest_pilot_rollup.decision === 'fix-now'],
   ['latest pilot rollup renders', withPilotRollupMarkdown.includes('## Latest Pilot Evidence Rollup') && withPilotRollupMarkdown.includes('Decision: fix-now')],
+  ['latest project learnings summarized', withProjectLearnings.latest_project_learnings.recurring_pitfalls === 1 && withProjectLearnings.latest_project_learnings.risk_areas === 1],
+  ['latest project learnings renders', withProjectLearningsMarkdown.includes('## Latest Project Learnings') && withProjectLearningsMarkdown.includes('Check docs-drift risks early.')],
   ['idempotent no changes', again.changes.length === 0],
   ['installed runtime passes', installed.status === 'pass'],
   ['missing runtime fails', missingInstalled.status === 'fail'],

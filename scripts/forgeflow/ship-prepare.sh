@@ -166,6 +166,12 @@ node "$HELPER_ROOT/scripts/forgeflow/check-implementation-notes.js" \
   --json > "$NOTES_CHECK_JSON"
 NOTES_CHECK_STATUS="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("status", "unknown"))' "$NOTES_CHECK_JSON")"
 
+PROJECT_LEARNINGS_JSON="$SHIP_DIR/project-learnings-rollup.json"
+node "$HELPER_ROOT/scripts/forgeflow/rollup-project-learnings.js" \
+  --project-dir "$FORGEFLOW_DIR" \
+  --json > "$PROJECT_LEARNINGS_JSON"
+PROJECT_LEARNINGS_PATH="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("out", ""))' "$PROJECT_LEARNINGS_JSON")"
+
 BODY_FILE="$SHIP_DIR/pr-body.md"
 cat > "$BODY_FILE" <<EOF
 ## Summary
@@ -184,14 +190,21 @@ $SUMMARY_TEXT
 - Status: $NOTES_CHECK_STATUS
 - Report: $NOTES_CHECK_JSON
 
+## Project Learnings
+
+- Refreshed: $PROJECT_LEARNINGS_PATH
+- Report: $PROJECT_LEARNINGS_JSON
+
 ## Generated Artifacts
 
 - $SHIP_DIR/ship-summary.json
 - $SHIP_DIR/ship-presentation.html
 - $NOTES_CHECK_JSON
+- $PROJECT_LEARNINGS_JSON
 EOF
 
 printf 'SUMMARY_JSON=%s\n' "$SHIP_DIR/ship-summary.json"
 printf 'PRESENTATION_HTML=%s\n' "$SHIP_DIR/ship-presentation.html"
 printf 'PR_BODY_MD=%s\n' "$BODY_FILE"
 printf 'IMPLEMENTATION_NOTES_CHECK_JSON=%s\n' "$NOTES_CHECK_JSON"
+printf 'PROJECT_LEARNINGS_JSON=%s\n' "$PROJECT_LEARNINGS_JSON"

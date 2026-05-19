@@ -191,6 +191,48 @@ function latestPilotRollup(ffDir) {
   };
 }
 
+function sectionLines(content, heading) {
+  const lines = String(content || '').split(/\r?\n/);
+  const start = lines.findIndex((line) => line.trim() === `## ${heading}`);
+  if (start === -1) return [];
+  const body = [];
+  for (const line of lines.slice(start + 1)) {
+    if (line.startsWith('## ')) break;
+    body.push(line);
+  }
+  return body;
+}
+
+function countBulletsInSection(content, heading) {
+  return sectionLines(content, heading).filter((line) => /^-\s+/.test(line.trim())).length;
+}
+
+function firstBulletInSection(content, heading) {
+  const bullet = sectionLines(content, heading).map((line) => line.trim()).find((line) => /^-\s+/.test(line));
+  return bullet ? bullet.replace(/^-\s+/, '') : '';
+}
+
+function latestProjectLearnings(ffDir) {
+  const file = path.join(ffDir, 'project-learnings.md');
+  if (!fs.existsSync(file)) {
+    return {
+      status: 'missing',
+      path: file,
+      recurring_pitfalls: 0,
+      risk_areas: 0,
+      recommended_approach: '',
+    };
+  }
+  const content = fs.readFileSync(file, 'utf8');
+  return {
+    status: 'present',
+    path: file,
+    recurring_pitfalls: countBulletsInSection(content, 'Recurring Pitfalls'),
+    risk_areas: countBulletsInSection(content, 'Risk Areas'),
+    recommended_approach: firstBulletInSection(content, 'Recommended Approach For Next Work'),
+  };
+}
+
 function runHealthCheck(opts = {}) {
   const requestedRoot = opts.root || process.cwd();
   const gitRepo = isGitRepo(requestedRoot);
@@ -244,6 +286,7 @@ function runHealthCheck(opts = {}) {
     changes,
     latest_notes_check: latestImplementationNotesCheck(ffDir),
     latest_pilot_rollup: latestPilotRollup(ffDir),
+    latest_project_learnings: latestProjectLearnings(ffDir),
   };
 }
 
@@ -287,6 +330,15 @@ function renderMarkdown(result) {
     lines.push(`- Report: ${latest.path}`);
     lines.push('');
   }
+  if (result.latest_project_learnings && result.latest_project_learnings.status !== 'missing') {
+    const latest = result.latest_project_learnings;
+    lines.push('## Latest Project Learnings', '');
+    lines.push(`- Recurring pitfalls: ${latest.recurring_pitfalls}`);
+    lines.push(`- Risk areas: ${latest.risk_areas}`);
+    if (latest.recommended_approach) lines.push(`- Recommended approach: ${latest.recommended_approach}`);
+    lines.push(`- Report: ${latest.path}`);
+    lines.push('');
+  }
   lines.push('## Checks', '');
   for (const item of result.checks) {
     const suffix = item.reason ? ` (${item.reason})` : '';
@@ -324,4 +376,5 @@ module.exports = {
   expectedTemplateSources,
   latestImplementationNotesCheck,
   latestPilotRollup,
+  latestProjectLearnings,
 };
