@@ -386,9 +386,10 @@ PLAN_PATH="${FORGEFLOW_DIR}/current-plan.md"
 DISCUSSION_PATH="${FORGEFLOW_DIR}/current-discussion.md"
 RESEARCH_PATH="${FORGEFLOW_DIR}/current-research.md"
 NOTES_PATH="${FORGEFLOW_DIR}/implementation-notes.md"
+PROJECT_LEARNINGS_PATH="${FORGEFLOW_DIR}/project-learnings.md"
 ```
 
-If each path exists, read the file and store its contents as `plan_content`, `discussion_content`, `research_content`, and `implementation_notes_content` respectively. Pass the file contents (not the paths) to Compass's prompt. Treat implementation notes as context for decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes; they are not proof that the implementation is correct.
+If each path exists, read the file and store its contents as `plan_content`, `discussion_content`, `research_content`, `implementation_notes_content`, and `project_learnings_content` respectively. Pass the file contents (not the paths) to Compass's prompt. Treat implementation notes as context for decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes; they are not proof that the implementation is correct. Treat project learnings as guidance for recurring pitfalls, stable decisions, risk areas, validation patterns, hot files/modules, repeated follow-ups, and recommended next approach; they are not proof and every finding still needs current evidence.
 
 ## Step 3.4: Build local context pack
 
@@ -661,6 +662,7 @@ After Arbiter completes, spawn `compass-review` with:
 - The discussion from `.forgeflow/<project-name>/current-discussion.md` (if it exists)
 - The research from `.forgeflow/<project-name>/current-research.md` (if it exists)
 - The implementation notes from `.forgeflow/<project-name>/implementation-notes.md` (if it exists)
+- The project learnings from `.forgeflow/<project-name>/project-learnings.md` (if it exists, guidance only)
 - Any test files she created during `/implement` (check test directories for her `.spec.ts` files or validation checklists)
 
 Compass's prompt:

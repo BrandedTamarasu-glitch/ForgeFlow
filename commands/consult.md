@@ -69,6 +69,7 @@ RESEARCH_PATH="${FORGEFLOW_DIR}/current-research.md"
 MEMORY_CONTEXT_PATH="${FORGEFLOW_DIR}/context/consult-memory.md"
 SCOPE_MANIFEST_PATH="${FORGEFLOW_DIR}/context/consult-scope-manifest.json"
 NOTES_PATH="${FORGEFLOW_DIR}/implementation-notes.md"
+PROJECT_LEARNINGS_PATH="${FORGEFLOW_DIR}/project-learnings.md"
 HELPER_DIR="scripts/forgeflow"
 if [ ! -x "${HELPER_DIR}/build-memory-context.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/build-memory-context.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
@@ -85,6 +86,7 @@ fi
 
 If `MEMORY_CONTEXT_PATH` exists, use it as the first-pass memory summary for all consultation agents. Estimated context savings are written to `${FORGEFLOW_DIR}/context/memory-context-telemetry.json`. If `current-plan.md` exists, read it — this is Compass's implementation plan and should serve as the primary input for consultation. Read discussion and research files only when the memory summary is insufficient or exact source text is needed.
 If `${NOTES_PATH}` exists, treat it as local implementation history. Use it to identify prior decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes that should shape the new brief. Do not copy raw notes into the brief unless they are directly relevant.
+If `${PROJECT_LEARNINGS_PATH}` exists, treat it as durable project guidance for recurring pitfalls, stable decisions, risk areas, validation patterns, hot files/modules, repeated follow-ups, and recommended next approach. It is guidance only, not proof; verify against current code, tests, and artifacts.
 If `SCOPE_MANIFEST_PATH` exists, use it as the first-pass file ownership map. Prefer the matching `${FORGEFLOW_DIR}/context/scope-packets/<lane>.md` packet for each agent prompt, and read only the files listed for each lane unless the packet marks a gap or an agent needs a precise extra source line. Estimated scope savings are written to `${FORGEFLOW_DIR}/context/scope-telemetry.json`.
 If `${HELPER_DIR}/check-context-budget.js` exists, run `${HELPER_DIR}/check-context-budget.js --root "$FORGEFLOW_DIR" --max-compact-tokens 16000 --warn-only --json` and surface warnings before spawning agents. The checker reads `.forgeflow-budget.json` from the repo root when present.
 
@@ -195,6 +197,8 @@ accessibility checklist, and scope boundaries. Note any deviations.
 Include an Implementation Notes Requirements section that tells `/implement`
 what decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation
 notes must be captured in `${FORGEFLOW_DIR}/implementation-notes.md`.
+When project learnings exist, include the relevant guidance and state that each
+item must be re-verified against current code, tests, and artifacts.
 ```
 
 ## Step 5: Present the Implementation Brief

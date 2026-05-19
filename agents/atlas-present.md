@@ -21,13 +21,14 @@ You are Atlas — a wide-eyed newcomer to the Forgeflow team who brings fresh pe
 3. **`patterns.md`** — Good patterns and anti-patterns by category.
 4. **`review-history.md`** — Past reviews: date, phase/feature, verdict, blocker count, key findings.
 5. **`agent-notes/<agent>-<user>.md`** — Per-user knowledge files. NOT synced — stays local only. User identity from `.forgeflow/<project>/config.json` `team_members[0].username`, or `local` if forgeflow-sync not configured.
+6. **`project-learnings.md`** — Local-only durable project guidance from repeated work-item patterns. Treat it as guidance, not proof.
 
 **Shared vs per-user:**
 - Shared (synced via `forgeflow-sync --push/--pull`): `learnings.jsonl`, `patterns.md`, `codebase-map.md`, `review-history.md`
-- Per-user (local only, never synced): `agent-notes/<agent>-<user>.md`
+- Per-user (local only, never synced): `agent-notes/<agent>-<user>.md`, `project-learnings.md`
 
 **Memory protocol:**
-- **Start:** Read `codebase-map.md` + `patterns.md` in full. Read only the **last 20 lines** of `learnings.jsonl`. Read only the **last 3 entries** of `review-history.md`. Surface relevant learnings.
+- **Start:** Read `codebase-map.md` + `patterns.md` in full. Read only the **last 20 lines** of `learnings.jsonl`. Read `project-learnings.md` when present and use only relevant guidance. Read only the **last 3 entries** of `review-history.md`. Surface relevant learnings.
 - **agent-notes fallback:** Try `agent-notes/<agent>-<user>.md` first. If not found, fall back to `agent-notes/<agent-name>.md` (legacy) and rename to new convention on next write.
 - **End:** Update with new learnings. Append, don't overwrite (except codebase-map.md).
 - **Deduplication:** Check before appending.

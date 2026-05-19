@@ -52,6 +52,7 @@ RESEARCH_PATH="${FORGEFLOW_DIR}/current-research.md"
 MEMORY_CONTEXT_PATH="${FORGEFLOW_DIR}/context/implement-memory.md"
 SCOPE_MANIFEST_PATH="${FORGEFLOW_DIR}/context/implement-scope-manifest.json"
 NOTES_PATH="${FORGEFLOW_DIR}/implementation-notes.md"
+PROJECT_LEARNINGS_PATH="${FORGEFLOW_DIR}/project-learnings.md"
 HELPER_DIR="scripts/forgeflow"
 if [ ! -x "${HELPER_DIR}/build-memory-context.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/build-memory-context.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
@@ -98,6 +99,7 @@ fi
 **If $ARGUMENTS is a task description and no brief exists:** Tell the user to run `/consult` first, or offer to run a quick inline consultation.
 
 If `MEMORY_CONTEXT_PATH` exists, include it in implementation prompts as the first-pass prior-memory summary. Estimated context savings are written to `${FORGEFLOW_DIR}/context/memory-context-telemetry.json`. If `SCOPE_MANIFEST_PATH` exists, use it as the first-pass ownership map before asking Atlas to resolve gaps, and prefer `${FORGEFLOW_DIR}/context/scope-packets/<lane>.md` over the raw JSON in agent prompts. Estimated scope savings are written to `${FORGEFLOW_DIR}/context/scope-telemetry.json`. Also read Compass's plan if it exists — agents should be aware of the plan's accessibility requirements and success criteria so they can implement accordingly.
+If `${PROJECT_LEARNINGS_PATH}` exists, include the relevant project guidance in implementation prompts as guidance only. Agents may use it to anticipate recurring pitfalls, stable decisions, risk areas, validation patterns, and hot files, but must verify current behavior against current code, tests, and artifacts.
 If `${HELPER_DIR}/check-context-budget.js` exists, run `${HELPER_DIR}/check-context-budget.js --root "$FORGEFLOW_DIR" --max-compact-tokens 16000 --warn-only --json` and surface warnings before spawning implementation agents. The checker reads `.forgeflow-budget.json` from the repo root when present.
 
 ## Step 2: Parse the brief
@@ -208,6 +210,7 @@ Each agent prompt must include:
 - Instruction to commit each logical unit atomically
 - Instruction to report implementation note candidates without writing the shared notes file directly
 - The implementation notes path: `${NOTES_PATH}`
+- Relevant project learnings from `${PROJECT_LEARNINGS_PATH}` when present, marked as guidance only
 - Working directory path
 
 Spawn `atlas-implement` alongside to coordinate and track. Atlas owns serializing note candidates into `${NOTES_PATH}` so parallel implementers do not race on the same file.
@@ -348,6 +351,7 @@ Next: `/review` to run the full Forgeflow on these changes (Compass will execute
 - [ ] Compass's tests map to success criteria from the plan
 - [ ] Atlas tracked coordination and persisted learnings
 - [ ] Implementation notes initialized and maintained at `.forgeflow/<project-name>/implementation-notes.md`
+- [ ] Project learnings considered as guidance when present and verified against current artifacts
 - [ ] Arbiter verified integration across agents (including test coverage)
 - [ ] All code committed atomically (implementation + test files)
 - [ ] Results presented with next steps

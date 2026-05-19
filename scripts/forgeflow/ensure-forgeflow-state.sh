@@ -65,6 +65,33 @@ Running notes for decisions, spec gaps, tradeoffs, deviations, follow-ups, and v
 ## Validation Notes
 "
 
+create_file "$FORGEFLOW_DIR/project-learnings.md" "# Project Learnings
+
+Durable local guidance generated from Forgeflow implementation notes, review outcomes, and ship metadata.
+
+Project learnings are guidance only. Verify current findings against current code, tests, and artifacts.
+
+## Sources
+
+- Implementation notes: missing
+- Review outcomes: 0
+- Ship summary: missing
+
+## Recurring Pitfalls
+
+## Stable Decisions
+
+## Risk Areas
+
+## Validation Patterns
+
+## Hot Files And Modules
+
+## Repeated Follow-ups
+
+## Recommended Approach For Next Work
+"
+
 if [ ! -f "$FORGEFLOW_DIR/learnings.jsonl" ]; then
   : > "$FORGEFLOW_DIR/learnings.jsonl"
 fi

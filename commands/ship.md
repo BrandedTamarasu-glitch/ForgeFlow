@@ -44,6 +44,7 @@ Derive project paths:
 PROJECT_NAME=$(basename "$(pwd)")
 FORGEFLOW_DIR=".forgeflow/${PROJECT_NAME}"
 NOTES_PATH="${FORGEFLOW_DIR}/implementation-notes.md"
+PROJECT_LEARNINGS_PATH="${FORGEFLOW_DIR}/project-learnings.md"
 ```
 </context>
 
@@ -103,6 +104,7 @@ Read each of these if present -- do not fail if missing:
 - `${FORGEFLOW_DIR}/current-research.md`
 - `${FORGEFLOW_DIR}/current-brief.md`
 - `${FORGEFLOW_DIR}/implementation-notes.md`
+- `${FORGEFLOW_DIR}/project-learnings.md`
 
 Also check for `CONTEXT.md` in the working directory. If it exists, read it and pass to Compass and Atlas — it provides service-specific context that improves presentation quality.
 
@@ -114,6 +116,15 @@ scripts/forgeflow/check-implementation-notes.js --project-dir "${FORGEFLOW_DIR}"
 ```
 
 Treat `warn` as a visible ship note, not a blocker. Treat `fail` as a hard stop because it means sensitive content or another release-blocking notes problem was detected. Include the checker status in the PR body and ship artifacts when using `ship-prepare.sh`.
+
+### 1d.2 Project learnings refresh
+If `scripts/forgeflow/rollup-project-learnings.js` is available, run it before preparing the PR body:
+
+```bash
+scripts/forgeflow/rollup-project-learnings.js --project-dir "${FORGEFLOW_DIR}" --json
+```
+
+Treat the refreshed project learnings as local guidance only. Include the artifact path in the ship handoff, but do not claim any learning as current evidence unless it is verified against the current code, tests, and review artifacts.
 
 ### 1e. Detect frontend files
 Check `git diff ${BASE_BRANCH} --name-only` for frontend files. Frontend detection (same as /review):

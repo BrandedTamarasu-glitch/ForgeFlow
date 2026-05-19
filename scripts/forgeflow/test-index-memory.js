@@ -20,18 +20,21 @@ const memoryHits = buildMemoryHits(repoRoot, ['src/auth/session.ts'], {
 const checks = [
   ['result path', result.out === out],
   ['index written', fs.existsSync(out)],
-  ['four sources', index.sources.length === 4],
+  ['five sources', index.sources.length === 5],
   ['implementation notes source', index.sources.some((source) => source.path.endsWith('implementation-notes.md'))],
-  ['records created', index.records.length >= 11],
+  ['project learnings source', index.sources.some((source) => source.path.endsWith('project-learnings.md'))],
+  ['records created', index.records.length >= 16],
   ['heading indexed', index.records.some((record) => record.kind === 'heading' && record.text === 'Review Context Plan')],
   ['bullet indexed', index.records.some((record) => record.kind === 'bullet' && record.text.includes('session changes'))],
   ['implementation note indexed', index.records.some((record) => record.kind === 'bullet' && record.text.includes('retry validation'))],
+  ['project learning indexed', index.records.some((record) => record.kind === 'bullet' && record.text.includes('session-token-refresh'))],
   ['jsonl indexed', index.records.some((record) => record.kind === 'jsonl' && record.text.includes('Session token reviews'))],
   ['auth keyword', allText.includes('auth')],
   ['session keyword', allText.includes('session')],
   ['context pack uses index', memoryHits.includes(`Index: ${path.relative(repoRoot, out)}`)],
   ['indexed hit rendered', memoryHits.includes('[jsonl] Session token reviews')],
   ['implementation note hit rendered', memoryHits.includes('implementation-notes.md')],
+  ['project learning hit rendered', memoryHits.includes('project-learnings.md')],
 ];
 
 let failed = 0;
