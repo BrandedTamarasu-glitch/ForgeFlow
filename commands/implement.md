@@ -220,7 +220,7 @@ Spawn `atlas-implement` alongside to coordinate and track. Atlas owns serializin
 After Wave 1 completes:
 1. Read the files created by Wave 1 agents
 2. Hand Smith/Warden/Lumen/Compass/Atlas reports from the completed wave back to `atlas-implement` with this instruction:
-   "Extract every `Implementation Notes Candidates` item from the completed agent reports. Append the entries to `${NOTES_PATH}` under the matching category. Prefer `${HELPER_DIR}/record-implementation-notes.js` with a temporary JSON input when available. Do not rewrite existing notes. Return the entries appended and any rejected sensitive entries."
+   "Extract every `Implementation Notes Candidates` item from the completed agent reports. Also add concise note candidates for durable project patterns that surfaced during this wave: repeated pitfalls, stable decisions, validation patterns, hot files/modules, or follow-ups likely to matter in the next work item. Append the entries to `${NOTES_PATH}` under the matching category. Prefer `${HELPER_DIR}/record-implementation-notes.js` with a temporary JSON input when available. Do not rewrite existing notes. Then refresh `${PROJECT_LEARNINGS_PATH}` with `${HELPER_DIR}/rollup-project-learnings.js --project-dir "${FORGEFLOW_DIR}" --json` when the helper is available. Return the entries appended, entries rejected, final notes path, and refreshed project learnings path."
 3. Verify shared interfaces were defined correctly
 4. If issues found, fix before proceeding
 
@@ -252,10 +252,18 @@ Implementation note consolidation checkpoint.
 Working directory: {cwd}
 Implementation notes path: {notes_path}
 Recorder helper: {helper_dir}/record-implementation-notes.js
+Project learnings helper: {helper_dir}/rollup-project-learnings.js
+Project learnings path: {project_learnings_path}
 
-Read the reports below, extract every `Implementation Notes Candidates` item, and append them to `{notes_path}`. Use the recorder helper with a temporary JSON input when available. Categories must be one of: decision, spec-gap, tradeoff, deviation, follow-up, validation.
+Read the reports below, extract every `Implementation Notes Candidates` item, and append them to `{notes_path}`. Also add concise note candidates for durable project patterns that should shape the next work item: repeated pitfalls, stable decisions, validation patterns, hot files/modules, or recurring follow-ups. Use the recorder helper with a temporary JSON input when available. Categories must be one of: decision, spec-gap, tradeoff, deviation, follow-up, validation.
 
 Reject and report any candidate that contains secrets, raw settings JSON, tokens, keys, certificates, private URLs, customer names, or large source snippets.
+
+After notes are appended, refresh `{project_learnings_path}` with the project learnings helper when available:
+
+```bash
+{helper_dir}/rollup-project-learnings.js --project-dir "{forgeflow_dir}" --json
+```
 
 === Smith ===
 {smith_report}
@@ -269,10 +277,10 @@ Reject and report any candidate that contains secrets, raw settings JSON, tokens
 === EMILY ===
 {compass_test_plan}
 
-Return the entries appended, entries rejected, and the final notes path.
+Return the entries appended, entries rejected, final notes path, refreshed project learnings path, and the top recommended next-work guidance if one was produced.
 ```
 
-Read the updated `${NOTES_PATH}` before spawning Arbiter.
+Read the updated `${NOTES_PATH}` and `${PROJECT_LEARNINGS_PATH}` before spawning Arbiter.
 
 ## Step 5: Post-implementation integration check
 
@@ -302,6 +310,10 @@ Working directory: {cwd}
 Path: {notes_path}
 {implementation_notes_content_or_missing}
 
+=== PROJECT LEARNINGS ===
+Path: {project_learnings_path}
+{project_learnings_content_or_missing}
+
 {If Compass's plan exists:}
 === EMILY'S PLAN (for reference) ===
 {plan_content}
@@ -311,6 +323,7 @@ Verify integration points work together.
 Write any integration glue needed.
 Check Compass's validation tests reference real files and interfaces from the implementation.
 Verify `${NOTES_PATH}` exists, includes relevant decisions/spec gaps/tradeoffs/deviations/follow-ups/validation notes or explicitly says none were needed, and does not contain obvious secrets, raw settings JSON, tokens, keys, private URLs, customer names, or large source snippets.
+Verify `${PROJECT_LEARNINGS_PATH}` was refreshed after note consolidation when the helper was available. Treat project learnings as guidance only; do not accept them as proof without current evidence.
 Report overall status.
 If Compass's plan exists, note whether the implementation
 addresses her accessibility requirements and success criteria.
@@ -334,6 +347,9 @@ Display the combined implementation report.
 ### Implementation Notes
 {Path to `${NOTES_PATH}` and a short summary of notable decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes}
 
+### Project Learnings
+{Path to `${PROJECT_LEARNINGS_PATH}` and the top recommended next-work guidance if refreshed}
+
 ### Files Created/Modified
 {Combined file list — including test files}
 
@@ -351,7 +367,7 @@ Next: `/review` to run the full Forgeflow on these changes (Compass will execute
 - [ ] Compass's tests map to success criteria from the plan
 - [ ] Atlas tracked coordination and persisted learnings
 - [ ] Implementation notes initialized and maintained at `.forgeflow/<project-name>/implementation-notes.md`
-- [ ] Project learnings considered as guidance when present and verified against current artifacts
+- [ ] Project learnings refreshed after implementation note consolidation and considered as guidance when present
 - [ ] Arbiter verified integration across agents (including test coverage)
 - [ ] All code committed atomically (implementation + test files)
 - [ ] Results presented with next steps

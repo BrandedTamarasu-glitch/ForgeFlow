@@ -23,6 +23,8 @@ scripts/forgeflow/rollup-project-learnings.js --json
 
 `/ship` also refreshes the file and writes `.forgeflow/<project-name>/ship/project-learnings-rollup.json` for the shipping handoff. `/forgeflow-health` reports the latest local project-learnings summary when the Markdown artifact exists.
 
+During `/implement`, Atlas refreshes project learnings after implementation-note consolidation when the helper is available. This lets the artifact accumulate signal during long work items instead of waiting for the final ship handoff.
+
 From Claude Code, run:
 
 ```text
