@@ -2,6 +2,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { spawnSync } = require('child_process');
 const { buildContextPack, buildLatestInsights, buildLatestInsightsResult } = require('./build-context-pack');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
@@ -101,6 +102,22 @@ fs.writeFileSync(path.join(insightsProjectDir, 'project-learnings.md'), [
 ].join('\n'));
 const blockedInsights = buildLatestInsights(insightsRoot);
 const blockedInsightsResult = buildLatestInsightsResult(insightsRoot);
+const cliOutDir = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-cli-'));
+const cli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/build-context-pack.js'), [
+  '--files',
+  path.join(repoRoot, 'fixtures/context-pack/review.files'),
+  '--lines',
+  '80',
+  '--task',
+  'Review login flow token load context packing',
+  '--out',
+  cliOutDir,
+  '--json',
+], {
+  cwd: repoRoot,
+  encoding: 'utf8',
+});
+const cliJson = cli.status === 0 ? JSON.parse(cli.stdout) : null;
 
 const route = JSON.parse(fs.readFileSync(path.join(outDir, 'route.json'), 'utf8'));
 const manifest = JSON.parse(fs.readFileSync(path.join(outDir, 'file-manifest.json'), 'utf8'));
@@ -133,6 +150,9 @@ const checks = [
   ['latest insights report linked', synthesis.latest_insights_report_path.endsWith('latest-insights-report.json')],
   ['code topology linked', synthesis.code_topology_path.endsWith('code-topology.json')],
   ['code topology review focus linked', synthesis.code_topology_review_focus_path.endsWith('code-topology-review-focus.md')],
+  ['code topology summary linked', synthesis.code_topology_summary.available === true && synthesis.code_topology_summary.paths.review_focus.endsWith('code-topology-review-focus.md')],
+  ['code topology summary has hotspots', synthesis.code_topology_summary.high_fan_in.length > 0 && synthesis.code_topology_summary.high_fan_out.length > 0],
+  ['code topology summary has neighbor list', Array.isArray(synthesis.code_topology_summary.changed_file_neighbors)],
   ['agent packet includes latest insights', wardenPacket.includes('## Latest Insights')],
   ['agent packet includes code topology', wardenPacket.includes('## Code Topology') && wardenPacket.includes('static JS/TS import graph only')],
   ['agent packet escapes markdown paths', wardenPacket.includes('src/auth/session\\.ts')],
@@ -147,6 +167,7 @@ const checks = [
   ['blocked insights use quality gate', blockedInsights.includes('Quality Gate') && blockedInsights.includes('quality check returned FAIL')],
   ['blocked insights report explains reason', blockedInsightsResult.report.status === 'blocked' && blockedInsightsResult.report.issues.some((issue) => issue.code === 'candidate-category-invalid')],
   ['blocked insights omit malformed candidate body', !blockedInsights.includes('This malformed candidate should block injection.')],
+  ['cli json exposes code topology', cli.status === 0 && cliJson.code_topology.available === true && cliJson.code_topology.paths.graph.endsWith('code-topology.json')],
 ];
 
 let failed = 0;

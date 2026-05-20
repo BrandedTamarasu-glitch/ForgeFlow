@@ -191,7 +191,7 @@ These records are local-first. They are meant to help you understand false posit
 
 Forgeflow includes local-only helpers that reduce agent prompt load before review or implementation work starts:
 
-- **Context packs:** `build-context-pack.js` prepares bounded reviewer packets and a synthesis input file from the changed files, including compact topology context when JS/TS files are in scope.
+- **Context packs:** `build-context-pack.js` prepares bounded reviewer packets and a synthesis input file from the changed files, including compact topology context and a JSON topology summary when JS/TS files are in scope.
 - **Code topology:** `build-code-topology.js` builds a static JS/TS import graph with fan-in/fan-out hotspots and changed-file neighbors.
 - **Memory index:** `index-memory.js` indexes local Forgeflow memory so agents can use compact project history instead of reading full notes.
 - **Memory context:** `build-memory-context.js` builds a compact memory summary for research, planning, consultation, and implementation.

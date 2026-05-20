@@ -447,6 +447,34 @@ function compactTopology(topologyResult) {
   return lines.join('\n');
 }
 
+function topologyReport(topologyResult, root) {
+  if (!topologyResult || !topologyResult.topology) {
+    return {
+      available: false,
+      reason: 'no-js-ts-files',
+    };
+  }
+  const topology = topologyResult.topology;
+  return {
+    available: true,
+    summary: topology.summary,
+    high_fan_in: topology.high_fan_in.slice(0, 5),
+    high_fan_out: topology.high_fan_out.slice(0, 5),
+    changed_file_neighbors: topology.changed_file_neighbors.slice(0, 5).map((item) => ({
+      path: item.path,
+      fan_in: item.fan_in,
+      fan_out: item.fan_out,
+      read_next: item.read_next.slice(0, 5),
+    })),
+    paths: {
+      graph: path.relative(root, topologyResult.out),
+      review_focus: path.relative(root, topologyResult.markdown_out),
+      telemetry: path.relative(root, topologyResult.telemetry_path),
+    },
+    limits: 'static JS/TS import graph only; not a runtime call graph',
+  };
+}
+
 function rulePack(agent, route, manifest) {
   const kinds = new Set(manifest.map((file) => file.kind));
   const rules = [];
@@ -556,6 +584,7 @@ function buildContextPack(opts) {
   const latestInsights = latestInsightsResult.markdown;
   const topologyContext = buildTopologyContext(root, outDir, route.files);
   const topologySummary = compactTopology(topologyContext);
+  const topology = topologyReport(topologyContext, root);
   const agents = route.agents.included || [];
   const packets = {};
 
@@ -594,6 +623,7 @@ function buildContextPack(opts) {
     code_topology_path: topologyContext ? path.relative(root, topologyContext.out) : null,
     code_topology_review_focus_path: topologyContext ? path.relative(root, topologyContext.markdown_out) : null,
     code_topology_telemetry_path: topologyContext ? path.relative(root, topologyContext.telemetry_path) : null,
+    code_topology_summary: topology,
     memory_index_path: memoryIndexPath ? path.relative(root, memoryIndexPath) : null,
     context_telemetry_path: path.relative(root, path.join(outDir, 'context-telemetry.json')),
     file_manifest_path: path.relative(root, path.join(outDir, 'file-manifest.json')),
@@ -619,6 +649,7 @@ function buildContextPack(opts) {
     manifest,
     synthesis_input: synthesisInput,
     telemetry,
+    topology,
   };
 }
 
@@ -632,11 +663,15 @@ function main() {
       agents: result.route.agents.included,
       packet_count: Object.keys(result.synthesis_input.agent_packets).length,
       estimated_saved_tokens: result.telemetry.estimated_saved_tokens,
+      code_topology: result.topology,
     }, null, 2));
   } else {
     console.log(`Context pack: ${result.out_dir}`);
     console.log(`Route: ${result.route.mode}`);
     console.log(`Agent packets: ${Object.keys(result.synthesis_input.agent_packets).join(', ') || 'none'}`);
+    if (result.topology.available) {
+      console.log(`Code topology: ${result.topology.paths.review_focus}`);
+    }
   }
 }
 
