@@ -39,6 +39,15 @@ fs.writeFileSync(path.join(betaDir, 'learnings.jsonl'), [
   JSON.stringify({ date: '2026-05-05', source: 'warden', type: 'integration', learning: 'External API call lacks retry timeout when payment provider stalls', severity: 'high' }),
   '',
 ].join('\n'));
+fs.writeFileSync(path.join(alphaDir, 'project-learning-candidates.jsonl'), [
+  JSON.stringify({ ts: '2026-05-06T00:00:00Z', source: 'Atlas', category: 'validation-pattern', learning: 'Rollback plan should be checked before release readiness claims', confidence: 'high' }),
+  '',
+].join('\n'));
+fs.writeFileSync(path.join(betaDir, 'project-learning-candidates.jsonl'), [
+  JSON.stringify({ ts: '2026-05-07T00:00:00Z', source: 'Atlas', category: 'validation-pattern', learning: 'Rollback plan should be checked before release readiness approval claims', confidence: 'medium' }),
+  JSON.stringify({ ts: '2026-05-08T00:00:00Z', source: 'Atlas', category: 'validation-pattern', learning: 'Rollback plan should be checked before release readiness deployment claims', confidence: 'medium' }),
+  '',
+].join('\n'));
 
 const dryRun = rollupPatternLearnings({
   root,
@@ -77,12 +86,14 @@ const badPeriod = spawnSync(process.execPath, [
 const checks = [
   ['scores known pattern', scoreKnownPattern('schema enum type mismatch in TypeScript signature') === 'Type Safety & Schema Mismatches'],
   ['dry-run does not log', dryRun.dry_run === true && !dryRunLogged],
-  ['counts projects and learnings', recorded.projects_scanned === 2 && recorded.learnings_total === 5],
+  ['counts projects and learnings', recorded.projects_scanned === 2 && recorded.learnings_total === 8],
+  ['counts source file types', recorded.legacy_learning_files.length === 2 && recorded.project_learning_candidate_files.length === 2],
   ['summarizes known updates', recorded.known_pattern_updates.some((item) => item.pattern === 'Type Safety & Schema Mismatches' && item.occurrences === 1)],
   ['surfaces candidates', recorded.candidates.some((item) => item.projects.length === 2 && item.occurrences === 3 && item.title.includes('External'))],
-  ['writes learning log', fs.readFileSync(path.join(patternsDir, '.learnings-log.jsonl'), 'utf8').includes('"learnings_total":5')],
+  ['surfaces fallback candidates', recorded.candidates.some((item) => item.projects.length === 2 && item.occurrences === 3 && item.title.includes('Rollback'))],
+  ['writes learning log', fs.readFileSync(path.join(patternsDir, '.learnings-log.jsonl'), 'utf8').includes('"learnings_total":8')],
   ['renders markdown', markdown.includes('# Forgeflow Learnings - all') && markdown.includes('Candidates for promotion')],
-  ['cli json works', cli.status === 0 && cliJson.projects_scanned === 2 && cliJson.candidates.length === 1],
+  ['cli json works', cli.status === 0 && cliJson.projects_scanned === 2 && cliJson.candidates.length === 2],
   ['bad period exits usage', badPeriod.status === 2 && badPeriod.stderr.includes('Invalid --period')],
 ];
 

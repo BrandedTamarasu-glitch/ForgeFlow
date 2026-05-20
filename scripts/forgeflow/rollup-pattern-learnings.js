@@ -131,6 +131,17 @@ function learningFiles(root) {
   )).sort();
 }
 
+function candidateFiles(root) {
+  return walk(root, (file) => (
+    path.basename(file) === 'project-learning-candidates.jsonl'
+    && file.split(path.sep).includes('.forgeflow')
+  )).sort();
+}
+
+function learningSourceFiles(root) {
+  return [...learningFiles(root), ...candidateFiles(root)].sort();
+}
+
 function projectFromLearningPath(file) {
   const parts = file.split(path.sep);
   const index = parts.lastIndexOf('.forgeflow');
@@ -169,6 +180,36 @@ function normalizeLearning(record, file, cutoff) {
     files: Array.isArray(record.files) ? record.files : [],
     severity: String(record.severity || 'medium').toLowerCase(),
   };
+}
+
+function severityFromConfidence(confidence) {
+  const value = String(confidence || '').toLowerCase();
+  if (value === 'high') return 'high';
+  if (value === 'low') return 'low';
+  return 'medium';
+}
+
+function normalizeProjectCandidate(record, file, cutoff) {
+  if (!record || !inWindow(record, cutoff)) return null;
+  const learning = String(record.learning || '').trim();
+  if (!learning) return null;
+  return {
+    project: projectFromLearningPath(file),
+    date: String(record.date || record.ts || '').slice(0, 10),
+    source: String(record.source || 'Atlas'),
+    type: String(record.category || 'project-learning'),
+    learning,
+    files: [],
+    severity: severityFromConfidence(record.confidence),
+  };
+}
+
+function normalizeRecord(record, file, cutoff) {
+  const basename = path.basename(file);
+  if (basename === 'project-learning-candidates.jsonl') {
+    return normalizeProjectCandidate(record, file, cutoff);
+  }
+  return normalizeLearning(record, file, cutoff);
 }
 
 function readPatternTitles(patternsDir) {
@@ -264,10 +305,12 @@ function rollupPatternLearnings(opts = {}) {
   const now = opts.now || new Date();
   const period = opts.period || 'all';
   const cutoff = opts.cutoff || cutoffForPeriod(period, now);
-  const files = opts.files || learningFiles(root);
+  const files = opts.files || learningSourceFiles(root);
   const learnings = files.flatMap((file) => readJsonl(file)
-    .map((record) => normalizeLearning(record, file, cutoff))
+    .map((record) => normalizeRecord(record, file, cutoff))
     .filter(Boolean));
+  const legacyLearningFiles = files.filter((file) => path.basename(file) === 'learnings.jsonl');
+  const projectCandidateFiles = files.filter((file) => path.basename(file) === 'project-learning-candidates.jsonl');
   const projects = [...new Set(learnings.map((item) => item.project))].sort();
   const knownPatternTitles = readPatternTitles(patternsDir);
   const result = {
@@ -278,6 +321,8 @@ function rollupPatternLearnings(opts = {}) {
     dry_run: Boolean(opts.dryRun),
     patterns_dir: patternsDir,
     learning_files: files,
+    legacy_learning_files: legacyLearningFiles,
+    project_learning_candidate_files: projectCandidateFiles,
     known_patterns: knownPatternTitles,
     projects_scanned: projects.length,
     learnings_total: learnings.length,
@@ -297,7 +342,7 @@ function renderMarkdown(result) {
     '',
     `- Projects scanned: ${result.projects_scanned}`,
     `- Total learnings: ${result.learnings_total}`,
-    `- Learning files: ${result.learning_files.length}`,
+    `- Learning files: ${result.learning_files.length} (${result.legacy_learning_files.length} legacy, ${result.project_learning_candidate_files.length} project candidates)`,
     `- Period cutoff: ${result.cutoff}`,
     `- Mode: ${result.dry_run ? 'dry-run' : 'recorded'}`,
     '',
@@ -351,7 +396,9 @@ if (require.main === module) {
 
 module.exports = {
   cutoffForPeriod,
+  candidateFiles,
   learningFiles,
+  learningSourceFiles,
   renderMarkdown,
   rollupPatternLearnings,
   scoreKnownPattern,

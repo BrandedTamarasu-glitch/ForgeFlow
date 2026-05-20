@@ -1,6 +1,6 @@
 ---
 name: forgeflow-learnings
-description: Show current-project learning insights, or aggregate learnings.jsonl across projects for pattern promotion.
+description: Show current-project learning insights, or aggregate cross-project learning sources for pattern promotion.
 argument-hint: "[--project] [--check] [--period week|month|all] [--min-projects N] [--min-occurrences N] [--dry-run] [--json]"
 allowed-tools:
   - Read
@@ -14,7 +14,7 @@ allowed-tools:
 <objective>
 Default current-project mode refreshes `.forgeflow/<project>/project-learnings.md` and prints the actionable project insight summary: recurring pitfalls, stable decisions, risk areas, validation patterns, hot files, repeated follow-ups, and recommended next approach.
 
-Cross-project mode reads per-project `.forgeflow/<project>/learnings.jsonl` files across the user's tree, clusters findings by type and keyword affinity to existing patterns, and either auto-updates `forgeflow-patterns/recurring-blockers.md` or surfaces NEW pattern candidates for user promotion.
+Cross-project mode reads per-project `.forgeflow/<project>/learnings.jsonl` and `project-learning-candidates.jsonl` files across the user's tree, clusters findings by type and keyword affinity to existing patterns, and either auto-updates `forgeflow-patterns/recurring-blockers.md` or surfaces NEW pattern candidates for user promotion.
 
 Answers: "What failure modes are the Forgeflow team catching repeatedly, and which ones have grown into generalizable patterns worth writing into the canonical pattern library?"
 
@@ -37,6 +37,10 @@ Per-project structured learnings (primary):
 - `.forgeflow/<project>/learnings.jsonl` — one JSON per line:
   ```
   {"date": "YYYY-MM-DD", "source": "<agent>", "type": "quality|efficiency|security|...", "learning": "<text>", "files": ["..."], "severity": "low|medium|high"}
+  ```
+- `.forgeflow/<project>/project-learning-candidates.jsonl` — structured Atlas/Arbiter candidates:
+  ```
+  {"ts": "ISO-8601", "category": "validation-pattern|risk-area|...", "learning": "<text>", "source": "<agent>", "confidence": "low|medium|high"}
   ```
 
 Canonical pattern files (promotion targets):
@@ -126,10 +130,10 @@ When `${HELPER_DIR}/rollup-pattern-learnings.js` exists, run it and print its ou
 "${HELPER_DIR}/rollup-pattern-learnings.js" $ARGUMENTS
 ```
 
-The helper owns scanning `.forgeflow/<project>/learnings.jsonl`, period filtering, known-pattern matching, candidate clustering, JSON/Markdown output, and `.learnings-log.jsonl` self-logging. If the helper is missing, continue with the manual fallback below and tell the user to run `/update-forgeflow`.
+The helper owns scanning `.forgeflow/<project>/learnings.jsonl` and `project-learning-candidates.jsonl`, period filtering, known-pattern matching, candidate clustering, JSON/Markdown output, and `.learnings-log.jsonl` self-logging. If the helper is missing, continue with the manual fallback below and tell the user to run `/update-forgeflow`.
 
 ```bash
-find "$HOME" -name "learnings.jsonl" -path "*/.forgeflow/*" -type f 2>/dev/null
+find "$HOME" \( -name "learnings.jsonl" -o -name "project-learning-candidates.jsonl" \) -path "*/.forgeflow/*" -type f 2>/dev/null
 ```
 
 Filter to files with at least 1 line. If zero files found, exit with:
@@ -137,7 +141,7 @@ Filter to files with at least 1 line. If zero files found, exit with:
 ```
 No learnings found.
 
-/forgeflow-learnings reads .forgeflow/<project>/learnings.jsonl files across your tree.
+/forgeflow-learnings reads .forgeflow/<project>/learnings.jsonl and project-learning-candidates.jsonl files across your tree.
 Atlas writes to these during /plan, /implement, and /review sessions.
 
 If you've never run /review with the full Forgeflow on a real project, there's nothing
@@ -146,9 +150,9 @@ to learn from yet. Run /review on a real codebase first, then try again.
 
 ## Step 2: Load and filter learnings
 
-For each `learnings.jsonl`:
+For each `learnings.jsonl` or `project-learning-candidates.jsonl`:
 - Parse each line (skip malformed lines silently)
-- Apply period filter on the `date` field
+- Apply period filter on the `date` or `ts` field
 - Record: `{project, date, source, type, learning, files, severity}`
 
 Extract `project` from the path: `.forgeflow/<project>/learnings.jsonl` → `<project>`.

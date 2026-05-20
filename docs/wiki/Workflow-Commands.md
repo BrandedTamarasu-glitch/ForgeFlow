@@ -24,7 +24,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands.
 | `/forgeflow-code-map` | Generate a compact project code map with topology, sections, changed-section hints, Git provenance, and generated artifact paths. |
 | `/forgeflow-drift` | Check whether agent prompts have drifted from canonical shared intelligence references using the script-backed drift helper. |
 | `/forgeflow-health` | Audit installation and project-local state; can safely repair `.forgeflow/` scaffolding and budget config. |
-| `/forgeflow-learnings --project --check` | Refresh and print current-project learnings, then show whether the artifact passes the quality gate for agent context. Cross-project mode uses the pattern-learnings rollup helper. |
+| `/forgeflow-learnings --project --check` | Refresh and print current-project learnings, then show whether the artifact passes the quality gate for agent context. Cross-project mode uses the pattern-learnings rollup helper across legacy learnings and project-learning candidates. |
 | `/forgeflow-metrics` | Summarize telemetry, calibration, outcomes, context savings, budget health, and advisor actions. |
 | `/forgeflow-report` | Produce a script-backed status report including local metrics, false-positive thresholds, pattern freshness, context trends, and project trends. |
 | `/forgeflow-release-check` | Run local pre-release checks for command coverage, install, update, health, version, and context helpers. |
