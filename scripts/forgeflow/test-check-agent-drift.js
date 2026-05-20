@@ -61,6 +61,32 @@ fs.writeFileSync(path.join(agentsDir, 'smith-consult.md'), [
 const parsed = parseSections(fs.readFileSync(path.join(sharedDir, 'smith-craft.md'), 'utf8'));
 const focused = checkAgentDrift({ root, canonical: 'smith-craft', agent: 'smith-review', threshold: 70 });
 const allSmith = checkAgentDrift({ root, canonical: 'smith-craft', threshold: 70 });
+fs.writeFileSync(path.join(sharedDir, 'arbiter-intelligence.md'), [
+  '## Conflict Resolution Hierarchy',
+  '',
+  '- Consult and review compare this.',
+  '',
+  '## Deviation Protocol',
+  '',
+  '- Implement compares this.',
+  '',
+  '## Lead Architect Intelligence',
+  '',
+  '- All Arbiter modes compare this.',
+  '',
+].join('\n'));
+fs.writeFileSync(path.join(agentsDir, 'arbiter-review.md'), [
+  '## Conflict Resolution Hierarchy',
+  '',
+  '- Consult and review compare this.',
+  '',
+  '<!-- adapted from _shared/arbiter-intelligence.md -->',
+  '## Lead Architect Intelligence',
+  '',
+  '- Review mode adapts this heavily.',
+  '',
+].join('\n'));
+const arbiterReview = checkAgentDrift({ root, canonical: 'arbiter-intelligence', agent: 'arbiter-review', threshold: 70 });
 const markdown = renderMarkdown(focused);
 const cli = spawnSync(process.execPath, [
   path.join(repoRoot, 'scripts/forgeflow/check-agent-drift.js'),
@@ -85,6 +111,8 @@ const checks = [
   ['detects missing section', focused.status === 'fail' && focused.per_agent[0].missing === 1 && focused.actionable === 1],
   ['detects drifted section', allSmith.per_agent.some((item) => item.agent === 'smith-consult' && item.drifted === 1)],
   ['tracks missing inputs', allSmith.missing_inputs.some((item) => item.kind === 'agent' && item.name === 'smith-audit')],
+  ['applies mode-specific expected sections', arbiterReview.status === 'pass' && arbiterReview.per_agent[0].sections.every((section) => section.section !== 'Deviation Protocol')],
+  ['treats adapted sections as modified', arbiterReview.per_agent[0].sections.some((section) => section.section === 'Lead Architect Intelligence' && section.status === 'MODIFIED' && section.adapted === true)],
   ['renders markdown', markdown.includes('# Forgeflow Drift Report') && markdown.includes('Actionable Drift')],
   ['cli json exits actionable', cli.status === 1 && cliJson.per_agent[0].agent === 'smith-review'],
   ['bad threshold exits usage', badThreshold.status === 2 && badThreshold.stderr.includes('Invalid --threshold')],

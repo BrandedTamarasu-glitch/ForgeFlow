@@ -8,6 +8,28 @@ const CANONICAL_TARGETS = {
   'arbiter-intelligence': ['arbiter-consult', 'arbiter-implement', 'arbiter-review'],
   'lumen-design-principles': ['lumen-consult', 'lumen-implement', 'lumen-review'],
 };
+const EXPECTED_SECTIONS = {
+  'arbiter-intelligence': {
+    'arbiter-consult': [
+      'Conflict Resolution Hierarchy',
+      'Blocked Findings Protocol',
+      'Scope Gate',
+      'Rejected Alternatives Log',
+      'Lead Architect Intelligence',
+    ],
+    'arbiter-implement': [
+      'Blocked Findings Protocol',
+      'Deviation Protocol',
+      'Lead Architect Intelligence',
+    ],
+    'arbiter-review': [
+      'Conflict Resolution Hierarchy',
+      'Blocked Findings Protocol',
+      'Verdict Scale',
+      'Lead Architect Intelligence',
+    ],
+  },
+};
 
 function usage() {
   console.error('Usage: check-agent-drift.js [--root <dir>] [--agent <name>] [--canonical <name>] [--threshold N] [--json]');
@@ -94,8 +116,10 @@ function parseSections(content) {
     const heading = match[1].trim();
     const start = match.index + match[0].length;
     const end = next ? next.index : body.length;
+    const beforeHeading = body.slice(Math.max(0, match.index - 180), match.index);
     sections.push({
       heading,
+      adapted: /<!--\s*adapted from _shared\//i.test(beforeHeading),
       lines: normalizeLines(body.slice(start, end)),
     });
   }
@@ -130,11 +154,18 @@ function compareSection(canonicalSection, agentSections, threshold) {
   const similarity = jaccardPercent(canonicalSection.lines, agentSection.lines);
   const same = canonicalSection.lines.length === agentSection.lines.length
     && canonicalSection.lines.every((line, index) => line === agentSection.lines[index]);
+  const adapted = Boolean(agentSection.adapted);
   return {
     section: canonicalSection.heading,
-    status: same ? 'SYNCED' : (similarity >= threshold ? 'MODIFIED' : 'DRIFTED'),
+    status: same ? 'SYNCED' : (similarity >= threshold || adapted ? 'MODIFIED' : 'DRIFTED'),
     similarity,
+    adapted,
   };
+}
+
+function expectedSectionSet(canonical, agent) {
+  const names = EXPECTED_SECTIONS[canonical] && EXPECTED_SECTIONS[canonical][agent];
+  return names ? new Set(names) : null;
 }
 
 function mappingFor(opts = {}) {
@@ -197,7 +228,9 @@ function checkAgentDrift(opts = {}) {
     if (!agentCache.has(agent)) {
       agentCache.set(agent, new Map(readSections(agentPath).map((section) => [section.heading, section])));
     }
+    const expectedSections = expectedSectionSet(canonical, agent);
     const sections = canonicalCache.get(canonical)
+      .filter((section) => !expectedSections || expectedSections.has(section.heading))
       .map((section) => compareSection(section, agentCache.get(agent), threshold));
     comparisons += sections.length;
     perAgent.push(summarizeAgent(agent, canonical, sections));

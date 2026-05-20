@@ -42,6 +42,8 @@ Total mappings: 4 canonicals × avg 3.5 targets = 14 (canonical, agent) pairs pe
 
 - **Canonical files are reference-only.** They have frontmatter declaring them non-agents (`description: Canonical ... reference. Not an agent...`). Never dispatch a canonical as a subagent.
 - **Partial adaptation is expected.** Agents do not paste the canonical verbatim; they adapt wording for their mode (consult vs review). A MODIFIED section is normal. Only MISSING or fully DRIFTED sections are actionable.
+- **Mode-specific sections are expected.** Arbiter modes only compare sections relevant to that mode. Consult does not need implement-only deviation handling; review does not need consult-only scope logs.
+- **Adapted sections are informational.** A section preceded by `<!-- adapted from _shared/... -->` is treated as MODIFIED, not DRIFTED, even when line similarity is low.
 - **Frontmatter is not compared.** The agent's frontmatter is its own; only body sections (under `## ` headings) are scored.
 - **Heading text must match exactly.** If the canonical renames a section from "Verdict Scale" to "Verdict Thresholds," every consuming agent will show MISSING for "Verdict Thresholds" until they resync. This is correct behavior — it surfaces the rename as actionable drift.
 - **Section comparison is line-set Jaccard.** Not a full semantic diff. False positives possible when an agent uses different bullet wording for the same intent; accept this and use `--threshold 60` to relax if noisy.
@@ -109,7 +111,13 @@ Store as: `agents[agent_name] = [(heading, normalized_lines), ...]`
 
 ## Step 4: Score each (canonical, agent) pair
 
-For each pair:
+For each pair, first filter the canonical sections to the sections expected for that agent mode. Most canonicals compare every `##` section; Arbiter has mode-specific section expectations:
+
+- `arbiter-consult`: Conflict Resolution Hierarchy, Blocked Findings Protocol, Scope Gate, Rejected Alternatives Log, Lead Architect Intelligence
+- `arbiter-implement`: Blocked Findings Protocol, Deviation Protocol, Lead Architect Intelligence
+- `arbiter-review`: Conflict Resolution Hierarchy, Blocked Findings Protocol, Verdict Scale, Lead Architect Intelligence
+
+Then score each expected section:
 
 ```
 agent_sections_by_heading = dict((h, body) for (h, body) in agents[agent])
@@ -126,6 +134,8 @@ for (heading, canonical_body) in canonicals[canonical]:
 
         if canonical_body == agent_body:
             status = "SYNCED"
+        elif agent section has an "adapted from _shared" marker:
+            status = "MODIFIED"
         elif similarity >= threshold:
             status = "MODIFIED"
         else:
