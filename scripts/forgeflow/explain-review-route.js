@@ -106,16 +106,37 @@ function countChangedLines(filesPath) {
 
   const { spawnSync } = require('child_process');
   const result = spawnSync('git', ['diff', '--numstat', 'HEAD'], { encoding: 'utf8' });
-  if (result.status !== 0) {
-    return null;
-  }
 
-  return result.stdout.split(/\r?\n/).reduce((sum, line) => {
+  const trackedLines = result.status === 0 ? result.stdout.split(/\r?\n/).reduce((sum, line) => {
     const [added, deleted] = line.split(/\s+/);
     const add = Number.parseInt(added, 10);
     const del = Number.parseInt(deleted, 10);
     return sum + (Number.isFinite(add) ? add : 0) + (Number.isFinite(del) ? del : 0);
-  }, 0);
+  }, 0) : 0;
+  return trackedLines + countUntrackedLines();
+}
+
+function countFileLines(file) {
+  try {
+    const stat = fs.statSync(file);
+    if (!stat.isFile()) return 0;
+    const data = fs.readFileSync(file);
+    if (data.length === 0) return 0;
+    let lines = 0;
+    for (const byte of data) {
+      if (byte === 10) lines += 1;
+    }
+    return data[data.length - 1] === 10 ? lines : lines + 1;
+  } catch (_err) {
+    return 0;
+  }
+}
+
+function countUntrackedLines() {
+  return runGit(['ls-files', '--others', '--exclude-standard'])
+    .map(sanitizeFileLine)
+    .filter(Boolean)
+    .reduce((sum, file) => sum + countFileLines(file), 0);
 }
 
 function readCalibration(opts) {

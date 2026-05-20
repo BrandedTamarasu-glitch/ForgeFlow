@@ -125,6 +125,8 @@ else
   git diff --name-only --cached 2>/dev/null >> /tmp/_review_files_$$
   git ls-files --others --exclude-standard 2>/dev/null >> /tmp/_review_files_$$
   LINES_CHANGED=$(git diff --numstat HEAD 2>/dev/null | awk '{s+=$1+$2} END {print s+0}')
+  UNTRACKED_LINES=$(git ls-files --others --exclude-standard 2>/dev/null | while IFS= read -r file; do [ -f "$file" ] && wc -l < "$file"; done | awk '{s+=$1} END {print s+0}')
+  LINES_CHANGED=$((LINES_CHANGED + UNTRACKED_LINES))
 fi
 sort -u /tmp/_review_files_$$ > /tmp/_review_files_unique_$$
 FILES=$(cat /tmp/_review_files_unique_$$)

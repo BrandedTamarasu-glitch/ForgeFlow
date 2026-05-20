@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
+const { spawnSync } = require('child_process');
 const { classify } = require('./explain-review-route');
 const { readFiles } = require('./explain-review-route');
 
@@ -126,6 +128,21 @@ if (noisyErrors.length) {
   console.error(`noisy-file-list: ${noisyErrors.join('; ')}`);
 } else {
   console.log('noisy-file-list: ok');
+}
+
+const untrackedRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-review-route-untracked-'));
+spawnSync('git', ['init'], { cwd: untrackedRoot, encoding: 'utf8' });
+fs.writeFileSync(path.join(untrackedRoot, 'helper.js'), Array.from({ length: 60 }, (_, index) => `const line${index} = ${index};`).join('\n'));
+const untrackedCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/explain-review-route.js'), ['--json'], {
+  cwd: untrackedRoot,
+  encoding: 'utf8',
+});
+const untrackedRoute = untrackedCli.status === 0 ? JSON.parse(untrackedCli.stdout) : {};
+if (untrackedRoute.lines_changed !== 60 || untrackedRoute.mode !== 'full-mode') {
+  failed += 1;
+  console.error(`untracked-line-count: expected 60 lines and full-mode, got ${untrackedRoute.lines_changed}/${untrackedRoute.mode || 'no-mode'}`);
+} else {
+  console.log('untracked-line-count: ok');
 }
 
 if (failed > 0) {
