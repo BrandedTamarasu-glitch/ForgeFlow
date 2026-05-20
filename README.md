@@ -269,6 +269,7 @@ From Claude Code, use the command view:
 
 ```text
 /forgeflow-learnings --project
+/forgeflow-learnings --project --check
 ```
 
 Review context packets include the latest insights so agents can account for recurring project patterns while still verifying every finding against current artifacts.

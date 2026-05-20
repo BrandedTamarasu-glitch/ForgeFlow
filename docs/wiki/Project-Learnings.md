@@ -40,9 +40,10 @@ From Claude Code, run:
 
 ```text
 /forgeflow-learnings --project
+/forgeflow-learnings --project --check
 ```
 
-That refreshes the artifact and prints the insight sections in a user-facing order.
+That refreshes the artifact and prints the insight sections in a user-facing order. Add `--check` to also run the project-learnings quality check from the command surface.
 
 Review context packs also include a compact **Latest Insights** section in each agent packet. Agents can use it to adjust attention while reviewing, but they still need current code, test, and artifact evidence for every finding. Context packs inject the insights only when the project-learnings checker passes; warn or fail results produce a compact quality-gate warning instead. The generated context pack includes `latest-insights-report.json` with the gate status and top check issues.
 

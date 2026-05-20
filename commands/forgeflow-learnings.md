@@ -1,7 +1,7 @@
 ---
 name: forgeflow-learnings
 description: Show current-project learning insights, or aggregate learnings.jsonl across projects for pattern promotion.
-argument-hint: "[--project] [--period week|month|all] [--min-projects N] [--min-occurrences N] [--dry-run] [--json]"
+argument-hint: "[--project] [--check] [--period week|month|all] [--min-projects N] [--min-occurrences N] [--dry-run] [--json]"
 allowed-tools:
   - Read
   - Write
@@ -24,6 +24,7 @@ Self-improving Forgeflow mechanic: runs monthly. `recurring-blockers.md`, `tooli
 <context>
 $ARGUMENTS:
 - `--project` — force current-project mode. This is the default when no cross-project promotion flags are present.
+- `--check` — after refreshing current-project learnings, run the project-learnings quality check and show whether the artifact is safe to inject into agent context.
 - `--period week|month|all` — window to include (default: all — this command is for rare, curated promotion, not weekly churn)
 - `--min-projects N` — minimum distinct projects a cluster must appear in (default: 2)
 - `--min-occurrences N` — minimum total occurrences across all projects (default: 3)
@@ -86,6 +87,23 @@ Refresh the local artifact and render the user-facing insight view:
 ```
 
 If `--json` is present, pass `--json` and print the helper JSON directly.
+
+If `--check` is present, resolve the quality helper:
+
+```bash
+if [ ! -x "${HELPER_DIR}/check-project-learnings.js" ]; then
+  echo "Project learnings quality helper is not installed. Run /update-forgeflow, then retry /forgeflow-learnings --project --check."
+  exit 1
+fi
+```
+
+Then run:
+
+```bash
+"${HELPER_DIR}/check-project-learnings.js" --project-dir "${FORGEFLOW_DIR}"
+```
+
+For `--json --check`, return a single object with `learnings` from `show-project-learnings.js --json` and `check` from `check-project-learnings.js --json`. If the check status is `warn` or `fail`, call out that review context packs will block latest-insights injection until the reported issues are fixed or the rollup is refreshed.
 
 Do not modify canonical `forgeflow-patterns/` files in current-project mode.
 
