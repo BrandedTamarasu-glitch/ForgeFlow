@@ -37,15 +37,17 @@ const checks = [
   ['writes markdown', fs.existsSync(out) && markdown.includes('# Forgeflow Project Code Map')],
   ['writes topology graph', fs.existsSync(graphPath)],
   ['writes compact topology graph', graph.scope === 'changed-neighborhood'],
+  ['summary includes provenance', result.summary.provenance && result.summary.provenance.source === 'show-code-map'],
   ['summary counts source files', result.summary.summary.source_files === 7],
   ['summary includes sections', result.summary.summary.sections >= 8],
   ['summary honors max hotspots', result.summary.high_fan_in.length <= 5 && result.summary.high_fan_out.length <= 5],
   ['summary includes fan-in', result.summary.high_fan_in.some((item) => item.path === 'src/shared/index.ts')],
   ['summary includes markdown section count', result.summary.summary.markdown_section_files >= 1],
+  ['markdown includes provenance', markdown.includes('## Provenance') && markdown.includes('- Source: show\\-code\\-map')],
   ['markdown includes artifacts', markdown.includes('## Artifacts') && markdown.includes('code-topology.json')],
   ['markdown includes limits', markdown.includes('Not a runtime call graph')],
   ['render returns markdown', rendered.includes('## High Fan-In')],
-  ['cli json works', cli.status === 0 && cliJson.summary.source_files === 7 && cliJson.artifacts.graph.endsWith('code-topology.json') && cliJson.high_fan_in.length <= 1],
+  ['cli json works', cli.status === 0 && cliJson.summary.source_files === 7 && cliJson.artifacts.graph.endsWith('code-topology.json') && cliJson.high_fan_in.length <= 1 && cliJson.provenance.source === 'show-code-map'],
 ];
 
 let failed = 0;

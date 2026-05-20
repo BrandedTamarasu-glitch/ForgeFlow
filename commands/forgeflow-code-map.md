@@ -9,7 +9,7 @@ allowed-tools:
 ---
 
 <objective>
-Generate a user-facing project code map for the current repository. The map summarizes static JS/TS topology, fan-in/fan-out hotspots, source symbols with line ranges, Markdown headings, changed sections, and generated artifact paths.
+Generate a user-facing project code map for the current repository. The map summarizes static JS/TS topology, fan-in/fan-out hotspots, source symbols with line ranges, Markdown headings, changed sections, Git provenance, and generated artifact paths.
 
 Answers: "What does this project look like structurally, what files are central, and which changed sections should agents or maintainers inspect first?"
 </objective>
@@ -17,6 +17,7 @@ Answers: "What does this project look like structurally, what files are central,
 <context>
 $ARGUMENTS:
 - `--json` — structured output instead of Markdown
+- `--project-dir <dir>` — write generated `.forgeflow` context artifacts under a specific project directory
 - `--out <markdown>` — write the rendered summary to a custom path
 - `--max-hotspots N` — number of fan-in/fan-out hotspots to keep
 
@@ -32,6 +33,7 @@ The command uses `scripts/forgeflow/show-code-map.js`, which writes:
 - **Static map only.** This is not a runtime call graph, control-flow graph, data-flow graph, or dependency severity model.
 - **JS/TS topology only.** Import edges are collected for `.js`, `.jsx`, `.ts`, and `.tsx`. Markdown headings are included as documentation sections.
 - **Changed sections require a Git diff.** When there is no working-tree diff against `HEAD`, changed-section output is empty.
+- **Provenance is Git-based.** Branch, commit, dirty state, changed-file count, and untracked-file count are recorded when the helper runs from the repository root.
 - **Line ranges are hints.** They are computed from static section starts and the next section boundary.
 
 <process>
@@ -53,7 +55,7 @@ Code map helper is not installed. Run /update-forgeflow, then retry /forgeflow-c
 
 ## Step 2: Build arguments
 
-Pass through `--json`, `--out <markdown>`, and `--max-hotspots N` from `$ARGUMENTS`.
+Pass through `--json`, `--project-dir <dir>`, `--out <markdown>`, and `--max-hotspots N` from `$ARGUMENTS`.
 
 ## Step 3: Render map
 
@@ -70,6 +72,7 @@ Print the helper output directly.
 <success_criteria>
 - [ ] The command prints a compact project code map or JSON summary
 - [ ] Generated artifact paths are included
+- [ ] Output includes provenance metadata
 - [ ] Output states static-map limitations
 - [ ] Missing helper produces an actionable update instruction
 </success_criteria>

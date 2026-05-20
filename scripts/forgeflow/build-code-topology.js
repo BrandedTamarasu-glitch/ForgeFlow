@@ -72,6 +72,28 @@ function repoRoot(cwd = process.cwd()) {
   return git(['rev-parse', '--show-toplevel'], cwd) || cwd;
 }
 
+function gitProvenance(root, detail = {}) {
+  const gitRoot = git(['rev-parse', '--show-toplevel'], root);
+  const isGit = Boolean(gitRoot && path.resolve(gitRoot) === path.resolve(root));
+  const status = isGit ? git(['status', '--short'], root).split(/\r?\n/).filter(Boolean) : [];
+  const changedFiles = isGit ? git(['diff', '--name-only', 'HEAD'], root).split(/\r?\n/).filter(Boolean) : [];
+  const untrackedFiles = isGit ? git(['ls-files', '--others', '--exclude-standard'], root).split(/\r?\n/).filter(Boolean) : [];
+  return {
+    schema_version: '1',
+    generated_at: new Date().toISOString(),
+    source: detail.source || 'build-code-topology',
+    git_available: isGit,
+    branch: isGit ? git(['branch', '--show-current'], root) || 'detached' : '',
+    commit: isGit ? git(['rev-parse', 'HEAD'], root) : '',
+    commit_short: isGit ? git(['rev-parse', '--short', 'HEAD'], root) : '',
+    dirty: status.length > 0,
+    changed_files: changedFiles.length,
+    untracked_files: untrackedFiles.length,
+    files_path: detail.filesPath ? normalize(path.relative(root, detail.filesPath)) : '',
+    scope: detail.scope || '',
+  };
+}
+
 function defaultProjectDir(root) {
   return path.join(root, '.forgeflow', path.basename(root));
 }
@@ -516,6 +538,7 @@ function renderMarkdown(topology) {
     '',
     `Generated at: ${topology.generated_at}`,
     `Root: ${topology.root}`,
+    `Provenance: ${topology.provenance && topology.provenance.git_available ? `${topology.provenance.branch}@${topology.provenance.commit_short}${topology.provenance.dirty ? ' dirty' : ' clean'}` : 'git unavailable'}`,
     '',
     '## Summary',
     '',
@@ -603,7 +626,11 @@ function compactTopology(topology) {
   const markdownSections = topology.markdown_sections
     .slice()
     .sort((a, b) => b.sections.length - a.sections.length || a.path.localeCompare(b.path))
-    .slice(0, 5);
+    .slice(0, 5)
+    .map((item) => ({
+      path: item.path,
+      sections: compactSections(item.sections),
+    }));
   return {
     ...topology,
     scope: 'changed-neighborhood',
@@ -624,6 +651,7 @@ function buildCodeTopology(opts = {}) {
   const telemetryOut = opts.telemetryOut || defaultTelemetryOut(root);
   const maxHotspots = Number.isFinite(opts.maxHotspots) && opts.maxHotspots > 0 ? opts.maxHotspots : DEFAULT_MAX_HOTSPOTS;
   const { sourceFiles, sectionFiles, denied } = readFiles(root);
+  const generatedAt = new Date().toISOString();
   const sectionMap = buildSectionMap(root, sectionFiles);
   const changedLineMap = changedLinesFromGit(root, opts.filesPath || '');
   const changedSectionMap = buildChangedSectionMap(root, sectionMap, changedLineMap);
@@ -638,9 +666,14 @@ function buildCodeTopology(opts = {}) {
   const changedSectionCount = Object.values(changedSectionMap).reduce((count, sections) => count + sections.length, 0);
   const fullTopology = {
     schema_version: '1',
-    generated_at: new Date().toISOString(),
+    generated_at: generatedAt,
     root,
     scope: 'full',
+    provenance: gitProvenance(root, {
+      source: opts.source || 'build-code-topology',
+      filesPath: opts.filesPath || '',
+      scope: opts.compact ? 'changed-neighborhood' : 'full',
+    }),
     source_extensions: SOURCE_EXTENSIONS,
     section_extensions: [...SOURCE_EXTENSIONS, ...MARKDOWN_EXTENSIONS],
     summary: {
@@ -678,7 +711,10 @@ function buildCodeTopology(opts = {}) {
   const telemetry = contextTelemetry('code-topology', {
     baseline_chars: sum(sourceFiles.map((file) => fileChars(path.join(root, file)))),
     compact_chars: textChars(topologyJson) + textChars(markdown),
-    detail: topology.summary,
+    detail: {
+      ...topology.summary,
+      provenance: topology.provenance,
+    },
   });
   writeTelemetry(telemetryOut, telemetry);
   return { out, markdown_out: markdownOut, telemetry_path: telemetryOut, topology, markdown, telemetry };
@@ -693,6 +729,7 @@ function main() {
       markdown_out: result.markdown_out,
       telemetry_path: result.telemetry_path,
       scope: result.topology.scope,
+      provenance: result.topology.provenance,
       summary: result.topology.summary,
       high_fan_in: result.topology.high_fan_in,
       high_fan_out: result.topology.high_fan_out,
@@ -717,6 +754,7 @@ module.exports = {
   deniedPath,
   extractImports,
   extractSections,
+  gitProvenance,
   parseDiffChangedLines,
   renderMarkdown,
   resolveLocalImport,

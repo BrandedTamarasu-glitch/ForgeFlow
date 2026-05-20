@@ -104,6 +104,7 @@ function projectCodeMapSummary(topology, artifacts, opts = {}) {
     schema_version: '1',
     generated_at: topology.generated_at,
     root: topology.root,
+    provenance: topology.provenance || null,
     summary: topology.summary,
     high_fan_in: topology.high_fan_in.slice(0, maxHotspots),
     high_fan_out: topology.high_fan_out.slice(0, maxHotspots),
@@ -136,6 +137,19 @@ function renderProjectCodeMap(summary) {
     '',
     `Generated at: ${summary.generated_at}`,
     `Root: ${summary.root}`,
+    '',
+    '## Provenance',
+    '',
+    ...(summary.provenance
+      ? [
+        `- Source: ${md(summary.provenance.source || 'unknown')}`,
+        `- Branch: ${md(summary.provenance.branch || 'unknown')}`,
+        `- Commit: ${md(summary.provenance.commit_short || 'unknown')}`,
+        `- Worktree: ${summary.provenance.dirty ? 'dirty' : 'clean'}`,
+        `- Changed files: ${summary.provenance.changed_files}`,
+        `- Untracked files: ${summary.provenance.untracked_files}`,
+      ]
+      : ['- Git provenance unavailable']),
     '',
     '## Summary',
     '',
@@ -197,6 +211,7 @@ function showCodeMap(opts = {}) {
     telemetryOut,
     maxHotspots: opts.maxHotspots,
     compact: true,
+    source: 'show-code-map',
   });
   const artifacts = {
     graph: path.relative(root, result.out),

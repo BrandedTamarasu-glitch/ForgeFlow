@@ -460,6 +460,7 @@ function buildTopologyContext(root, outDir, files) {
       telemetryOut: path.join(outDir, 'code-topology-telemetry.json'),
       maxHotspots: 8,
       compact: true,
+      source: 'build-context-pack',
     });
   } catch (_err) {
     return null;
@@ -469,8 +470,10 @@ function buildTopologyContext(root, outDir, files) {
 function compactTopology(topologyResult) {
   if (!topologyResult || !topologyResult.topology) return '(none)';
   const topology = topologyResult.topology;
+  const provenance = topology.provenance || {};
   const lines = [
     `Summary: ${topology.summary.source_files} source files, ${topology.summary.local_edges} local edges, ${topology.summary.sections || 0} sections, ${topology.summary.changed_sections || 0} changed sections, ${topology.summary.unresolved_imports} unresolved, ${topology.summary.skipped_dynamic_imports} skipped dynamic.`,
+    `Provenance: ${provenance.git_available ? `${provenance.branch}@${provenance.commit_short}${provenance.dirty ? ' dirty' : ' clean'}` : 'git unavailable'}.`,
     '',
     'High fan-in:',
     ...(topology.high_fan_in.length > 0
@@ -512,6 +515,7 @@ function topologyReport(topologyResult, root) {
   const topology = topologyResult.topology;
   return {
     available: true,
+    provenance: topology.provenance || null,
     summary: topology.summary,
     high_fan_in: topology.high_fan_in.slice(0, 5),
     high_fan_out: topology.high_fan_out.slice(0, 5),
@@ -691,6 +695,7 @@ function buildContextPack(opts) {
     code_topology_path: topologyContext ? path.relative(root, topologyContext.out) : null,
     code_topology_review_focus_path: topologyContext ? path.relative(root, topologyContext.markdown_out) : null,
     code_topology_telemetry_path: topologyContext ? path.relative(root, topologyContext.telemetry_path) : null,
+    code_topology_provenance: topologyContext && topologyContext.topology ? topologyContext.topology.provenance || null : null,
     code_topology_summary: topology,
     memory_index_path: memoryIndexPath ? path.relative(root, memoryIndexPath) : null,
     context_telemetry_path: path.relative(root, path.join(outDir, 'context-telemetry.json')),
