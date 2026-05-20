@@ -88,8 +88,19 @@ function cleanText(value) {
 
 function safeText(value) {
   const text = cleanText(value);
-  if (!text || containsSensitiveContent(text)) return '';
+  if (!text || containsSensitiveContent(text) || isNonGuidanceText(text)) return '';
   return text;
+}
+
+function isNonGuidanceText(value) {
+  const text = cleanText(value).toLowerCase();
+  return [
+    /^none\.?$/,
+    /^none\b/,
+    /^n\/a\.?$/,
+    /^not applicable\.?$/,
+    /^no (spec gaps?|deviations?|follow-?ups?|issues?|risks?)\.?$/,
+  ].some((pattern) => pattern.test(text));
 }
 
 function addUnique(list, value) {
