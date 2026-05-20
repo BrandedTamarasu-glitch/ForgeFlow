@@ -411,6 +411,7 @@ function buildTopologyContext(root, outDir, files) {
       markdownOut: path.join(outDir, 'code-topology-review-focus.md'),
       telemetryOut: path.join(outDir, 'code-topology-telemetry.json'),
       maxHotspots: 8,
+      compact: true,
     });
   } catch (_err) {
     return null;

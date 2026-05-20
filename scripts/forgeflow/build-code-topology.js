@@ -16,7 +16,7 @@ const DEFAULT_MAX_HOTSPOTS = 10;
 function usage() {
   console.error([
     'Usage: build-code-topology.js [--root <dir>] [--files <path>] [--out <path>]',
-    '       [--markdown-out <path>] [--telemetry-out <path>] [--max-hotspots <n>] [--json]',
+    '       [--markdown-out <path>] [--telemetry-out <path>] [--max-hotspots <n>] [--compact] [--json]',
   ].join('\n'));
 }
 
@@ -28,6 +28,7 @@ function parseArgs(argv) {
     markdownOut: '',
     telemetryOut: '',
     maxHotspots: DEFAULT_MAX_HOTSPOTS,
+    compact: false,
     json: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
@@ -44,6 +45,8 @@ function parseArgs(argv) {
       opts.telemetryOut = path.resolve(argv[++i] || '');
     } else if (arg === '--max-hotspots') {
       opts.maxHotspots = Number.parseInt(argv[++i] || `${DEFAULT_MAX_HOTSPOTS}`, 10);
+    } else if (arg === '--compact') {
+      opts.compact = true;
     } else if (arg === '--json') {
       opts.json = true;
     } else if (arg === '--help' || arg === '-h') {
@@ -369,6 +372,34 @@ function renderMarkdown(topology) {
   return `${lines.join('\n')}\n`;
 }
 
+function compactTopology(topology) {
+  const keep = new Set();
+  for (const item of topology.high_fan_in) keep.add(item.path);
+  for (const item of topology.high_fan_out) keep.add(item.path);
+  for (const item of topology.changed_file_neighbors) {
+    keep.add(item.path);
+    for (const next of item.read_next) keep.add(next.path);
+  }
+  for (const file of topology.changed_files) keep.add(file);
+
+  const nodes = topology.nodes.filter((node) => keep.has(node.path)).map((node) => ({
+    ...node,
+    imports: node.imports.filter((target) => keep.has(target)),
+    imported_by: node.imported_by.filter((source) => keep.has(source)),
+  }));
+  const edges = topology.edges.filter((edge) => keep.has(edge.source) && keep.has(edge.target));
+  const sourceFilter = (item) => keep.has(item.source);
+  return {
+    ...topology,
+    scope: 'changed-neighborhood',
+    nodes,
+    edges,
+    unresolved: topology.unresolved.filter(sourceFilter),
+    external: topology.external.filter(sourceFilter),
+    skipped_dynamic: topology.skipped_dynamic.filter(sourceFilter),
+  };
+}
+
 function buildCodeTopology(opts = {}) {
   const root = opts.root || repoRoot();
   const out = opts.out || defaultOut(root);
@@ -378,10 +409,11 @@ function buildCodeTopology(opts = {}) {
   const { sourceFiles, denied } = readFiles(root);
   const graph = buildGraph(root, sourceFiles);
   const changedFiles = readChangedFiles(root, opts.filesPath || '').filter(isSourceFile);
-  const topology = {
+  const fullTopology = {
     schema_version: '1',
     generated_at: new Date().toISOString(),
     root,
+    scope: 'full',
     source_extensions: SOURCE_EXTENSIONS,
     summary: {
       source_files: sourceFiles.length,
@@ -402,6 +434,7 @@ function buildCodeTopology(opts = {}) {
     skipped_dynamic: graph.skipped_dynamic,
     denied,
   };
+  const topology = opts.compact ? compactTopology(fullTopology) : fullTopology;
   const markdown = renderMarkdown(topology);
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, `${JSON.stringify(topology, null, 2)}\n`);
@@ -424,6 +457,7 @@ function main() {
       out: result.out,
       markdown_out: result.markdown_out,
       telemetry_path: result.telemetry_path,
+      scope: result.topology.scope,
       summary: result.topology.summary,
       high_fan_in: result.topology.high_fan_in,
       high_fan_out: result.topology.high_fan_out,

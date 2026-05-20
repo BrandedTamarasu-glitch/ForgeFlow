@@ -34,7 +34,7 @@ In a repo checkout, examples use `scripts/forgeflow/`. A Claude install from `/u
 
 When present, `.forgeflow/<project-name>/implementation-notes.md` is included in the memory index. This lets later consult, implement, review, and ship phases see prior decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes without loading the full raw notes file into every prompt.
 
-When JS/TS files are in scope, review context packs also write `code-topology.json`, `code-topology-review-focus.md`, and `code-topology-telemetry.json`, then include a compact **Code Topology** section in each agent packet. `synthesis-input.json` and `build-context-pack.js --json` expose a `code_topology_summary`/`code_topology` object with hotspot paths and read-next neighbors. Treat this as static import guidance only, not a runtime call graph.
+When JS/TS files are in scope, review context packs also write `code-topology.json`, `code-topology-review-focus.md`, and `code-topology-telemetry.json`, then include a compact **Code Topology** section in each agent packet. The context-pack topology JSON uses changed-neighborhood scope to keep changed files, read-next neighbors, and hotspot nodes without storing the full repo graph in the review artifact. `synthesis-input.json` and `build-context-pack.js --json` expose a `code_topology_summary`/`code_topology` object with hotspot paths and read-next neighbors. Treat this as static import guidance only, not a runtime call graph.
 
 When present, `.forgeflow/<project-name>/project-learnings.md` should be treated as guidance, not proof. Agents may use it to anticipate likely pitfalls and local patterns, but every current finding still needs evidence from current code, tests, and artifacts. If the quality check returns warn or fail, context packs replace the insights with a compact warning and do not inject the guidance. Use `/forgeflow-learnings --project --check` to refresh the artifact and inspect the same gate from the command surface.
 
@@ -83,6 +83,7 @@ The default template supports global and per-kind limits:
   "warn_only": true,
   "kind_limits": {
     "context-pack": 16000,
+    "code-topology": 12000,
     "memory-context": 8000,
     "scope-manifest": 6000
   }

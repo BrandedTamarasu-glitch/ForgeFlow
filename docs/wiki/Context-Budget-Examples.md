@@ -18,6 +18,7 @@ Default `.forgeflow-budget.json`:
   "warn_only": true,
   "kind_limits": {
     "context-pack": 16000,
+    "code-topology": 12000,
     "memory-context": 8000,
     "scope-manifest": 6000
   }
@@ -70,6 +71,7 @@ For release checks, switch from warnings to failures:
   "warn_only": false,
   "kind_limits": {
     "context-pack": 14000,
+    "code-topology": 10000,
     "memory-context": 7000,
     "scope-manifest": 5000
   }

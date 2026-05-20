@@ -158,6 +158,7 @@ const checks = [
   ['agent packet escapes markdown paths', wardenPacket.includes('src/auth/session\\.ts')],
   ['telemetry token estimate', Number.isInteger(telemetry.estimated_compact_tokens)],
   ['code topology includes changed files', topology.changed_files.includes('src/auth/session.ts')],
+  ['code topology context uses compact scope', topology.scope === 'changed-neighborhood'],
   ['latest insights report has status', ['injected', 'missing', 'blocked', 'error'].includes(insightsReport.status)],
   ['noisy manifest sanitized', noisyManifest.files.length === 3],
   ['no noisy decoration in manifest', !noisyManifest.files.some((file) => file.path.includes('Changes') || file.path.includes('|'))],

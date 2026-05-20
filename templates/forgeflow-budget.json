@@ -3,6 +3,7 @@
   "warn_only": true,
   "kind_limits": {
     "context-pack": 16000,
+    "code-topology": 12000,
     "memory-context": 8000,
     "scope-manifest": 6000
   }

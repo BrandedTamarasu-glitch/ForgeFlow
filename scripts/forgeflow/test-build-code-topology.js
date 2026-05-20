@@ -45,6 +45,15 @@ const cli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/build-code-topology
   '--json',
 ], { encoding: 'utf8' });
 const cliJson = cli.status === 0 ? JSON.parse(cli.stdout) : {};
+const compactResult = buildCodeTopology({
+  root: fixtureRoot,
+  filesPath: path.join(fixtureRoot, 'changed.files'),
+  out: path.join(tmp, 'compact.json'),
+  markdownOut: path.join(tmp, 'compact.md'),
+  telemetryOut: path.join(tmp, 'compact-telemetry.json'),
+  maxHotspots: 5,
+  compact: true,
+});
 const importKinds = extractImports("import type { User } from './types';\nexport { x } from './x';\nconst y = require('./y');");
 const sourceSet = new Set(['src/shared/index.ts']);
 const gitRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-code-topology-git-'));
@@ -96,6 +105,9 @@ const checks = [
   ['markdown renders review focus', markdown.includes('## Changed File Neighbors') && markdown.includes('Static JS/TS module graph only.')],
   ['telemetry written', telemetry.kind === 'code-topology' && Number.isInteger(telemetry.estimated_compact_tokens)],
   ['cli json works', cli.status === 0 && cliJson.summary.source_files === 7],
+  ['compact scope marks topology', compactResult.topology.scope === 'changed-neighborhood'],
+  ['compact keeps changed neighbor', compactResult.topology.changed_file_neighbors.some((item) => item.path === 'src/features/feature.ts')],
+  ['compact trims node list', compactResult.topology.nodes.length < topology.nodes.length],
   ['denies sensitive paths', deniedPath('config/api-token.ts') === 'sensitive filename'],
   ['git scan includes untracked source', gitResult.topology.nodes.some((node) => node.path === 'src/untracked.ts') && gitResult.topology.changed_files.includes('src/untracked.ts')],
   ['git scan skips deleted tracked source', !gitResult.topology.nodes.some((node) => node.path === 'src/tracked.ts') && gitResult.topology.denied.some((item) => item.path === 'src/tracked.ts' && item.reason === 'missing source path')],

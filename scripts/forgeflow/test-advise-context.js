@@ -6,6 +6,7 @@ const { adviseContext, renderMarkdown } = require('./advise-context');
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-advisor-'));
 const contextDir = path.join(root, 'Forgeflow', 'context');
+const config = path.join(root, 'missing-budget-config.json');
 fs.mkdirSync(contextDir, { recursive: true });
 
 const telemetryFile = path.join(contextDir, 'context-telemetry.json');
@@ -38,6 +39,7 @@ fs.writeFileSync(path.join(contextDir, 'code-topology-telemetry.json'), `${JSON.
 
 const result = adviseContext({
   root,
+  config,
   maxCompactTokens: 2000,
   maxCompactTokensSet: true,
   kindLimits: {},
@@ -47,6 +49,7 @@ const result = adviseContext({
 
 const empty = adviseContext({
   root: path.join(root, 'missing'),
+  config,
   maxCompactTokens: 2000,
   maxCompactTokensSet: true,
   kindLimits: {},
@@ -69,6 +72,7 @@ fs.writeFileSync(path.join(smallContextDir, 'memory-context-telemetry.json'), `$
 })}\n`);
 const smallLowSavings = adviseContext({
   root: smallRoot,
+  config,
   maxCompactTokens: 2000,
   maxCompactTokensSet: true,
   kindLimits: {},
@@ -79,6 +83,7 @@ const smallLowSavings = adviseContext({
 const historyPath = path.join(root, 'history', 'context-advisor.jsonl');
 const firstRecorded = adviseContext({
   root,
+  config,
   history: historyPath,
   record: true,
   now: new Date('2026-05-15T12:00:00.000Z'),
@@ -102,6 +107,7 @@ fs.writeFileSync(telemetryFile, `${JSON.stringify({
 
 const secondRecorded = adviseContext({
   root,
+  config,
   history: historyPath,
   record: true,
   now: new Date('2026-05-15T13:00:00.000Z'),
