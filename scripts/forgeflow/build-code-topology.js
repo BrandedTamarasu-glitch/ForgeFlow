@@ -11,6 +11,7 @@ const {
 } = require('./context-telemetry');
 
 const SOURCE_EXTENSIONS = ['.js', '.jsx', '.ts', '.tsx'];
+const MARKDOWN_EXTENSIONS = ['.md', '.mdx'];
 const DEFAULT_MAX_HOTSPOTS = 10;
 
 function usage() {
@@ -107,6 +108,14 @@ function isSourceFile(file) {
   return SOURCE_EXTENSIONS.includes(path.extname(file));
 }
 
+function isMarkdownFile(file) {
+  return MARKDOWN_EXTENSIONS.includes(path.extname(file).toLowerCase());
+}
+
+function isSectionFile(file) {
+  return isSourceFile(file) || isMarkdownFile(file);
+}
+
 function readTrackedFiles(root) {
   const gitRoot = git(['rev-parse', '--show-toplevel'], root);
   if (!gitRoot || path.resolve(gitRoot) !== path.resolve(root)) return [];
@@ -150,6 +159,7 @@ function readFiles(root) {
   const files = walked.found;
   const denied = [];
   const sourceFiles = [];
+  const sectionFiles = [];
   for (const file of files.map(normalize).sort()) {
     const reason = deniedPath(file);
     if (reason) {
@@ -169,8 +179,13 @@ function readFiles(root) {
       continue;
     }
     if (isSourceFile(file)) sourceFiles.push(file);
+    if (isSectionFile(file)) sectionFiles.push(file);
   }
-  return { sourceFiles: [...new Set(sourceFiles)].sort(), denied: [...walked.denied, ...denied].sort((a, b) => a.path.localeCompare(b.path)) };
+  return {
+    sourceFiles: [...new Set(sourceFiles)].sort(),
+    sectionFiles: [...new Set(sectionFiles)].sort(),
+    denied: [...walked.denied, ...denied].sort((a, b) => a.path.localeCompare(b.path)),
+  };
 }
 
 function readChangedFiles(root, filesPath) {
@@ -206,6 +221,87 @@ function extractImports(content) {
   return { imports, skippedDynamic };
 }
 
+function lineNumberAt(content, index) {
+  let line = 1;
+  for (let i = 0; i < index; i += 1) {
+    if (content.charCodeAt(i) === 10) line += 1;
+  }
+  return line;
+}
+
+function addSection(sections, seen, section) {
+  const key = `${section.kind}:${section.name}:${section.line}`;
+  if (seen.has(key)) return;
+  seen.add(key);
+  sections.push(section);
+}
+
+function extractSourceSections(content) {
+  const text = stripComments(content);
+  const sections = [];
+  const seen = new Set();
+  const patterns = [
+    { kind: 'function', regex: /\bexport\s+(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/g },
+    { kind: 'function', regex: /\bfunction\s+([A-Za-z_$][\w$]*)\s*\(/g },
+    { kind: 'class', regex: /\bexport\s+(?:default\s+)?class\s+([A-Za-z_$][\w$]*)\b/g },
+    { kind: 'class', regex: /\bclass\s+([A-Za-z_$][\w$]*)\b/g },
+    { kind: 'const', regex: /\bexport\s+(?:const|let|var)\s+([A-Za-z_$][\w$]*)\b/g },
+    { kind: 'const', regex: /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>/g },
+  ];
+  for (const { kind, regex } of patterns) {
+    let match;
+    while ((match = regex.exec(text))) {
+      addSection(sections, seen, {
+        kind,
+        name: match[1],
+        line: lineNumberAt(content, match.index),
+      });
+    }
+  }
+  return sections.sort((a, b) => a.line - b.line || a.kind.localeCompare(b.kind) || a.name.localeCompare(b.name));
+}
+
+function cleanHeading(value) {
+  return String(value || '').trim().replace(/\s+#+\s*$/u, '').slice(0, 160);
+}
+
+function extractMarkdownSections(content) {
+  const sections = [];
+  const lines = String(content || '').split(/\r?\n/);
+  for (let index = 0; index < lines.length; index += 1) {
+    const match = lines[index].match(/^(#{1,6})\s+(.+)$/);
+    if (!match) continue;
+    const name = cleanHeading(match[2]);
+    if (!name) continue;
+    sections.push({
+      kind: 'heading',
+      name,
+      level: match[1].length,
+      line: index + 1,
+    });
+  }
+  return sections;
+}
+
+function extractSections(file, content) {
+  if (isMarkdownFile(file)) return extractMarkdownSections(content);
+  if (isSourceFile(file)) return extractSourceSections(content);
+  return [];
+}
+
+function buildSectionMap(root, sectionFiles) {
+  const map = {};
+  for (const file of sectionFiles) {
+    try {
+      const sections = extractSections(file, fs.readFileSync(path.join(root, file), 'utf8'));
+      if (sections.length > 0) map[file] = sections;
+    } catch (_err) {
+      // Ignore unreadable files; missing source paths are already reported in denied.
+    }
+  }
+  return map;
+}
+
 function candidatePaths(fromFile, specifier) {
   const base = normalize(path.join(path.dirname(fromFile), specifier));
   const ext = path.extname(base);
@@ -230,7 +326,7 @@ function resolveLocalImport(fromFile, specifier, sourceSet) {
   return { target: '', status: 'unresolved' };
 }
 
-function buildGraph(root, sourceFiles) {
+function buildGraph(root, sourceFiles, sectionMap = {}) {
   const sourceSet = new Set(sourceFiles);
   const nodes = Object.fromEntries(sourceFiles.map((file) => [file, {
     path: file,
@@ -238,6 +334,7 @@ function buildGraph(root, sourceFiles) {
     imported_by: [],
     fan_in: 0,
     fan_out: 0,
+    sections: sectionMap[file] || [],
   }]));
   const edges = [];
   const unresolved = [];
@@ -312,6 +409,7 @@ function changedNeighbors(nodes, changedFiles) {
       path: file,
       fan_in: node.fan_in,
       fan_out: node.fan_out,
+      sections: node.sections || [],
       dependencies,
       dependents,
       read_next: [...dependencies, ...dependents]
@@ -336,6 +434,7 @@ function renderMarkdown(topology) {
     `- External imports: ${topology.summary.external_imports}`,
     `- Unresolved imports: ${topology.summary.unresolved_imports}`,
     `- Skipped dynamic imports: ${topology.summary.skipped_dynamic_imports}`,
+    `- Sections mapped: ${topology.summary.sections}`,
     '',
     '## High Fan-In',
     '',
@@ -353,6 +452,9 @@ function renderMarkdown(topology) {
   } else {
     for (const item of topology.changed_file_neighbors) {
       lines.push(`### ${md(item.path)}`, '', `- fan-in: ${item.fan_in}`, `- fan-out: ${item.fan_out}`);
+      if (item.sections.length > 0) {
+        lines.push('- sections:', ...item.sections.slice(0, 10).map((section) => `  - ${md(section.kind)} ${md(section.name)} (line ${section.line})`));
+      }
       if (item.read_next.length === 0) {
         lines.push('- read next: (none)');
       } else {
@@ -365,8 +467,13 @@ function renderMarkdown(topology) {
   lines.push(...(topology.unresolved.length > 0 ? topology.unresolved.slice(0, 20).map((item) => `- ${md(item.source)}: ${md(item.specifier)} (${md(item.kind)})`) : ['(none)']), '');
   lines.push('## Skipped Dynamic Imports', '');
   lines.push(...(topology.skipped_dynamic.length > 0 ? topology.skipped_dynamic.slice(0, 20).map((item) => `- ${md(item.source)}: import(${md(item.expression)})`) : ['(none)']), '');
+  lines.push('## Markdown Sections', '');
+  lines.push(...(topology.markdown_sections.length > 0
+    ? topology.markdown_sections.slice(0, 20).map((item) => `- ${md(item.path)}: ${item.sections.slice(0, 5).map((section) => `${md(section.name)} (line ${section.line})`).join(', ')}`)
+    : ['(none)']), '');
   lines.push('## Limits', '');
   lines.push('- Static JS/TS module graph only.');
+  lines.push('- Sections are static exported/common symbol and Markdown heading hints only.');
   lines.push('- Does not represent runtime call graph, control flow, data flow, or dependency severity.');
   lines.push('- Dynamic imports are reported as skipped unless they also appear as static imports.');
   return `${lines.join('\n')}\n`;
@@ -389,11 +496,13 @@ function compactTopology(topology) {
   }));
   const edges = topology.edges.filter((edge) => keep.has(edge.source) && keep.has(edge.target));
   const sourceFilter = (item) => keep.has(item.source);
+  const markdownSections = topology.markdown_sections.filter((item) => topology.changed_files.includes(item.path));
   return {
     ...topology,
     scope: 'changed-neighborhood',
     nodes,
     edges,
+    markdown_sections: markdownSections,
     unresolved: topology.unresolved.filter(sourceFilter),
     external: topology.external.filter(sourceFilter),
     skipped_dynamic: topology.skipped_dynamic.filter(sourceFilter),
@@ -406,29 +515,40 @@ function buildCodeTopology(opts = {}) {
   const markdownOut = opts.markdownOut || defaultMarkdownOut(root);
   const telemetryOut = opts.telemetryOut || defaultTelemetryOut(root);
   const maxHotspots = Number.isFinite(opts.maxHotspots) && opts.maxHotspots > 0 ? opts.maxHotspots : DEFAULT_MAX_HOTSPOTS;
-  const { sourceFiles, denied } = readFiles(root);
-  const graph = buildGraph(root, sourceFiles);
-  const changedFiles = readChangedFiles(root, opts.filesPath || '').filter(isSourceFile);
+  const { sourceFiles, sectionFiles, denied } = readFiles(root);
+  const sectionMap = buildSectionMap(root, sectionFiles);
+  const graph = buildGraph(root, sourceFiles, sectionMap);
+  const changedFiles = readChangedFiles(root, opts.filesPath || '').filter(isSectionFile);
+  const changedSourceFiles = changedFiles.filter(isSourceFile);
+  const markdownSections = Object.entries(sectionMap)
+    .filter(([file]) => isMarkdownFile(file))
+    .map(([file, sections]) => ({ path: file, sections }))
+    .sort((a, b) => a.path.localeCompare(b.path));
+  const sectionCount = Object.values(sectionMap).reduce((count, sections) => count + sections.length, 0);
   const fullTopology = {
     schema_version: '1',
     generated_at: new Date().toISOString(),
     root,
     scope: 'full',
     source_extensions: SOURCE_EXTENSIONS,
+    section_extensions: [...SOURCE_EXTENSIONS, ...MARKDOWN_EXTENSIONS],
     summary: {
       source_files: sourceFiles.length,
       local_edges: graph.edges.length,
       external_imports: graph.external.length,
       unresolved_imports: graph.unresolved.length,
       skipped_dynamic_imports: graph.skipped_dynamic.length,
+      sections: sectionCount,
+      markdown_section_files: markdownSections.length,
       denied_files: denied.length,
     },
     nodes: graph.nodes,
     edges: graph.edges,
     high_fan_in: rank(graph.nodes, 'fan_in', maxHotspots),
     high_fan_out: rank(graph.nodes, 'fan_out', maxHotspots),
+    markdown_sections: markdownSections,
     changed_files: changedFiles,
-    changed_file_neighbors: changedNeighbors(graph.nodes, changedFiles),
+    changed_file_neighbors: changedNeighbors(graph.nodes, changedSourceFiles),
     unresolved: graph.unresolved,
     external: graph.external,
     skipped_dynamic: graph.skipped_dynamic,
@@ -481,6 +601,7 @@ module.exports = {
   buildCodeTopology,
   deniedPath,
   extractImports,
+  extractSections,
   renderMarkdown,
   resolveLocalImport,
 };

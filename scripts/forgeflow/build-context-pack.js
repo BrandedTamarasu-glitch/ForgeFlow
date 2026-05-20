@@ -422,7 +422,7 @@ function compactTopology(topologyResult) {
   if (!topologyResult || !topologyResult.topology) return '(none)';
   const topology = topologyResult.topology;
   const lines = [
-    `Summary: ${topology.summary.source_files} source files, ${topology.summary.local_edges} local edges, ${topology.summary.unresolved_imports} unresolved, ${topology.summary.skipped_dynamic_imports} skipped dynamic.`,
+    `Summary: ${topology.summary.source_files} source files, ${topology.summary.local_edges} local edges, ${topology.summary.sections || 0} sections, ${topology.summary.unresolved_imports} unresolved, ${topology.summary.skipped_dynamic_imports} skipped dynamic.`,
     '',
     'High fan-in:',
     ...(topology.high_fan_in.length > 0
@@ -442,6 +442,9 @@ function compactTopology(topologyResult) {
     for (const item of topology.changed_file_neighbors.slice(0, 5)) {
       const readNext = item.read_next.map((next) => md(next.path)).slice(0, 5).join(', ') || '(none)';
       lines.push(`- ${md(item.path)}: ${readNext}`);
+      if (item.sections && item.sections.length > 0) {
+        lines.push(`  - sections: ${item.sections.slice(0, 5).map((section) => `${md(section.name)}:${section.line}`).join(', ')}`);
+      }
     }
   }
   lines.push('', 'Limits: static JS/TS import graph only; not a runtime call graph.');
@@ -465,7 +468,12 @@ function topologyReport(topologyResult, root) {
       path: item.path,
       fan_in: item.fan_in,
       fan_out: item.fan_out,
+      sections: (item.sections || []).slice(0, 10),
       read_next: item.read_next.slice(0, 5),
+    })),
+    markdown_sections: (topology.markdown_sections || []).slice(0, 5).map((item) => ({
+      path: item.path,
+      sections: item.sections.slice(0, 10),
     })),
     paths: {
       graph: path.relative(root, topologyResult.out),
