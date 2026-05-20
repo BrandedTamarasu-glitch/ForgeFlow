@@ -18,7 +18,8 @@ Single report pulling together everything the self-improving Forgeflow machinery
 4. **Pattern promotions** (from `forgeflow-patterns/.learnings-log.jsonl`) — what `/forgeflow-learnings` added to the canonical library
 5. **Drift status** (from `/forgeflow-drift --json`) — which agents lag their canonical reference
 6. **Context savings** (from `.forgeflow/**/context-telemetry.json` and related context telemetry) — whether local context packing is reducing prompt load
-7. **Recommendations** — specific agent prompts that need refinement based on the above
+7. **Project trends** (from `show-project-trends.js`) — whether code-map trend history, project learnings, and advisor health agree
+8. **Recommendations** — specific agent prompts that need refinement based on the above
 
 Answers: "Is the Forgeflow team getting smarter, and where is it getting stupider?"
 
@@ -34,6 +35,7 @@ $ARGUMENTS:
 Reads:
 - `~/.claude/projects/<sanitized-cwd>/memory/forgeflow-metrics.jsonl` across all project dirs
 - `forgeflow-patterns/.learnings-log.jsonl` (written by `/forgeflow-learnings`)
+- `.forgeflow/<project>/context/code-map-history.jsonl` and `.forgeflow/<project>/project-learnings.md` via `show-project-trends.js`
 - Invokes `/forgeflow-drift --json` for drift snapshot (unless `--no-drift`)
 </context>
 
@@ -127,6 +129,16 @@ ${HELPER_DIR}/advise-context.js --root .forgeflow --record --json
 
 Include estimated saved tokens, percent saved by telemetry kind, any context budget warnings, advisor recommendations for low savings, over-budget packets, or missing telemetry, and previous-run trend deltas. The budget checker reads `.forgeflow-budget.json` from the repo root when present. The advisor appends compact history to `.forgeflow/context-advisor-history.jsonl`.
 
+### 3f. Project trends
+
+When `${HELPER_DIR}/show-project-trends.js` exists, run:
+
+```bash
+${HELPER_DIR}/show-project-trends.js --json
+```
+
+Include code-map trend status, unresolved import delta, changed-section delta, new hotspots, whether project learnings consumed the code-map trend, advisor budget/status, and advisor recommendation actions. If the helper is missing, report project trends as unavailable rather than failing the whole report.
+
 ## Step 4: Render output
 
 If `--json`, dump the aggregated data structure.
@@ -195,7 +207,17 @@ If overdue, output the literal instruction: "Run `/forgeflow-learnings` to refre
 
 <inlined `/forgeflow-drift` summary — top 3 drifted agents>
 
-## 7. This-month priorities
+## 7. Project trends
+
+- Code-map trend: stable
+- Unresolved imports delta: 0
+- Changed sections delta: 0
+- New high fan-in: (none)
+- New high fan-out: (none)
+- Project learnings consumed trend: yes
+- Advisor budget: pass
+
+## 8. This-month priorities
 
 Auto-derived from the above:
 
@@ -222,10 +244,11 @@ Lets future `/forgeflow-report` runs compute the "trend vs prior period" column 
 </process>
 
 <success_criteria>
-- [ ] Single report combining all five signal sources (invocations, verdicts, auto-fix, false positives, drift)
+- [ ] Single report combining activity, verdicts, auto-fix, false positives, pattern library, drift, context savings, and project trends
 - [ ] False-positive threshold correctly applied (3 overturns per reviewer+class)
 - [ ] Pattern-library section shows last run + overdue flag
 - [ ] Drift section uses live `/forgeflow-drift --json` (unless `--no-drift`)
+- [ ] Project trends section uses `show-project-trends.js` when available and degrades gracefully when missing
 - [ ] "This-month priorities" is auto-derived from the data, not a placeholder
 - [ ] Trend column shows delta vs prior period when `.report-log.jsonl` has ≥2 entries
 - [ ] `--json` produces pipe-friendly structured output
