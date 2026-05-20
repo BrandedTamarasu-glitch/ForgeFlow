@@ -179,6 +179,7 @@ function normalizeLearning(record, file, cutoff) {
     learning,
     files: Array.isArray(record.files) ? record.files : [],
     severity: String(record.severity || 'medium').toLowerCase(),
+    source_kind: 'legacy-learning',
   };
 }
 
@@ -201,6 +202,7 @@ function normalizeProjectCandidate(record, file, cutoff) {
     learning,
     files: [],
     severity: severityFromConfidence(record.confidence),
+    source_kind: 'project-learning-candidate',
   };
 }
 
@@ -246,6 +248,26 @@ function maxSeverity(items) {
   return items.slice().sort((a, b) => (rank[b.severity] || 2) - (rank[a.severity] || 2))[0]?.severity || 'medium';
 }
 
+function sourceMix(items) {
+  return items.reduce((counts, item) => {
+    const key = item.source_kind || 'unknown';
+    counts[key] = (counts[key] || 0) + 1;
+    return counts;
+  }, {});
+}
+
+function renderSourceMix(mix) {
+  const labels = {
+    'legacy-learning': 'legacy',
+    'project-learning-candidate': 'project candidates',
+    unknown: 'unknown',
+  };
+  return Object.entries(mix || {})
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([key, count]) => `${labels[key] || key}: ${count}`)
+    .join(', ') || 'none';
+}
+
 function summarizeKnown(items) {
   const byPattern = new Map();
   for (const item of items) {
@@ -258,6 +280,7 @@ function summarizeKnown(items) {
     pattern,
     projects: [...new Set(records.map((item) => item.project))].sort(),
     occurrences: records.length,
+    source_mix: sourceMix(records),
     sample_learnings: records.slice(0, 5),
     applied: false,
   })).sort((a, b) => b.occurrences - a.occurrences || a.pattern.localeCompare(b.pattern));
@@ -280,6 +303,7 @@ function summarizeCandidates(items, minProjects, minOccurrences) {
         projects,
         occurrences: records.length,
         max_severity: maxSeverity(records),
+        source_mix: sourceMix(records),
         sample_learnings: records.slice(0, 5),
       };
     })
@@ -353,7 +377,7 @@ function renderMarkdown(result) {
     lines.push('- None.');
   } else {
     for (const item of result.known_pattern_updates) {
-      lines.push(`- **${item.pattern}** - ${item.occurrences} occurrence(s) across ${item.projects.length} project(s): ${item.projects.join(', ')}`);
+      lines.push(`- **${item.pattern}** - ${item.occurrences} occurrence(s) across ${item.projects.length} project(s): ${item.projects.join(', ')}; sources: ${renderSourceMix(item.source_mix)}`);
     }
   }
   lines.push('', `## Candidates for promotion (${result.candidates.length})`, '');
@@ -364,10 +388,11 @@ function renderMarkdown(result) {
       lines.push(`### Candidate: ${item.title}`);
       lines.push('');
       lines.push(`Threshold: ${item.projects.length} project(s), ${item.occurrences} occurrence(s), max severity ${item.max_severity}`);
+      lines.push(`Sources: ${renderSourceMix(item.source_mix)}`);
       lines.push('');
       lines.push('**Citations:**');
       for (const sample of item.sample_learnings) {
-        lines.push(`- \`${sample.project}\` (${sample.date || 'unknown'}) - "${sample.learning}"`);
+        lines.push(`- \`${sample.project}\` (${sample.date || 'unknown'}, ${sample.source_kind || 'unknown'}) - "${sample.learning}"`);
       }
       lines.push('');
     }
@@ -400,8 +425,10 @@ module.exports = {
   learningFiles,
   learningSourceFiles,
   renderMarkdown,
+  renderSourceMix,
   rollupPatternLearnings,
   scoreKnownPattern,
+  sourceMix,
   summarizeCandidates,
   summarizeKnown,
 };

@@ -6,6 +6,7 @@ const { spawnSync } = require('child_process');
 const {
   rollupPatternLearnings,
   renderMarkdown,
+  renderSourceMix,
   scoreKnownPattern,
 } = require('./rollup-pattern-learnings');
 
@@ -88,11 +89,12 @@ const checks = [
   ['dry-run does not log', dryRun.dry_run === true && !dryRunLogged],
   ['counts projects and learnings', recorded.projects_scanned === 2 && recorded.learnings_total === 8],
   ['counts source file types', recorded.legacy_learning_files.length === 2 && recorded.project_learning_candidate_files.length === 2],
-  ['summarizes known updates', recorded.known_pattern_updates.some((item) => item.pattern === 'Type Safety & Schema Mismatches' && item.occurrences === 1)],
-  ['surfaces candidates', recorded.candidates.some((item) => item.projects.length === 2 && item.occurrences === 3 && item.title.includes('External'))],
-  ['surfaces fallback candidates', recorded.candidates.some((item) => item.projects.length === 2 && item.occurrences === 3 && item.title.includes('Rollback'))],
+  ['summarizes known updates', recorded.known_pattern_updates.some((item) => item.pattern === 'Type Safety & Schema Mismatches' && item.occurrences === 1 && item.source_mix['legacy-learning'] === 1)],
+  ['surfaces candidates', recorded.candidates.some((item) => item.projects.length === 2 && item.occurrences === 3 && item.title.includes('External') && item.source_mix['legacy-learning'] === 3)],
+  ['surfaces fallback candidates', recorded.candidates.some((item) => item.projects.length === 2 && item.occurrences === 3 && item.title.includes('Rollback') && item.source_mix['project-learning-candidate'] === 3)],
   ['writes learning log', fs.readFileSync(path.join(patternsDir, '.learnings-log.jsonl'), 'utf8').includes('"learnings_total":8')],
-  ['renders markdown', markdown.includes('# Forgeflow Learnings - all') && markdown.includes('Candidates for promotion')],
+  ['renders source mix', renderSourceMix({ 'legacy-learning': 2, 'project-learning-candidate': 1 }) === 'legacy: 2, project candidates: 1'],
+  ['renders markdown', markdown.includes('# Forgeflow Learnings - all') && markdown.includes('Candidates for promotion') && markdown.includes('Sources: project candidates: 3') && markdown.includes('project-learning-candidate')],
   ['cli json works', cli.status === 0 && cliJson.projects_scanned === 2 && cliJson.candidates.length === 2],
   ['bad period exits usage', badPeriod.status === 2 && badPeriod.stderr.includes('Invalid --period')],
 ];

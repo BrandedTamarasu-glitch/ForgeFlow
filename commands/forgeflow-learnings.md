@@ -130,7 +130,7 @@ When `${HELPER_DIR}/rollup-pattern-learnings.js` exists, run it and print its ou
 "${HELPER_DIR}/rollup-pattern-learnings.js" $ARGUMENTS
 ```
 
-The helper owns scanning `.forgeflow/<project>/learnings.jsonl` and `project-learning-candidates.jsonl`, period filtering, known-pattern matching, candidate clustering, JSON/Markdown output, and `.learnings-log.jsonl` self-logging. If the helper is missing, continue with the manual fallback below and tell the user to run `/update-forgeflow`.
+The helper owns scanning `.forgeflow/<project>/learnings.jsonl` and `project-learning-candidates.jsonl`, period filtering, known-pattern matching, source-mix reporting, candidate clustering, JSON/Markdown output, and `.learnings-log.jsonl` self-logging. If the helper is missing, continue with the manual fallback below and tell the user to run `/update-forgeflow`.
 
 ```bash
 find "$HOME" \( -name "learnings.jsonl" -o -name "project-learning-candidates.jsonl" \) -path "*/.forgeflow/*" -type f 2>/dev/null
@@ -207,8 +207,8 @@ For each uncategorized cluster passing the thresholds, output:
 Threshold: appeared in <N> projects, <M> total occurrences, <max severity>
 
 **Citations:**
-- `<project1>` (YYYY-MM-DD) — "<learning text>"
-- `<project2>` (YYYY-MM-DD) — "<learning text>"
+- `<project1>` (YYYY-MM-DD, legacy-learning) — "<learning text>"
+- `<project2>` (YYYY-MM-DD, project-learning-candidate) — "<learning text>"
 - ...
 
 **Suggested classification:** <BLOCKER | REVISE> (based on max severity in cluster)
