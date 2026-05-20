@@ -107,6 +107,7 @@ const manifest = JSON.parse(fs.readFileSync(path.join(outDir, 'file-manifest.jso
 const synthesis = JSON.parse(fs.readFileSync(path.join(outDir, 'synthesis-input.json'), 'utf8'));
 const telemetry = JSON.parse(fs.readFileSync(path.join(outDir, 'context-telemetry.json'), 'utf8'));
 const insightsReport = JSON.parse(fs.readFileSync(path.join(outDir, 'latest-insights-report.json'), 'utf8'));
+const topology = JSON.parse(fs.readFileSync(path.join(outDir, 'code-topology.json'), 'utf8'));
 const noisyManifest = JSON.parse(fs.readFileSync(path.join(noisyOutDir, 'file-manifest.json'), 'utf8'));
 const wardenPacket = fs.readFileSync(path.join(repoRoot, synthesis.agent_packets.warden_reviewer), 'utf8');
 
@@ -122,13 +123,21 @@ const checks = [
   ['memory hits written', fs.existsSync(path.join(outDir, 'memory-hits.md'))],
   ['latest insights written', fs.existsSync(path.join(outDir, 'latest-insights.md'))],
   ['latest insights report written', fs.existsSync(path.join(outDir, 'latest-insights-report.json'))],
+  ['code topology written', fs.existsSync(path.join(outDir, 'code-topology.json'))],
+  ['code topology review focus written', fs.existsSync(path.join(outDir, 'code-topology-review-focus.md'))],
+  ['code topology telemetry written', fs.existsSync(path.join(outDir, 'code-topology-telemetry.json'))],
   ['diff summary written', fs.existsSync(path.join(outDir, 'diff-summary.md'))],
   ['telemetry written', fs.existsSync(path.join(outDir, 'context-telemetry.json'))],
   ['telemetry linked', synthesis.context_telemetry_path.endsWith('context-telemetry.json')],
   ['latest insights linked', synthesis.latest_insights_path.endsWith('latest-insights.md')],
   ['latest insights report linked', synthesis.latest_insights_report_path.endsWith('latest-insights-report.json')],
+  ['code topology linked', synthesis.code_topology_path.endsWith('code-topology.json')],
+  ['code topology review focus linked', synthesis.code_topology_review_focus_path.endsWith('code-topology-review-focus.md')],
   ['agent packet includes latest insights', wardenPacket.includes('## Latest Insights')],
+  ['agent packet includes code topology', wardenPacket.includes('## Code Topology') && wardenPacket.includes('static JS/TS import graph only')],
+  ['agent packet escapes markdown paths', wardenPacket.includes('src/auth/session\\.ts')],
   ['telemetry token estimate', Number.isInteger(telemetry.estimated_compact_tokens)],
+  ['code topology includes changed files', topology.changed_files.includes('src/auth/session.ts')],
   ['latest insights report has status', ['injected', 'missing', 'blocked', 'error'].includes(insightsReport.status)],
   ['noisy manifest sanitized', noisyManifest.files.length === 3],
   ['no noisy decoration in manifest', !noisyManifest.files.some((file) => file.path.includes('Changes') || file.path.includes('|'))],

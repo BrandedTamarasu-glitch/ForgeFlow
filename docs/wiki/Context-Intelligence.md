@@ -12,7 +12,7 @@ In a repo checkout, examples use `scripts/forgeflow/`. A Claude install from `/u
 
 | Capability | Helper | Purpose |
 |---|---|---|
-| Review context packs | `scripts/forgeflow/build-context-pack.js` | Builds bounded reviewer packets and synthesis input from the current change. |
+| Review context packs | `scripts/forgeflow/build-context-pack.js` | Builds bounded reviewer packets and synthesis input from the current change, including compact topology context for JS/TS changes. |
 | Code topology | `scripts/forgeflow/build-code-topology.js` | Builds a static JS/TS import graph with fan-in/fan-out hotspots and changed-file neighbors. |
 | Memory index | `scripts/forgeflow/index-memory.js` | Indexes local Forgeflow memory so helpers can find relevant history cheaply. |
 | Compact memory context | `scripts/forgeflow/build-memory-context.js` | Produces a concise project-memory summary for research, plan, consult, and implement workflows. |
@@ -33,6 +33,8 @@ In a repo checkout, examples use `scripts/forgeflow/`. A Claude install from `/u
 | Latest insights packets | `scripts/forgeflow/build-context-pack.js` | Includes the current project-learning insight view in agent packets only after the project-learning quality check passes, and writes a gate report. |
 
 When present, `.forgeflow/<project-name>/implementation-notes.md` is included in the memory index. This lets later consult, implement, review, and ship phases see prior decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes without loading the full raw notes file into every prompt.
+
+When JS/TS files are in scope, review context packs also write `code-topology.json`, `code-topology-review-focus.md`, and `code-topology-telemetry.json`, then include a compact **Code Topology** section in each agent packet. Treat this as static import guidance only, not a runtime call graph.
 
 When present, `.forgeflow/<project-name>/project-learnings.md` should be treated as guidance, not proof. Agents may use it to anticipate likely pitfalls and local patterns, but every current finding still needs evidence from current code, tests, and artifacts. If the quality check returns warn or fail, context packs replace the insights with a compact warning and do not inject the guidance. Use `/forgeflow-learnings --project --check` to refresh the artifact and inspect the same gate from the command surface.
 

@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { classify, readFiles } = require('./explain-review-route');
+const { buildCodeTopology } = require('./build-code-topology');
 const { buildMemoryIndex } = require('./index-memory');
 const { showProjectLearnings } = require('./show-project-learnings');
 const { checkProjectLearnings } = require('./check-project-learnings');
@@ -182,6 +183,10 @@ function buildDiffSummary(files, root, opts) {
 
 function fenced(value) {
   return ['```text', value, '```'].join('\n');
+}
+
+function md(value) {
+  return String(value || '').replace(/([\\`*_{}\[\]()#+\-.!|>])/g, '\\$1');
 }
 
 function keywords(files, route, task) {
@@ -388,6 +393,60 @@ function truncate(text, maxChars) {
   return `${text.slice(0, Math.max(0, maxChars - 80)).trimEnd()}\n\n[truncated to ${maxChars} chars]`;
 }
 
+function writeTempFile(dir, name, lines) {
+  const file = path.join(dir, name);
+  fs.writeFileSync(file, `${lines.join('\n')}\n`);
+  return file;
+}
+
+function buildTopologyContext(root, outDir, files) {
+  const sourceFiles = files.filter((file) => /\.(js|jsx|ts|tsx)$/i.test(file));
+  if (sourceFiles.length === 0) return null;
+  try {
+    const filesPath = writeTempFile(outDir, 'topology-files.txt', sourceFiles);
+    return buildCodeTopology({
+      root,
+      filesPath,
+      out: path.join(outDir, 'code-topology.json'),
+      markdownOut: path.join(outDir, 'code-topology-review-focus.md'),
+      telemetryOut: path.join(outDir, 'code-topology-telemetry.json'),
+      maxHotspots: 8,
+    });
+  } catch (_err) {
+    return null;
+  }
+}
+
+function compactTopology(topologyResult) {
+  if (!topologyResult || !topologyResult.topology) return '(none)';
+  const topology = topologyResult.topology;
+  const lines = [
+    `Summary: ${topology.summary.source_files} source files, ${topology.summary.local_edges} local edges, ${topology.summary.unresolved_imports} unresolved, ${topology.summary.skipped_dynamic_imports} skipped dynamic.`,
+    '',
+    'High fan-in:',
+    ...(topology.high_fan_in.length > 0
+      ? topology.high_fan_in.slice(0, 5).map((item) => `- ${md(item.path)} (fan-in ${item.fan_in}, fan-out ${item.fan_out})`)
+      : ['(none)']),
+    '',
+    'High fan-out:',
+    ...(topology.high_fan_out.length > 0
+      ? topology.high_fan_out.slice(0, 5).map((item) => `- ${md(item.path)} (fan-in ${item.fan_in}, fan-out ${item.fan_out})`)
+      : ['(none)']),
+    '',
+    'Changed-file neighbors:',
+  ];
+  if (topology.changed_file_neighbors.length === 0) {
+    lines.push('(none)');
+  } else {
+    for (const item of topology.changed_file_neighbors.slice(0, 5)) {
+      const readNext = item.read_next.map((next) => md(next.path)).slice(0, 5).join(', ') || '(none)';
+      lines.push(`- ${md(item.path)}: ${readNext}`);
+    }
+  }
+  lines.push('', 'Limits: static JS/TS import graph only; not a runtime call graph.');
+  return lines.join('\n');
+}
+
 function rulePack(agent, route, manifest) {
   const kinds = new Set(manifest.map((file) => file.kind));
   const rules = [];
@@ -422,7 +481,7 @@ function relevantFilesForAgent(agent, manifest) {
   return selected.length > 0 ? selected : manifest.slice(0, 10);
 }
 
-function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, task) {
+function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, topologySummary, task) {
   const relevant = relevantFilesForAgent(agent, manifest);
   const rules = rulePack(agent, route, manifest);
   return [
@@ -438,7 +497,7 @@ function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestI
     `- telemetry: ${(route.telemetry_hints || []).map((hint) => `${hint.type}:${hint.class}`).join(', ') || '(none)'}`,
     '',
     '## Relevant Files',
-    ...relevant.map((file) => `- ${file.path} (${file.kind}, ${file.exists ? `${file.size_bytes} bytes` : 'missing'})`),
+    ...relevant.map((file) => `- ${md(file.path)} (${file.kind}, ${file.exists ? `${file.size_bytes} bytes` : 'missing'})`),
     '',
     '## Local Rule Pack',
     ...rules.map((rule) => `- ${rule}`),
@@ -448,6 +507,9 @@ function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestI
     '',
     '## Latest Insights',
     latestInsights.replace(/^# Forgeflow Project Learnings[^\n]*\s*/u, '').trim() || '(none)',
+    '',
+    '## Code Topology',
+    topologySummary,
     '',
     '## Diff Summary',
     diffSummary.replace(/^# Diff Summary\s*/u, '').trim() || '(none)',
@@ -492,11 +554,13 @@ function buildContextPack(opts) {
   const memoryHits = buildMemoryHits(root, route.files, route, opts.task, opts.maxMemoryChars, memoryIndexPath);
   const latestInsightsResult = buildLatestInsightsResult(root);
   const latestInsights = latestInsightsResult.markdown;
+  const topologyContext = buildTopologyContext(root, outDir, route.files);
+  const topologySummary = compactTopology(topologyContext);
   const agents = route.agents.included || [];
   const packets = {};
 
   for (const agent of agents) {
-    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, opts.task);
+    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, topologySummary, opts.task);
     const file = path.join(packetDir, `${agent}.md`);
     fs.writeFileSync(file, content);
     packets[agent] = path.relative(root, file);
@@ -527,6 +591,9 @@ function buildContextPack(opts) {
     memory_hits_path: path.relative(root, path.join(outDir, 'memory-hits.md')),
     latest_insights_path: path.relative(root, path.join(outDir, 'latest-insights.md')),
     latest_insights_report_path: path.relative(root, path.join(outDir, 'latest-insights-report.json')),
+    code_topology_path: topologyContext ? path.relative(root, topologyContext.out) : null,
+    code_topology_review_focus_path: topologyContext ? path.relative(root, topologyContext.markdown_out) : null,
+    code_topology_telemetry_path: topologyContext ? path.relative(root, topologyContext.telemetry_path) : null,
     memory_index_path: memoryIndexPath ? path.relative(root, memoryIndexPath) : null,
     context_telemetry_path: path.relative(root, path.join(outDir, 'context-telemetry.json')),
     file_manifest_path: path.relative(root, path.join(outDir, 'file-manifest.json')),
