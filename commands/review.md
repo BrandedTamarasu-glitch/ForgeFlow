@@ -628,6 +628,12 @@ Arbiter receives:
 - Working directory: {cwd}
 - Instructions to read any files flagged by multiple reviewers that are NOT already in `<injected-context>`
 
+When `synthesis-input.json` contains `code_topology_summary.available=true`, Arbiter must use `code_topology_summary` as review-context guidance:
+- Check whether reviewer findings touch high fan-in/high fan-out files or changed-file neighbors.
+- Use `changed_file_neighbors[].read_next` to identify focused follow-up reads when exact source evidence is needed.
+- Do not convert topology hotspots into findings by themselves; topology supports prioritization only.
+- Mention any topology-guided follow-up reads that materially changed the verdict.
+
 ### Arbiter under chunking
 
 If `CHUNKED=true`, Arbiter receives outputs grouped by chunk, with explicit cross-chunk synthesis instructions:
@@ -670,6 +676,8 @@ Compass's prompt:
 Use the Forgeflow context packet and synthesis input first. Do not re-read packeted files unless exact source evidence is needed for validation.
 
 {synthesis-input.json + relevant phase artifacts when context pack exists, otherwise injected-context block from Step 3.5 with agent="compass-review"}
+
+If `synthesis-input.json` contains `code_topology_summary.available=true`, use it to prioritize validation around high fan-in/high fan-out files and changed-file neighbors. Treat topology as static import guidance only: it can suggest read-next targets and pressure-test areas, but it is not proof of runtime behavior or a standalone defect.
 
 You are performing your final review after Arbiter's technical verdict.
 This includes E2E feature validation and pressure testing — not just code review.

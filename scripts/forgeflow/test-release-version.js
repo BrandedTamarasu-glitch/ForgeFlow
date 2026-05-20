@@ -26,6 +26,7 @@ const marketplaceEntry = marketplace.plugins.find((entry) => entry.name === plug
 const releaseProcess = fs.readFileSync(path.join(repoRoot, 'docs/wiki/Release-Process.md'), 'utf8');
 const releaseCheck = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-release-check.md'), 'utf8');
 const learningsCommand = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-learnings.md'), 'utf8');
+const reviewCommand = fs.readFileSync(path.join(repoRoot, 'commands/review.md'), 'utf8');
 const readme = fs.readFileSync(path.join(repoRoot, 'README.md'), 'utf8');
 const hostedDocs = fs.readFileSync(path.join(repoRoot, 'docs/index.html'), 'utf8');
 
@@ -66,6 +67,8 @@ const checks = [
   ['release check runs implementation notes test', releaseCheck.includes('node scripts/forgeflow/test-implementation-notes.js')],
   ['release check runs implementation notes quality test', releaseCheck.includes('node scripts/forgeflow/test-check-implementation-notes.js')],
   ['release check runs project learnings quality test', releaseCheck.includes('node scripts/forgeflow/test-check-project-learnings.js')],
+  ['review command guides Arbiter topology use', reviewCommand.includes('Arbiter must use `code_topology_summary` as review-context guidance') && reviewCommand.includes('topology supports prioritization only')],
+  ['review command guides Compass topology use', reviewCommand.includes('use it to prioritize validation around high fan-in/high fan-out files') && reviewCommand.includes('not proof of runtime behavior')],
 ];
 
 let failed = 0;
