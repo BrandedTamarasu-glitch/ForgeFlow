@@ -72,11 +72,15 @@ function md(value) {
   return String(value || '').replace(/([\\`*_{}\[\]()#+\-.!|>])/g, '\\$1');
 }
 
-function topMarkdownSections(topology) {
+function safeLimit(value, fallback) {
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function topMarkdownSections(topology, limit = 8) {
   return (topology.markdown_sections || [])
     .slice()
     .sort((a, b) => b.sections.length - a.sections.length || a.path.localeCompare(b.path))
-    .slice(0, 8)
+    .slice(0, limit)
     .map((item) => ({
       path: item.path,
       section_count: item.sections.length,
@@ -91,24 +95,25 @@ function changedSectionList(topology) {
     .slice(0, 20);
 }
 
-function projectCodeMapSummary(topology, artifacts) {
+function projectCodeMapSummary(topology, artifacts, opts = {}) {
+  const maxHotspots = safeLimit(opts.maxHotspots, 8);
   return {
     schema_version: '1',
     generated_at: topology.generated_at,
     root: topology.root,
     summary: topology.summary,
-    high_fan_in: topology.high_fan_in.slice(0, 8),
-    high_fan_out: topology.high_fan_out.slice(0, 8),
+    high_fan_in: topology.high_fan_in.slice(0, maxHotspots),
+    high_fan_out: topology.high_fan_out.slice(0, maxHotspots),
     changed_sections: changedSectionList(topology),
-    changed_file_neighbors: topology.changed_file_neighbors.slice(0, 8).map((item) => ({
+    changed_file_neighbors: topology.changed_file_neighbors.slice(0, maxHotspots).map((item) => ({
       path: item.path,
       fan_in: item.fan_in,
       fan_out: item.fan_out,
-      sections: item.sections.slice(0, 8),
-      changed_sections: item.changed_sections.slice(0, 8),
-      read_next: item.read_next.slice(0, 8),
+      sections: item.sections.slice(0, maxHotspots),
+      changed_sections: item.changed_sections.slice(0, maxHotspots),
+      read_next: item.read_next.slice(0, maxHotspots),
     })),
-    markdown_sections: topMarkdownSections(topology),
+    markdown_sections: topMarkdownSections(topology, maxHotspots),
     artifacts,
     limits: [
       'Static JS/TS import graph only.',
@@ -188,13 +193,14 @@ function showCodeMap(opts = {}) {
     markdownOut: reviewFocusOut,
     telemetryOut,
     maxHotspots: opts.maxHotspots,
+    compact: true,
   });
   const artifacts = {
     graph: path.relative(root, result.out),
     review_focus: path.relative(root, result.markdown_out),
     telemetry: path.relative(root, result.telemetry_path),
   };
-  const summary = projectCodeMapSummary(result.topology, artifacts);
+  const summary = projectCodeMapSummary(result.topology, artifacts, { maxHotspots: opts.maxHotspots });
   const markdown = renderProjectCodeMap(summary);
   const out = opts.out || defaultOut(root);
   fs.mkdirSync(path.dirname(out), { recursive: true });

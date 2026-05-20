@@ -7,6 +7,7 @@ const { buildCodeTopology } = require('./build-code-topology');
 const { buildMemoryIndex } = require('./index-memory');
 const { showProjectLearnings } = require('./show-project-learnings');
 const { checkProjectLearnings } = require('./check-project-learnings');
+const { projectCodeMapSummary, renderProjectCodeMap } = require('./show-code-map');
 const {
   contextTelemetry,
   fileChars,
@@ -420,6 +421,21 @@ function compactProjectCodeMap(root, maxChars = 2500) {
   return truncate(lines.join('\n'), maxChars);
 }
 
+function projectCodeMapFromTopology(root, topologyResult, maxChars = 2500) {
+  if (!topologyResult || !topologyResult.topology) return '(none)';
+  const artifacts = {
+    graph: path.relative(root, topologyResult.out),
+    review_focus: path.relative(root, topologyResult.markdown_out),
+    telemetry: path.relative(root, topologyResult.telemetry_path),
+  };
+  const summary = projectCodeMapSummary(topologyResult.topology, artifacts, { maxHotspots: 5 });
+  return truncate([
+    `Artifact: ${artifacts.graph}`,
+    '',
+    firstLines(renderProjectCodeMap(summary).replace(/^# Forgeflow Project Code Map\s*/u, '').trim(), 80),
+  ].join('\n'), maxChars);
+}
+
 function truncate(text, maxChars) {
   if (!Number.isFinite(maxChars) || maxChars <= 0 || text.length <= maxChars) return text;
   return `${text.slice(0, Math.max(0, maxChars - 80)).trimEnd()}\n\n[truncated to ${maxChars} chars]`;
@@ -630,8 +646,9 @@ function buildContextPack(opts) {
   const memoryHits = buildMemoryHits(root, route.files, route, opts.task, opts.maxMemoryChars, memoryIndexPath);
   const latestInsightsResult = buildLatestInsightsResult(root);
   const latestInsights = latestInsightsResult.markdown;
-  const projectCodeMap = compactProjectCodeMap(root);
   const topologyContext = buildTopologyContext(root, outDir, route.files);
+  const projectCodeMap = projectCodeMapFromTopology(root, topologyContext);
+  const projectCodeMapPath = path.join(outDir, 'project-code-map.md');
   const topologySummary = compactTopology(topologyContext);
   const topology = topologyReport(topologyContext, root);
   const agents = route.agents.included || [];
@@ -669,12 +686,8 @@ function buildContextPack(opts) {
     memory_hits_path: path.relative(root, path.join(outDir, 'memory-hits.md')),
     latest_insights_path: path.relative(root, path.join(outDir, 'latest-insights.md')),
     latest_insights_report_path: path.relative(root, path.join(outDir, 'latest-insights-report.json')),
-    project_code_map_path: fs.existsSync(path.join(defaultProjectDir(root), 'context', 'project-code-map.md'))
-      ? path.relative(root, path.join(defaultProjectDir(root), 'context', 'project-code-map.md'))
-      : null,
-    project_code_topology_path: fs.existsSync(path.join(defaultProjectDir(root), 'context', 'code-topology.json'))
-      ? path.relative(root, path.join(defaultProjectDir(root), 'context', 'code-topology.json'))
-      : null,
+    project_code_map_path: topologyContext ? path.relative(root, projectCodeMapPath) : null,
+    project_code_topology_path: topologyContext ? path.relative(root, topologyContext.out) : null,
     code_topology_path: topologyContext ? path.relative(root, topologyContext.out) : null,
     code_topology_review_focus_path: topologyContext ? path.relative(root, topologyContext.markdown_out) : null,
     code_topology_telemetry_path: topologyContext ? path.relative(root, topologyContext.telemetry_path) : null,
@@ -694,7 +707,7 @@ function buildContextPack(opts) {
   fs.writeFileSync(path.join(outDir, 'diff-summary.md'), `${diffSummary}\n`);
   fs.writeFileSync(path.join(outDir, 'memory-hits.md'), `${memoryHits}\n`);
   fs.writeFileSync(path.join(outDir, 'latest-insights.md'), `${latestInsights || '# Latest Insights\n\n(none)'}\n`);
-  fs.writeFileSync(path.join(outDir, 'project-code-map.md'), `# Project Code Map\n\n${projectCodeMap}\n`);
+  fs.writeFileSync(projectCodeMapPath, `# Project Code Map\n\n${projectCodeMap}\n`);
   writeJson(path.join(outDir, 'latest-insights-report.json'), latestInsightsResult.report);
   writeTelemetry(path.join(outDir, 'context-telemetry.json'), telemetry);
   writeJson(path.join(outDir, 'synthesis-input.json'), synthesisInput);
@@ -746,6 +759,7 @@ module.exports = {
   buildLatestInsightsResult,
   buildMemoryHits,
   compactProjectCodeMap,
+  projectCodeMapFromTopology,
   fileKind,
   rulePack,
 };

@@ -574,6 +574,15 @@ function renderMarkdown(topology) {
 }
 
 function compactTopology(topology) {
+  const compactSections = (sections) => (sections || []).slice(0, 5);
+  const compactNeighbor = (item) => ({
+    path: item.path,
+    fan_in: item.fan_in,
+    fan_out: item.fan_out,
+    sections: compactSections(item.sections),
+    changed_sections: compactSections(item.changed_sections),
+    read_next: (item.read_next || []).slice(0, 5),
+  });
   const keep = new Set();
   for (const item of topology.high_fan_in) keep.add(item.path);
   for (const item of topology.high_fan_out) keep.add(item.path);
@@ -587,6 +596,7 @@ function compactTopology(topology) {
     ...node,
     imports: node.imports.filter((target) => keep.has(target)),
     imported_by: node.imported_by.filter((source) => keep.has(source)),
+    sections: [],
   }));
   const edges = topology.edges.filter((edge) => keep.has(edge.source) && keep.has(edge.target));
   const sourceFilter = (item) => keep.has(item.source);
@@ -597,6 +607,7 @@ function compactTopology(topology) {
     nodes,
     edges,
     markdown_sections: markdownSections,
+    changed_file_neighbors: topology.changed_file_neighbors.map(compactNeighbor),
     unresolved: topology.unresolved.filter(sourceFilter),
     external: topology.external.filter(sourceFilter),
     skipped_dynamic: topology.skipped_dynamic.filter(sourceFilter),
@@ -656,13 +667,14 @@ function buildCodeTopology(opts = {}) {
   };
   const topology = opts.compact ? compactTopology(fullTopology) : fullTopology;
   const markdown = renderMarkdown(topology);
+  const topologyJson = opts.compact ? JSON.stringify(topology) : JSON.stringify(topology, null, 2);
   fs.mkdirSync(path.dirname(out), { recursive: true });
-  fs.writeFileSync(out, `${JSON.stringify(topology, null, 2)}\n`);
+  fs.writeFileSync(out, `${topologyJson}\n`);
   fs.mkdirSync(path.dirname(markdownOut), { recursive: true });
   fs.writeFileSync(markdownOut, markdown);
   const telemetry = contextTelemetry('code-topology', {
     baseline_chars: sum(sourceFiles.map((file) => fileChars(path.join(root, file)))),
-    compact_chars: textChars(JSON.stringify(topology, null, 2)) + textChars(markdown),
+    compact_chars: textChars(topologyJson) + textChars(markdown),
     detail: topology.summary,
   });
   writeTelemetry(telemetryOut, telemetry);
