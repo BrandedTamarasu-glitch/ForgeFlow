@@ -11,6 +11,7 @@ const {
   parseDiffChangedLines,
   resolveLocalImport,
   sectionsForChangedLines,
+  withSectionRanges,
 } = require('./build-code-topology');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
@@ -66,6 +67,10 @@ const touchedSections = sectionsForChangedLines([
   { kind: 'function', name: 'first', line: 1 },
   { kind: 'function', name: 'second', line: 5 },
 ], [3, 6], 8);
+const rangedSections = withSectionRanges([
+  { kind: 'function', name: 'first', line: 1 },
+  { kind: 'function', name: 'second', line: 5 },
+], 8);
 const sourceSet = new Set(['src/shared/index.ts']);
 const gitRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-code-topology-git-'));
 fs.mkdirSync(path.join(gitRoot, 'src'), { recursive: true });
@@ -142,14 +147,15 @@ const checks = [
   ['extracts markdown headings', markdownSections.length === 2 && markdownSections[1].name === 'Details'],
   ['parses diff changed lines', changedLines['src/example.ts'].length === 2 && changedLines['src/example.ts'][0] === 3],
   ['maps changed lines to sections', touchedSections.length === 2 && touchedSections[0].name === 'first' && touchedSections[1].name === 'second'],
+  ['adds section ranges', rangedSections[0].end_line === 4 && rangedSections[1].end_line === 8],
   ['resolves index import', resolveLocalImport('src/app/main.ts', '../shared', sourceSet).target === 'src/shared/index.ts'],
   ['tracks local edges', topology.edges.some((edge) => edge.source === 'src/app/main.ts' && edge.target === 'src/features/feature.ts')],
   ['tracks commonjs edge', topology.edges.some((edge) => edge.source === 'src/lib/legacy.js' && edge.target === 'src/shared/index.ts' && edge.kind === 'require')],
   ['tracks re-export edge', topology.edges.some((edge) => edge.source === 'src/lib/helper.ts' && edge.target === 'src/shared/index.ts' && edge.kind === 'export-from')],
   ['resolves js specifier to ts file', topology.edges.some((edge) => edge.source === 'src/app/main.ts' && edge.target === 'src/lib/helper.ts' && edge.specifier === '../lib/helper.js')],
   ['high fan-in detects shared', topology.high_fan_in[0].path === 'src/shared/index.ts' && shared.fan_in === 4],
-  ['node records sections', feature.sections.some((item) => item.kind === 'function' && item.name === 'runFeature')],
-  ['markdown sections recorded', guideSections && guideSections.sections.some((item) => item.name === 'Review Notes')],
+  ['node records sections', feature.sections.some((item) => item.kind === 'function' && item.name === 'runFeature' && Number.isInteger(item.end_line))],
+  ['markdown sections recorded', guideSections && guideSections.sections.some((item) => item.name === 'Review Notes' && Number.isInteger(item.end_line))],
   ['high fan-out detects feature', topology.high_fan_out.some((item) => item.path === 'src/features/feature.ts' && item.fan_out === 2)],
   ['changed neighbor includes dependent', feature.imported_by.includes('src/app/main.ts') && topology.changed_file_neighbors[0].read_next.some((item) => item.path === 'src/app/main.ts')],
   ['changed neighbor includes sections', topology.changed_file_neighbors[0].sections.some((item) => item.name === 'runFeature')],
@@ -157,7 +163,7 @@ const checks = [
   ['markdown escapes unresolved imports', markdown.includes('bad\\]\\#missing')],
   ['dynamic import reported', topology.skipped_dynamic.some((item) => item.source === 'src/features/feature.ts')],
   ['markdown renders review focus', markdown.includes('## Changed File Neighbors') && markdown.includes('Static JS/TS module graph only.')],
-  ['markdown renders sections', markdown.includes('Sections mapped') && markdown.includes('## Markdown Sections')],
+  ['markdown renders sections', markdown.includes('Sections mapped') && markdown.includes('## Markdown Sections') && markdown.includes('function runFeature (lines 6-9)')],
   ['telemetry written', telemetry.kind === 'code-topology' && Number.isInteger(telemetry.estimated_compact_tokens)],
   ['cli json works', cli.status === 0 && cliJson.summary.source_files === 7],
   ['compact scope marks topology', compactResult.topology.scope === 'changed-neighborhood'],
@@ -166,7 +172,7 @@ const checks = [
   ['denies sensitive paths', deniedPath('config/api-token.ts') === 'sensitive filename'],
   ['git scan includes untracked source', gitResult.topology.nodes.some((node) => node.path === 'src/untracked.ts') && gitResult.topology.changed_files.includes('src/untracked.ts')],
   ['git scan skips deleted tracked source', !gitResult.topology.nodes.some((node) => node.path === 'src/tracked.ts') && gitResult.topology.denied.some((item) => item.path === 'src/tracked.ts' && item.reason === 'missing source path')],
-  ['changed section detected from git diff', changedSectionResult.topology.summary.changed_sections === 1 && changedSectionNeighbor.changed_sections[0].name === 'target'],
+  ['changed section detected from git diff', changedSectionResult.topology.summary.changed_sections === 1 && changedSectionNeighbor.changed_sections[0].name === 'target' && changedSectionNeighbor.changed_sections[0].end_line === 7],
   ['symlink source denied', symlinkResult.topology.nodes.length === 0 && (!fs.existsSync(path.join(symlinkRoot, 'src/linked.ts')) || symlinkResult.topology.denied.some((item) => item.reason === 'symbolic links are not accepted'))],
 ];
 

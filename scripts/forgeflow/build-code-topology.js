@@ -320,23 +320,39 @@ function extractSections(file, content) {
   return [];
 }
 
+function lineCount(content) {
+  const text = String(content || '');
+  if (!text) return 0;
+  const lines = text.split(/\r?\n/);
+  return lines[lines.length - 1] === '' ? lines.length - 1 : lines.length;
+}
+
 function sectionEndLine(sections, index, totalLines) {
   const next = sections[index + 1];
   if (next && Number.isFinite(next.line)) return Math.max(next.line - 1, sections[index].line);
   return totalLines;
 }
 
+function withSectionRanges(sections, totalLines) {
+  if (!Array.isArray(sections)) return [];
+  return sections.map((section, index) => ({
+    ...section,
+    end_line: sectionEndLine(sections, index, totalLines),
+  }));
+}
+
 function sectionsForChangedLines(sections, changedLines, totalLines) {
   if (!Array.isArray(sections) || sections.length === 0 || !Array.isArray(changedLines) || changedLines.length === 0) return [];
   const changed = [];
-  for (let index = 0; index < sections.length; index += 1) {
-    const section = sections[index];
-    const endLine = sectionEndLine(sections, index, totalLines);
+  const rangedSections = sections.every((section) => Number.isFinite(section.end_line))
+    ? sections
+    : withSectionRanges(sections, totalLines);
+  for (const section of rangedSections) {
+    const endLine = section.end_line;
     const touched = changedLines.filter((line) => line >= section.line && line <= endLine);
     if (touched.length > 0) {
       changed.push({
         ...section,
-        end_line: endLine,
         changed_lines: touched,
       });
     }
@@ -348,7 +364,8 @@ function buildSectionMap(root, sectionFiles) {
   const map = {};
   for (const file of sectionFiles) {
     try {
-      const sections = extractSections(file, fs.readFileSync(path.join(root, file), 'utf8'));
+      const content = fs.readFileSync(path.join(root, file), 'utf8');
+      const sections = withSectionRanges(extractSections(file, content), lineCount(content));
       if (sections.length > 0) map[file] = sections;
     } catch (_err) {
       // Ignore unreadable files; missing source paths are already reported in denied.
@@ -364,7 +381,7 @@ function buildChangedSectionMap(root, sectionMap, changedLineMap) {
     if (sections.length === 0) continue;
     let totalLines = 0;
     try {
-      totalLines = fs.readFileSync(path.join(root, file), 'utf8').split(/\r?\n/).length;
+      totalLines = lineCount(fs.readFileSync(path.join(root, file), 'utf8'));
     } catch (_err) {
       totalLines = sections[sections.length - 1].line;
     }
@@ -527,10 +544,10 @@ function renderMarkdown(topology) {
     for (const item of topology.changed_file_neighbors) {
       lines.push(`### ${md(item.path)}`, '', `- fan-in: ${item.fan_in}`, `- fan-out: ${item.fan_out}`);
       if (item.sections.length > 0) {
-        lines.push('- sections:', ...item.sections.slice(0, 10).map((section) => `  - ${md(section.kind)} ${md(section.name)} (line ${section.line})`));
+        lines.push('- sections:', ...item.sections.slice(0, 10).map((section) => `  - ${md(section.kind)} ${md(section.name)} (lines ${section.line}-${section.end_line})`));
       }
       if (item.changed_sections.length > 0) {
-        lines.push('- changed sections:', ...item.changed_sections.slice(0, 10).map((section) => `  - ${md(section.kind)} ${md(section.name)} (lines ${section.changed_lines.join(', ')})`));
+        lines.push('- changed sections:', ...item.changed_sections.slice(0, 10).map((section) => `  - ${md(section.kind)} ${md(section.name)} (range ${section.line}-${section.end_line}; changed lines ${section.changed_lines.join(', ')})`));
       }
       if (item.read_next.length === 0) {
         lines.push('- read next: (none)');
@@ -546,7 +563,7 @@ function renderMarkdown(topology) {
   lines.push(...(topology.skipped_dynamic.length > 0 ? topology.skipped_dynamic.slice(0, 20).map((item) => `- ${md(item.source)}: import(${md(item.expression)})`) : ['(none)']), '');
   lines.push('## Markdown Sections', '');
   lines.push(...(topology.markdown_sections.length > 0
-    ? topology.markdown_sections.slice(0, 20).map((item) => `- ${md(item.path)}: ${item.sections.slice(0, 5).map((section) => `${md(section.name)} (line ${section.line})`).join(', ')}`)
+    ? topology.markdown_sections.slice(0, 20).map((item) => `- ${md(item.path)}: ${item.sections.slice(0, 5).map((section) => `${md(section.name)} (${section.line}-${section.end_line})`).join(', ')}`)
     : ['(none)']), '');
   lines.push('## Limits', '');
   lines.push('- Static JS/TS module graph only.');
@@ -689,4 +706,5 @@ module.exports = {
   renderMarkdown,
   resolveLocalImport,
   sectionsForChangedLines,
+  withSectionRanges,
 };

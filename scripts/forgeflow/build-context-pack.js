@@ -443,10 +443,10 @@ function compactTopology(topologyResult) {
       const readNext = item.read_next.map((next) => md(next.path)).slice(0, 5).join(', ') || '(none)';
       lines.push(`- ${md(item.path)}: ${readNext}`);
       if (item.sections && item.sections.length > 0) {
-        lines.push(`  - sections: ${item.sections.slice(0, 5).map((section) => `${md(section.name)}:${section.line}`).join(', ')}`);
+        lines.push(`  - sections: ${item.sections.slice(0, 5).map((section) => `${md(section.name)}:${section.line}-${section.end_line}`).join(', ')}`);
       }
       if (item.changed_sections && item.changed_sections.length > 0) {
-        lines.push(`  - changed sections: ${item.changed_sections.slice(0, 5).map((section) => `${md(section.name)}:${section.changed_lines.join('/')}`).join(', ')}`);
+        lines.push(`  - changed sections: ${item.changed_sections.slice(0, 5).map((section) => `${md(section.name)}:${section.line}-${section.end_line} changed ${section.changed_lines.join('/')}`).join(', ')}`);
       }
     }
   }
