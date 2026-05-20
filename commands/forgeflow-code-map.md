@@ -9,7 +9,7 @@ allowed-tools:
 ---
 
 <objective>
-Generate a user-facing project code map for the current repository. The map summarizes static JS/TS topology, fan-in/fan-out hotspots, source symbols with line ranges, Markdown headings, changed sections, Git provenance, and generated artifact paths.
+Generate a user-facing project code map for the current repository. The map summarizes static JS/TS topology, fan-in/fan-out hotspots, source symbols with line ranges, Markdown headings, changed sections, Git provenance, previous-run trend deltas, and generated artifact paths.
 
 Answers: "What does this project look like structurally, what files are central, and which changed sections should agents or maintainers inspect first?"
 </objective>
@@ -26,6 +26,7 @@ The command uses `scripts/forgeflow/show-code-map.js`, which writes:
 - `.forgeflow/<project>/context/code-topology.json`
 - `.forgeflow/<project>/context/code-topology-review-focus.md`
 - `.forgeflow/<project>/context/code-topology-telemetry.json`
+- `.forgeflow/<project>/context/code-map-history.jsonl`
 </context>
 
 ## Gotchas
@@ -34,6 +35,7 @@ The command uses `scripts/forgeflow/show-code-map.js`, which writes:
 - **JS/TS topology only.** Import edges are collected for `.js`, `.jsx`, `.ts`, and `.tsx`. Markdown headings are included as documentation sections.
 - **Changed sections require a Git diff.** When there is no working-tree diff against `HEAD`, changed-section output is empty.
 - **Provenance is Git-based.** Branch, commit, dirty state, changed-file count, and untracked-file count are recorded when the helper runs from the repository root.
+- **Trends are local history.** Trend deltas compare against the previous compact snapshot in `.forgeflow/<project>/context/code-map-history.jsonl`.
 - **Line ranges are hints.** They are computed from static section starts and the next section boundary.
 
 <process>
@@ -73,6 +75,7 @@ Print the helper output directly.
 - [ ] The command prints a compact project code map or JSON summary
 - [ ] Generated artifact paths are included
 - [ ] Output includes provenance metadata
+- [ ] Output includes local code-map trend metadata
 - [ ] Output states static-map limitations
 - [ ] Missing helper produces an actionable update instruction
 </success_criteria>

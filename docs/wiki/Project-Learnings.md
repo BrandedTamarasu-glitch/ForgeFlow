@@ -21,7 +21,7 @@ Refresh it from local implementation notes, review outcomes, and ship metadata:
 scripts/forgeflow/show-project-learnings.js
 ```
 
-For the current checkout, `show-project-learnings.js` refreshes `.forgeflow/<project-name>/context/code-topology.json` first, then uses it as structural input. High fan-in/fan-out paths and files with changed sections become Hot Files And Modules signals, and changed-section counts can shape Recommended Approach For Next Work.
+For the current checkout, `show-project-learnings.js` refreshes `.forgeflow/<project-name>/context/code-topology.json` first, then uses it as structural input. High fan-in/fan-out paths and files with changed sections become Hot Files And Modules signals, and changed-section counts can shape Recommended Approach For Next Work. When `.forgeflow/<project-name>/context/code-map-history.jsonl` has at least two snapshots, new hotspots, unresolved-import growth, and changed-section churn also feed the rollup.
 
 `/ship` also refreshes the file and writes `.forgeflow/<project-name>/ship/project-learnings-rollup.json` for the shipping handoff. `/forgeflow-health` reports the latest local project-learnings summary when the Markdown artifact exists.
 
@@ -63,7 +63,7 @@ Use project learnings for patterns that should shape future work:
 - recurring implementation pitfalls
 - stable project decisions
 - risky files, modules, or workflows
-- structural hotspots and changed sections from the latest code map
+- structural hotspots, changed sections, and trend deltas from the latest code map
 - repeated validation gaps
 - repeated review finding categories
 - follow-ups that keep reappearing

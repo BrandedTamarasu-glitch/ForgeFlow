@@ -193,9 +193,9 @@ These records are local-first. They are meant to help you understand false posit
 
 Forgeflow includes local-only helpers that reduce agent prompt load before review or implementation work starts:
 
-- **Context packs:** `build-context-pack.js` prepares bounded reviewer packets and a synthesis input file from the changed files, including latest insights, compact project code-map guidance, changed-neighborhood topology context, changed-section hints, provenance metadata, and a JSON topology summary when JS/TS files are in scope.
+- **Context packs:** `build-context-pack.js` prepares bounded reviewer packets and a synthesis input file from the changed files, including latest insights, compact project code-map guidance, changed-neighborhood topology context, changed-section hints, provenance metadata, topology trend history, and a JSON topology summary when JS/TS files are in scope.
 - **Code topology:** `build-code-topology.js` builds a static JS/TS import graph with fan-in/fan-out hotspots, changed-file neighbors, source symbols with line ranges, changed sections, Markdown headings, and Git provenance.
-- **Project code map:** `show-code-map.js` renders a compact maintainer-facing summary of topology, hotspots, sections, changed sections, provenance, and artifact paths.
+- **Project code map:** `show-code-map.js` renders a compact maintainer-facing summary of topology, hotspots, sections, changed sections, provenance, trend deltas, and artifact paths.
 - **Memory index:** `index-memory.js` indexes local Forgeflow memory so agents can use compact project history instead of reading full notes.
 - **Memory context:** `build-memory-context.js` builds a compact memory summary for research, planning, consultation, and implementation.
 - **Scope manifests:** `build-scope-manifest.js` creates file ownership packets for implementation waves.
@@ -268,7 +268,7 @@ Refresh the local rollup after several work items:
 scripts/forgeflow/show-project-learnings.js
 ```
 
-For the current checkout, `show-project-learnings.js` refreshes the compact code map before rolling up insights. The rollup adds structural hotspots and changed-section files to Hot Files And Modules and next-work guidance.
+For the current checkout, `show-project-learnings.js` refreshes the compact code map before rolling up insights. The rollup adds structural hotspots, changed-section files, and code-map trend deltas to Hot Files And Modules, Risk Areas, and next-work guidance.
 
 `/ship` refreshes the file during handoff prep, and `/forgeflow-health` surfaces the latest local summary when it exists.
 During `/implement`, Atlas refreshes project learnings after implementation-note consolidation when the helper is available.

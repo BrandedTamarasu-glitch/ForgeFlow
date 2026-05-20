@@ -168,6 +168,7 @@ const synthesis = JSON.parse(fs.readFileSync(path.join(outDir, 'synthesis-input.
 const telemetry = JSON.parse(fs.readFileSync(path.join(outDir, 'context-telemetry.json'), 'utf8'));
 const insightsReport = JSON.parse(fs.readFileSync(path.join(outDir, 'latest-insights-report.json'), 'utf8'));
 const topology = JSON.parse(fs.readFileSync(path.join(outDir, 'code-topology.json'), 'utf8'));
+const codeMapHistoryPath = path.join(outDir, 'code-map-history.jsonl');
 const noisyManifest = JSON.parse(fs.readFileSync(path.join(noisyOutDir, 'file-manifest.json'), 'utf8'));
 const wardenPacket = fs.readFileSync(path.join(repoRoot, synthesis.agent_packets.warden_reviewer), 'utf8');
 const compactMap = compactProjectCodeMap(repoRoot);
@@ -197,6 +198,7 @@ const checks = [
   ['code topology written', fs.existsSync(path.join(outDir, 'code-topology.json'))],
   ['code topology review focus written', fs.existsSync(path.join(outDir, 'code-topology-review-focus.md'))],
   ['code topology telemetry written', fs.existsSync(path.join(outDir, 'code-topology-telemetry.json'))],
+  ['code map history written', fs.existsSync(codeMapHistoryPath) && fs.readFileSync(codeMapHistoryPath, 'utf8').trim().split(/\r?\n/).length === 1],
   ['diff summary written', fs.existsSync(path.join(outDir, 'diff-summary.md'))],
   ['telemetry written', fs.existsSync(path.join(outDir, 'context-telemetry.json'))],
   ['telemetry linked', synthesis.context_telemetry_path.endsWith('context-telemetry.json')],
@@ -207,8 +209,10 @@ const checks = [
   ['code topology linked', synthesis.code_topology_path.endsWith('code-topology.json')],
   ['code topology review focus linked', synthesis.code_topology_review_focus_path.endsWith('code-topology-review-focus.md')],
   ['code topology provenance linked', synthesis.code_topology_provenance && synthesis.code_topology_provenance.source === 'build-context-pack'],
+  ['code topology history linked', synthesis.code_topology_history && synthesis.code_topology_history.recorded === true && synthesis.code_topology_history.path.endsWith('code-map-history.jsonl')],
   ['code topology summary linked', synthesis.code_topology_summary.available === true && synthesis.code_topology_summary.paths.review_focus.endsWith('code-topology-review-focus.md')],
   ['code topology summary has provenance', synthesis.code_topology_summary.provenance && synthesis.code_topology_summary.provenance.source === 'build-context-pack'],
+  ['code topology summary has history', synthesis.code_topology_summary.history && synthesis.code_topology_summary.history.recorded === true],
   ['code topology summary has hotspots', synthesis.code_topology_summary.high_fan_in.length > 0 && synthesis.code_topology_summary.high_fan_out.length > 0],
   ['code topology summary has neighbor list', Array.isArray(synthesis.code_topology_summary.changed_file_neighbors)],
   ['code topology summary has section count', Number.isInteger(synthesis.code_topology_summary.summary.sections)],

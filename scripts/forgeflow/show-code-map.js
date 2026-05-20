@@ -71,6 +71,16 @@ function defaultOut(root, projectDir = defaultProjectDir(root)) {
   return path.join(projectDir, 'context', 'project-code-map.md');
 }
 
+function defaultHistoryPath(root, projectDir = defaultProjectDir(root)) {
+  return path.join(projectDir, 'context', 'code-map-history.jsonl');
+}
+
+function historyPathForTopologyOut(topologyOut) {
+  const dir = path.dirname(topologyOut);
+  const contextDir = path.basename(dir) === 'latest' ? path.dirname(dir) : dir;
+  return path.join(contextDir, 'code-map-history.jsonl');
+}
+
 function md(value) {
   return String(value || '').replace(/([\\`*_{}\[\]()#+\-.!|>])/g, '\\$1');
 }
@@ -127,8 +137,133 @@ function projectCodeMapSummary(topology, artifacts, opts = {}) {
   };
 }
 
+function readCodeMapHistory(historyPath) {
+  if (!historyPath || !fs.existsSync(historyPath)) return [];
+  return fs.readFileSync(historyPath, 'utf8')
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((line) => {
+      try {
+        return JSON.parse(line);
+      } catch (_err) {
+        return null;
+      }
+    })
+    .filter(Boolean);
+}
+
+function codeMapHistoryRecord(summary) {
+  return {
+    schema_version: '1',
+    generated_at: summary.generated_at,
+    source: summary.provenance ? summary.provenance.source : 'unknown',
+    branch: summary.provenance ? summary.provenance.branch : '',
+    commit_short: summary.provenance ? summary.provenance.commit_short : '',
+    dirty: summary.provenance ? Boolean(summary.provenance.dirty) : false,
+    summary: {
+      source_files: summary.summary.source_files,
+      local_edges: summary.summary.local_edges,
+      unresolved_imports: summary.summary.unresolved_imports,
+      skipped_dynamic_imports: summary.summary.skipped_dynamic_imports,
+      sections: summary.summary.sections || 0,
+      changed_sections: summary.summary.changed_sections || 0,
+      markdown_section_files: summary.summary.markdown_section_files || 0,
+    },
+    high_fan_in: summary.high_fan_in.slice(0, 5).map((item) => ({
+      path: item.path,
+      fan_in: item.fan_in,
+      fan_out: item.fan_out,
+    })),
+    high_fan_out: summary.high_fan_out.slice(0, 5).map((item) => ({
+      path: item.path,
+      fan_in: item.fan_in,
+      fan_out: item.fan_out,
+    })),
+    changed_sections: summary.changed_sections.slice(0, 20).map((item) => ({
+      file: item.file,
+      name: item.name,
+      kind: item.kind,
+    })),
+  };
+}
+
+function pathSet(items) {
+  return new Set((items || []).map((item) => item.path).filter(Boolean));
+}
+
+function setDelta(current, previous) {
+  return [...current].filter((item) => !previous.has(item)).slice(0, 10);
+}
+
+function compareCodeMapTrend(current, history) {
+  const previous = history.length > 0 ? history[history.length - 1] : null;
+  if (!previous || !previous.summary) {
+    return { status: 'first-run' };
+  }
+  const currentFanIn = pathSet(current.high_fan_in);
+  const previousFanIn = pathSet(previous.high_fan_in);
+  const currentFanOut = pathSet(current.high_fan_out);
+  const previousFanOut = pathSet(previous.high_fan_out);
+  return {
+    status: 'compared',
+    previous_generated_at: previous.generated_at || '',
+    source_files_delta: current.summary.source_files - (previous.summary.source_files || 0),
+    local_edges_delta: current.summary.local_edges - (previous.summary.local_edges || 0),
+    unresolved_imports_delta: current.summary.unresolved_imports - (previous.summary.unresolved_imports || 0),
+    skipped_dynamic_imports_delta: current.summary.skipped_dynamic_imports - (previous.summary.skipped_dynamic_imports || 0),
+    sections_delta: current.summary.sections - (previous.summary.sections || 0),
+    changed_sections_delta: current.summary.changed_sections - (previous.summary.changed_sections || 0),
+    new_high_fan_in: setDelta(currentFanIn, previousFanIn),
+    new_high_fan_out: setDelta(currentFanOut, previousFanOut),
+    removed_high_fan_in: setDelta(previousFanIn, currentFanIn),
+    removed_high_fan_out: setDelta(previousFanOut, currentFanOut),
+  };
+}
+
+function appendCodeMapHistory(historyPath, record) {
+  fs.mkdirSync(path.dirname(historyPath), { recursive: true });
+  fs.appendFileSync(historyPath, `${JSON.stringify(record)}\n`);
+}
+
+function attachCodeMapHistory(root, summary, historyPath, opts = {}) {
+  const history = readCodeMapHistory(historyPath);
+  const record = codeMapHistoryRecord(summary);
+  const trend = compareCodeMapTrend(record, history);
+  summary.history = {
+    path: path.relative(root, historyPath),
+    previous_runs: history.length,
+    recorded: false,
+    trend,
+  };
+  if (opts.record !== false) {
+    appendCodeMapHistory(historyPath, record);
+    summary.history.recorded = true;
+  }
+  return summary.history;
+}
+
 function renderList(items, renderItem) {
   return items.length > 0 ? items.map(renderItem) : ['(none)'];
+}
+
+function renderTrend(summary) {
+  if (!summary.history) return ['(not recorded)'];
+  const trend = summary.history.trend || {};
+  if (trend.status !== 'compared') {
+    return [
+      `- History: ${md(summary.history.path)} (${summary.history.previous_runs} previous runs)`,
+      '- Trend: first recorded code-map snapshot',
+    ];
+  }
+  return [
+    `- History: ${md(summary.history.path)} (${summary.history.previous_runs} previous runs)`,
+    `- Source files delta: ${trend.source_files_delta}`,
+    `- Local edges delta: ${trend.local_edges_delta}`,
+    `- Unresolved imports delta: ${trend.unresolved_imports_delta}`,
+    `- Changed sections delta: ${trend.changed_sections_delta}`,
+    `- New high fan-in: ${trend.new_high_fan_in.length > 0 ? trend.new_high_fan_in.map(md).join(', ') : '(none)'}`,
+    `- New high fan-out: ${trend.new_high_fan_out.length > 0 ? trend.new_high_fan_out.map(md).join(', ') : '(none)'}`,
+  ];
 }
 
 function renderProjectCodeMap(summary) {
@@ -161,6 +296,10 @@ function renderProjectCodeMap(summary) {
     `- Sections mapped: ${summary.summary.sections}`,
     `- Changed sections: ${summary.summary.changed_sections}`,
     `- Markdown section files: ${summary.summary.markdown_section_files}`,
+    '',
+    '## Trends',
+    '',
+    ...renderTrend(summary),
     '',
     '## High Fan-In',
     '',
@@ -219,6 +358,7 @@ function showCodeMap(opts = {}) {
     telemetry: path.relative(root, result.telemetry_path),
   };
   const summary = projectCodeMapSummary(result.topology, artifacts, { maxHotspots: opts.maxHotspots });
+  attachCodeMapHistory(root, summary, opts.history || defaultHistoryPath(root, projectDir), { record: opts.recordHistory });
   const markdown = renderProjectCodeMap(summary);
   const out = opts.out || defaultOut(root, projectDir);
   fs.mkdirSync(path.dirname(out), { recursive: true });
@@ -250,8 +390,14 @@ if (require.main === module) {
 }
 
 module.exports = {
+  attachCodeMapHistory,
   changedSectionList,
+  codeMapHistoryRecord,
+  compareCodeMapTrend,
+  defaultHistoryPath,
+  historyPathForTopologyOut,
   projectCodeMapSummary,
+  readCodeMapHistory,
   renderProjectCodeMap,
   showCodeMap,
   topMarkdownSections,

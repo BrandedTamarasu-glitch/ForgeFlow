@@ -7,7 +7,12 @@ const { buildCodeTopology } = require('./build-code-topology');
 const { buildMemoryIndex } = require('./index-memory');
 const { showProjectLearnings } = require('./show-project-learnings');
 const { checkProjectLearnings } = require('./check-project-learnings');
-const { projectCodeMapSummary, renderProjectCodeMap } = require('./show-code-map');
+const {
+  attachCodeMapHistory,
+  historyPathForTopologyOut,
+  projectCodeMapSummary,
+  renderProjectCodeMap,
+} = require('./show-code-map');
 const {
   contextTelemetry,
   fileChars,
@@ -429,6 +434,7 @@ function projectCodeMapFromTopology(root, topologyResult, maxChars = 2500) {
     telemetry: path.relative(root, topologyResult.telemetry_path),
   };
   const summary = projectCodeMapSummary(topologyResult.topology, artifacts, { maxHotspots: 5 });
+  topologyResult.code_map_history = attachCodeMapHistory(root, summary, historyPathForTopologyOut(topologyResult.out));
   return truncate([
     `Artifact: ${artifacts.graph}`,
     '',
@@ -516,6 +522,7 @@ function topologyReport(topologyResult, root) {
   return {
     available: true,
     provenance: topology.provenance || null,
+    history: topologyResult.code_map_history || null,
     summary: topology.summary,
     high_fan_in: topology.high_fan_in.slice(0, 5),
     high_fan_out: topology.high_fan_out.slice(0, 5),
@@ -696,6 +703,7 @@ function buildContextPack(opts) {
     code_topology_review_focus_path: topologyContext ? path.relative(root, topologyContext.markdown_out) : null,
     code_topology_telemetry_path: topologyContext ? path.relative(root, topologyContext.telemetry_path) : null,
     code_topology_provenance: topologyContext && topologyContext.topology ? topologyContext.topology.provenance || null : null,
+    code_topology_history: topologyContext ? topologyContext.code_map_history || null : null,
     code_topology_summary: topology,
     memory_index_path: memoryIndexPath ? path.relative(root, memoryIndexPath) : null,
     context_telemetry_path: path.relative(root, path.join(outDir, 'context-telemetry.json')),

@@ -54,6 +54,14 @@ Project-local context trend history is stored at:
 
 This file is compact local telemetry. It records token estimates, savings, budget status, violation counts, and recommendation actions from context advisor runs.
 
+Project code-map trend history is stored at:
+
+```text
+.forgeflow/<project-name>/context/code-map-history.jsonl
+```
+
+This file is compact local topology telemetry. It records summary counts, top hotspots, changed-section hints, provenance source, and previous-run comparison inputs. It does not store file contents.
+
 ## Sharing
 
 Nothing in the local workflow requires hosted telemetry. If you enable team sync, review what state files are copied and use a private remote.

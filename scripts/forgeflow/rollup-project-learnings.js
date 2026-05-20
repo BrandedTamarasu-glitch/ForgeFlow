@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { compareCodeMapTrend } = require('./show-code-map');
 
 const DEFAULT_MAX_ITEMS = 8;
 
@@ -220,6 +221,29 @@ function codeMapChangedSectionFiles(codeMap) {
   return [];
 }
 
+function latestCodeMapTrend(history) {
+  const records = Array.isArray(history) ? history.filter((item) => item && item.summary) : [];
+  if (records.length < 2) return { status: records.length === 1 ? 'first-run' : 'missing' };
+  return compareCodeMapTrend(records[records.length - 1], records.slice(0, -1));
+}
+
+function applyCodeMapTrend(hotFiles, classCounts, recommended, trend) {
+  if (!trend || trend.status !== 'compared') return;
+  for (const file of trend.new_high_fan_in || []) {
+    increment(hotFiles, file);
+  }
+  for (const file of trend.new_high_fan_out || []) {
+    increment(hotFiles, file);
+  }
+  if (trend.unresolved_imports_delta > 0) {
+    increment(classCounts, 'unresolved-import-growth', trend.unresolved_imports_delta);
+    addUnique(recommended, `Investigate ${trend.unresolved_imports_delta} new unresolved import(s) before relying on topology guidance.`);
+  }
+  if (trend.changed_sections_delta > 0) {
+    addUnique(recommended, `Prioritize ${trend.changed_sections_delta} additional changed section(s) before broad file reads.`);
+  }
+}
+
 function buildRollup(inputs = {}, opts = {}) {
   const maxItems = Number.isFinite(opts.maxItems) && opts.maxItems > 0 ? opts.maxItems : DEFAULT_MAX_ITEMS;
   const notes = inputs.notes || {};
@@ -227,6 +251,8 @@ function buildRollup(inputs = {}, opts = {}) {
   const learningCandidates = Array.isArray(inputs.learningCandidates) ? inputs.learningCandidates : [];
   const shipSummary = inputs.shipSummary || {};
   const codeMap = inputs.codeMap || null;
+  const codeMapHistory = Array.isArray(inputs.codeMapHistory) ? inputs.codeMapHistory : [];
+  const codeMapTrend = inputs.codeMapTrend || latestCodeMapTrend(codeMapHistory);
   const classCounts = {};
   const hotFiles = {};
   const reviewModes = {};
@@ -260,6 +286,7 @@ function buildRollup(inputs = {}, opts = {}) {
     for (const item of Array.isArray(codeMap.high_fan_out) ? codeMap.high_fan_out : []) increment(hotFiles, codeMapHotspotPath(item));
     for (const file of codeMapChangedSectionFiles(codeMap)) increment(hotFiles, file);
   }
+  applyCodeMapTrend(hotFiles, classCounts, recommended, codeMapTrend);
 
   const recurringPitfalls = [];
   for (const note of notes.spec_gaps || []) addUnique(recurringPitfalls, note);
@@ -314,6 +341,8 @@ function buildRollup(inputs = {}, opts = {}) {
       code_map: Boolean(inputs.hasCodeMap),
       code_map_sections: codeMap && codeMap.summary ? codeMap.summary.sections || 0 : 0,
       code_map_changed_sections: codeMap && codeMap.summary ? codeMap.summary.changed_sections || 0 : 0,
+      code_map_history: codeMapHistory.length,
+      code_map_trend: codeMapTrend.status || 'missing',
     },
     recurring_pitfalls: recurringPitfalls.slice(0, maxItems),
     stable_decisions: stableDecisions.slice(0, maxItems),
@@ -350,6 +379,7 @@ function renderMarkdown(rollup) {
     `- Review outcomes: ${rollup.sources.review_outcomes}`,
     `- Ship summary: ${rollup.sources.ship_summary ? 'present' : 'missing'}`,
     `- Code map: ${rollup.sources.code_map ? `${rollup.sources.code_map_sections} sections, ${rollup.sources.code_map_changed_sections} changed` : 'missing'}`,
+    `- Code map history: ${rollup.sources.code_map_history} snapshot(s), trend ${rollup.sources.code_map_trend}`,
     '',
     '## Recurring Pitfalls',
     '',
@@ -391,13 +421,16 @@ function rollupProjectLearnings(opts = {}) {
   const learningCandidatesPath = path.join(projectDir, 'project-learning-candidates.jsonl');
   const shipSummaryPath = path.join(projectDir, 'ship', 'ship-summary.json');
   const codeMapPath = path.join(projectDir, 'context', 'code-topology.json');
+  const codeMapHistoryPath = path.join(projectDir, 'context', 'code-map-history.jsonl');
   const codeMap = Object.prototype.hasOwnProperty.call(opts, 'codeMap') ? opts.codeMap : readJson(codeMapPath);
+  const codeMapHistory = Object.prototype.hasOwnProperty.call(opts, 'codeMapHistory') ? opts.codeMapHistory : readJsonl(codeMapHistoryPath);
   const inputs = {
     notes: readImplementationNotes(projectDir),
     reviewOutcomes: readJsonl(reviewOutcomesPath),
     learningCandidates: readJsonl(learningCandidatesPath),
     shipSummary: readJson(shipSummaryPath) || {},
     codeMap,
+    codeMapHistory,
     hasImplementationNotes: fs.existsSync(implementationNotesPath),
     hasShipSummary: fs.existsSync(shipSummaryPath),
     hasCodeMap: Boolean(codeMap && codeMap.summary),

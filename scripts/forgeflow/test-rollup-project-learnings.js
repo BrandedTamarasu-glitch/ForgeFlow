@@ -126,6 +126,43 @@ fs.writeFileSync(path.join(contextDir, 'code-topology.json'), JSON.stringify({
     ],
   },
 }, null, 2));
+fs.writeFileSync(path.join(contextDir, 'code-map-history.jsonl'), [
+  JSON.stringify({
+    schema_version: '1',
+    generated_at: '2026-05-19T00:00:00Z',
+    summary: {
+      source_files: 3,
+      local_edges: 1,
+      unresolved_imports: 0,
+      skipped_dynamic_imports: 0,
+      sections: 10,
+      changed_sections: 1,
+      markdown_section_files: 0,
+    },
+    high_fan_in: [],
+    high_fan_out: [],
+  }),
+  JSON.stringify({
+    schema_version: '1',
+    generated_at: '2026-05-20T00:00:00Z',
+    summary: {
+      source_files: 3,
+      local_edges: 2,
+      unresolved_imports: 1,
+      skipped_dynamic_imports: 0,
+      sections: 12,
+      changed_sections: 2,
+      markdown_section_files: 0,
+    },
+    high_fan_in: [
+      { path: 'scripts/forgeflow/build-context-pack.js', fan_in: 5, fan_out: 2 },
+    ],
+    high_fan_out: [
+      { path: 'scripts/forgeflow/show-code-map.js', fan_in: 1, fan_out: 4 },
+    ],
+  }),
+  '',
+].join('\n'));
 
 const notes = parseImplementationNotes(fs.readFileSync(path.join(projectDir, 'implementation-notes.md'), 'utf8'));
 const out = path.join(projectDir, 'project-learnings.md');
@@ -154,11 +191,13 @@ const checks = [
   ['detects sensitive content', containsSensitiveContent('token: SHOULD_NOT_RENDER')],
   ['rolls up sources', result.sources.implementation_notes === true && result.sources.review_outcomes === 1 && result.sources.ship_summary === true],
   ['rolls up code map source', result.sources.code_map === true && result.sources.code_map_sections === 12 && result.sources.code_map_changed_sections === 2],
+  ['rolls up code map history source', result.sources.code_map_history === 2 && result.sources.code_map_trend === 'compared'],
   ['records generated timestamp', Boolean(result.generated_at) && rendered.includes('- Generated at: ')],
   ['rolls up learning candidates source', result.sources.learning_candidates === 3],
   ['captures recurring pitfall', result.recurring_pitfalls.some((line) => line.includes('Release-helper changes'))],
   ['captures review risk area', result.risk_areas.some((item) => item.name === 'docs-drift' && item.count === 2)],
   ['captures auto-fix risk area', result.risk_areas.some((item) => item.name === 'auto-fix-failed')],
+  ['captures topology trend risk area', result.risk_areas.some((item) => item.name === 'unresolved-import-growth' && item.count === 1)],
   ['weights hot files by evidence count', result.hot_files_and_modules[0].includes('scripts/forgeflow/rollup-project-learnings.js')],
   ['adds code map hotspots to hot files', result.hot_files_and_modules.some((line) => line.includes('scripts/forgeflow/show-code-map.js')) && result.hot_files_and_modules.some((line) => line.includes('scripts/forgeflow/build-context-pack.js'))],
   ['captures validation pattern', result.validation_patterns.some((line) => line.includes('focused helper tests'))],
@@ -167,6 +206,7 @@ const checks = [
   ['writes markdown artifact', rendered.includes('# Project Learnings') && rendered.includes('## Recommended Approach For Next Work')],
   ['captures structured recommendation', result.recommended_approach_for_next_work.some((line) => line.includes('expanding learning automation') && line.includes('[confidence: low, evidence: 1, apply: Treat as planning guidance until it repeats.]'))],
   ['recommends changed code-map sections', result.recommended_approach_for_next_work.some((line) => line.includes('changed code-map section'))],
+  ['recommends topology trend risk', result.recommended_approach_for_next_work.some((line) => line.includes('new unresolved import'))],
   ['markdown omits sensitive note', !rendered.includes('SHOULD_NOT_RENDER')],
   ['manual rollup uses notes', manual.stable_decisions.some((line) => line.includes('Markdown stays canonical'))],
   ['manual rollup accepts generated timestamp', manual.generated_at === '2026-05-20T00:00:00Z'],
