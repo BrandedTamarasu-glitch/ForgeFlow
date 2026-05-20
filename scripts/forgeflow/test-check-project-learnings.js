@@ -19,6 +19,7 @@ function writeLearnings(dir, sections, boundary = true) {
   if (boundary) {
     lines.push('Project learnings are guidance only. Verify current findings against current code, tests, and artifacts.', '');
   }
+  lines.push('## Sources', '', '- Generated at: 2026-05-20T00:00:00Z', '');
   for (const [heading, items] of Object.entries(sections)) {
     lines.push(`## ${heading}`, '', ...items.map((item) => `- ${item}`), '');
   }
@@ -107,6 +108,20 @@ writeLearnings(missingBoundary, {
   'Recommended Approach For Next Work': [],
 }, false);
 
+const stale = project('stale');
+writeLearnings(stale, {
+  'Recurring Pitfalls': ['A real pitfall.'],
+  'Stable Decisions': [],
+  'Risk Areas': [],
+  'Validation Patterns': [],
+  'Hot Files And Modules': [],
+  'Repeated Follow-ups': [],
+  'Recommended Approach For Next Work': [],
+});
+let staleContent = fs.readFileSync(path.join(stale, 'project-learnings.md'), 'utf8');
+staleContent = staleContent.replace('- Generated at: 2026-05-20T00:00:00Z', '- Generated at: 2026-03-01T00:00:00Z');
+fs.writeFileSync(path.join(stale, 'project-learnings.md'), staleContent);
+
 const goodResult = checkProjectLearnings({ projectDir: good });
 const placeholderResult = checkProjectLearnings({ projectDir: placeholder });
 const strictPlaceholder = spawnSync(path.join(repoRoot, 'scripts/forgeflow/check-project-learnings.js'), [
@@ -124,12 +139,14 @@ const sensitiveCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/check-proj
 const badCandidateResult = checkProjectLearnings({ projectDir: badCandidate });
 const invalidMetadataResult = checkProjectLearnings({ projectDir: invalidMetadata });
 const missingBoundaryResult = checkProjectLearnings({ projectDir: missingBoundary });
+const staleResult = checkProjectLearnings({ projectDir: stale, now: new Date('2026-05-20T00:00:00Z') });
 const missingArg = spawnSync(path.join(repoRoot, 'scripts/forgeflow/check-project-learnings.js'), [
   '--project-dir',
 ], { encoding: 'utf8' });
 
 const checks = [
   ['good passes', goodResult.status === 'pass'],
+  ['reads generated timestamp', goodResult.generated_at === '2026-05-20T00:00:00Z'],
   ['counts candidates', goodResult.candidates === 1],
   ['placeholder warns', placeholderResult.status === 'warn' && placeholderResult.issues.some((item) => item.code === 'placeholder-only')],
   ['strict placeholder fails', strictPlaceholder.status === 1],
@@ -138,6 +155,7 @@ const checks = [
   ['bad candidate fails', badCandidateResult.status === 'fail' && badCandidateResult.issues.some((item) => item.code === 'candidate-category-invalid') && badCandidateResult.issues.some((item) => item.code === 'candidate-json-invalid')],
   ['invalid candidate metadata fails', invalidMetadataResult.status === 'fail' && invalidMetadataResult.issues.some((item) => item.code === 'candidate-confidence-invalid') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-evidence-count-invalid') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-application-guidance-oversized')],
   ['missing proof boundary fails', missingBoundaryResult.status === 'fail' && missingBoundaryResult.issues.some((item) => item.code === 'proof-boundary-missing')],
+  ['stale freshness warns', staleResult.status === 'warn' && staleResult.issues.some((item) => item.code === 'freshness-stale' && item.age_days > 30)],
   ['missing option value exits usage', missingArg.status === 2 && missingArg.stderr.includes('Missing value for --project-dir')],
 ];
 

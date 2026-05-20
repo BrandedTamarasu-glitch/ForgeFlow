@@ -283,6 +283,7 @@ function buildRollup(inputs = {}, opts = {}) {
 
   return {
     schema_version: '1',
+    generated_at: opts.generatedAt || new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
     sources: {
       implementation_notes: Boolean(inputs.hasImplementationNotes),
       learning_candidates: learningCandidates.length,
@@ -318,6 +319,7 @@ function renderMarkdown(rollup) {
     '',
     '## Sources',
     '',
+    `- Generated at: ${rollup.generated_at || 'unknown'}`,
     `- Implementation notes: ${rollup.sources.implementation_notes ? 'present' : 'missing'}`,
     `- Learning candidates: ${rollup.sources.learning_candidates}`,
     `- Review outcomes: ${rollup.sources.review_outcomes}`,

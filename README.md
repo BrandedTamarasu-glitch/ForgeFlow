@@ -263,7 +263,7 @@ scripts/forgeflow/show-project-learnings.js
 
 `/ship` refreshes the file during handoff prep, and `/forgeflow-health` surfaces the latest local summary when it exists.
 During `/implement`, Atlas refreshes project learnings after implementation-note consolidation when the helper is available.
-Structured candidates are stored locally in `.forgeflow/<project-name>/project-learning-candidates.jsonl` when Atlas records explicit learning categories. Candidates may include `confidence` (`low`, `medium`, or `high`), `evidence_count`, and compact `application_guidance` so agents can distinguish repeated, well-supported guidance from early signal and know how to apply it.
+Structured candidates are stored locally in `.forgeflow/<project-name>/project-learning-candidates.jsonl` when Atlas records explicit learning categories. Candidates may include `confidence` (`low`, `medium`, or `high`), `evidence_count`, and compact `application_guidance` so agents can distinguish repeated, well-supported guidance from early signal and know how to apply it. Rollups include `Generated at` freshness metadata.
 
 From Claude Code, use the command view:
 
@@ -273,7 +273,7 @@ From Claude Code, use the command view:
 
 Review context packets include the latest insights so agents can account for recurring project patterns while still verifying every finding against current artifacts.
 Context packs only inject those insights when the project-learnings checker passes; non-passing checks produce a compact quality-gate warning instead of guidance.
-The checker guards that loop against sensitive content, placeholder-only output, oversized packets, duplicate bullets, malformed candidates, and missing proof-boundary text:
+The checker guards that loop against sensitive content, placeholder-only output, oversized packets, duplicate bullets, malformed candidates, stale rollups, and missing proof-boundary text:
 
 ```bash
 scripts/forgeflow/check-project-learnings.js --json

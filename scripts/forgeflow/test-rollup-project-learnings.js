@@ -115,7 +115,7 @@ const manual = buildRollup({
   shipSummary: {},
   hasImplementationNotes: true,
   hasShipSummary: false,
-}, { maxItems: 2 });
+}, { maxItems: 2, generatedAt: '2026-05-20T00:00:00Z' });
 const cliJson = spawnSync(path.join(repoRoot, 'scripts/forgeflow/rollup-project-learnings.js'), [
   '--project-dir',
   projectDir,
@@ -131,6 +131,7 @@ const checks = [
   ['redacts sensitive implementation note', !notes.spec_gaps.some((line) => line.includes('SHOULD_NOT_RENDER'))],
   ['detects sensitive content', containsSensitiveContent('token: SHOULD_NOT_RENDER')],
   ['rolls up sources', result.sources.implementation_notes === true && result.sources.review_outcomes === 1 && result.sources.ship_summary === true],
+  ['records generated timestamp', Boolean(result.generated_at) && rendered.includes('- Generated at: ')],
   ['rolls up learning candidates source', result.sources.learning_candidates === 3],
   ['captures recurring pitfall', result.recurring_pitfalls.some((line) => line.includes('Release-helper changes'))],
   ['captures review risk area', result.risk_areas.some((item) => item.name === 'docs-drift' && item.count === 2)],
@@ -143,6 +144,7 @@ const checks = [
   ['captures structured recommendation', result.recommended_approach_for_next_work.some((line) => line.includes('expanding learning automation') && line.includes('[confidence: low, evidence: 1, apply: Treat as planning guidance until it repeats.]'))],
   ['markdown omits sensitive note', !rendered.includes('SHOULD_NOT_RENDER')],
   ['manual rollup uses notes', manual.stable_decisions.some((line) => line.includes('Markdown stays canonical'))],
+  ['manual rollup accepts generated timestamp', manual.generated_at === '2026-05-20T00:00:00Z'],
   ['cli emits json', cliJson.status === 0 && cliResult.out === out],
   ['missing option value exits usage', missingValue.status === 2 && missingValue.stderr.includes('Missing value for --project-dir')],
 ];

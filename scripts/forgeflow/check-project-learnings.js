@@ -28,6 +28,7 @@ const SENSITIVE_PATTERNS = [
   ['long-token-like-value', /\b[A-Z0-9]{20,}\b/],
   ['private-url', /\b(?:https?|ssh|git):\/\/(?:[^/\s:@]+:[^/\s@]+@|[^/\s]*(?:localhost|127\.0\.0\.1|10\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.|\.internal\b|\.local\b|internal\.|intranet\.|corp\.))/i],
 ];
+const STALE_AFTER_DAYS = 30;
 
 function usage() {
   console.error('Usage: check-project-learnings.js [--project-dir <dir>] [--strict] [--json]');
@@ -129,6 +130,26 @@ function duplicateItems(sections) {
   return duplicates;
 }
 
+function generatedAt(content) {
+  const match = String(content || '').match(/^- Generated at:\s*(.+)$/mu);
+  if (!match) return '';
+  return match[1].trim();
+}
+
+function staleGeneratedAtIssue(content, source, now = new Date()) {
+  const value = generatedAt(content);
+  if (!value || value === 'unknown') return null;
+  const timestamp = Date.parse(value);
+  if (Number.isNaN(timestamp)) {
+    return issue('warn', 'freshness-invalid', 'Project learnings generated_at metadata is invalid', { source });
+  }
+  const ageDays = Math.floor((now.getTime() - timestamp) / 86400000);
+  if (ageDays > STALE_AFTER_DAYS) {
+    return issue('warn', 'freshness-stale', 'Project learnings are stale; refresh before relying on agent guidance', { source, age_days: ageDays, stale_after_days: STALE_AFTER_DAYS });
+  }
+  return null;
+}
+
 function readJsonl(file) {
   if (!fs.existsSync(file)) return { records: [], issues: [] };
   const records = [];
@@ -185,11 +206,13 @@ function checkProjectLearnings(opts = {}) {
   let sectionCounts = {};
   let placeholderSections = 0;
   let bytes = 0;
+  let generatedAtValue = '';
 
   if (!fs.existsSync(markdownFile)) {
     issues.push(issue(opts.strict ? 'fail' : 'warn', 'learnings-missing', 'Project learnings file is missing', { source: markdownFile }));
   } else {
     const content = fs.readFileSync(markdownFile, 'utf8');
+    generatedAtValue = generatedAt(content);
     bytes = Buffer.byteLength(content, 'utf8');
     const lines = content.split(/\r?\n/);
     issues.push(...sensitiveIssues(lines, markdownFile));
@@ -199,6 +222,8 @@ function checkProjectLearnings(opts = {}) {
     if (bytes > 12000) {
       issues.push(issue('warn', 'learnings-oversized', 'Project learnings file is large enough to bloat latest-insights packets', { source: markdownFile, bytes }));
     }
+    const freshnessIssue = staleGeneratedAtIssue(content, markdownFile, opts.now || new Date());
+    if (freshnessIssue) issues.push(freshnessIssue);
     for (const heading of REQUIRED_SECTIONS) {
       const items = sectionItems(content, heading);
       if (!items) {
@@ -229,6 +254,7 @@ function checkProjectLearnings(opts = {}) {
     candidates_file: fs.existsSync(candidatesFile) ? candidatesFile : '',
     candidates: candidateCheck.records,
     bytes,
+    generated_at: generatedAtValue,
     section_counts: sectionCounts,
     issues,
   };
