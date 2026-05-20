@@ -33,6 +33,7 @@ In a repo checkout, examples use `scripts/forgeflow/`. A Claude install from `/u
 | Latest insights packets | `scripts/forgeflow/build-context-pack.js` | Includes the current project-learning insight view in agent packets only after the project-learning quality check passes, and writes a gate report. |
 | Project code map | `scripts/forgeflow/show-code-map.js` | Renders a compact maintainer-facing map from topology, hotspots, sections, changed sections, provenance, trend deltas, and artifact paths. |
 | Project trends | `scripts/forgeflow/show-project-trends.js` | Summarizes code-map trend status, artifact freshness, project-learning consumption, and advisor health from existing local artifacts. |
+| Forgeflow report | `scripts/forgeflow/render-forgeflow-report.js` | Combines local telemetry, false-positive thresholds, pattern-log freshness, context savings, and project trends into one report. |
 
 When present, `.forgeflow/<project-name>/implementation-notes.md` is included in the memory index. This lets later consult, implement, review, and ship phases see prior decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes without loading the full raw notes file into every prompt.
 
@@ -50,6 +51,7 @@ For review:
 scripts/forgeflow/build-context-pack.js --json
 scripts/forgeflow/build-code-topology.js --json
 scripts/forgeflow/show-code-map.js --json
+scripts/forgeflow/render-forgeflow-report.js --no-drift --json
 scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json
 scripts/forgeflow/advise-context.js --root .forgeflow --record --json
 ```

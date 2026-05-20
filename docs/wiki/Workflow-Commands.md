@@ -25,7 +25,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands.
 | `/forgeflow-health` | Audit installation and project-local state; can safely repair `.forgeflow/` scaffolding and budget config. |
 | `/forgeflow-learnings --project --check` | Refresh and print current-project learnings, then show whether the artifact passes the quality gate for agent context. |
 | `/forgeflow-metrics` | Summarize telemetry, calibration, outcomes, context savings, budget health, and advisor actions. |
-| `/forgeflow-report` | Produce a broader status report including drift, context trends, project trends, and local metrics. |
+| `/forgeflow-report` | Produce a script-backed status report including local metrics, false-positive thresholds, pattern freshness, context trends, and project trends. |
 | `/forgeflow-release-check` | Run local pre-release checks for command coverage, install, update, health, version, and context helpers. |
 | `/forgeflow-trends` | Show the current project's code-map trend, artifact freshness, project-learning consumption, and context-advisor status. |
 | `/forgeflow-version` | Show installed commit, upstream status, latest release, helper paths, and the next update action. |

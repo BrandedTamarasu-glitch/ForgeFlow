@@ -36,6 +36,7 @@ Reads:
 - `~/.claude/projects/<sanitized-cwd>/memory/forgeflow-metrics.jsonl` across all project dirs
 - `forgeflow-patterns/.learnings-log.jsonl` (written by `/forgeflow-learnings`)
 - `.forgeflow/<project>/context/code-map-history.jsonl` and `.forgeflow/<project>/project-learnings.md` via `show-project-trends.js`
+- `scripts/forgeflow/render-forgeflow-report.js` when available; this is the preferred executable report path
 - Invokes `/forgeflow-drift --json` for drift snapshot (unless `--no-drift`)
 </context>
 
@@ -47,6 +48,25 @@ Reads:
 - **Drift invocation is best-effort.** If `/forgeflow-drift` errors, the report still produces the other sections.
 
 <process>
+
+## Step 0: Use the script-backed report path
+
+Resolve `HELPER_DIR` to `scripts/forgeflow` when present, otherwise `$HOME/.claude/forgeflow/scripts/forgeflow`.
+
+```bash
+HELPER_DIR="scripts/forgeflow"
+if [ ! -x "${HELPER_DIR}/render-forgeflow-report.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/render-forgeflow-report.js" ]; then
+  HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
+fi
+```
+
+When `${HELPER_DIR}/render-forgeflow-report.js` exists, run it and print its output directly:
+
+```bash
+"${HELPER_DIR}/render-forgeflow-report.js" $ARGUMENTS
+```
+
+This helper owns parsing, aggregation, Markdown/JSON rendering, project-trends integration, and `.report-log.jsonl` self-logging. If the helper is missing, continue with the manual fallback below and tell the user to run `/update-forgeflow` after the report.
 
 ## Step 1: Resolve period
 
@@ -245,6 +265,7 @@ Lets future `/forgeflow-report` runs compute the "trend vs prior period" column 
 
 <success_criteria>
 - [ ] Single report combining activity, verdicts, auto-fix, false positives, pattern library, drift, context savings, and project trends
+- [ ] Script-backed helper path is used when available
 - [ ] False-positive threshold correctly applied (3 overturns per reviewer+class)
 - [ ] Pattern-library section shows last run + overdue flag
 - [ ] Drift section uses live `/forgeflow-drift --json` (unless `--no-drift`)

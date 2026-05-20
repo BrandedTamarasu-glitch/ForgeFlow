@@ -1,6 +1,8 @@
 # Forgeflow memory (session-specific, not portable)
 .forgeflow/
 .forgeflow-budget.json
+forgeflow-patterns/.learnings-log.jsonl
+forgeflow-patterns/.report-log.jsonl
 
 # Superpowers brainstorm cache
 .superpowers/
