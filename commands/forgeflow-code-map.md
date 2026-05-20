@@ -1,7 +1,7 @@
 ---
 name: forgeflow-code-map
 description: Generate and print a compact project code map from Forgeflow topology, sections, and changed-section signals.
-argument-hint: "[--json] [--out <markdown>] [--max-hotspots N]"
+argument-hint: "[--json] [--project-dir <dir>] [--out <markdown>] [--max-hotspots N]"
 allowed-tools:
   - Read
   - Write

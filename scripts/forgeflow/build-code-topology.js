@@ -89,7 +89,7 @@ function gitProvenance(root, detail = {}) {
     dirty: status.length > 0,
     changed_files: changedFiles.length,
     untracked_files: untrackedFiles.length,
-    files_path: detail.filesPath ? normalize(path.relative(root, detail.filesPath)) : '',
+    files_path: safeProvenancePath(root, detail.filesPath),
     scope: detail.scope || '',
   };
 }
@@ -112,6 +112,15 @@ function defaultTelemetryOut(root) {
 
 function normalize(file) {
   return String(file || '').replace(/\\/g, '/').replace(/^\.\/+/, '');
+}
+
+function safeProvenancePath(root, file) {
+  if (!file) return '';
+  const relative = normalize(path.relative(path.resolve(root), path.resolve(file)));
+  if (!relative || relative === '..' || relative.startsWith('../') || path.isAbsolute(relative)) {
+    return '(external)';
+  }
+  return relative;
 }
 
 function deniedPath(file) {

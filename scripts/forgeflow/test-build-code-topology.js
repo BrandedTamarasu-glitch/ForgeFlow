@@ -59,6 +59,15 @@ const compactResult = buildCodeTopology({
   maxHotspots: 5,
   compact: true,
 });
+const outsideFilesPath = path.join(tmp, 'outside.files');
+fs.writeFileSync(outsideFilesPath, 'src/features/feature.ts\n');
+const externalFilesPathResult = buildCodeTopology({
+  root: fixtureRoot,
+  filesPath: outsideFilesPath,
+  out: path.join(tmp, 'external-files-path.json'),
+  markdownOut: path.join(tmp, 'external-files-path.md'),
+  telemetryOut: path.join(tmp, 'external-files-path-telemetry.json'),
+});
 const importKinds = extractImports("import type { User } from './types';\nexport { x } from './x';\nconst y = require('./y');");
 const sourceSections = extractSections('src/example.ts', 'export class Example {}\nexport function run() {}\nconst local = () => true;\n');
 const markdownSections = extractSections('README.md', '# Title\n\n## Details\n');
@@ -171,6 +180,7 @@ const checks = [
   ['compact scope marks topology', compactResult.topology.scope === 'changed-neighborhood'],
   ['compact keeps changed neighbor', compactResult.topology.changed_file_neighbors.some((item) => item.path === 'src/features/feature.ts')],
   ['compact trims node list', compactResult.topology.nodes.length < topology.nodes.length],
+  ['external files path redacted', externalFilesPathResult.topology.provenance.files_path === '(external)'],
   ['denies sensitive paths', deniedPath('config/api-token.ts') === 'sensitive filename'],
   ['git scan includes untracked source', gitResult.topology.nodes.some((node) => node.path === 'src/untracked.ts') && gitResult.topology.changed_files.includes('src/untracked.ts')],
   ['git provenance records dirty repo', gitResult.topology.provenance.git_available === true && gitResult.topology.provenance.dirty === true && gitResult.topology.provenance.untracked_files === 1],
