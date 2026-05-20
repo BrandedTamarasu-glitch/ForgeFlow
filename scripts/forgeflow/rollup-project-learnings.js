@@ -207,12 +207,26 @@ function filePathFromEntry(entry) {
   return '';
 }
 
+function codeMapHotspotPath(entry) {
+  if (!entry || typeof entry !== 'object') return '';
+  return safeText(entry.path || entry.file || '');
+}
+
+function codeMapChangedSectionFiles(codeMap) {
+  if (!codeMap || typeof codeMap !== 'object') return [];
+  if (codeMap.changed_sections && typeof codeMap.changed_sections === 'object' && !Array.isArray(codeMap.changed_sections)) {
+    return Object.keys(codeMap.changed_sections).filter(Boolean);
+  }
+  return [];
+}
+
 function buildRollup(inputs = {}, opts = {}) {
   const maxItems = Number.isFinite(opts.maxItems) && opts.maxItems > 0 ? opts.maxItems : DEFAULT_MAX_ITEMS;
   const notes = inputs.notes || {};
   const reviewOutcomes = Array.isArray(inputs.reviewOutcomes) ? inputs.reviewOutcomes : [];
   const learningCandidates = Array.isArray(inputs.learningCandidates) ? inputs.learningCandidates : [];
   const shipSummary = inputs.shipSummary || {};
+  const codeMap = inputs.codeMap || null;
   const classCounts = {};
   const hotFiles = {};
   const reviewModes = {};
@@ -240,6 +254,11 @@ function buildRollup(inputs = {}, opts = {}) {
   for (const candidate of learningCandidates) {
     if (candidate.category === 'risk-area') increment(classCounts, candidate.learning, evidenceCount(candidate));
     if (candidate.category === 'hot-file') increment(hotFiles, candidate.learning, evidenceCount(candidate));
+  }
+  if (codeMap && codeMap.summary) {
+    for (const item of Array.isArray(codeMap.high_fan_in) ? codeMap.high_fan_in : []) increment(hotFiles, codeMapHotspotPath(item));
+    for (const item of Array.isArray(codeMap.high_fan_out) ? codeMap.high_fan_out : []) increment(hotFiles, codeMapHotspotPath(item));
+    for (const file of codeMapChangedSectionFiles(codeMap)) increment(hotFiles, file);
   }
 
   const recurringPitfalls = [];
@@ -274,6 +293,9 @@ function buildRollup(inputs = {}, opts = {}) {
   const topFile = hotFileItems[0];
   if (topRisk) addUnique(recommended, `Check ${topRisk.name} risks early; review outcomes have repeated this category.`);
   if (topFile) addUnique(recommended, `Inspect ${topFile.replace(/\s+\(\d+ signals\)$/, '')} first when it is in scope.`);
+  if (codeMap && codeMap.summary && codeMap.summary.changed_sections > 0) {
+    addUnique(recommended, `Start with ${codeMap.summary.changed_sections} changed code-map section(s) before broad file reads.`);
+  }
   if (validationPatterns.length > 0) addUnique(recommended, 'Reuse the recorded validation pattern before ship.');
   if (repeatedFollowUps.length > 0) addUnique(recommended, 'Resolve repeated follow-ups before expanding scope.');
   for (const candidate of learningCandidates.filter((item) => item.category === 'recommended-approach')) {
@@ -289,6 +311,9 @@ function buildRollup(inputs = {}, opts = {}) {
       learning_candidates: learningCandidates.length,
       review_outcomes: reviewOutcomes.length,
       ship_summary: Boolean(inputs.hasShipSummary),
+      code_map: Boolean(inputs.hasCodeMap),
+      code_map_sections: codeMap && codeMap.summary ? codeMap.summary.sections || 0 : 0,
+      code_map_changed_sections: codeMap && codeMap.summary ? codeMap.summary.changed_sections || 0 : 0,
     },
     recurring_pitfalls: recurringPitfalls.slice(0, maxItems),
     stable_decisions: stableDecisions.slice(0, maxItems),
@@ -324,6 +349,7 @@ function renderMarkdown(rollup) {
     `- Learning candidates: ${rollup.sources.learning_candidates}`,
     `- Review outcomes: ${rollup.sources.review_outcomes}`,
     `- Ship summary: ${rollup.sources.ship_summary ? 'present' : 'missing'}`,
+    `- Code map: ${rollup.sources.code_map ? `${rollup.sources.code_map_sections} sections, ${rollup.sources.code_map_changed_sections} changed` : 'missing'}`,
     '',
     '## Recurring Pitfalls',
     '',
@@ -364,13 +390,16 @@ function rollupProjectLearnings(opts = {}) {
   const reviewOutcomesPath = path.join(projectDir, 'review-outcomes.jsonl');
   const learningCandidatesPath = path.join(projectDir, 'project-learning-candidates.jsonl');
   const shipSummaryPath = path.join(projectDir, 'ship', 'ship-summary.json');
+  const codeMapPath = path.join(projectDir, 'context', 'code-topology.json');
   const inputs = {
     notes: readImplementationNotes(projectDir),
     reviewOutcomes: readJsonl(reviewOutcomesPath),
     learningCandidates: readJsonl(learningCandidatesPath),
     shipSummary: readJson(shipSummaryPath) || {},
+    codeMap: readJson(codeMapPath),
     hasImplementationNotes: fs.existsSync(implementationNotesPath),
     hasShipSummary: fs.existsSync(shipSummaryPath),
+    hasCodeMap: fs.existsSync(codeMapPath),
   };
   const rollup = buildRollup(inputs, opts);
   fs.mkdirSync(path.dirname(out), { recursive: true });

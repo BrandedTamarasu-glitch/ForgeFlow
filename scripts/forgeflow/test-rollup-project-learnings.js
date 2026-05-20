@@ -14,7 +14,9 @@ const repoRoot = path.resolve(__dirname, '..', '..');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-project-learnings-'));
 const projectDir = path.join(tmp, '.forgeflow', 'Demo');
 const shipDir = path.join(projectDir, 'ship');
+const contextDir = path.join(projectDir, 'context');
 fs.mkdirSync(shipDir, { recursive: true });
+fs.mkdirSync(contextDir, { recursive: true });
 
 fs.writeFileSync(path.join(projectDir, 'implementation-notes.md'), [
   '# Implementation Notes',
@@ -104,6 +106,26 @@ fs.writeFileSync(path.join(shipDir, 'ship-summary.json'), JSON.stringify({
     { status: 'M', path: 'README.md' },
   ],
 }, null, 2));
+fs.writeFileSync(path.join(contextDir, 'code-topology.json'), JSON.stringify({
+  schema_version: '1',
+  summary: {
+    source_files: 3,
+    local_edges: 2,
+    sections: 12,
+    changed_sections: 2,
+  },
+  high_fan_in: [
+    { path: 'scripts/forgeflow/build-context-pack.js', fan_in: 5, fan_out: 2 },
+  ],
+  high_fan_out: [
+    { path: 'scripts/forgeflow/show-code-map.js', fan_in: 1, fan_out: 4 },
+  ],
+  changed_sections: {
+    'scripts/forgeflow/show-code-map.js': [
+      { kind: 'function', name: 'showCodeMap', line: 180, end_line: 205, changed_lines: [190] },
+    ],
+  },
+}, null, 2));
 
 const notes = parseImplementationNotes(fs.readFileSync(path.join(projectDir, 'implementation-notes.md'), 'utf8'));
 const out = path.join(projectDir, 'project-learnings.md');
@@ -131,17 +153,20 @@ const checks = [
   ['redacts sensitive implementation note', !notes.spec_gaps.some((line) => line.includes('SHOULD_NOT_RENDER'))],
   ['detects sensitive content', containsSensitiveContent('token: SHOULD_NOT_RENDER')],
   ['rolls up sources', result.sources.implementation_notes === true && result.sources.review_outcomes === 1 && result.sources.ship_summary === true],
+  ['rolls up code map source', result.sources.code_map === true && result.sources.code_map_sections === 12 && result.sources.code_map_changed_sections === 2],
   ['records generated timestamp', Boolean(result.generated_at) && rendered.includes('- Generated at: ')],
   ['rolls up learning candidates source', result.sources.learning_candidates === 3],
   ['captures recurring pitfall', result.recurring_pitfalls.some((line) => line.includes('Release-helper changes'))],
   ['captures review risk area', result.risk_areas.some((item) => item.name === 'docs-drift' && item.count === 2)],
   ['captures auto-fix risk area', result.risk_areas.some((item) => item.name === 'auto-fix-failed')],
   ['weights hot files by evidence count', result.hot_files_and_modules[0].includes('scripts/forgeflow/rollup-project-learnings.js')],
+  ['adds code map hotspots to hot files', result.hot_files_and_modules.some((line) => line.includes('scripts/forgeflow/show-code-map.js')) && result.hot_files_and_modules.some((line) => line.includes('scripts/forgeflow/build-context-pack.js'))],
   ['captures validation pattern', result.validation_patterns.some((line) => line.includes('focused helper tests'))],
   ['captures structured validation pattern', result.validation_patterns.some((line) => line.includes('structured candidates'))],
   ['renders candidate confidence metadata', result.validation_patterns.some((line) => line.includes('[confidence: high, evidence: 2, apply: Use this before release readiness claims.]'))],
   ['writes markdown artifact', rendered.includes('# Project Learnings') && rendered.includes('## Recommended Approach For Next Work')],
   ['captures structured recommendation', result.recommended_approach_for_next_work.some((line) => line.includes('expanding learning automation') && line.includes('[confidence: low, evidence: 1, apply: Treat as planning guidance until it repeats.]'))],
+  ['recommends changed code-map sections', result.recommended_approach_for_next_work.some((line) => line.includes('changed code-map section'))],
   ['markdown omits sensitive note', !rendered.includes('SHOULD_NOT_RENDER')],
   ['manual rollup uses notes', manual.stable_decisions.some((line) => line.includes('Markdown stays canonical'))],
   ['manual rollup accepts generated timestamp', manual.generated_at === '2026-05-20T00:00:00Z'],

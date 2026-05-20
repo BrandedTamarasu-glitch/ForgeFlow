@@ -18,9 +18,12 @@ The file is local project state. It should stay under `.forgeflow/` and should n
 Refresh it from local implementation notes, review outcomes, and ship metadata:
 
 ```bash
+scripts/forgeflow/show-code-map.js --json
 scripts/forgeflow/rollup-project-learnings.js --json
 scripts/forgeflow/show-project-learnings.js
 ```
+
+When `.forgeflow/<project-name>/context/code-topology.json` exists, the rollup also uses it as structural input. High fan-in/fan-out paths and files with changed sections become Hot Files And Modules signals, and changed-section counts can shape Recommended Approach For Next Work.
 
 `/ship` also refreshes the file and writes `.forgeflow/<project-name>/ship/project-learnings-rollup.json` for the shipping handoff. `/forgeflow-health` reports the latest local project-learnings summary when the Markdown artifact exists.
 
@@ -62,6 +65,7 @@ Use project learnings for patterns that should shape future work:
 - recurring implementation pitfalls
 - stable project decisions
 - risky files, modules, or workflows
+- structural hotspots and changed sections from the latest code map
 - repeated validation gaps
 - repeated review finding categories
 - follow-ups that keep reappearing
