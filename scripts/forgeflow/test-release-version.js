@@ -27,6 +27,7 @@ const releaseProcess = fs.readFileSync(path.join(repoRoot, 'docs/wiki/Release-Pr
 const releaseCheck = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-release-check.md'), 'utf8');
 const learningsCommand = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-learnings.md'), 'utf8');
 const reportCommand = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-report.md'), 'utf8');
+const trendsCommand = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-trends.md'), 'utf8');
 const reviewCommand = fs.readFileSync(path.join(repoRoot, 'commands/review.md'), 'utf8');
 const readme = fs.readFileSync(path.join(repoRoot, 'README.md'), 'utf8');
 const hostedDocs = fs.readFileSync(path.join(repoRoot, 'docs/index.html'), 'utf8');
@@ -65,6 +66,7 @@ const checks = [
   ['release check runs project learnings display test', releaseCheck.includes('node scripts/forgeflow/test-show-project-learnings.js')],
   ['release check runs project trends display test', releaseCheck.includes('node scripts/forgeflow/test-show-project-trends.js')],
   ['report command includes project trends', reportCommand.includes('show-project-trends.js --json') && reportCommand.includes('## 7. Project trends')],
+  ['trends command uses project trends helper', trendsCommand.includes('show-project-trends.js') && readme.includes('/forgeflow-trends')],
   ['release check runs context pack test', releaseCheck.includes('node scripts/forgeflow/test-build-context-pack.js')],
   ['release check runs code topology test', releaseCheck.includes('node scripts/forgeflow/test-build-code-topology.js')],
   ['release check runs implementation notes test', releaseCheck.includes('node scripts/forgeflow/test-implementation-notes.js')],
