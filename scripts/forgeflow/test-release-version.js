@@ -49,7 +49,7 @@ const checks = [
   ['README links release gate', readme.includes('docs/wiki/Release-Gate.md')],
   ['README links project learnings', readme.includes('docs/wiki/Project-Learnings.md')],
   ['README mentions project learnings check command', readme.includes('/forgeflow-learnings --project --check')],
-  ['learnings command supports project check', learningsCommand.includes('--check') && learningsCommand.includes('check-project-learnings.js')],
+  ['learnings command supports project check', learningsCommand.includes('--check') && learningsCommand.includes('show-project-learnings.js') && learningsCommand.includes('context-pack smoke')],
   ['hosted docs links project learnings', hostedDocs.includes('./wiki/Project-Learnings.md')],
   ['release process mentions plugin manifest', releaseProcess.includes('.claude-plugin/plugin.json')],
   ['release process mentions marketplace manifest', releaseProcess.includes('.claude-plugin/marketplace.json')],

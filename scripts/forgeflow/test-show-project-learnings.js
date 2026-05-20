@@ -28,6 +28,7 @@ fs.writeFileSync(path.join(projectDir, 'project-learning-candidates.jsonl'), [
 const result = showProjectLearnings({ projectDir });
 const defaultProjectDir = path.join(repoRoot, '.forgeflow', path.basename(repoRoot));
 const refreshedExternal = showProjectLearnings({ projectDir, refreshCodeMap: true });
+const checkedExternal = showProjectLearnings({ projectDir, check: true });
 const externalTopologyPath = path.join(projectDir, 'context', 'code-topology.json');
 const cliMarkdown = spawnSync(path.join(repoRoot, 'scripts/forgeflow/show-project-learnings.js'), [
   '--project-dir',
@@ -38,10 +39,17 @@ const cliJson = spawnSync(path.join(repoRoot, 'scripts/forgeflow/show-project-le
   projectDir,
   '--json',
 ], { encoding: 'utf8' });
+const cliCheckJson = spawnSync(path.join(repoRoot, 'scripts/forgeflow/show-project-learnings.js'), [
+  '--project-dir',
+  projectDir,
+  '--check',
+  '--json',
+], { encoding: 'utf8' });
 const missingValue = spawnSync(path.join(repoRoot, 'scripts/forgeflow/show-project-learnings.js'), [
   '--project-dir',
 ], { encoding: 'utf8' });
 const parsedJson = cliJson.status === 0 ? JSON.parse(cliJson.stdout) : {};
+const parsedCheckJson = cliCheckJson.status === 0 ? JSON.parse(cliCheckJson.stdout) : {};
 
 const checks = [
   ['writes artifact', fs.existsSync(path.join(projectDir, 'project-learnings.md'))],
@@ -50,11 +58,13 @@ const checks = [
   ['renders structured recommendation', result.markdown.includes('Record structured candidates before refreshing project learnings')],
   ['renders guidance warning', result.markdown.includes('Use these as guidance only')],
   ['explicit refresh writes external code map', refreshedExternal.sources.code_map === true && fs.existsSync(externalTopologyPath)],
+  ['check runs quality gate', checkedExternal.check.status === 'pass' && checkedExternal.context_smoke.status === 'skipped' && checkedExternal.latest_insights_ready === false],
   ['refreshes code map for default project dir', shouldRefreshProjectCodeMap(repoRoot, defaultProjectDir) === true],
   ['does not refresh code map for explicit external project dir', shouldRefreshProjectCodeMap(repoRoot, projectDir) === false],
   ['allows explicit refresh override', shouldRefreshProjectCodeMap(repoRoot, projectDir, { refreshCodeMap: true }) === true],
   ['cli markdown works', cliMarkdown.status === 0 && cliMarkdown.stdout.includes('## Validation Patterns')],
   ['cli json works', cliJson.status === 0 && parsedJson.sources.learning_candidates === 2 && !cliJson.stdout.includes('Forgeflow Project Learnings - Demo')],
+  ['cli check json works', cliCheckJson.status === 0 && parsedCheckJson.check.status === 'pass' && parsedCheckJson.context_smoke.status === 'skipped'],
   ['missing option value exits usage', missingValue.status === 2 && missingValue.stderr.includes('Missing value for --project-dir')],
 ];
 

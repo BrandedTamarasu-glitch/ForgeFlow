@@ -217,6 +217,7 @@ scripts/forgeflow/build-context-pack.js --json
 scripts/forgeflow/check-agent-drift.js --json
 scripts/forgeflow/build-code-topology.js --json
 scripts/forgeflow/show-code-map.js --json
+scripts/forgeflow/show-project-learnings.js --check --json
 scripts/forgeflow/show-project-trends.js --json
 scripts/forgeflow/render-forgeflow-report.js --no-drift --json
 scripts/forgeflow/rollup-pattern-learnings.js --dry-run --json
@@ -291,6 +292,8 @@ From Claude Code, use the command view:
 /forgeflow-learnings --project --check
 /forgeflow-trends
 ```
+
+`/forgeflow-learnings --project --check` refreshes the learning rollup, runs the quality gate, performs a context-pack smoke, and reports whether latest insights will be injected into future agent packets.
 
 Review context packets include the latest insights and compact project code-map guidance so agents can account for recurring project patterns and structural hotspots while still verifying every finding against current artifacts.
 Context packs only inject those insights when the project-learnings checker passes; non-passing checks produce a compact quality-gate warning instead of guidance.

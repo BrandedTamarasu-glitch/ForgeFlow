@@ -92,24 +92,13 @@ Refresh the local artifact and render the user-facing insight view:
 
 For the current checkout, `show-project-learnings.js` refreshes `.forgeflow/${PROJECT_NAME}/context/code-topology.json` before rolling up insights. Hot fan-in/fan-out files, changed-section files, and code-map trend deltas can appear in Hot Files And Modules, Risk Areas, and Recommended Approach For Next Work.
 
-If `--json` is present, pass `--json` and print the helper JSON directly.
-
-If `--check` is present, resolve the quality helper:
+If `--check` is present, pass `--check` to the helper. The helper refreshes project learnings, runs the quality gate, builds a context-pack smoke for the current checkout, and reports whether latest insights will be injected into future agent packets:
 
 ```bash
-if [ ! -x "${HELPER_DIR}/check-project-learnings.js" ]; then
-  echo "Project learnings quality helper is not installed. Run /update-forgeflow, then retry /forgeflow-learnings --project --check."
-  exit 1
-fi
+"${HELPER_DIR}/show-project-learnings.js" --project-dir "${FORGEFLOW_DIR}" --check
 ```
 
-Then run:
-
-```bash
-"${HELPER_DIR}/check-project-learnings.js" --project-dir "${FORGEFLOW_DIR}"
-```
-
-For `--json --check`, return a single object with `learnings` from `show-project-learnings.js --json` and `check` from `check-project-learnings.js --json`. If the check status is `warn` or `fail`, call out that review context packs will block latest-insights injection until the reported issues are fixed or the rollup is refreshed.
+If `--json` is present, pass `--json` and print the helper JSON directly. For `--json --check`, the helper returns `check`, `context_smoke`, and `latest_insights_ready` in the same object. If the check status is `warn` or `fail`, call out that review context packs will block latest-insights injection until the reported issues are fixed or the rollup is refreshed.
 
 Do not modify canonical `forgeflow-patterns/` files in current-project mode.
 
