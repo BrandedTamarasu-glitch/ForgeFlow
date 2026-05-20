@@ -15,7 +15,7 @@ const {
   writeTelemetry,
 } = require('./context-telemetry');
 
-const DEFAULT_MAX_MEMORY_CHARS = 12000;
+const DEFAULT_MAX_MEMORY_CHARS = 8000;
 const DEFAULT_MAX_DIFF_CHARS = 18000;
 
 function usage() {

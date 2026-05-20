@@ -43,6 +43,7 @@ If it reports `trim-budget-violation`, trim before spawning agents:
 
 - pass fewer paths to `/review`
 - split broad changes into directory-focused reviews
+- lower `build-context-pack.js --max-memory-chars` when local memory hits dominate packet size
 - review generated files separately from source changes
 - move long logs, snapshots, or vendored files out of the review scope
 
