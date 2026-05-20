@@ -19,7 +19,7 @@ Single report pulling together everything the self-improving Forgeflow machinery
 5. **Drift status** (from `/forgeflow-drift --json`) — which agents lag their canonical reference
 6. **Context savings** (from `.forgeflow/**/context-telemetry.json` and related context telemetry) — whether local context packing is reducing prompt load
 7. **Project trends** (from `show-project-trends.js`) — whether code-map trend history, project learnings, and advisor health agree
-8. **Latest-insights readiness** (from `latest-insights-report.json`) — whether agent packets are receiving project-learning guidance
+8. **Latest-insights readiness** (from `latest-insights-report.json`) — whether agent packets are receiving project-learning guidance and whether that report is fresh for the current checkout
 9. **Recommendations** — specific agent prompts that need refinement based on the above
 
 Answers: "Is the Forgeflow team getting smarter, and where is it getting stupider?"
@@ -37,7 +37,7 @@ Reads:
 - `~/.claude/projects/<sanitized-cwd>/memory/forgeflow-metrics.jsonl` across all project dirs
 - `forgeflow-patterns/.learnings-log.jsonl` (written by `/forgeflow-learnings`)
 - `.forgeflow/<project>/context/code-map-history.jsonl` and `.forgeflow/<project>/project-learnings.md` via `show-project-trends.js`
-- `.forgeflow/<project>/context/latest/latest-insights-report.json` for latest-insights injection readiness
+- `.forgeflow/<project>/context/latest/latest-insights-report.json` for latest-insights injection readiness and freshness
 - `scripts/forgeflow/render-forgeflow-report.js` when available; this is the preferred executable report path
 - Invokes `/forgeflow-drift --json` for drift snapshot (unless `--no-drift`)
 </context>

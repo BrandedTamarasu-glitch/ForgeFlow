@@ -106,6 +106,12 @@ fs.writeFileSync(latestInsightsReportPath, JSON.stringify({
   schema_version: '1',
   status: 'injected',
   reason: 'quality-check-passing',
+  generated_at: '2026-05-20T00:00:00.000Z',
+  git: {
+    available: false,
+    commit_short: '',
+    dirty: true,
+  },
   check_status: 'pass',
   issue_count: 0,
 }, null, 2));
@@ -139,8 +145,8 @@ const checks = [
   ['latest insights includes command', withProjectLearningsMarkdown.includes('Refresh/view: forgeflow-learnings --project')],
   ['latest insights includes validation and hot file', withProjectLearningsMarkdown.includes('Run docs checks before release checks.') && withProjectLearningsMarkdown.includes('scripts/forgeflow/health-check.js')],
   ['bad project learnings check summarized', withBadProjectLearnings.latest_project_learnings_check.status === 'fail' && withBadProjectLearningsMarkdown.includes('## Latest Project Learnings Check')],
-  ['latest insights readiness summarized', withInsightsReadiness.latest_insights_readiness.status === 'injected' && withInsightsReadiness.latest_insights_readiness.check_status === 'pass'],
-  ['latest insights readiness renders', withInsightsReadinessMarkdown.includes('## Latest Insights Readiness') && withInsightsReadinessMarkdown.includes('Status: injected')],
+  ['latest insights readiness summarized', withInsightsReadiness.latest_insights_readiness.status === 'injected' && withInsightsReadiness.latest_insights_readiness.check_status === 'pass' && withInsightsReadiness.latest_insights_readiness.freshness.status === 'current'],
+  ['latest insights readiness renders', withInsightsReadinessMarkdown.includes('## Latest Insights Readiness') && withInsightsReadinessMarkdown.includes('Status: injected') && withInsightsReadinessMarkdown.includes('Freshness: current')],
   ['idempotent no changes', again.changes.length === 0],
   ['installed runtime passes', installed.status === 'pass'],
   ['missing runtime fails', missingInstalled.status === 'fail'],

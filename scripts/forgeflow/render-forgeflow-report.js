@@ -2,6 +2,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { spawnSync } = require('child_process');
 const { adviseContext } = require('./advise-context');
 const { checkAgentDrift } = require('./check-agent-drift');
 const { showProjectTrends } = require('./show-project-trends');
@@ -127,6 +128,12 @@ function inWindow(record, cutoff) {
 
 function bump(object, key, amount = 1) {
   object[key] = (object[key] || 0) + amount;
+}
+
+function git(args, cwd) {
+  const result = spawnSync('git', args, { cwd, encoding: 'utf8' });
+  if (result.status !== 0) return '';
+  return result.stdout.trimEnd();
 }
 
 function addVerdict(verdicts, record) {
@@ -300,12 +307,17 @@ function latestInsightsReadiness(projectDir) {
   }
   try {
     const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const freshness = latestInsightsFreshness(parsed, path.dirname(path.dirname(projectDir)));
     return {
       status: parsed.status || 'unknown',
       path: file,
       reason: parsed.reason || '',
       check_status: parsed.check_status || '',
       issue_count: Number(parsed.issue_count || 0),
+      generated_at: parsed.generated_at || '',
+      commit_short: parsed.git && parsed.git.commit_short ? parsed.git.commit_short : '',
+      dirty: Boolean(parsed.git && parsed.git.dirty),
+      freshness,
     };
   } catch (_err) {
     return {
@@ -314,8 +326,54 @@ function latestInsightsReadiness(projectDir) {
       reason: 'invalid-json',
       check_status: '',
       issue_count: 0,
+      generated_at: '',
+      commit_short: '',
+      dirty: false,
+      freshness: { status: 'invalid', current_commit: '', current_dirty: false, issues: [] },
     };
   }
+}
+
+function currentGitState(root) {
+  const topLevel = git(['rev-parse', '--show-toplevel'], root);
+  if (!topLevel) return { available: false, commit_short: '', dirty: false };
+  return {
+    available: true,
+    commit_short: git(['rev-parse', '--short', 'HEAD'], root),
+    dirty: git(['status', '--short'], root).split(/\r?\n/).filter(Boolean).length > 0,
+  };
+}
+
+function latestInsightsFreshness(report, root) {
+  const current = currentGitState(root);
+  const recorded = report && report.git ? report.git : {};
+  const issues = [];
+  if (!recorded || (!recorded.commit_short && recorded.available !== false)) {
+    issues.push({
+      code: 'latest-insights-provenance-missing',
+      severity: 'attention',
+      message: 'Latest-insights report does not include git provenance.',
+    });
+  } else if (current.available && current.commit_short && current.commit_short !== recorded.commit_short) {
+    issues.push({
+      code: 'latest-insights-commit-stale',
+      severity: 'attention',
+      message: `Latest insights were generated for ${recorded.commit_short}, current HEAD is ${current.commit_short}.`,
+    });
+  }
+  if (current.available && current.dirty && !recorded.dirty) {
+    issues.push({
+      code: 'latest-insights-dirty-stale',
+      severity: 'attention',
+      message: 'Current worktree has local changes that the latest clean insights report did not include.',
+    });
+  }
+  return {
+    status: issues.length > 0 ? 'attention' : 'current',
+    current_commit: current.commit_short || '',
+    current_dirty: Boolean(current.dirty),
+    issues,
+  };
 }
 
 function driftSummary(noDrift, opts = {}) {
@@ -375,6 +433,9 @@ function derivePriorities(report) {
   }
   if (report.latest_insights.status && !['injected', 'missing'].includes(report.latest_insights.status)) {
     priorities.push('Run /forgeflow-learnings --project --check to restore latest-insights injection.');
+  }
+  if (report.latest_insights.freshness && report.latest_insights.freshness.status === 'attention') {
+    priorities.push('Refresh latest insights because the last injection report is stale for the current checkout.');
   }
   if (report.context.recommendations && report.context.recommendations.length > 0) {
     priorities.push(...report.context.recommendations.slice(0, 2).map((item) => item.command || item.reason));
@@ -536,6 +597,7 @@ function renderMarkdown(report) {
     lines.push(`- Latest insights: ${latestInsights.status || 'missing'}`);
     if (latestInsights.reason) lines.push(`- Latest insights reason: ${latestInsights.reason}`);
     if (latestInsights.check_status) lines.push(`- Latest insights quality gate: ${latestInsights.check_status}`);
+    if (latestInsights.freshness) lines.push(`- Latest insights freshness: ${latestInsights.freshness.status}`);
   }
 
   lines.push('', '## 9. Priorities', '');
@@ -575,6 +637,7 @@ module.exports = {
   collectMetrics,
   cutoffForPeriod,
   latestInsightsReadiness,
+  latestInsightsFreshness,
   renderMarkdown,
   summarizeMetrics,
   summarizePatternLog,

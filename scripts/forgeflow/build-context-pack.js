@@ -349,6 +349,8 @@ function latestInsightsReport(status, projectDir, root, check = null, reason = '
     schema_version: '1',
     status,
     reason,
+    generated_at: new Date().toISOString(),
+    git: currentGitState(root),
     project_dir: projectDir ? path.relative(root, projectDir) || '.' : '',
     check_status: check ? check.status : '',
     issue_count: issues.length,
@@ -358,6 +360,23 @@ function latestInsightsReport(status, projectDir, root, check = null, reason = '
       message: item.message,
       line: item.line || null,
     })),
+  };
+}
+
+function currentGitState(root) {
+  const topLevel = git(['rev-parse', '--show-toplevel'], root);
+  if (!topLevel) {
+    return {
+      available: false,
+      commit_short: '',
+      dirty: false,
+    };
+  }
+  const status = git(['status', '--short'], root).split(/\r?\n/).filter(Boolean);
+  return {
+    available: true,
+    commit_short: git(['rev-parse', '--short', 'HEAD'], root),
+    dirty: status.length > 0,
   };
 }
 
@@ -772,6 +791,7 @@ module.exports = {
   buildLatestInsightsResult,
   buildMemoryHits,
   compactProjectCodeMap,
+  currentGitState,
   projectCodeMapFromTopology,
   fileKind,
   rulePack,

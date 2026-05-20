@@ -281,7 +281,7 @@ scripts/forgeflow/show-project-learnings.js
 
 For the current checkout, `show-project-learnings.js` refreshes the compact code map before rolling up insights. The rollup adds structural hotspots, changed-section files, and code-map trend deltas to Hot Files And Modules, Risk Areas, and next-work guidance.
 
-`/ship` refreshes the file during handoff prep, and `/forgeflow-health` surfaces the latest local summary and latest-insights readiness when they exist.
+`/ship` refreshes the file during handoff prep, and `/forgeflow-health` surfaces the latest local summary plus latest-insights readiness/freshness when they exist.
 During `/implement`, Atlas refreshes project learnings after implementation-note consolidation when the helper is available.
 Structured candidates are stored locally in `.forgeflow/<project-name>/project-learning-candidates.jsonl` when Atlas records explicit learning categories. Candidates may include `confidence` (`low`, `medium`, or `high`), `evidence_count`, and compact `application_guidance` so agents can distinguish repeated, well-supported guidance from early signal and know how to apply it. Rollups include `Generated at` freshness metadata.
 

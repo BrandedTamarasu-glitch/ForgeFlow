@@ -23,7 +23,7 @@ scripts/forgeflow/show-project-learnings.js
 
 For the current checkout, `show-project-learnings.js` refreshes `.forgeflow/<project-name>/context/code-topology.json` first, then uses it as structural input. High fan-in/fan-out paths and files with changed sections become Hot Files And Modules signals, and changed-section counts can shape Recommended Approach For Next Work. When `.forgeflow/<project-name>/context/code-map-history.jsonl` has at least two snapshots, new hotspots, unresolved-import growth, and changed-section churn also feed the rollup.
 
-`/ship` also refreshes the file and writes `.forgeflow/<project-name>/ship/project-learnings-rollup.json` for the shipping handoff. `/forgeflow-health` reports the latest local project-learnings summary and latest-insights readiness when those artifacts exist.
+`/ship` also refreshes the file and writes `.forgeflow/<project-name>/ship/project-learnings-rollup.json` for the shipping handoff. `/forgeflow-health` reports the latest local project-learnings summary plus latest-insights readiness/freshness when those artifacts exist.
 
 During `/implement`, Atlas refreshes project learnings after implementation-note consolidation when the helper is available. This lets the artifact accumulate signal during long work items instead of waiting for the final ship handoff.
 

@@ -23,10 +23,10 @@ Forgeflow can be used as a full lifecycle or as targeted commands.
 | `/dashboard` | Start the optional local metrics dashboard on port 4003. |
 | `/forgeflow-code-map` | Generate a compact project code map with topology, sections, changed-section hints, Git provenance, and generated artifact paths. |
 | `/forgeflow-drift` | Check whether agent prompts have drifted from canonical shared intelligence references using the script-backed drift helper. |
-| `/forgeflow-health` | Audit installation, project-local state, latest project-learning quality, and latest-insights readiness; can safely repair `.forgeflow/` scaffolding and budget config. |
+| `/forgeflow-health` | Audit installation, project-local state, latest project-learning quality, and latest-insights readiness/freshness; can safely repair `.forgeflow/` scaffolding and budget config. |
 | `/forgeflow-learnings --project --check` | Refresh and print current-project learnings, run the quality gate, smoke-test context-pack injection, and report whether latest insights are ready for agent context. Cross-project mode uses the pattern-learnings rollup helper across legacy learnings and project-learning candidates. |
 | `/forgeflow-metrics` | Summarize telemetry, calibration, outcomes, context savings, budget health, and advisor actions. |
-| `/forgeflow-report` | Produce a script-backed status report including local metrics, false-positive thresholds, pattern freshness, context trends, project trends, and latest-insights readiness. |
+| `/forgeflow-report` | Produce a script-backed status report including local metrics, false-positive thresholds, pattern freshness, context trends, project trends, and latest-insights readiness/freshness. |
 | `/forgeflow-release-check` | Run local pre-release checks for command coverage, install, update, health, version, and context helpers. |
 | `/forgeflow-trends` | Show the current project's code-map trend, artifact freshness, project-learning consumption, and context-advisor status. |
 | `/forgeflow-version` | Show installed commit, upstream status, latest release, helper paths, and the next update action. |

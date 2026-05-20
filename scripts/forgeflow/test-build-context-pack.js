@@ -229,6 +229,7 @@ const checks = [
   ['code topology includes changed files', topology.changed_files.includes('src/auth/session.ts')],
   ['code topology context uses compact scope', topology.scope === 'changed-neighborhood'],
   ['latest insights report has status', ['injected', 'missing', 'blocked', 'error'].includes(insightsReport.status)],
+  ['latest insights report has provenance', insightsReport.generated_at && insightsReport.git && insightsReport.git.available === true && typeof insightsReport.git.commit_short === 'string'],
   ['noisy manifest sanitized', noisyManifest.files.length === 3],
   ['no noisy decoration in manifest', !noisyManifest.files.some((file) => file.path.includes('Changes') || file.path.includes('|'))],
   ['noisy result full mode', noisyResult.route.mode === 'full-mode'],
