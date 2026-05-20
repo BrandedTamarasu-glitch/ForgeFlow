@@ -21,6 +21,7 @@ const VALID_CATEGORIES = new Set([
   'repeated-follow-up',
   'recommended-approach',
 ]);
+const VALID_CONFIDENCE = new Set(['low', 'medium', 'high']);
 const SENSITIVE_PATTERNS = [
   ['private-key', /-----BEGIN [A-Z ]*PRIVATE KEY-----/i],
   ['assignment-secret', /\b(api[_-]?key|password|passwd|secret|token)\s*[:=]/i],
@@ -157,6 +158,16 @@ function checkCandidates(file) {
     }
     if (!String(value.learning || '').trim()) {
       issues.push(issue('fail', 'candidate-learning-missing', 'Project learning candidate is missing learning text', { source: file, line: record.line }));
+    }
+    if (value.confidence !== undefined && !VALID_CONFIDENCE.has(String(value.confidence).trim().toLowerCase())) {
+      issues.push(issue('fail', 'candidate-confidence-invalid', 'Project learning candidate has invalid confidence', { source: file, line: record.line }));
+    }
+    if (value.evidence_count !== undefined) {
+      const rawCount = String(value.evidence_count).trim();
+      const count = Number.parseInt(rawCount, 10);
+      if (!/^\d+$/.test(rawCount) || !Number.isInteger(count) || count < 1) {
+        issues.push(issue('fail', 'candidate-evidence-count-invalid', 'Project learning candidate has invalid evidence_count', { source: file, line: record.line }));
+      }
     }
   }
   return { records: records.length, issues };

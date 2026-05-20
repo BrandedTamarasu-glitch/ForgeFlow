@@ -24,7 +24,7 @@ In a repo checkout, examples use `scripts/forgeflow/`. A Claude install from `/u
 | Implementation notes recorder | `scripts/forgeflow/record-implementation-notes.js` | Appends Atlas-consolidated note candidates to the local implementation notes artifact. |
 | Implementation notes checker | `scripts/forgeflow/check-implementation-notes.js` | Audits notes structure, sensitive-content patterns, and ship-summary note rendering. |
 | Project learnings checker | `scripts/forgeflow/check-project-learnings.js` | Audits project-learning guidance for safety, usefulness, size, duplicates, and proof-boundary text. |
-| Project learning recorder | `scripts/forgeflow/record-project-learning.js` | Appends structured local learning candidates for explicit rollup categories. |
+| Project learning recorder | `scripts/forgeflow/record-project-learning.js` | Appends structured local learning candidates with optional confidence and evidence-count metadata. |
 | Pilot evidence recorder | `scripts/forgeflow/record-pilot-evidence.js` | Creates a local maintainer-pilot evidence note under `.forgeflow/<project-name>/pilot-evidence/`. |
 | Pilot evidence rollup | `scripts/forgeflow/rollup-pilot-evidence.js` | Summarizes local pilot evidence notes into support-category counts and a next-action decision. |
 | Project learnings rollup | `scripts/forgeflow/rollup-project-learnings.js` | Refreshes durable project guidance from implementation notes, review outcomes, and ship metadata. |

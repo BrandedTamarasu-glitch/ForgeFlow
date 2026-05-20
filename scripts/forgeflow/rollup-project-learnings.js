@@ -97,6 +97,24 @@ function addUnique(list, value) {
   list.push(text);
 }
 
+function evidenceCount(entry) {
+  const raw = String(entry && entry.evidence_count ? entry.evidence_count : 1).trim();
+  if (!/^\d+$/.test(raw)) return 1;
+  const count = Number.parseInt(raw, 10);
+  return Number.isInteger(count) && count > 0 ? count : 1;
+}
+
+function confidence(entry) {
+  const value = cleanText(entry && entry.confidence ? entry.confidence : 'medium').toLowerCase();
+  return ['low', 'medium', 'high'].includes(value) ? value : 'medium';
+}
+
+function weightedLearning(entry) {
+  const text = safeText(entry && entry.learning);
+  if (!text) return '';
+  return `${text} [confidence: ${confidence(entry)}, evidence: ${evidenceCount(entry)}]`;
+}
+
 function increment(map, key, amount = 1) {
   const normalized = cleanText(key).toLowerCase();
   if (!normalized) return;
@@ -213,15 +231,15 @@ function buildRollup(inputs = {}, opts = {}) {
     increment(hotFiles, filePathFromEntry(entry));
   }
   for (const candidate of learningCandidates) {
-    if (candidate.category === 'risk-area') increment(classCounts, candidate.learning);
-    if (candidate.category === 'hot-file') increment(hotFiles, candidate.learning);
+    if (candidate.category === 'risk-area') increment(classCounts, candidate.learning, evidenceCount(candidate));
+    if (candidate.category === 'hot-file') increment(hotFiles, candidate.learning, evidenceCount(candidate));
   }
 
   const recurringPitfalls = [];
   for (const note of notes.spec_gaps || []) addUnique(recurringPitfalls, note);
   for (const note of notes.deviations || []) addUnique(recurringPitfalls, note);
   for (const candidate of learningCandidates.filter((item) => item.category === 'recurring-pitfall')) {
-    addUnique(recurringPitfalls, candidate.learning);
+    addUnique(recurringPitfalls, weightedLearning(candidate));
   }
   for (const item of topCounts(classCounts, maxItems)) addUnique(recurringPitfalls, `${item.name} findings recurred ${item.count} time(s).`);
 
@@ -229,30 +247,30 @@ function buildRollup(inputs = {}, opts = {}) {
   for (const note of notes.decisions || []) addUnique(stableDecisions, note);
   for (const note of notes.tradeoffs || []) addUnique(stableDecisions, note);
   for (const candidate of learningCandidates.filter((item) => item.category === 'stable-decision')) {
-    addUnique(stableDecisions, candidate.learning);
+    addUnique(stableDecisions, weightedLearning(candidate));
   }
 
   const validationPatterns = [];
   for (const note of notes.validation_notes || []) addUnique(validationPatterns, note);
   for (const candidate of learningCandidates.filter((item) => item.category === 'validation-pattern')) {
-    addUnique(validationPatterns, candidate.learning);
+    addUnique(validationPatterns, weightedLearning(candidate));
   }
 
   const repeatedFollowUps = [];
   for (const note of notes.follow_ups || []) addUnique(repeatedFollowUps, note);
   for (const candidate of learningCandidates.filter((item) => item.category === 'repeated-follow-up')) {
-    addUnique(repeatedFollowUps, candidate.learning);
+    addUnique(repeatedFollowUps, weightedLearning(candidate));
   }
 
-  const hotFileItems = topCounts(hotFiles, maxItems).map((item) => item.count > 1 ? `${item.name} (${item.count} changes)` : item.name);
+  const hotFileItems = topCounts(hotFiles, maxItems).map((item) => item.count > 1 ? `${item.name} (${item.count} signals)` : item.name);
   const topRisk = topCounts(classCounts, 1)[0];
   const topFile = hotFileItems[0];
   if (topRisk) addUnique(recommended, `Check ${topRisk.name} risks early; review outcomes have repeated this category.`);
-  if (topFile) addUnique(recommended, `Inspect ${topFile.replace(/\s+\(\d+ changes\)$/, '')} first when it is in scope.`);
+  if (topFile) addUnique(recommended, `Inspect ${topFile.replace(/\s+\(\d+ signals\)$/, '')} first when it is in scope.`);
   if (validationPatterns.length > 0) addUnique(recommended, 'Reuse the recorded validation pattern before ship.');
   if (repeatedFollowUps.length > 0) addUnique(recommended, 'Resolve repeated follow-ups before expanding scope.');
   for (const candidate of learningCandidates.filter((item) => item.category === 'recommended-approach')) {
-    addUnique(recommended, candidate.learning);
+    addUnique(recommended, weightedLearning(candidate));
   }
   if (recommended.length === 0) addUnique(recommended, 'Run a few more work items, then refresh this rollup with new notes and review outcomes.');
 

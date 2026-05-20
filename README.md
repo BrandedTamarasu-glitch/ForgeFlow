@@ -263,7 +263,7 @@ scripts/forgeflow/show-project-learnings.js
 
 `/ship` refreshes the file during handoff prep, and `/forgeflow-health` surfaces the latest local summary when it exists.
 During `/implement`, Atlas refreshes project learnings after implementation-note consolidation when the helper is available.
-Structured candidates are stored locally in `.forgeflow/<project-name>/project-learning-candidates.jsonl` when Atlas records explicit learning categories.
+Structured candidates are stored locally in `.forgeflow/<project-name>/project-learning-candidates.jsonl` when Atlas records explicit learning categories. Candidates may include `confidence` (`low`, `medium`, or `high`) and `evidence_count` so agents can distinguish repeated, well-supported guidance from early signal.
 
 From Claude Code, use the command view:
 

@@ -80,6 +80,21 @@ writeCandidates(badCandidate, [
   '{not-json}',
 ]);
 
+const invalidMetadata = project('invalid-metadata');
+writeLearnings(invalidMetadata, {
+  'Recurring Pitfalls': ['A real pitfall.'],
+  'Stable Decisions': [],
+  'Risk Areas': [],
+  'Validation Patterns': [],
+  'Hot Files And Modules': [],
+  'Repeated Follow-ups': [],
+  'Recommended Approach For Next Work': [],
+});
+writeCandidates(invalidMetadata, [
+  JSON.stringify({ schema_version: '1', category: 'risk-area', learning: 'Good learning', confidence: 'certain' }),
+  JSON.stringify({ schema_version: '1', category: 'risk-area', learning: 'Another learning', evidence_count: 0 }),
+]);
+
 const missingBoundary = project('missing-boundary');
 writeLearnings(missingBoundary, {
   'Recurring Pitfalls': ['A real pitfall.'],
@@ -106,6 +121,7 @@ const sensitiveCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/check-proj
   '--json',
 ], { encoding: 'utf8' });
 const badCandidateResult = checkProjectLearnings({ projectDir: badCandidate });
+const invalidMetadataResult = checkProjectLearnings({ projectDir: invalidMetadata });
 const missingBoundaryResult = checkProjectLearnings({ projectDir: missingBoundary });
 const missingArg = spawnSync(path.join(repoRoot, 'scripts/forgeflow/check-project-learnings.js'), [
   '--project-dir',
@@ -119,6 +135,7 @@ const checks = [
   ['sensitive fails', sensitiveResult.status === 'fail' && sensitiveResult.issues.some((item) => item.code === 'sensitive-content')],
   ['sensitive output redacted', !sensitiveCli.stdout.includes('SHOULD_NOT_PRINT') && !sensitiveCli.stderr.includes('SHOULD_NOT_PRINT')],
   ['bad candidate fails', badCandidateResult.status === 'fail' && badCandidateResult.issues.some((item) => item.code === 'candidate-category-invalid') && badCandidateResult.issues.some((item) => item.code === 'candidate-json-invalid')],
+  ['invalid candidate metadata fails', invalidMetadataResult.status === 'fail' && invalidMetadataResult.issues.some((item) => item.code === 'candidate-confidence-invalid') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-evidence-count-invalid')],
   ['missing proof boundary fails', missingBoundaryResult.status === 'fail' && missingBoundaryResult.issues.some((item) => item.code === 'proof-boundary-missing')],
   ['missing option value exits usage', missingArg.status === 2 && missingArg.stderr.includes('Missing value for --project-dir')],
 ];

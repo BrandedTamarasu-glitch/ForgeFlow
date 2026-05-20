@@ -12,11 +12,12 @@ const VALID_CATEGORIES = new Set([
   'repeated-follow-up',
   'recommended-approach',
 ]);
+const VALID_CONFIDENCE = new Set(['low', 'medium', 'high']);
 
 function usage() {
   console.error([
     'Usage: record-project-learning.js [--project-dir <dir>] --input <json-file> [--json]',
-    '       record-project-learning.js [--project-dir <dir>] --category <category> --learning <text> [--source <text>] [--evidence <text>] [--json]',
+    '       record-project-learning.js [--project-dir <dir>] --category <category> --learning <text> [--source <text>] [--evidence <text>] [--confidence low|medium|high] [--evidence-count <n>] [--json]',
   ].join('\n'));
 }
 
@@ -28,6 +29,8 @@ function parseArgs(argv) {
     learning: '',
     source: '',
     evidence: '',
+    confidence: '',
+    evidenceCount: null,
     json: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
@@ -44,6 +47,10 @@ function parseArgs(argv) {
       opts.source = argv[++i] || '';
     } else if (arg === '--evidence') {
       opts.evidence = argv[++i] || '';
+    } else if (arg === '--confidence') {
+      opts.confidence = argv[++i] || '';
+    } else if (arg === '--evidence-count') {
+      opts.evidenceCount = Number.parseInt(argv[++i] || '0', 10);
     } else if (arg === '--json') {
       opts.json = true;
     } else if (arg === '--help' || arg === '-h') {
@@ -85,6 +92,26 @@ function cleanText(value) {
   return String(value || '').replace(/\s+/g, ' ').replace(/[|]/g, '/').trim();
 }
 
+function normalizeConfidence(value) {
+  const confidence = cleanText(value || 'medium').toLowerCase();
+  if (!VALID_CONFIDENCE.has(confidence)) {
+    throw new Error(`Invalid project learning confidence: ${confidence}`);
+  }
+  return confidence;
+}
+
+function normalizeEvidenceCount(value) {
+  if (value === undefined || value === null || value === '') return 1;
+  if (!/^\d+$/.test(String(value).trim())) {
+    throw new Error('Project learning evidence_count must be a positive integer');
+  }
+  const count = Number.parseInt(String(value), 10);
+  if (!Number.isInteger(count) || count < 1) {
+    throw new Error('Project learning evidence_count must be a positive integer');
+  }
+  return count;
+}
+
 function normalizeEntry(entry) {
   const normalized = {
     schema_version: '1',
@@ -93,6 +120,8 @@ function normalizeEntry(entry) {
     learning: cleanText(entry.learning),
     source: cleanText(entry.source || 'Atlas'),
     evidence: cleanText(entry.evidence || ''),
+    confidence: normalizeConfidence(entry.confidence),
+    evidence_count: normalizeEvidenceCount(entry.evidence_count ?? entry.evidenceCount),
   };
   if (!VALID_CATEGORIES.has(normalized.category)) {
     throw new Error(`Invalid project learning category: ${normalized.category}`);
@@ -117,6 +146,8 @@ function loadEntries(opts) {
     learning: opts.learning,
     source: opts.source,
     evidence: opts.evidence,
+    confidence: opts.confidence,
+    evidenceCount: opts.evidenceCount,
   })];
 }
 
@@ -158,6 +189,7 @@ if (require.main === module) {
 
 module.exports = {
   VALID_CATEGORIES,
+  VALID_CONFIDENCE,
   containsSensitiveContent,
   recordProjectLearning,
 };
