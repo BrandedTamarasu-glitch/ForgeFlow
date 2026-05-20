@@ -28,6 +28,7 @@ In a repo checkout, examples use `scripts/forgeflow/`. A Claude install from `/u
 | Project learnings checker | `scripts/forgeflow/check-project-learnings.js` | Audits project-learning guidance for safety, usefulness, size, freshness, duplicates, and proof-boundary text. |
 | Project learning recorder | `scripts/forgeflow/record-project-learning.js` | Appends structured local learning candidates with optional confidence, evidence-count, and application-guidance metadata. |
 | Pilot evidence recorder | `scripts/forgeflow/record-pilot-evidence.js` | Creates a local maintainer-pilot evidence note under `.forgeflow/<project-name>/pilot-evidence/`. |
+| Pattern learnings rollup | `scripts/forgeflow/rollup-pattern-learnings.js` | Scans cross-project learnings, clusters known/candidate patterns, and records pattern-log freshness for reports. |
 | Pilot evidence rollup | `scripts/forgeflow/rollup-pilot-evidence.js` | Summarizes local pilot evidence notes into support-category counts and a next-action decision. |
 | Project learnings rollup | `scripts/forgeflow/rollup-project-learnings.js` | Refreshes durable project guidance from implementation notes, review outcomes, and ship metadata. |
 | Project learnings display | `scripts/forgeflow/show-project-learnings.js` | Refreshes project learnings and prints the current-project insight view used by `/forgeflow-learnings --project`. |
@@ -54,6 +55,7 @@ scripts/forgeflow/check-agent-drift.js --json
 scripts/forgeflow/build-code-topology.js --json
 scripts/forgeflow/show-code-map.js --json
 scripts/forgeflow/render-forgeflow-report.js --no-drift --json
+scripts/forgeflow/rollup-pattern-learnings.js --dry-run --json
 scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json
 scripts/forgeflow/advise-context.js --root .forgeflow --record --json
 ```

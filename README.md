@@ -206,6 +206,7 @@ Forgeflow includes local-only helpers that reduce agent prompt load before revie
 - **Context advisor:** `advise-context.js --root .forgeflow --record --json` reports budget issues, low-savings packets, topology coverage signals, trimming recommendations, and previous-run trend deltas.
 - **Project trends:** `show-project-trends.js` summarizes the latest code-map trend, artifact freshness, project-learning consumption, and advisor status from existing local artifacts. `/forgeflow-report` uses the same helper when available.
 - **Forgeflow report:** `render-forgeflow-report.js` combines local telemetry, false-positive thresholds, pattern-log freshness, context savings, and project trends into one Markdown or JSON report.
+- **Pattern learnings:** `rollup-pattern-learnings.js` scans cross-project `.forgeflow/<project>/learnings.jsonl`, clusters known/candidate patterns, and records `.learnings-log.jsonl` for `/forgeflow-report`.
 
 Review context packs keep local memory hits bounded by default. If memory context dominates packet size, lower `build-context-pack.js --max-memory-chars` or split the review scope.
 
@@ -218,6 +219,7 @@ scripts/forgeflow/build-code-topology.js --json
 scripts/forgeflow/show-code-map.js --json
 scripts/forgeflow/show-project-trends.js --json
 scripts/forgeflow/render-forgeflow-report.js --no-drift --json
+scripts/forgeflow/rollup-pattern-learnings.js --dry-run --json
 scripts/forgeflow/build-memory-context.js --json
 scripts/forgeflow/build-scope-manifest.js --json
 scripts/forgeflow/summarize-context-telemetry.js --root .forgeflow --json

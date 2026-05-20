@@ -28,6 +28,7 @@ const checks = [
   ['runtime helpers include pilot evidence recorder', RUNTIME_HELPERS.includes('scripts/forgeflow/record-pilot-evidence.js')],
   ['runtime helpers include project learning recorder', RUNTIME_HELPERS.includes('scripts/forgeflow/record-project-learning.js')],
   ['runtime helpers include pilot evidence rollup', RUNTIME_HELPERS.includes('scripts/forgeflow/rollup-pilot-evidence.js')],
+  ['runtime helpers include pattern learnings rollup', RUNTIME_HELPERS.includes('scripts/forgeflow/rollup-pattern-learnings.js')],
   ['runtime helpers include project learnings rollup', RUNTIME_HELPERS.includes('scripts/forgeflow/rollup-project-learnings.js')],
   ['runtime helpers include project learnings display', RUNTIME_HELPERS.includes('scripts/forgeflow/show-project-learnings.js')],
   ['runtime helpers include forgeflow report', RUNTIME_HELPERS.includes('scripts/forgeflow/render-forgeflow-report.js')],

@@ -111,6 +111,23 @@ Do not modify canonical `forgeflow-patterns/` files in current-project mode.
 
 ## Step 1: Discover cross-project learning sources
 
+Resolve the cross-project helper:
+
+```bash
+HELPER_DIR="scripts/forgeflow"
+if [ ! -x "${HELPER_DIR}/rollup-pattern-learnings.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/rollup-pattern-learnings.js" ]; then
+  HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
+fi
+```
+
+When `${HELPER_DIR}/rollup-pattern-learnings.js` exists, run it and print its output directly:
+
+```bash
+"${HELPER_DIR}/rollup-pattern-learnings.js" $ARGUMENTS
+```
+
+The helper owns scanning `.forgeflow/<project>/learnings.jsonl`, period filtering, known-pattern matching, candidate clustering, JSON/Markdown output, and `.learnings-log.jsonl` self-logging. If the helper is missing, continue with the manual fallback below and tell the user to run `/update-forgeflow`.
+
 ```bash
 find "$HOME" -name "learnings.jsonl" -path "*/.forgeflow/*" -type f 2>/dev/null
 ```
@@ -294,6 +311,7 @@ Step 4a edits also target files in the resolved `forgeflow-patterns/` dir — NE
 
 <success_criteria>
 - [ ] Scanned every `.forgeflow/<project>/learnings.jsonl` under `$HOME` and reported the count
+- [ ] Script-backed helper path is used when available
 - [ ] Applied period + min-projects + min-occurrences filters correctly
 - [ ] Known-pattern updates target only the existing `**Seen in:**` block of the matching section
 - [ ] NEW candidates are surfaced, never auto-written
