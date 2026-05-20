@@ -287,6 +287,37 @@ function projectTrendsSummary(root, projectDir) {
   }
 }
 
+function latestInsightsReadiness(projectDir) {
+  const file = path.join(projectDir, 'context', 'latest', 'latest-insights-report.json');
+  if (!fs.existsSync(file)) {
+    return {
+      status: 'missing',
+      path: file,
+      reason: '',
+      check_status: '',
+      issue_count: 0,
+    };
+  }
+  try {
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+    return {
+      status: parsed.status || 'unknown',
+      path: file,
+      reason: parsed.reason || '',
+      check_status: parsed.check_status || '',
+      issue_count: Number(parsed.issue_count || 0),
+    };
+  } catch (_err) {
+    return {
+      status: 'invalid',
+      path: file,
+      reason: 'invalid-json',
+      check_status: '',
+      issue_count: 0,
+    };
+  }
+}
+
 function driftSummary(noDrift, opts = {}) {
   if (noDrift) return { status: 'skipped', reason: '--no-drift' };
   try {
@@ -342,6 +373,9 @@ function derivePriorities(report) {
   if (report.project_trends.freshness && report.project_trends.freshness.status !== 'current') {
     priorities.push('Refresh project code map and project learnings before relying on project trend guidance.');
   }
+  if (report.latest_insights.status && !['injected', 'missing'].includes(report.latest_insights.status)) {
+    priorities.push('Run /forgeflow-learnings --project --check to restore latest-insights injection.');
+  }
   if (report.context.recommendations && report.context.recommendations.length > 0) {
     priorities.push(...report.context.recommendations.slice(0, 2).map((item) => item.command || item.reason));
   }
@@ -360,6 +394,8 @@ function buildReport(opts = {}) {
   const patterns = summarizePatternLog(patternsDir, cutoff, now);
   const context = contextSummary(root);
   const projectTrends = projectTrendsSummary(root, opts.projectDir || path.join(root, '.forgeflow', path.basename(root)));
+  const projectDir = opts.projectDir || path.join(root, '.forgeflow', path.basename(root));
+  const latestInsights = latestInsightsReadiness(projectDir);
   const drift = driftSummary(Boolean(opts.noDrift), { root });
   const logRecord = {
     schema_version: '1',
@@ -380,6 +416,7 @@ function buildReport(opts = {}) {
     patterns,
     context,
     project_trends: projectTrends,
+    latest_insights: latestInsights,
     drift,
     report_history: {
       path: reportLogPath(patternsDir),
@@ -410,6 +447,7 @@ function renderMarkdown(report) {
   const trend = codeMap.trend || {};
   const freshness = projectTrends.freshness || {};
   const advisor = projectTrends.advisor || {};
+  const latestInsights = report.latest_insights || {};
   const context = report.context || {};
   const lines = [
     `# Forgeflow Report (${report.period})`,
@@ -495,6 +533,9 @@ function renderMarkdown(report) {
     lines.push(`- New high fan-out: ${(codeMap.new_high_fan_out || []).join(', ') || '(none)'}`);
     lines.push(`- Project learnings consumed trend: ${projectTrends.project_learnings && projectTrends.project_learnings.consumed_code_map_trend ? 'yes' : 'no'}`);
     lines.push(`- Advisor budget: ${advisor.budget_status || 'missing'}`);
+    lines.push(`- Latest insights: ${latestInsights.status || 'missing'}`);
+    if (latestInsights.reason) lines.push(`- Latest insights reason: ${latestInsights.reason}`);
+    if (latestInsights.check_status) lines.push(`- Latest insights quality gate: ${latestInsights.check_status}`);
   }
 
   lines.push('', '## 9. Priorities', '');
@@ -533,6 +574,7 @@ module.exports = {
   buildReport,
   collectMetrics,
   cutoffForPeriod,
+  latestInsightsReadiness,
   renderMarkdown,
   summarizeMetrics,
   summarizePatternLog,

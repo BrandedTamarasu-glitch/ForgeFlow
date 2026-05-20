@@ -263,6 +263,37 @@ function latestProjectLearningsCheck(ffDir) {
   }
 }
 
+function latestInsightsReadiness(ffDir) {
+  const file = path.join(ffDir, 'context', 'latest', 'latest-insights-report.json');
+  if (!fs.existsSync(file)) {
+    return {
+      status: 'missing',
+      path: file,
+      reason: '',
+      check_status: '',
+      issue_count: 0,
+    };
+  }
+  try {
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+    return {
+      status: parsed.status || 'unknown',
+      path: file,
+      reason: parsed.reason || '',
+      check_status: parsed.check_status || '',
+      issue_count: Number(parsed.issue_count || 0),
+    };
+  } catch (_err) {
+    return {
+      status: 'invalid',
+      path: file,
+      reason: 'invalid-json',
+      check_status: '',
+      issue_count: 0,
+    };
+  }
+}
+
 function runHealthCheck(opts = {}) {
   const requestedRoot = opts.root || process.cwd();
   const gitRepo = isGitRepo(requestedRoot);
@@ -318,6 +349,7 @@ function runHealthCheck(opts = {}) {
     latest_pilot_rollup: latestPilotRollup(ffDir),
     latest_project_learnings: latestProjectLearnings(ffDir),
     latest_project_learnings_check: latestProjectLearningsCheck(ffDir),
+    latest_insights_readiness: latestInsightsReadiness(ffDir),
   };
 }
 
@@ -382,6 +414,16 @@ function renderMarkdown(result) {
     lines.push(`- Report: ${latest.path}`);
     lines.push('');
   }
+  if (result.latest_insights_readiness && result.latest_insights_readiness.status !== 'missing') {
+    const latest = result.latest_insights_readiness;
+    lines.push('## Latest Insights Readiness', '');
+    lines.push(`- Status: ${latest.status}`);
+    if (latest.reason) lines.push(`- Reason: ${latest.reason}`);
+    if (latest.check_status) lines.push(`- Quality gate: ${latest.check_status}`);
+    lines.push(`- Issues: ${latest.issue_count}`);
+    lines.push(`- Report: ${latest.path}`);
+    lines.push('');
+  }
   lines.push('## Checks', '');
   for (const item of result.checks) {
     const suffix = item.reason ? ` (${item.reason})` : '';
@@ -421,4 +463,5 @@ module.exports = {
   latestPilotRollup,
   latestProjectLearnings,
   latestProjectLearningsCheck,
+  latestInsightsReadiness,
 };

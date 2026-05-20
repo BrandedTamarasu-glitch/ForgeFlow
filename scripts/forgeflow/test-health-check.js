@@ -100,6 +100,17 @@ fs.writeFileSync(projectLearningsPath, [
 ].join('\n'));
 const withBadProjectLearnings = runHealthCheck({ root, fix: false });
 const withBadProjectLearningsMarkdown = renderMarkdown(withBadProjectLearnings);
+const latestInsightsReportPath = path.join(root, '.forgeflow', project, 'context', 'latest', 'latest-insights-report.json');
+fs.mkdirSync(path.dirname(latestInsightsReportPath), { recursive: true });
+fs.writeFileSync(latestInsightsReportPath, JSON.stringify({
+  schema_version: '1',
+  status: 'injected',
+  reason: 'quality-check-passing',
+  check_status: 'pass',
+  issue_count: 0,
+}, null, 2));
+const withInsightsReadiness = runHealthCheck({ root, fix: false });
+const withInsightsReadinessMarkdown = renderMarkdown(withInsightsReadiness);
 const again = runHealthCheck({ root, fix: true });
 const installed = runHealthCheck({ root, installRoot, fix: false });
 fs.unlinkSync(manifestEntry('scripts/forgeflow/health-check.js', installRoot).destination);
@@ -128,6 +139,8 @@ const checks = [
   ['latest insights includes command', withProjectLearningsMarkdown.includes('Refresh/view: forgeflow-learnings --project')],
   ['latest insights includes validation and hot file', withProjectLearningsMarkdown.includes('Run docs checks before release checks.') && withProjectLearningsMarkdown.includes('scripts/forgeflow/health-check.js')],
   ['bad project learnings check summarized', withBadProjectLearnings.latest_project_learnings_check.status === 'fail' && withBadProjectLearningsMarkdown.includes('## Latest Project Learnings Check')],
+  ['latest insights readiness summarized', withInsightsReadiness.latest_insights_readiness.status === 'injected' && withInsightsReadiness.latest_insights_readiness.check_status === 'pass'],
+  ['latest insights readiness renders', withInsightsReadinessMarkdown.includes('## Latest Insights Readiness') && withInsightsReadinessMarkdown.includes('Status: injected')],
   ['idempotent no changes', again.changes.length === 0],
   ['installed runtime passes', installed.status === 'pass'],
   ['missing runtime fails', missingInstalled.status === 'fail'],

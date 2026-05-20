@@ -205,7 +205,7 @@ Forgeflow includes local-only helpers that reduce agent prompt load before revie
 - **Agent drift:** `check-agent-drift.js --json` compares consuming agent prompts against canonical shared intelligence sections and reports MISSING/DRIFTED sections. It handles mode-specific Arbiter expectations and treats explicitly adapted sections as informational.
 - **Context advisor:** `advise-context.js --root .forgeflow --record --json` reports budget issues, low-savings packets, topology coverage signals, trimming recommendations, and previous-run trend deltas.
 - **Project trends:** `show-project-trends.js` summarizes the latest code-map trend, artifact freshness, project-learning consumption, and advisor status from existing local artifacts. `/forgeflow-report` uses the same helper when available.
-- **Forgeflow report:** `render-forgeflow-report.js` combines local telemetry, false-positive thresholds, pattern-log freshness, context savings, and project trends into one Markdown or JSON report.
+- **Forgeflow report:** `render-forgeflow-report.js` combines local telemetry, false-positive thresholds, pattern-log freshness, context savings, project trends, and latest-insights readiness into one Markdown or JSON report.
 - **Pattern learnings:** `rollup-pattern-learnings.js` scans cross-project `.forgeflow/<project>/learnings.jsonl` plus `project-learning-candidates.jsonl`, clusters known/candidate patterns with source-mix labels, and records `.learnings-log.jsonl` for `/forgeflow-report`.
 
 Review context packs keep local memory hits bounded by default. If memory context dominates packet size, lower `build-context-pack.js --max-memory-chars` or split the review scope.
@@ -281,7 +281,7 @@ scripts/forgeflow/show-project-learnings.js
 
 For the current checkout, `show-project-learnings.js` refreshes the compact code map before rolling up insights. The rollup adds structural hotspots, changed-section files, and code-map trend deltas to Hot Files And Modules, Risk Areas, and next-work guidance.
 
-`/ship` refreshes the file during handoff prep, and `/forgeflow-health` surfaces the latest local summary when it exists.
+`/ship` refreshes the file during handoff prep, and `/forgeflow-health` surfaces the latest local summary and latest-insights readiness when they exist.
 During `/implement`, Atlas refreshes project learnings after implementation-note consolidation when the helper is available.
 Structured candidates are stored locally in `.forgeflow/<project-name>/project-learning-candidates.jsonl` when Atlas records explicit learning categories. Candidates may include `confidence` (`low`, `medium`, or `high`), `evidence_count`, and compact `application_guidance` so agents can distinguish repeated, well-supported guidance from early signal and know how to apply it. Rollups include `Generated at` freshness metadata.
 
