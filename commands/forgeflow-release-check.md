@@ -38,6 +38,7 @@ node scripts/forgeflow/test-install-smoke.js
 node scripts/forgeflow/test-update-forgeflow.js
 node scripts/forgeflow/test-health-check.js
 node scripts/forgeflow/test-forgeflow-version.js
+node scripts/forgeflow/test-check-agent-drift.js
 node scripts/forgeflow/test-render-forgeflow-report.js
 node scripts/forgeflow/test-render-evaluation-report.js
 node scripts/forgeflow/render-evaluation-report.js --outcomes fixtures/evaluation/sample-outcomes.jsonl --public --out /tmp/forgeflow-public-evaluation-summary.md
@@ -79,6 +80,7 @@ If any command fails, stop and report the failed command plus its output. Do not
 - [ ] Template installer test passes
 - [ ] Install manifest and install smoke tests pass
 - [ ] Update, health, and version helper tests pass
+- [ ] Agent drift helper test passes
 - [ ] Forgeflow report helper test passes
 - [ ] Evaluation report smoke test and public-summary render pass
 - [ ] Pilot evidence recorder test passes

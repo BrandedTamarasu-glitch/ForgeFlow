@@ -3,6 +3,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { adviseContext } = require('./advise-context');
+const { checkAgentDrift } = require('./check-agent-drift');
 const { showProjectTrends } = require('./show-project-trends');
 
 const PERIOD_DAYS = {
@@ -286,10 +287,13 @@ function projectTrendsSummary(root, projectDir) {
   }
 }
 
-function driftSummary(noDrift) {
-  return noDrift
-    ? { status: 'skipped', reason: '--no-drift' }
-    : { status: 'unavailable', reason: 'No JSON drift helper is available yet; run /forgeflow-drift for the detailed command workflow.' };
+function driftSummary(noDrift, opts = {}) {
+  if (noDrift) return { status: 'skipped', reason: '--no-drift' };
+  try {
+    return checkAgentDrift({ root: opts.root, threshold: opts.threshold || 70 });
+  } catch (err) {
+    return { status: 'unavailable', reason: err.message };
+  }
 }
 
 function reportLogPath(patternsDir) {
@@ -332,6 +336,9 @@ function derivePriorities(report) {
   if (report.patterns.status === 'overdue' || report.patterns.status === 'missing') {
     priorities.push('Run /forgeflow-learnings to refresh pattern promotion signal.');
   }
+  if (report.drift.status === 'fail' && Number(report.drift.drifted_agents || 0) > 0) {
+    priorities.push(`Resync ${report.drift.drifted_agents} agent prompt(s) with canonical shared intelligence.`);
+  }
   if (report.project_trends.freshness && report.project_trends.freshness.status !== 'current') {
     priorities.push('Refresh project code map and project learnings before relying on project trend guidance.');
   }
@@ -353,7 +360,7 @@ function buildReport(opts = {}) {
   const patterns = summarizePatternLog(patternsDir, cutoff, now);
   const context = contextSummary(root);
   const projectTrends = projectTrendsSummary(root, opts.projectDir || path.join(root, '.forgeflow', path.basename(root)));
-  const drift = driftSummary(Boolean(opts.noDrift));
+  const drift = driftSummary(Boolean(opts.noDrift), { root });
   const logRecord = {
     schema_version: '1',
     ts: now.toISOString(),
@@ -461,6 +468,8 @@ function renderMarkdown(report) {
 
   lines.push('', '## 6. Drift', '');
   lines.push(`- Status: ${report.drift.status}`);
+  if (Number.isFinite(report.drift.drifted_agents)) lines.push(`- Drifted agents: ${report.drift.drifted_agents}`);
+  if (Number.isFinite(report.drift.actionable)) lines.push(`- Actionable sections: ${report.drift.actionable}`);
   if (report.drift.reason) lines.push(`- Reason: ${report.drift.reason}`);
 
   lines.push('', '## 7. Context Savings', '');

@@ -18,6 +18,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/build-context-pack.js',
   'scripts/forgeflow/build-memory-context.js',
   'scripts/forgeflow/build-scope-manifest.js',
+  'scripts/forgeflow/check-agent-drift.js',
   'scripts/forgeflow/check-codex-agent-drift.js',
   'scripts/forgeflow/check-context-budget.js',
   'scripts/forgeflow/check-implementation-notes.js',

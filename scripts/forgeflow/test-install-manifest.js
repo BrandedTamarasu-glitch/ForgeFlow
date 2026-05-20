@@ -18,6 +18,7 @@ const checks = [
   ['script destination', destinationFor('scripts/forgeflow/health-check.js', home) === '/tmp/claude-home/forgeflow/scripts/forgeflow/health-check.js'],
   ['shell script executable', manifestEntry('scripts/forgeflow/ensure-forgeflow-state.sh', home).executable === true],
   ['runtime helpers include code topology', RUNTIME_HELPERS.includes('scripts/forgeflow/build-code-topology.js')],
+  ['runtime helpers include agent drift', RUNTIME_HELPERS.includes('scripts/forgeflow/check-agent-drift.js')],
   ['runtime helpers include updater', RUNTIME_HELPERS.includes('scripts/forgeflow/update-forgeflow.js')],
   ['runtime helpers include version helper', RUNTIME_HELPERS.includes('scripts/forgeflow/forgeflow-version.js')],
   ['runtime helpers include template installer', RUNTIME_HELPERS.includes('scripts/forgeflow/install-template.js')],

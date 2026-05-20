@@ -102,6 +102,13 @@ const report = buildReport({
   noDrift: true,
   now,
 });
+const reportWithDrift = buildReport({
+  root,
+  metricsRoot,
+  patternsDir,
+  projectDir,
+  now,
+});
 const markdown = renderMarkdown(report);
 const cli = spawnSync(process.execPath, [path.join(repoRoot, 'scripts/forgeflow/render-forgeflow-report.js'),
   '--root',
@@ -127,6 +134,7 @@ const checks = [
   ['summarizes pattern log', patterns.status === 'current' && patterns.totals.updates_applied === 2],
   ['includes context savings', report.context.summary.files === 1 && report.context.summary.percent_saved === 80],
   ['includes project trends', report.project_trends.code_map.trend.status === 'compared' && report.project_trends.freshness.status === 'current'],
+  ['includes live drift when enabled', reportWithDrift.drift.status === 'missing' || reportWithDrift.drift.status === 'fail' || reportWithDrift.drift.status === 'pass'],
   ['records report log', report.report_history.recorded === true && fs.readFileSync(path.join(patternsDir, '.report-log.jsonl'), 'utf8').trim().split(/\r?\n/).length >= 2],
   ['computes report trend', report.report_history.trend.status === 'compared' && report.report_history.trend.invocation_delta === 3],
   ['derives priorities', report.priorities.some((item) => item.includes('smith'))],

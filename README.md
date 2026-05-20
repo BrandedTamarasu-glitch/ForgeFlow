@@ -202,6 +202,7 @@ Forgeflow includes local-only helpers that reduce agent prompt load before revie
 - **Context telemetry:** context, memory, scope, and topology helpers emit token estimates and savings telemetry.
 - **Budget checks:** `check-context-budget.js` reads `.forgeflow-budget.json` and warns when compact context exceeds configured limits.
 - **Health repair:** `health-check.js --fix --json` creates safe project-local scaffolding and seeds budget config when missing.
+- **Agent drift:** `check-agent-drift.js --json` compares consuming agent prompts against canonical shared intelligence sections and reports MISSING/DRIFTED sections.
 - **Context advisor:** `advise-context.js --root .forgeflow --record --json` reports budget issues, low-savings packets, topology coverage signals, trimming recommendations, and previous-run trend deltas.
 - **Project trends:** `show-project-trends.js` summarizes the latest code-map trend, artifact freshness, project-learning consumption, and advisor status from existing local artifacts. `/forgeflow-report` uses the same helper when available.
 - **Forgeflow report:** `render-forgeflow-report.js` combines local telemetry, false-positive thresholds, pattern-log freshness, context savings, and project trends into one Markdown or JSON report.
@@ -212,6 +213,7 @@ Useful commands:
 
 ```bash
 scripts/forgeflow/build-context-pack.js --json
+scripts/forgeflow/check-agent-drift.js --json
 scripts/forgeflow/build-code-topology.js --json
 scripts/forgeflow/show-code-map.js --json
 scripts/forgeflow/show-project-trends.js --json

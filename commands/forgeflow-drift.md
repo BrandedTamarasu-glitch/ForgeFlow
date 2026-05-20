@@ -48,6 +48,25 @@ Total mappings: 4 canonicals × avg 3.5 targets = 14 (canonical, agent) pairs pe
 
 <process>
 
+## Step 0: Use the script-backed drift helper
+
+Resolve `HELPER_DIR` to `scripts/forgeflow` when present, otherwise `$HOME/.claude/forgeflow/scripts/forgeflow`.
+
+```bash
+HELPER_DIR="scripts/forgeflow"
+if [ ! -x "${HELPER_DIR}/check-agent-drift.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/check-agent-drift.js" ]; then
+  HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
+fi
+```
+
+When `${HELPER_DIR}/check-agent-drift.js` exists, run it and print its output directly:
+
+```bash
+"${HELPER_DIR}/check-agent-drift.js" $ARGUMENTS
+```
+
+The helper owns section parsing, scoring, JSON/Markdown rendering, filtering, threshold handling, and actionable exit codes. If it is missing, continue with the manual fallback below and tell the user to run `/update-forgeflow` after the report.
+
 ## Step 1: Verify canonical files exist
 
 Resolve the canonical and agent directories ONCE before any lookup:
@@ -226,6 +245,7 @@ If markdown (default):
 
 <success_criteria>
 - [ ] All four canonical references located and parsed
+- [ ] Script-backed helper path is used when available
 - [ ] All 14 target agents parsed (or fewer when `--agent` filter set)
 - [ ] Each (canonical, agent) pair produces per-section status (SYNCED | MODIFIED | DRIFTED | MISSING)
 - [ ] Actionable drift (MISSING, DRIFTED) rendered with specific fix instructions per section
