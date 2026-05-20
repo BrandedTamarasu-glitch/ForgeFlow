@@ -332,19 +332,55 @@ function renderLatestInsightsGate(result, root) {
   ].join('\n');
 }
 
-function buildLatestInsights(root, maxChars = 3000) {
+function latestInsightsReport(status, projectDir, root, check = null, reason = '') {
+  const issues = check && Array.isArray(check.issues) ? check.issues : [];
+  return {
+    schema_version: '1',
+    status,
+    reason,
+    project_dir: projectDir ? path.relative(root, projectDir) || '.' : '',
+    check_status: check ? check.status : '',
+    issue_count: issues.length,
+    issues: issues.slice(0, 10).map((item) => ({
+      severity: item.severity,
+      code: item.code,
+      message: item.message,
+      line: item.line || null,
+    })),
+  };
+}
+
+function buildLatestInsightsResult(root, maxChars = 3000) {
   const projectDir = defaultProjectDir(root);
-  if (!fs.existsSync(projectDir)) return '';
+  if (!fs.existsSync(projectDir)) {
+    return {
+      markdown: '',
+      report: latestInsightsReport('missing', projectDir, root, null, 'project-dir-missing'),
+    };
+  }
   try {
     const result = showProjectLearnings({ projectDir });
     const check = checkProjectLearnings({ projectDir });
     if (check.status !== 'pass') {
-      return truncate(renderLatestInsightsGate(check, root), maxChars);
+      return {
+        markdown: truncate(renderLatestInsightsGate(check, root), maxChars),
+        report: latestInsightsReport('blocked', projectDir, root, check, 'quality-check-not-passing'),
+      };
     }
-    return truncate(result.markdown, maxChars);
-  } catch (_err) {
-    return '';
+    return {
+      markdown: truncate(result.markdown, maxChars),
+      report: latestInsightsReport('injected', projectDir, root, check, 'quality-check-passing'),
+    };
+  } catch (err) {
+    return {
+      markdown: '',
+      report: latestInsightsReport('error', projectDir, root, null, err.message),
+    };
   }
+}
+
+function buildLatestInsights(root, maxChars = 3000) {
+  return buildLatestInsightsResult(root, maxChars).markdown;
 }
 
 function truncate(text, maxChars) {
@@ -454,7 +490,8 @@ function buildContextPack(opts) {
   const diffSummary = buildDiffSummary(route.files, root, opts);
   const memoryIndexPath = ensureMemoryIndex(root, opts.memoryIndex !== false);
   const memoryHits = buildMemoryHits(root, route.files, route, opts.task, opts.maxMemoryChars, memoryIndexPath);
-  const latestInsights = buildLatestInsights(root);
+  const latestInsightsResult = buildLatestInsightsResult(root);
+  const latestInsights = latestInsightsResult.markdown;
   const agents = route.agents.included || [];
   const packets = {};
 
@@ -489,6 +526,7 @@ function buildContextPack(opts) {
     diff_summary_path: path.relative(root, path.join(outDir, 'diff-summary.md')),
     memory_hits_path: path.relative(root, path.join(outDir, 'memory-hits.md')),
     latest_insights_path: path.relative(root, path.join(outDir, 'latest-insights.md')),
+    latest_insights_report_path: path.relative(root, path.join(outDir, 'latest-insights-report.json')),
     memory_index_path: memoryIndexPath ? path.relative(root, memoryIndexPath) : null,
     context_telemetry_path: path.relative(root, path.join(outDir, 'context-telemetry.json')),
     file_manifest_path: path.relative(root, path.join(outDir, 'file-manifest.json')),
@@ -504,6 +542,7 @@ function buildContextPack(opts) {
   fs.writeFileSync(path.join(outDir, 'diff-summary.md'), `${diffSummary}\n`);
   fs.writeFileSync(path.join(outDir, 'memory-hits.md'), `${memoryHits}\n`);
   fs.writeFileSync(path.join(outDir, 'latest-insights.md'), `${latestInsights || '# Latest Insights\n\n(none)'}\n`);
+  writeJson(path.join(outDir, 'latest-insights-report.json'), latestInsightsResult.report);
   writeTelemetry(path.join(outDir, 'context-telemetry.json'), telemetry);
   writeJson(path.join(outDir, 'synthesis-input.json'), synthesisInput);
 
@@ -546,6 +585,7 @@ if (require.main === module) {
 module.exports = {
   buildContextPack,
   buildLatestInsights,
+  buildLatestInsightsResult,
   buildMemoryHits,
   fileKind,
   rulePack,

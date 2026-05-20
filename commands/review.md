@@ -433,7 +433,7 @@ if [ -x "${HELPER_DIR}/check-context-budget.js" ]; then
 fi
 ```
 
-If the context pack exists, pass the matching `agent-packets/<agent>.md` file contents to each reviewer, `route.json` and `synthesis-input.json` to Arbiter, and `synthesis-input.json` plus Compass's phase artifacts to Compass. The packet includes a **Latest Insights** section from project learnings; agents may use it to anticipate recurring risks and validation patterns, but every finding still needs current evidence.
+If the context pack exists, pass the matching `agent-packets/<agent>.md` file contents to each reviewer, `route.json` and `synthesis-input.json` to Arbiter, and `synthesis-input.json` plus Compass's phase artifacts to Compass. The packet includes a **Latest Insights** section from project learnings; agents may use it to anticipate recurring risks and validation patterns, but every finding still needs current evidence. If latest insights are blocked, read `latest-insights-report.json` for the gate status and top check issues.
 
 ## Step 3.5: Context Pre-Loading
 

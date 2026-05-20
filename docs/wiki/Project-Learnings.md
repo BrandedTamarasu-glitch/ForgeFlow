@@ -44,7 +44,7 @@ From Claude Code, run:
 
 That refreshes the artifact and prints the insight sections in a user-facing order.
 
-Review context packs also include a compact **Latest Insights** section in each agent packet. Agents can use it to adjust attention while reviewing, but they still need current code, test, and artifact evidence for every finding. Context packs inject the insights only when the project-learnings checker passes; warn or fail results produce a compact quality-gate warning instead.
+Review context packs also include a compact **Latest Insights** section in each agent packet. Agents can use it to adjust attention while reviewing, but they still need current code, test, and artifact evidence for every finding. Context packs inject the insights only when the project-learnings checker passes; warn or fail results produce a compact quality-gate warning instead. The generated context pack includes `latest-insights-report.json` with the gate status and top check issues.
 
 Check the local artifact before relying on it:
 

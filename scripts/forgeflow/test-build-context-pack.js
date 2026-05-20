@@ -2,7 +2,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { buildContextPack, buildLatestInsights } = require('./build-context-pack');
+const { buildContextPack, buildLatestInsights, buildLatestInsightsResult } = require('./build-context-pack');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-'));
@@ -69,6 +69,7 @@ fs.writeFileSync(path.join(insightsProjectDir, 'project-learning-candidates.json
   { category: 'recommended-approach', learning: 'Gate agent guidance before injection.' },
 ].map((item) => JSON.stringify(item)).join('\n') + '\n');
 const passingInsights = buildLatestInsights(insightsRoot);
+const passingInsightsResult = buildLatestInsightsResult(insightsRoot);
 fs.writeFileSync(path.join(insightsProjectDir, 'project-learning-candidates.jsonl'), JSON.stringify({
   category: 'unknown-category',
   learning: 'This malformed candidate should block injection.',
@@ -99,11 +100,13 @@ fs.writeFileSync(path.join(insightsProjectDir, 'project-learnings.md'), [
   '',
 ].join('\n'));
 const blockedInsights = buildLatestInsights(insightsRoot);
+const blockedInsightsResult = buildLatestInsightsResult(insightsRoot);
 
 const route = JSON.parse(fs.readFileSync(path.join(outDir, 'route.json'), 'utf8'));
 const manifest = JSON.parse(fs.readFileSync(path.join(outDir, 'file-manifest.json'), 'utf8'));
 const synthesis = JSON.parse(fs.readFileSync(path.join(outDir, 'synthesis-input.json'), 'utf8'));
 const telemetry = JSON.parse(fs.readFileSync(path.join(outDir, 'context-telemetry.json'), 'utf8'));
+const insightsReport = JSON.parse(fs.readFileSync(path.join(outDir, 'latest-insights-report.json'), 'utf8'));
 const noisyManifest = JSON.parse(fs.readFileSync(path.join(noisyOutDir, 'file-manifest.json'), 'utf8'));
 const wardenPacket = fs.readFileSync(path.join(repoRoot, synthesis.agent_packets.warden_reviewer), 'utf8');
 
@@ -118,17 +121,22 @@ const checks = [
   ['aegis packet exists', Boolean(synthesis.agent_packets.aegis)],
   ['memory hits written', fs.existsSync(path.join(outDir, 'memory-hits.md'))],
   ['latest insights written', fs.existsSync(path.join(outDir, 'latest-insights.md'))],
+  ['latest insights report written', fs.existsSync(path.join(outDir, 'latest-insights-report.json'))],
   ['diff summary written', fs.existsSync(path.join(outDir, 'diff-summary.md'))],
   ['telemetry written', fs.existsSync(path.join(outDir, 'context-telemetry.json'))],
   ['telemetry linked', synthesis.context_telemetry_path.endsWith('context-telemetry.json')],
   ['latest insights linked', synthesis.latest_insights_path.endsWith('latest-insights.md')],
+  ['latest insights report linked', synthesis.latest_insights_report_path.endsWith('latest-insights-report.json')],
   ['agent packet includes latest insights', wardenPacket.includes('## Latest Insights')],
   ['telemetry token estimate', Number.isInteger(telemetry.estimated_compact_tokens)],
+  ['latest insights report has status', ['injected', 'missing', 'blocked', 'error'].includes(insightsReport.status)],
   ['noisy manifest sanitized', noisyManifest.files.length === 3],
   ['no noisy decoration in manifest', !noisyManifest.files.some((file) => file.path.includes('Changes') || file.path.includes('|'))],
   ['noisy result full mode', noisyResult.route.mode === 'full-mode'],
   ['passing insights include project guidance', passingInsights.includes('Check docs drift before release.')],
+  ['passing insights report injected', passingInsightsResult.report.status === 'injected' && passingInsightsResult.report.check_status === 'pass'],
   ['blocked insights use quality gate', blockedInsights.includes('Quality Gate') && blockedInsights.includes('quality check returned FAIL')],
+  ['blocked insights report explains reason', blockedInsightsResult.report.status === 'blocked' && blockedInsightsResult.report.issues.some((issue) => issue.code === 'candidate-category-invalid')],
   ['blocked insights omit malformed candidate body', !blockedInsights.includes('This malformed candidate should block injection.')],
 ];
 
