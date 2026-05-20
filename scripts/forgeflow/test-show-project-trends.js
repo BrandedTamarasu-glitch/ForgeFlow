@@ -5,6 +5,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const {
   parseProjectLearnings,
+  projectFreshness,
   renderMarkdown,
   showProjectTrends,
 } = require('./show-project-trends');
@@ -89,15 +90,40 @@ const missingValue = spawnSync(path.join(repoRoot, 'scripts/forgeflow/show-proje
   '--project-dir',
 ], { encoding: 'utf8' });
 const parsedLearnings = parseProjectLearnings(fs.readFileSync(path.join(projectDir, 'project-learnings.md'), 'utf8'));
+const staleFreshness = projectFreshness({
+  current: { available: true, commit_short: 'ccccccc', dirty: true },
+  latest: { generated_at: '2026-05-20T00:00:00Z', commit_short: 'bbbbbbb', dirty: false },
+  historySnapshots: 2,
+  projectLearnings: parsedLearnings,
+});
+const staleLearningFreshness = projectFreshness({
+  current: { available: true, commit_short: 'bbbbbbb', dirty: false },
+  latest: { generated_at: '2026-05-20T00:00:00Z', commit_short: 'bbbbbbb', dirty: false },
+  historySnapshots: 3,
+  projectLearnings: {
+    present: true,
+    generated_at: '2026-05-20T00:00:00Z',
+    consumed_code_map_history_snapshots: 2,
+  },
+});
+const missingFreshness = projectFreshness({
+  current: { available: true, commit_short: 'ccccccc', dirty: false },
+  latest: null,
+  projectLearnings: { present: false },
+});
 
 const checks = [
   ['summarizes history count', result.code_map.history_snapshots === 2],
   ['compares code map trend', result.code_map.trend.status === 'compared' && result.code_map.trend.unresolved_imports_delta === 1],
   ['reports new hotspots', result.code_map.new_high_fan_in.includes('src/core.ts') && result.code_map.new_high_fan_out.includes('src/app.ts')],
-  ['detects learning consumption', result.project_learnings.consumed_code_map_trend === true && parsedLearnings.consumed_code_map_trend === true],
+  ['detects learning consumption', result.project_learnings.consumed_code_map_trend === true && parsedLearnings.consumed_code_map_trend === true && parsedLearnings.consumed_code_map_history_snapshots === 2 && parsedLearnings.generated_at === ''],
+  ['summarizes freshness', result.freshness.status === 'attention' && result.freshness.issues.some((item) => item.code === 'project-learnings-generated-at-missing')],
+  ['detects stale code map freshness', staleFreshness.status === 'attention' && staleFreshness.issues.some((item) => item.code === 'code-map-commit-stale') && staleFreshness.issues.some((item) => item.code === 'code-map-dirty-stale')],
+  ['detects stale project learning code-map consumption', staleLearningFreshness.status === 'attention' && staleLearningFreshness.issues.some((item) => item.code === 'project-learnings-code-map-stale')],
+  ['detects missing freshness inputs', missingFreshness.status === 'missing' && missingFreshness.issues.some((item) => item.code === 'code-map-missing') && missingFreshness.issues.some((item) => item.code === 'project-learnings-missing')],
   ['summarizes advisor', result.advisor.budget_status === 'pass' && result.advisor.code_map_trends_status === 'attention'],
-  ['renders markdown', markdown.includes('# Forgeflow Project Trends') && markdown.includes('Unresolved imports delta: 1')],
-  ['cli json works', cli.status === 0 && cliJson.code_map.trend.status === 'compared' && cliJson.project_learnings.consumed_code_map_trend === true],
+  ['renders markdown', markdown.includes('# Forgeflow Project Trends') && markdown.includes('Unresolved imports delta: 1') && markdown.includes('## Freshness')],
+  ['cli json works', cli.status === 0 && cliJson.code_map.trend.status === 'compared' && cliJson.project_learnings.consumed_code_map_trend === true && Boolean(cliJson.freshness)],
   ['missing option value exits usage', missingValue.status === 2 && missingValue.stderr.includes('Missing value for --project-dir')],
 ];
 

@@ -27,7 +27,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands.
 | `/forgeflow-metrics` | Summarize telemetry, calibration, outcomes, context savings, budget health, and advisor actions. |
 | `/forgeflow-report` | Produce a broader status report including drift, context trends, project trends, and local metrics. |
 | `/forgeflow-release-check` | Run local pre-release checks for command coverage, install, update, health, version, and context helpers. |
-| `/forgeflow-trends` | Show the current project's code-map trend, project-learning consumption, and context-advisor status. |
+| `/forgeflow-trends` | Show the current project's code-map trend, artifact freshness, project-learning consumption, and context-advisor status. |
 | `/forgeflow-version` | Show installed commit, upstream status, latest release, helper paths, and the next update action. |
 | `/ship` | Prepare presentation, PR, CI checks, and release handoff. |
 

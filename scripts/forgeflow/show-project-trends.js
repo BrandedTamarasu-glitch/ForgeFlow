@@ -61,6 +61,22 @@ function readFile(file) {
   return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
 }
 
+function currentGitState(root) {
+  const isGit = Boolean(git(['rev-parse', '--show-toplevel'], root));
+  if (!isGit) return { available: false, commit_short: '', dirty: false };
+  const status = git(['status', '--short'], root).split(/\r?\n/).filter(Boolean);
+  return {
+    available: true,
+    commit_short: git(['rev-parse', '--short', 'HEAD'], root),
+    dirty: status.length > 0,
+  };
+}
+
+function parseGeneratedAt(markdown) {
+  const match = String(markdown || '').match(/^- Generated at:\s*(.+)$/mu);
+  return match ? match[1].trim() : '';
+}
+
 function latestCodeMapTrend(history) {
   const records = Array.isArray(history) ? history.filter((item) => item && item.summary) : [];
   if (records.length < 2) return { status: records.length === 1 ? 'first-run' : 'missing' };
@@ -70,10 +86,71 @@ function latestCodeMapTrend(history) {
 function parseProjectLearnings(markdown) {
   const sourceLine = String(markdown || '').split(/\r?\n/).find((line) => line.startsWith('- Code map history:')) || '';
   const consumedTrend = /trend\s+compared/.test(sourceLine);
+  const snapshotMatch = sourceLine.match(/Code map history:\s*(\d+)\s+snapshot/);
   return {
     present: Boolean(markdown),
+    generated_at: parseGeneratedAt(markdown),
     consumed_code_map_trend: consumedTrend,
+    consumed_code_map_history_snapshots: snapshotMatch ? Number.parseInt(snapshotMatch[1], 10) : null,
     code_map_history_source: sourceLine.replace(/^- /, ''),
+  };
+}
+
+function freshnessStatus(items) {
+  if (items.some((item) => item.severity === 'missing')) return 'missing';
+  if (items.some((item) => item.severity === 'attention')) return 'attention';
+  return 'current';
+}
+
+function projectFreshness({ current, latest, historySnapshots = 0, projectLearnings }) {
+  const items = [];
+  if (!latest) {
+    items.push({
+      code: 'code-map-missing',
+      severity: 'missing',
+      message: 'No code-map history snapshot is available.',
+    });
+  } else if (current.available && current.commit_short && latest.commit_short && current.commit_short !== latest.commit_short) {
+    items.push({
+      code: 'code-map-commit-stale',
+      severity: 'attention',
+      message: `Latest code-map snapshot is for ${latest.commit_short}, current HEAD is ${current.commit_short}.`,
+    });
+  }
+  if (latest && current.available && current.dirty && !latest.dirty) {
+    items.push({
+      code: 'code-map-dirty-stale',
+      severity: 'attention',
+      message: 'Current worktree has local changes that the latest clean code-map snapshot did not include.',
+    });
+  }
+  if (!projectLearnings.present) {
+    items.push({
+      code: 'project-learnings-missing',
+      severity: 'missing',
+      message: 'Project learnings are not present.',
+    });
+  } else if (!projectLearnings.generated_at) {
+    items.push({
+      code: 'project-learnings-generated-at-missing',
+      severity: 'attention',
+      message: 'Project learnings do not include generated-at metadata.',
+    });
+  } else if (
+    Number.isFinite(projectLearnings.consumed_code_map_history_snapshots)
+    && historySnapshots > projectLearnings.consumed_code_map_history_snapshots
+  ) {
+    items.push({
+      code: 'project-learnings-code-map-stale',
+      severity: 'attention',
+      message: `Project learnings consumed ${projectLearnings.consumed_code_map_history_snapshots} code-map snapshot(s), but ${historySnapshots} are available.`,
+    });
+  }
+  return {
+    status: freshnessStatus(items),
+    current_commit: current.commit_short || '',
+    current_dirty: Boolean(current.dirty),
+    issues: items,
   };
 }
 
@@ -90,10 +167,12 @@ function showProjectTrends(opts = {}) {
   const history = readCodeMapHistory(historyPath);
   const trend = latestCodeMapTrend(history);
   const latest = history.length > 0 ? history[history.length - 1] : null;
+  const projectLearnings = parseProjectLearnings(readFile(learningsPath));
   const advisor = adviseContext({
     root: projectDir,
     codeMapHistoryFiles: fs.existsSync(historyPath) ? [historyPath] : [],
   });
+  const current = currentGitState(root);
 
   return {
     schema_version: '1',
@@ -113,7 +192,8 @@ function showProjectTrends(opts = {}) {
       new_high_fan_in: topList(trend.new_high_fan_in),
       new_high_fan_out: topList(trend.new_high_fan_out),
     },
-    project_learnings: parseProjectLearnings(readFile(learningsPath)),
+    project_learnings: projectLearnings,
+    freshness: projectFreshness({ current, latest, historySnapshots: history.length, projectLearnings }),
     advisor: {
       budget_status: advisor.budget.status,
       code_topology_status: advisor.code_topology.status,
@@ -145,6 +225,13 @@ function renderMarkdown(result) {
     `- Changed sections delta: ${trend.changed_sections_delta ?? 0}`,
     `- New high fan-in: ${result.code_map.new_high_fan_in.length > 0 ? result.code_map.new_high_fan_in.join(', ') : '(none)'}`,
     `- New high fan-out: ${result.code_map.new_high_fan_out.length > 0 ? result.code_map.new_high_fan_out.join(', ') : '(none)'}`,
+    '',
+    '## Freshness',
+    '',
+    `- Status: ${result.freshness.status}`,
+    `- Current HEAD: ${result.freshness.current_commit || '(unknown)'}`,
+    `- Current dirty: ${result.freshness.current_dirty ? 'yes' : 'no'}`,
+    `- Issues: ${result.freshness.issues.length > 0 ? result.freshness.issues.map((item) => `${item.code}: ${item.message}`).join('; ') : '(none)'}`,
     '',
     '## Project Learnings',
     '',
@@ -184,6 +271,7 @@ if (require.main === module) {
 module.exports = {
   latestCodeMapTrend,
   parseProjectLearnings,
+  projectFreshness,
   renderMarkdown,
   showProjectTrends,
 };
