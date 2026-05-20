@@ -388,6 +388,38 @@ function buildLatestInsights(root, maxChars = 3000) {
   return buildLatestInsightsResult(root, maxChars).markdown;
 }
 
+function firstLines(text, maxLines) {
+  return String(text || '').split(/\r?\n/).slice(0, maxLines).join('\n');
+}
+
+function compactProjectCodeMap(root, maxChars = 2500) {
+  const projectDir = defaultProjectDir(root);
+  const codeMapPath = path.join(projectDir, 'context', 'project-code-map.md');
+  const topologyPath = path.join(projectDir, 'context', 'code-topology.json');
+  if (fs.existsSync(codeMapPath)) {
+    return truncate([
+      `Artifact: ${path.relative(root, codeMapPath)}`,
+      '',
+      firstLines(fs.readFileSync(codeMapPath, 'utf8').replace(/^# Forgeflow Project Code Map\s*/u, '').trim(), 80),
+    ].join('\n'), maxChars);
+  }
+  const topology = readJson(topologyPath);
+  if (!topology || !topology.summary) return '(none)';
+  const lines = [
+    `Artifact: ${path.relative(root, topologyPath)}`,
+    `Summary: ${topology.summary.source_files} source files, ${topology.summary.local_edges} local edges, ${topology.summary.sections || 0} sections, ${topology.summary.changed_sections || 0} changed sections.`,
+    '',
+    'High fan-in:',
+    ...((topology.high_fan_in || []).slice(0, 5).map((item) => `- ${md(item.path)} (fan-in ${item.fan_in}, fan-out ${item.fan_out})`)),
+    '',
+    'High fan-out:',
+    ...((topology.high_fan_out || []).slice(0, 5).map((item) => `- ${md(item.path)} (fan-in ${item.fan_in}, fan-out ${item.fan_out})`)),
+    '',
+    'Limits: static JS/TS import and section guidance only; not a runtime call graph.',
+  ];
+  return truncate(lines.join('\n'), maxChars);
+}
+
 function truncate(text, maxChars) {
   if (!Number.isFinite(maxChars) || maxChars <= 0 || text.length <= maxChars) return text;
   return `${text.slice(0, Math.max(0, maxChars - 80)).trimEnd()}\n\n[truncated to ${maxChars} chars]`;
@@ -522,7 +554,7 @@ function relevantFilesForAgent(agent, manifest) {
   return selected.length > 0 ? selected : manifest.slice(0, 10);
 }
 
-function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, topologySummary, task) {
+function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, projectCodeMap, topologySummary, task) {
   const relevant = relevantFilesForAgent(agent, manifest);
   const rules = rulePack(agent, route, manifest);
   return [
@@ -548,6 +580,9 @@ function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestI
     '',
     '## Latest Insights',
     latestInsights.replace(/^# Forgeflow Project Learnings[^\n]*\s*/u, '').trim() || '(none)',
+    '',
+    '## Project Code Map',
+    projectCodeMap,
     '',
     '## Code Topology',
     topologySummary,
@@ -595,6 +630,7 @@ function buildContextPack(opts) {
   const memoryHits = buildMemoryHits(root, route.files, route, opts.task, opts.maxMemoryChars, memoryIndexPath);
   const latestInsightsResult = buildLatestInsightsResult(root);
   const latestInsights = latestInsightsResult.markdown;
+  const projectCodeMap = compactProjectCodeMap(root);
   const topologyContext = buildTopologyContext(root, outDir, route.files);
   const topologySummary = compactTopology(topologyContext);
   const topology = topologyReport(topologyContext, root);
@@ -602,7 +638,7 @@ function buildContextPack(opts) {
   const packets = {};
 
   for (const agent of agents) {
-    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, topologySummary, opts.task);
+    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, projectCodeMap, topologySummary, opts.task);
     const file = path.join(packetDir, `${agent}.md`);
     fs.writeFileSync(file, content);
     packets[agent] = path.relative(root, file);
@@ -633,6 +669,12 @@ function buildContextPack(opts) {
     memory_hits_path: path.relative(root, path.join(outDir, 'memory-hits.md')),
     latest_insights_path: path.relative(root, path.join(outDir, 'latest-insights.md')),
     latest_insights_report_path: path.relative(root, path.join(outDir, 'latest-insights-report.json')),
+    project_code_map_path: fs.existsSync(path.join(defaultProjectDir(root), 'context', 'project-code-map.md'))
+      ? path.relative(root, path.join(defaultProjectDir(root), 'context', 'project-code-map.md'))
+      : null,
+    project_code_topology_path: fs.existsSync(path.join(defaultProjectDir(root), 'context', 'code-topology.json'))
+      ? path.relative(root, path.join(defaultProjectDir(root), 'context', 'code-topology.json'))
+      : null,
     code_topology_path: topologyContext ? path.relative(root, topologyContext.out) : null,
     code_topology_review_focus_path: topologyContext ? path.relative(root, topologyContext.markdown_out) : null,
     code_topology_telemetry_path: topologyContext ? path.relative(root, topologyContext.telemetry_path) : null,
@@ -652,6 +694,7 @@ function buildContextPack(opts) {
   fs.writeFileSync(path.join(outDir, 'diff-summary.md'), `${diffSummary}\n`);
   fs.writeFileSync(path.join(outDir, 'memory-hits.md'), `${memoryHits}\n`);
   fs.writeFileSync(path.join(outDir, 'latest-insights.md'), `${latestInsights || '# Latest Insights\n\n(none)'}\n`);
+  fs.writeFileSync(path.join(outDir, 'project-code-map.md'), `# Project Code Map\n\n${projectCodeMap}\n`);
   writeJson(path.join(outDir, 'latest-insights-report.json'), latestInsightsResult.report);
   writeTelemetry(path.join(outDir, 'context-telemetry.json'), telemetry);
   writeJson(path.join(outDir, 'synthesis-input.json'), synthesisInput);
@@ -702,6 +745,7 @@ module.exports = {
   buildLatestInsights,
   buildLatestInsightsResult,
   buildMemoryHits,
+  compactProjectCodeMap,
   fileKind,
   rulePack,
 };

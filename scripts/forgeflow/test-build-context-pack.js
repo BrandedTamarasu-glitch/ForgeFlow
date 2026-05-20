@@ -3,9 +3,34 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
-const { buildContextPack, buildLatestInsights, buildLatestInsightsResult } = require('./build-context-pack');
+const { buildContextPack, buildLatestInsights, buildLatestInsightsResult, compactProjectCodeMap } = require('./build-context-pack');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
+const repoProjectContextDir = path.join(repoRoot, '.forgeflow', path.basename(repoRoot), 'context');
+fs.mkdirSync(repoProjectContextDir, { recursive: true });
+const seededProjectCodeMapPath = path.join(repoProjectContextDir, 'project-code-map.md');
+const previousProjectCodeMap = fs.existsSync(seededProjectCodeMapPath)
+  ? fs.readFileSync(seededProjectCodeMapPath, 'utf8')
+  : null;
+fs.writeFileSync(seededProjectCodeMapPath, [
+  '# Forgeflow Project Code Map',
+  '',
+  '## Summary',
+  '',
+  '- Source files: 5',
+  '- Local edges: 4',
+  '- Sections mapped: 12',
+  '- Changed sections: 2',
+  '',
+  '## High Fan-In',
+  '',
+  '- scripts/forgeflow/build-context-pack.js (fan-in 3, fan-out 2)',
+  '',
+  '## Limits',
+  '',
+  '- Static JS/TS import graph only.',
+  '',
+].join('\n'));
 const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-'));
 const result = buildContextPack({
   filesPath: path.join(repoRoot, 'fixtures/context-pack/review.files'),
@@ -127,6 +152,12 @@ const insightsReport = JSON.parse(fs.readFileSync(path.join(outDir, 'latest-insi
 const topology = JSON.parse(fs.readFileSync(path.join(outDir, 'code-topology.json'), 'utf8'));
 const noisyManifest = JSON.parse(fs.readFileSync(path.join(noisyOutDir, 'file-manifest.json'), 'utf8'));
 const wardenPacket = fs.readFileSync(path.join(repoRoot, synthesis.agent_packets.warden_reviewer), 'utf8');
+const compactMap = compactProjectCodeMap(repoRoot);
+if (previousProjectCodeMap === null) {
+  fs.unlinkSync(seededProjectCodeMapPath);
+} else {
+  fs.writeFileSync(seededProjectCodeMapPath, previousProjectCodeMap);
+}
 
 const checks = [
   ['result out dir', result.out_dir === outDir],
@@ -148,6 +179,8 @@ const checks = [
   ['telemetry linked', synthesis.context_telemetry_path.endsWith('context-telemetry.json')],
   ['latest insights linked', synthesis.latest_insights_path.endsWith('latest-insights.md')],
   ['latest insights report linked', synthesis.latest_insights_report_path.endsWith('latest-insights-report.json')],
+  ['project code map linked', synthesis.project_code_map_path.endsWith('project-code-map.md')],
+  ['project code topology linked', synthesis.project_code_topology_path.endsWith('code-topology.json')],
   ['code topology linked', synthesis.code_topology_path.endsWith('code-topology.json')],
   ['code topology review focus linked', synthesis.code_topology_review_focus_path.endsWith('code-topology-review-focus.md')],
   ['code topology summary linked', synthesis.code_topology_summary.available === true && synthesis.code_topology_summary.paths.review_focus.endsWith('code-topology-review-focus.md')],
@@ -157,6 +190,7 @@ const checks = [
   ['code topology summary has changed section count', Number.isInteger(synthesis.code_topology_summary.summary.changed_sections)],
   ['code topology summary has section ranges', synthesis.code_topology_summary.changed_file_neighbors.every((item) => (item.sections || []).every((section) => Number.isInteger(section.end_line)))],
   ['agent packet includes latest insights', wardenPacket.includes('## Latest Insights')],
+  ['agent packet includes project code map', wardenPacket.includes('## Project Code Map') && wardenPacket.includes('Sections mapped: 12')],
   ['agent packet includes code topology', wardenPacket.includes('## Code Topology') && wardenPacket.includes('sections') && wardenPacket.includes('static JS/TS import graph only')],
   ['agent packet escapes markdown paths', wardenPacket.includes('src/auth/session\\.ts')],
   ['telemetry token estimate', Number.isInteger(telemetry.estimated_compact_tokens)],
@@ -171,6 +205,7 @@ const checks = [
   ['blocked insights use quality gate', blockedInsights.includes('Quality Gate') && blockedInsights.includes('quality check returned FAIL')],
   ['blocked insights report explains reason', blockedInsightsResult.report.status === 'blocked' && blockedInsightsResult.report.issues.some((issue) => issue.code === 'candidate-category-invalid')],
   ['blocked insights omit malformed candidate body', !blockedInsights.includes('This malformed candidate should block injection.')],
+  ['compact project code map renders', compactMap.includes('Sections mapped: 12')],
   ['cli json exposes code topology', cli.status === 0 && cliJson.code_topology.available === true && cliJson.code_topology.paths.graph.endsWith('code-topology.json')],
 ];
 

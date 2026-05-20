@@ -193,7 +193,7 @@ These records are local-first. They are meant to help you understand false posit
 
 Forgeflow includes local-only helpers that reduce agent prompt load before review or implementation work starts:
 
-- **Context packs:** `build-context-pack.js` prepares bounded reviewer packets and a synthesis input file from the changed files, including changed-neighborhood topology context, changed-section hints, and a JSON topology summary when JS/TS files are in scope.
+- **Context packs:** `build-context-pack.js` prepares bounded reviewer packets and a synthesis input file from the changed files, including latest insights, compact project code-map guidance, changed-neighborhood topology context, changed-section hints, and a JSON topology summary when JS/TS files are in scope.
 - **Code topology:** `build-code-topology.js` builds a static JS/TS import graph with fan-in/fan-out hotspots, changed-file neighbors, source symbols with line ranges, changed sections, and Markdown headings.
 - **Project code map:** `show-code-map.js` renders a compact maintainer-facing summary of topology, hotspots, sections, changed sections, and artifact paths.
 - **Memory index:** `index-memory.js` indexes local Forgeflow memory so agents can use compact project history instead of reading full notes.
@@ -283,7 +283,7 @@ From Claude Code, use the command view:
 /forgeflow-learnings --project --check
 ```
 
-Review context packets include the latest insights so agents can account for recurring project patterns while still verifying every finding against current artifacts.
+Review context packets include the latest insights and compact project code-map guidance so agents can account for recurring project patterns and structural hotspots while still verifying every finding against current artifacts.
 Context packs only inject those insights when the project-learnings checker passes; non-passing checks produce a compact quality-gate warning instead of guidance.
 Each context pack also writes `latest-insights-report.json` so users can see whether insights were injected, blocked, missing, or errored and which check issues caused the decision.
 The checker guards that loop against sensitive content, placeholder-only output, oversized packets, duplicate bullets, malformed candidates, stale rollups, and missing proof-boundary text:
