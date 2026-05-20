@@ -203,6 +203,7 @@ Forgeflow includes local-only helpers that reduce agent prompt load before revie
 - **Budget checks:** `check-context-budget.js` reads `.forgeflow-budget.json` and warns when compact context exceeds configured limits.
 - **Health repair:** `health-check.js --fix --json` creates safe project-local scaffolding and seeds budget config when missing.
 - **Context advisor:** `advise-context.js --root .forgeflow --record --json` reports budget issues, low-savings packets, topology coverage signals, trimming recommendations, and previous-run trend deltas.
+- **Project trends:** `show-project-trends.js` summarizes the latest code-map trend, project-learning consumption, and advisor status from existing local artifacts.
 
 Review context packs keep local memory hits bounded by default. If memory context dominates packet size, lower `build-context-pack.js --max-memory-chars` or split the review scope.
 
@@ -212,6 +213,7 @@ Useful commands:
 scripts/forgeflow/build-context-pack.js --json
 scripts/forgeflow/build-code-topology.js --json
 scripts/forgeflow/show-code-map.js --json
+scripts/forgeflow/show-project-trends.js --json
 scripts/forgeflow/build-memory-context.js --json
 scripts/forgeflow/build-scope-manifest.js --json
 scripts/forgeflow/summarize-context-telemetry.js --root .forgeflow --json

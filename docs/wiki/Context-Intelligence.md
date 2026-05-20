@@ -32,6 +32,7 @@ In a repo checkout, examples use `scripts/forgeflow/`. A Claude install from `/u
 | Project learnings display | `scripts/forgeflow/show-project-learnings.js` | Refreshes project learnings and prints the current-project insight view used by `/forgeflow-learnings --project`. |
 | Latest insights packets | `scripts/forgeflow/build-context-pack.js` | Includes the current project-learning insight view in agent packets only after the project-learning quality check passes, and writes a gate report. |
 | Project code map | `scripts/forgeflow/show-code-map.js` | Renders a compact maintainer-facing map from topology, hotspots, sections, changed sections, provenance, trend deltas, and artifact paths. |
+| Project trends | `scripts/forgeflow/show-project-trends.js` | Summarizes code-map trend status, project-learning consumption, and advisor health from existing local artifacts. |
 
 When present, `.forgeflow/<project-name>/implementation-notes.md` is included in the memory index. This lets later consult, implement, review, and ship phases see prior decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes without loading the full raw notes file into every prompt.
 
