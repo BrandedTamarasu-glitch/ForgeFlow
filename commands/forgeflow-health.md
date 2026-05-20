@@ -57,7 +57,7 @@ EXPECTED_PROJECT_RULES=(commit-hygiene dev-environment)
 EXPECTED_HOOKS=(forgeflow-gate forgeflow-context-monitor forgeflow-statusline forgeflow-telemetry)
 EXPECTED_TEMPLATES=(ship-presentation.html)
 EXPECTED_RUNTIME_HELPERS=(
-  advise-context.js agent-chat-off.sh agent-chat-on.sh build-context-pack.js build-memory-context.js
+  advise-context.js agent-chat-off.sh agent-chat-on.sh build-code-topology.js build-context-pack.js build-memory-context.js
   build-scope-manifest.js check-codex-agent-drift.js check-context-budget.js check-implementation-notes.js check-project-learnings.js context-telemetry.js
   ensure-forgeflow-state.sh explain-review-route.js forgeflow-version.js generate-codex-agent-stubs.js health-check.js
   index-memory.js install-manifest.js install-template.js record-pilot-evidence.js record-project-learning.js record-review-outcome.js render-evaluation-report.js render-ship-presentation.js
@@ -220,7 +220,7 @@ Default (without `--verbose`):
 - Project rules: 2/2
 - Hooks: 3/4 installed, 3/4 wired
 - Settings.json: valid
-- Runtime helpers: 24/24
+- Runtime helpers: 25/25
 - Current project (.forgeflow/): 3/3
 - Project-local .forgeflow/: skipped — cwd /path is not inside a git worktree
 

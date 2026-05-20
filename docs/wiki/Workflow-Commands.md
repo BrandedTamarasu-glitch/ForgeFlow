@@ -49,6 +49,7 @@ The review and implementation skills use local helpers when available:
 
 ```bash
 scripts/forgeflow/build-context-pack.js --json
+scripts/forgeflow/build-code-topology.js --json
 scripts/forgeflow/build-memory-context.js --json
 scripts/forgeflow/build-scope-manifest.js --json
 scripts/forgeflow/record-implementation-notes.js --json

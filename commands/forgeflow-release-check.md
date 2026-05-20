@@ -48,6 +48,7 @@ node scripts/forgeflow/test-show-project-learnings.js
 node scripts/forgeflow/test-seed-budget-config.js
 node scripts/forgeflow/test-check-context-budget.js
 node scripts/forgeflow/test-advise-context.js
+node scripts/forgeflow/test-build-code-topology.js
 node scripts/forgeflow/test-build-context-pack.js
 node scripts/forgeflow/test-implementation-notes.js
 node scripts/forgeflow/test-check-implementation-notes.js
@@ -82,6 +83,7 @@ If any command fails, stop and report the failed command plus its output. Do not
 - [ ] Project learnings rollup test passes
 - [ ] Project learnings display test passes
 - [ ] Context budget/advisor smoke tests pass
+- [ ] Code topology helper test passes
 - [ ] Context pack test passes
 - [ ] Implementation notes wiring and quality-check tests pass
 - [ ] Project learnings quality-check test passes

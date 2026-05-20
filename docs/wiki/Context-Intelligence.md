@@ -13,6 +13,7 @@ In a repo checkout, examples use `scripts/forgeflow/`. A Claude install from `/u
 | Capability | Helper | Purpose |
 |---|---|---|
 | Review context packs | `scripts/forgeflow/build-context-pack.js` | Builds bounded reviewer packets and synthesis input from the current change. |
+| Code topology | `scripts/forgeflow/build-code-topology.js` | Builds a static JS/TS import graph with fan-in/fan-out hotspots and changed-file neighbors. |
 | Memory index | `scripts/forgeflow/index-memory.js` | Indexes local Forgeflow memory so helpers can find relevant history cheaply. |
 | Compact memory context | `scripts/forgeflow/build-memory-context.js` | Produces a concise project-memory summary for research, plan, consult, and implement workflows. |
 | Scope manifests | `scripts/forgeflow/build-scope-manifest.js` | Creates implementation scope packets and file ownership hints for agent waves. |
@@ -41,6 +42,7 @@ For review:
 
 ```bash
 scripts/forgeflow/build-context-pack.js --json
+scripts/forgeflow/build-code-topology.js --json
 scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json
 scripts/forgeflow/advise-context.js --root .forgeflow --record --json
 ```
@@ -50,6 +52,7 @@ For implementation:
 ```bash
 scripts/forgeflow/build-memory-context.js --json
 scripts/forgeflow/build-scope-manifest.js --json
+scripts/forgeflow/build-code-topology.js --json
 scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json
 scripts/forgeflow/advise-context.js --root .forgeflow --record --json
 ```

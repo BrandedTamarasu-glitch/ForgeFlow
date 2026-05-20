@@ -14,6 +14,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/advise-context.js',
   'scripts/forgeflow/agent-chat-off.sh',
   'scripts/forgeflow/agent-chat-on.sh',
+  'scripts/forgeflow/build-code-topology.js',
   'scripts/forgeflow/build-context-pack.js',
   'scripts/forgeflow/build-memory-context.js',
   'scripts/forgeflow/build-scope-manifest.js',
