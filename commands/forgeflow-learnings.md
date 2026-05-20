@@ -86,7 +86,7 @@ Refresh the local artifact and render the user-facing insight view:
 "${HELPER_DIR}/show-project-learnings.js" --project-dir "${FORGEFLOW_DIR}"
 ```
 
-If `.forgeflow/${PROJECT_NAME}/context/code-topology.json` exists, the rollup uses it as structural input. Hot fan-in/fan-out files and changed-section files can appear in Hot Files And Modules and Recommended Approach For Next Work.
+For the current checkout, `show-project-learnings.js` refreshes `.forgeflow/${PROJECT_NAME}/context/code-topology.json` before rolling up insights. Hot fan-in/fan-out files and changed-section files can appear in Hot Files And Modules and Recommended Approach For Next Work.
 
 If `--json` is present, pass `--json` and print the helper JSON directly.
 

@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { rollupProjectLearnings } = require('./rollup-project-learnings');
+const { showCodeMap } = require('./show-code-map');
 
 const SECTION_ORDER = [
   'Recommended Approach For Next Work',
@@ -66,6 +67,15 @@ function defaultProjectDir(root) {
   return path.join(root, '.forgeflow', path.basename(root));
 }
 
+function samePath(left, right) {
+  return path.resolve(left || '') === path.resolve(right || '');
+}
+
+function shouldRefreshProjectCodeMap(root, projectDir, opts = {}) {
+  if (typeof opts.refreshCodeMap === 'boolean') return opts.refreshCodeMap;
+  return samePath(projectDir, defaultProjectDir(root));
+}
+
 function sectionItems(markdown, heading) {
   const lines = String(markdown || '').split(/\r?\n/);
   const start = lines.findIndex((line) => line.trim() === `## ${heading}`);
@@ -95,6 +105,9 @@ function renderProjectLearningsView(projectName, artifact, markdown) {
 function showProjectLearnings(opts = {}) {
   const root = repoRoot();
   const projectDir = opts.projectDir || defaultProjectDir(root);
+  if (shouldRefreshProjectCodeMap(root, projectDir, opts)) {
+    showCodeMap({ root });
+  }
   const rollup = rollupProjectLearnings({ projectDir });
   const markdown = fs.readFileSync(rollup.out, 'utf8');
   return {
@@ -126,5 +139,6 @@ if (require.main === module) {
 module.exports = {
   renderProjectLearningsView,
   sectionItems,
+  shouldRefreshProjectCodeMap,
   showProjectLearnings,
 };

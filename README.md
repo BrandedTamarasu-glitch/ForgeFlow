@@ -265,12 +265,10 @@ They capture durable project patterns across work items so future planning, impl
 Refresh the local rollup after several work items:
 
 ```bash
-scripts/forgeflow/show-code-map.js --json
-scripts/forgeflow/rollup-project-learnings.js --json
 scripts/forgeflow/show-project-learnings.js
 ```
 
-When the latest code map is present, the rollup adds structural hotspots and changed-section files to Hot Files And Modules and next-work guidance.
+For the current checkout, `show-project-learnings.js` refreshes the compact code map before rolling up insights. The rollup adds structural hotspots and changed-section files to Hot Files And Modules and next-work guidance.
 
 `/ship` refreshes the file during handoff prep, and `/forgeflow-health` surfaces the latest local summary when it exists.
 During `/implement`, Atlas refreshes project learnings after implementation-note consolidation when the helper is available.

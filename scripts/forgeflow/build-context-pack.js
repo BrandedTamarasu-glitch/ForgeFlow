@@ -365,7 +365,7 @@ function buildLatestInsightsResult(root, maxChars = 3000) {
     };
   }
   try {
-    const result = showProjectLearnings({ projectDir });
+    const result = showProjectLearnings({ projectDir, refreshCodeMap: false });
     const check = checkProjectLearnings({ projectDir });
     if (check.status !== 'pass') {
       return {

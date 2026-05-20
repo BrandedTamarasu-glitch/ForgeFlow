@@ -3,7 +3,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
-const { showProjectLearnings } = require('./show-project-learnings');
+const { shouldRefreshProjectCodeMap, showProjectLearnings } = require('./show-project-learnings');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-show-project-learnings-'));
@@ -26,6 +26,7 @@ fs.writeFileSync(path.join(projectDir, 'project-learning-candidates.jsonl'), [
 ].join('\n'));
 
 const result = showProjectLearnings({ projectDir });
+const defaultProjectDir = path.join(repoRoot, '.forgeflow', path.basename(repoRoot));
 const cliMarkdown = spawnSync(path.join(repoRoot, 'scripts/forgeflow/show-project-learnings.js'), [
   '--project-dir',
   projectDir,
@@ -46,6 +47,9 @@ const checks = [
   ['renders recommended first', result.markdown.indexOf('## Recommended Approach For Next Work') < result.markdown.indexOf('## Recurring Pitfalls')],
   ['renders structured recommendation', result.markdown.includes('Record structured candidates before refreshing project learnings')],
   ['renders guidance warning', result.markdown.includes('Use these as guidance only')],
+  ['refreshes code map for default project dir', shouldRefreshProjectCodeMap(repoRoot, defaultProjectDir) === true],
+  ['does not refresh code map for explicit external project dir', shouldRefreshProjectCodeMap(repoRoot, projectDir) === false],
+  ['allows explicit refresh override', shouldRefreshProjectCodeMap(repoRoot, projectDir, { refreshCodeMap: true }) === true],
   ['cli markdown works', cliMarkdown.status === 0 && cliMarkdown.stdout.includes('## Validation Patterns')],
   ['cli json works', cliJson.status === 0 && parsedJson.sources.learning_candidates === 2 && !cliJson.stdout.includes('Forgeflow Project Learnings - Demo')],
   ['missing option value exits usage', missingValue.status === 2 && missingValue.stderr.includes('Missing value for --project-dir')],
