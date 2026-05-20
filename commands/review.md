@@ -437,7 +437,7 @@ if [ -x "${HELPER_DIR}/check-context-budget.js" ]; then
 fi
 ```
 
-If the context pack exists, pass the matching `agent-packets/<agent>.md` file contents to each reviewer, `route.json` and `synthesis-input.json` to Arbiter, and `synthesis-input.json` plus Compass's phase artifacts to Compass. The packet includes a **Latest Insights** section from project learnings; agents may use it to anticipate recurring risks and validation patterns, but every finding still needs current evidence. If latest insights are blocked, read `latest-insights-report.json` for the gate status and top check issues. For JS/TS changes, packets also include a **Code Topology** section with static fan-in/fan-out and changed-file neighbor guidance, while `synthesis-input.json` exposes `code_topology_summary` for Arbiter and Compass. Treat topology as import-graph context, not runtime proof.
+If the context pack exists, pass the matching `agent-packets/<agent>.md` file contents to each reviewer, `route.json` and `synthesis-input.json` to Arbiter, and `synthesis-input.json` plus Compass's phase artifacts to Compass. The packet includes a **Latest Insights** section from project learnings; agents may use it to anticipate recurring risks and validation patterns, but every finding still needs current evidence. If latest insights are blocked, read `latest-insights-report.json` for the gate status and top check issues. For JS/TS changes, packets also include a **Code Topology** section with static fan-in/fan-out, changed-file neighbor guidance, and code-map trend metadata, while `synthesis-input.json` exposes `code_topology_summary` for Arbiter and Compass. Treat topology as import-graph context, not runtime proof.
 
 ## Step 3.5: Context Pre-Loading
 
@@ -635,6 +635,7 @@ Arbiter receives:
 When `synthesis-input.json` contains `code_topology_summary.available=true`, Arbiter must use `code_topology_summary` as review-context guidance:
 - Check whether reviewer findings touch high fan-in/high fan-out files or changed-file neighbors.
 - Use `changed_file_neighbors[].read_next` to identify focused follow-up reads when exact source evidence is needed.
+- If `code_topology_summary.history.trend.status` is `compared`, use new hotspots and unresolved-import or changed-section deltas to prioritize scrutiny, but verify any concern against current code before reporting it.
 - Do not convert topology hotspots into findings by themselves; topology supports prioritization only.
 - Mention any topology-guided follow-up reads that materially changed the verdict.
 
@@ -681,7 +682,7 @@ Use the Forgeflow context packet and synthesis input first. Do not re-read packe
 
 {synthesis-input.json + relevant phase artifacts when context pack exists, otherwise injected-context block from Step 3.5 with agent="compass-review"}
 
-If `synthesis-input.json` contains `code_topology_summary.available=true`, use it to prioritize validation around high fan-in/high fan-out files and changed-file neighbors. Treat topology as static import guidance only: it can suggest read-next targets and pressure-test areas, but it is not proof of runtime behavior or a standalone defect.
+If `synthesis-input.json` contains `code_topology_summary.available=true`, use it to prioritize validation around high fan-in/high fan-out files, changed-file neighbors, and compared code-map trend deltas. Treat topology as static import guidance only: it can suggest read-next targets and pressure-test areas, but it is not proof of runtime behavior or a standalone defect.
 
 You are performing your final review after Arbiter's technical verdict.
 This includes E2E feature validation and pressure testing — not just code review.

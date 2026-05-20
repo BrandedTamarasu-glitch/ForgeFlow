@@ -36,6 +36,39 @@ fs.writeFileSync(path.join(contextDir, 'code-topology-telemetry.json'), `${JSON.
     skipped_dynamic_imports: 2,
   },
 })}\n`);
+fs.writeFileSync(path.join(contextDir, 'code-map-history.jsonl'), [
+  JSON.stringify({
+    schema_version: '1',
+    generated_at: '2026-05-19T00:00:00Z',
+    summary: {
+      source_files: 8,
+      local_edges: 9,
+      unresolved_imports: 0,
+      skipped_dynamic_imports: 1,
+      sections: 12,
+      changed_sections: 1,
+      markdown_section_files: 1,
+    },
+    high_fan_in: [],
+    high_fan_out: [],
+  }),
+  JSON.stringify({
+    schema_version: '1',
+    generated_at: '2026-05-20T00:00:00Z',
+    summary: {
+      source_files: 8,
+      local_edges: 10,
+      unresolved_imports: 1,
+      skipped_dynamic_imports: 2,
+      sections: 14,
+      changed_sections: 3,
+      markdown_section_files: 1,
+    },
+    high_fan_in: [{ path: 'scripts/forgeflow/build-context-pack.js', fan_in: 5, fan_out: 2 }],
+    high_fan_out: [{ path: 'scripts/forgeflow/show-code-map.js', fan_in: 1, fan_out: 4 }],
+  }),
+  '',
+].join('\n'));
 
 const result = adviseContext({
   root,
@@ -124,8 +157,11 @@ const markdown = renderMarkdown(result);
 const checks = [
   ['files summarized', result.summary.files === 2],
   ['code topology summarized', result.code_topology.status === 'attention' && result.code_topology.unresolved_imports === 1 && result.code_topology.skipped_dynamic_imports === 2],
+  ['code map trends summarized', result.code_map_trends.status === 'attention' && result.code_map_trends.unresolved_imports_delta === 1 && result.code_map_trends.changed_sections_delta === 2],
+  ['code map trend recommendations', result.recommendations.some((item) => item.action === 'review-code-map-unresolved-growth') && result.recommendations.some((item) => item.action === 'review-code-map-new-hotspots')],
   ['code topology kind included', result.summary.by_kind['code-topology'].files === 1],
   ['code topology renders', markdown.includes('## Code Topology') && markdown.includes('Unresolved imports: 1')],
+  ['code map trends render', markdown.includes('## Code Map Trends') && markdown.includes('New high fan-in: scripts/forgeflow/build-context-pack.js')],
   ['budget warns', result.budget.status === 'warn'],
   ['budget recommendation', result.recommendations.some((item) => item.action === 'trim-budget-violation')],
   ['compaction recommendation', result.recommendations.some((item) => item.action === 'improve-compaction')],

@@ -11,6 +11,7 @@ const {
   defaultConfigPath,
   readConfig,
 } = require('./check-context-budget');
+const { compareCodeMapTrend } = require('./show-code-map');
 
 function usage() {
   console.error([
@@ -177,6 +178,68 @@ function topologyCoverage(files) {
   return coverage;
 }
 
+function readCodeMapHistoryFile(file) {
+  const records = [];
+  for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    try {
+      const record = JSON.parse(line);
+      if (record && record.schema_version === '1' && record.summary) records.push(record);
+    } catch (_err) {
+      // Ignore corrupt advisory history lines.
+    }
+  }
+  return records;
+}
+
+function codeMapTrends(files) {
+  const trends = {
+    files: 0,
+    compared: 0,
+    unresolved_imports_delta: 0,
+    changed_sections_delta: 0,
+    new_high_fan_in: [],
+    new_high_fan_out: [],
+    status: 'missing',
+  };
+
+  for (const file of files) {
+    if (path.basename(file) !== 'code-map-history.jsonl') continue;
+    trends.files += 1;
+    const records = readCodeMapHistoryFile(file);
+    if (records.length < 2) continue;
+    const trend = compareCodeMapTrend(records[records.length - 1], records.slice(0, -1));
+    if (trend.status !== 'compared') continue;
+    trends.compared += 1;
+    trends.unresolved_imports_delta += Number(trend.unresolved_imports_delta || 0);
+    trends.changed_sections_delta += Number(trend.changed_sections_delta || 0);
+    trends.new_high_fan_in.push(...(trend.new_high_fan_in || []));
+    trends.new_high_fan_out.push(...(trend.new_high_fan_out || []));
+  }
+
+  trends.new_high_fan_in = [...new Set(trends.new_high_fan_in)].slice(0, 10);
+  trends.new_high_fan_out = [...new Set(trends.new_high_fan_out)].slice(0, 10);
+  if (trends.files > 0) {
+    trends.status = trends.compared > 0
+      ? (trends.unresolved_imports_delta > 0 || trends.changed_sections_delta > 0 || trends.new_high_fan_in.length > 0 || trends.new_high_fan_out.length > 0 ? 'attention' : 'stable')
+      : 'insufficient-history';
+  }
+  return trends;
+}
+
+function walkCodeMapHistory(dir, files = []) {
+  if (!dir || !fs.existsSync(dir)) return files;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const file = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      walkCodeMapHistory(file, files);
+    } else if (entry.isFile() && entry.name === 'code-map-history.jsonl') {
+      files.push(file);
+    }
+  }
+  return files;
+}
+
 function recommend(summary, budget) {
   const recommendations = [];
 
@@ -232,6 +295,7 @@ function adviseContext(opts = {}) {
   const summary = summarize(files);
   const budget = checkBudget(files, config);
   const codeTopology = topologyCoverage(files);
+  const codeMapTrend = codeMapTrends(opts.codeMapHistoryFiles || walkCodeMapHistory(root));
   const result = {
     schema_version: '1',
     root,
@@ -239,8 +303,25 @@ function adviseContext(opts = {}) {
     summary,
     budget,
     code_topology: codeTopology,
+    code_map_trends: codeMapTrend,
     recommendations: recommend(summary, budget),
   };
+  if (codeMapTrend.unresolved_imports_delta > 0) {
+    result.recommendations.push({
+      severity: 'warn',
+      action: 'review-code-map-unresolved-growth',
+      reason: `Code-map history shows ${codeMapTrend.unresolved_imports_delta} new unresolved import(s).`,
+      command: 'Run /forgeflow-code-map and inspect unresolved imports before relying on topology guidance.',
+    });
+  }
+  if (codeMapTrend.new_high_fan_in.length > 0 || codeMapTrend.new_high_fan_out.length > 0) {
+    result.recommendations.push({
+      severity: 'info',
+      action: 'review-code-map-new-hotspots',
+      reason: 'Code-map history shows new fan-in/fan-out hotspots.',
+      command: 'Use the code-map Trends section to prioritize review and planning reads.',
+    });
+  }
   const historyPath = opts.history || defaultHistoryPath(root);
   const history = readHistory(historyPath);
   const record = historyRecord(result, opts.now || new Date());
@@ -268,6 +349,7 @@ function renderMarkdown(result) {
     `Percent saved: ${result.summary.percent_saved}%`,
     `Budget violations: ${result.budget.violations.length}`,
     `Code topology: ${result.code_topology.status}`,
+    `Code map trends: ${result.code_map_trends.status}`,
     `Trend: ${result.history.trend.status}`,
     '',
     '## Recommendations',
@@ -300,6 +382,16 @@ function renderMarkdown(result) {
     lines.push(`- Skipped dynamic imports: ${result.code_topology.skipped_dynamic_imports}`);
   }
 
+  if (result.code_map_trends.status !== 'missing') {
+    lines.push('', '## Code Map Trends', '');
+    lines.push(`- History files: ${result.code_map_trends.files}`);
+    lines.push(`- Compared histories: ${result.code_map_trends.compared}`);
+    lines.push(`- Unresolved imports delta: ${result.code_map_trends.unresolved_imports_delta}`);
+    lines.push(`- Changed sections delta: ${result.code_map_trends.changed_sections_delta}`);
+    lines.push(`- New high fan-in: ${result.code_map_trends.new_high_fan_in.length > 0 ? result.code_map_trends.new_high_fan_in.join(', ') : '(none)'}`);
+    lines.push(`- New high fan-out: ${result.code_map_trends.new_high_fan_out.length > 0 ? result.code_map_trends.new_high_fan_out.join(', ') : '(none)'}`);
+  }
+
   return lines.join('\n');
 }
 
@@ -327,6 +419,8 @@ module.exports = {
   adviseContext,
   compareTrend,
   historyRecord,
+  codeMapTrends,
+  walkCodeMapHistory,
   recommend,
   renderMarkdown,
   topologyCoverage,

@@ -231,6 +231,8 @@ The context advisor appends compact history to:
 .forgeflow/context-advisor-history.jsonl
 ```
 
+It also scans `.forgeflow/<project>/context/code-map-history.jsonl` when present and reports code-map trend attention items such as new hotspots, unresolved import growth, and changed-section churn.
+
 ## Implementation Notes And Pilot Evidence
 
 During implementation, Forgeflow keeps a local notes file at:

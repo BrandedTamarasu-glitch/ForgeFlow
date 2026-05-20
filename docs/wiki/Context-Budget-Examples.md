@@ -154,3 +154,5 @@ Budget violation delta: -1
 ```
 
 That means trimming improved the packet: compact tokens decreased, saved tokens increased, and one violation was removed.
+
+When code-map history exists, the same advisor output can include a **Code Map Trends** section. Use that section to spot new structural hotspots or unresolved import growth before starting the next review.

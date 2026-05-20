@@ -131,6 +131,8 @@ Each record includes:
 - budget status and violation count
 - recommendation actions
 
+The advisor also scans code-map history files under `.forgeflow/<project-name>/context/code-map-history.jsonl`. When at least two snapshots exist, it reports compared code-map trend deltas, including new hotspots, unresolved import growth, and changed-section churn.
+
 The next advisor run compares against the prior record and reports deltas for compact tokens, saved tokens, percent saved, and budget violations.
 
 The advisor also reads `code-topology-telemetry.json` when present. Its output reports topology coverage, source-file and edge counts, unresolved imports, and skipped dynamic imports so teams can spot when topology guidance is missing or when import-graph blind spots are recurring.
