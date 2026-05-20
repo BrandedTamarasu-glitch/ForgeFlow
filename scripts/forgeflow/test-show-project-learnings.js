@@ -27,6 +27,8 @@ fs.writeFileSync(path.join(projectDir, 'project-learning-candidates.jsonl'), [
 
 const result = showProjectLearnings({ projectDir });
 const defaultProjectDir = path.join(repoRoot, '.forgeflow', path.basename(repoRoot));
+const refreshedExternal = showProjectLearnings({ projectDir, refreshCodeMap: true });
+const externalTopologyPath = path.join(projectDir, 'context', 'code-topology.json');
 const cliMarkdown = spawnSync(path.join(repoRoot, 'scripts/forgeflow/show-project-learnings.js'), [
   '--project-dir',
   projectDir,
@@ -47,6 +49,7 @@ const checks = [
   ['renders recommended first', result.markdown.indexOf('## Recommended Approach For Next Work') < result.markdown.indexOf('## Recurring Pitfalls')],
   ['renders structured recommendation', result.markdown.includes('Record structured candidates before refreshing project learnings')],
   ['renders guidance warning', result.markdown.includes('Use these as guidance only')],
+  ['explicit refresh writes external code map', refreshedExternal.sources.code_map === true && fs.existsSync(externalTopologyPath)],
   ['refreshes code map for default project dir', shouldRefreshProjectCodeMap(repoRoot, defaultProjectDir) === true],
   ['does not refresh code map for explicit external project dir', shouldRefreshProjectCodeMap(repoRoot, projectDir) === false],
   ['allows explicit refresh override', shouldRefreshProjectCodeMap(repoRoot, projectDir, { refreshCodeMap: true }) === true],

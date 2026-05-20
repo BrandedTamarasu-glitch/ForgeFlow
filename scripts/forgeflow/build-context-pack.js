@@ -356,7 +356,7 @@ function latestInsightsReport(status, projectDir, root, check = null, reason = '
   };
 }
 
-function buildLatestInsightsResult(root, maxChars = 3000) {
+function buildLatestInsightsResult(root, maxChars = 3000, opts = {}) {
   const projectDir = defaultProjectDir(root);
   if (!fs.existsSync(projectDir)) {
     return {
@@ -365,7 +365,7 @@ function buildLatestInsightsResult(root, maxChars = 3000) {
     };
   }
   try {
-    const result = showProjectLearnings({ projectDir, refreshCodeMap: false });
+    const result = showProjectLearnings({ projectDir, refreshCodeMap: false, codeMap: opts.codeMap });
     const check = checkProjectLearnings({ projectDir });
     if (check.status !== 'pass') {
       return {
@@ -644,9 +644,9 @@ function buildContextPack(opts) {
   const diffSummary = buildDiffSummary(route.files, root, opts);
   const memoryIndexPath = ensureMemoryIndex(root, opts.memoryIndex !== false);
   const memoryHits = buildMemoryHits(root, route.files, route, opts.task, opts.maxMemoryChars, memoryIndexPath);
-  const latestInsightsResult = buildLatestInsightsResult(root);
-  const latestInsights = latestInsightsResult.markdown;
   const topologyContext = buildTopologyContext(root, outDir, route.files);
+  const latestInsightsResult = buildLatestInsightsResult(root, 3000, { codeMap: topologyContext ? topologyContext.topology : undefined });
+  const latestInsights = latestInsightsResult.markdown;
   const projectCodeMap = projectCodeMapFromTopology(root, topologyContext);
   const projectCodeMapPath = path.join(outDir, 'project-code-map.md');
   const topologySummary = compactTopology(topologyContext);

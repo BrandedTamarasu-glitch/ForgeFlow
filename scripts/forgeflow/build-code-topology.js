@@ -600,7 +600,10 @@ function compactTopology(topology) {
   }));
   const edges = topology.edges.filter((edge) => keep.has(edge.source) && keep.has(edge.target));
   const sourceFilter = (item) => keep.has(item.source);
-  const markdownSections = topology.markdown_sections.filter((item) => topology.changed_files.includes(item.path));
+  const markdownSections = topology.markdown_sections
+    .slice()
+    .sort((a, b) => b.sections.length - a.sections.length || a.path.localeCompare(b.path))
+    .slice(0, 5);
   return {
     ...topology,
     scope: 'changed-neighborhood',

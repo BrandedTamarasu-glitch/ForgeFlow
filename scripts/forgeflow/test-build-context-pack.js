@@ -9,8 +9,12 @@ const repoRoot = path.resolve(__dirname, '..', '..');
 const repoProjectContextDir = path.join(repoRoot, '.forgeflow', path.basename(repoRoot), 'context');
 fs.mkdirSync(repoProjectContextDir, { recursive: true });
 const seededProjectCodeMapPath = path.join(repoProjectContextDir, 'project-code-map.md');
+const seededTopologyPath = path.join(repoProjectContextDir, 'code-topology.json');
 const previousProjectCodeMap = fs.existsSync(seededProjectCodeMapPath)
   ? fs.readFileSync(seededProjectCodeMapPath, 'utf8')
+  : null;
+const previousTopology = fs.existsSync(seededTopologyPath)
+  ? fs.readFileSync(seededTopologyPath, 'utf8')
   : null;
 fs.writeFileSync(seededProjectCodeMapPath, [
   '# Forgeflow Project Code Map',
@@ -31,6 +35,20 @@ fs.writeFileSync(seededProjectCodeMapPath, [
   '- Static JS/TS import graph only.',
   '',
 ].join('\n'));
+fs.writeFileSync(seededTopologyPath, JSON.stringify({
+  schema_version: '1',
+  summary: {
+    source_files: 1,
+    local_edges: 0,
+    sections: 1,
+    changed_sections: 1,
+  },
+  high_fan_in: [{ path: 'legacy/stale-topology.js', fan_in: 9, fan_out: 0 }],
+  high_fan_out: [],
+  changed_sections: {
+    'legacy/stale-topology.js': [{ kind: 'function', name: 'stale', line: 1, end_line: 1, changed_lines: [1] }],
+  },
+}, null, 2));
 const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-'));
 const result = buildContextPack({
   filesPath: path.join(repoRoot, 'fixtures/context-pack/review.files'),
@@ -158,6 +176,11 @@ if (previousProjectCodeMap === null) {
 } else {
   fs.writeFileSync(seededProjectCodeMapPath, previousProjectCodeMap);
 }
+if (previousTopology === null) {
+  fs.unlinkSync(seededTopologyPath);
+} else {
+  fs.writeFileSync(seededTopologyPath, previousTopology);
+}
 
 const checks = [
   ['result out dir', result.out_dir === outDir],
@@ -190,6 +213,7 @@ const checks = [
   ['code topology summary has changed section count', Number.isInteger(synthesis.code_topology_summary.summary.changed_sections)],
   ['code topology summary has section ranges', synthesis.code_topology_summary.changed_file_neighbors.every((item) => (item.sections || []).every((section) => Number.isInteger(section.end_line)))],
   ['agent packet includes latest insights', wardenPacket.includes('## Latest Insights')],
+  ['agent packet latest insights omit stale topology', !wardenPacket.includes('legacy/stale-topology.js')],
   ['agent packet includes current project code map', wardenPacket.includes('## Project Code Map') && wardenPacket.includes('Artifact:') && wardenPacket.includes('code-topology.json')],
   ['agent packet omits stale project code map', !wardenPacket.includes('Sections mapped: 12')],
   ['agent packet includes code topology', wardenPacket.includes('## Code Topology') && wardenPacket.includes('sections') && wardenPacket.includes('static JS/TS import graph only')],

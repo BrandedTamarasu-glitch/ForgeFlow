@@ -5,7 +5,7 @@ const { spawnSync } = require('child_process');
 const { buildCodeTopology } = require('./build-code-topology');
 
 function usage() {
-  console.error('Usage: show-code-map.js [--root <dir>] [--out <markdown>] [--max-hotspots <n>] [--json]');
+  console.error('Usage: show-code-map.js [--root <dir>] [--project-dir <dir>] [--out <markdown>] [--max-hotspots <n>] [--json]');
 }
 
 function requireValue(argv, name, index) {
@@ -29,6 +29,9 @@ function parseArgs(argv) {
     const arg = argv[i];
     if (arg === '--root') {
       opts.root = path.resolve(requireValue(argv, arg, i));
+      i += 1;
+    } else if (arg === '--project-dir') {
+      opts.projectDir = path.resolve(requireValue(argv, arg, i));
       i += 1;
     } else if (arg === '--out') {
       opts.out = path.resolve(requireValue(argv, arg, i));
@@ -64,8 +67,8 @@ function defaultProjectDir(root) {
   return path.join(root, '.forgeflow', path.basename(root));
 }
 
-function defaultOut(root) {
-  return path.join(defaultProjectDir(root), 'context', 'project-code-map.md');
+function defaultOut(root, projectDir = defaultProjectDir(root)) {
+  return path.join(projectDir, 'context', 'project-code-map.md');
 }
 
 function md(value) {
@@ -183,7 +186,7 @@ function renderProjectCodeMap(summary) {
 
 function showCodeMap(opts = {}) {
   const root = opts.root || repoRoot();
-  const projectDir = defaultProjectDir(root);
+  const projectDir = opts.projectDir || defaultProjectDir(root);
   const topologyOut = path.join(projectDir, 'context', 'code-topology.json');
   const reviewFocusOut = path.join(projectDir, 'context', 'code-topology-review-focus.md');
   const telemetryOut = path.join(projectDir, 'context', 'code-topology-telemetry.json');
@@ -202,7 +205,7 @@ function showCodeMap(opts = {}) {
   };
   const summary = projectCodeMapSummary(result.topology, artifacts, { maxHotspots: opts.maxHotspots });
   const markdown = renderProjectCodeMap(summary);
-  const out = opts.out || defaultOut(root);
+  const out = opts.out || defaultOut(root, projectDir);
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, markdown);
   return {

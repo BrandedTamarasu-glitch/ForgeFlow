@@ -391,15 +391,16 @@ function rollupProjectLearnings(opts = {}) {
   const learningCandidatesPath = path.join(projectDir, 'project-learning-candidates.jsonl');
   const shipSummaryPath = path.join(projectDir, 'ship', 'ship-summary.json');
   const codeMapPath = path.join(projectDir, 'context', 'code-topology.json');
+  const codeMap = Object.prototype.hasOwnProperty.call(opts, 'codeMap') ? opts.codeMap : readJson(codeMapPath);
   const inputs = {
     notes: readImplementationNotes(projectDir),
     reviewOutcomes: readJsonl(reviewOutcomesPath),
     learningCandidates: readJsonl(learningCandidatesPath),
     shipSummary: readJson(shipSummaryPath) || {},
-    codeMap: readJson(codeMapPath),
+    codeMap,
     hasImplementationNotes: fs.existsSync(implementationNotesPath),
     hasShipSummary: fs.existsSync(shipSummaryPath),
-    hasCodeMap: fs.existsSync(codeMapPath),
+    hasCodeMap: Boolean(codeMap && codeMap.summary),
   };
   const rollup = buildRollup(inputs, opts);
   fs.mkdirSync(path.dirname(out), { recursive: true });

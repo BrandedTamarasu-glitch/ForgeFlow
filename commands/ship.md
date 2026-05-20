@@ -118,10 +118,10 @@ scripts/forgeflow/check-implementation-notes.js --project-dir "${FORGEFLOW_DIR}"
 Treat `warn` as a visible ship note, not a blocker. Treat `fail` as a hard stop because it means sensitive content or another release-blocking notes problem was detected. Include the checker status in the PR body and ship artifacts when using `ship-prepare.sh`.
 
 ### 1d.2 Project learnings refresh
-If `scripts/forgeflow/rollup-project-learnings.js` is available, run it before preparing the PR body:
+If `scripts/forgeflow/show-project-learnings.js` is available, run it before preparing the PR body:
 
 ```bash
-scripts/forgeflow/rollup-project-learnings.js --project-dir "${FORGEFLOW_DIR}" --json
+scripts/forgeflow/show-project-learnings.js --project-dir "${FORGEFLOW_DIR}" --json
 ```
 
 Treat the refreshed project learnings as local guidance only. Include the artifact path in the ship handoff, but do not claim any learning as current evidence unless it is verified against the current code, tests, and review artifacts.

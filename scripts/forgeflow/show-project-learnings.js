@@ -106,9 +106,11 @@ function showProjectLearnings(opts = {}) {
   const root = repoRoot();
   const projectDir = opts.projectDir || defaultProjectDir(root);
   if (shouldRefreshProjectCodeMap(root, projectDir, opts)) {
-    showCodeMap({ root });
+    showCodeMap({ root, projectDir });
   }
-  const rollup = rollupProjectLearnings({ projectDir });
+  const rollupOpts = { projectDir };
+  if (Object.prototype.hasOwnProperty.call(opts, 'codeMap')) rollupOpts.codeMap = opts.codeMap;
+  const rollup = rollupProjectLearnings(rollupOpts);
   const markdown = fs.readFileSync(rollup.out, 'utf8');
   return {
     ...rollup,

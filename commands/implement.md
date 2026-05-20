@@ -220,7 +220,7 @@ Spawn `atlas-implement` alongside to coordinate and track. Atlas owns serializin
 After Wave 1 completes:
 1. Read the files created by Wave 1 agents
 2. Hand Smith/Warden/Lumen/Compass/Atlas reports from the completed wave back to `atlas-implement` with this instruction:
-   "Extract every `Implementation Notes Candidates` item from the completed agent reports. Also add concise note candidates for durable project patterns that surfaced during this wave: repeated pitfalls, stable decisions, validation patterns, hot files/modules, or follow-ups likely to matter in the next work item. Append the entries to `${NOTES_PATH}` under the matching category. Prefer `${HELPER_DIR}/record-implementation-notes.js` with a temporary JSON input when available. Do not rewrite existing notes. Then refresh `${PROJECT_LEARNINGS_PATH}` with `${HELPER_DIR}/rollup-project-learnings.js --project-dir "${FORGEFLOW_DIR}" --json` when the helper is available. Return the entries appended, entries rejected, final notes path, and refreshed project learnings path."
+   "Extract every `Implementation Notes Candidates` item from the completed agent reports. Also add concise note candidates for durable project patterns that surfaced during this wave: repeated pitfalls, stable decisions, validation patterns, hot files/modules, or follow-ups likely to matter in the next work item. Append the entries to `${NOTES_PATH}` under the matching category. Prefer `${HELPER_DIR}/record-implementation-notes.js` with a temporary JSON input when available. Do not rewrite existing notes. Then refresh `${PROJECT_LEARNINGS_PATH}` with `${HELPER_DIR}/show-project-learnings.js --project-dir "${FORGEFLOW_DIR}" --json` when the helper is available. Return the entries appended, entries rejected, final notes path, and refreshed project learnings path."
 3. Verify shared interfaces were defined correctly
 4. If issues found, fix before proceeding
 
@@ -253,7 +253,7 @@ Working directory: {cwd}
 Implementation notes path: {notes_path}
 Recorder helper: {helper_dir}/record-implementation-notes.js
 Project learning recorder: {helper_dir}/record-project-learning.js
-Project learnings helper: {helper_dir}/rollup-project-learnings.js
+Project learnings helper: {helper_dir}/show-project-learnings.js
 Project learnings path: {project_learnings_path}
 
 Read the reports below, extract every `Implementation Notes Candidates` item, and append them to `{notes_path}`. Also add concise note candidates for durable project patterns that should shape the next work item: repeated pitfalls, stable decisions, validation patterns, hot files/modules, or recurring follow-ups. Use the recorder helper with a temporary JSON input when available. Categories must be one of: decision, spec-gap, tradeoff, deviation, follow-up, validation.
@@ -265,7 +265,7 @@ Reject and report any candidate that contains secrets, raw settings JSON, tokens
 After notes are appended, refresh `{project_learnings_path}` with the project learnings helper when available:
 
 ```bash
-{helper_dir}/rollup-project-learnings.js --project-dir "{forgeflow_dir}" --json
+{helper_dir}/show-project-learnings.js --project-dir "{forgeflow_dir}" --json
 ```
 
 === Smith ===

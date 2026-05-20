@@ -167,7 +167,7 @@ node "$HELPER_ROOT/scripts/forgeflow/check-implementation-notes.js" \
 NOTES_CHECK_STATUS="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("status", "unknown"))' "$NOTES_CHECK_JSON")"
 
 PROJECT_LEARNINGS_JSON="$SHIP_DIR/project-learnings-rollup.json"
-node "$HELPER_ROOT/scripts/forgeflow/rollup-project-learnings.js" \
+node "$HELPER_ROOT/scripts/forgeflow/show-project-learnings.js" \
   --project-dir "$FORGEFLOW_DIR" \
   --json > "$PROJECT_LEARNINGS_JSON"
 PROJECT_LEARNINGS_PATH="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("out", ""))' "$PROJECT_LEARNINGS_JSON")"
