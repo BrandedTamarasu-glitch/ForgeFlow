@@ -127,6 +127,8 @@ Each record includes:
 
 The next advisor run compares against the prior record and reports deltas for compact tokens, saved tokens, percent saved, and budget violations.
 
+The advisor also reads `code-topology-telemetry.json` when present. Its output reports topology coverage, source-file and edge counts, unresolved imports, and skipped dynamic imports so teams can spot when topology guidance is missing or when import-graph blind spots are recurring.
+
 ## Local-First Behavior
 
 All generated context artifacts stay under `.forgeflow/` by default. The state is local project memory, not hosted telemetry. Keep `.forgeflow/` ignored unless your team intentionally chooses to sync selected artifacts.

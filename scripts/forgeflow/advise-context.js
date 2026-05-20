@@ -143,6 +143,40 @@ function appendHistory(historyPath, record) {
   fs.appendFileSync(historyPath, `${JSON.stringify(record)}\n`);
 }
 
+function topologyCoverage(files) {
+  const coverage = {
+    files: 0,
+    source_files: 0,
+    local_edges: 0,
+    unresolved_imports: 0,
+    skipped_dynamic_imports: 0,
+    status: 'missing',
+  };
+
+  for (const file of files) {
+    if (path.basename(file) !== 'code-topology-telemetry.json') continue;
+    try {
+      const telemetry = JSON.parse(fs.readFileSync(file, 'utf8'));
+      if (!telemetry || telemetry.schema_version !== '1' || telemetry.kind !== 'code-topology') continue;
+      const detail = telemetry.detail || {};
+      coverage.files += 1;
+      coverage.source_files += Number(detail.source_files || 0);
+      coverage.local_edges += Number(detail.local_edges || 0);
+      coverage.unresolved_imports += Number(detail.unresolved_imports || 0);
+      coverage.skipped_dynamic_imports += Number(detail.skipped_dynamic_imports || 0);
+    } catch (_err) {
+      // Ignore corrupt advisory telemetry; summarize-context-telemetry tracks skipped files separately.
+    }
+  }
+
+  if (coverage.files > 0) {
+    coverage.status = coverage.unresolved_imports > 0 || coverage.skipped_dynamic_imports > 0
+      ? 'attention'
+      : 'covered';
+  }
+  return coverage;
+}
+
 function recommend(summary, budget) {
   const recommendations = [];
 
@@ -197,12 +231,14 @@ function adviseContext(opts = {}) {
   const config = loadConfig(opts);
   const summary = summarize(files);
   const budget = checkBudget(files, config);
+  const codeTopology = topologyCoverage(files);
   const result = {
     schema_version: '1',
     root,
     files: files.slice().sort(),
     summary,
     budget,
+    code_topology: codeTopology,
     recommendations: recommend(summary, budget),
   };
   const historyPath = opts.history || defaultHistoryPath(root);
@@ -231,6 +267,7 @@ function renderMarkdown(result) {
     `Estimated saved tokens: ${result.summary.totals.estimated_saved_tokens}`,
     `Percent saved: ${result.summary.percent_saved}%`,
     `Budget violations: ${result.budget.violations.length}`,
+    `Code topology: ${result.code_topology.status}`,
     `Trend: ${result.history.trend.status}`,
     '',
     '## Recommendations',
@@ -252,6 +289,15 @@ function renderMarkdown(result) {
     lines.push(`- Saved token delta: ${result.history.trend.saved_token_delta}`);
     lines.push(`- Percent saved delta: ${result.history.trend.percent_saved_delta}`);
     lines.push(`- Budget violation delta: ${result.history.trend.budget_violation_delta}`);
+  }
+
+  if (result.code_topology.status !== 'missing') {
+    lines.push('', '## Code Topology', '');
+    lines.push(`- Runs: ${result.code_topology.files}`);
+    lines.push(`- Source files: ${result.code_topology.source_files}`);
+    lines.push(`- Local edges: ${result.code_topology.local_edges}`);
+    lines.push(`- Unresolved imports: ${result.code_topology.unresolved_imports}`);
+    lines.push(`- Skipped dynamic imports: ${result.code_topology.skipped_dynamic_imports}`);
   }
 
   return lines.join('\n');
@@ -283,4 +329,5 @@ module.exports = {
   historyRecord,
   recommend,
   renderMarkdown,
+  topologyCoverage,
 };

@@ -196,10 +196,10 @@ Forgeflow includes local-only helpers that reduce agent prompt load before revie
 - **Memory index:** `index-memory.js` indexes local Forgeflow memory so agents can use compact project history instead of reading full notes.
 - **Memory context:** `build-memory-context.js` builds a compact memory summary for research, planning, consultation, and implementation.
 - **Scope manifests:** `build-scope-manifest.js` creates file ownership packets for implementation waves.
-- **Context telemetry:** context, memory, and scope helpers emit token estimates and savings telemetry.
+- **Context telemetry:** context, memory, scope, and topology helpers emit token estimates and savings telemetry.
 - **Budget checks:** `check-context-budget.js` reads `.forgeflow-budget.json` and warns when compact context exceeds configured limits.
 - **Health repair:** `health-check.js --fix --json` creates safe project-local scaffolding and seeds budget config when missing.
-- **Context advisor:** `advise-context.js --root .forgeflow --record --json` reports budget issues, low-savings packets, trimming recommendations, and previous-run trend deltas.
+- **Context advisor:** `advise-context.js --root .forgeflow --record --json` reports budget issues, low-savings packets, topology coverage signals, trimming recommendations, and previous-run trend deltas.
 
 Useful commands:
 

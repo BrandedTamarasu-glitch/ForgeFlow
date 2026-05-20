@@ -40,7 +40,10 @@ function defaultRoot(cwd = process.cwd()) {
 
 function isTelemetryFile(file) {
   const name = path.basename(file);
-  return name === 'context-telemetry.json' || name === 'memory-context-telemetry.json' || name === 'scope-telemetry.json';
+  return name === 'context-telemetry.json'
+    || name === 'memory-context-telemetry.json'
+    || name === 'scope-telemetry.json'
+    || name === 'code-topology-telemetry.json';
 }
 
 function walk(dir, files = []) {

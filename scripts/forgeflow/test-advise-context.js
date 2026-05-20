@@ -2,7 +2,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { adviseContext } = require('./advise-context');
+const { adviseContext, renderMarkdown } = require('./advise-context');
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-advisor-'));
 const contextDir = path.join(root, 'Forgeflow', 'context');
@@ -18,6 +18,22 @@ fs.writeFileSync(telemetryFile, `${JSON.stringify({
   estimated_baseline_tokens: 3000,
   estimated_compact_tokens: 2500,
   estimated_saved_tokens: 500,
+})}\n`);
+fs.writeFileSync(path.join(contextDir, 'code-topology-telemetry.json'), `${JSON.stringify({
+  schema_version: '1',
+  kind: 'code-topology',
+  baseline_chars: 1200,
+  compact_chars: 800,
+  saved_chars: 400,
+  estimated_baseline_tokens: 300,
+  estimated_compact_tokens: 200,
+  estimated_saved_tokens: 100,
+  detail: {
+    source_files: 8,
+    local_edges: 10,
+    unresolved_imports: 1,
+    skipped_dynamic_imports: 2,
+  },
 })}\n`);
 
 const result = adviseContext({
@@ -97,9 +113,13 @@ const secondRecorded = adviseContext({
 });
 
 const historyLines = fs.readFileSync(historyPath, 'utf8').trim().split(/\r?\n/);
+const markdown = renderMarkdown(result);
 
 const checks = [
-  ['files summarized', result.summary.files === 1],
+  ['files summarized', result.summary.files === 2],
+  ['code topology summarized', result.code_topology.status === 'attention' && result.code_topology.unresolved_imports === 1 && result.code_topology.skipped_dynamic_imports === 2],
+  ['code topology kind included', result.summary.by_kind['code-topology'].files === 1],
+  ['code topology renders', markdown.includes('## Code Topology') && markdown.includes('Unresolved imports: 1')],
   ['budget warns', result.budget.status === 'warn'],
   ['budget recommendation', result.recommendations.some((item) => item.action === 'trim-budget-violation')],
   ['compaction recommendation', result.recommendations.some((item) => item.action === 'improve-compaction')],
