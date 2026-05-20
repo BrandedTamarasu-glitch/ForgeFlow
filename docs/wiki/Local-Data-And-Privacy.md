@@ -60,7 +60,7 @@ Project code-map trend history is stored at:
 .forgeflow/<project-name>/context/code-map-history.jsonl
 ```
 
-This file is compact local topology telemetry. It records summary counts, top hotspots, changed-section hints, provenance source, and previous-run comparison inputs. It does not store file contents.
+This file is compact local topology telemetry. It records summary counts, top hotspots, changed-section hints, provenance source, and previous-run comparison inputs. It does not store file contents. The code-map helper retains the latest 50 snapshots by default.
 
 ## Sharing
 

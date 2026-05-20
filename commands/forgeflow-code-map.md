@@ -1,7 +1,7 @@
 ---
 name: forgeflow-code-map
 description: Generate and print a compact project code map from Forgeflow topology, sections, and changed-section signals.
-argument-hint: "[--json] [--project-dir <dir>] [--out <markdown>] [--max-hotspots N]"
+argument-hint: "[--json] [--project-dir <dir>] [--out <markdown>] [--max-hotspots N] [--history-limit N]"
 allowed-tools:
   - Read
   - Write
@@ -20,6 +20,7 @@ $ARGUMENTS:
 - `--project-dir <dir>` — write generated `.forgeflow` context artifacts under a specific project directory
 - `--out <markdown>` — write the rendered summary to a custom path
 - `--max-hotspots N` — number of fan-in/fan-out hotspots to keep
+- `--history-limit N` — number of recent code-map snapshots to retain (default: 50)
 
 The command uses `scripts/forgeflow/show-code-map.js`, which writes:
 - `.forgeflow/<project>/context/project-code-map.md`
@@ -35,7 +36,7 @@ The command uses `scripts/forgeflow/show-code-map.js`, which writes:
 - **JS/TS topology only.** Import edges are collected for `.js`, `.jsx`, `.ts`, and `.tsx`. Markdown headings are included as documentation sections.
 - **Changed sections require a Git diff.** When there is no working-tree diff against `HEAD`, changed-section output is empty.
 - **Provenance is Git-based.** Branch, commit, dirty state, changed-file count, and untracked-file count are recorded when the helper runs from the repository root.
-- **Trends are local history.** Trend deltas compare against the previous compact snapshot in `.forgeflow/<project>/context/code-map-history.jsonl`.
+- **Trends are local history.** Trend deltas compare against the previous compact snapshot in `.forgeflow/<project>/context/code-map-history.jsonl`; the helper retains the latest 50 snapshots by default.
 - **Line ranges are hints.** They are computed from static section starts and the next section boundary.
 
 <process>
@@ -57,7 +58,7 @@ Code map helper is not installed. Run /update-forgeflow, then retry /forgeflow-c
 
 ## Step 2: Build arguments
 
-Pass through `--json`, `--project-dir <dir>`, `--out <markdown>`, and `--max-hotspots N` from `$ARGUMENTS`.
+Pass through `--json`, `--project-dir <dir>`, `--out <markdown>`, `--max-hotspots N`, and `--history-limit N` from `$ARGUMENTS`.
 
 ## Step 3: Render map
 

@@ -4,6 +4,7 @@ const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const {
+  compactCodeMapHistory,
   renderProjectCodeMap,
   showCodeMap,
 } = require('./show-code-map');
@@ -26,10 +27,21 @@ const secondResult = showCodeMap({
   out: path.join(tmp, 'project-code-map-second.md'),
   maxHotspots: 5,
 });
+const retainedProjectDir = path.join(tmp, 'retained-project');
+for (let i = 0; i < 4; i += 1) {
+  showCodeMap({
+    root: fixtureRoot,
+    projectDir: retainedProjectDir,
+    out: path.join(tmp, `retained-code-map-${i}.md`),
+    maxHotspots: 5,
+    historyLimit: 2,
+  });
+}
 const markdown = fs.readFileSync(out, 'utf8');
 const graphPath = path.resolve(fixtureRoot, result.summary.artifacts.graph);
 const graph = JSON.parse(fs.readFileSync(graphPath, 'utf8'));
 const historyPath = path.join(projectDir, 'context', 'code-map-history.jsonl');
+const retainedHistoryPath = path.join(retainedProjectDir, 'context', 'code-map-history.jsonl');
 const cli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/show-code-map.js'), [
   '--root',
   fixtureRoot,
@@ -48,10 +60,12 @@ const checks = [
   ['writes markdown', fs.existsSync(out) && markdown.includes('# Forgeflow Project Code Map')],
   ['writes topology graph', fs.existsSync(graphPath)],
   ['writes code map history', fs.existsSync(historyPath) && fs.readFileSync(historyPath, 'utf8').trim().split(/\r?\n/).length === 2],
+  ['retains bounded history', fs.existsSync(retainedHistoryPath) && fs.readFileSync(retainedHistoryPath, 'utf8').trim().split(/\r?\n/).length === 2],
+  ['history compactor keeps latest records', compactCodeMapHistory([{ id: 1 }, { id: 2 }, { id: 3 }], 2).map((item) => item.id).join(',') === '2,3'],
   ['writes compact topology graph', graph.scope === 'changed-neighborhood'],
   ['summary includes provenance', result.summary.provenance && result.summary.provenance.source === 'show-code-map'],
   ['summary includes history', result.summary.history && result.summary.history.recorded === true && result.summary.history.trend.status === 'first-run'],
-  ['summary compares history', secondResult.summary.history && secondResult.summary.history.trend.status === 'compared'],
+  ['summary compares history', secondResult.summary.history && secondResult.summary.history.trend.status === 'compared' && secondResult.summary.history.retained_runs === 2],
   ['summary counts source files', result.summary.summary.source_files === 7],
   ['summary includes sections', result.summary.summary.sections >= 8],
   ['summary honors max hotspots', result.summary.high_fan_in.length <= 5 && result.summary.high_fan_out.length <= 5],

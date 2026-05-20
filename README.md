@@ -195,7 +195,7 @@ Forgeflow includes local-only helpers that reduce agent prompt load before revie
 
 - **Context packs:** `build-context-pack.js` prepares bounded reviewer packets and a synthesis input file from the changed files, including latest insights, compact project code-map guidance, changed-neighborhood topology context, changed-section hints, provenance metadata, topology trend history, and a JSON topology summary when JS/TS files are in scope.
 - **Code topology:** `build-code-topology.js` builds a static JS/TS import graph with fan-in/fan-out hotspots, changed-file neighbors, source symbols with line ranges, changed sections, Markdown headings, and Git provenance.
-- **Project code map:** `show-code-map.js` renders a compact maintainer-facing summary of topology, hotspots, sections, changed sections, provenance, trend deltas, and artifact paths.
+- **Project code map:** `show-code-map.js` renders a compact maintainer-facing summary of topology, hotspots, sections, changed sections, provenance, trend deltas, and artifact paths. Code-map history retains the latest 50 snapshots by default.
 - **Memory index:** `index-memory.js` indexes local Forgeflow memory so agents can use compact project history instead of reading full notes.
 - **Memory context:** `build-memory-context.js` builds a compact memory summary for research, planning, consultation, and implementation.
 - **Scope manifests:** `build-scope-manifest.js` creates file ownership packets for implementation waves.

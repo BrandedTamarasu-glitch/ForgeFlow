@@ -3,9 +3,10 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { buildCodeTopology } = require('./build-code-topology');
+const DEFAULT_HISTORY_LIMIT = 50;
 
 function usage() {
-  console.error('Usage: show-code-map.js [--root <dir>] [--project-dir <dir>] [--out <markdown>] [--max-hotspots <n>] [--json]');
+  console.error('Usage: show-code-map.js [--root <dir>] [--project-dir <dir>] [--out <markdown>] [--max-hotspots <n>] [--history-limit <n>] [--json]');
 }
 
 function requireValue(argv, name, index) {
@@ -23,6 +24,7 @@ function parseArgs(argv) {
     root: '',
     out: '',
     maxHotspots: 10,
+    historyLimit: DEFAULT_HISTORY_LIMIT,
     json: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
@@ -38,6 +40,9 @@ function parseArgs(argv) {
       i += 1;
     } else if (arg === '--max-hotspots') {
       opts.maxHotspots = Number.parseInt(requireValue(argv, arg, i), 10);
+      i += 1;
+    } else if (arg === '--history-limit') {
+      opts.historyLimit = Number.parseInt(requireValue(argv, arg, i), 10);
       i += 1;
     } else if (arg === '--json') {
       opts.json = true;
@@ -220,9 +225,15 @@ function compareCodeMapTrend(current, history) {
   };
 }
 
-function appendCodeMapHistory(historyPath, record) {
+function compactCodeMapHistory(history, limit = DEFAULT_HISTORY_LIMIT) {
+  const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : DEFAULT_HISTORY_LIMIT;
+  if (!Array.isArray(history) || history.length <= safeLimit) return history || [];
+  return history.slice(history.length - safeLimit);
+}
+
+function writeCodeMapHistory(historyPath, history) {
   fs.mkdirSync(path.dirname(historyPath), { recursive: true });
-  fs.appendFileSync(historyPath, `${JSON.stringify(record)}\n`);
+  fs.writeFileSync(historyPath, history.map((item) => JSON.stringify(item)).join('\n') + (history.length > 0 ? '\n' : ''), 'utf8');
 }
 
 function attachCodeMapHistory(root, summary, historyPath, opts = {}) {
@@ -236,8 +247,11 @@ function attachCodeMapHistory(root, summary, historyPath, opts = {}) {
     trend,
   };
   if (opts.record !== false) {
-    appendCodeMapHistory(historyPath, record);
+    const retainedHistory = compactCodeMapHistory([...history, record], opts.limit);
+    writeCodeMapHistory(historyPath, retainedHistory);
     summary.history.recorded = true;
+    summary.history.retained_runs = retainedHistory.length;
+    summary.history.retention_limit = Number.isFinite(opts.limit) && opts.limit > 0 ? opts.limit : DEFAULT_HISTORY_LIMIT;
   }
   return summary.history;
 }
@@ -252,11 +266,13 @@ function renderTrend(summary) {
   if (trend.status !== 'compared') {
     return [
       `- History: ${md(summary.history.path)} (${summary.history.previous_runs} previous runs)`,
+      `- Retained snapshots: ${summary.history.retained_runs || summary.history.previous_runs}`,
       '- Trend: first recorded code-map snapshot',
     ];
   }
   return [
     `- History: ${md(summary.history.path)} (${summary.history.previous_runs} previous runs)`,
+    `- Retained snapshots: ${summary.history.retained_runs || summary.history.previous_runs}`,
     `- Source files delta: ${trend.source_files_delta}`,
     `- Local edges delta: ${trend.local_edges_delta}`,
     `- Unresolved imports delta: ${trend.unresolved_imports_delta}`,
@@ -358,7 +374,7 @@ function showCodeMap(opts = {}) {
     telemetry: path.relative(root, result.telemetry_path),
   };
   const summary = projectCodeMapSummary(result.topology, artifacts, { maxHotspots: opts.maxHotspots });
-  attachCodeMapHistory(root, summary, opts.history || defaultHistoryPath(root, projectDir), { record: opts.recordHistory });
+  attachCodeMapHistory(root, summary, opts.history || defaultHistoryPath(root, projectDir), { record: opts.recordHistory, limit: opts.historyLimit });
   const markdown = renderProjectCodeMap(summary);
   const out = opts.out || defaultOut(root, projectDir);
   fs.mkdirSync(path.dirname(out), { recursive: true });
@@ -393,7 +409,9 @@ module.exports = {
   attachCodeMapHistory,
   changedSectionList,
   codeMapHistoryRecord,
+  compactCodeMapHistory,
   compareCodeMapTrend,
+  DEFAULT_HISTORY_LIMIT,
   defaultHistoryPath,
   historyPathForTopologyOut,
   projectCodeMapSummary,
