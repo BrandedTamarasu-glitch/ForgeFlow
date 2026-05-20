@@ -93,6 +93,7 @@ writeLearnings(invalidMetadata, {
 writeCandidates(invalidMetadata, [
   JSON.stringify({ schema_version: '1', category: 'risk-area', learning: 'Good learning', confidence: 'certain' }),
   JSON.stringify({ schema_version: '1', category: 'risk-area', learning: 'Another learning', evidence_count: 0 }),
+  JSON.stringify({ schema_version: '1', category: 'risk-area', learning: 'Long guidance', application_guidance: 'x'.repeat(241) }),
 ]);
 
 const missingBoundary = project('missing-boundary');
@@ -135,7 +136,7 @@ const checks = [
   ['sensitive fails', sensitiveResult.status === 'fail' && sensitiveResult.issues.some((item) => item.code === 'sensitive-content')],
   ['sensitive output redacted', !sensitiveCli.stdout.includes('SHOULD_NOT_PRINT') && !sensitiveCli.stderr.includes('SHOULD_NOT_PRINT')],
   ['bad candidate fails', badCandidateResult.status === 'fail' && badCandidateResult.issues.some((item) => item.code === 'candidate-category-invalid') && badCandidateResult.issues.some((item) => item.code === 'candidate-json-invalid')],
-  ['invalid candidate metadata fails', invalidMetadataResult.status === 'fail' && invalidMetadataResult.issues.some((item) => item.code === 'candidate-confidence-invalid') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-evidence-count-invalid')],
+  ['invalid candidate metadata fails', invalidMetadataResult.status === 'fail' && invalidMetadataResult.issues.some((item) => item.code === 'candidate-confidence-invalid') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-evidence-count-invalid') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-application-guidance-oversized')],
   ['missing proof boundary fails', missingBoundaryResult.status === 'fail' && missingBoundaryResult.issues.some((item) => item.code === 'proof-boundary-missing')],
   ['missing option value exits usage', missingArg.status === 2 && missingArg.stderr.includes('Missing value for --project-dir')],
 ];

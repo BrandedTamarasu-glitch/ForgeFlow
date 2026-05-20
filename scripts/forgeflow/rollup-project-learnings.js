@@ -109,10 +109,17 @@ function confidence(entry) {
   return ['low', 'medium', 'high'].includes(value) ? value : 'medium';
 }
 
+function applicationGuidance(entry) {
+  return safeText(entry && entry.application_guidance ? entry.application_guidance : '');
+}
+
 function weightedLearning(entry) {
   const text = safeText(entry && entry.learning);
   if (!text) return '';
-  return `${text} [confidence: ${confidence(entry)}, evidence: ${evidenceCount(entry)}]`;
+  const guidance = applicationGuidance(entry);
+  const suffix = [`confidence: ${confidence(entry)}`, `evidence: ${evidenceCount(entry)}`];
+  if (guidance) suffix.push(`apply: ${guidance}`);
+  return `${text} [${suffix.join(', ')}]`;
 }
 
 function increment(map, key, amount = 1) {

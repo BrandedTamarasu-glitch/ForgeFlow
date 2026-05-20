@@ -169,6 +169,9 @@ function checkCandidates(file) {
         issues.push(issue('fail', 'candidate-evidence-count-invalid', 'Project learning candidate has invalid evidence_count', { source: file, line: record.line }));
       }
     }
+    if (value.application_guidance !== undefined && String(value.application_guidance || '').trim().length > 240) {
+      issues.push(issue('fail', 'candidate-application-guidance-oversized', 'Project learning candidate application_guidance is too long', { source: file, line: record.line }));
+    }
   }
   return { records: records.length, issues };
 }

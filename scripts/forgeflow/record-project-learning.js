@@ -17,7 +17,7 @@ const VALID_CONFIDENCE = new Set(['low', 'medium', 'high']);
 function usage() {
   console.error([
     'Usage: record-project-learning.js [--project-dir <dir>] --input <json-file> [--json]',
-    '       record-project-learning.js [--project-dir <dir>] --category <category> --learning <text> [--source <text>] [--evidence <text>] [--confidence low|medium|high] [--evidence-count <n>] [--json]',
+    '       record-project-learning.js [--project-dir <dir>] --category <category> --learning <text> [--source <text>] [--evidence <text>] [--confidence low|medium|high] [--evidence-count <n>] [--application-guidance <text>] [--json]',
   ].join('\n'));
 }
 
@@ -31,6 +31,7 @@ function parseArgs(argv) {
     evidence: '',
     confidence: '',
     evidenceCount: null,
+    applicationGuidance: '',
     json: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
@@ -51,6 +52,8 @@ function parseArgs(argv) {
       opts.confidence = argv[++i] || '';
     } else if (arg === '--evidence-count') {
       opts.evidenceCount = Number.parseInt(argv[++i] || '0', 10);
+    } else if (arg === '--application-guidance') {
+      opts.applicationGuidance = argv[++i] || '';
     } else if (arg === '--json') {
       opts.json = true;
     } else if (arg === '--help' || arg === '-h') {
@@ -112,6 +115,14 @@ function normalizeEvidenceCount(value) {
   return count;
 }
 
+function normalizeApplicationGuidance(value) {
+  const guidance = cleanText(value || '');
+  if (guidance.length > 240) {
+    throw new Error('Project learning application_guidance must be 240 characters or fewer');
+  }
+  return guidance;
+}
+
 function normalizeEntry(entry) {
   const normalized = {
     schema_version: '1',
@@ -122,6 +133,7 @@ function normalizeEntry(entry) {
     evidence: cleanText(entry.evidence || ''),
     confidence: normalizeConfidence(entry.confidence),
     evidence_count: normalizeEvidenceCount(entry.evidence_count ?? entry.evidenceCount),
+    application_guidance: normalizeApplicationGuidance(entry.application_guidance ?? entry.applicationGuidance),
   };
   if (!VALID_CATEGORIES.has(normalized.category)) {
     throw new Error(`Invalid project learning category: ${normalized.category}`);
@@ -129,7 +141,7 @@ function normalizeEntry(entry) {
   if (!normalized.learning) {
     throw new Error('Project learning is required');
   }
-  const combined = `${normalized.category}\n${normalized.learning}\n${normalized.source}\n${normalized.evidence}`;
+  const combined = `${normalized.category}\n${normalized.learning}\n${normalized.source}\n${normalized.evidence}\n${normalized.application_guidance}`;
   if (containsSensitiveContent(combined)) {
     throw new Error('Project learning appears to contain sensitive content');
   }
@@ -148,6 +160,7 @@ function loadEntries(opts) {
     evidence: opts.evidence,
     confidence: opts.confidence,
     evidenceCount: opts.evidenceCount,
+    applicationGuidance: opts.applicationGuidance,
   })];
 }
 

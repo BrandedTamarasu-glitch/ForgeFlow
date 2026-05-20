@@ -34,7 +34,7 @@ Atlas can also record structured candidates in:
 
 Use `scripts/forgeflow/record-project-learning.js` for explicit categories: `recurring-pitfall`, `stable-decision`, `risk-area`, `validation-pattern`, `hot-file`, `repeated-follow-up`, and `recommended-approach`.
 
-Structured candidates may also include `confidence` (`low`, `medium`, or `high`) and `evidence_count` to show how much support the guidance has. The rollup keeps that weight visible in agent-facing insight bullets and uses `evidence_count` when ranking risk areas and hot files.
+Structured candidates may also include `confidence` (`low`, `medium`, or `high`), `evidence_count`, and compact `application_guidance` to show how much support the guidance has and how agents should use it. The rollup keeps that weight visible in agent-facing insight bullets and uses `evidence_count` when ranking risk areas and hot files.
 
 From Claude Code, run:
 
@@ -52,7 +52,7 @@ Check the local artifact before relying on it:
 scripts/forgeflow/check-project-learnings.js --json
 ```
 
-The checker catches sensitive content, placeholder-only output, oversized packets, duplicate bullets, malformed structured candidates, invalid confidence metadata, and missing proof-boundary text. `/forgeflow-health` surfaces non-passing project-learning checks when present.
+The checker catches sensitive content, placeholder-only output, oversized packets, duplicate bullets, malformed structured candidates, invalid confidence metadata, oversized application guidance, and missing proof-boundary text. `/forgeflow-health` surfaces non-passing project-learning checks when present.
 
 ## What Goes In
 

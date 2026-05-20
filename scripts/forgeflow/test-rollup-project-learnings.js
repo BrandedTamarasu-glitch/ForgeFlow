@@ -75,6 +75,7 @@ fs.writeFileSync(path.join(projectDir, 'project-learning-candidates.jsonl'), [
     source: 'Atlas',
     confidence: 'high',
     evidence_count: 2,
+    application_guidance: 'Use this before release readiness claims.',
   }),
   JSON.stringify({
     schema_version: '1',
@@ -83,6 +84,7 @@ fs.writeFileSync(path.join(projectDir, 'project-learning-candidates.jsonl'), [
     source: 'Arbiter',
     confidence: 'low',
     evidence_count: 1,
+    application_guidance: 'Treat as planning guidance until it repeats.',
   }),
   JSON.stringify({
     schema_version: '1',
@@ -136,9 +138,9 @@ const checks = [
   ['weights hot files by evidence count', result.hot_files_and_modules[0].includes('scripts/forgeflow/rollup-project-learnings.js')],
   ['captures validation pattern', result.validation_patterns.some((line) => line.includes('focused helper tests'))],
   ['captures structured validation pattern', result.validation_patterns.some((line) => line.includes('structured candidates'))],
-  ['renders candidate confidence metadata', result.validation_patterns.some((line) => line.includes('[confidence: high, evidence: 2]'))],
+  ['renders candidate confidence metadata', result.validation_patterns.some((line) => line.includes('[confidence: high, evidence: 2, apply: Use this before release readiness claims.]'))],
   ['writes markdown artifact', rendered.includes('# Project Learnings') && rendered.includes('## Recommended Approach For Next Work')],
-  ['captures structured recommendation', result.recommended_approach_for_next_work.some((line) => line.includes('expanding learning automation') && line.includes('[confidence: low, evidence: 1]'))],
+  ['captures structured recommendation', result.recommended_approach_for_next_work.some((line) => line.includes('expanding learning automation') && line.includes('[confidence: low, evidence: 1, apply: Treat as planning guidance until it repeats.]'))],
   ['markdown omits sensitive note', !rendered.includes('SHOULD_NOT_RENDER')],
   ['manual rollup uses notes', manual.stable_decisions.some((line) => line.includes('Markdown stays canonical'))],
   ['cli emits json', cliJson.status === 0 && cliResult.out === out],
