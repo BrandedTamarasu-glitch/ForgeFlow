@@ -8,7 +8,9 @@ const {
   deniedPath,
   extractImports,
   extractSections,
+  parseDiffChangedLines,
   resolveLocalImport,
+  sectionsForChangedLines,
 } = require('./build-code-topology');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
@@ -59,12 +61,19 @@ const compactResult = buildCodeTopology({
 const importKinds = extractImports("import type { User } from './types';\nexport { x } from './x';\nconst y = require('./y');");
 const sourceSections = extractSections('src/example.ts', 'export class Example {}\nexport function run() {}\nconst local = () => true;\n');
 const markdownSections = extractSections('README.md', '# Title\n\n## Details\n');
+const changedLines = parseDiffChangedLines('diff --git a/src/example.ts b/src/example.ts\n--- a/src/example.ts\n+++ b/src/example.ts\n@@ -2,0 +3,2 @@\n+const x = 1;\n+const y = 2;\n');
+const touchedSections = sectionsForChangedLines([
+  { kind: 'function', name: 'first', line: 1 },
+  { kind: 'function', name: 'second', line: 5 },
+], [3, 6], 8);
 const sourceSet = new Set(['src/shared/index.ts']);
 const gitRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-code-topology-git-'));
 fs.mkdirSync(path.join(gitRoot, 'src'), { recursive: true });
 fs.writeFileSync(path.join(gitRoot, 'src/tracked.ts'), 'export const tracked = true;\n');
 spawnSync('git', ['init'], { cwd: gitRoot, encoding: 'utf8' });
 spawnSync('git', ['add', 'src/tracked.ts'], { cwd: gitRoot, encoding: 'utf8' });
+spawnSync('git', ['-c', 'user.name=Forgeflow Test', '-c', 'user.email=forgeflow@example.invalid', 'commit', '-m', 'base'], { cwd: gitRoot, encoding: 'utf8' });
+fs.writeFileSync(path.join(gitRoot, 'src/tracked.ts'), 'export function tracked() {\n  return false;\n}\n');
 fs.unlinkSync(path.join(gitRoot, 'src/tracked.ts'));
 fs.writeFileSync(path.join(gitRoot, 'src/untracked.ts'), 'export const untracked = true;\n');
 const gitResult = buildCodeTopology({
@@ -88,6 +97,38 @@ const symlinkResult = buildCodeTopology({
   markdownOut: path.join(tmp, 'symlink-topology.md'),
   telemetryOut: path.join(tmp, 'symlink-topology-telemetry.json'),
 });
+const changedSectionRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-code-topology-changed-section-'));
+fs.mkdirSync(path.join(changedSectionRoot, 'src'), { recursive: true });
+fs.writeFileSync(path.join(changedSectionRoot, 'src/work.ts'), [
+  'export function stable() {',
+  '  return true;',
+  '}',
+  '',
+  'export function target() {',
+  '  return 1;',
+  '}',
+  '',
+].join('\n'));
+spawnSync('git', ['init'], { cwd: changedSectionRoot, encoding: 'utf8' });
+spawnSync('git', ['add', 'src/work.ts'], { cwd: changedSectionRoot, encoding: 'utf8' });
+spawnSync('git', ['-c', 'user.name=Forgeflow Test', '-c', 'user.email=forgeflow@example.invalid', 'commit', '-m', 'base'], { cwd: changedSectionRoot, encoding: 'utf8' });
+fs.writeFileSync(path.join(changedSectionRoot, 'src/work.ts'), [
+  'export function stable() {',
+  '  return true;',
+  '}',
+  '',
+  'export function target() {',
+  '  return 2;',
+  '}',
+  '',
+].join('\n'));
+const changedSectionResult = buildCodeTopology({
+  root: changedSectionRoot,
+  out: path.join(tmp, 'changed-section-topology.json'),
+  markdownOut: path.join(tmp, 'changed-section-topology.md'),
+  telemetryOut: path.join(tmp, 'changed-section-topology-telemetry.json'),
+});
+const changedSectionNeighbor = changedSectionResult.topology.changed_file_neighbors.find((item) => item.path === 'src/work.ts');
 
 const checks = [
   ['result paths', result.out === out && result.markdown_out === markdownOut && result.telemetry_path === telemetryOut],
@@ -99,6 +140,8 @@ const checks = [
   ['extracts import forms', importKinds.imports.length === 3],
   ['extracts source sections', sourceSections.some((item) => item.kind === 'class' && item.name === 'Example') && sourceSections.some((item) => item.kind === 'function' && item.name === 'run') && sourceSections.some((item) => item.kind === 'const' && item.name === 'local')],
   ['extracts markdown headings', markdownSections.length === 2 && markdownSections[1].name === 'Details'],
+  ['parses diff changed lines', changedLines['src/example.ts'].length === 2 && changedLines['src/example.ts'][0] === 3],
+  ['maps changed lines to sections', touchedSections.length === 2 && touchedSections[0].name === 'first' && touchedSections[1].name === 'second'],
   ['resolves index import', resolveLocalImport('src/app/main.ts', '../shared', sourceSet).target === 'src/shared/index.ts'],
   ['tracks local edges', topology.edges.some((edge) => edge.source === 'src/app/main.ts' && edge.target === 'src/features/feature.ts')],
   ['tracks commonjs edge', topology.edges.some((edge) => edge.source === 'src/lib/legacy.js' && edge.target === 'src/shared/index.ts' && edge.kind === 'require')],
@@ -123,6 +166,7 @@ const checks = [
   ['denies sensitive paths', deniedPath('config/api-token.ts') === 'sensitive filename'],
   ['git scan includes untracked source', gitResult.topology.nodes.some((node) => node.path === 'src/untracked.ts') && gitResult.topology.changed_files.includes('src/untracked.ts')],
   ['git scan skips deleted tracked source', !gitResult.topology.nodes.some((node) => node.path === 'src/tracked.ts') && gitResult.topology.denied.some((item) => item.path === 'src/tracked.ts' && item.reason === 'missing source path')],
+  ['changed section detected from git diff', changedSectionResult.topology.summary.changed_sections === 1 && changedSectionNeighbor.changed_sections[0].name === 'target'],
   ['symlink source denied', symlinkResult.topology.nodes.length === 0 && (!fs.existsSync(path.join(symlinkRoot, 'src/linked.ts')) || symlinkResult.topology.denied.some((item) => item.reason === 'symbolic links are not accepted'))],
 ];
 

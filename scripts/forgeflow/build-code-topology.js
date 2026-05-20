@@ -197,6 +197,37 @@ function readChangedFiles(root, filesPath) {
   return [...new Set([...changed, ...untracked])];
 }
 
+function addRangeLine(map, file, line) {
+  if (!file || !Number.isFinite(line) || line <= 0) return;
+  const key = normalize(file);
+  if (!map[key]) map[key] = new Set();
+  map[key].add(line);
+}
+
+function parseDiffChangedLines(diff) {
+  const changed = {};
+  let currentFile = '';
+  for (const line of String(diff || '').split(/\r?\n/)) {
+    const fileMatch = line.match(/^\+\+\+\s+b\/(.+)$/);
+    if (fileMatch) {
+      currentFile = normalize(fileMatch[1]);
+      continue;
+    }
+    if (!currentFile || currentFile === '/dev/null') continue;
+    const hunkMatch = line.match(/^@@\s+-\d+(?:,\d+)?\s+\+(\d+)(?:,(\d+))?\s+@@/);
+    if (!hunkMatch) continue;
+    const start = Number.parseInt(hunkMatch[1], 10);
+    const count = hunkMatch[2] === undefined ? 1 : Number.parseInt(hunkMatch[2], 10);
+    for (let offset = 0; offset < count; offset += 1) addRangeLine(changed, currentFile, start + offset);
+  }
+  return Object.fromEntries(Object.entries(changed).map(([file, lines]) => [file, [...lines].sort((a, b) => a - b)]));
+}
+
+function changedLinesFromGit(root, filesPath) {
+  if (filesPath) return {};
+  return parseDiffChangedLines(git(['diff', '--unified=0', 'HEAD'], root));
+}
+
 function stripComments(content) {
   return String(content || '')
     .replace(/\/\*[\s\S]*?\*\//g, '')
@@ -289,6 +320,30 @@ function extractSections(file, content) {
   return [];
 }
 
+function sectionEndLine(sections, index, totalLines) {
+  const next = sections[index + 1];
+  if (next && Number.isFinite(next.line)) return Math.max(next.line - 1, sections[index].line);
+  return totalLines;
+}
+
+function sectionsForChangedLines(sections, changedLines, totalLines) {
+  if (!Array.isArray(sections) || sections.length === 0 || !Array.isArray(changedLines) || changedLines.length === 0) return [];
+  const changed = [];
+  for (let index = 0; index < sections.length; index += 1) {
+    const section = sections[index];
+    const endLine = sectionEndLine(sections, index, totalLines);
+    const touched = changedLines.filter((line) => line >= section.line && line <= endLine);
+    if (touched.length > 0) {
+      changed.push({
+        ...section,
+        end_line: endLine,
+        changed_lines: touched,
+      });
+    }
+  }
+  return changed;
+}
+
 function buildSectionMap(root, sectionFiles) {
   const map = {};
   for (const file of sectionFiles) {
@@ -298,6 +353,23 @@ function buildSectionMap(root, sectionFiles) {
     } catch (_err) {
       // Ignore unreadable files; missing source paths are already reported in denied.
     }
+  }
+  return map;
+}
+
+function buildChangedSectionMap(root, sectionMap, changedLineMap) {
+  const map = {};
+  for (const [file, lines] of Object.entries(changedLineMap || {})) {
+    const sections = sectionMap[file] || [];
+    if (sections.length === 0) continue;
+    let totalLines = 0;
+    try {
+      totalLines = fs.readFileSync(path.join(root, file), 'utf8').split(/\r?\n/).length;
+    } catch (_err) {
+      totalLines = sections[sections.length - 1].line;
+    }
+    const changedSections = sectionsForChangedLines(sections, lines, totalLines);
+    if (changedSections.length > 0) map[file] = changedSections;
   }
   return map;
 }
@@ -390,7 +462,7 @@ function md(value) {
   return String(value || '').replace(/([\\`*_{}\[\]()#+\-.!|>])/g, '\\$1');
 }
 
-function changedNeighbors(nodes, changedFiles) {
+function changedNeighbors(nodes, changedFiles, changedSectionMap = {}) {
   const nodeMap = new Map(nodes.map((node) => [node.path, node]));
   const changes = [];
   for (const file of changedFiles.filter((item) => nodeMap.has(item)).sort()) {
@@ -410,6 +482,7 @@ function changedNeighbors(nodes, changedFiles) {
       fan_in: node.fan_in,
       fan_out: node.fan_out,
       sections: node.sections || [],
+      changed_sections: changedSectionMap[file] || [],
       dependencies,
       dependents,
       read_next: [...dependencies, ...dependents]
@@ -435,6 +508,7 @@ function renderMarkdown(topology) {
     `- Unresolved imports: ${topology.summary.unresolved_imports}`,
     `- Skipped dynamic imports: ${topology.summary.skipped_dynamic_imports}`,
     `- Sections mapped: ${topology.summary.sections}`,
+    `- Changed sections: ${topology.summary.changed_sections}`,
     '',
     '## High Fan-In',
     '',
@@ -454,6 +528,9 @@ function renderMarkdown(topology) {
       lines.push(`### ${md(item.path)}`, '', `- fan-in: ${item.fan_in}`, `- fan-out: ${item.fan_out}`);
       if (item.sections.length > 0) {
         lines.push('- sections:', ...item.sections.slice(0, 10).map((section) => `  - ${md(section.kind)} ${md(section.name)} (line ${section.line})`));
+      }
+      if (item.changed_sections.length > 0) {
+        lines.push('- changed sections:', ...item.changed_sections.slice(0, 10).map((section) => `  - ${md(section.kind)} ${md(section.name)} (lines ${section.changed_lines.join(', ')})`));
       }
       if (item.read_next.length === 0) {
         lines.push('- read next: (none)');
@@ -517,6 +594,8 @@ function buildCodeTopology(opts = {}) {
   const maxHotspots = Number.isFinite(opts.maxHotspots) && opts.maxHotspots > 0 ? opts.maxHotspots : DEFAULT_MAX_HOTSPOTS;
   const { sourceFiles, sectionFiles, denied } = readFiles(root);
   const sectionMap = buildSectionMap(root, sectionFiles);
+  const changedLineMap = changedLinesFromGit(root, opts.filesPath || '');
+  const changedSectionMap = buildChangedSectionMap(root, sectionMap, changedLineMap);
   const graph = buildGraph(root, sourceFiles, sectionMap);
   const changedFiles = readChangedFiles(root, opts.filesPath || '').filter(isSectionFile);
   const changedSourceFiles = changedFiles.filter(isSourceFile);
@@ -525,6 +604,7 @@ function buildCodeTopology(opts = {}) {
     .map(([file, sections]) => ({ path: file, sections }))
     .sort((a, b) => a.path.localeCompare(b.path));
   const sectionCount = Object.values(sectionMap).reduce((count, sections) => count + sections.length, 0);
+  const changedSectionCount = Object.values(changedSectionMap).reduce((count, sections) => count + sections.length, 0);
   const fullTopology = {
     schema_version: '1',
     generated_at: new Date().toISOString(),
@@ -539,6 +619,7 @@ function buildCodeTopology(opts = {}) {
       unresolved_imports: graph.unresolved.length,
       skipped_dynamic_imports: graph.skipped_dynamic.length,
       sections: sectionCount,
+      changed_sections: changedSectionCount,
       markdown_section_files: markdownSections.length,
       denied_files: denied.length,
     },
@@ -547,8 +628,10 @@ function buildCodeTopology(opts = {}) {
     high_fan_in: rank(graph.nodes, 'fan_in', maxHotspots),
     high_fan_out: rank(graph.nodes, 'fan_out', maxHotspots),
     markdown_sections: markdownSections,
+    changed_sections: changedSectionMap,
+    changed_lines: changedLineMap,
     changed_files: changedFiles,
-    changed_file_neighbors: changedNeighbors(graph.nodes, changedSourceFiles),
+    changed_file_neighbors: changedNeighbors(graph.nodes, changedSourceFiles, changedSectionMap),
     unresolved: graph.unresolved,
     external: graph.external,
     skipped_dynamic: graph.skipped_dynamic,
@@ -602,6 +685,8 @@ module.exports = {
   deniedPath,
   extractImports,
   extractSections,
+  parseDiffChangedLines,
   renderMarkdown,
   resolveLocalImport,
+  sectionsForChangedLines,
 };

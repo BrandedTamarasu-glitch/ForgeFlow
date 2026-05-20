@@ -422,7 +422,7 @@ function compactTopology(topologyResult) {
   if (!topologyResult || !topologyResult.topology) return '(none)';
   const topology = topologyResult.topology;
   const lines = [
-    `Summary: ${topology.summary.source_files} source files, ${topology.summary.local_edges} local edges, ${topology.summary.sections || 0} sections, ${topology.summary.unresolved_imports} unresolved, ${topology.summary.skipped_dynamic_imports} skipped dynamic.`,
+    `Summary: ${topology.summary.source_files} source files, ${topology.summary.local_edges} local edges, ${topology.summary.sections || 0} sections, ${topology.summary.changed_sections || 0} changed sections, ${topology.summary.unresolved_imports} unresolved, ${topology.summary.skipped_dynamic_imports} skipped dynamic.`,
     '',
     'High fan-in:',
     ...(topology.high_fan_in.length > 0
@@ -444,6 +444,9 @@ function compactTopology(topologyResult) {
       lines.push(`- ${md(item.path)}: ${readNext}`);
       if (item.sections && item.sections.length > 0) {
         lines.push(`  - sections: ${item.sections.slice(0, 5).map((section) => `${md(section.name)}:${section.line}`).join(', ')}`);
+      }
+      if (item.changed_sections && item.changed_sections.length > 0) {
+        lines.push(`  - changed sections: ${item.changed_sections.slice(0, 5).map((section) => `${md(section.name)}:${section.changed_lines.join('/')}`).join(', ')}`);
       }
     }
   }
@@ -469,6 +472,7 @@ function topologyReport(topologyResult, root) {
       fan_in: item.fan_in,
       fan_out: item.fan_out,
       sections: (item.sections || []).slice(0, 10),
+      changed_sections: (item.changed_sections || []).slice(0, 10),
       read_next: item.read_next.slice(0, 5),
     })),
     markdown_sections: (topology.markdown_sections || []).slice(0, 5).map((item) => ({

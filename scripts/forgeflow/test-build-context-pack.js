@@ -154,6 +154,7 @@ const checks = [
   ['code topology summary has hotspots', synthesis.code_topology_summary.high_fan_in.length > 0 && synthesis.code_topology_summary.high_fan_out.length > 0],
   ['code topology summary has neighbor list', Array.isArray(synthesis.code_topology_summary.changed_file_neighbors)],
   ['code topology summary has section count', Number.isInteger(synthesis.code_topology_summary.summary.sections)],
+  ['code topology summary has changed section count', Number.isInteger(synthesis.code_topology_summary.summary.changed_sections)],
   ['agent packet includes latest insights', wardenPacket.includes('## Latest Insights')],
   ['agent packet includes code topology', wardenPacket.includes('## Code Topology') && wardenPacket.includes('sections') && wardenPacket.includes('static JS/TS import graph only')],
   ['agent packet escapes markdown paths', wardenPacket.includes('src/auth/session\\.ts')],
