@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { seedBudgetConfig } = require('./seed-budget-config');
+const { checkProjectLearnings } = require('./check-project-learnings');
 const {
   RUNTIME_HELPERS,
   STATIC_FILES,
@@ -237,6 +238,31 @@ function latestProjectLearnings(ffDir) {
   };
 }
 
+function latestProjectLearningsCheck(ffDir) {
+  try {
+    const result = checkProjectLearnings({ projectDir: ffDir });
+    const failures = result.issues.filter((item) => item.severity === 'fail').length;
+    const warnings = result.issues.filter((item) => item.severity === 'warn').length;
+    return {
+      status: result.status,
+      issues: result.issues.length,
+      failures,
+      warnings,
+      candidates: result.candidates,
+      path: result.learnings_file,
+    };
+  } catch (_err) {
+    return {
+      status: 'invalid',
+      issues: 0,
+      failures: 0,
+      warnings: 0,
+      candidates: 0,
+      path: path.join(ffDir, 'project-learnings.md'),
+    };
+  }
+}
+
 function runHealthCheck(opts = {}) {
   const requestedRoot = opts.root || process.cwd();
   const gitRepo = isGitRepo(requestedRoot);
@@ -291,6 +317,7 @@ function runHealthCheck(opts = {}) {
     latest_notes_check: latestImplementationNotesCheck(ffDir),
     latest_pilot_rollup: latestPilotRollup(ffDir),
     latest_project_learnings: latestProjectLearnings(ffDir),
+    latest_project_learnings_check: latestProjectLearningsCheck(ffDir),
   };
 }
 
@@ -346,6 +373,15 @@ function renderMarkdown(result) {
     lines.push(`- Report: ${latest.path}`);
     lines.push('');
   }
+  if (result.latest_project_learnings_check && result.latest_project_learnings_check.status !== 'pass') {
+    const latest = result.latest_project_learnings_check;
+    lines.push('## Latest Project Learnings Check', '');
+    lines.push(`- Status: ${latest.status}`);
+    lines.push(`- Issues: ${latest.issues} (${latest.failures} fail, ${latest.warnings} warn)`);
+    lines.push(`- Candidates: ${latest.candidates}`);
+    lines.push(`- Report: ${latest.path}`);
+    lines.push('');
+  }
   lines.push('## Checks', '');
   for (const item of result.checks) {
     const suffix = item.reason ? ` (${item.reason})` : '';
@@ -384,4 +420,5 @@ module.exports = {
   latestImplementationNotesCheck,
   latestPilotRollup,
   latestProjectLearnings,
+  latestProjectLearningsCheck,
 };

@@ -61,6 +61,7 @@ const checks = [
   ['release check runs context pack test', releaseCheck.includes('node scripts/forgeflow/test-build-context-pack.js')],
   ['release check runs implementation notes test', releaseCheck.includes('node scripts/forgeflow/test-implementation-notes.js')],
   ['release check runs implementation notes quality test', releaseCheck.includes('node scripts/forgeflow/test-check-implementation-notes.js')],
+  ['release check runs project learnings quality test', releaseCheck.includes('node scripts/forgeflow/test-check-project-learnings.js')],
 ];
 
 let failed = 0;

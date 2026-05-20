@@ -272,6 +272,11 @@ From Claude Code, use the command view:
 ```
 
 Review context packets include the latest insights so agents can account for recurring project patterns while still verifying every finding against current artifacts.
+The project-learnings checker guards that loop against sensitive content, placeholder-only output, oversized packets, duplicate bullets, malformed candidates, and missing proof-boundary text:
+
+```bash
+scripts/forgeflow/check-project-learnings.js --json
+```
 
 ## Dashboard
 

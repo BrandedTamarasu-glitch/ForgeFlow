@@ -44,6 +44,14 @@ That refreshes the artifact and prints the insight sections in a user-facing ord
 
 Review context packs also include a compact **Latest Insights** section in each agent packet. Agents can use it to adjust attention while reviewing, but they still need current code, test, and artifact evidence for every finding.
 
+Check the local artifact before relying on it:
+
+```bash
+scripts/forgeflow/check-project-learnings.js --json
+```
+
+The checker catches sensitive content, placeholder-only output, oversized packets, duplicate bullets, malformed structured candidates, and missing proof-boundary text. `/forgeflow-health` surfaces non-passing project-learning checks when present.
+
 ## What Goes In
 
 Use project learnings for patterns that should shape future work:

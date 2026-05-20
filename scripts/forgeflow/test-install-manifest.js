@@ -22,6 +22,7 @@ const checks = [
   ['runtime helpers include template installer', RUNTIME_HELPERS.includes('scripts/forgeflow/install-template.js')],
   ['runtime helpers include implementation notes recorder', RUNTIME_HELPERS.includes('scripts/forgeflow/record-implementation-notes.js')],
   ['runtime helpers include implementation notes checker', RUNTIME_HELPERS.includes('scripts/forgeflow/check-implementation-notes.js')],
+  ['runtime helpers include project learnings checker', RUNTIME_HELPERS.includes('scripts/forgeflow/check-project-learnings.js')],
   ['runtime helpers include pilot evidence recorder', RUNTIME_HELPERS.includes('scripts/forgeflow/record-pilot-evidence.js')],
   ['runtime helpers include project learning recorder', RUNTIME_HELPERS.includes('scripts/forgeflow/record-project-learning.js')],
   ['runtime helpers include pilot evidence rollup', RUNTIME_HELPERS.includes('scripts/forgeflow/rollup-pilot-evidence.js')],

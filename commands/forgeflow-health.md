@@ -58,7 +58,7 @@ EXPECTED_HOOKS=(forgeflow-gate forgeflow-context-monitor forgeflow-statusline fo
 EXPECTED_TEMPLATES=(ship-presentation.html)
 EXPECTED_RUNTIME_HELPERS=(
   advise-context.js agent-chat-off.sh agent-chat-on.sh build-context-pack.js build-memory-context.js
-  build-scope-manifest.js check-codex-agent-drift.js check-context-budget.js check-implementation-notes.js context-telemetry.js
+  build-scope-manifest.js check-codex-agent-drift.js check-context-budget.js check-implementation-notes.js check-project-learnings.js context-telemetry.js
   ensure-forgeflow-state.sh explain-review-route.js forgeflow-version.js generate-codex-agent-stubs.js health-check.js
   index-memory.js install-manifest.js install-template.js record-pilot-evidence.js record-project-learning.js record-review-outcome.js render-evaluation-report.js render-ship-presentation.js
   rollup-pilot-evidence.js rollup-project-learnings.js seed-budget-config.js show-project-learnings.js ship-ci-status.sh ship-open-pr.sh ship-prepare.sh summarize-calibration.js

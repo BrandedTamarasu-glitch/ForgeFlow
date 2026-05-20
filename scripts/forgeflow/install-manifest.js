@@ -20,6 +20,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/check-codex-agent-drift.js',
   'scripts/forgeflow/check-context-budget.js',
   'scripts/forgeflow/check-implementation-notes.js',
+  'scripts/forgeflow/check-project-learnings.js',
   'scripts/forgeflow/context-telemetry.js',
   'scripts/forgeflow/ensure-forgeflow-state.sh',
   'scripts/forgeflow/explain-review-route.js',

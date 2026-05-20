@@ -53,6 +53,7 @@ node scripts/forgeflow/test-advise-context.js
 node scripts/forgeflow/test-build-context-pack.js
 node scripts/forgeflow/test-implementation-notes.js
 node scripts/forgeflow/test-check-implementation-notes.js
+node scripts/forgeflow/test-check-project-learnings.js
 git diff --check
 ```
 

@@ -51,6 +51,7 @@ node scripts/forgeflow/test-advise-context.js
 node scripts/forgeflow/test-build-context-pack.js
 node scripts/forgeflow/test-implementation-notes.js
 node scripts/forgeflow/test-check-implementation-notes.js
+node scripts/forgeflow/test-check-project-learnings.js
 git diff --check
 ```
 
@@ -83,5 +84,6 @@ If any command fails, stop and report the failed command plus its output. Do not
 - [ ] Context budget/advisor smoke tests pass
 - [ ] Context pack test passes
 - [ ] Implementation notes wiring and quality-check tests pass
+- [ ] Project learnings quality-check test passes
 - [ ] `git diff --check` passes
 </success_criteria>
