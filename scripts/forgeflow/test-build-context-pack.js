@@ -2,7 +2,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { buildContextPack } = require('./build-context-pack');
+const { buildContextPack, buildLatestInsights } = require('./build-context-pack');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-'));
@@ -29,6 +29,76 @@ const noisyResult = buildContextPack({
   maxMemoryChars: 12000,
   maxDiffChars: 18000,
 });
+const insightsRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-latest-insights-'));
+const insightsProjectDir = path.join(insightsRoot, '.forgeflow', path.basename(insightsRoot));
+fs.mkdirSync(insightsProjectDir, { recursive: true });
+fs.writeFileSync(path.join(insightsProjectDir, 'project-learnings.md'), [
+  '# Project Learnings',
+  '',
+  'These learnings are guidance only. Verify current code, tests, and review artifacts before relying on them.',
+  '',
+  '## Recurring Pitfalls',
+  '- Check docs drift before release.',
+  '',
+  '## Stable Decisions',
+  '- Keep project learnings local.',
+  '',
+  '## Risk Areas',
+  '- Context packets can overrun budgets.',
+  '',
+  '## Validation Patterns',
+  '- Run context pack tests before release checks.',
+  '',
+  '## Hot Files And Modules',
+  '- scripts/forgeflow/build-context-pack.js',
+  '',
+  '## Repeated Follow-ups',
+  '- Recheck generated reviewer packets.',
+  '',
+  '## Recommended Approach For Next Work',
+  '- Gate agent guidance before injection.',
+  '',
+].join('\n'));
+fs.writeFileSync(path.join(insightsProjectDir, 'project-learning-candidates.jsonl'), [
+  { category: 'recurring-pitfall', learning: 'Check docs drift before release.' },
+  { category: 'stable-decision', learning: 'Keep project learnings local.' },
+  { category: 'risk-area', learning: 'Context packets can overrun budgets.' },
+  { category: 'validation-pattern', learning: 'Run context pack tests before release checks.' },
+  { category: 'hot-file', learning: 'scripts/forgeflow/build-context-pack.js' },
+  { category: 'repeated-follow-up', learning: 'Recheck generated reviewer packets.' },
+  { category: 'recommended-approach', learning: 'Gate agent guidance before injection.' },
+].map((item) => JSON.stringify(item)).join('\n') + '\n');
+const passingInsights = buildLatestInsights(insightsRoot);
+fs.writeFileSync(path.join(insightsProjectDir, 'project-learning-candidates.jsonl'), JSON.stringify({
+  category: 'unknown-category',
+  learning: 'This malformed candidate should block injection.',
+}) + '\n');
+fs.writeFileSync(path.join(insightsProjectDir, 'project-learnings.md'), [
+  '# Project Learnings',
+  '',
+  '## Recurring Pitfalls',
+  '- No repeated pattern recorded yet.',
+  '',
+  '## Stable Decisions',
+  '- No repeated pattern recorded yet.',
+  '',
+  '## Risk Areas',
+  '- No repeated pattern recorded yet.',
+  '',
+  '## Validation Patterns',
+  '- No repeated pattern recorded yet.',
+  '',
+  '## Hot Files And Modules',
+  '- No repeated pattern recorded yet.',
+  '',
+  '## Repeated Follow-ups',
+  '- No repeated pattern recorded yet.',
+  '',
+  '## Recommended Approach For Next Work',
+  '- No repeated pattern recorded yet.',
+  '',
+].join('\n'));
+const blockedInsights = buildLatestInsights(insightsRoot);
 
 const route = JSON.parse(fs.readFileSync(path.join(outDir, 'route.json'), 'utf8'));
 const manifest = JSON.parse(fs.readFileSync(path.join(outDir, 'file-manifest.json'), 'utf8'));
@@ -57,6 +127,9 @@ const checks = [
   ['noisy manifest sanitized', noisyManifest.files.length === 3],
   ['no noisy decoration in manifest', !noisyManifest.files.some((file) => file.path.includes('Changes') || file.path.includes('|'))],
   ['noisy result full mode', noisyResult.route.mode === 'full-mode'],
+  ['passing insights include project guidance', passingInsights.includes('Check docs drift before release.')],
+  ['blocked insights use quality gate', blockedInsights.includes('Quality Gate') && blockedInsights.includes('quality check returned FAIL')],
+  ['blocked insights omit malformed candidate body', !blockedInsights.includes('This malformed candidate should block injection.')],
 ];
 
 let failed = 0;

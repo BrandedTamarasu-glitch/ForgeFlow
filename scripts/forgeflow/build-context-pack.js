@@ -5,6 +5,7 @@ const { spawnSync } = require('child_process');
 const { classify, readFiles } = require('./explain-review-route');
 const { buildMemoryIndex } = require('./index-memory');
 const { showProjectLearnings } = require('./show-project-learnings');
+const { checkProjectLearnings } = require('./check-project-learnings');
 const {
   contextTelemetry,
   fileChars,
@@ -314,11 +315,32 @@ function buildMemoryHits(root, files, route, task, maxChars, indexPath = null) {
   return truncate(rendered.join('\n'), maxChars);
 }
 
+function renderLatestInsightsGate(result, root) {
+  const relProjectDir = path.relative(root, result.project_dir) || '.';
+  const issues = result.issues.slice(0, 5).map((item) => `- ${item.severity.toUpperCase()} ${item.code}: ${item.message}`);
+  return [
+    '# Forgeflow Project Learnings - Quality Gate',
+    '',
+    `Project learnings were not injected because the quality check returned ${result.status.toUpperCase()}.`,
+    'Agents should proceed from current files, tests, and review evidence instead of project-learning guidance.',
+    '',
+    `Check: scripts/forgeflow/check-project-learnings.js --project-dir ${relProjectDir} --json`,
+    'Refresh/view: forgeflow-learnings --project',
+    '',
+    '## Issues',
+    ...(issues.length > 0 ? issues : ['- No specific issues were reported.']),
+  ].join('\n');
+}
+
 function buildLatestInsights(root, maxChars = 3000) {
   const projectDir = defaultProjectDir(root);
   if (!fs.existsSync(projectDir)) return '';
   try {
     const result = showProjectLearnings({ projectDir });
+    const check = checkProjectLearnings({ projectDir });
+    if (check.status !== 'pass') {
+      return truncate(renderLatestInsightsGate(check, root), maxChars);
+    }
     return truncate(result.markdown, maxChars);
   } catch (_err) {
     return '';
