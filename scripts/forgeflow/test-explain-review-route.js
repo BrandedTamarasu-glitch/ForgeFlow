@@ -141,8 +141,29 @@ const untrackedRoute = untrackedCli.status === 0 ? JSON.parse(untrackedCli.stdou
 if (untrackedRoute.lines_changed !== 60 || untrackedRoute.mode !== 'full-mode') {
   failed += 1;
   console.error(`untracked-line-count: expected 60 lines and full-mode, got ${untrackedRoute.lines_changed}/${untrackedRoute.mode || 'no-mode'}`);
+} else if (untrackedRoute.tracked_lines !== 0 || untrackedRoute.untracked_lines !== 60) {
+  failed += 1;
+  console.error(`untracked-line-sources: expected tracked/untracked 0/60, got ${untrackedRoute.tracked_lines}/${untrackedRoute.untracked_lines}`);
 } else {
   console.log('untracked-line-count: ok');
+}
+
+const explicitSourceRoute = classify(['helper.js'], {
+  linesChanged: 75,
+  trackedLines: 15,
+  untrackedLines: 60,
+  filesPath: 'changed-files.txt',
+  modeOverride: '',
+  ci: false,
+  calibration: null,
+});
+if (explicitSourceRoute.lines_changed !== 75
+  || explicitSourceRoute.tracked_lines !== 15
+  || explicitSourceRoute.untracked_lines !== 60) {
+  failed += 1;
+  console.error('explicit-line-sources: expected lines_changed/tracked_lines/untracked_lines 75/15/60');
+} else {
+  console.log('explicit-line-sources: ok');
 }
 
 if (failed > 0) {

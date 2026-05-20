@@ -119,14 +119,16 @@ if [ -n "${GITHUB_BASE_REF:-}" ] || echo "$ARGUMENTS" | grep -q -- '--pr '; then
   BASE_REF="${GITHUB_BASE_REF:-main}"
   git fetch origin "${BASE_REF}" 2>/dev/null || true
   git diff --name-only "origin/${BASE_REF}..HEAD" 2>/dev/null > /tmp/_review_files_$$
-  LINES_CHANGED=$(git diff --numstat "origin/${BASE_REF}..HEAD" 2>/dev/null | awk '{s+=$1+$2} END {print s+0}')
+  TRACKED_LINES_CHANGED=$(git diff --numstat "origin/${BASE_REF}..HEAD" 2>/dev/null | awk '{s+=$1+$2} END {print s+0}')
+  UNTRACKED_LINES_CHANGED=0
+  LINES_CHANGED="$TRACKED_LINES_CHANGED"
 else
   git diff --name-only HEAD 2>/dev/null > /tmp/_review_files_$$
   git diff --name-only --cached 2>/dev/null >> /tmp/_review_files_$$
   git ls-files --others --exclude-standard 2>/dev/null >> /tmp/_review_files_$$
-  LINES_CHANGED=$(git diff --numstat HEAD 2>/dev/null | awk '{s+=$1+$2} END {print s+0}')
-  UNTRACKED_LINES=$(git ls-files --others --exclude-standard 2>/dev/null | while IFS= read -r file; do [ -f "$file" ] && wc -l < "$file"; done | awk '{s+=$1} END {print s+0}')
-  LINES_CHANGED=$((LINES_CHANGED + UNTRACKED_LINES))
+  TRACKED_LINES_CHANGED=$(git diff --numstat HEAD 2>/dev/null | awk '{s+=$1+$2} END {print s+0}')
+  UNTRACKED_LINES_CHANGED=$(git ls-files --others --exclude-standard 2>/dev/null | while IFS= read -r file; do [ -f "$file" ] && wc -l < "$file"; done | awk '{s+=$1} END {print s+0}')
+  LINES_CHANGED=$((TRACKED_LINES_CHANGED + UNTRACKED_LINES_CHANGED))
 fi
 sort -u /tmp/_review_files_$$ > /tmp/_review_files_unique_$$
 FILES=$(cat /tmp/_review_files_unique_$$)
@@ -169,7 +171,7 @@ if [ "$CI_MODE" = "true" ]; then
   CI_ARG="--ci"
 fi
 
-ROUTING_JSON=$("${HELPER_DIR}/explain-review-route.js" --json --files /tmp/_review_files_unique_$$ --lines "$LINES_CHANGED" $MODE_ARG $CI_ARG $CALIBRATION_ARG)
+ROUTING_JSON=$("${HELPER_DIR}/explain-review-route.js" --json --files /tmp/_review_files_unique_$$ --lines "$LINES_CHANGED" --tracked-lines "$TRACKED_LINES_CHANGED" --untracked-lines "$UNTRACKED_LINES_CHANGED" $MODE_ARG $CI_ARG $CALIBRATION_ARG)
 ROUTING_MODE=$(printf '%s' "$ROUTING_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log(JSON.parse(s).mode))')
 ROUTING_VERIFIER=$(printf '%s' "$ROUTING_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log(JSON.parse(s).verifier||"not-required"))')
 ROUTING_TELEMETRY_HINTS=$(printf '%s' "$ROUTING_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log((JSON.parse(s).telemetry_hints||[]).map(h=>`${h.type}:${h.class}`).join(", ")))')

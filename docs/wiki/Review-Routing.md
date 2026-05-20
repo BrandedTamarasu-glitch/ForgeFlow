@@ -23,6 +23,14 @@ With explicit files:
 scripts/forgeflow/explain-review-route.js --json --files changed-files.txt --lines 120
 ```
 
+When callers precompute line counts, they can also pass source detail:
+
+```bash
+scripts/forgeflow/explain-review-route.js --json --files changed-files.txt --lines 120 --tracked-lines 90 --untracked-lines 30
+```
+
+The JSON includes `lines_changed`, `tracked_lines`, and `untracked_lines` so routing decisions can explain whether new untracked files affected the selected mode.
+
 With calibration:
 
 ```bash

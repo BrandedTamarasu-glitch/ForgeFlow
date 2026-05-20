@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 function usage() {
-  console.error('Usage: explain-review-route.js [--json] [--files <path>] [--lines <n>] [--mode skip|thin|full|deep] [--calibration <path>] [--ci]');
+  console.error('Usage: explain-review-route.js [--json] [--files <path>] [--lines <n>] [--tracked-lines <n>] [--untracked-lines <n>] [--mode skip|thin|full|deep] [--calibration <path>] [--ci]');
 }
 
 function parseArgs(argv) {
@@ -11,6 +11,8 @@ function parseArgs(argv) {
     json: false,
     filesPath: '',
     linesChanged: null,
+    trackedLines: null,
+    untrackedLines: null,
     modeOverride: '',
     calibrationPath: '',
     ci: false,
@@ -26,6 +28,10 @@ function parseArgs(argv) {
       opts.filesPath = argv[++i] || '';
     } else if (arg === '--lines') {
       opts.linesChanged = Number.parseInt(argv[++i] || '0', 10);
+    } else if (arg === '--tracked-lines') {
+      opts.trackedLines = Number.parseInt(argv[++i] || '0', 10);
+    } else if (arg === '--untracked-lines') {
+      opts.untrackedLines = Number.parseInt(argv[++i] || '0', 10);
     } else if (arg === '--mode') {
       opts.modeOverride = argv[++i] || '';
     } else if (arg === '--calibration') {
@@ -99,7 +105,7 @@ function sanitizeFileList(lines) {
   return [...new Set(lines.map(sanitizeFileLine).filter(Boolean))].sort();
 }
 
-function countChangedLines(filesPath) {
+function countChangedLineSources(filesPath) {
   if (filesPath) {
     return null;
   }
@@ -113,7 +119,17 @@ function countChangedLines(filesPath) {
     const del = Number.parseInt(deleted, 10);
     return sum + (Number.isFinite(add) ? add : 0) + (Number.isFinite(del) ? del : 0);
   }, 0) : 0;
-  return trackedLines + countUntrackedLines();
+  const untrackedLines = countUntrackedLines();
+  return {
+    tracked: trackedLines,
+    untracked: untrackedLines,
+    total: trackedLines + untrackedLines,
+  };
+}
+
+function countChangedLines(filesPath) {
+  const sources = countChangedLineSources(filesPath);
+  return sources ? sources.total : null;
 }
 
 function countFileLines(file) {
@@ -258,7 +274,10 @@ function buildTelemetryHints(files, calibration) {
 }
 
 function classify(files, opts) {
-  const linesChanged = opts.linesChanged ?? countChangedLines(opts.filesPath) ?? 0;
+  const computedLineSources = countChangedLineSources(opts.filesPath);
+  const trackedLines = opts.trackedLines ?? (computedLineSources ? computedLineSources.tracked : null);
+  const untrackedLines = opts.untrackedLines ?? (computedLineSources ? computedLineSources.untracked : null);
+  const linesChanged = opts.linesChanged ?? (computedLineSources ? computedLineSources.total : null) ?? 0;
   const uniqueFiles = [...new Set(files)].sort();
   const calibration = readCalibration(opts);
   const reasons = [];
@@ -338,6 +357,8 @@ function classify(files, opts) {
     routing_override: routingOverride,
     file_count: uniqueFiles.length,
     lines_changed: linesChanged,
+    tracked_lines: trackedLines,
+    untracked_lines: untrackedLines,
     files: uniqueFiles,
     triggers: {
       high_risk_files: highRiskFiles,
@@ -373,6 +394,9 @@ function describeTradeoff(mode, verifier) {
 function printHuman(route) {
   console.log(`Route: ${route.mode}`);
   console.log(`Files: ${route.file_count}; changed lines: ${route.lines_changed}`);
+  if (route.tracked_lines !== null || route.untracked_lines !== null) {
+    console.log(`Line sources: tracked ${route.tracked_lines ?? 'unknown'}; untracked ${route.untracked_lines ?? 'unknown'}`);
+  }
   console.log(`Agents included: ${route.agents.included.join(', ') || 'none'}`);
   console.log(`Agents skipped: ${route.agents.skipped.join(', ') || 'none'}`);
   console.log(`Verifier: ${route.verifier}`);

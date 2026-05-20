@@ -87,6 +87,8 @@ If `/review` cannot produce a verdict (classifier skip-mode, pre-flight failure,
     "pr_number": 42,
     "file_count": 7,
     "lines_changed": 384,
+    "tracked_lines": 344,
+    "untracked_lines": 40,
     "duration_seconds": 127,
     "cost_estimate_usd": 0.42,
     "parse_warnings": [],
@@ -170,6 +172,10 @@ Emitted only when the routing mode includes Arbiter synthesis (thin / full / dee
 ### `metadata.cost_estimate_usd`
 
 Rough estimate from per-mode token projections × current model rates. Not authoritative — real billing shows in the Anthropic console. Accuracy target: within ±30%. The wrapper uses this to detect budget overruns before the review starts, not after.
+
+### `metadata.lines_changed`, `metadata.tracked_lines`, and `metadata.untracked_lines`
+
+`lines_changed` is the classifier total used for routing. `tracked_lines` and `untracked_lines` explain the source of that total when available. Consumers must handle null source fields because older route helpers and explicit file lists may only provide the total.
 
 ### `metadata.parse_warnings`
 

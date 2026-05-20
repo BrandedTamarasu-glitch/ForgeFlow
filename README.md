@@ -176,6 +176,8 @@ Forgeflow review mode classifies a change before spawning agents:
 
 Routing is deterministic and explainable. When calibration data exists, Forgeflow can add telemetry hints, require Aegis for historically noisy classes, or expand specialist coverage for high-value paths.
 
+Route JSON reports total changed lines plus tracked and untracked line sources, which makes review escalation easier to audit when a branch includes newly created files.
+
 ## Local Metrics And Calibration
 
 Forgeflow can summarize local review telemetry:
