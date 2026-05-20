@@ -31,6 +31,7 @@ In a repo checkout, examples use `scripts/forgeflow/`. A Claude install from `/u
 | Project learnings rollup | `scripts/forgeflow/rollup-project-learnings.js` | Refreshes durable project guidance from implementation notes, review outcomes, and ship metadata. |
 | Project learnings display | `scripts/forgeflow/show-project-learnings.js` | Refreshes project learnings and prints the current-project insight view used by `/forgeflow-learnings --project`. |
 | Latest insights packets | `scripts/forgeflow/build-context-pack.js` | Includes the current project-learning insight view in agent packets only after the project-learning quality check passes, and writes a gate report. |
+| Project code map | `scripts/forgeflow/show-code-map.js` | Renders a compact maintainer-facing map from topology, hotspots, sections, changed sections, and artifact paths. |
 
 When present, `.forgeflow/<project-name>/implementation-notes.md` is included in the memory index. This lets later consult, implement, review, and ship phases see prior decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes without loading the full raw notes file into every prompt.
 
@@ -45,6 +46,7 @@ For review:
 ```bash
 scripts/forgeflow/build-context-pack.js --json
 scripts/forgeflow/build-code-topology.js --json
+scripts/forgeflow/show-code-map.js --json
 scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json
 scripts/forgeflow/advise-context.js --root .forgeflow --record --json
 ```
@@ -55,6 +57,7 @@ For implementation:
 scripts/forgeflow/build-memory-context.js --json
 scripts/forgeflow/build-scope-manifest.js --json
 scripts/forgeflow/build-code-topology.js --json
+scripts/forgeflow/show-code-map.js --json
 scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json
 scripts/forgeflow/advise-context.js --root .forgeflow --record --json
 ```

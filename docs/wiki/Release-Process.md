@@ -51,6 +51,7 @@ node scripts/forgeflow/test-show-project-learnings.js
 node scripts/forgeflow/test-check-context-budget.js
 node scripts/forgeflow/test-advise-context.js
 node scripts/forgeflow/test-build-code-topology.js
+node scripts/forgeflow/test-show-code-map.js
 node scripts/forgeflow/test-build-context-pack.js
 node scripts/forgeflow/test-implementation-notes.js
 node scripts/forgeflow/test-check-implementation-notes.js

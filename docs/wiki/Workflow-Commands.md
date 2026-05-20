@@ -21,6 +21,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands.
 | `/review-auto` | Apply conservative safe fixes, then re-review. |
 | `/audit` | Run a deeper systems/security/craft audit. |
 | `/dashboard` | Start the optional local metrics dashboard on port 4003. |
+| `/forgeflow-code-map` | Generate a compact project code map with topology, sections, and changed-section hints. |
 | `/forgeflow-health` | Audit installation and project-local state; can safely repair `.forgeflow/` scaffolding and budget config. |
 | `/forgeflow-learnings --project --check` | Refresh and print current-project learnings, then show whether the artifact passes the quality gate for agent context. |
 | `/forgeflow-metrics` | Summarize telemetry, calibration, outcomes, context savings, budget health, and advisor actions. |
@@ -50,6 +51,7 @@ The review and implementation skills use local helpers when available:
 ```bash
 scripts/forgeflow/build-context-pack.js --json
 scripts/forgeflow/build-code-topology.js --json
+scripts/forgeflow/show-code-map.js --json
 scripts/forgeflow/build-memory-context.js --json
 scripts/forgeflow/build-scope-manifest.js --json
 scripts/forgeflow/record-implementation-notes.js --json
