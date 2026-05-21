@@ -82,6 +82,21 @@ function runNodeTest(root, script) {
   };
 }
 
+function healthStatus(health, trends) {
+  if (!health || health.status !== 'pass') return 'fail';
+  const recommendations = health.recommendations || [];
+  if (recommendations.length === 0) return 'pass';
+  const unresolved = recommendations.filter((item) => {
+    if (item.action !== 'refresh-latest-insights') return true;
+    const freshness = trends && trends.latest_insights && trends.latest_insights.freshness
+      ? trends.latest_insights.freshness.status
+      : 'missing';
+    const refreshStatus = trends && trends.refresh ? trends.refresh.status : 'missing';
+    return !(refreshStatus === 'pass' && freshness === 'current');
+  });
+  return unresolved.length > 0 ? 'warn' : 'pass';
+}
+
 function smokeCheck(opts = {}) {
   const root = opts.root || process.cwd();
   const projectDir = opts.projectDir || defaultProjectDir(root);
@@ -89,15 +104,16 @@ function smokeCheck(opts = {}) {
   const checks = [];
 
   let health = null;
+  let healthIndex = -1;
   try {
     health = runHealthCheck({ root });
-    checks.push(check('health', health.status === 'pass' ? (health.recommendations.length > 0 ? 'warn' : 'pass') : 'fail', {
+    healthIndex = checks.push(check('health', health.status === 'pass' ? (health.recommendations.length > 0 ? 'warn' : 'pass') : 'fail', {
       command: 'forgeflow-health',
       summary: health.status,
       recommendations: health.recommendations,
-    }));
+    })) - 1;
   } catch (err) {
-    checks.push(check('health', 'fail', { command: 'forgeflow-health', error: err.message }));
+    healthIndex = checks.push(check('health', 'fail', { command: 'forgeflow-health', error: err.message })) - 1;
   }
 
   let trends = null;
@@ -118,6 +134,17 @@ function smokeCheck(opts = {}) {
     }));
   } catch (err) {
     checks.push(check('trends-refresh', 'fail', { command: 'forgeflow-trends --refresh', error: err.message }));
+  }
+
+  if (healthIndex >= 0 && health) {
+    const status = healthStatus(health, trends);
+    checks[healthIndex] = {
+      ...checks[healthIndex],
+      status,
+      resolved_recommendations: status === 'pass'
+        ? (health.recommendations || []).filter((item) => item.action === 'refresh-latest-insights')
+        : [],
+    };
   }
 
   let report = null;
@@ -221,6 +248,7 @@ if (require.main === module) {
 
 module.exports = {
   combineStatus,
+  healthStatus,
   renderMarkdown,
   smokeCheck,
 };

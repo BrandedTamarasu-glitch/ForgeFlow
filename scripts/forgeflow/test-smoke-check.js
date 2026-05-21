@@ -4,6 +4,7 @@ const os = require('os');
 const path = require('path');
 const {
   combineStatus,
+  healthStatus,
   renderMarkdown,
   smokeCheck,
 } = require('./smoke-check');
@@ -23,6 +24,8 @@ const checks = [
   ['combines pass', combineStatus([{ status: 'pass' }, { status: 'pass' }]) === 'pass'],
   ['combines warn', combineStatus([{ status: 'pass' }, { status: 'warn' }]) === 'warn'],
   ['combines fail', combineStatus([{ status: 'warn' }, { status: 'fail' }]) === 'fail'],
+  ['resolves health refresh warning', healthStatus({ status: 'pass', recommendations: [{ action: 'refresh-latest-insights' }] }, { refresh: { status: 'pass' }, latest_insights: { freshness: { status: 'current' } } }) === 'pass'],
+  ['keeps unresolved health warning', healthStatus({ status: 'pass', recommendations: [{ action: 'inspect-settings' }] }, { refresh: { status: 'pass' }, latest_insights: { freshness: { status: 'current' } } }) === 'warn'],
   ['runs without failure', result.status === 'pass' || result.status === 'warn'],
   ['includes core checks', ['health', 'trends-refresh', 'report-refresh', 'code-map', 'doc-links', 'release-version'].every((name) => result.checks.some((item) => item.name === name))],
   ['trends refresh present', result.checks.find((item) => item.name === 'trends-refresh').refresh_status === 'pass'],
