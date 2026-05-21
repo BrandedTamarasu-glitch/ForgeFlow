@@ -122,6 +122,17 @@ const staleLearningFreshness = projectFreshness({
     consumed_code_map_history_snapshots: 2,
   },
 });
+const refreshLagFreshness = projectFreshness({
+  current: { available: true, commit_short: 'bbbbbbb', dirty: false },
+  latest: { generated_at: '2026-05-20T00:00:00Z', commit_short: 'bbbbbbb', dirty: false },
+  historySnapshots: 3,
+  projectLearnings: {
+    present: true,
+    generated_at: '2026-05-20T00:00:00Z',
+    consumed_code_map_history_snapshots: 2,
+  },
+  allowRefreshLag: true,
+});
 const missingFreshness = projectFreshness({
   current: { available: true, commit_short: 'ccccccc', dirty: false },
   latest: null,
@@ -130,6 +141,13 @@ const missingFreshness = projectFreshness({
 const staleInsightsFreshness = latestInsightsFreshness({
   git: { available: true, commit_short: 'bbbbbbb', dirty: false },
 }, repoRoot);
+const refreshCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/show-project-trends.js'), [
+  '--project-dir',
+  projectDir,
+  '--refresh',
+  '--json',
+], { encoding: 'utf8' });
+const refreshCliJson = refreshCli.status === 0 ? JSON.parse(refreshCli.stdout) : {};
 
 const checks = [
   ['summarizes history count', result.code_map.history_snapshots === 2],
@@ -141,10 +159,12 @@ const checks = [
   ['detects stale latest insights', staleInsightsFreshness.status === 'attention' && staleInsightsFreshness.issues.some((item) => item.code === 'latest-insights-commit-stale')],
   ['detects stale code map freshness', staleFreshness.status === 'attention' && staleFreshness.issues.some((item) => item.code === 'code-map-commit-stale') && staleFreshness.issues.some((item) => item.code === 'code-map-dirty-stale')],
   ['detects stale project learning code-map consumption', staleLearningFreshness.status === 'attention' && staleLearningFreshness.issues.some((item) => item.code === 'project-learnings-code-map-stale')],
+  ['allows refresh smoke code-map lag', refreshLagFreshness.status === 'current'],
   ['detects missing freshness inputs', missingFreshness.status === 'missing' && missingFreshness.issues.some((item) => item.code === 'code-map-missing') && missingFreshness.issues.some((item) => item.code === 'project-learnings-missing')],
   ['summarizes advisor', result.advisor.budget_status === 'pass' && result.advisor.code_map_trends_status === 'attention'],
   ['renders markdown', markdown.includes('# Forgeflow Project Trends') && markdown.includes('Unresolved imports delta: 1') && markdown.includes('## Freshness') && markdown.includes('## Latest Insights')],
   ['cli json works', cli.status === 0 && cliJson.code_map.trend.status === 'compared' && cliJson.project_learnings.consumed_code_map_trend === true && Boolean(cliJson.freshness) && cliJson.latest_insights.status === 'injected'],
+  ['refresh cli works', refreshCli.status === 0 && refreshCliJson.refresh && refreshCliJson.refresh.check_status === 'pass'],
   ['missing option value exits usage', missingValue.status === 2 && missingValue.stderr.includes('Missing value for --project-dir')],
 ];
 

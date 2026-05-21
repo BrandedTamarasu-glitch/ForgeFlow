@@ -1,7 +1,7 @@
 ---
 name: forgeflow-trends
 description: Show the current project's code-map trend, artifact freshness, latest-insights readiness, project-learning consumption, and context-advisor status.
-argument-hint: "[--json]"
+argument-hint: "[--refresh] [--json]"
 allowed-tools:
   - Read
   - Bash
@@ -16,6 +16,7 @@ Answers: "What is changing structurally in this project, are the artifacts and l
 <context>
 $ARGUMENTS:
 - `--json` — structured output instead of Markdown
+- `--refresh` — refresh project learnings, run the quality gate, and smoke-test latest-insights injection before rendering trends
 
 The command uses `scripts/forgeflow/show-project-trends.js`, which reads existing local artifacts:
 - `.forgeflow/<project>/context/code-map-history.jsonl`
@@ -26,7 +27,7 @@ The command uses `scripts/forgeflow/show-project-trends.js`, which reads existin
 
 ## Gotchas
 
-- **Read-only summary.** This command does not refresh code maps, project learnings, or advisor history. Run `/forgeflow-code-map`, `/forgeflow-learnings --project`, or `/forgeflow-report` first when artifacts are stale.
+- **Read-only by default.** Without `--refresh`, this command does not refresh code maps, project learnings, or advisor history. Use `/forgeflow-trends --refresh` when you want a current guidance-health read in one step.
 - **Freshness is advisory.** Stale warnings compare the latest recorded code-map and latest-insights commits to current HEAD, flag clean snapshots when the current worktree is dirty, and flag project learnings that have not consumed the latest code-map snapshot count.
 - **Local-only signal.** Missing artifacts mean the trend is unavailable, not that the project has no trend.
 - **Guidance only.** Structural trends prioritize attention; they are not proof of runtime defects.
@@ -50,7 +51,7 @@ Project trends helper is not installed. Run /update-forgeflow, then retry /forge
 
 ## Step 2: Render trends
 
-Pass through `--json` from `$ARGUMENTS`.
+Pass through `--refresh` and `--json` from `$ARGUMENTS`.
 
 Run:
 
@@ -64,6 +65,7 @@ Print the helper output directly.
 
 <success_criteria>
 - [ ] The command prints a compact project trends report or JSON summary
+- [ ] `--refresh` refreshes project learnings and latest-insights readiness before rendering
 - [ ] Output includes code-map trend status
 - [ ] Output includes artifact freshness status and concrete stale/missing reasons
 - [ ] Output includes latest-insights readiness and freshness

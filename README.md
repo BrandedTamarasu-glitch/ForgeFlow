@@ -294,7 +294,7 @@ From Claude Code, use the command view:
 /forgeflow-trends
 ```
 
-`/forgeflow-trends` shows code-map trend, project-learning freshness, latest-insights readiness/freshness, and context-advisor status in one compact project guidance health view.
+`/forgeflow-trends` shows code-map trend, project-learning freshness, latest-insights readiness/freshness, and context-advisor status in one compact project guidance health view. Use `/forgeflow-trends --refresh` to refresh project learnings and latest-insights readiness before rendering the view.
 
 `/forgeflow-learnings --project --check` refreshes the learning rollup, runs the quality gate, performs a context-pack smoke, and reports whether latest insights will be injected into future agent packets.
 

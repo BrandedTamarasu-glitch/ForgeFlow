@@ -11,7 +11,7 @@ const {
 const { compareCodeMapTrend, readCodeMapHistory } = require('./show-code-map');
 
 function usage() {
-  console.error('Usage: show-project-trends.js [--project-dir <dir>] [--json]');
+  console.error('Usage: show-project-trends.js [--project-dir <dir>] [--refresh] [--json]');
 }
 
 function requireValue(argv, name, index) {
@@ -27,6 +27,7 @@ function requireValue(argv, name, index) {
 function parseArgs(argv) {
   const opts = {
     projectDir: '',
+    refresh: false,
     json: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
@@ -34,6 +35,8 @@ function parseArgs(argv) {
     if (arg === '--project-dir') {
       opts.projectDir = path.resolve(requireValue(argv, arg, i));
       i += 1;
+    } else if (arg === '--refresh') {
+      opts.refresh = true;
     } else if (arg === '--json') {
       opts.json = true;
     } else if (arg === '--help' || arg === '-h') {
@@ -86,7 +89,7 @@ function freshnessStatus(items) {
   return 'current';
 }
 
-function projectFreshness({ current, latest, historySnapshots = 0, projectLearnings }) {
+function projectFreshness({ current, latest, historySnapshots = 0, projectLearnings, allowRefreshLag = false }) {
   const items = [];
   if (!latest) {
     items.push({
@@ -123,6 +126,7 @@ function projectFreshness({ current, latest, historySnapshots = 0, projectLearni
   } else if (
     Number.isFinite(projectLearnings.consumed_code_map_history_snapshots)
     && historySnapshots > projectLearnings.consumed_code_map_history_snapshots
+    && !(allowRefreshLag && historySnapshots === projectLearnings.consumed_code_map_history_snapshots + 1)
   ) {
     items.push({
       code: 'project-learnings-code-map-stale',
@@ -142,9 +146,23 @@ function topList(items, limit = 5) {
   return (items || []).slice(0, limit);
 }
 
+function refreshProjectGuidance(projectDir) {
+  const { showProjectLearnings } = require('./show-project-learnings');
+  const result = showProjectLearnings({ projectDir, check: true });
+  return {
+    status: result.check && result.check.status === 'pass' ? 'pass' : 'attention',
+    project_learnings: result.out || '',
+    check_status: result.check ? result.check.status : '',
+    context_smoke_status: result.context_smoke ? result.context_smoke.status : '',
+    latest_insights_status: result.context_smoke ? result.context_smoke.latest_insights_status : '',
+    latest_insights_ready: Boolean(result.latest_insights_ready),
+  };
+}
+
 function showProjectTrends(opts = {}) {
   const root = opts.root || repoRoot();
   const projectDir = opts.projectDir || defaultProjectDir(root);
+  const refresh = opts.refresh ? refreshProjectGuidance(projectDir) : null;
   const contextDir = path.join(projectDir, 'context');
   const historyPath = path.join(contextDir, 'code-map-history.jsonl');
   const learningsPath = path.join(projectDir, 'project-learnings.md');
@@ -163,6 +181,7 @@ function showProjectTrends(opts = {}) {
     schema_version: '1',
     project_dir: projectDir,
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
+    refresh,
     paths: {
       code_map_history: fs.existsSync(historyPath) ? path.relative(root, historyPath) : null,
       project_learnings: fs.existsSync(learningsPath) ? path.relative(root, learningsPath) : null,
@@ -179,7 +198,13 @@ function showProjectTrends(opts = {}) {
       new_high_fan_out: topList(trend.new_high_fan_out),
     },
     project_learnings: projectLearnings,
-    freshness: projectFreshness({ current, latest, historySnapshots: history.length, projectLearnings }),
+    freshness: projectFreshness({
+      current,
+      latest,
+      historySnapshots: history.length,
+      projectLearnings,
+      allowRefreshLag: refresh && refresh.status === 'pass',
+    }),
     latest_insights: latestInsights,
     advisor: {
       budget_status: advisor.budget.status,
@@ -200,6 +225,7 @@ function renderMarkdown(result) {
     '',
     `Project: ${result.project_dir}`,
     `Generated at: ${result.generated_at}`,
+    result.refresh ? `Refresh: ${result.refresh.status}` : 'Refresh: not requested',
     '',
     '## Code Map Trend',
     '',
