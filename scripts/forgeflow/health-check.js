@@ -271,6 +271,28 @@ function latestInsightsReadiness(ffDir) {
   return readLatestInsightsReadiness(ffDir, path.dirname(path.dirname(ffDir)));
 }
 
+function healthRecommendations({ latestInsights }) {
+  const recommendations = [];
+  const freshness = latestInsights && latestInsights.freshness ? latestInsights.freshness : null;
+  if (freshness && freshness.issues && freshness.issues.length > 0) {
+    recommendations.push({
+      severity: 'attention',
+      action: 'refresh-latest-insights',
+      command: 'forgeflow-trends --refresh',
+      reason: 'Latest insights are stale or missing for the current checkout.',
+    });
+  }
+  if (latestInsights && ['blocked', 'error', 'invalid'].includes(latestInsights.status)) {
+    recommendations.push({
+      severity: 'attention',
+      action: 'inspect-learning-gate',
+      command: 'forgeflow-learnings --project --check',
+      reason: 'Latest insights are not ready for agent context.',
+    });
+  }
+  return recommendations;
+}
+
 function runHealthCheck(opts = {}) {
   const requestedRoot = opts.root || process.cwd();
   const gitRepo = isGitRepo(requestedRoot);
@@ -314,6 +336,8 @@ function runHealthCheck(opts = {}) {
   addInstallChecks(checks, opts.installRoot);
 
   const failures = checks.filter((item) => item.status === 'fail');
+  const latestInsights = latestInsightsReadiness(ffDir);
+  const recommendations = healthRecommendations({ latestInsights });
   return {
     schema_version: '1',
     root,
@@ -326,7 +350,8 @@ function runHealthCheck(opts = {}) {
     latest_pilot_rollup: latestPilotRollup(ffDir),
     latest_project_learnings: latestProjectLearnings(ffDir),
     latest_project_learnings_check: latestProjectLearningsCheck(ffDir),
-    latest_insights_readiness: latestInsightsReadiness(ffDir),
+    latest_insights_readiness: latestInsights,
+    recommendations,
   };
 }
 
@@ -402,6 +427,13 @@ function renderMarkdown(result) {
     lines.push(`- Report: ${latest.path}`);
     lines.push('');
   }
+  if (result.recommendations && result.recommendations.length > 0) {
+    lines.push('## Recommendations', '');
+    for (const item of result.recommendations) {
+      lines.push(`- ${item.command}: ${item.reason}`);
+    }
+    lines.push('');
+  }
   lines.push('## Checks', '');
   for (const item of result.checks) {
     const suffix = item.reason ? ` (${item.reason})` : '';
@@ -443,4 +475,5 @@ module.exports = {
   latestProjectLearningsCheck,
   latestInsightsReadiness,
   latestInsightsFreshness,
+  healthRecommendations,
 };
