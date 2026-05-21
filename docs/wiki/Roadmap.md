@@ -4,11 +4,89 @@ Forgeflow is currently a local-first developer workflow for Claude Code and Code
 
 ## Current Focus
 
-Forgeflow now has the local install, health, repair, rollback, release, docs, demo, template-installer, evaluation, adoption, field-validation, distribution-readiness, and team-trial guidance needed for broader use. The next phase is pilot evidence collection: running bounded maintainer trials, collecting public-safe summaries, and deciding what product fixes or rollout steps the evidence supports.
+Forgeflow now has the local install, health, repair, rollback, release, docs, demo, template-installer, evaluation, adoption, field-validation, distribution-readiness, team-trial guidance, learning path, code topology, project trends, and report surfaces needed for broader use. The current phase is stabilization: run bounded maintainer trials, automate the smoke path, collect public-safe summaries, and make targeted fixes from observed evidence.
 
 ## Pilot Evidence Collection Work
 
-No active pilot-evidence collection item is currently selected.
+No new broad feature track is currently selected. Remaining work should stay inside the phases below unless pilot evidence exposes a higher-priority gap.
+
+## Stabilization Plan
+
+### Phase 1: Current-State Refresh And Smoke
+
+Goal: make the local Forgeflow install and project guidance current after every pushed slice.
+
+Work items:
+- Run `/forgeflow-health`.
+- Run `/forgeflow-trends --refresh`.
+- Run `/forgeflow-report --refresh`.
+- Run `/forgeflow-code-map`.
+- Confirm latest insights are current for `HEAD`.
+- Confirm context budget is passing or has a concrete trim recommendation.
+- Confirm import-gap counts are visible in trends and report.
+
+Exit criteria:
+- Health passes or has one documented manual setting fix.
+- Trends/report have no stale-guidance recommendation after refresh.
+- Any remaining recommendation points to a real follow-up command.
+
+### Phase 2: Smoke Automation
+
+Goal: turn the manual smoke path into one repeatable local check.
+
+Work items:
+- Add a helper that runs health, trends refresh, report refresh, code map, doc links, and release-version guard.
+- Emit compact JSON and Markdown summaries.
+- Add a test for pass/fail aggregation and command failure reporting.
+- Document when to run the smoke helper before commit, before push, and before a pilot.
+
+Exit criteria:
+- One command can prove the local install, docs, project guidance, report, and code-map surfaces are coherent.
+- Failures include the exact next command or file to inspect.
+
+### Phase 3: Pilot Script And Evidence
+
+Goal: make a maintainer trial easy to run without inventing steps during the session.
+
+Work items:
+- Create a short pilot script that covers install verification, health, trends, report, code map, one work item, and final report.
+- Add a public-safe result template for Zach/user feedback.
+- Record pilot evidence with the existing evidence helpers.
+- Roll up repeated friction categories after each trial.
+
+Exit criteria:
+- A new maintainer can run the pilot without reading the whole wiki.
+- The output clearly says repeat, expand, stop-and-fix, or defer.
+
+### Phase 4: Targeted Hardening
+
+Goal: fix only issues observed by smoke runs or pilots.
+
+Candidate fixes:
+- Reduce false import gaps that come from fixtures or test-only files when running project-level trends.
+- Add a clearer topology scope setting when users want production-only maps.
+- Tighten health output so Claude/Codex install problems point to one repair path.
+- Trim any report sections that repeat the same recommendation in multiple places.
+- Add release-check coverage for the smoke helper after it exists.
+
+Exit criteria:
+- Each hardening item is backed by a smoke failure, pilot note, or repeated user confusion.
+- No speculative helper is added without evidence.
+
+### Phase 5: Packaging And Freeze
+
+Goal: stop feature churn and prepare for broader use.
+
+Work items:
+- Run the full release-check list.
+- Run clean-checkout install verification for Claude and Codex.
+- Update README, Home, Roadmap, Context Intelligence, Workflow Commands, and Release Process.
+- Tag the stabilized release only after smoke and pilot evidence are green.
+
+Exit criteria:
+- Docs describe the actual user path.
+- Release checks and smoke checks pass from a clean checkout.
+- Remaining work is tracked as evidence-driven follow-up, not hidden TODOs.
 
 ## Recently Added
 
@@ -66,3 +144,5 @@ No active pilot-evidence collection item is currently selected.
 - pilot support rollup for repeated blocker categories across maintainer trials
 - pilot adoption comparison worksheet for repeat, expand, stop-and-fix, and defer decisions
 - pilot next-action decision record for product-fix, another-pilot, small-team-expansion, or continued-deferral outcomes
+- project learning path through health, trends, report, latest-insights packets, and direct refresh recommendations
+- project code-map import-gap explanations with trends/report recommendations

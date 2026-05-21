@@ -207,7 +207,7 @@ Forgeflow includes local-only helpers that reduce agent prompt load before revie
 - **Context advisor:** `advise-context.js --root .forgeflow --record --json` reports budget issues, low-savings packets, topology coverage signals, trimming recommendations, and previous-run trend deltas. It prefers canonical `context/latest` telemetry when the same artifact also exists in the project context root.
 - **Project trends:** `show-project-trends.js` summarizes the latest code-map trend, import-gap status, artifact freshness, latest-insights readiness/freshness, project-learning consumption, and advisor status from existing local artifacts. `/forgeflow-report` uses the same helper when available.
 - **Latest-insights state:** `latest-insights-state.js` provides the shared readiness/freshness check used by health, report, and trends so stale guidance is reported consistently.
-- **Forgeflow report:** `render-forgeflow-report.js` combines local telemetry, false-positive thresholds, pattern-log freshness, context savings, project trends, latest-insights readiness/freshness, and direct next-action recommendations into one Markdown or JSON report. Use `--refresh` to update project guidance first.
+- **Forgeflow report:** `render-forgeflow-report.js` combines local telemetry, false-positive thresholds, pattern-log freshness, context savings, project trends, import-gap status, latest-insights readiness/freshness, and direct next-action recommendations into one Markdown or JSON report. Use `--refresh` to update project guidance first.
 - **Pattern learnings:** `rollup-pattern-learnings.js` scans cross-project `.forgeflow/<project>/learnings.jsonl` plus `project-learning-candidates.jsonl`, clusters known/candidate patterns with source-mix labels, and records `.learnings-log.jsonl` for `/forgeflow-report`.
 
 Review context packs keep local memory hits bounded by default. If memory context dominates packet size, lower `build-context-pack.js --max-memory-chars` or split the review scope.
@@ -364,7 +364,7 @@ Release checks guard stale-guidance next actions so `/forgeflow-health`, `/forge
 
 ## Current Status
 
-Forgeflow is a local-first developer workflow for turning product intent into shipped code with explicit planning, implementation, review, verification, and release handoff. It currently targets Claude Code and Codex users who are comfortable installing command/agent files and running local scripts. The current pilot-evidence work focuses on real maintainer trials, public-safe summaries, support-triage rollups, and rollout decisions based on observed results.
+Forgeflow is a local-first developer workflow for turning product intent into shipped code with explicit planning, implementation, review, verification, and release handoff. It currently targets Claude Code and Codex users who are comfortable installing command/agent files and running local scripts. The current work is shifting from broad feature expansion to stabilization: real maintainer trials, smoke automation, report/readme/wiki polish, and targeted fixes from observed use.
 
 ## License
 
