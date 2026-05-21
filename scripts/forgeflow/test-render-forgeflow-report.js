@@ -124,6 +124,29 @@ const reportWithDrift = buildReport({
   now,
 });
 const markdown = renderMarkdown(report);
+fs.writeFileSync(path.join(contextDir, 'latest', 'latest-insights-report.json'), JSON.stringify({
+  schema_version: '1',
+  status: 'injected',
+  reason: 'quality-check-passing',
+  generated_at: '2026-05-20T00:00:00.000Z',
+  git: {
+    available: true,
+    commit_short: 'stale',
+    dirty: false,
+  },
+  check_status: 'pass',
+  issue_count: 0,
+}, null, 2));
+const staleReport = buildReport({
+  root,
+  metricsRoot,
+  patternsDir,
+  projectDir,
+  noDrift: true,
+  now,
+  record: false,
+});
+const staleMarkdown = renderMarkdown(staleReport);
 const cli = spawnSync(process.execPath, [path.join(repoRoot, 'scripts/forgeflow/render-forgeflow-report.js'),
   '--root',
   root,
@@ -149,6 +172,7 @@ const checks = [
   ['includes context savings', report.context.summary.files === 1 && report.context.summary.percent_saved === 80],
   ['includes project trends', report.project_trends.code_map.trend.status === 'compared' && report.project_trends.freshness.status === 'current'],
   ['includes latest insights readiness', report.latest_insights.status === 'injected' && report.latest_insights.check_status === 'pass' && report.latest_insights.freshness.status === 'current'],
+  ['recommends refresh for stale latest insights', staleReport.recommendations.some((item) => item.command === 'forgeflow-trends --refresh') && staleMarkdown.includes('forgeflow-trends --refresh')],
   ['includes live drift when enabled', reportWithDrift.drift.status === 'missing' || reportWithDrift.drift.status === 'fail' || reportWithDrift.drift.status === 'pass'],
   ['records report log', report.report_history.recorded === true && fs.readFileSync(path.join(patternsDir, '.report-log.jsonl'), 'utf8').trim().split(/\r?\n/).length >= 2],
   ['computes report trend', report.report_history.trend.status === 'compared' && report.report_history.trend.invocation_delta === 3],

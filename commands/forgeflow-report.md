@@ -20,7 +20,7 @@ Single report pulling together everything the self-improving Forgeflow machinery
 6. **Context savings** (from `.forgeflow/**/context-telemetry.json` and related context telemetry) — whether local context packing is reducing prompt load
 7. **Project trends** (from `show-project-trends.js`) — whether code-map trend history, project learnings, and advisor health agree
 8. **Latest-insights readiness** (from `latest-insights-report.json`) — whether agent packets are receiving project-learning guidance and whether that report is fresh for the current checkout
-9. **Recommendations** — specific agent prompts that need refinement based on the above
+9. **Recommendations** — direct next actions, including `/forgeflow-trends --refresh` when project guidance is stale, plus derived priorities from the above
 
 Answers: "Is the Forgeflow team getting smarter, and where is it getting stupider?"
 

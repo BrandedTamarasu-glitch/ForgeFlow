@@ -36,7 +36,7 @@ In a repo checkout, examples use `scripts/forgeflow/`. A Claude install from `/u
 | Latest insights state | `scripts/forgeflow/latest-insights-state.js` | Provides the shared readiness/freshness check used by health, report, and trends. |
 | Project code map | `scripts/forgeflow/show-code-map.js` | Renders a compact maintainer-facing map from topology, hotspots, sections, changed sections, provenance, trend deltas, and artifact paths. |
 | Project trends | `scripts/forgeflow/show-project-trends.js` | Summarizes code-map trend status, artifact freshness, latest-insights readiness/freshness, project-learning consumption, and advisor health from existing local artifacts, with optional `--refresh` first and a direct refresh recommendation when stale. |
-| Forgeflow report | `scripts/forgeflow/render-forgeflow-report.js` | Combines local telemetry, false-positive thresholds, pattern-log freshness, context savings, project trends, and latest-insights readiness/freshness into one report. |
+| Forgeflow report | `scripts/forgeflow/render-forgeflow-report.js` | Combines local telemetry, false-positive thresholds, pattern-log freshness, context savings, project trends, latest-insights readiness/freshness, and direct next-action recommendations into one report. |
 
 When present, `.forgeflow/<project-name>/implementation-notes.md` is included in the memory index. This lets later consult, implement, review, and ship phases see prior decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes without loading the full raw notes file into every prompt.
 

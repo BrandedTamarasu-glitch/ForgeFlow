@@ -362,6 +362,36 @@ function derivePriorities(report) {
   return priorities.slice(0, 5);
 }
 
+function reportRecommendations(report) {
+  const recommendations = [];
+  const seen = new Set();
+  function add(item) {
+    if (!item || !item.command || seen.has(item.command)) return;
+    seen.add(item.command);
+    recommendations.push(item);
+  }
+
+  for (const item of report.project_trends.recommendations || []) add(item);
+  const freshness = report.latest_insights.freshness || null;
+  if (freshness && freshness.issues && freshness.issues.length > 0) {
+    add({
+      severity: 'attention',
+      action: 'refresh-project-trends',
+      command: 'forgeflow-trends --refresh',
+      reason: 'Project guidance artifacts are stale or missing for the current checkout.',
+    });
+  }
+  if (['blocked', 'error', 'invalid'].includes(report.latest_insights.status)) {
+    add({
+      severity: 'attention',
+      action: 'inspect-learning-gate',
+      command: 'forgeflow-learnings --project --check',
+      reason: 'Latest insights are not ready for agent context.',
+    });
+  }
+  return recommendations;
+}
+
 function buildReport(opts = {}) {
   const root = opts.root || process.cwd();
   const now = opts.now || new Date();
@@ -404,8 +434,10 @@ function buildReport(opts = {}) {
       recorded: false,
       trend: trendVsPrior(history, logRecord, period),
     },
+    recommendations: [],
     priorities: [],
   };
+  report.recommendations = reportRecommendations(report);
   report.priorities = derivePriorities(report);
   if (opts.record !== false) {
     writeReportLog(patternsDir, logRecord);
@@ -520,6 +552,14 @@ function renderMarkdown(report) {
   }
 
   lines.push('', '## 9. Priorities', '');
+  if (report.recommendations.length > 0) {
+    lines.push('### Recommendations', '');
+    for (const item of report.recommendations) {
+      lines.push(`- ${item.command}: ${item.reason}`);
+    }
+    lines.push('');
+    lines.push('### Derived Priorities', '');
+  }
   if (report.priorities.length === 0) {
     lines.push('- No immediate priorities derived from local report signals.');
   } else {
@@ -557,6 +597,7 @@ module.exports = {
   cutoffForPeriod,
   latestInsightsReadiness,
   latestInsightsFreshness,
+  reportRecommendations,
   renderMarkdown,
   summarizeMetrics,
   summarizePatternLog,
