@@ -63,6 +63,22 @@ async function run() {
     current: latest,
     latest,
     plan: { firstRun: false, files: [], deleted: [] },
+    missingRequired: [],
+    fetcher: localFetcher,
+  });
+
+  const incompleteHome = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-update-incomplete-'));
+  fs.writeFileSync(versionPath(incompleteHome), `${latest}\n`);
+  const autoRepair = await updateForgeflow({
+    home: incompleteHome,
+    repo: 'local/repo',
+    current: latest,
+    latest,
+    plan: {
+      firstRun: false,
+      files: ['scripts/forgeflow/smoke-check.js'],
+      deleted: [],
+    },
     fetcher: localFetcher,
   });
 
@@ -115,6 +131,9 @@ async function run() {
     ['partial version not advanced', fs.readFileSync(versionPath(partialHome), 'utf8').trim() === previous],
     ['partial deleted reported', partial.deleted.includes('commands/old.md')],
     ['up to date', upToDate.status === 'up-to-date'],
+    ['latest incomplete auto repairs', autoRepair.status === 'repaired' && autoRepair.repair_needed === true],
+    ['latest incomplete reports missing managed files', autoRepair.missing_required.includes('scripts/forgeflow/smoke-check.js')],
+    ['latest incomplete installs missing helper', fs.existsSync(path.join(incompleteHome, 'forgeflow', 'scripts', 'forgeflow', 'smoke-check.js'))],
     ['repair status', repaired.status === 'repaired'],
     ['repair installs missing file', fs.existsSync(path.join(repairHome, 'forgeflow', 'scripts', 'forgeflow', 'health-check.js'))],
     ['repair writes version', fs.readFileSync(versionPath(repairHome), 'utf8').trim() === latest],

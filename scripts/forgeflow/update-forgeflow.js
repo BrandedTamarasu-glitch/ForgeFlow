@@ -7,6 +7,8 @@ const path = require('path');
 const {
   isManagedSource,
   manifestEntry,
+  RUNTIME_HELPERS,
+  STATIC_FILES,
 } = require('./install-manifest');
 
 const DEFAULT_REPO = 'BrandedTamarasu-glitch/ForgeFlow';
@@ -116,6 +118,21 @@ function managedFilesFromTree(tree) {
 function shouldSyncSource(source) {
   const entry = manifestEntry(source);
   return Boolean(isManagedSource(source) && entry && !entry.preserve);
+}
+
+function requiredManagedSources() {
+  return [
+    ...Array.from(STATIC_FILES),
+    ...RUNTIME_HELPERS,
+  ].sort();
+}
+
+function missingRequiredManagedFiles(home) {
+  return requiredManagedSources()
+    .map((source) => manifestEntry(source, home))
+    .filter(Boolean)
+    .filter((entry) => !entry.preserve && !fs.existsSync(entry.destination))
+    .map((entry) => entry.source);
 }
 
 async function latestSha(repo) {
@@ -344,12 +361,19 @@ async function updateForgeflow(opts = {}) {
 
   const current = opts.current !== undefined ? opts.current : readCurrentVersion(home);
   const latest = opts.latest || await latestSha(repo);
-  if (current === latest && !opts.repair) {
+  const missingRequired = opts.missingRequired !== undefined
+    ? opts.missingRequired
+    : missingRequiredManagedFiles(home);
+  const repairNeeded = current === latest && !opts.repair && missingRequired.length > 0;
+  const effectiveRepair = Boolean(opts.repair || repairNeeded);
+  if (current === latest && !effectiveRepair) {
     return {
       schema_version: '1',
       status: 'up-to-date',
       current,
       latest,
+      repair_needed: false,
+      missing_required: [],
       files: [],
       synced: [],
       failed: [],
@@ -358,7 +382,7 @@ async function updateForgeflow(opts = {}) {
     };
   }
 
-  const plan = opts.plan || (opts.repair
+  const plan = opts.plan || (effectiveRepair
     ? await filesForRepair(repo, latest)
     : await filesForInstall(repo, current, latest));
   const backup = createBackup({
@@ -387,11 +411,13 @@ async function updateForgeflow(opts = {}) {
 
   return {
     schema_version: '1',
-    status: failures.length === 0 ? (opts.repair ? 'repaired' : 'updated') : 'partial',
+    status: failures.length === 0 ? (effectiveRepair ? 'repaired' : 'updated') : 'partial',
     current,
     latest,
     first_run: plan.firstRun,
-    repair: Boolean(opts.repair),
+    repair: effectiveRepair,
+    repair_needed: repairNeeded,
+    missing_required: missingRequired,
     files: plan.files,
     synced: installed.synced,
     failed: failures,
@@ -435,6 +461,9 @@ function renderMarkdown(result) {
     '',
     `Files synced (${result.synced.length}):`,
   ];
+  if (result.repair_needed && result.missing_required?.length > 0) {
+    lines.splice(1, 0, `Missing managed files detected (${result.missing_required.length}); running repair sync.`);
+  }
   for (const item of result.synced) {
     lines.push(`  ${item.source}  ${item.before} -> ${item.after}`);
   }
@@ -473,7 +502,9 @@ module.exports = {
   filesForRepair,
   installFiles,
   deleteFiles,
+  missingRequiredManagedFiles,
   renderMarkdown,
+  requiredManagedSources,
   rollbackForgeflow,
   updateForgeflow,
   versionPath,

@@ -11,7 +11,7 @@ Pull the latest Forgeflow release from GitHub via curl and sync updated files in
 
 <context>
 $ARGUMENTS:
-- `--repair` — reinstall all managed Forgeflow files from upstream `main`, even when the installed SHA is already current. Use this when a managed command, agent, hook, template, pattern, or runtime helper is missing or corrupted.
+- `--repair` — reinstall all managed Forgeflow files from upstream `main`, even when the installed SHA is already current. Use this when a managed command, agent, hook, template, pattern, or runtime helper is corrupted. Plain `/update-forgeflow` also performs this repair automatically when the installed SHA is current but required managed files are missing.
 - `--rollback` — restore the previous managed-file snapshot from `~/.claude/forgeflow/backups/previous`. This only covers Forgeflow-managed files and never touches `custom-*` agents.
 - `--json` — emit machine-readable helper output.
 - `--dry-run` — plan without writing files.
@@ -65,7 +65,7 @@ If `CURRENT` is non-empty, validate it is a 40-character hex string:
 [[ -z "$CURRENT" || "$CURRENT" =~ ^[0-9a-f]{40}$ ]] || stop "Corrupt version file: ~/.claude/forgeflow-version. Delete it and re-run."
 ```
 
-If `CURRENT` is non-empty and equals `LATEST`, print `"Already up to date ($LATEST_SHORT)."` and stop.
+If `CURRENT` is non-empty and equals `LATEST`, verify required managed files still exist locally. If any are missing, run the repair sync path even without `--repair`; otherwise print `"Already up to date ($LATEST_SHORT)."` and stop.
 
 ## Step 3 — Resolve Files to Sync
 
