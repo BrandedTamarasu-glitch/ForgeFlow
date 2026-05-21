@@ -59,6 +59,8 @@ node scripts/forgeflow/test-check-project-learnings.js
 git diff --check
 ```
 
+`test-release-version.js` also guards that `/forgeflow-health`, `/forgeflow-trends`, `/forgeflow-report`, and the README all expose the same `/forgeflow-trends --refresh` stale-guidance next action.
+
 Render the public-summary example before release notes claim evaluation evidence:
 
 ```bash

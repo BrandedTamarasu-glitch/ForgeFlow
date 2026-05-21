@@ -61,6 +61,8 @@ node scripts/forgeflow/test-check-project-learnings.js
 git diff --check
 ```
 
+`test-release-version.js` guards that `/forgeflow-health`, `/forgeflow-trends`, `/forgeflow-report`, and the README all expose `/forgeflow-trends --refresh` as the stale-guidance next action.
+
 ## Step 3: Report
 
 If every command passes, report:

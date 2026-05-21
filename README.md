@@ -360,6 +360,8 @@ It runs on `http://127.0.0.1:4003` and reads local telemetry files from `~/.clau
 - [Verdict JSON schema](docs/forgeflow-json-schema.md)
 - [Evaluation protocol](docs/forgeflow-evaluation-protocol.md)
 
+Release checks guard stale-guidance next actions so `/forgeflow-health`, `/forgeflow-trends`, `/forgeflow-report`, and this README continue to point users at `/forgeflow-trends --refresh`.
+
 ## Current Status
 
 Forgeflow is a local-first developer workflow for turning product intent into shipped code with explicit planning, implementation, review, verification, and release handoff. It currently targets Claude Code and Codex users who are comfortable installing command/agent files and running local scripts. The current pilot-evidence work focuses on real maintainer trials, public-safe summaries, support-triage rollups, and rollout decisions based on observed results.

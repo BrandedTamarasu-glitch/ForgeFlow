@@ -26,6 +26,7 @@ const marketplaceEntry = marketplace.plugins.find((entry) => entry.name === plug
 const releaseProcess = fs.readFileSync(path.join(repoRoot, 'docs/wiki/Release-Process.md'), 'utf8');
 const releaseCheck = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-release-check.md'), 'utf8');
 const learningsCommand = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-learnings.md'), 'utf8');
+const healthCommand = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-health.md'), 'utf8');
 const reportCommand = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-report.md'), 'utf8');
 const trendsCommand = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-trends.md'), 'utf8');
 const reviewCommand = fs.readFileSync(path.join(repoRoot, 'commands/review.md'), 'utf8');
@@ -70,6 +71,7 @@ const checks = [
   ['release check runs project trends display test', releaseCheck.includes('node scripts/forgeflow/test-show-project-trends.js')],
   ['report command uses report helper', reportCommand.includes('render-forgeflow-report.js') && reportCommand.includes('show-project-trends.js --json')],
   ['trends command uses project trends helper', trendsCommand.includes('show-project-trends.js') && readme.includes('/forgeflow-trends')],
+  ['health trends report share refresh recommendation', healthCommand.includes('/forgeflow-trends --refresh') && trendsCommand.includes('/forgeflow-trends --refresh') && reportCommand.includes('/forgeflow-trends --refresh') && readme.includes('/forgeflow-trends --refresh')],
   ['release check runs context pack test', releaseCheck.includes('node scripts/forgeflow/test-build-context-pack.js')],
   ['release check runs code topology test', releaseCheck.includes('node scripts/forgeflow/test-build-code-topology.js')],
   ['release check runs implementation notes test', releaseCheck.includes('node scripts/forgeflow/test-implementation-notes.js')],
