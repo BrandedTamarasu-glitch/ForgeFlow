@@ -240,6 +240,64 @@ function walkCodeMapHistory(dir, files = []) {
   return files;
 }
 
+function telemetryPreference(file, telemetry) {
+  const normalized = file.split(path.sep);
+  const contextIndex = normalized.lastIndexOf('context');
+  const inLatest = contextIndex >= 0 && normalized[contextIndex + 1] === 'latest';
+  const generatedAt = Date.parse(telemetry.generated_at || telemetry.ts || '') || 0;
+  return {
+    file,
+    inLatest,
+    generatedAt,
+  };
+}
+
+function telemetryKey(file, telemetry) {
+  const normalized = file.split(path.sep);
+  const contextIndex = normalized.lastIndexOf('context');
+  const kind = telemetry.kind || 'unknown';
+  if (contextIndex >= 0) {
+    const projectRoot = normalized.slice(0, contextIndex).join(path.sep);
+    return `${projectRoot}${path.sep}context${path.sep}${kind}${path.sep}${path.basename(file)}`;
+  }
+  return `${path.dirname(file)}${path.sep}${kind}${path.sep}${path.basename(file)}`;
+}
+
+function preferTelemetry(a, b) {
+  if (a.inLatest !== b.inLatest) return b.inLatest ? b : a;
+  if (a.generatedAt !== b.generatedAt) return b.generatedAt > a.generatedAt ? b : a;
+  return b.file.localeCompare(a.file) < 0 ? b : a;
+}
+
+function selectTelemetryFiles(files) {
+  const selected = new Map();
+  const corrupt = [];
+
+  for (const file of files) {
+    let telemetry = null;
+    try {
+      telemetry = JSON.parse(fs.readFileSync(file, 'utf8'));
+    } catch (_err) {
+      corrupt.push(file);
+      continue;
+    }
+    if (!telemetry || telemetry.schema_version !== '1') {
+      corrupt.push(file);
+      continue;
+    }
+
+    const key = telemetryKey(file, telemetry);
+    const candidate = telemetryPreference(file, telemetry);
+    const current = selected.get(key);
+    selected.set(key, current ? preferTelemetry(current, candidate) : candidate);
+  }
+
+  return [
+    ...Array.from(selected.values()).map((item) => item.file),
+    ...corrupt,
+  ].sort();
+}
+
 function recommend(summary, budget) {
   const recommendations = [];
 
@@ -290,7 +348,8 @@ function recommend(summary, budget) {
 
 function adviseContext(opts = {}) {
   const root = opts.root || defaultRoot();
-  const files = opts.files || walk(root);
+  const walkedFiles = opts.files || walk(root);
+  const files = opts.dedupeTelemetry === false ? walkedFiles : selectTelemetryFiles(walkedFiles);
   const config = loadConfig(opts);
   const summary = summarize(files);
   const budget = checkBudget(files, config);
@@ -420,6 +479,7 @@ module.exports = {
   compareTrend,
   historyRecord,
   codeMapTrends,
+  selectTelemetryFiles,
   walkCodeMapHistory,
   recommend,
   renderMarkdown,

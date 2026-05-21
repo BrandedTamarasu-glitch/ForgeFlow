@@ -113,6 +113,64 @@ const smallLowSavings = adviseContext({
   warnOnlySet: true,
 });
 
+const duplicateRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-advisor-duplicate-'));
+const duplicateContextDir = path.join(duplicateRoot, 'Forgeflow', 'context');
+const duplicateLatestDir = path.join(duplicateContextDir, 'latest');
+fs.mkdirSync(duplicateLatestDir, { recursive: true });
+fs.writeFileSync(path.join(duplicateContextDir, 'code-topology-telemetry.json'), `${JSON.stringify({
+  schema_version: '1',
+  kind: 'code-topology',
+  generated_at: '2026-05-20T00:00:00.000Z',
+  baseline_chars: 1200,
+  compact_chars: 800,
+  saved_chars: 400,
+  estimated_baseline_tokens: 300,
+  estimated_compact_tokens: 200,
+  estimated_saved_tokens: 100,
+  detail: {
+    source_files: 8,
+    local_edges: 10,
+    unresolved_imports: 1,
+    skipped_dynamic_imports: 2,
+  },
+})}\n`);
+fs.writeFileSync(path.join(duplicateLatestDir, 'code-topology-telemetry.json'), `${JSON.stringify({
+  schema_version: '1',
+  kind: 'code-topology',
+  generated_at: '2026-05-21T00:00:00.000Z',
+  baseline_chars: 2400,
+  compact_chars: 400,
+  saved_chars: 2000,
+  estimated_baseline_tokens: 600,
+  estimated_compact_tokens: 100,
+  estimated_saved_tokens: 500,
+  detail: {
+    source_files: 9,
+    local_edges: 12,
+    unresolved_imports: 0,
+    skipped_dynamic_imports: 0,
+  },
+})}\n`);
+const deduped = adviseContext({
+  root: duplicateRoot,
+  config,
+  maxCompactTokens: 2000,
+  maxCompactTokensSet: true,
+  kindLimits: {},
+  warnOnly: true,
+  warnOnlySet: true,
+});
+const notDeduped = adviseContext({
+  root: duplicateRoot,
+  config,
+  dedupeTelemetry: false,
+  maxCompactTokens: 2000,
+  maxCompactTokensSet: true,
+  kindLimits: {},
+  warnOnly: true,
+  warnOnlySet: true,
+});
+
 const historyPath = path.join(root, 'history', 'context-advisor.jsonl');
 const firstRecorded = adviseContext({
   root,
@@ -166,6 +224,8 @@ const checks = [
   ['budget recommendation', result.recommendations.some((item) => item.action === 'trim-budget-violation')],
   ['compaction recommendation', result.recommendations.some((item) => item.action === 'improve-compaction')],
   ['small low savings not noisy', !smallLowSavings.recommendations.some((item) => item.action === 'improve-compaction')],
+  ['latest telemetry preferred', deduped.summary.files === 1 && deduped.summary.by_kind['code-topology'].estimated_compact_tokens === 100 && deduped.code_topology.status === 'covered'],
+  ['dedupe can be disabled', notDeduped.summary.files === 2 && notDeduped.code_topology.files === 2],
   ['empty recommendation', empty.recommendations.some((item) => item.action === 'generate-context-telemetry')],
   ['history first recorded', firstRecorded.history.recorded === true],
   ['history compared', secondRecorded.history.trend.status === 'compared'],
