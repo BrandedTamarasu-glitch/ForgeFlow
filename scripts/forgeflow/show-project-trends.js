@@ -193,6 +193,7 @@ function latestImportGaps(contextDir, limit = 5) {
     test_fixture_total: testFixtureTotal,
     unresolved: gaps.unresolved,
     skipped_dynamic: gaps.skipped_dynamic,
+    triage: gaps.triage || { expected_total: 0, needs_review_total: 0, categories: [] },
   };
 }
 
@@ -333,6 +334,9 @@ function renderMarkdown(result) {
     `- Skipped dynamic imports: ${result.import_gaps.skipped_dynamic_total}`,
     `- Production-scope gaps: ${result.import_gaps.production_total || 0}`,
     `- Test/fixture-scope gaps: ${result.import_gaps.test_fixture_total || 0}`,
+    `- Likely expected gaps: ${result.import_gaps.triage ? result.import_gaps.triage.expected_total || 0 : 0}`,
+    `- Needs review: ${result.import_gaps.triage ? result.import_gaps.triage.needs_review_total || 0 : 0}`,
+    `- Top triage: ${result.import_gaps.triage && result.import_gaps.triage.categories.length > 0 ? result.import_gaps.triage.categories.slice(0, 3).map((item) => `${item.category} (${item.total})`).join(', ') : '(none)'}`,
     `- First unresolved: ${result.import_gaps.unresolved.length > 0 ? `${result.import_gaps.unresolved[0].source}: ${result.import_gaps.unresolved[0].specifier}` : '(none)'}`,
     `- First dynamic: ${result.import_gaps.skipped_dynamic.length > 0 ? `${result.import_gaps.skipped_dynamic[0].source}: dynamic import ${result.import_gaps.skipped_dynamic[0].expression}` : '(none)'}`,
     '',

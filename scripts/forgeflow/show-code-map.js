@@ -127,6 +127,99 @@ function dynamicImportReason(item) {
   return 'non-literal dynamic import; target is only known at runtime';
 }
 
+const ASSET_OR_DATA_EXTENSIONS = new Set([
+  '.avif', '.bmp', '.css', '.csv', '.gif', '.ico', '.jpeg', '.jpg', '.json', '.md',
+  '.mp3', '.mp4', '.pdf', '.png', '.scss', '.svg', '.txt', '.webp', '.woff', '.woff2',
+]);
+const SOURCE_SUFFIX_EXTENSIONS = new Set([
+  '.api', '.component', '.config', '.constant', '.constants', '.context', '.hook',
+  '.hooks', '.model', '.models', '.schema', '.service', '.store', '.type', '.types',
+  '.util', '.utils',
+]);
+
+function literalImportValue(expression) {
+  const match = String(expression || '').match(/^['"]([^'"]+)['"]$/);
+  return match ? match[1] : '';
+}
+
+function importGapCategory(item, kind) {
+  if (item.scope === 'test-fixture') {
+    return {
+      category: 'test-fixture',
+      severity: 'info',
+      expected: true,
+      action: 'Treat as fixture/test-only topology noise unless the current change touches this fixture.',
+    };
+  }
+
+  if (kind === 'dynamic') {
+    const literal = literalImportValue(item.expression);
+    if (!literal) {
+      return {
+        category: 'runtime-dynamic-import',
+        severity: 'info',
+        expected: true,
+        action: 'Runtime expression is intentional in many routers/i18n loaders; inspect only when this path is in scope.',
+      };
+    }
+    if (literal.startsWith('.') || literal.startsWith('@/') || literal.startsWith('~/')) {
+      return {
+        category: 'dynamic-local-or-alias',
+        severity: 'review',
+        expected: false,
+        action: 'Confirm bundler aliases and lazy-route targets are valid, or add resolver support if this is expected.',
+      };
+    }
+    return {
+      category: 'dynamic-package',
+      severity: 'info',
+      expected: true,
+      action: 'Package dynamic import is usually intentional; verify dependency presence if this file is in scope.',
+    };
+  }
+
+  const specifier = String(item.specifier || '');
+  const ext = path.extname(specifier);
+  if (ASSET_OR_DATA_EXTENSIONS.has(ext.toLowerCase())) {
+    return {
+      category: 'asset-or-data-import',
+      severity: 'info',
+      expected: true,
+      action: 'No source graph edge is expected; verify bundler asset/data handling only when this import is in scope.',
+    };
+  }
+  if (SOURCE_SUFFIX_EXTENSIONS.has(ext.toLowerCase())) {
+    return {
+      category: 'source-suffix-resolution-gap',
+      severity: 'review',
+      expected: false,
+      action: 'Check for a matching source file such as .ts/.tsx, or extend topology resolution for this naming suffix.',
+    };
+  }
+  if (specifier.startsWith('@/') || specifier.startsWith('~/')) {
+    return {
+      category: 'alias-resolution-gap',
+      severity: 'review',
+      expected: false,
+      action: 'Confirm tsconfig/bundler alias config or add alias resolution support to the topology helper.',
+    };
+  }
+  if (specifier.startsWith('.')) {
+    return {
+      category: 'local-module-missing',
+      severity: 'review',
+      expected: false,
+      action: 'Confirm the target module exists, add an index file, or fix the import path.',
+    };
+  }
+  return {
+    category: 'external-or-alias-gap',
+    severity: 'review',
+    expected: false,
+    action: 'Confirm this is an external package, configured alias, or unresolved dependency.',
+  };
+}
+
 function importGapScope(source) {
   const normalized = String(source || '').replace(/\\/g, '/');
   const base = path.basename(normalized);
@@ -160,6 +253,53 @@ function importGapCounts(unresolved, skippedDynamic) {
   return counts;
 }
 
+function importGapTriage(unresolved, skippedDynamic) {
+  const all = [
+    ...unresolved.map((item) => ({ ...item, gap_type: 'unresolved' })),
+    ...skippedDynamic.map((item) => ({ ...item, gap_type: 'dynamic' })),
+  ];
+  const categories = {};
+  let expectedTotal = 0;
+  let needsReviewTotal = 0;
+  for (const item of all) {
+    const category = item.triage && item.triage.category ? item.triage.category : 'unknown';
+    if (!categories[category]) {
+      categories[category] = {
+        category,
+        severity: item.triage ? item.triage.severity : 'review',
+        expected: item.triage ? Boolean(item.triage.expected) : false,
+        total: 0,
+        unresolved: 0,
+        skipped_dynamic: 0,
+        examples: [],
+        action: item.triage ? item.triage.action : 'Inspect import gap.',
+      };
+    }
+    const bucket = categories[category];
+    bucket.total += 1;
+    if (item.gap_type === 'unresolved') bucket.unresolved += 1;
+    if (item.gap_type === 'dynamic') bucket.skipped_dynamic += 1;
+    if (bucket.examples.length < 3) {
+      bucket.examples.push({
+        source: item.source,
+        specifier: item.specifier || '',
+        expression: item.expression || '',
+        scope: item.scope,
+      });
+    }
+    if (item.triage && item.triage.expected) expectedTotal += 1;
+    else needsReviewTotal += 1;
+  }
+  return {
+    expected_total: expectedTotal,
+    needs_review_total: needsReviewTotal,
+    categories: Object.values(categories).sort((a, b) => {
+      if (a.expected !== b.expected) return a.expected ? 1 : -1;
+      return b.total - a.total || a.category.localeCompare(b.category);
+    }),
+  };
+}
+
 function importGapSummary(topology, limit = 8) {
   const allUnresolved = (topology.unresolved || []).map((item) => ({
     source: item.source,
@@ -167,19 +307,25 @@ function importGapSummary(topology, limit = 8) {
     kind: item.kind,
     scope: importGapScope(item.source),
     reason: unresolvedImportReason(item),
-    action: 'Confirm the target file exists, add an index file, or treat it as an intentional unresolved alias.',
-  }));
+  })).map((item) => {
+    const triage = importGapCategory(item, 'unresolved');
+    return { ...item, triage, action: triage.action };
+  });
   const allSkippedDynamic = (topology.skipped_dynamic || []).map((item) => ({
     source: item.source,
     expression: item.expression,
     scope: importGapScope(item.source),
     reason: dynamicImportReason(item),
-    action: 'Inspect runtime routing or bundler conventions when this path affects the current change.',
-  }));
+  })).map((item) => {
+    const triage = importGapCategory(item, 'dynamic');
+    return { ...item, triage, action: triage.action };
+  });
   const counts = importGapCounts(allUnresolved, allSkippedDynamic);
+  const triage = importGapTriage(allUnresolved, allSkippedDynamic);
   return {
     unresolved: allUnresolved.slice(0, limit),
     skipped_dynamic: allSkippedDynamic.slice(0, limit),
+    triage,
     limits: {
       unresolved: limit,
       skipped_dynamic: limit,
@@ -427,10 +573,16 @@ function renderProjectCodeMap(summary) {
   lines.push(`- Skipped dynamic imports shown: ${gaps.skipped_dynamic.length}/${gaps.limits.skipped_dynamic_total || 0}`);
   lines.push(`- Production-scope gaps: ${gaps.limits.production_total || 0}`);
   lines.push(`- Test/fixture-scope gaps: ${gaps.limits.test_fixture_total || 0}`);
+  if (gaps.triage) {
+    lines.push(`- Likely expected gaps: ${gaps.triage.expected_total || 0}`);
+    lines.push(`- Needs review: ${gaps.triage.needs_review_total || 0}`);
+  }
+  lines.push('', '### Triage', '');
+  lines.push(...renderList((gaps.triage && gaps.triage.categories) || [], (item) => `- ${md(item.category)}: ${item.total} (${md(item.severity)}). ${md(item.action)}`), '');
   lines.push('', '### Unresolved Imports', '');
-  lines.push(...renderList(gaps.unresolved, (item) => `- ${md(item.source)}: ${md(item.specifier)} (${md(item.kind)}, ${md(item.scope)}) - ${md(item.reason)}. ${md(item.action)}`), '');
+  lines.push(...renderList(gaps.unresolved, (item) => `- ${md(item.source)}: ${md(item.specifier)} (${md(item.kind)}, ${md(item.scope)}, ${md(item.triage ? item.triage.category : 'untriaged')}) - ${md(item.reason)}. ${md(item.action)}`), '');
   lines.push('### Skipped Dynamic Imports', '');
-  lines.push(...renderList(gaps.skipped_dynamic, (item) => `- ${md(item.source)}: dynamic import ${md(item.expression)} (${md(item.scope)}) - ${md(item.reason)}. ${md(item.action)}`), '');
+  lines.push(...renderList(gaps.skipped_dynamic, (item) => `- ${md(item.source)}: dynamic import ${md(item.expression)} (${md(item.scope)}, ${md(item.triage ? item.triage.category : 'untriaged')}) - ${md(item.reason)}. ${md(item.action)}`), '');
   lines.push('## Artifacts', '');
   lines.push(`- Graph: ${summary.artifacts.graph}`);
   lines.push(`- Review focus: ${summary.artifacts.review_focus}`);
@@ -502,6 +654,7 @@ module.exports = {
   historyPathForTopologyOut,
   importGapScope,
   importGapSummary,
+  importGapTriage,
   projectCodeMapSummary,
   readCodeMapHistory,
   renderProjectCodeMap,

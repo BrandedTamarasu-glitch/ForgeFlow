@@ -5,6 +5,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const {
   compactCodeMapHistory,
+  importGapSummary,
   importGapScope,
   renderProjectCodeMap,
   showCodeMap,
@@ -56,6 +57,20 @@ const cli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/show-code-map.js'),
 ], { encoding: 'utf8' });
 const cliJson = cli.status === 0 ? JSON.parse(cli.stdout) : {};
 const rendered = renderProjectCodeMap(result.summary);
+const triagedGaps = importGapSummary({
+  unresolved: [
+    { source: 'src/app.ts', specifier: '../../favicon.ico', kind: 'import' },
+    { source: 'src/types.ts', specifier: '../types/audit.types', kind: 'import' },
+    { source: 'src/app.ts', specifier: './missing', kind: 'import' },
+    { source: 'fixtures/demo/test-app.ts', specifier: './missing', kind: 'import' },
+  ],
+  skipped_dynamic: [
+    { source: 'src/routes.ts', expression: "'@/routes/admin'" },
+    { source: 'src/pdf.ts', expression: "'@react-pdf/renderer'" },
+    { source: 'src/i18n.ts', expression: '`./langs/${lang}.json`' },
+  ],
+}, 10);
+const triageCategories = Object.fromEntries(triagedGaps.triage.categories.map((item) => [item.category, item]));
 
 const checks = [
   ['writes markdown', fs.existsSync(out) && markdown.includes('# Forgeflow Project Code Map')],
@@ -73,10 +88,13 @@ const checks = [
   ['summary includes fan-in', result.summary.high_fan_in.some((item) => item.path === 'src/shared/index.ts')],
   ['summary includes markdown section count', result.summary.summary.markdown_section_files >= 1],
   ['summary includes import gaps', result.summary.import_gaps.unresolved.some((item) => item.specifier === './missing' && item.reason.includes('no matching local')) && result.summary.import_gaps.skipped_dynamic.some((item) => item.reason.includes('runtime'))],
+  ['triages expected import gaps', triagedGaps.triage.expected_total === 4 && triageCategories['asset-or-data-import'].total === 1 && triageCategories['dynamic-package'].total === 1 && triageCategories['runtime-dynamic-import'].total === 1],
+  ['triages review import gaps', triagedGaps.triage.needs_review_total === 3 && triageCategories['local-module-missing'].total === 1 && triageCategories['source-suffix-resolution-gap'].total === 1 && triageCategories['dynamic-local-or-alias'].total === 1],
+  ['triages test fixture import gaps', triageCategories['test-fixture'].total === 1 && triageCategories['test-fixture'].expected === true],
   ['classifies fixture import gap paths', importGapScope('src/app.ts') === 'production' && importGapScope('fixtures/demo/test-app.ts') === 'test-fixture'],
   ['markdown includes provenance', markdown.includes('## Provenance') && markdown.includes('- Source: show\\-code\\-map')],
   ['markdown includes trends', markdown.includes('## Trends') && markdown.includes('first recorded code-map snapshot')],
-  ['markdown includes import gaps', markdown.includes('## Import Gaps') && markdown.includes('no matching local JS/TS file') && markdown.includes('non\\-literal dynamic import')],
+  ['markdown includes import gaps', markdown.includes('## Import Gaps') && markdown.includes('### Triage') && markdown.includes('no matching local JS/TS file') && markdown.includes('non\\-literal dynamic import')],
   ['markdown includes artifacts', markdown.includes('## Artifacts') && markdown.includes('code-topology.json')],
   ['markdown includes limits', markdown.includes('Not a runtime call graph')],
   ['render returns markdown', rendered.includes('## High Fan-In')],

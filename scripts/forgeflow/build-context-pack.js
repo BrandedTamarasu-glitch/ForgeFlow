@@ -480,6 +480,7 @@ function compactCodeMapFromSummary(summary) {
     `Provenance: ${provenance.branch ? `${provenance.branch}@${provenance.commit_short || 'unknown'}${provenance.dirty ? ' dirty' : ' clean'}` : 'git unavailable'}.`,
     `Summary: ${summary.summary.source_files} source files, ${summary.summary.local_edges} local edges, ${summary.summary.sections || 0} sections, ${summary.summary.changed_sections || 0} changed sections.`,
     `Import gaps: ${gaps.limits.unresolved_total || 0} unresolved, ${gaps.limits.skipped_dynamic_total || 0} dynamic, ${gaps.limits.production_total || 0} production-scope.`,
+    `Import-gap triage: ${gaps.triage ? gaps.triage.needs_review_total || 0 : 0} need review, ${gaps.triage ? gaps.triage.expected_total || 0 : 0} likely expected.`,
     '',
     'High fan-in:',
     ...renderList(summary.high_fan_in, (item) => `- ${md(item.path)} (fan-in ${item.fan_in}, fan-out ${item.fan_out})`),
@@ -493,6 +494,8 @@ function compactCodeMapFromSummary(summary) {
     lines.push(`- ${md(item.path)}: ${item.read_next.map((next) => md(next.path)).slice(0, 5).join(', ') || '(none)'}`);
   }
   if (summary.changed_file_neighbors.length === 0) lines.push('(none)');
+  lines.push('', 'Import gap triage:');
+  lines.push(...renderList(gaps.triage ? gaps.triage.categories : [], (item) => `- ${md(item.category)}: ${item.total} (${md(item.severity)}) - ${md(item.action)}`));
   lines.push('', 'Import gap actions:');
   lines.push(...renderList(gaps.unresolved, (item) => `- ${md(item.source)}: ${md(item.specifier)} (${md(item.scope)}) - ${md(item.action)}`));
   lines.push(...renderList(gaps.skipped_dynamic, (item) => `- ${md(item.source)}: dynamic import ${md(item.expression)} (${md(item.scope)}) - ${md(item.action)}`));

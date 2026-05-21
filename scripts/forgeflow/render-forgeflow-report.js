@@ -551,6 +551,10 @@ function renderMarkdown(report) {
     lines.push(`- Unresolved imports delta: ${trend.unresolved_imports_delta ?? 0}`);
     lines.push(`- Changed sections delta: ${trend.changed_sections_delta ?? 0}`);
     lines.push(`- Import gaps: ${importGaps.status || 'missing'} (${importGaps.unresolved_total || 0} unresolved, ${importGaps.skipped_dynamic_total || 0} dynamic, ${importGaps.production_total || 0} production-scope)`);
+    if (importGaps.triage) {
+      lines.push(`- Import-gap triage: ${importGaps.triage.needs_review_total || 0} need review, ${importGaps.triage.expected_total || 0} likely expected`);
+      lines.push(`- Top triage categories: ${(importGaps.triage.categories || []).slice(0, 3).map((item) => `${item.category} (${item.total})`).join(', ') || '(none)'}`);
+    }
     lines.push(`- New high fan-in: ${(codeMap.new_high_fan_in || []).join(', ') || '(none)'}`);
     lines.push(`- New high fan-out: ${(codeMap.new_high_fan_out || []).join(', ') || '(none)'}`);
     lines.push(`- Project learnings consumed trend: ${projectTrends.project_learnings && projectTrends.project_learnings.consumed_code_map_trend ? 'yes' : 'no'}`);

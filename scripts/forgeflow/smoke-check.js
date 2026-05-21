@@ -232,6 +232,9 @@ function runDownstreamSmoke({ root, projectDir, patternsDir }) {
       skipped_dynamic_total: gaps.limits ? gaps.limits.skipped_dynamic_total : 0,
       production_total: productionTotal,
       test_fixture_total: gaps.limits ? gaps.limits.test_fixture_total || 0 : 0,
+      expected_total: gaps.triage ? gaps.triage.expected_total || 0 : 0,
+      needs_review_total: gaps.triage ? gaps.triage.needs_review_total || 0 : 0,
+      triage_categories: gaps.triage ? gaps.triage.categories.slice(0, 5) : [],
     }));
   } catch (err) {
     checks.push(check('code-map', 'fail', { command: 'forgeflow-code-map', error: err.message }));
