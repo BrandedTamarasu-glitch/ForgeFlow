@@ -341,7 +341,13 @@ function extractImports(content) {
   const skippedDynamic = [];
   while ((match = dynamicRegex.exec(dynamicText))) {
     if (insideStringLiteral(dynamicText, match.index)) continue;
-    skippedDynamic.push({ expression: match[1].trim().slice(0, 120) });
+    const expression = match[1].trim();
+    const literal = expression.match(/^['"]([^'"]+)['"]$/);
+    if (literal) {
+      imports.push({ specifier: literal[1], kind: 'dynamic-import' });
+    } else {
+      skippedDynamic.push({ expression: expression.slice(0, 120) });
+    }
   }
   return { imports, skippedDynamic };
 }
@@ -485,8 +491,7 @@ function buildChangedSectionMap(root, sectionMap, changedLineMap) {
   return map;
 }
 
-function candidatePaths(fromFile, specifier) {
-  const base = normalize(path.join(path.dirname(fromFile), specifier));
+function sourceCandidates(base) {
   const ext = path.extname(base);
   const candidates = [];
   if (ext) {
@@ -505,16 +510,100 @@ function candidatePaths(fromFile, specifier) {
   return [...new Set(candidates)];
 }
 
-function resolveLocalImport(fromFile, specifier, sourceSet) {
-  if (!specifier.startsWith('.')) return { target: '', status: 'external' };
-  for (const candidate of candidatePaths(fromFile, specifier)) {
+function candidatePaths(fromFile, specifier) {
+  return sourceCandidates(normalize(path.join(path.dirname(fromFile), specifier)));
+}
+
+function stripJsonComments(content) {
+  return String(content || '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+}
+
+function readJsonFile(file) {
+  try {
+    return JSON.parse(stripJsonComments(fs.readFileSync(file, 'utf8')));
+  } catch (_err) {
+    return null;
+  }
+}
+
+function tsConfigAliasRules(root) {
+  const configFiles = readTrackedFiles(root)
+    .filter((file) => /(^|\/)(tsconfig|jsconfig)(\.[^/]*)?\.json$/i.test(file))
+    .filter((file) => !deniedPath(file));
+  const rules = [];
+  for (const file of configFiles) {
+    const config = readJsonFile(path.join(root, file));
+    const compilerOptions = config && config.compilerOptions ? config.compilerOptions : {};
+    const baseUrl = normalize(path.join(path.dirname(file), compilerOptions.baseUrl || '.'));
+    const paths = compilerOptions.paths && typeof compilerOptions.paths === 'object' ? compilerOptions.paths : {};
+    for (const [pattern, targets] of Object.entries(paths)) {
+      if (pattern === '*') continue;
+      const targetList = Array.isArray(targets) ? targets : [targets];
+      const starIndex = pattern.indexOf('*');
+      const prefix = starIndex >= 0 ? pattern.slice(0, starIndex) : pattern;
+      const suffix = starIndex >= 0 ? pattern.slice(starIndex + 1) : '';
+      for (const target of targetList.filter(Boolean)) {
+        const targetText = String(target);
+        const targetStarIndex = targetText.indexOf('*');
+        rules.push({
+          pattern,
+          prefix,
+          suffix,
+          exact: starIndex < 0,
+          targetPrefix: targetStarIndex >= 0 ? targetText.slice(0, targetStarIndex) : targetText,
+          targetSuffix: targetStarIndex >= 0 ? targetText.slice(targetStarIndex + 1) : '',
+          baseUrl,
+          source: file,
+        });
+      }
+    }
+  }
+  return rules;
+}
+
+function aliasCandidateBases(fromFile, specifier, aliasRules = []) {
+  const bases = [];
+  for (const rule of aliasRules) {
+    if (rule.pattern === '*') continue;
+    if (rule.exact) {
+      if (specifier !== rule.prefix) continue;
+      bases.push(normalize(path.join(rule.baseUrl, rule.targetPrefix)));
+      continue;
+    }
+    if (!specifier.startsWith(rule.prefix) || (rule.suffix && !specifier.endsWith(rule.suffix))) continue;
+    const middleEnd = rule.suffix ? specifier.length - rule.suffix.length : specifier.length;
+    const middle = specifier.slice(rule.prefix.length, middleEnd);
+    bases.push(normalize(path.join(rule.baseUrl, `${rule.targetPrefix}${middle}${rule.targetSuffix}`)));
+  }
+
+  if (specifier.startsWith('@/') || specifier.startsWith('~/')) {
+    const remainder = specifier.slice(2);
+    const parts = normalize(fromFile).split('/');
+    const srcIndex = parts.lastIndexOf('src');
+    if (srcIndex >= 0) bases.push(normalize(path.join(parts.slice(0, srcIndex + 1).join('/'), remainder)));
+    bases.push(normalize(path.join('src', remainder)));
+  }
+
+  return [...new Set(bases)];
+}
+
+function resolveLocalImport(fromFile, specifier, sourceSet, aliasRules = []) {
+  const isRelative = specifier.startsWith('.');
+  const bases = specifier.startsWith('.')
+    ? [normalize(path.join(path.dirname(fromFile), specifier))]
+    : aliasCandidateBases(fromFile, specifier, aliasRules);
+  if (bases.length === 0) return { target: '', status: 'external' };
+  for (const candidate of bases.flatMap(sourceCandidates)) {
     if (sourceSet.has(candidate)) return { target: candidate, status: 'resolved' };
   }
-  return { target: '', status: 'unresolved' };
+  return { target: '', status: isRelative ? 'unresolved' : 'external' };
 }
 
 function buildGraph(root, sourceFiles, sectionMap = {}) {
   const sourceSet = new Set(sourceFiles);
+  const aliasRules = tsConfigAliasRules(root);
   const nodes = Object.fromEntries(sourceFiles.map((file) => [file, {
     path: file,
     imports: [],
@@ -536,7 +625,7 @@ function buildGraph(root, sourceFiles, sectionMap = {}) {
       skipped_dynamic.push({ source: file, ...skipped });
     }
     for (const item of parsed.imports) {
-      const resolved = resolveLocalImport(file, item.specifier, sourceSet);
+      const resolved = resolveLocalImport(file, item.specifier, sourceSet, aliasRules);
       if (resolved.status === 'resolved') {
         edges.push({ source: file, target: resolved.target, specifier: item.specifier, kind: item.kind });
         nodes[file].imports.push(resolved.target);
@@ -668,7 +757,7 @@ function renderMarkdown(topology) {
   lines.push('- Static JS/TS module graph only.');
   lines.push('- Sections are static exported/common symbol and Markdown heading hints only.');
   lines.push('- Does not represent runtime call graph, control flow, data flow, or dependency severity.');
-  lines.push('- Dynamic imports are reported as skipped unless they also appear as static imports.');
+  lines.push('- Literal dynamic imports are resolved when they target local source; non-literal dynamic imports are reported as skipped.');
   return `${lines.join('\n')}\n`;
 }
 

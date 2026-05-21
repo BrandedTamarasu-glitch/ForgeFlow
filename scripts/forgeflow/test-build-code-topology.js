@@ -68,7 +68,7 @@ const externalFilesPathResult = buildCodeTopology({
   markdownOut: path.join(tmp, 'external-files-path.md'),
   telemetryOut: path.join(tmp, 'external-files-path-telemetry.json'),
 });
-const importKinds = extractImports("import type { User } from './types';\nexport { x } from './x';\nconst y = require('./y');\nconst label = 'import(ignored)';\nconst rendered = `import(${value})`;\nconst z = import(`./dynamic-${name}`);");
+const importKinds = extractImports("import type { User } from './types';\nexport { x } from './x';\nconst y = require('./y');\nconst label = 'import(ignored)';\nconst rendered = `import(${value})`;\nconst view = import('@/routes/dashboard');\nconst z = import(`./dynamic-${name}`);");
 const sourceSections = extractSections('src/example.ts', 'export class Example {}\nexport function run() {}\nconst local = () => true;\n');
 const markdownSections = extractSections('README.md', '# Title\n\n## Details\n');
 const changedLines = parseDiffChangedLines('diff --git a/src/example.ts b/src/example.ts\n--- a/src/example.ts\n+++ b/src/example.ts\n@@ -2,0 +3,2 @@\n+const x = 1;\n+const y = 2;\n');
@@ -150,6 +150,19 @@ fs.writeFileSync(path.join(resolverRoot, 'src/types/audit.types.ts'), 'export ty
 fs.writeFileSync(path.join(resolverRoot, 'src/types/missing.model.ts'), 'export type ExistingModel = { id: string };\n');
 fs.writeFileSync(path.join(resolverRoot, 'src/assets/password-icon.tsx'), 'export default function PasswordIcon() { return null; }\n');
 fs.writeFileSync(path.join(resolverRoot, 'src/assets/new-password-icon.tsx'), 'export default function NewPasswordIcon() { return null; }\n');
+fs.mkdirSync(path.join(resolverRoot, 'src/routes'), { recursive: true });
+fs.mkdirSync(path.join(resolverRoot, 'src/auth/view'), { recursive: true });
+fs.writeFileSync(path.join(resolverRoot, 'tsconfig.json'), JSON.stringify({
+  compilerOptions: {
+    baseUrl: '.',
+    paths: {
+      '@/*': ['src/*'],
+      '*': ['types/*'],
+    },
+  },
+}, null, 2));
+fs.writeFileSync(path.join(resolverRoot, 'src/routes/dashboard.tsx'), 'export default function Dashboard() { return null; }\n');
+fs.writeFileSync(path.join(resolverRoot, 'src/auth/view/login.tsx'), 'export default function Login() { return null; }\n');
 fs.writeFileSync(path.join(resolverRoot, 'src/assets/index.ts'), [
   "export { default as PasswordIcon } from './password-icon';",
   "export { default as NewPasswordIcon } from './new-password-icon';",
@@ -158,8 +171,10 @@ fs.writeFileSync(path.join(resolverRoot, 'src/assets/index.ts'), [
 fs.writeFileSync(path.join(resolverRoot, 'src/app.ts'), [
   "import type { AuditRecord } from './types/audit.types';",
   "import { PasswordIcon, NewPasswordIcon } from './assets';",
+  "import Dashboard from '@/routes/dashboard';",
+  "const loadLogin = () => import('@/auth/view/login');",
   "import type { MissingModel } from './types/actually-missing.model';",
-  'export const icons = [PasswordIcon, NewPasswordIcon];',
+  'export const icons = [PasswordIcon, NewPasswordIcon, Dashboard, loadLogin];',
   'export type AppAuditRecord = AuditRecord & MissingModel;',
   '',
 ].join('\n'));
@@ -178,7 +193,7 @@ const checks = [
   ['counts mapped sections', topology.summary.sections >= 8],
   ['counts markdown section files', topology.summary.markdown_section_files === 1],
   ['skips dependencies', !topology.nodes.some((node) => node.path.includes('node_modules')) && deniedPath('node_modules/ignored/index.ts') === 'generated or dependency path'],
-  ['extracts import forms', importKinds.imports.length === 3 && importKinds.skippedDynamic.length === 1 && importKinds.skippedDynamic[0].expression.includes('dynamic')],
+  ['extracts import forms', importKinds.imports.length === 4 && importKinds.imports.some((item) => item.kind === 'dynamic-import' && item.specifier === '@/routes/dashboard') && importKinds.skippedDynamic.length === 1 && importKinds.skippedDynamic[0].expression.includes('dynamic')],
   ['extracts source sections', sourceSections.some((item) => item.kind === 'class' && item.name === 'Example') && sourceSections.some((item) => item.kind === 'function' && item.name === 'run') && sourceSections.some((item) => item.kind === 'const' && item.name === 'local')],
   ['extracts markdown headings', markdownSections.length === 2 && markdownSections[1].name === 'Details'],
   ['parses diff changed lines', changedLines['src/example.ts'].length === 2 && changedLines['src/example.ts'][0] === 3],
@@ -187,6 +202,7 @@ const checks = [
   ['resolves index import', resolveLocalImport('src/app/main.ts', '../shared', sourceSet).target === 'src/shared/index.ts'],
   ['resolves suffix-style source import', resolveLocalImport('src/app.ts', './types/audit.types', new Set(['src/types/audit.types.ts'])).target === 'src/types/audit.types.ts'],
   ['resolves extensionless tsx export', resolveLocalImport('src/assets/index.ts', './password-icon', new Set(['src/assets/password-icon.tsx'])).target === 'src/assets/password-icon.tsx'],
+  ['resolves common src alias fallback', resolveLocalImport('packages/app/src/app.ts', '@/routes/dashboard', new Set(['packages/app/src/routes/dashboard.tsx'])).target === 'packages/app/src/routes/dashboard.tsx'],
   ['tracks local edges', topology.edges.some((edge) => edge.source === 'src/app/main.ts' && edge.target === 'src/features/feature.ts')],
   ['tracks commonjs edge', topology.edges.some((edge) => edge.source === 'src/lib/legacy.js' && edge.target === 'src/shared/index.ts' && edge.kind === 'require')],
   ['tracks re-export edge', topology.edges.some((edge) => edge.source === 'src/lib/helper.ts' && edge.target === 'src/shared/index.ts' && edge.kind === 'export-from')],
@@ -216,8 +232,9 @@ const checks = [
   ['git provenance records dirty repo', gitResult.topology.provenance.git_available === true && gitResult.topology.provenance.dirty === true && gitResult.topology.provenance.untracked_files === 1],
   ['git scan skips deleted tracked source', !gitResult.topology.nodes.some((node) => node.path === 'src/tracked.ts') && gitResult.topology.denied.some((item) => item.path === 'src/tracked.ts' && item.reason === 'missing source path')],
   ['changed section detected from git diff', changedSectionResult.topology.summary.changed_sections === 1 && changedSectionNeighbor.changed_sections[0].name === 'target' && changedSectionNeighbor.changed_sections[0].end_line === 7],
-  ['resolver fixture resolves suffix and tsx edges', resolverResult.topology.edges.some((edge) => edge.source === 'src/app.ts' && edge.target === 'src/types/audit.types.ts') && resolverResult.topology.edges.some((edge) => edge.source === 'src/assets/index.ts' && edge.target === 'src/assets/password-icon.tsx') && resolverResult.topology.edges.some((edge) => edge.source === 'src/assets/index.ts' && edge.target === 'src/assets/new-password-icon.tsx')],
-  ['resolver fixture keeps genuinely missing suffix unresolved', resolverResult.topology.unresolved.some((item) => item.source === 'src/app.ts' && item.specifier === './types/actually-missing.model') && !resolverResult.topology.unresolved.some((item) => item.specifier === './types/audit.types') && !resolverResult.topology.unresolved.some((item) => item.specifier === './password-icon')],
+  ['resolver fixture resolves suffix tsx alias and dynamic edges', resolverResult.topology.edges.some((edge) => edge.source === 'src/app.ts' && edge.target === 'src/types/audit.types.ts') && resolverResult.topology.edges.some((edge) => edge.source === 'src/assets/index.ts' && edge.target === 'src/assets/password-icon.tsx') && resolverResult.topology.edges.some((edge) => edge.source === 'src/assets/index.ts' && edge.target === 'src/assets/new-password-icon.tsx') && resolverResult.topology.edges.some((edge) => edge.source === 'src/app.ts' && edge.target === 'src/routes/dashboard.tsx' && edge.kind === 'import') && resolverResult.topology.edges.some((edge) => edge.source === 'src/app.ts' && edge.target === 'src/auth/view/login.tsx' && edge.kind === 'dynamic-import')],
+  ['resolver fixture ignores catch-all path aliases for packages', resolveLocalImport('src/app.ts', 'react', new Set(['types/react.ts']), [{ pattern: '*', prefix: '', suffix: '', exact: false, targetPrefix: 'types/', targetSuffix: '', baseUrl: '.', source: 'tsconfig.json' }]).status === 'external'],
+  ['resolver fixture keeps genuinely missing suffix unresolved', resolverResult.topology.unresolved.some((item) => item.source === 'src/app.ts' && item.specifier === './types/actually-missing.model') && !resolverResult.topology.unresolved.some((item) => item.specifier === './types/audit.types') && !resolverResult.topology.unresolved.some((item) => item.specifier === './password-icon') && !resolverResult.topology.skipped_dynamic.some((item) => item.expression.includes('@/auth/view/login'))],
   ['symlink source denied', symlinkResult.topology.nodes.length === 0 && (!fs.existsSync(path.join(symlinkRoot, 'src/linked.ts')) || symlinkResult.topology.denied.some((item) => item.reason === 'symbolic links are not accepted'))],
 ];
 
