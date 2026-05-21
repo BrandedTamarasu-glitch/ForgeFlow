@@ -327,6 +327,7 @@ It runs on `http://127.0.0.1:4003` and reads local telemetry files from `~/.clau
 
 - [Hosted docs entry](docs/index.html)
 - [Wiki source](docs/wiki/Home.md)
+- [Forgeflow 4.3 release brief](docs/wiki/Forgeflow-4.3-Release-Brief.md)
 - [Why Forgeflow](docs/wiki/Why-Forgeflow.md)
 - [Project learnings](docs/wiki/Project-Learnings.md)
 - [Maintainer pilot](docs/wiki/Maintainer-Pilot.md)

@@ -12,6 +12,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 
 - [Hosted Docs Entry](../index.html)
 - [Why Forgeflow](Why-Forgeflow)
+- [Forgeflow 4.3 Release Brief](Forgeflow-4.3-Release-Brief.md)
 - [Project Learnings](Project-Learnings)
 - [Maintainer Pilot](Maintainer-Pilot)
 - [Team Privacy Boundaries](Team-Privacy-Boundaries)
