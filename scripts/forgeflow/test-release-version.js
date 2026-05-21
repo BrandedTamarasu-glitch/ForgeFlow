@@ -69,7 +69,7 @@ const checks = [
   ['release check runs project learnings rollup test', releaseCheck.includes('node scripts/forgeflow/test-rollup-project-learnings.js')],
   ['release check runs project learnings display test', releaseCheck.includes('node scripts/forgeflow/test-show-project-learnings.js')],
   ['release check runs project trends display test', releaseCheck.includes('node scripts/forgeflow/test-show-project-trends.js')],
-  ['report command uses report helper', reportCommand.includes('render-forgeflow-report.js') && reportCommand.includes('show-project-trends.js --json')],
+  ['report command uses report helper', reportCommand.includes('render-forgeflow-report.js') && reportCommand.includes('show-project-trends.js --json') && reportCommand.includes('--refresh')],
   ['trends command uses project trends helper', trendsCommand.includes('show-project-trends.js') && readme.includes('/forgeflow-trends')],
   ['health trends report share refresh recommendation', healthCommand.includes('/forgeflow-trends --refresh') && trendsCommand.includes('/forgeflow-trends --refresh') && reportCommand.includes('/forgeflow-trends --refresh') && readme.includes('/forgeflow-trends --refresh')],
   ['release check runs context pack test', releaseCheck.includes('node scripts/forgeflow/test-build-context-pack.js')],

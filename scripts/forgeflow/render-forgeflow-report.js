@@ -20,7 +20,7 @@ const FALSE_POSITIVE_THRESHOLD = 3;
 function usage() {
   console.error([
     'Usage: render-forgeflow-report.js [--period week|month|quarter|all] [--metrics-root <dir>]',
-    '       [--patterns-dir <dir>] [--project-dir <dir>] [--root <dir>] [--no-drift] [--json]',
+    '       [--patterns-dir <dir>] [--project-dir <dir>] [--root <dir>] [--refresh] [--no-drift] [--json]',
   ].join('\n'));
 }
 
@@ -41,6 +41,7 @@ function parseArgs(argv) {
     patternsDir: '',
     projectDir: '',
     root: '',
+    refresh: false,
     noDrift: false,
     json: false,
   };
@@ -61,6 +62,8 @@ function parseArgs(argv) {
     } else if (arg === '--root') {
       opts.root = path.resolve(requireValue(argv, arg, i));
       i += 1;
+    } else if (arg === '--refresh') {
+      opts.refresh = true;
     } else if (arg === '--no-drift') {
       opts.noDrift = true;
     } else if (arg === '--json') {
@@ -279,9 +282,9 @@ function contextSummary(root) {
   }
 }
 
-function projectTrendsSummary(root, projectDir) {
+function projectTrendsSummary(root, projectDir, opts = {}) {
   try {
-    return showProjectTrends({ root, projectDir });
+    return showProjectTrends({ root, projectDir, refresh: Boolean(opts.refresh) });
   } catch (err) {
     return {
       schema_version: '1',
@@ -403,7 +406,9 @@ function buildReport(opts = {}) {
   const metrics = collectMetrics(metricsRoot, cutoff);
   const patterns = summarizePatternLog(patternsDir, cutoff, now);
   const context = contextSummary(root);
-  const projectTrends = projectTrendsSummary(root, opts.projectDir || path.join(root, '.forgeflow', path.basename(root)));
+  const projectTrends = projectTrendsSummary(root, opts.projectDir || path.join(root, '.forgeflow', path.basename(root)), {
+    refresh: Boolean(opts.refresh),
+  });
   const projectDir = opts.projectDir || path.join(root, '.forgeflow', path.basename(root));
   const latestInsights = latestInsightsReadiness(projectDir);
   const drift = driftSummary(Boolean(opts.noDrift), { root });

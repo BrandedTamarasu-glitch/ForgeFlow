@@ -1,7 +1,7 @@
 ---
 name: forgeflow-report
 description: Monthly executive summary of Forgeflow health. Aggregates telemetry, learnings, drift, and false-positive signals into one report. Flags reviewers that need prompt refinement and patterns that need curation.
-argument-hint: "[--period week|month|quarter|all (default month)] [--no-drift] [--json]"
+argument-hint: "[--period week|month|quarter|all (default month)] [--refresh] [--no-drift] [--json]"
 allowed-tools:
   - Read
   - Bash
@@ -30,6 +30,7 @@ Self-improving Forgeflow mechanic: run monthly. Output is the decision surface f
 <context>
 $ARGUMENTS:
 - `--period week|month|quarter|all` — default: month (30 days)
+- `--refresh` — refresh project learnings and latest-insights readiness before rendering the report
 - `--no-drift` — skip running `/forgeflow-drift` (faster; useful when drift was recently checked)
 - `--json` — structured JSON output
 

@@ -147,6 +147,16 @@ const staleReport = buildReport({
   record: false,
 });
 const staleMarkdown = renderMarkdown(staleReport);
+const refreshedReport = buildReport({
+  root,
+  metricsRoot,
+  patternsDir,
+  projectDir,
+  noDrift: true,
+  now,
+  refresh: true,
+  record: false,
+});
 const cli = spawnSync(process.execPath, [path.join(repoRoot, 'scripts/forgeflow/render-forgeflow-report.js'),
   '--root',
   root,
@@ -156,6 +166,7 @@ const cli = spawnSync(process.execPath, [path.join(repoRoot, 'scripts/forgeflow/
   patternsDir,
   '--project-dir',
   projectDir,
+  '--refresh',
   '--no-drift',
   '--json',
 ], { encoding: 'utf8' });
@@ -173,12 +184,13 @@ const checks = [
   ['includes project trends', report.project_trends.code_map.trend.status === 'compared' && report.project_trends.freshness.status === 'current'],
   ['includes latest insights readiness', report.latest_insights.status === 'injected' && report.latest_insights.check_status === 'pass' && report.latest_insights.freshness.status === 'current'],
   ['recommends refresh for stale latest insights', staleReport.recommendations.some((item) => item.command === 'forgeflow-trends --refresh') && staleMarkdown.includes('forgeflow-trends --refresh')],
+  ['refreshes project trends when requested', refreshedReport.project_trends.refresh && refreshedReport.project_trends.refresh.check_status === 'pass'],
   ['includes live drift when enabled', reportWithDrift.drift.status === 'missing' || reportWithDrift.drift.status === 'fail' || reportWithDrift.drift.status === 'pass'],
   ['records report log', report.report_history.recorded === true && fs.readFileSync(path.join(patternsDir, '.report-log.jsonl'), 'utf8').trim().split(/\r?\n/).length >= 2],
   ['computes report trend', report.report_history.trend.status === 'compared' && report.report_history.trend.invocation_delta === 3],
   ['derives priorities', report.priorities.some((item) => item.includes('smith'))],
   ['renders markdown sections', markdown.includes('## 8. Project Trends') && markdown.includes('## 9. Priorities') && markdown.includes('Latest insights: injected') && markdown.includes('Latest insights freshness: current')],
-  ['cli json works', cli.status === 0 && cliJson.metrics.false_positives.flagged.length === 1 && cliJson.report_history.recorded === true],
+  ['cli json works', cli.status === 0 && cliJson.metrics.false_positives.flagged.length === 1 && cliJson.report_history.recorded === true && cliJson.project_trends.refresh.check_status === 'pass'],
   ['invalid period exits usage', badPeriod.status === 2 && badPeriod.stderr.includes('Invalid --period')],
 ];
 
