@@ -29,6 +29,7 @@ node scripts/forgeflow/test-rollup-project-learnings.js
 node scripts/forgeflow/test-show-project-learnings.js
 node scripts/forgeflow/test-show-project-trends.js
 node scripts/forgeflow/test-smoke-check.js
+node scripts/forgeflow/smoke-check.js --mode source --json
 node scripts/forgeflow/test-render-pilot-script.js
 node scripts/forgeflow/test-seed-budget-config.js
 node scripts/forgeflow/test-check-context-budget.js

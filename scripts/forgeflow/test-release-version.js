@@ -74,6 +74,7 @@ const checks = [
   ['release check runs project learnings display test', releaseCheck.includes('node scripts/forgeflow/test-show-project-learnings.js')],
   ['release check runs project trends display test', releaseCheck.includes('node scripts/forgeflow/test-show-project-trends.js')],
   ['release check runs smoke check test', releaseCheck.includes('node scripts/forgeflow/test-smoke-check.js')],
+  ['release check runs source smoke', releaseCheck.includes('node scripts/forgeflow/smoke-check.js --mode source --json')],
   ['release check runs pilot script test', releaseCheck.includes('node scripts/forgeflow/test-render-pilot-script.js')],
   ['README mentions smoke check helper', readme.includes('scripts/forgeflow/smoke-check.js --json')],
   ['pilot command uses pilot script helper', pilotCommand.includes('render-pilot-script.js') && pilotCommand.includes('public-safe result template')],
