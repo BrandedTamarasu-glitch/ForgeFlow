@@ -18,7 +18,7 @@ Single report pulling together everything the self-improving Forgeflow machinery
 4. **Pattern promotions** (from `forgeflow-patterns/.learnings-log.jsonl`) — what `/forgeflow-learnings` added to the canonical library
 5. **Drift status** (from `/forgeflow-drift --json`) — which agents lag their canonical reference
 6. **Context savings** (from `.forgeflow/**/context-telemetry.json` and related context telemetry) — whether local context packing is reducing prompt load
-7. **Project trends** (from `show-project-trends.js`) — whether code-map trend history, project learnings, and advisor health agree
+7. **Project trends** (from `show-project-trends.js`) — whether code-map trend history, import gaps, project learnings, and advisor health agree
 8. **Latest-insights readiness** (from `latest-insights-report.json`) — whether agent packets are receiving project-learning guidance and whether that report is fresh for the current checkout
 9. **Recommendations** — direct next actions, including `/forgeflow-trends --refresh` when project guidance is stale, plus derived priorities from the above
 
@@ -160,7 +160,7 @@ When `${HELPER_DIR}/show-project-trends.js` exists, run:
 ${HELPER_DIR}/show-project-trends.js --json
 ```
 
-Include code-map trend status, unresolved import delta, changed-section delta, new hotspots, whether project learnings consumed the code-map trend, advisor budget/status, and advisor recommendation actions. If the helper is missing, report project trends as unavailable rather than failing the whole report.
+Include code-map trend status, unresolved import delta, changed-section delta, import-gap counts, new hotspots, whether project learnings consumed the code-map trend, advisor budget/status, and advisor recommendation actions. If the helper is missing, report project trends as unavailable rather than failing the whole report.
 
 ## Step 4: Render output
 

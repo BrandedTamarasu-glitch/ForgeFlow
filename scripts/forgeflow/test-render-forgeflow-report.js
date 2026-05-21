@@ -80,6 +80,13 @@ fs.writeFileSync(path.join(contextDir, 'code-map-history.jsonl'), [
   }),
   '',
 ].join('\n'));
+fs.writeFileSync(path.join(contextDir, 'code-topology.json'), JSON.stringify({
+  schema_version: '1',
+  unresolved: [
+    { source: 'src/report.ts', specifier: './missing', kind: 'import' },
+  ],
+  skipped_dynamic: [],
+}, null, 2));
 fs.writeFileSync(path.join(projectDir, 'project-learnings.md'), [
   '# Project Learnings',
   '',
@@ -182,6 +189,7 @@ const checks = [
   ['summarizes pattern log', patterns.status === 'current' && patterns.totals.updates_applied === 2],
   ['includes context savings', report.context.summary.files === 1 && report.context.summary.percent_saved === 80],
   ['includes project trends', report.project_trends.code_map.trend.status === 'compared' && report.project_trends.freshness.status === 'current'],
+  ['includes import gaps', report.project_trends.import_gaps.status === 'attention' && report.project_trends.import_gaps.unresolved_total === 1 && report.recommendations.some((item) => item.command === 'forgeflow-code-map')],
   ['includes latest insights readiness', report.latest_insights.status === 'injected' && report.latest_insights.check_status === 'pass' && report.latest_insights.freshness.status === 'current'],
   ['recommends refresh for stale latest insights', staleReport.recommendations.some((item) => item.command === 'forgeflow-trends --refresh') && staleMarkdown.includes('forgeflow-trends --refresh')],
   ['refreshes project trends when requested', refreshedReport.project_trends.refresh && refreshedReport.project_trends.refresh.check_status === 'pass'],
@@ -189,8 +197,8 @@ const checks = [
   ['records report log', report.report_history.recorded === true && fs.readFileSync(path.join(patternsDir, '.report-log.jsonl'), 'utf8').trim().split(/\r?\n/).length >= 2],
   ['computes report trend', report.report_history.trend.status === 'compared' && report.report_history.trend.invocation_delta === 3],
   ['derives priorities', report.priorities.some((item) => item.includes('smith'))],
-  ['renders markdown sections', markdown.includes('## 8. Project Trends') && markdown.includes('## 9. Priorities') && markdown.includes('Latest insights: injected') && markdown.includes('Latest insights freshness: current')],
-  ['cli json works', cli.status === 0 && cliJson.metrics.false_positives.flagged.length === 1 && cliJson.report_history.recorded === true && cliJson.project_trends.refresh.check_status === 'pass'],
+  ['renders markdown sections', markdown.includes('## 8. Project Trends') && markdown.includes('## 9. Priorities') && markdown.includes('Import gaps: attention') && markdown.includes('Latest insights: injected') && markdown.includes('Latest insights freshness: current')],
+  ['cli json works', cli.status === 0 && cliJson.metrics.false_positives.flagged.length === 1 && cliJson.report_history.recorded === true && cliJson.project_trends.refresh.check_status === 'pass' && cliJson.project_trends.import_gaps.status === 'attention'],
   ['invalid period exits usage', badPeriod.status === 2 && badPeriod.stderr.includes('Invalid --period')],
 ];
 

@@ -8,7 +8,7 @@ const {
   latestInsightsReadiness,
   repoRoot,
 } = require('./latest-insights-state');
-const { compareCodeMapTrend, readCodeMapHistory } = require('./show-code-map');
+const { compareCodeMapTrend, importGapSummary, readCodeMapHistory } = require('./show-code-map');
 
 function usage() {
   console.error('Usage: show-project-trends.js [--project-dir <dir>] [--refresh] [--json]');
@@ -159,7 +159,40 @@ function refreshProjectGuidance(projectDir) {
   };
 }
 
-function trendRecommendations({ freshness, latestInsights, refresh }) {
+function readJson(file) {
+  if (!file || !fs.existsSync(file)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (_err) {
+    return null;
+  }
+}
+
+function latestImportGaps(contextDir, limit = 5) {
+  const topology = readJson(path.join(contextDir, 'code-topology.json'))
+    || readJson(path.join(contextDir, 'latest', 'code-topology.json'));
+  if (!topology || topology.schema_version !== '1') {
+    return {
+      status: 'missing',
+      unresolved_total: 0,
+      skipped_dynamic_total: 0,
+      unresolved: [],
+      skipped_dynamic: [],
+    };
+  }
+  const gaps = importGapSummary(topology, limit);
+  const unresolvedTotal = gaps.limits.unresolved_total || 0;
+  const skippedDynamicTotal = gaps.limits.skipped_dynamic_total || 0;
+  return {
+    status: unresolvedTotal > 0 || skippedDynamicTotal > 0 ? 'attention' : 'clear',
+    unresolved_total: unresolvedTotal,
+    skipped_dynamic_total: skippedDynamicTotal,
+    unresolved: gaps.unresolved,
+    skipped_dynamic: gaps.skipped_dynamic,
+  };
+}
+
+function trendRecommendations({ freshness, latestInsights, refresh, importGaps }) {
   const recommendations = [];
   const hasProjectFreshnessIssue = freshness && freshness.issues && freshness.issues.length > 0;
   const insightsFreshness = latestInsights && latestInsights.freshness ? latestInsights.freshness : null;
@@ -178,6 +211,14 @@ function trendRecommendations({ freshness, latestInsights, refresh }) {
       action: 'inspect-refresh',
       command: 'forgeflow-learnings --project --check',
       reason: 'The trends refresh did not complete cleanly.',
+    });
+  }
+  if (importGaps && importGaps.status === 'attention') {
+    recommendations.push({
+      severity: 'attention',
+      action: 'review-import-gaps',
+      command: 'forgeflow-code-map',
+      reason: `Code map has ${importGaps.unresolved_total} unresolved import(s) and ${importGaps.skipped_dynamic_total} skipped dynamic import(s).`,
     });
   }
   return recommendations;
@@ -200,6 +241,7 @@ function showProjectTrends(opts = {}) {
   });
   const current = currentGitState(root);
   const latestInsights = latestInsightsReadiness(projectDir, root);
+  const importGaps = latestImportGaps(contextDir);
 
   const freshness = projectFreshness({
     current,
@@ -228,6 +270,7 @@ function showProjectTrends(opts = {}) {
       new_high_fan_in: topList(trend.new_high_fan_in),
       new_high_fan_out: topList(trend.new_high_fan_out),
     },
+    import_gaps: importGaps,
     project_learnings: projectLearnings,
     freshness,
     latest_insights: latestInsights,
@@ -241,7 +284,7 @@ function showProjectTrends(opts = {}) {
       percent_saved: advisor.summary.percent_saved,
     },
   };
-  result.recommendations = trendRecommendations({ freshness, latestInsights, refresh });
+  result.recommendations = trendRecommendations({ freshness, latestInsights, refresh, importGaps });
   return result;
 }
 
@@ -271,6 +314,14 @@ function renderMarkdown(result) {
     `- Changed sections delta: ${trend.changed_sections_delta ?? 0}`,
     `- New high fan-in: ${result.code_map.new_high_fan_in.length > 0 ? result.code_map.new_high_fan_in.join(', ') : '(none)'}`,
     `- New high fan-out: ${result.code_map.new_high_fan_out.length > 0 ? result.code_map.new_high_fan_out.join(', ') : '(none)'}`,
+    '',
+    '## Import Gaps',
+    '',
+    `- Status: ${result.import_gaps.status}`,
+    `- Unresolved imports: ${result.import_gaps.unresolved_total}`,
+    `- Skipped dynamic imports: ${result.import_gaps.skipped_dynamic_total}`,
+    `- First unresolved: ${result.import_gaps.unresolved.length > 0 ? `${result.import_gaps.unresolved[0].source}: ${result.import_gaps.unresolved[0].specifier}` : '(none)'}`,
+    `- First dynamic: ${result.import_gaps.skipped_dynamic.length > 0 ? `${result.import_gaps.skipped_dynamic[0].source}: import(${result.import_gaps.skipped_dynamic[0].expression})` : '(none)'}`,
     '',
     '## Freshness',
     '',
@@ -326,6 +377,7 @@ module.exports = {
   latestInsightsReadiness,
   latestCodeMapTrend,
   parseProjectLearnings,
+  latestImportGaps,
   projectFreshness,
   renderMarkdown,
   showProjectTrends,

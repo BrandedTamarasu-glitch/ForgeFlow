@@ -359,6 +359,9 @@ function derivePriorities(report) {
   if (report.latest_insights.freshness && report.latest_insights.freshness.status === 'attention') {
     priorities.push('Refresh latest insights because the last injection report is stale for the current checkout.');
   }
+  if (report.project_trends.import_gaps && report.project_trends.import_gaps.status === 'attention') {
+    priorities.push('Review code-map import gaps before relying on static topology guidance.');
+  }
   if (report.context.recommendations && report.context.recommendations.length > 0) {
     priorities.push(...report.context.recommendations.slice(0, 2).map((item) => item.command || item.reason));
   }
@@ -464,6 +467,7 @@ function renderMarkdown(report) {
   const trend = codeMap.trend || {};
   const freshness = projectTrends.freshness || {};
   const advisor = projectTrends.advisor || {};
+  const importGaps = projectTrends.import_gaps || {};
   const latestInsights = report.latest_insights || {};
   const context = report.context || {};
   const lines = [
@@ -546,6 +550,7 @@ function renderMarkdown(report) {
     lines.push(`- Freshness: ${freshness.status || 'missing'}`);
     lines.push(`- Unresolved imports delta: ${trend.unresolved_imports_delta ?? 0}`);
     lines.push(`- Changed sections delta: ${trend.changed_sections_delta ?? 0}`);
+    lines.push(`- Import gaps: ${importGaps.status || 'missing'} (${importGaps.unresolved_total || 0} unresolved, ${importGaps.skipped_dynamic_total || 0} dynamic)`);
     lines.push(`- New high fan-in: ${(codeMap.new_high_fan_in || []).join(', ') || '(none)'}`);
     lines.push(`- New high fan-out: ${(codeMap.new_high_fan_out || []).join(', ') || '(none)'}`);
     lines.push(`- Project learnings consumed trend: ${projectTrends.project_learnings && projectTrends.project_learnings.consumed_code_map_trend ? 'yes' : 'no'}`);

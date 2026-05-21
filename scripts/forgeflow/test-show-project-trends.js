@@ -72,6 +72,15 @@ fs.writeFileSync(path.join(contextDir, 'code-topology-telemetry.json'), JSON.str
     skipped_dynamic_imports: 0,
   },
 }) + '\n');
+fs.writeFileSync(path.join(contextDir, 'code-topology.json'), JSON.stringify({
+  schema_version: '1',
+  unresolved: [
+    { source: 'src/app.ts', specifier: './missing', kind: 'import' },
+  ],
+  skipped_dynamic: [
+    { source: 'src/routes.ts', expression: '`./pages/${name}`' },
+  ],
+}, null, 2));
 fs.writeFileSync(path.join(projectDir, 'project-learnings.md'), [
   '# Project Learnings',
   '',
@@ -154,6 +163,7 @@ const checks = [
   ['summarizes history count', result.code_map.history_snapshots === 2],
   ['compares code map trend', result.code_map.trend.status === 'compared' && result.code_map.trend.unresolved_imports_delta === 1],
   ['reports new hotspots', result.code_map.new_high_fan_in.includes('src/core.ts') && result.code_map.new_high_fan_out.includes('src/app.ts')],
+  ['summarizes import gaps', result.import_gaps.status === 'attention' && result.import_gaps.unresolved_total === 1 && result.import_gaps.skipped_dynamic_total === 1 && result.recommendations.some((item) => item.command === 'forgeflow-code-map')],
   ['detects learning consumption', result.project_learnings.consumed_code_map_trend === true && parsedLearnings.consumed_code_map_trend === true && parsedLearnings.consumed_code_map_history_snapshots === 2 && parsedLearnings.generated_at === ''],
   ['summarizes freshness', result.freshness.status === 'attention' && result.freshness.issues.some((item) => item.code === 'project-learnings-generated-at-missing')],
   ['recommends refresh for stale artifacts', staleGuidance.recommendations.some((item) => item.command === 'forgeflow-trends --refresh')],
@@ -164,8 +174,8 @@ const checks = [
   ['allows refresh smoke code-map lag', refreshLagFreshness.status === 'current'],
   ['detects missing freshness inputs', missingFreshness.status === 'missing' && missingFreshness.issues.some((item) => item.code === 'code-map-missing') && missingFreshness.issues.some((item) => item.code === 'project-learnings-missing')],
   ['summarizes advisor', result.advisor.budget_status === 'pass' && result.advisor.code_map_trends_status === 'attention'],
-  ['renders markdown', markdown.includes('# Forgeflow Project Trends') && markdown.includes('## Recommendations') && markdown.includes('Unresolved imports delta: 1') && markdown.includes('## Freshness') && markdown.includes('## Latest Insights')],
-  ['cli json works', cli.status === 0 && cliJson.code_map.trend.status === 'compared' && cliJson.project_learnings.consumed_code_map_trend === true && Boolean(cliJson.freshness) && cliJson.latest_insights.status === 'injected'],
+  ['renders markdown', markdown.includes('# Forgeflow Project Trends') && markdown.includes('## Recommendations') && markdown.includes('Unresolved imports delta: 1') && markdown.includes('## Import Gaps') && markdown.includes('forgeflow-code-map') && markdown.includes('## Latest Insights')],
+  ['cli json works', cli.status === 0 && cliJson.code_map.trend.status === 'compared' && cliJson.project_learnings.consumed_code_map_trend === true && Boolean(cliJson.freshness) && cliJson.latest_insights.status === 'injected' && cliJson.import_gaps.status === 'attention'],
   ['refresh cli works', refreshCli.status === 0 && refreshCliJson.refresh && refreshCliJson.refresh.check_status === 'pass'],
   ['missing option value exits usage', missingValue.status === 2 && missingValue.stderr.includes('Missing value for --project-dir')],
 ];
