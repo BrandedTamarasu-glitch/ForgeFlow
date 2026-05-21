@@ -1,8 +1,13 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
-const { spawnSync } = require('child_process');
 const { adviseContext } = require('./advise-context');
+const {
+  currentGitState,
+  latestInsightsFreshness,
+  latestInsightsReadiness,
+  repoRoot,
+} = require('./latest-insights-state');
 const { compareCodeMapTrend, readCodeMapHistory } = require('./show-code-map');
 
 function usage() {
@@ -43,33 +48,12 @@ function parseArgs(argv) {
   return opts;
 }
 
-function git(args, cwd) {
-  const result = spawnSync('git', args, { cwd, encoding: 'utf8' });
-  if (result.status !== 0) return '';
-  return result.stdout.trimEnd();
-}
-
-function repoRoot(cwd = process.cwd()) {
-  return git(['rev-parse', '--show-toplevel'], cwd) || cwd;
-}
-
 function defaultProjectDir(root) {
   return path.join(root, '.forgeflow', path.basename(root));
 }
 
 function readFile(file) {
   return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
-}
-
-function currentGitState(root) {
-  const isGit = Boolean(git(['rev-parse', '--show-toplevel'], root));
-  if (!isGit) return { available: false, commit_short: '', dirty: false };
-  const status = git(['status', '--short'], root).split(/\r?\n/).filter(Boolean);
-  return {
-    available: true,
-    commit_short: git(['rev-parse', '--short', 'HEAD'], root),
-    dirty: status.length > 0,
-  };
 }
 
 function parseGeneratedAt(markdown) {
@@ -151,87 +135,6 @@ function projectFreshness({ current, latest, historySnapshots = 0, projectLearni
     current_commit: current.commit_short || '',
     current_dirty: Boolean(current.dirty),
     issues: items,
-  };
-}
-
-function latestInsightsReadiness(projectDir, root) {
-  const file = path.join(projectDir, 'context', 'latest', 'latest-insights-report.json');
-  if (!fs.existsSync(file)) {
-    return {
-      status: 'missing',
-      path: file,
-      reason: 'latest-insights-report.json not found',
-      check_status: '',
-      issue_count: 0,
-      generated_at: '',
-      commit_short: '',
-      dirty: false,
-      freshness: latestInsightsFreshness(null, root),
-    };
-  }
-  try {
-    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
-    return {
-      status: parsed.status || 'unknown',
-      path: file,
-      reason: parsed.reason || '',
-      check_status: parsed.check_status || '',
-      issue_count: Number(parsed.issue_count || 0),
-      generated_at: parsed.generated_at || '',
-      commit_short: parsed.git && parsed.git.commit_short ? parsed.git.commit_short : '',
-      dirty: Boolean(parsed.git && parsed.git.dirty),
-      freshness: latestInsightsFreshness(parsed, root),
-    };
-  } catch (_err) {
-    return {
-      status: 'invalid',
-      path: file,
-      reason: 'latest-insights-report.json is not valid JSON',
-      check_status: '',
-      issue_count: 0,
-      generated_at: '',
-      commit_short: '',
-      dirty: false,
-      freshness: { status: 'invalid', current_commit: '', current_dirty: false, issues: [] },
-    };
-  }
-}
-
-function latestInsightsFreshness(report, root) {
-  const current = currentGitState(root);
-  const recorded = report && report.git ? report.git : {};
-  const issues = [];
-  if (!report) {
-    issues.push({
-      code: 'latest-insights-missing',
-      severity: 'missing',
-      message: 'No latest-insights report is available.',
-    });
-  } else if (!recorded || (!recorded.commit_short && recorded.available !== false)) {
-    issues.push({
-      code: 'latest-insights-provenance-missing',
-      severity: 'attention',
-      message: 'Latest-insights report does not include git provenance.',
-    });
-  } else if (current.available && current.commit_short && current.commit_short !== recorded.commit_short) {
-    issues.push({
-      code: 'latest-insights-commit-stale',
-      severity: 'attention',
-      message: `Latest insights were generated for ${recorded.commit_short}, current HEAD is ${current.commit_short}.`,
-    });
-  }
-  if (current.available && current.dirty && !recorded.dirty) {
-    issues.push({
-      code: 'latest-insights-dirty-stale',
-      severity: 'attention',
-      message: 'Current worktree has local changes that the latest clean insights report did not include.',
-    });
-  }
-  return {
-    status: freshnessStatus(issues),
-    current_commit: current.commit_short || '',
-    current_dirty: Boolean(current.dirty),
-    issues,
   };
 }
 

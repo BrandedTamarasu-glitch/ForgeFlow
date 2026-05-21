@@ -39,7 +39,7 @@ Passing
 - Commands: 25/25 + 2/2 subdir
 - Project rules: 2/2
 - Hooks: 4/4 installed, 4/4 wired
-- Runtime helpers: 25/25 present, all syntax-OK
+- Runtime helpers: 26/26 present, all syntax-OK
 - Version: up to date
 
 Summary: all checks passing.

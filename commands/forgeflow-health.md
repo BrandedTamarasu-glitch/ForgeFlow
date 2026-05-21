@@ -221,7 +221,7 @@ Default (without `--verbose`):
 - Project rules: 2/2
 - Hooks: 3/4 installed, 3/4 wired
 - Settings.json: valid
-- Runtime helpers: 25/25
+- Runtime helpers: 26/26
 - Current project (.forgeflow/): 3/3
 - Project-local .forgeflow/: skipped — cwd /path is not inside a git worktree
 
