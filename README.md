@@ -204,8 +204,8 @@ Forgeflow includes local-only helpers that reduce agent prompt load before revie
 - **Health repair:** `health-check.js --fix --json` creates safe project-local scaffolding and seeds budget config when missing.
 - **Agent drift:** `check-agent-drift.js --json` compares consuming agent prompts against canonical shared intelligence sections and reports MISSING/DRIFTED sections. It handles mode-specific Arbiter expectations and treats explicitly adapted sections as informational.
 - **Context advisor:** `advise-context.js --root .forgeflow --record --json` reports budget issues, low-savings packets, topology coverage signals, trimming recommendations, and previous-run trend deltas.
-- **Project trends:** `show-project-trends.js` summarizes the latest code-map trend, artifact freshness, project-learning consumption, and advisor status from existing local artifacts. `/forgeflow-report` uses the same helper when available.
-- **Forgeflow report:** `render-forgeflow-report.js` combines local telemetry, false-positive thresholds, pattern-log freshness, context savings, project trends, and latest-insights readiness into one Markdown or JSON report.
+- **Project trends:** `show-project-trends.js` summarizes the latest code-map trend, artifact freshness, latest-insights readiness/freshness, project-learning consumption, and advisor status from existing local artifacts. `/forgeflow-report` uses the same helper when available.
+- **Forgeflow report:** `render-forgeflow-report.js` combines local telemetry, false-positive thresholds, pattern-log freshness, context savings, project trends, and latest-insights readiness/freshness into one Markdown or JSON report.
 - **Pattern learnings:** `rollup-pattern-learnings.js` scans cross-project `.forgeflow/<project>/learnings.jsonl` plus `project-learning-candidates.jsonl`, clusters known/candidate patterns with source-mix labels, and records `.learnings-log.jsonl` for `/forgeflow-report`.
 
 Review context packs keep local memory hits bounded by default. If memory context dominates packet size, lower `build-context-pack.js --max-memory-chars` or split the review scope.
@@ -292,6 +292,8 @@ From Claude Code, use the command view:
 /forgeflow-learnings --project --check
 /forgeflow-trends
 ```
+
+`/forgeflow-trends` shows code-map trend, project-learning freshness, latest-insights readiness/freshness, and context-advisor status in one compact project guidance health view.
 
 `/forgeflow-learnings --project --check` refreshes the learning rollup, runs the quality gate, performs a context-pack smoke, and reports whether latest insights will be injected into future agent packets.
 

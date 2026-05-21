@@ -4,6 +4,7 @@ const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const {
+  latestInsightsFreshness,
   parseProjectLearnings,
   projectFreshness,
   renderMarkdown,
@@ -14,7 +15,9 @@ const repoRoot = path.resolve(__dirname, '..', '..');
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-project-trends-'));
 const projectDir = path.join(root, '.forgeflow', 'Demo');
 const contextDir = path.join(projectDir, 'context');
+const latestDir = path.join(contextDir, 'latest');
 fs.mkdirSync(contextDir, { recursive: true });
+fs.mkdirSync(latestDir, { recursive: true });
 
 fs.writeFileSync(path.join(contextDir, 'code-map-history.jsonl'), [
   JSON.stringify({
@@ -77,6 +80,19 @@ fs.writeFileSync(path.join(projectDir, 'project-learnings.md'), [
   '- Code map history: 2 snapshot(s), trend compared',
   '',
 ].join('\n'));
+fs.writeFileSync(path.join(latestDir, 'latest-insights-report.json'), JSON.stringify({
+  schema_version: '1',
+  status: 'injected',
+  reason: 'quality-check-passing',
+  generated_at: '2026-05-20T00:00:00.000Z',
+  git: {
+    available: false,
+    commit_short: '',
+    dirty: true,
+  },
+  check_status: 'pass',
+  issue_count: 0,
+}, null, 2));
 
 const result = showProjectTrends({ root, projectDir });
 const markdown = renderMarkdown(result);
@@ -111,6 +127,9 @@ const missingFreshness = projectFreshness({
   latest: null,
   projectLearnings: { present: false },
 });
+const staleInsightsFreshness = latestInsightsFreshness({
+  git: { available: true, commit_short: 'bbbbbbb', dirty: false },
+}, repoRoot);
 
 const checks = [
   ['summarizes history count', result.code_map.history_snapshots === 2],
@@ -118,12 +137,14 @@ const checks = [
   ['reports new hotspots', result.code_map.new_high_fan_in.includes('src/core.ts') && result.code_map.new_high_fan_out.includes('src/app.ts')],
   ['detects learning consumption', result.project_learnings.consumed_code_map_trend === true && parsedLearnings.consumed_code_map_trend === true && parsedLearnings.consumed_code_map_history_snapshots === 2 && parsedLearnings.generated_at === ''],
   ['summarizes freshness', result.freshness.status === 'attention' && result.freshness.issues.some((item) => item.code === 'project-learnings-generated-at-missing')],
+  ['summarizes latest insights', result.latest_insights.status === 'injected' && result.latest_insights.check_status === 'pass' && result.latest_insights.freshness.status === 'current'],
+  ['detects stale latest insights', staleInsightsFreshness.status === 'attention' && staleInsightsFreshness.issues.some((item) => item.code === 'latest-insights-commit-stale')],
   ['detects stale code map freshness', staleFreshness.status === 'attention' && staleFreshness.issues.some((item) => item.code === 'code-map-commit-stale') && staleFreshness.issues.some((item) => item.code === 'code-map-dirty-stale')],
   ['detects stale project learning code-map consumption', staleLearningFreshness.status === 'attention' && staleLearningFreshness.issues.some((item) => item.code === 'project-learnings-code-map-stale')],
   ['detects missing freshness inputs', missingFreshness.status === 'missing' && missingFreshness.issues.some((item) => item.code === 'code-map-missing') && missingFreshness.issues.some((item) => item.code === 'project-learnings-missing')],
   ['summarizes advisor', result.advisor.budget_status === 'pass' && result.advisor.code_map_trends_status === 'attention'],
-  ['renders markdown', markdown.includes('# Forgeflow Project Trends') && markdown.includes('Unresolved imports delta: 1') && markdown.includes('## Freshness')],
-  ['cli json works', cli.status === 0 && cliJson.code_map.trend.status === 'compared' && cliJson.project_learnings.consumed_code_map_trend === true && Boolean(cliJson.freshness)],
+  ['renders markdown', markdown.includes('# Forgeflow Project Trends') && markdown.includes('Unresolved imports delta: 1') && markdown.includes('## Freshness') && markdown.includes('## Latest Insights')],
+  ['cli json works', cli.status === 0 && cliJson.code_map.trend.status === 'compared' && cliJson.project_learnings.consumed_code_map_trend === true && Boolean(cliJson.freshness) && cliJson.latest_insights.status === 'injected'],
   ['missing option value exits usage', missingValue.status === 2 && missingValue.stderr.includes('Missing value for --project-dir')],
 ];
 

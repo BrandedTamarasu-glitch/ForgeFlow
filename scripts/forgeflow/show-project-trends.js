@@ -154,6 +154,87 @@ function projectFreshness({ current, latest, historySnapshots = 0, projectLearni
   };
 }
 
+function latestInsightsReadiness(projectDir, root) {
+  const file = path.join(projectDir, 'context', 'latest', 'latest-insights-report.json');
+  if (!fs.existsSync(file)) {
+    return {
+      status: 'missing',
+      path: file,
+      reason: 'latest-insights-report.json not found',
+      check_status: '',
+      issue_count: 0,
+      generated_at: '',
+      commit_short: '',
+      dirty: false,
+      freshness: latestInsightsFreshness(null, root),
+    };
+  }
+  try {
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+    return {
+      status: parsed.status || 'unknown',
+      path: file,
+      reason: parsed.reason || '',
+      check_status: parsed.check_status || '',
+      issue_count: Number(parsed.issue_count || 0),
+      generated_at: parsed.generated_at || '',
+      commit_short: parsed.git && parsed.git.commit_short ? parsed.git.commit_short : '',
+      dirty: Boolean(parsed.git && parsed.git.dirty),
+      freshness: latestInsightsFreshness(parsed, root),
+    };
+  } catch (_err) {
+    return {
+      status: 'invalid',
+      path: file,
+      reason: 'latest-insights-report.json is not valid JSON',
+      check_status: '',
+      issue_count: 0,
+      generated_at: '',
+      commit_short: '',
+      dirty: false,
+      freshness: { status: 'invalid', current_commit: '', current_dirty: false, issues: [] },
+    };
+  }
+}
+
+function latestInsightsFreshness(report, root) {
+  const current = currentGitState(root);
+  const recorded = report && report.git ? report.git : {};
+  const issues = [];
+  if (!report) {
+    issues.push({
+      code: 'latest-insights-missing',
+      severity: 'missing',
+      message: 'No latest-insights report is available.',
+    });
+  } else if (!recorded || (!recorded.commit_short && recorded.available !== false)) {
+    issues.push({
+      code: 'latest-insights-provenance-missing',
+      severity: 'attention',
+      message: 'Latest-insights report does not include git provenance.',
+    });
+  } else if (current.available && current.commit_short && current.commit_short !== recorded.commit_short) {
+    issues.push({
+      code: 'latest-insights-commit-stale',
+      severity: 'attention',
+      message: `Latest insights were generated for ${recorded.commit_short}, current HEAD is ${current.commit_short}.`,
+    });
+  }
+  if (current.available && current.dirty && !recorded.dirty) {
+    issues.push({
+      code: 'latest-insights-dirty-stale',
+      severity: 'attention',
+      message: 'Current worktree has local changes that the latest clean insights report did not include.',
+    });
+  }
+  return {
+    status: freshnessStatus(issues),
+    current_commit: current.commit_short || '',
+    current_dirty: Boolean(current.dirty),
+    issues,
+  };
+}
+
 function topList(items, limit = 5) {
   return (items || []).slice(0, limit);
 }
@@ -173,6 +254,7 @@ function showProjectTrends(opts = {}) {
     codeMapHistoryFiles: fs.existsSync(historyPath) ? [historyPath] : [],
   });
   const current = currentGitState(root);
+  const latestInsights = latestInsightsReadiness(projectDir, root);
 
   return {
     schema_version: '1',
@@ -181,6 +263,7 @@ function showProjectTrends(opts = {}) {
     paths: {
       code_map_history: fs.existsSync(historyPath) ? path.relative(root, historyPath) : null,
       project_learnings: fs.existsSync(learningsPath) ? path.relative(root, learningsPath) : null,
+      latest_insights_report: fs.existsSync(latestInsights.path) ? path.relative(root, latestInsights.path) : null,
     },
     code_map: {
       history_snapshots: history.length,
@@ -194,6 +277,7 @@ function showProjectTrends(opts = {}) {
     },
     project_learnings: projectLearnings,
     freshness: projectFreshness({ current, latest, historySnapshots: history.length, projectLearnings }),
+    latest_insights: latestInsights,
     advisor: {
       budget_status: advisor.budget.status,
       code_topology_status: advisor.code_topology.status,
@@ -233,6 +317,13 @@ function renderMarkdown(result) {
     `- Current dirty: ${result.freshness.current_dirty ? 'yes' : 'no'}`,
     `- Issues: ${result.freshness.issues.length > 0 ? result.freshness.issues.map((item) => `${item.code}: ${item.message}`).join('; ') : '(none)'}`,
     '',
+    '## Latest Insights',
+    '',
+    `- Status: ${result.latest_insights.status}`,
+    `- Gate: ${result.latest_insights.check_status || '(unknown)'}`,
+    `- Freshness: ${result.latest_insights.freshness ? result.latest_insights.freshness.status : 'unknown'}`,
+    `- Issues: ${result.latest_insights.freshness && result.latest_insights.freshness.issues.length > 0 ? result.latest_insights.freshness.issues.map((item) => `${item.code}: ${item.message}`).join('; ') : '(none)'}`,
+    '',
     '## Project Learnings',
     '',
     `- Present: ${result.project_learnings.present ? 'yes' : 'no'}`,
@@ -269,6 +360,8 @@ if (require.main === module) {
 }
 
 module.exports = {
+  latestInsightsFreshness,
+  latestInsightsReadiness,
   latestCodeMapTrend,
   parseProjectLearnings,
   projectFreshness,
