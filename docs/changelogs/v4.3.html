@@ -258,14 +258,14 @@
     <div class="version-tag">Forgeflow &mdash; Release Notes</div>
     <h1>What&rsquo;s new in <span>V4.3</span></h1>
     <div class="header-meta">
-      <div class="meta-item"><strong>Date</strong> &nbsp; 18 April 2026</div>
-      <div class="meta-item"><strong>Scope</strong> &nbsp; Observability + integrity + cross-project memory + plugin packaging (Phases 1&ndash;3 of the V4.3 plan)</div>
-      <div class="meta-item"><strong>Files updated</strong> &nbsp; 2 new commands (forgeflow-metrics, forgeflow-health), 1 new hook (forgeflow-telemetry.js), new <code>.claude-plugin/</code> + <code>forgeflow-patterns/</code> dirs, atlas-{early,consult,review} updated, update-forgeflow sync expanded</div>
+      <div class="meta-item"><strong>Date</strong> &nbsp; 21 May 2026</div>
+      <div class="meta-item"><strong>Scope</strong> &nbsp; Observability + integrity + cross-project memory + plugin packaging + stabilization smoke and pilot readiness</div>
+      <div class="meta-item"><strong>Files updated</strong> &nbsp; 4 user-facing commands (forgeflow-metrics, forgeflow-health, forgeflow-smoke, forgeflow-pilot), runtime helpers, plugin metadata, clean-checkout release validation, docs, and topology/report guidance</div>
     </div>
   </header>
 
   <div class="intro">
-    V4.3 addresses the gaps V4.2 surfaces: no data on whether the new commands are being used, no way to verify the Forgeflow team is installed correctly, and learnings trapped per-project instead of flowing across projects. Three themes shipped in parallel &mdash; Observability, Integrity, Cross-Project Memory &mdash; plus plugin packaging to reduce install friction. Phase 4 (monorepo-aware <code>/fleet</code>) is deferred pending Phase 1 telemetry signal. <em>The guiding rule: before adding more surface area, know what&rsquo;s installed, what&rsquo;s working, and what&rsquo;s being used.</em>
+    V4.3 addresses the gaps V4.2 surfaces: no data on whether commands are being used, no repeatable way to verify the Forgeflow team is installed correctly, and no compact release path for smoke checks, pilot evidence, and clean-checkout validation. The release ships Observability, Integrity, Cross-Project Memory, plugin packaging, stabilization smoke automation, maintainer pilot scripts, and topology/report hardening. <em>The guiding rule: before adding more surface area, know what&rsquo;s installed, what&rsquo;s working, and what&rsquo;s ready for a maintainer to run.</em>
   </div>
 
   <!-- Phase 1: Observability -->
@@ -301,7 +301,7 @@
     <ul class="changes">
       <li>
         <strong><code>.claude-plugin/plugin.json</code> &mdash; plugin manifest</strong>
-        <span class="detail">Declares version 4.2.0, author, homepage, keywords, and component directories (agents, commands, hooks, templates, project-rules, forgeflow-patterns). <code>install.destinations</code> map each source directory to its target under <code>~/.claude/</code>. <code>install.preserve</code> protects <code>custom-*</code> agents from being overwritten. <code>install.post-install</code> documents which hooks need manual wiring into <code>settings.json</code> PostToolUse.</span>
+        <span class="detail">Declares version 4.3.0, author, homepage, keywords, and component directories (agents, commands, hooks, templates, project-rules, forgeflow-patterns). <code>install.destinations</code> map each source directory to its target under <code>~/.claude/</code>. <code>install.preserve</code> protects <code>custom-*</code> agents from being overwritten. <code>install.post-install</code> documents which hooks need manual wiring into <code>settings.json</code> PostToolUse.</span>
       </li>
       <li>
         <strong><code>.claude-plugin/marketplace.json</code> &mdash; marketplace entry</strong>
@@ -360,6 +360,34 @@
 
   <div class="divider"></div>
 
+  <!-- Stabilization -->
+  <div class="section section-cross">
+    <div class="section-header">
+      <span class="agent-badge badge-cross">Stabilization &mdash; Smoke + Pilot Readiness</span>
+      <span class="section-role">Repeatable local verification before broader use</span>
+    </div>
+    <ul class="changes">
+      <li>
+        <strong><code>/forgeflow-smoke</code> and <code>smoke-check.js</code> &mdash; one local stabilization check</strong>
+        <span class="detail">Runs health, trends refresh, report refresh, code map, doc links, and release-version guards in one pass. The helper emits Markdown or JSON, reports pass/warn/fail per check, resolves stale latest-insights recommendations when the same run refreshes them, and keeps warnings actionable instead of failing informational fixture/test import gaps.</span>
+      </li>
+      <li>
+        <strong><code>/forgeflow-pilot</code> and <code>render-pilot-script.js</code> &mdash; bounded maintainer trial script</strong>
+        <span class="detail">Prints a repeatable pilot path for Claude Code or Codex: install verification, baseline smoke, trends, report, code map, one bounded work item, final report, pilot evidence recording, rollup, and a public-safe result template. This lets a maintainer run one real trial without assembling steps from the full wiki.</span>
+      </li>
+      <li>
+        <strong>Import-gap hardening for project trends, report, and smoke</strong>
+        <span class="detail">Code maps still show every unresolved and skipped dynamic import, but each gap is classified as production or test/fixture scope. Trends, report, and smoke now escalate production-scope gaps while leaving test/fixture-only gaps visible as informational context.</span>
+      </li>
+      <li>
+        <strong>Clean-checkout release verification</strong>
+        <span class="detail">Verified a fresh checkout at the release commit, disposable Claude and Codex template installs, installed helper health with project-local repair, clean smoke, and the full release-check test list. Generated local state remains under ignored <code>.forgeflow/</code> paths.</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
   <!-- Phase 4 deferral + sequencing -->
   <div class="section section-compass">
     <div class="section-header">
@@ -386,7 +414,7 @@
 
   <footer>
     <div class="footer-left">Forgeflow &mdash; ForgeflowAI/Forgeflow &mdash; V4.3</div>
-    <div class="footer-right">18 Apr 2026</div>
+    <div class="footer-right">21 May 2026</div>
   </footer>
 
 </div>
