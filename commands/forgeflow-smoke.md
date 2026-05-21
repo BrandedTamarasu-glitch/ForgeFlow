@@ -34,7 +34,7 @@ The command uses `scripts/forgeflow/smoke-check.js`.
 
 ```bash
 HELPER_DIR="scripts/forgeflow"
-if [ ! -x "${HELPER_DIR}/smoke-check.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/smoke-check.js" ]; then
+if [ ! -f "${HELPER_DIR}/smoke-check.js" ] && [ -f "$HOME/.claude/forgeflow/scripts/forgeflow/smoke-check.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
 ```
@@ -50,7 +50,7 @@ Smoke helper is not installed. Run /update-forgeflow, then retry /forgeflow-smok
 Pass through `$ARGUMENTS`.
 
 ```bash
-"${HELPER_DIR}/smoke-check.js" $ARGUMENTS
+node "${HELPER_DIR}/smoke-check.js" $ARGUMENTS
 ```
 
 Print the helper output directly.

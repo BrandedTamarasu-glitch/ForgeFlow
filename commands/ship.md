@@ -27,7 +27,7 @@ fi
 <objective>
 Ship the current branch. This is the final command in the lifecycle: `/discuss` -> `/research` -> `/plan` -> `/consult` -> `/implement` -> `/review` -> `/ship`. It generates a stakeholder presentation (HTML), creates or updates a pull request, monitors CI, and auto-fixes failures.
 
-**Prerequisite:** The Forgeflow must have passed this branch. `/ship` checks `review-history.md` for an APPROVE + CONFIRM verdict and refuses to proceed without it.
+**Prerequisite:** The Forgeflow must have passed this branch. `/ship` checks `review-history.md` for a passing review verdict (`APPROVE + CONFIRM` or an allowed `CONDITIONAL APPROVE`) and refuses to proceed without it.
 
 **Permission grant:** The user invoked /ship, which grants permission to push, create PRs, and auto-fix CI failures. This overrides the global CLAUDE.md restriction on git push and gh commands for the scope of this execution.
 </objective>
@@ -65,7 +65,7 @@ Read `${FORGEFLOW_DIR}/review-history.md` and parse for the latest verdict.
 
 - If the file does not exist, exit immediately:
   "Review not passed. Run `/review` first to get Forgeflow approval."
-- If the latest verdict is not APPROVE + CONFIRM, exit immediately:
+- If the latest verdict is not a passing review verdict (`APPROVE + CONFIRM` or an allowed `CONDITIONAL APPROVE`), exit immediately:
   "Review not passed. Run `/review` first to get Forgeflow approval."
 
 Do NOT proceed past this step without a passing verdict.
@@ -109,19 +109,28 @@ Read each of these if present -- do not fail if missing:
 Also check for `CONTEXT.md` in the working directory. If it exists, read it and pass to Compass and Atlas — it provides service-specific context that improves presentation quality.
 
 ### 1d.1 Implementation notes quality check
-If `scripts/forgeflow/check-implementation-notes.js` is available, run:
+Resolve the helper directory before running release-gated checks:
 
 ```bash
-scripts/forgeflow/check-implementation-notes.js --project-dir "${FORGEFLOW_DIR}" --json
+HELPER_DIR="scripts/forgeflow"
+if [ ! -f "${HELPER_DIR}/check-implementation-notes.js" ] && [ -f "$HOME/.claude/forgeflow/scripts/forgeflow/check-implementation-notes.js" ]; then
+  HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
+fi
+```
+
+If `${HELPER_DIR}/check-implementation-notes.js` is available, run:
+
+```bash
+node "${HELPER_DIR}/check-implementation-notes.js" --project-dir "${FORGEFLOW_DIR}" --json
 ```
 
 Treat `warn` as a visible ship note, not a blocker. Treat `fail` as a hard stop because it means sensitive content or another release-blocking notes problem was detected. Include the checker status in the PR body and ship artifacts when using `ship-prepare.sh`.
 
 ### 1d.2 Project learnings refresh
-If `scripts/forgeflow/show-project-learnings.js` is available, run it before preparing the PR body:
+If `${HELPER_DIR}/show-project-learnings.js` is available, run it before preparing the PR body:
 
 ```bash
-scripts/forgeflow/show-project-learnings.js --project-dir "${FORGEFLOW_DIR}" --json
+node "${HELPER_DIR}/show-project-learnings.js" --project-dir "${FORGEFLOW_DIR}" --json
 ```
 
 Treat the refreshed project learnings as local guidance only. Include the artifact path in the ship handoff, but do not claim any learning as current evidence unless it is verified against the current code, tests, and review artifacts.
@@ -132,30 +141,30 @@ files in `frontend/`, `src/components/`, `src/pages/`, `public/`, or with extens
 
 Set `HAS_FRONTEND=true` if any frontend files are present.
 
-### 1f. Secret scan (MEDIUM priority -- warn, do not block)
+### 1f. Secret scan (hard gate)
 Scan the full diff for obvious secret patterns:
 - `password=`, `api_key=`, `secret=`, `token=` (case-insensitive, in assignment context)
 - Base64 strings longer than 40 characters inside `.env` files
 - AWS key patterns (`AKIA[A-Z0-9]{16}`)
 - Private key headers (`-----BEGIN .* PRIVATE KEY-----`)
 
-If any matches found, use `AskUserQuestion` to gate on user confirmation:
+If any matches are found, exit immediately:
 ```
-WARNING: Potential secrets detected in diff:
+Potential secrets detected in diff:
   - [file:line] [pattern matched]
 
-Continue shipping despite potential secrets? (yes/no)
+Remove or redact the matched content, rerun validation, then rerun /ship.
 ```
 
-If the user says no, exit immediately. If yes, proceed. Do NOT continue without explicit user confirmation when secrets are detected.
+Do not prompt to continue and do not ship with potential secrets in the diff.
 
 ### 1g. Commit hygiene validation
 
-If the project references `@~/.claude/project-rules/commit-hygiene.md` in its CLAUDE.md, enforce those rules here as the last gate before PR creation. If the file is not referenced, skip this step silently.
+Enforce Forgeflow commit hygiene rules as the last gate before PR creation unless `$ARGUMENTS` contains `--skip-hygiene`. Do not depend on a `CLAUDE.md` opt-in.
 
 Run these checks:
 
-**Commit body line length (hard gate if opted in):**
+**Commit body line length (hard gate):**
 ```bash
 # Find any commit body line longer than 72 chars since base branch
 git log ${BASE_BRANCH}..HEAD --format="%b" | awk 'length > 72 {print NR": "$0}'
@@ -195,9 +204,9 @@ grep -rn "import.*\b<exported-name>\b" src/ --include="*.ts" --include="*.tsx"
 If consumers exist but the export was removed, emit a WARNING listing them. Let the user decide — do not block.
 
 **Secret patterns check (cross-reference 1f):**
-This step is already covered by 1f, but re-run the scan if the user answered "yes" to 1f's prompt and modified any files since. Otherwise skip.
+This step is already covered by 1f. Re-run the scan if any files changed during hygiene fixes; any match remains a hard stop.
 
-**Fail-open default:** If `git log` or `git diff` errors out (e.g., shallow clone, detached HEAD), log the error and continue. Do not let hygiene validation itself block ship.
+**Fail-open default:** If non-secret hygiene checks such as `git log` or `git diff` error out (e.g., shallow clone, detached HEAD), log the error and continue. Secret-scan failures must never fail open.
 
 
 ## Step 2: Phase 1 -- Parallel Content Generation
@@ -872,7 +881,7 @@ After fix agents complete:
 </process>
 
 <success_criteria>
-- [ ] Review gate enforced -- /ship refuses without APPROVE + CONFIRM
+- [ ] Review gate enforced -- /ship refuses without a passing review verdict
 - [ ] Compass produces stakeholder-readable JSON with no jargon
 - [ ] Atlas produces accurate dev JSON from actual git/test data
 - [ ] Screenshots captured when possible, graceful fallback when not

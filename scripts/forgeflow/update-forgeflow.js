@@ -113,6 +113,11 @@ function managedFilesFromTree(tree) {
     .sort();
 }
 
+function shouldSyncSource(source) {
+  const entry = manifestEntry(source);
+  return Boolean(isManagedSource(source) && entry && !entry.preserve);
+}
+
 async function latestSha(repo) {
   const data = await request(`https://api.github.com/repos/${repo}/commits/main`, 'json');
   const sha = data.sha || '';
@@ -135,10 +140,14 @@ async function filesForInstall(repo, current, latest) {
   const deleted = [];
   for (const item of data.files || []) {
     const source = item.filename;
-    if (!isManagedSource(source)) continue;
     if (item.status === 'removed') {
-      deleted.push(source);
-    } else if (['added', 'modified', 'renamed'].includes(item.status) && !manifestEntry(source).preserve) {
+      if (shouldSyncSource(source)) deleted.push(source);
+    } else if (item.status === 'renamed') {
+      if (item.previous_filename && shouldSyncSource(item.previous_filename)) {
+        deleted.push(item.previous_filename);
+      }
+      if (shouldSyncSource(source)) files.push(source);
+    } else if (['added', 'modified'].includes(item.status) && shouldSyncSource(source)) {
       files.push(source);
     }
   }
@@ -253,6 +262,27 @@ async function installFiles({ repo, sha, home, files, fetcher = fetchRaw, dryRun
   return { synced, failed };
 }
 
+function deleteFiles({ home, files, dryRun = false }) {
+  const removed = [];
+  const failed = [];
+  for (const source of files) {
+    const entry = manifestEntry(source, home);
+    if (!entry || entry.preserve) continue;
+    try {
+      if (fs.existsSync(entry.destination)) {
+        if (!dryRun) fs.unlinkSync(entry.destination);
+        removed.push({
+          source,
+          destination: entry.destination,
+        });
+      }
+    } catch (err) {
+      failed.push({ source, error: err.message });
+    }
+  }
+  return { removed, failed };
+}
+
 function rollbackForgeflow(opts = {}) {
   const home = opts.home || path.join(os.homedir(), '.claude');
   const manifestPath = backupManifestPath(home);
@@ -333,7 +363,7 @@ async function updateForgeflow(opts = {}) {
     : await filesForInstall(repo, current, latest));
   const backup = createBackup({
     home,
-    files: plan.files,
+    files: [...plan.files, ...plan.deleted],
     current,
     dryRun: opts.dryRun,
   });
@@ -345,7 +375,11 @@ async function updateForgeflow(opts = {}) {
     fetcher: opts.fetcher || fetchRaw,
     dryRun: opts.dryRun,
   });
-  const versionWritten = installed.failed.length === 0 && !opts.dryRun;
+  const removed = installed.failed.length === 0
+    ? deleteFiles({ home, files: plan.deleted, dryRun: opts.dryRun })
+    : { removed: [], failed: [] };
+  const failures = [...installed.failed, ...removed.failed];
+  const versionWritten = failures.length === 0 && !opts.dryRun;
   if (versionWritten) {
     fs.mkdirSync(home, { recursive: true });
     fs.writeFileSync(versionPath(home), `${latest}\n`);
@@ -353,15 +387,16 @@ async function updateForgeflow(opts = {}) {
 
   return {
     schema_version: '1',
-    status: installed.failed.length === 0 ? (opts.repair ? 'repaired' : 'updated') : 'partial',
+    status: failures.length === 0 ? (opts.repair ? 'repaired' : 'updated') : 'partial',
     current,
     latest,
     first_run: plan.firstRun,
     repair: Boolean(opts.repair),
     files: plan.files,
     synced: installed.synced,
-    failed: installed.failed,
+    failed: failures,
     deleted: plan.deleted,
+    removed: removed.removed,
     version_written: versionWritten,
     backup,
   };
@@ -409,7 +444,7 @@ function renderMarkdown(result) {
     lines.push('', 'Version was not updated. Re-run /update-forgeflow after fixing the failure.');
   }
   if (result.deleted.length > 0) {
-    lines.push('', 'Removed upstream, not deleted locally:');
+    lines.push('', result.removed && result.removed.length > 0 ? 'Files removed:' : 'Removed upstream, not present locally:');
     for (const item of result.deleted) lines.push(`  ${item}`);
   }
   if (result.backup?.created) {
@@ -437,6 +472,7 @@ module.exports = {
   filesForInstall,
   filesForRepair,
   installFiles,
+  deleteFiles,
   renderMarkdown,
   rollbackForgeflow,
   updateForgeflow,

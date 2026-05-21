@@ -92,6 +92,23 @@ const sensitive = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-projec
   '--learning',
   'token: SHOULD_NOT_WRITE',
 ], { encoding: 'utf8' });
+const symlinkProjectDir = path.join(tmp, '.forgeflow', 'SymlinkDemo');
+fs.mkdirSync(symlinkProjectDir, { recursive: true });
+const outsideCandidates = path.join(tmp, 'outside-candidates.jsonl');
+const symlinkCandidates = path.join(symlinkProjectDir, 'project-learning-candidates.jsonl');
+fs.writeFileSync(outsideCandidates, 'do not append\n');
+let symlinkAppendBlocked = true;
+try {
+  fs.symlinkSync(outsideCandidates, symlinkCandidates);
+  recordProjectLearning({
+    projectDir: symlinkProjectDir,
+    category: 'risk-area',
+    learning: 'Should not append through symlink',
+  });
+  symlinkAppendBlocked = false;
+} catch (err) {
+  symlinkAppendBlocked = err.message.includes('symlinked file');
+}
 const afterCli = fs.readFileSync(file, 'utf8');
 
 const checks = [
@@ -110,6 +127,7 @@ const checks = [
   ['oversized guidance fails', oversizedGuidance.status === 1 && oversizedGuidance.stderr.includes('application_guidance')],
   ['sensitive entry fails', sensitive.status === 1 && sensitive.stderr.includes('sensitive content')],
   ['sensitive value not written', !fs.readFileSync(file, 'utf8').includes('SHOULD_NOT_WRITE')],
+  ['symlink candidate destination blocked', symlinkAppendBlocked && fs.readFileSync(outsideCandidates, 'utf8') === 'do not append\n'],
 ];
 
 let failed = 0;

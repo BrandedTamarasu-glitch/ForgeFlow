@@ -17,6 +17,26 @@ const result = buildMemoryContext({
   maxHits: 8,
   maxChars: 4000,
 });
+const symlinkOutProject = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-memory-context-symlink-'));
+fs.writeFileSync(path.join(symlinkOutProject, 'project-learnings.md'), '# Project Learnings\n\n- safe session note\n');
+const outsideContext = path.join(symlinkOutProject, 'outside-context.md');
+const symlinkContext = path.join(symlinkOutProject, 'context', 'memory-context.md');
+fs.mkdirSync(path.dirname(symlinkContext), { recursive: true });
+fs.writeFileSync(outsideContext, 'do not overwrite\n');
+let symlinkContextBlocked = true;
+try {
+  fs.symlinkSync(outsideContext, symlinkContext);
+  buildMemoryContext({
+    projectDir: symlinkOutProject,
+    query: 'session',
+    out: symlinkContext,
+    indexOut: path.join(symlinkOutProject, 'index', 'memory-index.json'),
+    telemetryOut: path.join(symlinkOutProject, 'context', 'memory-context-telemetry.json'),
+  });
+  symlinkContextBlocked = false;
+} catch (err) {
+  symlinkContextBlocked = err.message.includes('symlinked file');
+}
 
 const content = fs.readFileSync(out, 'utf8');
 const telemetry = JSON.parse(fs.readFileSync(telemetryOut, 'utf8'));
@@ -34,6 +54,7 @@ const checks = [
   ['plan heading included', content.includes('Review Context Plan')],
   ['telemetry kind', telemetry.kind === 'memory-context'],
   ['telemetry estimates tokens', Number.isInteger(telemetry.estimated_compact_tokens)],
+  ['symlink context destination blocked', symlinkContextBlocked && fs.readFileSync(outsideContext, 'utf8') === 'do not overwrite\n'],
 ];
 
 let failed = 0;

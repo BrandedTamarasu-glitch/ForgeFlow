@@ -16,7 +16,7 @@ const {
 } = require('./install-manifest');
 
 function usage() {
-  console.error('Usage: health-check.js [--root <dir>] [--install-root <dir>] [--fix] [--json]');
+  console.error('Usage: health-check.js [--root <dir>] [--install-root <dir>] [--fix] [--verbose] [--json]');
 }
 
 function parseArgs(argv) {
@@ -24,6 +24,7 @@ function parseArgs(argv) {
     root: '',
     installRoot: '',
     fix: false,
+    verbose: false,
     json: false,
   };
 
@@ -35,6 +36,8 @@ function parseArgs(argv) {
       opts.installRoot = path.resolve(argv[++i] || '');
     } else if (arg === '--fix') {
       opts.fix = true;
+    } else if (arg === '--verbose') {
+      opts.verbose = true;
     } else if (arg === '--json') {
       opts.json = true;
     } else if (arg === '--help' || arg === '-h') {
@@ -79,6 +82,8 @@ function gitignorePath(root) {
 function hasGitignoreEntry(root) {
   const file = gitignorePath(root);
   if (!fs.existsSync(file)) return false;
+  const state = gitignoreState(root);
+  if (!state.safe) return false;
   return fs.readFileSync(file, 'utf8')
     .split(/\r?\n/)
     .some((line) => line.trim() === '.forgeflow/');
@@ -86,9 +91,32 @@ function hasGitignoreEntry(root) {
 
 function addGitignoreEntry(root) {
   const file = gitignorePath(root);
+  const state = gitignoreState(root);
+  if (!state.safe) {
+    throw new Error(`Refusing to update unsafe .gitignore: ${state.reason}`);
+  }
   const prior = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
   const prefix = prior && !prior.endsWith('\n') ? '\n' : '';
   fs.writeFileSync(file, `${prior}${prefix}.forgeflow/\n`);
+}
+
+function gitignoreState(root) {
+  const file = gitignorePath(root);
+  if (!fs.existsSync(file)) {
+    return { path: file, exists: false, safe: true, reason: '' };
+  }
+  try {
+    const stat = fs.lstatSync(file);
+    if (stat.isSymbolicLink()) {
+      return { path: file, exists: true, safe: false, reason: '.gitignore is a symlink' };
+    }
+    if (!stat.isFile()) {
+      return { path: file, exists: true, safe: false, reason: '.gitignore is not a regular file' };
+    }
+  } catch (err) {
+    return { path: file, exists: true, safe: false, reason: err.message };
+  }
+  return { path: file, exists: true, safe: true, reason: '' };
 }
 
 function check(name, ok, fix, detail = {}) {
@@ -122,21 +150,48 @@ function expectedTemplateSources() {
     .sort();
 }
 
+function walkManagedSources(dir, files = []) {
+  if (!fs.existsSync(dir)) return files;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const file = path.join(dir, entry.name);
+    if (entry.isDirectory()) walkManagedSources(file, files);
+    else if (entry.isFile()) files.push(file);
+  }
+  return files;
+}
+
+function expectedInstallSources() {
+  const sourceRoot = path.resolve(__dirname, '..', '..');
+  const dynamicDirs = [
+    'agents',
+    'commands',
+    'forgeflow-patterns',
+    'project-rules',
+  ];
+  const dynamicSources = dynamicDirs
+    .flatMap((dir) => walkManagedSources(path.join(sourceRoot, dir)))
+    .map((file) => path.relative(sourceRoot, file).replace(/\\/g, '/'));
+  return [...new Set([
+    ...dynamicSources,
+    ...expectedTemplateSources(),
+    ...expectedRuntimeSources(),
+    ...Array.from(STATIC_FILES).filter((source) => source.startsWith('hooks/')),
+  ].filter(isManagedSource))].sort();
+}
+
 function addInstallChecks(checks, installRoot) {
   if (!installRoot) return;
-  for (const source of expectedTemplateSources()) {
-    const entry = manifestEntry(source, installRoot);
-    if (!entry) continue;
-    checks.push(check(`template ${path.basename(source)}`, fs.existsSync(entry.destination), `run update-forgeflow to install ${source}`, {
-      path: entry.destination,
-    }));
-  }
-  for (const source of expectedRuntimeSources()) {
+  for (const source of expectedInstallSources()) {
     const entry = manifestEntry(source, installRoot);
     if (!entry) continue;
     const exists = fs.existsSync(entry.destination);
-    const executable = exists ? ((fs.statSync(entry.destination).mode & 0o111) !== 0) : false;
-    checks.push(check(`runtime helper ${path.basename(source)}`, exists && executable, `run update-forgeflow to install ${source}`, {
+    const executable = entry.executable ? (exists && ((fs.statSync(entry.destination).mode & 0o111) !== 0)) : true;
+    const label = entry.category === 'runtime-script'
+      ? `runtime helper ${path.basename(source)}`
+      : (entry.category === 'template' || entry.category === 'hook'
+        ? `${entry.category} ${path.basename(source)}`
+        : `${entry.category} ${source}`);
+    checks.push(check(label, exists && executable, `run update-forgeflow to install ${source}`, {
       path: entry.destination,
     }));
   }
@@ -271,7 +326,7 @@ function latestInsightsReadiness(ffDir) {
   return readLatestInsightsReadiness(ffDir, path.dirname(path.dirname(ffDir)));
 }
 
-function healthRecommendations({ latestInsights }) {
+function healthRecommendations({ latestInsights, projectLearningsCheck }) {
   const recommendations = [];
   const freshness = latestInsights && latestInsights.freshness ? latestInsights.freshness : null;
   if (freshness && freshness.issues && freshness.issues.length > 0) {
@@ -288,6 +343,14 @@ function healthRecommendations({ latestInsights }) {
       action: 'inspect-learning-gate',
       command: 'forgeflow-learnings --project --check',
       reason: 'Latest insights are not ready for agent context.',
+    });
+  }
+  if (projectLearningsCheck && ['warn', 'fail', 'invalid'].includes(projectLearningsCheck.status)) {
+    recommendations.push({
+      severity: 'attention',
+      action: 'inspect-project-learnings',
+      command: 'forgeflow-learnings --project --check',
+      reason: 'Project learnings quality gate is not passing.',
     });
   }
   return recommendations;
@@ -321,11 +384,14 @@ function runHealthCheck(opts = {}) {
     }
     checks.push(check('agent notes dir', fs.existsSync(notesDir), 'create agent-notes dir'));
 
-    if (opts.fix && !hasGitignoreEntry(root)) {
+    const gitignore = gitignoreState(root);
+    if (opts.fix && gitignore.safe && !hasGitignoreEntry(root)) {
       addGitignoreEntry(root);
       changes.push({ path: gitignorePath(root), action: 'added .forgeflow/' });
     }
-    checks.push(check('gitignore .forgeflow/', hasGitignoreEntry(root), 'add .forgeflow/ to .gitignore'));
+    checks.push(check('gitignore .forgeflow/', hasGitignoreEntry(root), gitignore.safe ? 'add .forgeflow/ to .gitignore' : `${gitignore.reason}; replace it with a regular .gitignore before running --fix`, {
+      reason: gitignore.safe ? '' : gitignore.reason,
+    }));
 
     if (opts.fix && !fs.existsSync(budgetPath)) {
       const seeded = seedBudgetConfig({ root, out: budgetPath });
@@ -337,7 +403,8 @@ function runHealthCheck(opts = {}) {
 
   const failures = checks.filter((item) => item.status === 'fail');
   const latestInsights = latestInsightsReadiness(ffDir);
-  const recommendations = healthRecommendations({ latestInsights });
+  const projectLearningsCheck = latestProjectLearningsCheck(ffDir);
+  const recommendations = healthRecommendations({ latestInsights, projectLearningsCheck });
   return {
     schema_version: '1',
     root,
@@ -349,7 +416,7 @@ function runHealthCheck(opts = {}) {
     latest_notes_check: latestImplementationNotesCheck(ffDir),
     latest_pilot_rollup: latestPilotRollup(ffDir),
     latest_project_learnings: latestProjectLearnings(ffDir),
-    latest_project_learnings_check: latestProjectLearningsCheck(ffDir),
+    latest_project_learnings_check: projectLearningsCheck,
     latest_insights_readiness: latestInsights,
     recommendations,
   };
@@ -436,7 +503,10 @@ function renderMarkdown(result) {
   }
   lines.push('## Checks', '');
   for (const item of result.checks) {
-    const suffix = item.reason ? ` (${item.reason})` : '';
+    const details = [];
+    if (item.reason) details.push(item.reason);
+    if (item.status === 'skip' && item.fix) details.push(`next: ${item.fix}`);
+    const suffix = details.length > 0 ? ` (${details.join('; ')})` : '';
     lines.push(`- ${item.status.toUpperCase()}: ${item.name}${suffix}`);
   }
   return lines.join('\n');
@@ -464,9 +534,11 @@ if (require.main === module) {
 
 module.exports = {
   hasGitignoreEntry,
+  gitignoreState,
   isGitRepo,
   renderMarkdown,
   runHealthCheck,
+  expectedInstallSources,
   expectedRuntimeSources,
   expectedTemplateSources,
   latestImplementationNotesCheck,

@@ -9,6 +9,7 @@ const {
   textChars,
   writeTelemetry,
 } = require('./context-telemetry');
+const { writeFileSafe } = require('./file-safety');
 
 const DEFAULT_MAX_HITS = 40;
 const DEFAULT_MAX_CHARS = 8000;
@@ -172,7 +173,7 @@ function buildMemoryContext(opts = {}) {
   );
 
   fs.mkdirSync(path.dirname(out), { recursive: true });
-  fs.writeFileSync(out, `${rendered.markdown}\n`);
+  writeFileSafe(out, `${rendered.markdown}\n`);
   const rawMemoryChars = sum(indexResult.index.sources.map((source) => source.bytes || 0));
   const telemetry = contextTelemetry('memory-context', {
     baseline_chars: rawMemoryChars,

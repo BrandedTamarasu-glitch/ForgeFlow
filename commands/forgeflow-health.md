@@ -26,7 +26,7 @@ No arguments: shows only failures, summary pass/fail count.
 - **Never modifies settings.json.** Hook wiring issues are reported but user fixes them manually — settings.json is too load-bearing to mutate silently.
 - **Checks current cwd's `.forgeflow/` state only inside a git worktree.** If run outside a git repo, skip project-local checks and say exactly which cwd was skipped. Do not count that skip as a failure.
 - **Version drift check is best-effort.** Compares `~/.claude/forgeflow-version` to the latest upstream SHA via `curl` to GitHub. If offline, skips the check with a note.
-- **Restart detection is indirect.** If files exist on disk but a slash command or hook behavior is unavailable in the current Claude session, report "installed on disk; restart Claude Code to reload commands/hooks."
+- **Restart state is inferred from disk checks.** If health passes on disk but a slash command or hook behavior is unavailable in the current Claude session, tell the user to restart Claude Code to reload commands/hooks.
 - **Does not validate agent file semantics.** Only checks that files exist and have valid frontmatter — does not verify prompts are coherent or up to date. For that, run the Forgeflow on the agent files themselves via `/review agents/*.md`.
 - **Custom agent detection.** Files under `~/.claude/agents/` starting with `custom-` are NOT expected; they're user-created. Only the canonical Forgeflow agents and shared reference files are required.
 
@@ -59,8 +59,8 @@ EXPECTED_TEMPLATES=(ship-presentation.html)
 EXPECTED_RUNTIME_HELPERS=(
   advise-context.js agent-chat-off.sh agent-chat-on.sh build-code-topology.js build-context-pack.js build-memory-context.js
   build-scope-manifest.js check-agent-drift.js check-codex-agent-drift.js check-context-budget.js check-implementation-notes.js check-project-learnings.js context-telemetry.js
-  ensure-forgeflow-state.sh explain-review-route.js forgeflow-version.js generate-codex-agent-stubs.js health-check.js
-  index-memory.js install-manifest.js install-template.js record-pilot-evidence.js record-project-learning.js record-review-outcome.js render-evaluation-report.js render-forgeflow-report.js render-pilot-script.js render-ship-presentation.js
+  ensure-forgeflow-state.sh explain-review-route.js file-safety.js forgeflow-version.js generate-codex-agent-stubs.js health-check.js
+  index-memory.js install-manifest.js install-template.js latest-insights-state.js record-implementation-notes.js record-pilot-evidence.js record-project-learning.js record-review-outcome.js render-evaluation-report.js render-forgeflow-report.js render-pilot-script.js render-ship-presentation.js
   rollup-pattern-learnings.js rollup-pilot-evidence.js rollup-project-learnings.js seed-budget-config.js show-code-map.js show-project-learnings.js show-project-trends.js ship-ci-status.sh ship-open-pr.sh ship-prepare.sh summarize-calibration.js
   smoke-check.js summarize-context-telemetry.js update-forgeflow.js
 )

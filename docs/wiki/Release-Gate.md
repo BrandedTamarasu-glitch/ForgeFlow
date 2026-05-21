@@ -17,10 +17,28 @@ node scripts/forgeflow/test-install-smoke.js
 node scripts/forgeflow/test-update-forgeflow.js
 node scripts/forgeflow/test-health-check.js
 node scripts/forgeflow/test-forgeflow-version.js
+node scripts/forgeflow/test-check-agent-drift.js
+node scripts/forgeflow/test-render-forgeflow-report.js
 node scripts/forgeflow/test-render-evaluation-report.js
+node scripts/forgeflow/render-evaluation-report.js --outcomes fixtures/evaluation/sample-outcomes.jsonl --public --out /tmp/forgeflow-public-evaluation-summary.md
+node scripts/forgeflow/test-record-pilot-evidence.js
+node scripts/forgeflow/test-record-project-learning.js
+node scripts/forgeflow/test-rollup-pattern-learnings.js
+node scripts/forgeflow/test-rollup-pilot-evidence.js
+node scripts/forgeflow/test-rollup-project-learnings.js
+node scripts/forgeflow/test-show-project-learnings.js
+node scripts/forgeflow/test-show-project-trends.js
+node scripts/forgeflow/test-smoke-check.js
+node scripts/forgeflow/test-render-pilot-script.js
 node scripts/forgeflow/test-seed-budget-config.js
 node scripts/forgeflow/test-check-context-budget.js
 node scripts/forgeflow/test-advise-context.js
+node scripts/forgeflow/test-build-code-topology.js
+node scripts/forgeflow/test-show-code-map.js
+node scripts/forgeflow/test-build-context-pack.js
+node scripts/forgeflow/test-implementation-notes.js
+node scripts/forgeflow/test-check-implementation-notes.js
+node scripts/forgeflow/test-check-project-learnings.js
 git diff --check
 ```
 

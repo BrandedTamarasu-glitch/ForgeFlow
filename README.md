@@ -201,6 +201,7 @@ Forgeflow includes local-only helpers that reduce agent prompt load before revie
 - **Scope manifests:** `build-scope-manifest.js` creates file ownership packets for implementation waves.
 - **Context telemetry:** context, memory, scope, and topology helpers emit token estimates and savings telemetry.
 - **Budget checks:** `check-context-budget.js` reads `.forgeflow-budget.json` and warns when compact context exceeds configured limits.
+- **Local artifact safety:** context and memory helpers reject symlinked memory sources and symlinked output destinations, include untracked files in scope summaries, and can fail CI predictably when generated packets exceed configured context budgets.
 - **Health repair:** `health-check.js --fix --json` creates safe project-local scaffolding and seeds budget config when missing.
 - **Health recommendations:** `/forgeflow-health` reports latest-insights freshness and recommends `/forgeflow-trends --refresh` when local guidance artifacts are stale.
 - **Agent drift:** `check-agent-drift.js --json` compares consuming agent prompts against canonical shared intelligence sections and reports MISSING/DRIFTED sections. It handles mode-specific Arbiter expectations and treats explicitly adapted sections as informational.
@@ -213,6 +214,8 @@ Forgeflow includes local-only helpers that reduce agent prompt load before revie
 - **Pattern learnings:** `rollup-pattern-learnings.js` scans cross-project `.forgeflow/<project>/learnings.jsonl` plus `project-learning-candidates.jsonl`, clusters known/candidate patterns with source-mix labels, and records `.learnings-log.jsonl` for `/forgeflow-report`.
 
 Review context packs keep local memory hits bounded by default. If memory context dominates packet size, lower `build-context-pack.js --max-memory-chars` or split the review scope.
+
+Review and ship commands now keep the approval handoff explicit: `/review` records final verdicts in `.forgeflow/<project>/review-history.md`, `/review-auto` records post-fix approval state, and `/ship` treats secret-scan matches as hard stops before PR creation.
 
 Useful commands:
 

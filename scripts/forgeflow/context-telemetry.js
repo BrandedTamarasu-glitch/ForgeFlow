@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { writeJsonSafe } = require('./file-safety');
 
 function estimateTokens(chars) {
   const count = Number.isFinite(chars) ? Math.max(0, chars) : 0;
@@ -48,7 +49,7 @@ function contextTelemetry(kind, values) {
 
 function writeTelemetry(file, telemetry) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, `${JSON.stringify(telemetry, null, 2)}\n`);
+  writeJsonSafe(file, telemetry);
 }
 
 module.exports = {

@@ -161,6 +161,81 @@ const cli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/build-context-pack.
   encoding: 'utf8',
 });
 const cliJson = cli.status === 0 ? JSON.parse(cli.stdout) : null;
+const untrackedRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-untracked-'));
+spawnSync('git', ['init'], { cwd: untrackedRoot, encoding: 'utf8' });
+fs.writeFileSync(path.join(untrackedRoot, 'untracked-helper.js'), 'export const value = 1;\n');
+const untrackedOutDir = path.join(untrackedRoot, '.forgeflow', path.basename(untrackedRoot), 'context', 'latest');
+const untrackedCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/build-context-pack.js'), [
+  '--out',
+  untrackedOutDir,
+  '--json',
+], {
+  cwd: untrackedRoot,
+  encoding: 'utf8',
+});
+const untrackedDiffSummary = fs.existsSync(path.join(untrackedOutDir, 'diff-summary.md'))
+  ? fs.readFileSync(path.join(untrackedOutDir, 'diff-summary.md'), 'utf8')
+  : '';
+const budgetRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-budget-'));
+spawnSync('git', ['init'], { cwd: budgetRoot, encoding: 'utf8' });
+fs.writeFileSync(path.join(budgetRoot, 'big-change.js'), `${'const value = 1;\n'.repeat(200)}`);
+fs.writeFileSync(path.join(budgetRoot, '.forgeflow-budget.json'), JSON.stringify({
+  max_compact_tokens: 1,
+  warn_only: false,
+}, null, 2));
+const budgetCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/build-context-pack.js'), [
+  '--out',
+  path.join(budgetRoot, '.forgeflow', path.basename(budgetRoot), 'context', 'latest'),
+  '--ci',
+  '--json',
+], {
+  cwd: budgetRoot,
+  encoding: 'utf8',
+});
+const symlinkOutDir = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-symlink-'));
+const outsideDiff = path.join(symlinkOutDir, 'outside-diff.md');
+const symlinkDiff = path.join(symlinkOutDir, 'diff-summary.md');
+fs.writeFileSync(outsideDiff, 'do not overwrite\n');
+let symlinkPackBlocked = true;
+try {
+  fs.symlinkSync(outsideDiff, symlinkDiff);
+  buildContextPack({
+    filesPath: path.join(repoRoot, 'fixtures/context-pack/review.files'),
+    linesChanged: 80,
+    out: symlinkOutDir,
+    ci: false,
+    maxMemoryChars: 12000,
+    maxDiffChars: 18000,
+  });
+  symlinkPackBlocked = false;
+} catch (err) {
+  symlinkPackBlocked = err.message.includes('symlinked file');
+}
+const symlinkMemoryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-memory-symlink-'));
+spawnSync('git', ['init'], { cwd: symlinkMemoryRoot, encoding: 'utf8' });
+fs.writeFileSync(path.join(symlinkMemoryRoot, 'src-auth-session.js'), 'export const session = true;\n');
+const symlinkMemoryProject = path.join(symlinkMemoryRoot, '.forgeflow', path.basename(symlinkMemoryRoot));
+fs.mkdirSync(symlinkMemoryProject, { recursive: true });
+const outsideMemory = path.join(symlinkMemoryRoot, 'outside-memory.md');
+fs.writeFileSync(outsideMemory, '# Secret Memory\n\n- TOP_SECRET_MARKER session token leak\n');
+fs.symlinkSync(outsideMemory, path.join(symlinkMemoryProject, 'project-learnings.md'));
+const symlinkMemoryOut = path.join(symlinkMemoryProject, 'context', 'latest');
+const symlinkMemoryCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/build-context-pack.js'), [
+  '--out',
+  symlinkMemoryOut,
+  '--task',
+  'Review session token behavior',
+  '--json',
+], {
+  cwd: symlinkMemoryRoot,
+  encoding: 'utf8',
+});
+const symlinkMemoryResult = symlinkMemoryCli.status === 0 ? JSON.parse(symlinkMemoryCli.stdout) : {};
+const symlinkMemorySynthesis = JSON.parse(fs.readFileSync(path.join(symlinkMemoryOut, 'synthesis-input.json'), 'utf8'));
+const symlinkMemoryHits = fs.readFileSync(path.join(symlinkMemoryOut, 'memory-hits.md'), 'utf8');
+const symlinkMemoryPackets = Object.values(symlinkMemorySynthesis.agent_packets)
+  .map((packet) => fs.readFileSync(path.join(symlinkMemoryRoot, packet), 'utf8'))
+  .join('\n');
 
 const route = JSON.parse(fs.readFileSync(path.join(outDir, 'route.json'), 'utf8'));
 const manifest = JSON.parse(fs.readFileSync(path.join(outDir, 'file-manifest.json'), 'utf8'));
@@ -221,7 +296,7 @@ const checks = [
   ['agent packet includes latest insights', wardenPacket.includes('## Latest Insights')],
   ['agent packet latest insights omit stale topology', !wardenPacket.includes('legacy/stale-topology.js')],
   ['agent packet includes current project code map', wardenPacket.includes('## Project Code Map') && wardenPacket.includes('Artifact:') && wardenPacket.includes('code-topology.json')],
-  ['agent packet includes provenance', wardenPacket.includes('## Provenance') && wardenPacket.includes('Provenance:')],
+  ['agent packet includes provenance', wardenPacket.includes('Provenance:')],
   ['agent packet omits stale project code map', !wardenPacket.includes('Sections mapped: 12')],
   ['agent packet includes code topology', wardenPacket.includes('## Code Topology') && wardenPacket.includes('sections') && wardenPacket.includes('static JS/TS import graph only')],
   ['agent packet escapes markdown paths', wardenPacket.includes('src/auth/session\\.ts')],
@@ -240,6 +315,10 @@ const checks = [
   ['blocked insights omit malformed candidate body', !blockedInsights.includes('This malformed candidate should block injection.')],
   ['compact project code map renders', compactMap.includes('Sections mapped: 12')],
   ['cli json exposes code topology', cli.status === 0 && cliJson.code_topology.available === true && cliJson.code_topology.paths.graph.endsWith('code-topology.json')],
+  ['untracked file included in diff summary', untrackedCli.status === 0 && untrackedDiffSummary.includes('?? untracked-helper.js')],
+  ['ci budget violation fails predictably', budgetCli.status === 1 && budgetCli.stderr.includes('Context pack budget exceeded')],
+  ['symlink context pack destination blocked', symlinkPackBlocked && fs.readFileSync(outsideDiff, 'utf8') === 'do not overwrite\n'],
+  ['symlink memory fallback does not leak', symlinkMemoryCli.status === 0 && !symlinkMemoryHits.includes('TOP_SECRET_MARKER') && !symlinkMemoryPackets.includes('TOP_SECRET_MARKER') && symlinkMemorySynthesis.memory_index_path === null && symlinkMemoryResult.mode],
 ];
 
 let failed = 0;

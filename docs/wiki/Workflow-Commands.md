@@ -17,8 +17,8 @@ Forgeflow can be used as a full lifecycle or as targeted commands.
 | `/plan` | Produce a phased implementation plan with validation criteria. |
 | `/consult` | Produce an implementation brief across architecture, security, UX, and coordination. |
 | `/implement` | Execute the current brief with coordinated agents and maintain `.forgeflow/<project>/implementation-notes.md`. |
-| `/review` | Review changed files with explainable routing and multi-agent synthesis. |
-| `/review-auto` | Apply conservative safe fixes, then re-review. |
+| `/review` | Review changed files with explainable routing and multi-agent synthesis, then record the final verdict in `.forgeflow/<project>/review-history.md` for `/ship`. |
+| `/review-auto` | Apply conservative safe fixes, refresh/check project learnings, then re-review and record the post-fix approval state. |
 | `/audit` | Run a deeper systems/security/craft audit. |
 | `/dashboard` | Start the optional local metrics dashboard on port 4003. |
 | `/forgeflow-code-map` | Generate a compact project code map with topology, sections, changed-section hints, import-gap explanations, Git provenance, and generated artifact paths. |
@@ -32,7 +32,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands.
 | `/forgeflow-smoke` | Run the local stabilization smoke path for health, trends refresh, report refresh, code map, doc links, and release-version guards. |
 | `/forgeflow-trends` | Show the current project's code-map trend, import-gap status, artifact freshness, latest-insights readiness/freshness, project-learning consumption, and context-advisor status. Add `--refresh` to refresh project learnings and latest-insights readiness first; stale reports recommend it directly. |
 | `/forgeflow-version` | Show installed commit, upstream status, latest release, helper paths, and the next update action. |
-| `/ship` | Prepare presentation, PR, CI checks, and release handoff. |
+| `/ship` | Prepare presentation, PR, CI checks, and release handoff after a passing review-history gate; potential secrets are hard blockers. |
 
 ## Codex Skills
 
@@ -70,7 +70,7 @@ scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json
 scripts/forgeflow/advise-context.js --root .forgeflow --record --json
 ```
 
-These helpers produce bounded context packets, compact memory summaries, file ownership packets, budget warnings, trimming recommendations, and trend history.
+These helpers produce bounded context packets, compact memory summaries, file ownership packets, budget warnings, trimming recommendations, and trend history. Context and memory helpers reject symlinked local artifact reads/writes and include untracked files in generated review/scope context.
 
 ## Implementation Notes
 

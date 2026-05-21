@@ -242,6 +242,7 @@ function showProjectTrends(opts = {}) {
   const advisor = adviseContext({
     root: projectDir,
     codeMapHistoryFiles: fs.existsSync(historyPath) ? [historyPath] : [],
+    record: Boolean(opts.refresh),
   });
   const current = currentGitState(root);
   const latestInsights = latestInsightsReadiness(projectDir, root);
@@ -283,6 +284,12 @@ function showProjectTrends(opts = {}) {
       code_topology_status: advisor.code_topology.status,
       code_map_trends_status: advisor.code_map_trends.status,
       recommendation_actions: advisor.recommendations.map((item) => item.action),
+      recommendations: advisor.recommendations.slice(0, 5).map((item) => ({
+        severity: item.severity,
+        action: item.action,
+        command: item.command,
+        reason: item.reason,
+      })),
       estimated_compact_tokens: advisor.summary.totals.estimated_compact_tokens,
       estimated_saved_tokens: advisor.summary.totals.estimated_saved_tokens,
       percent_saved: advisor.summary.percent_saved,
@@ -356,6 +363,9 @@ function renderMarkdown(result) {
     `- Code map trends: ${result.advisor.code_map_trends_status}`,
     `- Percent saved: ${result.advisor.percent_saved}%`,
     `- Recommendations: ${result.advisor.recommendation_actions.join(', ') || '(none)'}`,
+    ...(result.advisor.recommendations.length > 0
+      ? result.advisor.recommendations.map((item) => `- Next: ${item.command}: ${item.reason}`)
+      : []),
   ].join('\n');
 }
 

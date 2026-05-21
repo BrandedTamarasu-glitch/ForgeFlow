@@ -27,7 +27,7 @@ fi
 <objective>
 Run the Forgeflow review team on changed files. Works in any project.
 
-The Forgeflow team: `smith-review`, `warden-review`, `lumen-review`, `atlas-review` (parallel) → `arbiter-review` (synthesis) → `compass-review` (final).
+The Forgeflow team: `smith_reviewer`, `warden_reviewer`, `lumen_reviewer`, `atlas_reviewer` (parallel) → `arbiter_reviewer` (synthesis) → `compass_reviewer` (final). Hyphenated command/agent names in legacy docs are display aliases only; use the canonical reviewer ids in route output and context packets.
 </objective>
 
 <context>
@@ -752,6 +752,8 @@ When `CI_MODE=true`, skip the markdown branches below and jump to Step 7.5.
 
 Display Arbiter's consolidated review followed by Compass's final review.
 
+Before returning control to the user, append the final review verdict to `${FORGEFLOW_DIR}/review-history.md`. Include timestamp, branch, current HEAD, reviewed files or range, Arbiter verdict, Compass verdict, blocker/must-fix counts, validation summary, and the exact next action. `/ship` reads this file as its approval gate, so do not skip this write for APPROVE, CONDITIONAL_APPROVE, REVISE, or BLOCK outcomes.
+
 **If Arbiter APPROVE + Compass CONFIRM:**
 ```
 ## Forgeflow: APPROVED
@@ -900,6 +902,8 @@ When Step 0 pre-flight failed, Step 0.5 returned `skip-mode`, or Step 1 produced
 `reason` uses the fixed enum in the schema doc (`classifier-skip-mode`, `no-files-changed`, `preflight-typecheck-failed`, `preflight-lint-failed`, `preflight-branch-mismatch`, `budget-exceeded`, `auth-missing`, `classifier-error`).
 
 ### 7.5c. Emit
+
+Before emitting the CI JSON block, append the same final verdict summary to `${FORGEFLOW_DIR}/review-history.md`. The entry must include the JSON verdict value and enough branch/HEAD context for `/ship` stale-review checks.
 
 Print the JSON object wrapped in sentinel tags as the LAST output to stdout. Nothing may follow:
 

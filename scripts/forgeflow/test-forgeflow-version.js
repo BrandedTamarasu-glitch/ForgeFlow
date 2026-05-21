@@ -13,6 +13,7 @@ async function main() {
   const missingHome = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-version-missing-'));
   const installedHome = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-version-installed-'));
   const corruptHome = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-version-corrupt-'));
+  const partialHome = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-version-partial-'));
   const sha = '0123456789abcdef0123456789abcdef01234567';
 
   fs.mkdirSync(path.join(installedHome, 'forgeflow', 'scripts', 'forgeflow'), { recursive: true });
@@ -26,11 +27,14 @@ async function main() {
   fs.writeFileSync(path.join(installedHome, 'hooks', 'forgeflow-statusline.js'), 'hook\n');
 
   fs.writeFileSync(path.join(corruptHome, 'forgeflow-version'), 'not-a-sha\n');
+  fs.writeFileSync(path.join(partialHome, 'forgeflow-version'), `${sha}\n`);
 
   const missing = await getVersionStatus({ home: missingHome, offline: true });
   const installed = await getVersionStatus({ home: installedHome, offline: true });
   const corrupt = await getVersionStatus({ home: corruptHome, offline: true });
+  const partial = await getVersionStatus({ home: partialHome, offline: true });
   const markdown = renderMarkdown(installed);
+  const partialMarkdown = renderMarkdown(partial);
 
   const checks = [
     ['short sha', shortSha(sha) === '0123456'],
@@ -40,6 +44,9 @@ async function main() {
     ['installed offline status', installed.status === 'installed-offline'],
     ['installed helper path exists', installed.paths.helper_root.exists === true],
     ['installed command path exists', installed.paths.version_command.exists === true],
+    ['partial install asks repair', partial.status === 'repair-needed' && partial.action === 'Run /update-forgeflow --repair.'],
+    ['partial install records missing paths', partial.path_status.missing_required.some((item) => item.name === 'updater')],
+    ['partial markdown lists missing paths', partialMarkdown.includes('## Missing Required Paths')],
     ['corrupt status', corrupt.status === 'corrupt-version'],
     ['markdown includes next step', markdown.includes('## Next Step')],
   ];

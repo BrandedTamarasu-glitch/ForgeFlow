@@ -29,15 +29,15 @@ This is the closed-loop enhancement proposed in the insights report. It is delib
 $ARGUMENTS — optional. Same as `/review` (file paths, git ref, `--pr <N>`, `--skip-preflight`) plus:
 - `--max-iterations <N>` — cap the fix-review loop (default: 2, max: 3)
 - `--dry-run` — classify findings and report what would be auto-fixed, but do not apply changes
-- `--ci` — headless CI mode. Auto-enabled when `CLAUDE_CODE_HEADLESS=1` is set. Skips the initial `/review` call when `--from-verdict-json` is supplied; commits and pushes fixes (including `chore(auto-fix): round N` subject); emits a post-fix verdict JSON block per `docs/forgeflow-json-schema.md` so the wrapper can post the updated verdict
+- `--ci` — headless CI mode. Auto-enabled when `CLAUDE_CODE_HEADLESS=1` is set. Skips the initial `/review` call when `--from-verdict-json` is supplied; commits and pushes fixes (including `chore(auto-fix): apply Forgeflow items (round N)` subject); emits a post-fix verdict JSON block per `docs/forgeflow-json-schema.md` so the wrapper can post the updated verdict
 - `--from-verdict-json <path>` — CI mode only. Accepts a PATH to a JSON file containing a pre-computed verdict (from an earlier `/review --ci` run) and starts at classification (Step 2) instead of running a fresh `/review`. This is how the PR workflow avoids paying for two reviews when the first run already produced findings. The JSON is read from the file, not passed inline — shell arg length limits make inline JSON unreliable for large findings arrays.
 </context>
 
 ## Gotchas
 - **Warden-flagged items are always surfaced, never auto-applied.** Even if a Warden finding is labeled MUST-FIX-SAFE by tier rules, the source-reviewer check forces it to MUST-FIX-RISKY. Do not remove that safeguard — it exists because "security-adjacent safe" is an oxymoron.
-- **Separate commit per iteration.** Do not rebase or squash between iterations until the loop completes. Each `chore(auto-fix): round N` commit is referenced in `review-history.md` — rewriting the commit invalidates the audit trail.
+- **Separate commit per iteration.** Do not rebase or squash between iterations until the loop completes. Each `chore(auto-fix): apply Forgeflow items (round N)` commit is referenced in `review-history.md` — rewriting the commit invalidates the audit trail.
 - **Iteration 2+ does not re-prompt unless new items appear.** This is intentional — the first-iteration approval covers NITs that recur in iteration 2. If you want to stop mid-loop, interrupt via Ctrl+C; partial work remains committed, review-history shows the cut-off round.
-- **Revert mechanism only handles modifications.** `git checkout -- <file>` restores files from HEAD, which handles modified files. If a worker deleted a file (it shouldn't — constraints forbid it), the delete is also reverted. But if a worker created a new untracked file, Step 5.1's scope check catches it and uses `rm -f` to clean up.
+- **Revert mechanism is path-scoped.** Track the exact files touched by workers. Revert only those paths with `git checkout -- <file>` and remove only new untracked files detected in Step 5.1 using path-safe handling. Never run `git checkout -- .`.
 - **Agent pre-check substitutions persist only for the run.** If you pick replacements at Step 1.5, they apply to this invocation only. The next `/review-auto` re-runs the check from scratch. Install the standard agents via `/update-forgeflow` for a permanent fix.
 - **Dry-run does not call `/review`.** It only runs the classifier on the existing review output. If you have no prior review in history, `--dry-run` after a fresh `/review` invocation requires the full flow first.
 
@@ -50,7 +50,7 @@ If `$ARGUMENTS` contains `--ci` OR the env var `CLAUDE_CODE_HEADLESS=1` is set, 
 When `CI_MODE=true`:
 - Suppress all user-facing markdown narrative. Internal step outputs accumulate into memory for the final Step N JSON emission.
 - Skip all `AskUserQuestion` prompts; use conservative defaults (accept the proposed fix set only if every item is NIT or MUST-FIX-SAFE non-security; abort the auto-fix pass otherwise).
-- Push commits back to the PR branch on each completed iteration. Commit subject format: `chore(auto-fix): round N` — matches the existing telemetry hook's regex.
+- Push commits back to the PR branch on each completed iteration. Commit subject format: `chore(auto-fix): apply Forgeflow items (round N)`.
 - At the end, emit a single `<forgeflow-verdict-json>...</forgeflow-verdict-json>` block containing the POST-FIX verdict so the wrapper can update the PR comment.
 
 ## Step 1: Initial review (skipped when --from-verdict-json is supplied)
@@ -222,7 +222,7 @@ Track the iteration-1 approval state so iteration 2+ knows what was already sanc
 
 Before dispatching, snapshot the untracked file list (for scope-violation detection on revert):
 ```bash
-git status --porcelain | grep '^??' | awk '{print $2}' > /tmp/auto-fix-untracked-before.txt
+git status --porcelain=v1 -z | python3 -c 'import sys; data=sys.stdin.buffer.read().split(b"\0"); sys.stdout.buffer.write(b"\0".join(item[3:] for item in data if item.startswith(b"?? ")) + b"\0")' > /tmp/auto-fix-untracked-before.z
 ```
 
 ### 4a. Pre-load context (Forgeflow convention)
@@ -295,14 +295,35 @@ After all workers return, before any commit:
 
 ```bash
 # 5.1 — Scope check: new untracked files are a violation
-git status --porcelain | grep '^??' | awk '{print $2}' > /tmp/auto-fix-untracked-after.txt
-NEW_UNTRACKED=$(comm -13 <(sort /tmp/auto-fix-untracked-before.txt) <(sort /tmp/auto-fix-untracked-after.txt))
-if [ -n "$NEW_UNTRACKED" ]; then
-  echo "Worker created new files (scope violation): $NEW_UNTRACKED"
-  # Delete only the new untracked files (safe — they did not exist before)
-  echo "$NEW_UNTRACKED" | xargs -r rm -f
-  # Also revert modifications
-  git checkout -- .
+git status --porcelain=v1 -z > /tmp/auto-fix-status-after.z
+python3 - "$PWD" /tmp/auto-fix-untracked-before.z /tmp/auto-fix-status-after.z <<'PY'
+import os
+import sys
+
+root, before_path, status_path = sys.argv[1:4]
+
+def read_before(path):
+    if not os.path.exists(path):
+        return set()
+    data = open(path, "rb").read()
+    return {item.decode("utf-8", "surrogateescape") for item in data.split(b"\0") if item}
+
+def read_after(path):
+    data = open(path, "rb").read()
+    items = [item.decode("utf-8", "surrogateescape") for item in data.split(b"\0") if item]
+    return {item[3:] for item in items if item.startswith("?? ")}
+
+created = sorted(read_after(status_path) - read_before(before_path))
+if created:
+    print("Worker created new files (scope violation):")
+    for rel_path in created:
+        print(f"  - {rel_path}")
+        os.unlink(os.path.join(root, rel_path))
+    sys.exit(1)
+PY
+if [ "$?" -ne 0 ]; then
+  # Also revert only worker-touched tracked files.
+  git checkout -- <worker-touched-files>
   exit 1
 fi
 
@@ -310,7 +331,7 @@ fi
 CHANGED=$(git diff --name-only | wc -l)
 if [ "$CHANGED" -gt 10 ]; then
   echo "Auto-fix touched $CHANGED files. Limit is 10. Reverting."
-  git checkout -- .
+  git checkout -- <worker-touched-files>
   exit 1
 fi
 
@@ -419,6 +440,18 @@ Recurring patterns flagged (appear in 2+ rounds this cycle):
 
 Next time Atlas participates in `/plan` or `/consult`, these patterns appear in persistent context, letting the Forgeflow team preempt them before code is written.
 
+After writing agent notes, refresh and check project learnings so auto-fix patterns can flow into latest insights:
+
+```bash
+HELPER_DIR="scripts/forgeflow"
+if [ ! -f "${HELPER_DIR}/show-project-learnings.js" ] && [ -f "$HOME/.claude/forgeflow/scripts/forgeflow/show-project-learnings.js" ]; then
+  HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
+fi
+if [ -f "${HELPER_DIR}/show-project-learnings.js" ]; then
+  node "${HELPER_DIR}/show-project-learnings.js" --project-dir ".forgeflow/${PROJECT_NAME}" --check --json
+fi
+```
+
 ## Step 7: Re-review
 
 Invoke `/review $ARGUMENTS` again WITH the same argument-stripping rules as Step 1: strip `--max-iterations`, `--dry-run`, `--from-verdict-json <path>` before passing through. KEEP `--ci` when set — the re-review must run in CI mode so it emits a JSON verdict the wrapper and Step 7.5 can consume. `--from-verdict-json` must never appear on a re-review; re-reviews always execute a fresh classification.
@@ -426,6 +459,8 @@ Invoke `/review $ARGUMENTS` again WITH the same argument-stripping rules as Step
 Parse the new verdict. When `CI_MODE=true`, extract the `<forgeflow-verdict-json>...</forgeflow-verdict-json>` block from `/review`'s stdout using the same Python regex extractor the wrapper uses (see `scripts/forgeflow-pr-review.sh`). Validate `schema_version: "1"`. Preserve this parsed verdict object as the basis for Step 7.5's final emission — do not re-derive the verdict from prose.
 
 **If APPROVE + CONFIRM:**
+Append the final post-fix verdict from the re-review to `.forgeflow/<project>/review-history.md` if `/review` did not already write it. The entry must include the final `APPROVE + CONFIRM`, branch, HEAD, iteration count, and auto-fix commit SHA so `/ship` consumes the approved post-fix state rather than the earlier round entry.
+
 Report:
 ```
 ## Auto-fix loop: SUCCESS

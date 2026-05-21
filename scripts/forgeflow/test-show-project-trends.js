@@ -72,6 +72,17 @@ fs.writeFileSync(path.join(contextDir, 'code-topology-telemetry.json'), JSON.str
     skipped_dynamic_imports: 0,
   },
 }) + '\n');
+fs.writeFileSync(path.join(latestDir, 'context-telemetry.json'), JSON.stringify({
+  schema_version: '1',
+  kind: 'context-pack',
+  baseline_chars: 100000,
+  compact_chars: 80000,
+  saved_chars: 20000,
+  estimated_baseline_tokens: 25000,
+  estimated_compact_tokens: 20000,
+  estimated_saved_tokens: 5000,
+  detail: {},
+}) + '\n');
 fs.writeFileSync(path.join(contextDir, 'code-topology.json'), JSON.stringify({
   schema_version: '1',
   unresolved: [
@@ -221,8 +232,8 @@ const checks = [
   ['detects stale project learning code-map consumption', staleLearningFreshness.status === 'attention' && staleLearningFreshness.issues.some((item) => item.code === 'project-learnings-code-map-stale')],
   ['allows refresh smoke code-map lag', refreshLagFreshness.status === 'current'],
   ['detects missing freshness inputs', missingFreshness.status === 'missing' && missingFreshness.issues.some((item) => item.code === 'code-map-missing') && missingFreshness.issues.some((item) => item.code === 'project-learnings-missing')],
-  ['summarizes advisor', result.advisor.budget_status === 'pass' && result.advisor.code_map_trends_status === 'attention'],
-  ['renders markdown', markdown.includes('# Forgeflow Project Trends') && markdown.includes('## Recommendations') && markdown.includes('Unresolved imports delta: 1') && markdown.includes('## Import Gaps') && markdown.includes('forgeflow-code-map') && markdown.includes('## Latest Insights')],
+  ['summarizes advisor', result.advisor.budget_status === 'warn' && result.advisor.code_map_trends_status === 'attention' && result.advisor.recommendations.some((item) => item.action === 'trim-budget-violation')],
+  ['renders markdown', markdown.includes('# Forgeflow Project Trends') && markdown.includes('## Recommendations') && markdown.includes('Unresolved imports delta: 1') && markdown.includes('## Import Gaps') && markdown.includes('forgeflow-code-map') && markdown.includes('## Latest Insights') && markdown.includes('Narrow file scope')],
   ['cli json works', cli.status === 0 && cliJson.code_map.trend.status === 'compared' && cliJson.project_learnings.consumed_code_map_trend === true && Boolean(cliJson.freshness) && cliJson.latest_insights.status === 'injected' && cliJson.import_gaps.status === 'attention'],
   ['refresh cli works', refreshCli.status === 0 && refreshCliJson.refresh && refreshCliJson.refresh.check_status === 'pass'],
   ['missing option value exits usage', missingValue.status === 2 && missingValue.stderr.includes('Missing value for --project-dir')],

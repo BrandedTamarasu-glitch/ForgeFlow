@@ -73,7 +73,7 @@ Overwrite `.claude/handoff.md` with this exact structure:
 - **Last commit:** <sha-short> <subject>
 
 ## What's done this session
-<bulleted summary grouped by area — draw from git log entries since the most recent base-branch divergence, plus any files edited this session that are not yet committed. Be specific, file-path-first.>
+<bulleted summary grouped by area — draw from the recent git log, current git status, linked PR metadata, and any files edited this session that are not yet committed. Be specific, file-path-first.>
 
 ## What's pending
 <bulleted list. Pull MUST-FIX and BLOCKER items from the latest Forgeflow verdict if present. Otherwise pull from TODO markers in changed files, or from the active plan's unchecked boxes.>

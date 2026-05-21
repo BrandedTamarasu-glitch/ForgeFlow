@@ -6,6 +6,7 @@ const {
   codexDestination,
   codexSources,
   installTemplate,
+  isRegularSourceFile,
 } = require('./install-template');
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-template-install-'));
@@ -27,6 +28,16 @@ const codexSkill = path.join(codexHome, 'skills', 'forgeflow-review', 'SKILL.md'
 const codexMap = path.join(codexHome, 'forgeflow', 'agent-canonical-map.json');
 const claudeCommand = path.join(claudeHome, 'commands', 'review.md');
 const claudeHelper = path.join(claudeHome, 'forgeflow', 'scripts', 'forgeflow', 'health-check.js');
+const regularSource = path.join(root, 'regular.txt');
+const symlinkSource = path.join(root, 'symlink.txt');
+fs.writeFileSync(regularSource, 'regular\n');
+let symlinkCreated = false;
+try {
+  fs.symlinkSync(regularSource, symlinkSource);
+  symlinkCreated = true;
+} catch (_err) {
+  symlinkCreated = false;
+}
 
 const checks = [
   ['both targets installed', result.results.length === 2],
@@ -38,6 +49,8 @@ const checks = [
   ['codex sources include agents', codexSources().includes('.codex/agents/smith-reviewer.toml')],
   ['codex sources include skills', codexSources().includes('.agents/skills/forgeflow-review/SKILL.md')],
   ['codex destination maps agent home', codexDestination('.codex/agents/smith-reviewer.toml', '/tmp/codex') === '/tmp/codex/agents/smith-reviewer.toml'],
+  ['regular source accepted', isRegularSourceFile(regularSource) === true],
+  ['symlink source rejected', !symlinkCreated || isRegularSourceFile(symlinkSource) === false],
   ['dry run reports dry mode', dryRun.dry_run === true],
   ['dry run avoids writes', !fs.existsSync(dryClaudeHome) && !fs.existsSync(dryCodexHome)],
 ];

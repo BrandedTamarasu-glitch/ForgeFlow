@@ -17,6 +17,37 @@ const allText = index.records.map((record) => `${record.kind} ${record.text} ${(
 const memoryHits = buildMemoryHits(repoRoot, ['src/auth/session.ts'], {
   reasons: ['auth-sensitive file changed'],
 }, 'review auth session token behavior', 12000, out);
+const symlinkProject = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-memory-index-symlink-'));
+const secretFile = path.join(symlinkProject, 'outside-secret.md');
+fs.writeFileSync(secretFile, '- TOP_SECRET_MARKER\n');
+let symlinkReadBlocked = true;
+try {
+  fs.symlinkSync(secretFile, path.join(symlinkProject, 'project-learnings.md'));
+  buildMemoryIndex({
+    projectDir: symlinkProject,
+    out: path.join(symlinkProject, 'index', 'memory-index.json'),
+  });
+  symlinkReadBlocked = false;
+} catch (err) {
+  symlinkReadBlocked = err.message.includes('symlinked file');
+}
+const symlinkOutProject = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-memory-index-out-symlink-'));
+fs.writeFileSync(path.join(symlinkOutProject, 'project-learnings.md'), '# Project Learnings\n\n- safe\n');
+const outsideOut = path.join(symlinkOutProject, 'outside-index.json');
+const symlinkOut = path.join(symlinkOutProject, 'index', 'memory-index.json');
+fs.mkdirSync(path.dirname(symlinkOut), { recursive: true });
+fs.writeFileSync(outsideOut, 'do not overwrite\n');
+let symlinkWriteBlocked = true;
+try {
+  fs.symlinkSync(outsideOut, symlinkOut);
+  buildMemoryIndex({
+    projectDir: symlinkOutProject,
+    out: symlinkOut,
+  });
+  symlinkWriteBlocked = false;
+} catch (err) {
+  symlinkWriteBlocked = err.message.includes('symlinked file');
+}
 const checks = [
   ['result path', result.out === out],
   ['index written', fs.existsSync(out)],
@@ -35,6 +66,8 @@ const checks = [
   ['indexed hit rendered', memoryHits.includes('[jsonl] Session token reviews')],
   ['implementation note hit rendered', memoryHits.includes('implementation-notes.md')],
   ['project learning hit rendered', memoryHits.includes('project-learnings.md')],
+  ['symlink memory source blocked', symlinkReadBlocked],
+  ['symlink index destination blocked', symlinkWriteBlocked && fs.readFileSync(outsideOut, 'utf8') === 'do not overwrite\n'],
 ];
 
 let failed = 0;

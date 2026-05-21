@@ -92,6 +92,12 @@ function existsWithPath(file) {
   };
 }
 
+function missingRequiredPaths(paths) {
+  return Object.entries(paths)
+    .filter(([_name, item]) => !item.exists)
+    .map(([name, item]) => ({ name, path: item.path }));
+}
+
 async function latestMain(repo) {
   const data = await request(`https://api.github.com/repos/${repo}/commits/main`);
   const sha = data.sha || '';
@@ -144,6 +150,10 @@ async function getVersionStatus(opts = {}) {
     },
     status: 'unknown',
     action: '',
+    help: '',
+  };
+  result.path_status = {
+    missing_required: missingRequiredPaths(result.paths),
   };
 
   if (!opts.offline) {
@@ -164,24 +174,38 @@ async function getVersionStatus(opts = {}) {
 
   if (installed.status === 'missing') {
     result.status = 'not-installed';
-    result.action = 'Run /update-forgeflow, or run scripts/forgeflow/update-forgeflow.js from a local checkout.';
+    result.action = 'Run /update-forgeflow.';
+    result.help = 'If the slash command is unavailable, run scripts/forgeflow/update-forgeflow.js from a local checkout.';
   } else if (installed.status === 'corrupt') {
     result.status = 'corrupt-version';
     result.action = `Delete ${installed.path}, then run /update-forgeflow.`;
   } else if (result.upstream.status === 'ok' && result.upstream.main?.sha) {
     if (installed.sha === result.upstream.main.sha) {
-      result.status = 'up-to-date';
-      result.action = 'No update needed.';
+      if (result.path_status.missing_required.length > 0) {
+        result.status = 'repair-needed';
+        result.action = 'Run /update-forgeflow --repair.';
+        result.help = 'The recorded version matches upstream, but required installed files are missing.';
+      } else {
+        result.status = 'up-to-date';
+        result.action = 'No update needed.';
+      }
     } else {
       result.status = 'outdated';
       result.action = '/update-forgeflow';
     }
   } else if (result.upstream.status === 'skipped-offline') {
-    result.status = 'installed-offline';
-    result.action = 'Run without --offline to compare against upstream main.';
+    if (result.path_status.missing_required.length > 0) {
+      result.status = 'repair-needed';
+      result.action = 'Run /update-forgeflow --repair.';
+      result.help = 'Offline mode skipped upstream comparison, but required installed files are missing.';
+    } else {
+      result.status = 'installed-offline';
+      result.action = 'Run without --offline to compare against upstream main.';
+    }
   } else {
     result.status = 'installed-unknown-upstream';
-    result.action = 'Network check failed. Re-run when GitHub is reachable, or run /update-forgeflow directly.';
+    result.action = 'Re-run /forgeflow-version when GitHub is reachable.';
+    result.help = 'If you need to repair now, run /update-forgeflow.';
   }
 
   return result;
@@ -224,8 +248,15 @@ function renderMarkdown(result) {
   lines.push(`- /update-forgeflow command: ${result.paths.update_command.path} (${yesNo(result.paths.update_command.exists)})`);
   lines.push(`- /forgeflow-version command: ${result.paths.version_command.path} (${yesNo(result.paths.version_command.exists)})`);
   lines.push(`- Statusline hook: ${result.paths.statusline_hook.path} (${yesNo(result.paths.statusline_hook.exists)})`);
+  if (result.path_status?.missing_required?.length > 0) {
+    lines.push('', '## Missing Required Paths', '');
+    for (const item of result.path_status.missing_required) {
+      lines.push(`- ${item.name}: ${item.path}`);
+    }
+  }
 
   lines.push('', '## Next Step', '', result.action);
+  if (result.help) lines.push('', result.help);
   return lines.join('\n');
 }
 
@@ -246,6 +277,7 @@ if (require.main === module) {
 
 module.exports = {
   getVersionStatus,
+  missingRequiredPaths,
   readInstalledVersion,
   renderMarkdown,
   shortSha,

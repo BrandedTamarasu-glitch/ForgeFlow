@@ -72,14 +72,27 @@ function walk(dir, files = []) {
   return files;
 }
 
+function isRegularSourceFile(file) {
+  try {
+    const stat = fs.lstatSync(file);
+    return stat.isFile() && !stat.isSymbolicLink();
+  } catch (_err) {
+    return false;
+  }
+}
+
 function relative(file) {
   return path.relative(repoRoot, file).replace(/\\/g, '/');
 }
 
 function copyFile({ source, destination, executable = false, dryRun = false }) {
   if (!dryRun) {
+    const sourcePath = path.join(repoRoot, source);
+    if (!isRegularSourceFile(sourcePath)) {
+      throw new Error(`Refusing to copy non-regular source file: ${source}`);
+    }
     fs.mkdirSync(path.dirname(destination), { recursive: true });
-    fs.copyFileSync(path.join(repoRoot, source), destination);
+    fs.copyFileSync(sourcePath, destination);
     fs.chmodSync(destination, executable ? 0o755 : 0o644);
   }
   return { source, destination };
@@ -120,7 +133,7 @@ function codexSources() {
     .map(relative)
     .filter((source) => /^\.agents\/skills\/[^/]+\/.+/.test(source));
   const support = ['.codex/agent-canonical-map.json'];
-  return [...agents, ...skills, ...support.filter((source) => fs.existsSync(path.join(repoRoot, source)))].sort();
+  return [...agents, ...skills, ...support.filter((source) => isRegularSourceFile(path.join(repoRoot, source)))].sort();
 }
 
 function codexDestination(source, home) {
@@ -201,5 +214,6 @@ module.exports = {
   installClaude,
   installCodex,
   installTemplate,
+  isRegularSourceFile,
   renderMarkdown,
 };

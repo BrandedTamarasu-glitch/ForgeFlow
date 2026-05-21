@@ -31,6 +31,9 @@ const reportCommand = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-re
 const pilotCommand = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-pilot.md'), 'utf8');
 const trendsCommand = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-trends.md'), 'utf8');
 const reviewCommand = fs.readFileSync(path.join(repoRoot, 'commands/review.md'), 'utf8');
+const reviewAutoCommand = fs.readFileSync(path.join(repoRoot, 'commands/review-auto.md'), 'utf8');
+const shipCommand = fs.readFileSync(path.join(repoRoot, 'commands/ship.md'), 'utf8');
+const handoffCommand = fs.readFileSync(path.join(repoRoot, 'commands/handoff.md'), 'utf8');
 const readme = fs.readFileSync(path.join(repoRoot, 'README.md'), 'utf8');
 const hostedDocs = fs.readFileSync(path.join(repoRoot, 'docs/index.html'), 'utf8');
 
@@ -84,6 +87,14 @@ const checks = [
   ['release check runs project learnings quality test', releaseCheck.includes('node scripts/forgeflow/test-check-project-learnings.js')],
   ['review command guides Arbiter topology use', reviewCommand.includes('Arbiter must use `code_topology_summary` as review-context guidance') && reviewCommand.includes('topology supports prioritization only') && reviewCommand.includes('code_topology_summary.history.trend.status')],
   ['review command guides Compass topology use', reviewCommand.includes('use it to prioritize validation around high fan-in/high fan-out files') && reviewCommand.includes('compared code-map trend deltas') && reviewCommand.includes('not proof of runtime behavior')],
+  ['review command persists verdict history', reviewCommand.includes('append the final review verdict to `${FORGEFLOW_DIR}/review-history.md`') && reviewCommand.includes('/ship` reads this file as its approval gate')],
+  ['ship uses installed helper fallback', shipCommand.includes('HELPER_DIR="scripts/forgeflow"') && shipCommand.includes('node "${HELPER_DIR}/check-implementation-notes.js"') && shipCommand.includes('node "${HELPER_DIR}/show-project-learnings.js"')],
+  ['ship secret scan is hard gate', shipCommand.includes('### 1f. Secret scan (hard gate)') && shipCommand.includes('Do not prompt to continue') && shipCommand.includes('Secret-scan failures must never fail open')],
+  ['ship hygiene always enforced', shipCommand.includes('Do not depend on a `CLAUDE.md` opt-in') && shipCommand.includes('Commit body line length (hard gate)')],
+  ['review-auto avoids whole-worktree checkout', reviewAutoCommand.includes('Never run `git checkout -- .`') && !reviewAutoCommand.includes('git checkout -- .\n')],
+  ['review-auto refreshes project learnings', reviewAutoCommand.includes('show-project-learnings.js') && reviewAutoCommand.includes('--check --json')],
+  ['learnings command separates mode flags', learningsCommand.includes('Choose either current-project mode') && learningsCommand.includes('Do not pass this flag through to cross-project rollup helpers')],
+  ['handoff summary source matches gathered state', handoffCommand.includes('draw from the recent git log, current git status, linked PR metadata')],
 ];
 
 let failed = 0;

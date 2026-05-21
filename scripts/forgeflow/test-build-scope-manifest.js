@@ -2,6 +2,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { spawnSync } = require('child_process');
 const { buildScopeManifest } = require('./build-scope-manifest');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
@@ -18,10 +19,20 @@ const result = buildScopeManifest({
   telemetryOut,
   maxFilesPerLane: 20,
 });
+const untrackedRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-scope-untracked-'));
+spawnSync('git', ['init'], { cwd: untrackedRoot, encoding: 'utf8' });
+fs.writeFileSync(path.join(untrackedRoot, 'new-work-item.js'), 'export const work = true;\n');
+const untrackedResult = buildScopeManifest({
+  root: untrackedRoot,
+  out: path.join(untrackedRoot, '.forgeflow', path.basename(untrackedRoot), 'context', 'scope-manifest.json'),
+  packetDir: path.join(untrackedRoot, '.forgeflow', path.basename(untrackedRoot), 'context', 'scope-packets'),
+  telemetryOut: path.join(untrackedRoot, '.forgeflow', path.basename(untrackedRoot), 'context', 'scope-telemetry.json'),
+});
 
 const manifest = JSON.parse(fs.readFileSync(out, 'utf8'));
 const telemetry = JSON.parse(fs.readFileSync(telemetryOut, 'utf8'));
 const sharedPaths = manifest.lanes.shared.map((entry) => entry.path);
+const untrackedManifestEntries = Object.values(untrackedResult.manifest.lanes).flat();
 const checks = [
   ['result path', result.out === out],
   ['manifest written', fs.existsSync(out)],
@@ -40,6 +51,7 @@ const checks = [
   ['deny env', manifest.denied.some((entry) => entry.path === '.env')],
   ['deny token', manifest.denied.some((entry) => entry.path === 'config/api-token.txt')],
   ['shared array present', Array.isArray(sharedPaths)],
+  ['untracked file auto-discovered', untrackedManifestEntries.some((entry) => entry.path === 'new-work-item.js')],
 ];
 
 let failed = 0;

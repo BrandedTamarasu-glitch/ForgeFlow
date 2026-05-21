@@ -23,7 +23,7 @@ Self-improving Forgeflow mechanic: runs monthly. `recurring-blockers.md`, `tooli
 
 <context>
 $ARGUMENTS:
-- `--project` — force current-project mode. This is the default when no cross-project promotion flags are present.
+- `--project` — force current-project mode. This is the default when no cross-project promotion flags are present. Do not pass this flag through to cross-project rollup helpers.
 - `--check` — after refreshing current-project learnings, run the project-learnings quality check and show whether the artifact is safe to inject into agent context.
 - `--period week|month|all` — window to include (default: all — this command is for rare, curated promotion, not weekly churn)
 - `--min-projects N` — minimum distinct projects a cluster must appear in (default: 2)
@@ -113,7 +113,13 @@ if [ ! -x "${HELPER_DIR}/rollup-pattern-learnings.js" ] && [ -x "$HOME/.claude/f
 fi
 ```
 
-When `${HELPER_DIR}/rollup-pattern-learnings.js` exists, run it and print its output directly:
+If `$ARGUMENTS` includes `--project` or `--check` together with cross-project flags (`--period`, `--min-projects`, `--min-occurrences`, or `--dry-run`), stop with:
+
+```text
+Choose either current-project mode (`--project`/`--check`) or cross-project pattern mode, not both.
+```
+
+When `${HELPER_DIR}/rollup-pattern-learnings.js` exists, run it with only cross-project flags and print its output directly:
 
 ```bash
 "${HELPER_DIR}/rollup-pattern-learnings.js" $ARGUMENTS

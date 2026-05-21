@@ -20,6 +20,7 @@ In a repo checkout, examples use `scripts/forgeflow/`. A Claude install from `/u
 | Context telemetry | `scripts/forgeflow/summarize-context-telemetry.js` | Summarizes estimated baseline, compact, and saved tokens from generated artifacts. |
 | Budget checks | `scripts/forgeflow/check-context-budget.js` | Warns or fails when compact context exceeds configured token budgets. |
 | Budget seed | `scripts/forgeflow/seed-budget-config.js` | Creates `.forgeflow-budget.json` without overwriting existing config. |
+| Local artifact safety | `scripts/forgeflow/file-safety.js` | Refuses symlinked memory inputs and symlinked output destinations before context, memory, or learning helpers read or write local artifacts. |
 | Health repair | `scripts/forgeflow/health-check.js` | Creates safe project-local Forgeflow state and seeds budget config when requested. |
 | Context advisor | `scripts/forgeflow/advise-context.js` | Reports trimming recommendations and previous-run trend deltas, preferring canonical `context/latest` telemetry when the same artifact also exists in the project context root. |
 | Agent drift | `scripts/forgeflow/check-agent-drift.js` | Compares agent prompts against canonical shared intelligence sections, with mode-specific Arbiter expectations and adapted sections treated as informational. |
@@ -41,6 +42,8 @@ In a repo checkout, examples use `scripts/forgeflow/`. A Claude install from `/u
 | Pilot script | `scripts/forgeflow/render-pilot-script.js` | Prints a bounded maintainer trial script and public-safe result template that connects smoke, report, code-map, evidence recording, and pilot rollup. |
 
 When present, `.forgeflow/<project-name>/implementation-notes.md` is included in the memory index. This lets later consult, implement, review, and ship phases see prior decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes without loading the full raw notes file into every prompt.
+
+Context helpers treat `.forgeflow/` as local state but still guard it: memory indexing and fallback memory reads refuse symlinked sources, predictable output files refuse symlinked destinations, and context/scope summaries include untracked files so newly created work is visible to reviewers. In CI mode, context-pack generation fails predictably when generated telemetry exceeds the configured context budget instead of silently handing out an over-budget packet.
 
 Review context packs include a compact **Project Code Map** section when `.forgeflow/<project-name>/context/project-code-map.md` or `code-topology.json` exists. This gives agents project-level hotspot and section guidance even when the current change is not a JS/TS diff.
 

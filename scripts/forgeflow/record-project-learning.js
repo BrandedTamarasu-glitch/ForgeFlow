@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { appendFileSafe } = require('./file-safety');
 
 const VALID_CATEGORIES = new Set([
   'recurring-pitfall',
@@ -171,7 +172,7 @@ function recordProjectLearning(opts = {}) {
   const entries = loadEntries(opts);
   fs.mkdirSync(projectDir, { recursive: true });
   for (const entry of entries) {
-    fs.appendFileSync(out, `${JSON.stringify(entry)}\n`);
+    appendFileSafe(out, `${JSON.stringify(entry)}\n`);
   }
   return { file: out, entries: entries.length };
 }

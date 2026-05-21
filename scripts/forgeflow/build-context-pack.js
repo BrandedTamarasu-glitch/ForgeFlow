@@ -4,6 +4,11 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { classify, readFiles } = require('./explain-review-route');
 const { buildCodeTopology } = require('./build-code-topology');
+const {
+  safeReadTextFile,
+  writeFileSafe,
+  writeJsonSafe,
+} = require('./file-safety');
 const { buildMemoryIndex } = require('./index-memory');
 const { showProjectLearnings } = require('./show-project-learnings');
 const { checkProjectLearnings } = require('./check-project-learnings');
@@ -20,6 +25,12 @@ const {
   textChars,
   writeTelemetry,
 } = require('./context-telemetry');
+const {
+  applyConfig,
+  checkBudget,
+  defaultConfigPath,
+  readConfig,
+} = require('./check-context-budget');
 
 const DEFAULT_MAX_MEMORY_CHARS = 8000;
 const DEFAULT_MAX_DIFF_CHARS = 18000;
@@ -169,6 +180,13 @@ function buildDiffSummary(files, root, opts) {
   const nameStatus = opts.filesPath
     ? files.map((file) => `? ${file}`).join('\n')
     : git(['diff', '--name-status', 'HEAD'], root);
+  const untracked = opts.filesPath
+    ? ''
+    : git(['ls-files', '--others', '--exclude-standard'], root)
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .map((file) => `?? ${file}`)
+      .join('\n');
   const stat = opts.filesPath
     ? ''
     : git(['diff', '--stat', 'HEAD'], root);
@@ -177,7 +195,7 @@ function buildDiffSummary(files, root, opts) {
     : git(['diff', '--numstat', 'HEAD'], root);
 
   parts.push('## Files', '');
-  parts.push(nameStatus || files.map((file) => `- ${file}`).join('\n') || '(none)', '');
+  parts.push([nameStatus, untracked].filter(Boolean).join('\n') || files.map((file) => `- ${file}`).join('\n') || '(none)', '');
   if (numstat) {
     parts.push('## Numstat', '', fenced(numstat), '');
   }
@@ -301,7 +319,12 @@ function buildMemoryHits(root, files, route, task, maxChars, indexPath = null) {
   for (const file of memoryFiles(root)) {
     if (!fs.existsSync(file)) continue;
     const rel = path.relative(root, file);
-    const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/);
+    let lines = [];
+    try {
+      lines = safeReadTextFile(file, defaultProjectDir(root)).content.split(/\r?\n/);
+    } catch (_err) {
+      continue;
+    }
     for (let i = 0; i < lines.length; i += 1) {
       const line = lines[i].trim();
       if (!line) continue;
@@ -445,7 +468,43 @@ function compactProjectCodeMap(root, maxChars = 2500) {
   return truncate(lines.join('\n'), maxChars);
 }
 
-function projectCodeMapFromTopology(root, topologyResult, maxChars = 2500) {
+function renderList(items, renderItem) {
+  return items && items.length > 0 ? items.map(renderItem) : ['(none)'];
+}
+
+function compactCodeMapFromSummary(summary) {
+  const gaps = summary.import_gaps || { unresolved: [], skipped_dynamic: [], limits: {} };
+  const provenance = summary.provenance || {};
+  const lines = [
+    `Artifact: ${summary.artifacts.graph}`,
+    `Provenance: ${provenance.branch ? `${provenance.branch}@${provenance.commit_short || 'unknown'}${provenance.dirty ? ' dirty' : ' clean'}` : 'git unavailable'}.`,
+    `Summary: ${summary.summary.source_files} source files, ${summary.summary.local_edges} local edges, ${summary.summary.sections || 0} sections, ${summary.summary.changed_sections || 0} changed sections.`,
+    `Import gaps: ${gaps.limits.unresolved_total || 0} unresolved, ${gaps.limits.skipped_dynamic_total || 0} dynamic, ${gaps.limits.production_total || 0} production-scope.`,
+    '',
+    'High fan-in:',
+    ...renderList(summary.high_fan_in, (item) => `- ${md(item.path)} (fan-in ${item.fan_in}, fan-out ${item.fan_out})`),
+    '',
+    'High fan-out:',
+    ...renderList(summary.high_fan_out, (item) => `- ${md(item.path)} (fan-in ${item.fan_in}, fan-out ${item.fan_out})`),
+    '',
+    'Changed file neighborhoods:',
+  ];
+  for (const item of summary.changed_file_neighbors.slice(0, 5)) {
+    lines.push(`- ${md(item.path)}: ${item.read_next.map((next) => md(next.path)).slice(0, 5).join(', ') || '(none)'}`);
+  }
+  if (summary.changed_file_neighbors.length === 0) lines.push('(none)');
+  lines.push('', 'Import gap actions:');
+  lines.push(...renderList(gaps.unresolved, (item) => `- ${md(item.source)}: ${md(item.specifier)} (${md(item.scope)}) - ${md(item.action)}`));
+  lines.push(...renderList(gaps.skipped_dynamic, (item) => `- ${md(item.source)}: dynamic import ${md(item.expression)} (${md(item.scope)}) - ${md(item.action)}`));
+  lines.push('', 'Artifacts:');
+  lines.push(`- Graph: ${summary.artifacts.graph}`);
+  lines.push(`- Review focus: ${summary.artifacts.review_focus}`);
+  lines.push(`- Telemetry: ${summary.artifacts.telemetry}`);
+  lines.push('', 'Limits:', ...summary.limits.map((item) => `- ${item}`));
+  return lines.join('\n');
+}
+
+function projectCodeMapFromTopology(root, topologyResult, maxChars = 4500) {
   if (!topologyResult || !topologyResult.topology) return '(none)';
   const artifacts = {
     graph: path.relative(root, topologyResult.out),
@@ -454,21 +513,21 @@ function projectCodeMapFromTopology(root, topologyResult, maxChars = 2500) {
   };
   const summary = projectCodeMapSummary(topologyResult.topology, artifacts, { maxHotspots: 5 });
   topologyResult.code_map_history = attachCodeMapHistory(root, summary, historyPathForTopologyOut(topologyResult.out));
-  return truncate([
-    `Artifact: ${artifacts.graph}`,
-    '',
-    firstLines(renderProjectCodeMap(summary).replace(/^# Forgeflow Project Code Map\s*/u, '').trim(), 80),
-  ].join('\n'), maxChars);
+  return truncate(compactCodeMapFromSummary(summary), maxChars);
 }
 
 function truncate(text, maxChars) {
   if (!Number.isFinite(maxChars) || maxChars <= 0 || text.length <= maxChars) return text;
-  return `${text.slice(0, Math.max(0, maxChars - 80)).trimEnd()}\n\n[truncated to ${maxChars} chars]`;
+  const limit = Math.max(0, maxChars - 80);
+  const clipped = text.slice(0, limit);
+  const lineEnd = clipped.lastIndexOf('\n');
+  const boundary = lineEnd > Math.floor(limit * 0.7) ? lineEnd : limit;
+  return `${clipped.slice(0, boundary).trimEnd()}\n\n[truncated to ${maxChars} chars]`;
 }
 
 function writeTempFile(dir, name, lines) {
   const file = path.join(dir, name);
-  fs.writeFileSync(file, `${lines.join('\n')}\n`);
+  writeFileSafe(file, `${lines.join('\n')}\n`);
   return file;
 }
 
@@ -644,7 +703,7 @@ function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestI
 }
 
 function writeJson(file, value) {
-  fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`);
+  writeJsonSafe(file, value);
 }
 
 function rawChangedFileChars(root, files) {
@@ -675,7 +734,7 @@ function buildContextPack(opts) {
   const memoryIndexPath = ensureMemoryIndex(root, opts.memoryIndex !== false);
   const memoryHits = buildMemoryHits(root, route.files, route, opts.task, opts.maxMemoryChars, memoryIndexPath);
   const topologyContext = buildTopologyContext(root, outDir, route.files);
-  const latestInsightsResult = buildLatestInsightsResult(root, 3000, { codeMap: topologyContext ? topologyContext.topology : undefined });
+  const latestInsightsResult = buildLatestInsightsResult(root, 5000, { codeMap: topologyContext ? topologyContext.topology : undefined });
   const latestInsights = latestInsightsResult.markdown;
   const projectCodeMap = projectCodeMapFromTopology(root, topologyContext);
   const projectCodeMapPath = path.join(outDir, 'project-code-map.md');
@@ -687,7 +746,7 @@ function buildContextPack(opts) {
   for (const agent of agents) {
     const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, projectCodeMap, topologySummary, opts.task);
     const file = path.join(packetDir, `${agent}.md`);
-    fs.writeFileSync(file, content);
+    writeFileSafe(file, content);
     packets[agent] = path.relative(root, file);
   }
 
@@ -736,13 +795,29 @@ function buildContextPack(opts) {
 
   writeJson(path.join(outDir, 'route.json'), route);
   writeJson(path.join(outDir, 'file-manifest.json'), { schema_version: '1', files: manifest });
-  fs.writeFileSync(path.join(outDir, 'diff-summary.md'), `${diffSummary}\n`);
-  fs.writeFileSync(path.join(outDir, 'memory-hits.md'), `${memoryHits}\n`);
-  fs.writeFileSync(path.join(outDir, 'latest-insights.md'), `${latestInsights || '# Latest Insights\n\n(none)'}\n`);
-  fs.writeFileSync(projectCodeMapPath, `# Project Code Map\n\n${projectCodeMap}\n`);
+  writeFileSafe(path.join(outDir, 'diff-summary.md'), `${diffSummary}\n`);
+  writeFileSafe(path.join(outDir, 'memory-hits.md'), `${memoryHits}\n`);
+  writeFileSafe(path.join(outDir, 'latest-insights.md'), `${latestInsights || '# Latest Insights\n\n(none)'}\n`);
+  writeFileSafe(projectCodeMapPath, `# Project Code Map\n\n${projectCodeMap}\n`);
   writeJson(path.join(outDir, 'latest-insights-report.json'), latestInsightsResult.report);
-  writeTelemetry(path.join(outDir, 'context-telemetry.json'), telemetry);
+  const telemetryPath = path.join(outDir, 'context-telemetry.json');
+  writeTelemetry(telemetryPath, telemetry);
   writeJson(path.join(outDir, 'synthesis-input.json'), synthesisInput);
+  const budgetConfigPath = defaultConfigPath(root);
+  const budget = checkBudget([telemetryPath], applyConfig({
+    root: outDir,
+    files: [telemetryPath],
+    config: budgetConfigPath,
+    maxCompactTokens: 16000,
+    maxCompactTokensSet: false,
+    kindLimits: {},
+    warnOnly: !opts.ci,
+    warnOnlySet: Boolean(opts.ci),
+  }, readConfig(budgetConfigPath)));
+  if (opts.ci && budget.violations.length > 0) {
+    const detail = budget.violations.map((item) => `${item.kind} over by ${item.over_by}`).join(', ');
+    throw new Error(`Context pack budget exceeded: ${detail}`);
+  }
 
   return {
     out_dir: outDir,
@@ -751,6 +826,7 @@ function buildContextPack(opts) {
     synthesis_input: synthesisInput,
     telemetry,
     topology,
+    budget,
   };
 }
 
@@ -765,6 +841,7 @@ function main() {
       packet_count: Object.keys(result.synthesis_input.agent_packets).length,
       estimated_saved_tokens: result.telemetry.estimated_saved_tokens,
       code_topology: result.topology,
+      budget: result.budget,
     }, null, 2));
   } else {
     console.log(`Context pack: ${result.out_dir}`);

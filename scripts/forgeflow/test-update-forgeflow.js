@@ -87,6 +87,7 @@ async function run() {
   fs.mkdirSync(path.join(rollbackHome, 'agents'), { recursive: true });
   fs.writeFileSync(versionPath(rollbackHome), `${previous}\n`);
   fs.writeFileSync(path.join(rollbackHome, 'commands', 'review.md'), 'old review\n');
+  fs.writeFileSync(path.join(rollbackHome, 'commands', 'old.md'), 'old command\n');
   fs.writeFileSync(path.join(rollbackHome, 'agents', 'custom-local.md'), 'custom\n');
   const rollbackUpdate = await updateForgeflow({
     home: rollbackHome,
@@ -96,10 +97,11 @@ async function run() {
     plan: {
       firstRun: false,
       files: ['commands/review.md', 'commands/quick.md'],
-      deleted: [],
+      deleted: ['commands/old.md'],
     },
     fetcher: localFetcher,
   });
+  const rollbackUpdateRemovedOld = rollbackUpdate.removed.some((item) => item.source === 'commands/old.md') && !fs.existsSync(path.join(rollbackHome, 'commands', 'old.md'));
   const rollback = rollbackForgeflow({ home: rollbackHome });
 
   const checks = [
@@ -117,8 +119,10 @@ async function run() {
     ['repair installs missing file', fs.existsSync(path.join(repairHome, 'forgeflow', 'scripts', 'forgeflow', 'health-check.js'))],
     ['repair writes version', fs.readFileSync(versionPath(repairHome), 'utf8').trim() === latest],
     ['rollback update created backup', rollbackUpdate.backup.created === true],
+    ['rollback update removed deleted file', rollbackUpdateRemovedOld],
     ['rollback status', rollback.status === 'rolled-back'],
     ['rollback restored prior file', fs.readFileSync(path.join(rollbackHome, 'commands', 'review.md'), 'utf8') === 'old review\n'],
+    ['rollback restored deleted file', fs.readFileSync(path.join(rollbackHome, 'commands', 'old.md'), 'utf8') === 'old command\n'],
     ['rollback removed newly created file', !fs.existsSync(path.join(rollbackHome, 'commands', 'quick.md'))],
     ['rollback restored version', fs.readFileSync(versionPath(rollbackHome), 'utf8').trim() === previous],
     ['rollback preserved custom agent', fs.readFileSync(path.join(rollbackHome, 'agents', 'custom-local.md'), 'utf8') === 'custom\n'],

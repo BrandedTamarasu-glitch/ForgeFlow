@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { safeReadTextFile, writeJsonSafe } = require('./file-safety');
 
 const DEFAULT_MAX_TEXT_CHARS = 320;
 
@@ -144,8 +145,7 @@ function buildMemoryIndex(opts = {}) {
   for (const name of memoryFileNames()) {
     const file = path.join(projectDir, name);
     if (!fs.existsSync(file)) continue;
-    const stat = fs.statSync(file);
-    const content = fs.readFileSync(file, 'utf8');
+    const { stat, content } = safeReadTextFile(file, projectDir);
     const rel = path.relative(root, file);
     sources.push({
       path: rel,
@@ -167,7 +167,7 @@ function buildMemoryIndex(opts = {}) {
   };
 
   fs.mkdirSync(path.dirname(out), { recursive: true });
-  fs.writeFileSync(out, `${JSON.stringify(index, null, 2)}\n`);
+  writeJsonSafe(out, index);
   return { out, index };
 }
 

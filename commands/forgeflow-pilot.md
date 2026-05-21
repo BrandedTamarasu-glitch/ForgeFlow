@@ -31,7 +31,7 @@ The command uses `scripts/forgeflow/render-pilot-script.js`.
 
 ```bash
 HELPER_DIR="scripts/forgeflow"
-if [ ! -x "${HELPER_DIR}/render-pilot-script.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/render-pilot-script.js" ]; then
+if [ ! -f "${HELPER_DIR}/render-pilot-script.js" ] && [ -f "$HOME/.claude/forgeflow/scripts/forgeflow/render-pilot-script.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
 ```
@@ -47,7 +47,7 @@ Pilot script helper is not installed. Run /update-forgeflow, then retry /forgefl
 Pass through `$ARGUMENTS`.
 
 ```bash
-"${HELPER_DIR}/render-pilot-script.js" $ARGUMENTS
+node "${HELPER_DIR}/render-pilot-script.js" $ARGUMENTS
 ```
 
 Print the helper output directly.

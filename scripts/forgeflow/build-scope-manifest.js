@@ -9,6 +9,7 @@ const {
   textChars,
   writeTelemetry,
 } = require('./context-telemetry');
+const { writeFileSafe, writeJsonSafe } = require('./file-safety');
 
 const DEFAULT_MAX_FILES_PER_LANE = 40;
 const LANES = ['shared', 'smith', 'warden', 'lumen', 'compass', 'atlas'];
@@ -102,7 +103,8 @@ function readFileList(filesPath, root) {
   }
   const tracked = git(['ls-files'], root).split(/\r?\n/).filter(Boolean);
   const changed = git(['diff', '--name-only', 'HEAD'], root).split(/\r?\n/).filter(Boolean);
-  return [...new Set([...tracked, ...changed])];
+  const untracked = git(['ls-files', '--others', '--exclude-standard'], root).split(/\r?\n/).filter(Boolean);
+  return [...new Set([...tracked, ...changed, ...untracked])];
 }
 
 function deniedPath(file) {
@@ -219,7 +221,7 @@ function writeScopePackets(manifest, packetDir) {
   const packets = {};
   for (const lane of LANES) {
     const file = path.join(packetDir, `${lane}.md`);
-    fs.writeFileSync(file, `${renderScopePacket(lane, manifest)}\n`);
+    writeFileSafe(file, `${renderScopePacket(lane, manifest)}\n`);
     packets[lane] = file;
   }
   return packets;
@@ -272,7 +274,7 @@ function buildScopeManifest(opts = {}) {
   };
 
   fs.mkdirSync(path.dirname(out), { recursive: true });
-  fs.writeFileSync(out, `${JSON.stringify(manifest, null, 2)}\n`);
+  writeJsonSafe(out, manifest);
   const packetDir = opts.packetDir || defaultPacketDir(root);
   const packets = writeScopePackets(manifest, packetDir);
   const packetChars = sum(Object.values(packets).map((file) => fileChars(file)));
