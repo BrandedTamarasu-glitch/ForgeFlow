@@ -113,6 +113,46 @@ function changedSectionList(topology) {
     .slice(0, 20);
 }
 
+function unresolvedImportReason(item) {
+  const specifier = String(item.specifier || '');
+  if (!specifier.startsWith('.')) return 'external package import';
+  const ext = path.extname(specifier);
+  if (ext && !['.js', '.jsx', '.ts', '.tsx'].includes(ext)) return 'unsupported source extension';
+  return 'no matching local JS/TS file or index file found';
+}
+
+function dynamicImportReason(item) {
+  const expression = String(item.expression || '');
+  if (/^['"][^'"]+['"]$/.test(expression)) return 'literal dynamic import; static graph skips runtime import() edges';
+  return 'non-literal dynamic import; target is only known at runtime';
+}
+
+function importGapSummary(topology, limit = 8) {
+  const unresolved = (topology.unresolved || []).slice(0, limit).map((item) => ({
+    source: item.source,
+    specifier: item.specifier,
+    kind: item.kind,
+    reason: unresolvedImportReason(item),
+    action: 'Confirm the target file exists, add an index file, or treat it as an intentional unresolved alias.',
+  }));
+  const skipped_dynamic = (topology.skipped_dynamic || []).slice(0, limit).map((item) => ({
+    source: item.source,
+    expression: item.expression,
+    reason: dynamicImportReason(item),
+    action: 'Inspect runtime routing or bundler conventions when this path affects the current change.',
+  }));
+  return {
+    unresolved,
+    skipped_dynamic,
+    limits: {
+      unresolved: limit,
+      skipped_dynamic: limit,
+      unresolved_total: (topology.unresolved || []).length,
+      skipped_dynamic_total: (topology.skipped_dynamic || []).length,
+    },
+  };
+}
+
 function projectCodeMapSummary(topology, artifacts, opts = {}) {
   const maxHotspots = safeLimit(opts.maxHotspots, 8);
   return {
@@ -132,6 +172,7 @@ function projectCodeMapSummary(topology, artifacts, opts = {}) {
       changed_sections: item.changed_sections.slice(0, maxHotspots),
       read_next: item.read_next.slice(0, maxHotspots),
     })),
+    import_gaps: importGapSummary(topology, maxHotspots),
     markdown_sections: topMarkdownSections(topology, maxHotspots),
     artifacts,
     limits: [
@@ -345,6 +386,14 @@ function renderProjectCodeMap(summary) {
   if (summary.changed_file_neighbors.length === 0) lines.push('(none)', '');
   lines.push('## Markdown Section Files', '');
   lines.push(...renderList(summary.markdown_sections, (item) => `- ${md(item.path)} (${item.section_count} headings): ${item.sections.map((section) => md(section.name)).join(', ')}`), '');
+  lines.push('## Import Gaps', '');
+  const gaps = summary.import_gaps || { unresolved: [], skipped_dynamic: [], limits: {} };
+  lines.push(`- Unresolved imports shown: ${gaps.unresolved.length}/${gaps.limits.unresolved_total || 0}`);
+  lines.push(`- Skipped dynamic imports shown: ${gaps.skipped_dynamic.length}/${gaps.limits.skipped_dynamic_total || 0}`);
+  lines.push('', '### Unresolved Imports', '');
+  lines.push(...renderList(gaps.unresolved, (item) => `- ${md(item.source)}: ${md(item.specifier)} (${md(item.kind)}) - ${md(item.reason)}. ${md(item.action)}`), '');
+  lines.push('### Skipped Dynamic Imports', '');
+  lines.push(...renderList(gaps.skipped_dynamic, (item) => `- ${md(item.source)}: import(${md(item.expression)}) - ${md(item.reason)}. ${md(item.action)}`), '');
   lines.push('## Artifacts', '');
   lines.push(`- Graph: ${summary.artifacts.graph}`);
   lines.push(`- Review focus: ${summary.artifacts.review_focus}`);
@@ -414,6 +463,7 @@ module.exports = {
   DEFAULT_HISTORY_LIMIT,
   defaultHistoryPath,
   historyPathForTopologyOut,
+  importGapSummary,
   projectCodeMapSummary,
   readCodeMapHistory,
   renderProjectCodeMap,

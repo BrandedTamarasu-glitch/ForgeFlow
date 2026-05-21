@@ -68,7 +68,7 @@ const externalFilesPathResult = buildCodeTopology({
   markdownOut: path.join(tmp, 'external-files-path.md'),
   telemetryOut: path.join(tmp, 'external-files-path-telemetry.json'),
 });
-const importKinds = extractImports("import type { User } from './types';\nexport { x } from './x';\nconst y = require('./y');");
+const importKinds = extractImports("import type { User } from './types';\nexport { x } from './x';\nconst y = require('./y');\nconst label = 'import(ignored)';\nconst z = import(`./dynamic-${name}`);");
 const sourceSections = extractSections('src/example.ts', 'export class Example {}\nexport function run() {}\nconst local = () => true;\n');
 const markdownSections = extractSections('README.md', '# Title\n\n## Details\n');
 const changedLines = parseDiffChangedLines('diff --git a/src/example.ts b/src/example.ts\n--- a/src/example.ts\n+++ b/src/example.ts\n@@ -2,0 +3,2 @@\n+const x = 1;\n+const y = 2;\n');
@@ -152,7 +152,7 @@ const checks = [
   ['counts mapped sections', topology.summary.sections >= 8],
   ['counts markdown section files', topology.summary.markdown_section_files === 1],
   ['skips dependencies', !topology.nodes.some((node) => node.path.includes('node_modules')) && deniedPath('node_modules/ignored/index.ts') === 'generated or dependency path'],
-  ['extracts import forms', importKinds.imports.length === 3],
+  ['extracts import forms', importKinds.imports.length === 3 && importKinds.skippedDynamic.length === 1 && importKinds.skippedDynamic[0].expression.includes('dynamic')],
   ['extracts source sections', sourceSections.some((item) => item.kind === 'class' && item.name === 'Example') && sourceSections.some((item) => item.kind === 'function' && item.name === 'run') && sourceSections.some((item) => item.kind === 'const' && item.name === 'local')],
   ['extracts markdown headings', markdownSections.length === 2 && markdownSections[1].name === 'Details'],
   ['parses diff changed lines', changedLines['src/example.ts'].length === 2 && changedLines['src/example.ts'][0] === 3],
@@ -180,6 +180,7 @@ const checks = [
   ['compact scope marks topology', compactResult.topology.scope === 'changed-neighborhood'],
   ['compact keeps changed neighbor', compactResult.topology.changed_file_neighbors.some((item) => item.path === 'src/features/feature.ts')],
   ['compact trims node list', compactResult.topology.nodes.length < topology.nodes.length],
+  ['compact keeps import gaps', compactResult.topology.unresolved.some((item) => item.specifier === './missing') && compactResult.topology.skipped_dynamic.some((item) => item.source === 'src/features/feature.ts')],
   ['external files path redacted', externalFilesPathResult.topology.provenance.files_path === '(external)'],
   ['denies sensitive paths', deniedPath('config/api-token.ts') === 'sensitive filename'],
   ['git scan includes untracked source', gitResult.topology.nodes.some((node) => node.path === 'src/untracked.ts') && gitResult.topology.changed_files.includes('src/untracked.ts')],

@@ -265,8 +265,65 @@ function stripComments(content) {
     .replace(/(^|[^:])\/\/.*$/gm, '$1');
 }
 
+function insideStringLiteral(text, index) {
+  let quote = '';
+  let escaped = false;
+  for (let i = 0; i < index; i += 1) {
+    const char = text[i];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (char === '\\') {
+      escaped = true;
+      continue;
+    }
+    if (quote) {
+      if (char === quote) quote = '';
+      continue;
+    }
+    if (char === '"' || char === "'" || char === '`') quote = char;
+  }
+  return Boolean(quote);
+}
+
+function maskRegexLiterals(text) {
+  const chars = String(text || '').split('');
+  for (let i = 0; i < chars.length; i += 1) {
+    if (chars[i] !== '/') continue;
+    const before = chars.slice(0, i).join('').trimEnd().slice(-1);
+    if (before && !'([=:{,;!&|?'.includes(before)) continue;
+    let escaped = false;
+    let inClass = false;
+    let end = -1;
+    for (let j = i + 1; j < chars.length; j += 1) {
+      const char = chars[j];
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (char === '\\') {
+        escaped = true;
+        continue;
+      }
+      if (char === '[') inClass = true;
+      if (char === ']') inClass = false;
+      if (char === '/' && !inClass) {
+        end = j;
+        break;
+      }
+      if (char === '\n') break;
+    }
+    if (end < 0) continue;
+    for (let j = i; j <= end; j += 1) chars[j] = ' ';
+    i = end;
+  }
+  return chars.join('');
+}
+
 function extractImports(content) {
   const text = stripComments(content);
+  const dynamicText = maskRegexLiterals(text);
   const imports = [];
   const importRegex = /\bimport\s+(?:type\s+)?(?:[\s\S]*?\s+from\s+)?['"]([^'"]+)['"]/g;
   const exportRegex = /\bexport\s+(?:type\s+)?(?:\*|\{[\s\S]*?\})\s+from\s+['"]([^'"]+)['"]/g;
@@ -277,7 +334,8 @@ function extractImports(content) {
   while ((match = exportRegex.exec(text))) imports.push({ specifier: match[1], kind: 'export-from' });
   while ((match = requireRegex.exec(text))) imports.push({ specifier: match[1], kind: 'require' });
   const skippedDynamic = [];
-  while ((match = dynamicRegex.exec(text))) {
+  while ((match = dynamicRegex.exec(dynamicText))) {
+    if (insideStringLiteral(dynamicText, match.index)) continue;
     skippedDynamic.push({ expression: match[1].trim().slice(0, 120) });
   }
   return { imports, skippedDynamic };
@@ -631,7 +689,6 @@ function compactTopology(topology) {
     sections: [],
   }));
   const edges = topology.edges.filter((edge) => keep.has(edge.source) && keep.has(edge.target));
-  const sourceFilter = (item) => keep.has(item.source);
   const markdownSections = topology.markdown_sections
     .slice()
     .sort((a, b) => b.sections.length - a.sections.length || a.path.localeCompare(b.path))
@@ -647,9 +704,9 @@ function compactTopology(topology) {
     edges,
     markdown_sections: markdownSections,
     changed_file_neighbors: topology.changed_file_neighbors.map(compactNeighbor),
-    unresolved: topology.unresolved.filter(sourceFilter),
-    external: topology.external.filter(sourceFilter),
-    skipped_dynamic: topology.skipped_dynamic.filter(sourceFilter),
+    unresolved: topology.unresolved.slice(0, 20),
+    external: topology.external.filter((item) => keep.has(item.source)),
+    skipped_dynamic: topology.skipped_dynamic.slice(0, 20),
   };
 }
 
