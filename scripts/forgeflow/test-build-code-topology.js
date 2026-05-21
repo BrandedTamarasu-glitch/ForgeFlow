@@ -143,6 +143,32 @@ const changedSectionResult = buildCodeTopology({
   telemetryOut: path.join(tmp, 'changed-section-topology-telemetry.json'),
 });
 const changedSectionNeighbor = changedSectionResult.topology.changed_file_neighbors.find((item) => item.path === 'src/work.ts');
+const resolverRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-code-topology-resolver-'));
+fs.mkdirSync(path.join(resolverRoot, 'src/types'), { recursive: true });
+fs.mkdirSync(path.join(resolverRoot, 'src/assets'), { recursive: true });
+fs.writeFileSync(path.join(resolverRoot, 'src/types/audit.types.ts'), 'export type AuditRecord = { id: string };\n');
+fs.writeFileSync(path.join(resolverRoot, 'src/types/missing.model.ts'), 'export type ExistingModel = { id: string };\n');
+fs.writeFileSync(path.join(resolverRoot, 'src/assets/password-icon.tsx'), 'export default function PasswordIcon() { return null; }\n');
+fs.writeFileSync(path.join(resolverRoot, 'src/assets/new-password-icon.tsx'), 'export default function NewPasswordIcon() { return null; }\n');
+fs.writeFileSync(path.join(resolverRoot, 'src/assets/index.ts'), [
+  "export { default as PasswordIcon } from './password-icon';",
+  "export { default as NewPasswordIcon } from './new-password-icon';",
+  '',
+].join('\n'));
+fs.writeFileSync(path.join(resolverRoot, 'src/app.ts'), [
+  "import type { AuditRecord } from './types/audit.types';",
+  "import { PasswordIcon, NewPasswordIcon } from './assets';",
+  "import type { MissingModel } from './types/actually-missing.model';",
+  'export const icons = [PasswordIcon, NewPasswordIcon];',
+  'export type AppAuditRecord = AuditRecord & MissingModel;',
+  '',
+].join('\n'));
+const resolverResult = buildCodeTopology({
+  root: resolverRoot,
+  out: path.join(tmp, 'resolver-topology.json'),
+  markdownOut: path.join(tmp, 'resolver-topology.md'),
+  telemetryOut: path.join(tmp, 'resolver-topology-telemetry.json'),
+});
 
 const checks = [
   ['result paths', result.out === out && result.markdown_out === markdownOut && result.telemetry_path === telemetryOut],
@@ -159,6 +185,8 @@ const checks = [
   ['maps changed lines to sections', touchedSections.length === 2 && touchedSections[0].name === 'first' && touchedSections[1].name === 'second'],
   ['adds section ranges', rangedSections[0].end_line === 4 && rangedSections[1].end_line === 8],
   ['resolves index import', resolveLocalImport('src/app/main.ts', '../shared', sourceSet).target === 'src/shared/index.ts'],
+  ['resolves suffix-style source import', resolveLocalImport('src/app.ts', './types/audit.types', new Set(['src/types/audit.types.ts'])).target === 'src/types/audit.types.ts'],
+  ['resolves extensionless tsx export', resolveLocalImport('src/assets/index.ts', './password-icon', new Set(['src/assets/password-icon.tsx'])).target === 'src/assets/password-icon.tsx'],
   ['tracks local edges', topology.edges.some((edge) => edge.source === 'src/app/main.ts' && edge.target === 'src/features/feature.ts')],
   ['tracks commonjs edge', topology.edges.some((edge) => edge.source === 'src/lib/legacy.js' && edge.target === 'src/shared/index.ts' && edge.kind === 'require')],
   ['tracks re-export edge', topology.edges.some((edge) => edge.source === 'src/lib/helper.ts' && edge.target === 'src/shared/index.ts' && edge.kind === 'export-from')],
@@ -182,11 +210,14 @@ const checks = [
   ['compact trims node list', compactResult.topology.nodes.length < topology.nodes.length],
   ['compact keeps import gaps', compactResult.topology.unresolved.some((item) => item.specifier === './missing') && compactResult.topology.skipped_dynamic.some((item) => item.source === 'src/features/feature.ts')],
   ['external files path redacted', externalFilesPathResult.topology.provenance.files_path === '(external)'],
-  ['denies sensitive paths', deniedPath('config/api-token.ts') === 'sensitive filename'],
+  ['denies sensitive non-source paths', deniedPath('config/api-token.pem') === 'local or sensitive artifact'],
+  ['allows source files with sensitive words in names', deniedPath('src/assets/password-icon.tsx') === ''],
   ['git scan includes untracked source', gitResult.topology.nodes.some((node) => node.path === 'src/untracked.ts') && gitResult.topology.changed_files.includes('src/untracked.ts')],
   ['git provenance records dirty repo', gitResult.topology.provenance.git_available === true && gitResult.topology.provenance.dirty === true && gitResult.topology.provenance.untracked_files === 1],
   ['git scan skips deleted tracked source', !gitResult.topology.nodes.some((node) => node.path === 'src/tracked.ts') && gitResult.topology.denied.some((item) => item.path === 'src/tracked.ts' && item.reason === 'missing source path')],
   ['changed section detected from git diff', changedSectionResult.topology.summary.changed_sections === 1 && changedSectionNeighbor.changed_sections[0].name === 'target' && changedSectionNeighbor.changed_sections[0].end_line === 7],
+  ['resolver fixture resolves suffix and tsx edges', resolverResult.topology.edges.some((edge) => edge.source === 'src/app.ts' && edge.target === 'src/types/audit.types.ts') && resolverResult.topology.edges.some((edge) => edge.source === 'src/assets/index.ts' && edge.target === 'src/assets/password-icon.tsx') && resolverResult.topology.edges.some((edge) => edge.source === 'src/assets/index.ts' && edge.target === 'src/assets/new-password-icon.tsx')],
+  ['resolver fixture keeps genuinely missing suffix unresolved', resolverResult.topology.unresolved.some((item) => item.source === 'src/app.ts' && item.specifier === './types/actually-missing.model') && !resolverResult.topology.unresolved.some((item) => item.specifier === './types/audit.types') && !resolverResult.topology.unresolved.some((item) => item.specifier === './password-icon')],
   ['symlink source denied', symlinkResult.topology.nodes.length === 0 && (!fs.existsSync(path.join(symlinkRoot, 'src/linked.ts')) || symlinkResult.topology.denied.some((item) => item.reason === 'symbolic links are not accepted'))],
 ];
 

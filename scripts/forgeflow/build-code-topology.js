@@ -13,6 +13,11 @@ const {
 const SOURCE_EXTENSIONS = ['.js', '.jsx', '.ts', '.tsx'];
 const MARKDOWN_EXTENSIONS = ['.md', '.mdx'];
 const DEFAULT_MAX_HOTSPOTS = 10;
+const SOURCE_SUFFIX_EXTENSIONS = new Set([
+  '.api', '.component', '.config', '.constant', '.constants', '.context', '.hook',
+  '.hooks', '.model', '.models', '.schema', '.service', '.store', '.type', '.types',
+  '.util', '.utils',
+]);
 
 function usage() {
   console.error([
@@ -131,7 +136,7 @@ function deniedPath(file) {
   if (/(^|\/)(\.git|\.forgeflow|node_modules|dist|build|coverage|\.next|\.turbo|vendor)\//.test(lower)) return 'generated or dependency path';
   if (/(^|\/)\.env($|[._-])/.test(lower)) return 'environment file';
   if (/\.(pem|key|p12|cert|log|sqlite|db)$/i.test(base)) return 'local or sensitive artifact';
-  if (/(password|secret|token)/i.test(base)) return 'sensitive filename';
+  if (/(password|secret|token)/i.test(base) && !isSourceFile(lower)) return 'sensitive filename';
   return '';
 }
 
@@ -489,11 +494,15 @@ function candidatePaths(fromFile, specifier) {
     const withoutExt = base.slice(0, -ext.length);
     if (ext === '.js') candidates.push(`${withoutExt}.ts`, `${withoutExt}.tsx`, `${withoutExt}.jsx`);
     if (ext === '.jsx') candidates.push(`${withoutExt}.tsx`);
+    if (SOURCE_SUFFIX_EXTENSIONS.has(ext)) {
+      for (const sourceExt of SOURCE_EXTENSIONS) candidates.push(`${base}${sourceExt}`);
+      for (const sourceExt of SOURCE_EXTENSIONS) candidates.push(`${base}/index${sourceExt}`);
+    }
   } else {
     for (const sourceExt of SOURCE_EXTENSIONS) candidates.push(`${base}${sourceExt}`);
     for (const sourceExt of SOURCE_EXTENSIONS) candidates.push(`${base}/index${sourceExt}`);
   }
-  return candidates;
+  return [...new Set(candidates)];
 }
 
 function resolveLocalImport(fromFile, specifier, sourceSet) {
