@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow — V4.3.1 Changelog</title>
+  <style>
+    body {
+      background: #0d0d0d;
+      color: #ddd8cc;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.65;
+      margin: 0;
+    }
+    main {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 72px 32px 96px;
+    }
+    .version {
+      color: #7a7670;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    h1 {
+      font-size: 40px;
+      font-weight: 400;
+      line-height: 1.15;
+      margin: 14px 0 20px;
+    }
+    h2 {
+      border-top: 1px solid #303030;
+      color: #f0a232;
+      font-size: 18px;
+      font-weight: 600;
+      margin: 42px 0 18px;
+      padding-top: 28px;
+    }
+    p, li {
+      color: #c9c2b6;
+    }
+    code {
+      background: #1c1c1c;
+      border: 1px solid #303030;
+      border-radius: 4px;
+      color: #f0c070;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      padding: 1px 5px;
+    }
+    a {
+      color: #f0a232;
+      text-decoration: none;
+    }
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 52px;
+      padding-top: 24px;
+      border-top: 1px solid #303030;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="version">Forgeflow V4.3.1 · 21 May 2026</div>
+    <h1>Patch Release: Downstream Smoke Fixes And Review Hardening</h1>
+    <p>
+      Forgeflow 4.3.1 is a patch release for the first public GitHub issue plus the review,
+      ship, update, install, and local-context hardening completed after 4.3.0.
+    </p>
+
+    <h2>Downstream Smoke Fix</h2>
+    <ul>
+      <li>
+        Fixed <code>smoke-check.js</code> so installed downstream projects no longer fail
+        <code>doc-links</code> and <code>release-version</code> when source-tree test files are not installed.
+      </li>
+      <li>
+        The smoke helper now runs those checks when the Forgeflow source test scripts are available
+        and reports <code>skip</code> with an explicit reason when they are not.
+      </li>
+      <li>
+        Updated <code>/forgeflow-smoke</code>, README, and wiki docs to describe doc/release guards
+        as optional source-tree checks.
+      </li>
+    </ul>
+
+    <h2>Review And Ship Hardening</h2>
+    <ul>
+      <li>
+        <code>/review</code> records final verdicts to review history so <code>/ship</code>
+        can use a concrete approval handoff.
+      </li>
+      <li>
+        <code>/review-auto</code> refreshes project learnings after auto-fix rounds, records
+        post-fix approval state, and uses path-scoped rollback guidance.
+      </li>
+      <li>
+        <code>/ship</code> treats potential secrets as hard blockers and enforces commit hygiene
+        without depending on local project opt-in files.
+      </li>
+    </ul>
+
+    <h2>Install, Update, And Context Safety</h2>
+    <ul>
+      <li>
+        Install/update helpers reject symlinked managed sources, account for deleted managed files,
+        and report repair-needed installs when required runtime files are missing.
+      </li>
+      <li>
+        Context, memory, scope, and learning helpers reject symlinked local artifact paths where
+        they read or write Forgeflow state.
+      </li>
+      <li>
+        Context packs and scope manifests include untracked files so newly created work appears in
+        generated review and implementation context.
+      </li>
+    </ul>
+
+    <h2>Validation</h2>
+    <ul>
+      <li>Full release-gate helper tests passed locally before tagging.</li>
+      <li>Source-tree smoke still runs doc/release guards and passes.</li>
+      <li>Downstream optional smoke guard behavior was verified with a consumer-style temp root.</li>
+    </ul>
+
+    <div class="nav">
+      <a href="./v4.3.html">&larr; V4.3</a>
+      <span>V4.3.1</span>
+    </div>
+  </main>
+</body>
+</html>
