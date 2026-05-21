@@ -344,6 +344,7 @@ function projectCodeMapSummary(topology, artifacts, opts = {}) {
     summary: topology.summary,
     high_fan_in: topology.high_fan_in.slice(0, maxHotspots),
     high_fan_out: topology.high_fan_out.slice(0, maxHotspots),
+    resolved_edges: topology.resolved_edges || null,
     changed_sections: changedSectionList(topology),
     changed_file_neighbors: topology.changed_file_neighbors.slice(0, maxHotspots).map((item) => ({
       path: item.path,
@@ -395,6 +396,8 @@ function codeMapHistoryRecord(summary) {
       sections: summary.summary.sections || 0,
       changed_sections: summary.summary.changed_sections || 0,
       markdown_section_files: summary.summary.markdown_section_files || 0,
+      resolved_alias_edges: summary.resolved_edges ? summary.resolved_edges.alias || 0 : 0,
+      resolved_dynamic_edges: summary.resolved_edges ? summary.resolved_edges.dynamic || 0 : 0,
     },
     high_fan_in: summary.high_fan_in.slice(0, 5).map((item) => ({
       path: item.path,
@@ -534,6 +537,26 @@ function renderProjectCodeMap(summary) {
     `- Sections mapped: ${summary.summary.sections}`,
     `- Changed sections: ${summary.summary.changed_sections}`,
     `- Markdown section files: ${summary.summary.markdown_section_files}`,
+    '',
+    '## Resolved Edge Types',
+    '',
+    ...(summary.resolved_edges
+      ? [
+        `- Relative edges: ${summary.resolved_edges.relative}`,
+        `- Alias edges: ${summary.resolved_edges.alias}`,
+        `- Literal dynamic edges: ${summary.resolved_edges.dynamic}`,
+        `- Source-suffix edges: ${summary.resolved_edges.source_suffix}`,
+        `- JS/JSX compatibility edges: ${summary.resolved_edges.js_compat}`,
+      ]
+      : ['(not available)']),
+    '',
+    '### Alias Edge Examples',
+    '',
+    ...renderList(summary.resolved_edges && summary.resolved_edges.examples ? summary.resolved_edges.examples.alias || [] : [], (item) => `- ${md(item.source)}: ${md(item.specifier)} -> ${md(item.target)} (${md(item.kind)})`),
+    '',
+    '### Literal Dynamic Edge Examples',
+    '',
+    ...renderList(summary.resolved_edges && summary.resolved_edges.examples ? summary.resolved_edges.examples.dynamic || [] : [], (item) => `- ${md(item.source)}: ${md(item.specifier)} -> ${md(item.target)} (${md(item.kind)})`),
     '',
     '## Trends',
     '',

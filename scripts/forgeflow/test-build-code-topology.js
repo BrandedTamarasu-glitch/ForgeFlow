@@ -204,6 +204,7 @@ const checks = [
   ['resolves extensionless tsx export', resolveLocalImport('src/assets/index.ts', './password-icon', new Set(['src/assets/password-icon.tsx'])).target === 'src/assets/password-icon.tsx'],
   ['resolves common src alias fallback', resolveLocalImport('packages/app/src/app.ts', '@/routes/dashboard', new Set(['packages/app/src/routes/dashboard.tsx'])).target === 'packages/app/src/routes/dashboard.tsx'],
   ['tracks local edges', topology.edges.some((edge) => edge.source === 'src/app/main.ts' && edge.target === 'src/features/feature.ts')],
+  ['summarizes resolved edge types', resolverResult.topology.resolved_edges.alias >= 2 && resolverResult.topology.resolved_edges.dynamic === 1 && resolverResult.topology.resolved_edges.source_suffix === 1 && resolverResult.topology.resolved_edges.examples.alias.some((item) => item.specifier === '@/routes/dashboard')],
   ['tracks commonjs edge', topology.edges.some((edge) => edge.source === 'src/lib/legacy.js' && edge.target === 'src/shared/index.ts' && edge.kind === 'require')],
   ['tracks re-export edge', topology.edges.some((edge) => edge.source === 'src/lib/helper.ts' && edge.target === 'src/shared/index.ts' && edge.kind === 'export-from')],
   ['resolves js specifier to ts file', topology.edges.some((edge) => edge.source === 'src/app/main.ts' && edge.target === 'src/lib/helper.ts' && edge.specifier === '../lib/helper.js')],

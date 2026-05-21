@@ -654,6 +654,47 @@ function buildGraph(root, sourceFiles, sectionMap = {}) {
   };
 }
 
+function edgeResolutionSummary(edges, limit = 5) {
+  const summary = {
+    total: edges.length,
+    relative: 0,
+    alias: 0,
+    dynamic: 0,
+    source_suffix: 0,
+    js_compat: 0,
+    examples: {
+      alias: [],
+      dynamic: [],
+      source_suffix: [],
+      js_compat: [],
+    },
+  };
+  for (const edge of edges) {
+    const specifier = String(edge.specifier || '');
+    const targetExt = path.extname(edge.target || '');
+    const specExt = path.extname(specifier);
+    if (specifier.startsWith('.')) summary.relative += 1;
+    else summary.alias += 1;
+    if (edge.kind === 'dynamic-import') summary.dynamic += 1;
+    if (SOURCE_SUFFIX_EXTENSIONS.has(specExt)) summary.source_suffix += 1;
+    if ((specExt === '.js' || specExt === '.jsx') && specExt !== targetExt) summary.js_compat += 1;
+
+    if (!specifier.startsWith('.') && summary.examples.alias.length < limit) {
+      summary.examples.alias.push({ source: edge.source, specifier, target: edge.target, kind: edge.kind });
+    }
+    if (edge.kind === 'dynamic-import' && summary.examples.dynamic.length < limit) {
+      summary.examples.dynamic.push({ source: edge.source, specifier, target: edge.target, kind: edge.kind });
+    }
+    if (SOURCE_SUFFIX_EXTENSIONS.has(specExt) && summary.examples.source_suffix.length < limit) {
+      summary.examples.source_suffix.push({ source: edge.source, specifier, target: edge.target, kind: edge.kind });
+    }
+    if ((specExt === '.js' || specExt === '.jsx') && specExt !== targetExt && summary.examples.js_compat.length < limit) {
+      summary.examples.js_compat.push({ source: edge.source, specifier, target: edge.target, kind: edge.kind });
+    }
+  }
+  return summary;
+}
+
 function rank(nodes, key, maxHotspots) {
   return nodes
     .filter((node) => node[key] > 0)
@@ -853,6 +894,7 @@ function buildCodeTopology(opts = {}) {
     },
     nodes: graph.nodes,
     edges: graph.edges,
+    resolved_edges: edgeResolutionSummary(graph.edges),
     high_fan_in: rank(graph.nodes, 'fan_in', maxHotspots),
     high_fan_out: rank(graph.nodes, 'fan_out', maxHotspots),
     markdown_sections: markdownSections,
