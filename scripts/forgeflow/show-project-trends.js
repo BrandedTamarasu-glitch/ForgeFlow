@@ -159,6 +159,30 @@ function refreshProjectGuidance(projectDir) {
   };
 }
 
+function trendRecommendations({ freshness, latestInsights, refresh }) {
+  const recommendations = [];
+  const hasProjectFreshnessIssue = freshness && freshness.issues && freshness.issues.length > 0;
+  const insightsFreshness = latestInsights && latestInsights.freshness ? latestInsights.freshness : null;
+  const hasInsightsFreshnessIssue = insightsFreshness && insightsFreshness.issues && insightsFreshness.issues.length > 0;
+  if ((hasProjectFreshnessIssue || hasInsightsFreshnessIssue) && !refresh) {
+    recommendations.push({
+      severity: 'attention',
+      action: 'refresh-project-trends',
+      command: 'forgeflow-trends --refresh',
+      reason: 'Project guidance artifacts are stale or missing for the current checkout.',
+    });
+  }
+  if (refresh && refresh.status !== 'pass') {
+    recommendations.push({
+      severity: 'attention',
+      action: 'inspect-refresh',
+      command: 'forgeflow-learnings --project --check',
+      reason: 'The trends refresh did not complete cleanly.',
+    });
+  }
+  return recommendations;
+}
+
 function showProjectTrends(opts = {}) {
   const root = opts.root || repoRoot();
   const projectDir = opts.projectDir || defaultProjectDir(root);
@@ -177,7 +201,14 @@ function showProjectTrends(opts = {}) {
   const current = currentGitState(root);
   const latestInsights = latestInsightsReadiness(projectDir, root);
 
-  return {
+  const freshness = projectFreshness({
+    current,
+    latest,
+    historySnapshots: history.length,
+    projectLearnings,
+    allowRefreshLag: refresh && refresh.status === 'pass',
+  });
+  const result = {
     schema_version: '1',
     project_dir: projectDir,
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
@@ -198,13 +229,7 @@ function showProjectTrends(opts = {}) {
       new_high_fan_out: topList(trend.new_high_fan_out),
     },
     project_learnings: projectLearnings,
-    freshness: projectFreshness({
-      current,
-      latest,
-      historySnapshots: history.length,
-      projectLearnings,
-      allowRefreshLag: refresh && refresh.status === 'pass',
-    }),
+    freshness,
     latest_insights: latestInsights,
     advisor: {
       budget_status: advisor.budget.status,
@@ -216,6 +241,8 @@ function showProjectTrends(opts = {}) {
       percent_saved: advisor.summary.percent_saved,
     },
   };
+  result.recommendations = trendRecommendations({ freshness, latestInsights, refresh });
+  return result;
 }
 
 function renderMarkdown(result) {
@@ -226,6 +253,12 @@ function renderMarkdown(result) {
     `Project: ${result.project_dir}`,
     `Generated at: ${result.generated_at}`,
     result.refresh ? `Refresh: ${result.refresh.status}` : 'Refresh: not requested',
+    '',
+    '## Recommendations',
+    '',
+    ...(result.recommendations.length > 0
+      ? result.recommendations.map((item) => `- ${item.command}: ${item.reason}`)
+      : ['- (none)']),
     '',
     '## Code Map Trend',
     '',

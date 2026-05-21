@@ -9,6 +9,7 @@ allowed-tools:
 
 <objective>
 Print a compact local project trends report for the current checkout. The report summarizes code-map trend status, unresolved import delta, changed-section churn, new hotspots, whether the artifacts appear fresh for current HEAD/local changes, whether latest insights are ready and fresh, whether project learnings consumed the trend, and context-advisor health.
+When stale guidance is detected without `--refresh`, the report includes a direct recommendation to run `/forgeflow-trends --refresh`.
 
 Answers: "What is changing structurally in this project, are the artifacts and latest insights fresh enough to trust, did project learnings absorb it, and is the context pipeline healthy?"
 </objective>
@@ -69,6 +70,7 @@ Print the helper output directly.
 - [ ] Output includes code-map trend status
 - [ ] Output includes artifact freshness status and concrete stale/missing reasons
 - [ ] Output includes latest-insights readiness and freshness
+- [ ] Stale artifact output includes the next refresh command
 - [ ] Output shows whether project learnings consumed trend history
 - [ ] Output includes context-advisor budget/status
 - [ ] Missing helper produces an actionable update instruction
