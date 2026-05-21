@@ -5,6 +5,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const {
   compactCodeMapHistory,
+  importGapScope,
   renderProjectCodeMap,
   showCodeMap,
 } = require('./show-code-map');
@@ -72,6 +73,7 @@ const checks = [
   ['summary includes fan-in', result.summary.high_fan_in.some((item) => item.path === 'src/shared/index.ts')],
   ['summary includes markdown section count', result.summary.summary.markdown_section_files >= 1],
   ['summary includes import gaps', result.summary.import_gaps.unresolved.some((item) => item.specifier === './missing' && item.reason.includes('no matching local')) && result.summary.import_gaps.skipped_dynamic.some((item) => item.reason.includes('runtime'))],
+  ['classifies fixture import gap paths', importGapScope('src/app.ts') === 'production' && importGapScope('fixtures/demo/test-app.ts') === 'test-fixture'],
   ['markdown includes provenance', markdown.includes('## Provenance') && markdown.includes('- Source: show\\-code\\-map')],
   ['markdown includes trends', markdown.includes('## Trends') && markdown.includes('first recorded code-map snapshot')],
   ['markdown includes import gaps', markdown.includes('## Import Gaps') && markdown.includes('no matching local JS/TS file') && markdown.includes('non\\-literal dynamic import')],

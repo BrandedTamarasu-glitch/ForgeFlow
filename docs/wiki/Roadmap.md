@@ -63,11 +63,9 @@ Exit criteria:
 Goal: fix only issues observed by smoke runs or pilots.
 
 Candidate fixes:
-- Reduce false import gaps that come from fixtures or test-only files when running project-level trends.
 - Add a clearer topology scope setting when users want production-only maps.
 - Tighten health output so Claude/Codex install problems point to one repair path.
 - Trim any report sections that repeat the same recommendation in multiple places.
-- Add release-check coverage for the smoke helper after it exists.
 
 Exit criteria:
 - Each hardening item is backed by a smoke failure, pilot note, or repeated user confusion.
@@ -146,3 +144,5 @@ Exit criteria:
 - pilot next-action decision record for product-fix, another-pilot, small-team-expansion, or continued-deferral outcomes
 - project learning path through health, trends, report, latest-insights packets, and direct refresh recommendations
 - project code-map import-gap explanations with trends/report recommendations
+- local smoke helper and `/forgeflow-smoke` for repeatable stabilization checks
+- maintainer pilot script helper and `/forgeflow-pilot` for bounded trial setup, evidence capture, rollup, and public-safe result templates

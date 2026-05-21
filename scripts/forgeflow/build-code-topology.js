@@ -650,7 +650,7 @@ function renderMarkdown(topology) {
   lines.push('## Unresolved Imports', '');
   lines.push(...(topology.unresolved.length > 0 ? topology.unresolved.slice(0, 20).map((item) => `- ${md(item.source)}: ${md(item.specifier)} (${md(item.kind)})`) : ['(none)']), '');
   lines.push('## Skipped Dynamic Imports', '');
-  lines.push(...(topology.skipped_dynamic.length > 0 ? topology.skipped_dynamic.slice(0, 20).map((item) => `- ${md(item.source)}: import(${md(item.expression)})`) : ['(none)']), '');
+  lines.push(...(topology.skipped_dynamic.length > 0 ? topology.skipped_dynamic.slice(0, 20).map((item) => `- ${md(item.source)}: dynamic import ${md(item.expression)}`) : ['(none)']), '');
   lines.push('## Markdown Sections', '');
   lines.push(...(topology.markdown_sections.length > 0
     ? topology.markdown_sections.slice(0, 20).map((item) => `- ${md(item.path)}: ${item.sections.slice(0, 5).map((section) => `${md(section.name)} (${section.line}-${section.end_line})`).join(', ')}`)

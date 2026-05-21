@@ -39,6 +39,20 @@ $ship
 
 ## Run The Pilot
 
+Print the short script for the selected runtime:
+
+```bash
+scripts/forgeflow/render-pilot-script.js --runtime codex
+```
+
+From Claude Code:
+
+```text
+/forgeflow-pilot --runtime claude-code
+```
+
+Use the generated script as the run order for install verification, baseline smoke, trends, report, code map, one bounded work item, final report, evidence capture, and rollup.
+
 From Claude Code:
 
 ```text

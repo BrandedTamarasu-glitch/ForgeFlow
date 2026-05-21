@@ -28,6 +28,7 @@ const releaseCheck = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-rel
 const learningsCommand = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-learnings.md'), 'utf8');
 const healthCommand = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-health.md'), 'utf8');
 const reportCommand = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-report.md'), 'utf8');
+const pilotCommand = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-pilot.md'), 'utf8');
 const trendsCommand = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-trends.md'), 'utf8');
 const reviewCommand = fs.readFileSync(path.join(repoRoot, 'commands/review.md'), 'utf8');
 const readme = fs.readFileSync(path.join(repoRoot, 'README.md'), 'utf8');
@@ -69,6 +70,10 @@ const checks = [
   ['release check runs project learnings rollup test', releaseCheck.includes('node scripts/forgeflow/test-rollup-project-learnings.js')],
   ['release check runs project learnings display test', releaseCheck.includes('node scripts/forgeflow/test-show-project-learnings.js')],
   ['release check runs project trends display test', releaseCheck.includes('node scripts/forgeflow/test-show-project-trends.js')],
+  ['release check runs smoke check test', releaseCheck.includes('node scripts/forgeflow/test-smoke-check.js')],
+  ['release check runs pilot script test', releaseCheck.includes('node scripts/forgeflow/test-render-pilot-script.js')],
+  ['README mentions smoke check helper', readme.includes('scripts/forgeflow/smoke-check.js --json')],
+  ['pilot command uses pilot script helper', pilotCommand.includes('render-pilot-script.js') && pilotCommand.includes('public-safe result template')],
   ['report command uses report helper', reportCommand.includes('render-forgeflow-report.js') && reportCommand.includes('show-project-trends.js --json') && reportCommand.includes('--refresh')],
   ['trends command uses project trends helper', trendsCommand.includes('show-project-trends.js') && readme.includes('/forgeflow-trends')],
   ['health trends report share refresh recommendation', healthCommand.includes('/forgeflow-trends --refresh') && trendsCommand.includes('/forgeflow-trends --refresh') && reportCommand.includes('/forgeflow-trends --refresh') && readme.includes('/forgeflow-trends --refresh')],

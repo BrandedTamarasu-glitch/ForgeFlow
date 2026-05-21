@@ -151,6 +151,53 @@ const staleInsightsFreshness = latestInsightsFreshness({
   git: { available: true, commit_short: 'bbbbbbb', dirty: false },
 }, repoRoot);
 const staleGuidance = showProjectTrends({ root: repoRoot, projectDir });
+const infoProjectDir = path.join(root, '.forgeflow', 'InfoOnly');
+const infoContextDir = path.join(infoProjectDir, 'context');
+const infoLatestDir = path.join(infoContextDir, 'latest');
+fs.mkdirSync(infoLatestDir, { recursive: true });
+fs.writeFileSync(path.join(infoContextDir, 'code-map-history.jsonl'), `${JSON.stringify({
+  schema_version: '1',
+  generated_at: '2026-05-20T00:00:00Z',
+  commit_short: '',
+  dirty: true,
+  summary: {
+    source_files: 1,
+    local_edges: 0,
+    unresolved_imports: 1,
+    skipped_dynamic_imports: 0,
+    sections: 1,
+    changed_sections: 0,
+    markdown_section_files: 0,
+  },
+  high_fan_in: [],
+  high_fan_out: [],
+})}\n`);
+fs.writeFileSync(path.join(infoContextDir, 'code-topology.json'), JSON.stringify({
+  schema_version: '1',
+  unresolved: [
+    { source: 'fixtures/demo/test-app.ts', specifier: './missing', kind: 'import' },
+  ],
+  skipped_dynamic: [],
+}, null, 2));
+fs.writeFileSync(path.join(infoProjectDir, 'project-learnings.md'), [
+  '# Project Learnings',
+  '',
+  '## Sources',
+  '',
+  '- Generated at: 2026-05-20T00:00:00Z',
+  '- Code map history: 1 snapshot(s)',
+  '',
+].join('\n'));
+fs.writeFileSync(path.join(infoLatestDir, 'latest-insights-report.json'), JSON.stringify({
+  schema_version: '1',
+  status: 'injected',
+  reason: 'quality-check-passing',
+  generated_at: '2026-05-20T00:00:00.000Z',
+  git: { available: false, commit_short: '', dirty: true },
+  check_status: 'pass',
+  issue_count: 0,
+}, null, 2));
+const infoOnlyGaps = showProjectTrends({ root, projectDir: infoProjectDir });
 const refreshCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/show-project-trends.js'), [
   '--project-dir',
   projectDir,
@@ -164,6 +211,7 @@ const checks = [
   ['compares code map trend', result.code_map.trend.status === 'compared' && result.code_map.trend.unresolved_imports_delta === 1],
   ['reports new hotspots', result.code_map.new_high_fan_in.includes('src/core.ts') && result.code_map.new_high_fan_out.includes('src/app.ts')],
   ['summarizes import gaps', result.import_gaps.status === 'attention' && result.import_gaps.unresolved_total === 1 && result.import_gaps.skipped_dynamic_total === 1 && result.recommendations.some((item) => item.command === 'forgeflow-code-map')],
+  ['keeps test fixture import gaps informational', infoOnlyGaps.import_gaps.status === 'info' && infoOnlyGaps.import_gaps.production_total === 0 && infoOnlyGaps.import_gaps.test_fixture_total === 1 && !infoOnlyGaps.recommendations.some((item) => item.command === 'forgeflow-code-map')],
   ['detects learning consumption', result.project_learnings.consumed_code_map_trend === true && parsedLearnings.consumed_code_map_trend === true && parsedLearnings.consumed_code_map_history_snapshots === 2 && parsedLearnings.generated_at === ''],
   ['summarizes freshness', result.freshness.status === 'attention' && result.freshness.issues.some((item) => item.code === 'project-learnings-generated-at-missing')],
   ['recommends refresh for stale artifacts', staleGuidance.recommendations.some((item) => item.command === 'forgeflow-trends --refresh')],

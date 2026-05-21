@@ -408,10 +408,10 @@ function buildReport(opts = {}) {
   const history = readReportHistory(patternsDir);
   const metrics = collectMetrics(metricsRoot, cutoff);
   const patterns = summarizePatternLog(patternsDir, cutoff, now);
-  const context = contextSummary(root);
   const projectTrends = projectTrendsSummary(root, opts.projectDir || path.join(root, '.forgeflow', path.basename(root)), {
     refresh: Boolean(opts.refresh),
   });
+  const context = contextSummary(root);
   const projectDir = opts.projectDir || path.join(root, '.forgeflow', path.basename(root));
   const latestInsights = latestInsightsReadiness(projectDir);
   const drift = driftSummary(Boolean(opts.noDrift), { root });
@@ -550,7 +550,7 @@ function renderMarkdown(report) {
     lines.push(`- Freshness: ${freshness.status || 'missing'}`);
     lines.push(`- Unresolved imports delta: ${trend.unresolved_imports_delta ?? 0}`);
     lines.push(`- Changed sections delta: ${trend.changed_sections_delta ?? 0}`);
-    lines.push(`- Import gaps: ${importGaps.status || 'missing'} (${importGaps.unresolved_total || 0} unresolved, ${importGaps.skipped_dynamic_total || 0} dynamic)`);
+    lines.push(`- Import gaps: ${importGaps.status || 'missing'} (${importGaps.unresolved_total || 0} unresolved, ${importGaps.skipped_dynamic_total || 0} dynamic, ${importGaps.production_total || 0} production-scope)`);
     lines.push(`- New high fan-in: ${(codeMap.new_high_fan_in || []).join(', ') || '(none)'}`);
     lines.push(`- New high fan-out: ${(codeMap.new_high_fan_out || []).join(', ') || '(none)'}`);
     lines.push(`- Project learnings consumed trend: ${projectTrends.project_learnings && projectTrends.project_learnings.consumed_code_map_trend ? 'yes' : 'no'}`);

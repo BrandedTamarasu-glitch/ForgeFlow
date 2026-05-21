@@ -48,6 +48,9 @@ node scripts/forgeflow/test-record-project-learning.js
 node scripts/forgeflow/test-rollup-pilot-evidence.js
 node scripts/forgeflow/test-rollup-project-learnings.js
 node scripts/forgeflow/test-show-project-learnings.js
+node scripts/forgeflow/test-show-project-trends.js
+node scripts/forgeflow/test-smoke-check.js
+node scripts/forgeflow/test-render-pilot-script.js
 node scripts/forgeflow/test-check-context-budget.js
 node scripts/forgeflow/test-advise-context.js
 node scripts/forgeflow/test-build-code-topology.js

@@ -127,28 +127,63 @@ function dynamicImportReason(item) {
   return 'non-literal dynamic import; target is only known at runtime';
 }
 
+function importGapScope(source) {
+  const normalized = String(source || '').replace(/\\/g, '/');
+  const base = path.basename(normalized);
+  if (
+    normalized.includes('/fixtures/')
+    || normalized.startsWith('fixtures/')
+    || normalized.includes('/__fixtures__/')
+    || normalized.includes('/test/')
+    || normalized.includes('/tests/')
+    || normalized.includes('/__tests__/')
+    || /^test[-.]/.test(base)
+    || /[-.]test\.[cm]?[jt]sx?$/.test(base)
+    || /[-.]spec\.[cm]?[jt]sx?$/.test(base)
+  ) {
+    return 'test-fixture';
+  }
+  return 'production';
+}
+
+function importGapCounts(unresolved, skippedDynamic) {
+  const counts = {
+    unresolved_total: unresolved.length,
+    skipped_dynamic_total: skippedDynamic.length,
+    unresolved_production_total: unresolved.filter((item) => item.scope === 'production').length,
+    skipped_dynamic_production_total: skippedDynamic.filter((item) => item.scope === 'production').length,
+    unresolved_test_fixture_total: unresolved.filter((item) => item.scope === 'test-fixture').length,
+    skipped_dynamic_test_fixture_total: skippedDynamic.filter((item) => item.scope === 'test-fixture').length,
+  };
+  counts.production_total = counts.unresolved_production_total + counts.skipped_dynamic_production_total;
+  counts.test_fixture_total = counts.unresolved_test_fixture_total + counts.skipped_dynamic_test_fixture_total;
+  return counts;
+}
+
 function importGapSummary(topology, limit = 8) {
-  const unresolved = (topology.unresolved || []).slice(0, limit).map((item) => ({
+  const allUnresolved = (topology.unresolved || []).map((item) => ({
     source: item.source,
     specifier: item.specifier,
     kind: item.kind,
+    scope: importGapScope(item.source),
     reason: unresolvedImportReason(item),
     action: 'Confirm the target file exists, add an index file, or treat it as an intentional unresolved alias.',
   }));
-  const skipped_dynamic = (topology.skipped_dynamic || []).slice(0, limit).map((item) => ({
+  const allSkippedDynamic = (topology.skipped_dynamic || []).map((item) => ({
     source: item.source,
     expression: item.expression,
+    scope: importGapScope(item.source),
     reason: dynamicImportReason(item),
     action: 'Inspect runtime routing or bundler conventions when this path affects the current change.',
   }));
+  const counts = importGapCounts(allUnresolved, allSkippedDynamic);
   return {
-    unresolved,
-    skipped_dynamic,
+    unresolved: allUnresolved.slice(0, limit),
+    skipped_dynamic: allSkippedDynamic.slice(0, limit),
     limits: {
       unresolved: limit,
       skipped_dynamic: limit,
-      unresolved_total: (topology.unresolved || []).length,
-      skipped_dynamic_total: (topology.skipped_dynamic || []).length,
+      ...counts,
     },
   };
 }
@@ -390,10 +425,12 @@ function renderProjectCodeMap(summary) {
   const gaps = summary.import_gaps || { unresolved: [], skipped_dynamic: [], limits: {} };
   lines.push(`- Unresolved imports shown: ${gaps.unresolved.length}/${gaps.limits.unresolved_total || 0}`);
   lines.push(`- Skipped dynamic imports shown: ${gaps.skipped_dynamic.length}/${gaps.limits.skipped_dynamic_total || 0}`);
+  lines.push(`- Production-scope gaps: ${gaps.limits.production_total || 0}`);
+  lines.push(`- Test/fixture-scope gaps: ${gaps.limits.test_fixture_total || 0}`);
   lines.push('', '### Unresolved Imports', '');
-  lines.push(...renderList(gaps.unresolved, (item) => `- ${md(item.source)}: ${md(item.specifier)} (${md(item.kind)}) - ${md(item.reason)}. ${md(item.action)}`), '');
+  lines.push(...renderList(gaps.unresolved, (item) => `- ${md(item.source)}: ${md(item.specifier)} (${md(item.kind)}, ${md(item.scope)}) - ${md(item.reason)}. ${md(item.action)}`), '');
   lines.push('### Skipped Dynamic Imports', '');
-  lines.push(...renderList(gaps.skipped_dynamic, (item) => `- ${md(item.source)}: import(${md(item.expression)}) - ${md(item.reason)}. ${md(item.action)}`), '');
+  lines.push(...renderList(gaps.skipped_dynamic, (item) => `- ${md(item.source)}: dynamic import ${md(item.expression)} (${md(item.scope)}) - ${md(item.reason)}. ${md(item.action)}`), '');
   lines.push('## Artifacts', '');
   lines.push(`- Graph: ${summary.artifacts.graph}`);
   lines.push(`- Review focus: ${summary.artifacts.review_focus}`);
@@ -463,6 +500,7 @@ module.exports = {
   DEFAULT_HISTORY_LIMIT,
   defaultHistoryPath,
   historyPathForTopologyOut,
+  importGapScope,
   importGapSummary,
   projectCodeMapSummary,
   readCodeMapHistory,

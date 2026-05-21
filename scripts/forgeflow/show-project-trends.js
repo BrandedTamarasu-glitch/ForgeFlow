@@ -183,10 +183,14 @@ function latestImportGaps(contextDir, limit = 5) {
   const gaps = importGapSummary(topology, limit);
   const unresolvedTotal = gaps.limits.unresolved_total || 0;
   const skippedDynamicTotal = gaps.limits.skipped_dynamic_total || 0;
+  const productionTotal = gaps.limits.production_total || 0;
+  const testFixtureTotal = gaps.limits.test_fixture_total || 0;
   return {
-    status: unresolvedTotal > 0 || skippedDynamicTotal > 0 ? 'attention' : 'clear',
+    status: productionTotal > 0 ? 'attention' : (unresolvedTotal > 0 || skippedDynamicTotal > 0 ? 'info' : 'clear'),
     unresolved_total: unresolvedTotal,
     skipped_dynamic_total: skippedDynamicTotal,
+    production_total: productionTotal,
+    test_fixture_total: testFixtureTotal,
     unresolved: gaps.unresolved,
     skipped_dynamic: gaps.skipped_dynamic,
   };
@@ -218,7 +222,7 @@ function trendRecommendations({ freshness, latestInsights, refresh, importGaps }
       severity: 'attention',
       action: 'review-import-gaps',
       command: 'forgeflow-code-map',
-      reason: `Code map has ${importGaps.unresolved_total} unresolved import(s) and ${importGaps.skipped_dynamic_total} skipped dynamic import(s).`,
+      reason: `Code map has ${importGaps.production_total} production-scope import gap(s).`,
     });
   }
   return recommendations;
@@ -320,8 +324,10 @@ function renderMarkdown(result) {
     `- Status: ${result.import_gaps.status}`,
     `- Unresolved imports: ${result.import_gaps.unresolved_total}`,
     `- Skipped dynamic imports: ${result.import_gaps.skipped_dynamic_total}`,
+    `- Production-scope gaps: ${result.import_gaps.production_total || 0}`,
+    `- Test/fixture-scope gaps: ${result.import_gaps.test_fixture_total || 0}`,
     `- First unresolved: ${result.import_gaps.unresolved.length > 0 ? `${result.import_gaps.unresolved[0].source}: ${result.import_gaps.unresolved[0].specifier}` : '(none)'}`,
-    `- First dynamic: ${result.import_gaps.skipped_dynamic.length > 0 ? `${result.import_gaps.skipped_dynamic[0].source}: import(${result.import_gaps.skipped_dynamic[0].expression})` : '(none)'}`,
+    `- First dynamic: ${result.import_gaps.skipped_dynamic.length > 0 ? `${result.import_gaps.skipped_dynamic[0].source}: dynamic import ${result.import_gaps.skipped_dynamic[0].expression}` : '(none)'}`,
     '',
     '## Freshness',
     '',

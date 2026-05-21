@@ -56,9 +56,9 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 
 Forgeflow separates software delivery into phases and assigns each phase to agents with explicit responsibilities. This keeps planning, implementation, validation, and final judgment from collapsing into one overbroad prompt.
 
-The current build also adds local context intelligence: bounded context packets, compact memory summaries, scope manifests, context telemetry, budget checks, health repair, and trend-aware context recommendations. These helpers keep agent prompts smaller while preserving the local project memory needed for end-to-end work.
+The current build also adds local context intelligence: bounded context packets, compact memory summaries, scope manifests, context telemetry, budget checks, health repair, smoke checks, pilot scripts, and trend-aware context recommendations. These helpers keep agent prompts smaller while preserving the local project memory needed for end-to-end work.
 
-Forgeflow also carries implementation context and pilot evidence forward. `/implement` maintains local implementation notes, `/ship` checks and summarizes those notes, and pilot helpers record maintainer-trial evidence plus support/adoption rollups under `.forgeflow/<project-name>/`.
+Forgeflow also carries implementation context and pilot evidence forward. `/implement` maintains local implementation notes, `/ship` checks and summarizes those notes, `/forgeflow-smoke` verifies the local stabilization path, and `/forgeflow-pilot` prints a bounded maintainer-trial script with evidence capture and support/adoption rollups under `.forgeflow/<project-name>/`.
 
 Project learnings are the next local memory layer: a durable, user-editable summary of recurring pitfalls, stable decisions, risk areas, validation patterns, and recommended approaches across work items. Agents can use that file as guidance in later phases while still verifying current code and artifacts.
 

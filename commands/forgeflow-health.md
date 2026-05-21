@@ -49,7 +49,7 @@ EXPECTED_SHARED_AGENT_FILES=(
 )
 EXPECTED_COMMANDS=(
   audit ci-wrapper consult create-agent dashboard debate discuss fleet
-  forgeflow-code-map forgeflow-drift forgeflow-health forgeflow-learnings forgeflow-metrics forgeflow-release-check forgeflow-report forgeflow-sync forgeflow-trends forgeflow-version
+  forgeflow-code-map forgeflow-drift forgeflow-health forgeflow-learnings forgeflow-metrics forgeflow-pilot forgeflow-release-check forgeflow-report forgeflow-smoke forgeflow-sync forgeflow-trends forgeflow-version
   handoff implement plan quick research review review-auto ship sync-upstream ui-iterate update-forgeflow
 )
 EXPECTED_SUBDIR_COMMANDS=(agent-chat/on agent-chat/off)
@@ -60,9 +60,9 @@ EXPECTED_RUNTIME_HELPERS=(
   advise-context.js agent-chat-off.sh agent-chat-on.sh build-code-topology.js build-context-pack.js build-memory-context.js
   build-scope-manifest.js check-agent-drift.js check-codex-agent-drift.js check-context-budget.js check-implementation-notes.js check-project-learnings.js context-telemetry.js
   ensure-forgeflow-state.sh explain-review-route.js forgeflow-version.js generate-codex-agent-stubs.js health-check.js
-  index-memory.js install-manifest.js install-template.js record-pilot-evidence.js record-project-learning.js record-review-outcome.js render-evaluation-report.js render-forgeflow-report.js render-ship-presentation.js
+  index-memory.js install-manifest.js install-template.js record-pilot-evidence.js record-project-learning.js record-review-outcome.js render-evaluation-report.js render-forgeflow-report.js render-pilot-script.js render-ship-presentation.js
   rollup-pattern-learnings.js rollup-pilot-evidence.js rollup-project-learnings.js seed-budget-config.js show-code-map.js show-project-learnings.js show-project-trends.js ship-ci-status.sh ship-open-pr.sh ship-prepare.sh summarize-calibration.js
-  summarize-context-telemetry.js update-forgeflow.js
+  smoke-check.js summarize-context-telemetry.js update-forgeflow.js
 )
 ```
 

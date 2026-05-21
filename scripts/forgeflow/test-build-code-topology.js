@@ -68,7 +68,7 @@ const externalFilesPathResult = buildCodeTopology({
   markdownOut: path.join(tmp, 'external-files-path.md'),
   telemetryOut: path.join(tmp, 'external-files-path-telemetry.json'),
 });
-const importKinds = extractImports("import type { User } from './types';\nexport { x } from './x';\nconst y = require('./y');\nconst label = 'import(ignored)';\nconst z = import(`./dynamic-${name}`);");
+const importKinds = extractImports("import type { User } from './types';\nexport { x } from './x';\nconst y = require('./y');\nconst label = 'import(ignored)';\nconst rendered = `import(${value})`;\nconst z = import(`./dynamic-${name}`);");
 const sourceSections = extractSections('src/example.ts', 'export class Example {}\nexport function run() {}\nconst local = () => true;\n');
 const markdownSections = extractSections('README.md', '# Title\n\n## Details\n');
 const changedLines = parseDiffChangedLines('diff --git a/src/example.ts b/src/example.ts\n--- a/src/example.ts\n+++ b/src/example.ts\n@@ -2,0 +3,2 @@\n+const x = 1;\n+const y = 2;\n');

@@ -49,6 +49,8 @@ node scripts/forgeflow/test-rollup-pilot-evidence.js
 node scripts/forgeflow/test-rollup-project-learnings.js
 node scripts/forgeflow/test-show-project-learnings.js
 node scripts/forgeflow/test-show-project-trends.js
+node scripts/forgeflow/test-smoke-check.js
+node scripts/forgeflow/test-render-pilot-script.js
 node scripts/forgeflow/test-seed-budget-config.js
 node scripts/forgeflow/test-check-context-budget.js
 node scripts/forgeflow/test-advise-context.js
@@ -93,6 +95,8 @@ If any command fails, stop and report the failed command plus its output. Do not
 - [ ] Project learnings rollup test passes
 - [ ] Project learnings display test passes
 - [ ] Project trends display test passes
+- [ ] Smoke check test passes
+- [ ] Pilot script renderer test passes
 - [ ] Context budget/advisor smoke tests pass
 - [ ] Code topology helper test passes
 - [ ] Project code map display test passes

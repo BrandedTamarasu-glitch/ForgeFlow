@@ -195,7 +195,7 @@ Forgeflow includes local-only helpers that reduce agent prompt load before revie
 
 - **Context packs:** `build-context-pack.js` prepares bounded reviewer packets and a synthesis input file from the changed files, including latest insights, compact project code-map guidance, changed-neighborhood topology context, changed-section hints, provenance metadata, topology trend history, and a JSON topology summary when JS/TS files are in scope.
 - **Code topology:** `build-code-topology.js` builds a static JS/TS import graph with fan-in/fan-out hotspots, changed-file neighbors, source symbols with line ranges, changed sections, Markdown headings, Git provenance, and import-gap details for unresolved or dynamic imports.
-- **Project code map:** `show-code-map.js` renders a compact maintainer-facing summary of topology, hotspots, sections, changed sections, import gaps, provenance, trend deltas, and artifact paths. Code-map history retains the latest 50 snapshots by default.
+- **Project code map:** `show-code-map.js` renders a compact maintainer-facing summary of topology, hotspots, sections, changed sections, import gaps, provenance, trend deltas, and artifact paths. Import gaps are classified as production or test/fixture scope so trends and smoke checks escalate the right work. Code-map history retains the latest 50 snapshots by default.
 - **Memory index:** `index-memory.js` indexes local Forgeflow memory so agents can use compact project history instead of reading full notes.
 - **Memory context:** `build-memory-context.js` builds a compact memory summary for research, planning, consultation, and implementation.
 - **Scope manifests:** `build-scope-manifest.js` creates file ownership packets for implementation waves.
@@ -208,6 +208,8 @@ Forgeflow includes local-only helpers that reduce agent prompt load before revie
 - **Project trends:** `show-project-trends.js` summarizes the latest code-map trend, import-gap status, artifact freshness, latest-insights readiness/freshness, project-learning consumption, and advisor status from existing local artifacts. `/forgeflow-report` uses the same helper when available.
 - **Latest-insights state:** `latest-insights-state.js` provides the shared readiness/freshness check used by health, report, and trends so stale guidance is reported consistently.
 - **Forgeflow report:** `render-forgeflow-report.js` combines local telemetry, false-positive thresholds, pattern-log freshness, context savings, project trends, import-gap status, latest-insights readiness/freshness, and direct next-action recommendations into one Markdown or JSON report. Use `--refresh` to update project guidance first.
+- **Smoke check:** `smoke-check.js` runs health, trends refresh, report refresh, code map, doc links, and release-version guards in one local stabilization check.
+- **Pilot script:** `render-pilot-script.js` prints a maintainer trial script with install verification, smoke, trends, report, code map, one bounded work item, final report, evidence capture, rollup, and a public-safe result template.
 - **Pattern learnings:** `rollup-pattern-learnings.js` scans cross-project `.forgeflow/<project>/learnings.jsonl` plus `project-learning-candidates.jsonl`, clusters known/candidate patterns with source-mix labels, and records `.learnings-log.jsonl` for `/forgeflow-report`.
 
 Review context packs keep local memory hits bounded by default. If memory context dominates packet size, lower `build-context-pack.js --max-memory-chars` or split the review scope.
@@ -222,6 +224,8 @@ scripts/forgeflow/show-code-map.js --json
 scripts/forgeflow/show-project-learnings.js --check --json
 scripts/forgeflow/show-project-trends.js --json
 scripts/forgeflow/render-forgeflow-report.js --no-drift --json
+scripts/forgeflow/smoke-check.js --json
+scripts/forgeflow/render-pilot-script.js --runtime codex
 scripts/forgeflow/rollup-pattern-learnings.js --dry-run --json
 scripts/forgeflow/build-memory-context.js --json
 scripts/forgeflow/build-scope-manifest.js --json
@@ -261,11 +265,12 @@ scripts/forgeflow/check-implementation-notes.js --json
 For maintainer trials, Forgeflow can record local pilot evidence and refresh a rollup automatically:
 
 ```bash
+scripts/forgeflow/render-pilot-script.js --runtime codex
 scripts/forgeflow/record-pilot-evidence.js --runtime codex --health-result pass --json
 scripts/forgeflow/rollup-pilot-evidence.js --json
 ```
 
-The rollup stays local under `.forgeflow/<project-name>/` and summarizes pilot count, support categories, findings, review minutes, and the next recommended action.
+The pilot script prints the bounded trial path and public-safe result template. The rollup stays local under `.forgeflow/<project-name>/` and summarizes pilot count, support categories, findings, review minutes, and the next recommended action.
 
 Project learning rollups are planned around:
 
