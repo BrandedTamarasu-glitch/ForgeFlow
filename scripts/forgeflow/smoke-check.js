@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const path = require('path');
+const fs = require('fs');
 const { spawnSync } = require('child_process');
 const { runHealthCheck } = require('./health-check');
 const { showCodeMap } = require('./show-code-map');
@@ -72,13 +73,34 @@ function check(name, status, detail = {}) {
   return { name, status, ...detail };
 }
 
-function runNodeTest(root, script) {
-  const result = spawnSync(process.execPath, [path.join(root, script)], { cwd: root, encoding: 'utf8' });
+function helperRoot() {
+  return path.resolve(__dirname, '..', '..');
+}
+
+function resolveNodeTestRoot(root, script, helperRepoRoot = helperRoot()) {
+  const candidates = [root, helperRepoRoot];
+  return candidates.find((candidate) => fs.existsSync(path.join(candidate, script))) || null;
+}
+
+function runOptionalNodeTest(root, script, displayCommand, helperRepoRoot = helperRoot()) {
+  const testRoot = resolveNodeTestRoot(root, script, helperRepoRoot);
+  if (!testRoot) {
+    return {
+      status: 'skip',
+      exit_code: null,
+      stdout: '',
+      stderr: '',
+      reason: 'source-tree test not available in this install',
+      command: displayCommand,
+    };
+  }
+  const result = spawnSync(process.execPath, [path.join(testRoot, script)], { cwd: testRoot, encoding: 'utf8' });
   return {
     status: result.status === 0 ? 'pass' : 'fail',
     exit_code: result.status,
     stdout: result.stdout.trim(),
     stderr: result.stderr.trim(),
+    command: displayCommand,
   };
 }
 
@@ -183,16 +205,18 @@ function smokeCheck(opts = {}) {
     checks.push(check('code-map', 'fail', { command: 'forgeflow-code-map', error: err.message }));
   }
 
-  const docLinks = runNodeTest(root, 'scripts/forgeflow/test-doc-links.js');
+  const docLinks = runOptionalNodeTest(root, 'scripts/forgeflow/test-doc-links.js', 'node scripts/forgeflow/test-doc-links.js');
   checks.push(check('doc-links', docLinks.status, {
-    command: 'node scripts/forgeflow/test-doc-links.js',
+    command: docLinks.command,
     summary: docLinks.stdout || docLinks.stderr,
+    reason: docLinks.reason,
   }));
 
-  const releaseVersion = runNodeTest(root, 'scripts/forgeflow/test-release-version.js');
+  const releaseVersion = runOptionalNodeTest(root, 'scripts/forgeflow/test-release-version.js', 'node scripts/forgeflow/test-release-version.js');
   checks.push(check('release-version', releaseVersion.status, {
-    command: 'node scripts/forgeflow/test-release-version.js',
+    command: releaseVersion.command,
     summary: releaseVersion.stdout || releaseVersion.stderr,
+    reason: releaseVersion.reason,
   }));
 
   return {
@@ -250,5 +274,7 @@ module.exports = {
   combineStatus,
   healthStatus,
   renderMarkdown,
+  resolveNodeTestRoot,
+  runOptionalNodeTest,
   smokeCheck,
 };

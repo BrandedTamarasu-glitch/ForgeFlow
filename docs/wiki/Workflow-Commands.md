@@ -29,7 +29,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands.
 | `/forgeflow-pilot` | Print the repeatable maintainer pilot script and public-safe result template. |
 | `/forgeflow-report` | Produce a script-backed status report including local metrics, false-positive thresholds, pattern freshness, context trends, project trends, import-gap status, latest-insights readiness/freshness, and direct next-action recommendations. Add `--refresh` to update project guidance first. |
 | `/forgeflow-release-check` | Run local pre-release checks for command coverage, install, update, health, version, and context helpers. |
-| `/forgeflow-smoke` | Run the local stabilization smoke path for health, trends refresh, report refresh, code map, doc links, and release-version guards. |
+| `/forgeflow-smoke` | Run the local stabilization smoke path for health, trends refresh, report refresh, code map, and optional source-tree doc/release guards. |
 | `/forgeflow-trends` | Show the current project's code-map trend, import-gap status, artifact freshness, latest-insights readiness/freshness, project-learning consumption, and context-advisor status. Add `--refresh` to refresh project learnings and latest-insights readiness first; stale reports recommend it directly. |
 | `/forgeflow-version` | Show installed commit, upstream status, latest release, helper paths, and the next update action. |
 | `/ship` | Prepare presentation, PR, CI checks, and release handoff after a passing review-history gate; potential secrets are hard blockers. |

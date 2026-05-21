@@ -7,7 +7,7 @@ allowed-tools:
 ---
 
 <objective>
-Run the repeatable Forgeflow smoke path for the current checkout. The smoke checks health, refreshes project guidance, renders the report refresh path, renders the code map, and verifies docs/release metadata guards.
+Run the repeatable Forgeflow smoke path for the current checkout. The smoke checks health, refreshes project guidance, renders the report refresh path, renders the code map, and verifies docs/release metadata guards when the Forgeflow source-tree test scripts are available.
 
 Answers: "Is this checkout locally coherent enough to continue work, commit, push, or run a pilot?"
 </objective>
@@ -26,6 +26,7 @@ The command uses `scripts/forgeflow/smoke-check.js`.
 
 - **Warnings are actionable.** Import gaps and context budget warnings do not fail the smoke by default; they should include the next command or trim guidance.
 - **Refresh writes local artifacts.** The smoke refreshes project learnings, latest insights, code-map history, context telemetry, and report context.
+- **Source-tree guards are optional downstream.** `doc-links` and `release-version` are skipped when the installed helper cannot find the Forgeflow repo test scripts.
 - **Local-only.** Smoke output is meant for local confidence and pilot readiness, not a public CI claim.
 
 <process>
@@ -62,6 +63,6 @@ Print the helper output directly.
 - [ ] Output includes trends refresh status
 - [ ] Output includes report refresh and context budget status
 - [ ] Output includes code-map import-gap status
-- [ ] Output includes docs and release metadata guard status
+- [ ] Output includes docs and release metadata guard status, or an explicit skip when those source-tree tests are unavailable
 - [ ] Failures include the exact helper or command to inspect
 </success_criteria>

@@ -6,6 +6,8 @@ const {
   combineStatus,
   healthStatus,
   renderMarkdown,
+  resolveNodeTestRoot,
+  runOptionalNodeTest,
   smokeCheck,
 } = require('./smoke-check');
 
@@ -13,12 +15,15 @@ const repoRoot = path.resolve(__dirname, '..', '..');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-smoke-check-'));
 const patternsDir = path.join(tmp, 'forgeflow-patterns');
 fs.mkdirSync(patternsDir, { recursive: true });
+const fakeHelperRoot = path.join(tmp, 'installed-helper-root');
+fs.mkdirSync(fakeHelperRoot, { recursive: true });
 
 const result = smokeCheck({
   root: repoRoot,
   patternsDir,
 });
 const markdown = renderMarkdown(result);
+const downstreamDocLinks = runOptionalNodeTest(tmp, 'scripts/forgeflow/test-doc-links.js', 'node scripts/forgeflow/test-doc-links.js', fakeHelperRoot);
 
 const checks = [
   ['combines pass', combineStatus([{ status: 'pass' }, { status: 'pass' }]) === 'pass'],
@@ -31,6 +36,8 @@ const checks = [
   ['trends refresh present', result.checks.find((item) => item.name === 'trends-refresh').refresh_status === 'pass'],
   ['report refresh present', result.checks.find((item) => item.name === 'report-refresh').refresh_status === 'pass'],
   ['markdown renders table', markdown.includes('# Forgeflow Smoke Check') && markdown.includes('| Check | Status | Command | Summary |')],
+  ['skips repo tests when unavailable downstream', downstreamDocLinks.status === 'skip' && downstreamDocLinks.reason.includes('source-tree test not available')],
+  ['resolves repo tests from helper root', resolveNodeTestRoot(tmp, 'scripts/forgeflow/test-doc-links.js', repoRoot) === repoRoot],
 ];
 
 let failed = 0;
