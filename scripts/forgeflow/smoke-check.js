@@ -8,7 +8,7 @@ const { showProjectTrends } = require('./show-project-trends');
 const { buildReport } = require('./render-forgeflow-report');
 
 function usage() {
-  console.error('Usage: smoke-check.js [--root <dir>] [--project-dir <dir>] [--patterns-dir <dir>] [--json]');
+  console.error('Usage: smoke-check.js [--mode downstream|source|full] [--root <dir>] [--project-dir <dir>] [--patterns-dir <dir>] [--json]');
 }
 
 function requireValue(argv, name, index) {
@@ -26,6 +26,7 @@ function parseArgs(argv) {
     root: '',
     projectDir: '',
     patternsDir: '',
+    mode: 'downstream',
     json: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
@@ -39,6 +40,20 @@ function parseArgs(argv) {
     } else if (arg === '--patterns-dir') {
       opts.patternsDir = path.resolve(requireValue(argv, arg, i));
       i += 1;
+    } else if (arg === '--mode') {
+      opts.mode = requireValue(argv, arg, i);
+      if (!['downstream', 'source', 'full'].includes(opts.mode)) {
+        console.error(`Unknown smoke mode: ${opts.mode}`);
+        usage();
+        process.exit(2);
+      }
+      i += 1;
+    } else if (arg === '--downstream') {
+      opts.mode = 'downstream';
+    } else if (arg === '--source' || arg === '--release') {
+      opts.mode = 'source';
+    } else if (arg === '--full') {
+      opts.mode = 'full';
     } else if (arg === '--json') {
       opts.json = true;
     } else if (arg === '--help' || arg === '-h') {
@@ -104,6 +119,26 @@ function runOptionalNodeTest(root, script, displayCommand, helperRepoRoot = help
   };
 }
 
+function sourceCheck(root, name, script, helperRepoRoot = helperRoot()) {
+  const result = runOptionalNodeTest(root, script, `node ${script}`, helperRepoRoot);
+  return check(name, result.status, {
+    command: result.command,
+    summary: result.stdout || result.stderr,
+    reason: result.reason,
+  });
+}
+
+function runSourceSmoke(root, helperRepoRoot = helperRoot()) {
+  return [
+    sourceCheck(root, 'command-coverage', 'scripts/forgeflow/test-command-coverage.js', helperRepoRoot),
+    sourceCheck(root, 'doc-links', 'scripts/forgeflow/test-doc-links.js', helperRepoRoot),
+    sourceCheck(root, 'plugin-manifest', 'scripts/forgeflow/test-plugin-manifest.js', helperRepoRoot),
+    sourceCheck(root, 'release-version', 'scripts/forgeflow/test-release-version.js', helperRepoRoot),
+    sourceCheck(root, 'install-manifest', 'scripts/forgeflow/test-install-manifest.js', helperRepoRoot),
+    sourceCheck(root, 'update-forgeflow', 'scripts/forgeflow/test-update-forgeflow.js', helperRepoRoot),
+  ];
+}
+
 function healthStatus(health, trends) {
   if (!health || health.status !== 'pass') return 'fail';
   const recommendations = health.recommendations || [];
@@ -119,10 +154,7 @@ function healthStatus(health, trends) {
   return unresolved.length > 0 ? 'warn' : 'pass';
 }
 
-function smokeCheck(opts = {}) {
-  const root = opts.root || process.cwd();
-  const projectDir = opts.projectDir || defaultProjectDir(root);
-  const patternsDir = opts.patternsDir || defaultPatternsDir(root);
+function runDownstreamSmoke({ root, projectDir, patternsDir }) {
   const checks = [];
 
   let health = null;
@@ -205,23 +237,27 @@ function smokeCheck(opts = {}) {
     checks.push(check('code-map', 'fail', { command: 'forgeflow-code-map', error: err.message }));
   }
 
-  const docLinks = runOptionalNodeTest(root, 'scripts/forgeflow/test-doc-links.js', 'node scripts/forgeflow/test-doc-links.js');
-  checks.push(check('doc-links', docLinks.status, {
-    command: docLinks.command,
-    summary: docLinks.stdout || docLinks.stderr,
-    reason: docLinks.reason,
-  }));
+  return checks;
+}
 
-  const releaseVersion = runOptionalNodeTest(root, 'scripts/forgeflow/test-release-version.js', 'node scripts/forgeflow/test-release-version.js');
-  checks.push(check('release-version', releaseVersion.status, {
-    command: releaseVersion.command,
-    summary: releaseVersion.stdout || releaseVersion.stderr,
-    reason: releaseVersion.reason,
-  }));
+function smokeCheck(opts = {}) {
+  const root = opts.root || process.cwd();
+  const projectDir = opts.projectDir || defaultProjectDir(root);
+  const patternsDir = opts.patternsDir || defaultPatternsDir(root);
+  const mode = opts.mode || 'downstream';
+  const checks = [];
+
+  if (mode === 'downstream' || mode === 'full') {
+    checks.push(...runDownstreamSmoke({ root, projectDir, patternsDir }));
+  }
+  if (mode === 'source' || mode === 'full') {
+    checks.push(...runSourceSmoke(root));
+  }
 
   return {
     schema_version: '1',
     generated_at: new Date().toISOString(),
+    mode,
     root,
     project_dir: projectDir,
     patterns_dir: patternsDir,
@@ -232,7 +268,7 @@ function smokeCheck(opts = {}) {
 
 function renderMarkdown(result) {
   const lines = [
-    `# Forgeflow Smoke Check: ${result.status.toUpperCase()}`,
+    `# Forgeflow Smoke Check (${result.mode || 'downstream'}): ${result.status.toUpperCase()}`,
     '',
     `Root: ${result.root}`,
     `Project dir: ${result.project_dir}`,
@@ -275,6 +311,8 @@ module.exports = {
   healthStatus,
   renderMarkdown,
   resolveNodeTestRoot,
+  runDownstreamSmoke,
   runOptionalNodeTest,
+  runSourceSmoke,
   smokeCheck,
 };

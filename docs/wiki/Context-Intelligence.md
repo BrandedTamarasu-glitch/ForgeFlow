@@ -38,7 +38,7 @@ In a repo checkout, examples use `scripts/forgeflow/`. A Claude install from `/u
 | Project code map | `scripts/forgeflow/show-code-map.js` | Renders a compact maintainer-facing map from topology, hotspots, sections, changed sections, import gaps, provenance, trend deltas, and artifact paths. |
 | Project trends | `scripts/forgeflow/show-project-trends.js` | Summarizes code-map trend status, import-gap status, artifact freshness, latest-insights readiness/freshness, project-learning consumption, and advisor health from existing local artifacts, with optional `--refresh` first and a direct refresh recommendation when stale. |
 | Forgeflow report | `scripts/forgeflow/render-forgeflow-report.js` | Combines local telemetry, false-positive thresholds, pattern-log freshness, context savings, project trends, import-gap status, latest-insights readiness/freshness, and direct next-action recommendations into one report, with optional `--refresh` first. |
-| Smoke check | `scripts/forgeflow/smoke-check.js` | Runs health, trends refresh, report refresh, code map, and source-tree doc-links/release-version guards when those test scripts are available. |
+| Smoke check | `scripts/forgeflow/smoke-check.js` | Defaults to downstream readiness checks for health, trends refresh, report refresh, and code map. Use `--mode source` for source-tree release guards or `--mode full` for both groups. |
 | Pilot script | `scripts/forgeflow/render-pilot-script.js` | Prints a bounded maintainer trial script and public-safe result template that connects smoke, report, code-map, evidence recording, and pilot rollup. |
 
 When present, `.forgeflow/<project-name>/implementation-notes.md` is included in the memory index. This lets later consult, implement, review, and ship phases see prior decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes without loading the full raw notes file into every prompt.
@@ -62,6 +62,7 @@ scripts/forgeflow/build-code-topology.js --json
 scripts/forgeflow/show-code-map.js --json
 scripts/forgeflow/render-forgeflow-report.js --no-drift --json
 scripts/forgeflow/smoke-check.js --json
+scripts/forgeflow/smoke-check.js --mode source --json
 scripts/forgeflow/render-pilot-script.js --runtime codex
 scripts/forgeflow/rollup-pattern-learnings.js --dry-run --json
 scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json

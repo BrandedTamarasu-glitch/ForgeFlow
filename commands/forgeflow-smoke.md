@@ -1,13 +1,13 @@
 ---
 name: forgeflow-smoke
-description: Run the local Forgeflow stabilization smoke path and report pass, warn, or fail.
-argument-hint: "[--json] [--root <dir>] [--project-dir <dir>] [--patterns-dir <dir>]"
+description: Run the Forgeflow downstream, source, or full smoke path and report pass, warn, or fail.
+argument-hint: "[--mode downstream|source|full] [--json] [--root <dir>] [--project-dir <dir>] [--patterns-dir <dir>]"
 allowed-tools:
   - Bash
 ---
 
 <objective>
-Run the repeatable Forgeflow smoke path for the current checkout. The smoke checks health, refreshes project guidance, renders the report refresh path, renders the code map, and verifies docs/release metadata guards when the Forgeflow source-tree test scripts are available.
+Run the repeatable Forgeflow smoke path for the current checkout. By default, the smoke checks downstream install/project readiness: health, refreshed project guidance, report refresh, and code map. Source/release guards are available with `--mode source`; `--mode full` runs both groups.
 
 Answers: "Is this checkout locally coherent enough to continue work, commit, push, or run a pilot?"
 </objective>
@@ -15,6 +15,9 @@ Answers: "Is this checkout locally coherent enough to continue work, commit, pus
 <context>
 $ARGUMENTS:
 - `--json` — structured output instead of Markdown
+- `--mode downstream` — default. Run installed/downstream project checks only.
+- `--mode source` — run Forgeflow source-tree release guards only.
+- `--mode full` — run downstream and source checks together.
 - `--root <dir>` — repository root to check
 - `--project-dir <dir>` — project-local `.forgeflow/<project>` directory
 - `--patterns-dir <dir>` — pattern log directory for report rendering
@@ -26,7 +29,7 @@ The command uses `scripts/forgeflow/smoke-check.js`.
 
 - **Warnings are actionable.** Import gaps and context budget warnings do not fail the smoke by default; they should include the next command or trim guidance.
 - **Refresh writes local artifacts.** The smoke refreshes project learnings, latest insights, code-map history, context telemetry, and report context.
-- **Source-tree guards are optional downstream.** `doc-links` and `release-version` are skipped when the installed helper cannot find the Forgeflow repo test scripts.
+- **Source-tree guards are explicit.** Use `--mode source` for doc links, release metadata, manifest drift, command coverage, and updater tests. Downstream mode avoids repo-only checks.
 - **Local-only.** Smoke output is meant for local confidence and pilot readiness, not a public CI claim.
 
 <process>
@@ -63,6 +66,6 @@ Print the helper output directly.
 - [ ] Output includes trends refresh status
 - [ ] Output includes report refresh and context budget status
 - [ ] Output includes code-map import-gap status
-- [ ] Output includes docs and release metadata guard status, or an explicit skip when those source-tree tests are unavailable
+- [ ] Source mode includes docs, release metadata, manifest, command coverage, and updater guard status
 - [ ] Failures include the exact helper or command to inspect
 </success_criteria>
