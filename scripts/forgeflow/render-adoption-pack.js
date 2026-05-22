@@ -55,6 +55,7 @@ function buildAdoptionPack(opts = {}) {
   });
   const projectDir = path.join(process.cwd(), pilot.project_dir);
   const rollup = rollupPilotEvidence({ projectDir });
+  const nextAction = adoptionNextAction(rollup, pilot);
   const trialEvidence = {
     status: rollup.pilot_count > 0 ? 'available' : 'not-recorded',
     pilot_count: rollup.pilot_count,
@@ -66,6 +67,7 @@ function buildAdoptionPack(opts = {}) {
     blocked_first_review_count: rollup.blocked_first_review_count,
     repeated_issue_categories: rollup.repeat_issue_count,
     next_fix_layer: rollup.next_fix_layer,
+    next_action: nextAction,
     rollup_path: path.join(pilot.project_dir, 'pilot-evidence-rollup.md'),
   };
   return {
@@ -108,6 +110,89 @@ function buildAdoptionPack(opts = {}) {
       `scripts/forgeflow/record-pilot-evidence.js --runtime ${pilot.runtime} --health-result <pass|warn|fail> --project-type other --adoption-decision <repeat-pilot|expand-small-team|stop-and-fix|defer> --json`,
       'scripts/forgeflow/rollup-pilot-evidence.js --json',
     ],
+  };
+}
+
+function firstCountKey(counts) {
+  return Object.entries(counts || {}).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] || '';
+}
+
+function adoptionCommand(pilot) {
+  if (pilot.runtime === 'claude-code') return `/forgeflow-adoption --runtime claude-code --project-name "${pilot.project_name}" --path ${pilot.path}`;
+  return `scripts/forgeflow/render-adoption-pack.js --runtime codex --project-name "${pilot.project_name}" --path ${pilot.path}`;
+}
+
+function healthCommand(pilot) {
+  if (pilot.runtime === 'claude-code') return '/forgeflow-health';
+  return 'scripts/forgeflow/health-check.js --json';
+}
+
+function pilotCommand(pilot) {
+  if (pilot.runtime === 'claude-code') return `/forgeflow-pilot --runtime claude-code --project-name "${pilot.project_name}" --path ${pilot.path}`;
+  return `scripts/forgeflow/render-pilot-script.js --runtime codex --project-name "${pilot.project_name}" --path ${pilot.path}`;
+}
+
+function adoptionNextAction(rollup, pilot) {
+  if (!rollup || rollup.pilot_count === 0) {
+    return {
+      action: 'run-first-trial',
+      owner: 'maintainer',
+      blocker: '',
+      fix_layer: '',
+      command: pilotCommand(pilot),
+      reason: 'No local pilot evidence has been recorded yet.',
+    };
+  }
+  const topCategory = firstCountKey(rollup.support_categories);
+  if (rollup.blocked_first_review_count > 0) {
+    return {
+      action: 'fix-blocked-first-review',
+      owner: 'maintainer',
+      blocker: topCategory || 'first-review-blocked',
+      fix_layer: rollup.next_fix_layer || '',
+      command: healthCommand(pilot),
+      reason: `${rollup.blocked_first_review_count} pilot record(s) show a blocked first review or stop-and-fix decision.`,
+    };
+  }
+  if (rollup.repeat_issue_count > 0) {
+    return {
+      action: 'fix-repeated-friction',
+      owner: 'forgeflow-maintainer',
+      blocker: topCategory || 'repeated-support-category',
+      fix_layer: rollup.next_fix_layer || '',
+      command: adoptionCommand(pilot),
+      reason: `${rollup.repeat_issue_count} support categor${rollup.repeat_issue_count === 1 ? 'y has' : 'ies have'} repeated across pilot evidence.`,
+    };
+  }
+  if ((rollup.adoption_decisions['expand-small-team'] || 0) > 0) {
+    return {
+      action: 'expand-small-team',
+      owner: 'team-lead',
+      blocker: '',
+      fix_layer: '',
+      command: pilot.runtime === 'claude-code'
+        ? `/forgeflow-pilot --runtime claude-code --project-name "${pilot.project_name}" --path maintainer`
+        : `scripts/forgeflow/render-pilot-script.js --runtime codex --project-name "${pilot.project_name}" --path maintainer`,
+      reason: 'Pilot evidence includes an expand-small-team decision and no blocking repeated friction.',
+    };
+  }
+  if ((rollup.adoption_decisions.defer || 0) > 0) {
+    return {
+      action: 'defer-rollout',
+      owner: 'maintainer',
+      blocker: '',
+      fix_layer: '',
+      command: adoptionCommand(pilot),
+      reason: 'Pilot evidence says the workflow can wait even if it is usable.',
+    };
+  }
+  return {
+    action: 'run-another-pilot',
+    owner: 'maintainer',
+    blocker: topCategory,
+    fix_layer: rollup.next_fix_layer || '',
+    command: pilotCommand(pilot),
+    reason: 'Pilot evidence exists, but adoption signal is still thin.',
   };
 }
 
@@ -156,9 +241,30 @@ function renderMarkdown(pack) {
       `Findings: ${pack.trial_evidence.findings.confirmed} confirmed, ${pack.trial_evidence.findings.rejected} rejected, ${pack.trial_evidence.findings.deferred} deferred`,
     );
     if (pack.trial_evidence.next_fix_layer) lines.push(`Next fix layer: ${pack.trial_evidence.next_fix_layer}`);
+    lines.push(
+      '',
+      'Recommended next action:',
+      '',
+      `- Action: ${pack.trial_evidence.next_action.action}`,
+      `- Owner: ${pack.trial_evidence.next_action.owner}`,
+      `- Command: \`${pack.trial_evidence.next_action.command}\``,
+      `- Reason: ${pack.trial_evidence.next_action.reason}`,
+    );
+    if (pack.trial_evidence.next_action.blocker) lines.push(`- Blocker: ${pack.trial_evidence.next_action.blocker}`);
+    if (pack.trial_evidence.next_action.fix_layer) lines.push(`- Fix layer: ${pack.trial_evidence.next_action.fix_layer}`);
     lines.push('', 'Health results:', '', ...countLines(pack.trial_evidence.health_results), '', 'Support categories:', '', ...countLines(pack.trial_evidence.support_categories), '');
   } else {
-    lines.push('No pilot evidence has been recorded yet. Run the first trial, record evidence, then rerender this pack to see adoption signal.', '');
+    lines.push(
+      'No pilot evidence has been recorded yet. Run the first trial, record evidence, then rerender this pack to see adoption signal.',
+      '',
+      'Recommended next action:',
+      '',
+      `- Action: ${pack.trial_evidence.next_action.action}`,
+      `- Owner: ${pack.trial_evidence.next_action.owner}`,
+      `- Command: \`${pack.trial_evidence.next_action.command}\``,
+      `- Reason: ${pack.trial_evidence.next_action.reason}`,
+      '',
+    );
   }
   lines.push('## Decision Rubric', '');
   for (const [key, value] of Object.entries(pack.decision_rubric)) {
@@ -185,6 +291,7 @@ function main() {
 if (require.main === module) main();
 
 module.exports = {
+  adoptionNextAction,
   buildAdoptionPack,
   renderMarkdown,
 };

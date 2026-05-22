@@ -51,7 +51,7 @@ If the user is still deciding whether Forgeflow is a fit, print the adoption pac
 scripts/forgeflow/render-adoption-pack.js --runtime codex
 ```
 
-The adoption pack also summarizes existing local pilot-evidence rollups when they exist, so rerun it after recording evidence to see the current repeat, expand, stop-and-fix, or defer signal.
+The adoption pack also summarizes existing local pilot-evidence rollups when they exist, so rerun it after recording evidence to see the current repeat, expand, stop-and-fix, or defer signal plus the recommended action, owner lane, blocker, runnable inspection command, and fix layer when available.
 
 From Claude Code:
 

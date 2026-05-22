@@ -6,7 +6,7 @@ allowed-tools:
   - Bash
 ---
 <objective>
-Help a net-new user decide whether Forgeflow is worth trying by printing one concise adoption pack: why it exists, when it fits, when to wait, how to run the first trial, what evidence has already been recorded, and how to decide the next step.
+Help a net-new user decide whether Forgeflow is worth trying by printing one concise adoption pack: why it exists, when it fits, when to wait, how to run the first trial, what evidence has already been recorded, the recommended next action, and how to decide the next step.
 </objective>
 
 <context>
