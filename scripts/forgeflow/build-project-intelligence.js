@@ -2,9 +2,12 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
-const { assertSafeDirectory, writeFileSafe } = require('./file-safety');
+const { assertSafeDirectory, safeReadTextFile, writeFileSafe } = require('./file-safety');
+const { containsProhibitedFeedbackContent, rollupFeedback } = require('./record-agent-feedback');
 const { showProjectLearnings } = require('./show-project-learnings');
 const { showProjectTrends } = require('./show-project-trends');
+const VALID_FEEDBACK_SIGNALS = new Set(['useful', 'unclear', 'ignored', 'incorrect']);
+const VALID_FEEDBACK_CONFIDENCE = new Set(['low', 'medium', 'high']);
 
 function usage() {
   console.error('Usage: build-project-intelligence.js [--root <dir>] [--project-dir <dir>] [--out <path>] [--json]');
@@ -84,6 +87,94 @@ function topItems(items, limit = 5) {
   return (items || []).map(trimBullet).filter(Boolean).slice(0, limit);
 }
 
+function feedbackSchemaIssue(record) {
+  if (!record || typeof record !== 'object' || Array.isArray(record)) return 'invalid-schema';
+  if (!record.agent || typeof record.agent !== 'string') return 'invalid-schema';
+  if (!VALID_FEEDBACK_SIGNALS.has(record.signal)) return 'invalid-schema';
+  if (!record.summary || typeof record.summary !== 'string') return 'invalid-schema';
+  if (!VALID_FEEDBACK_CONFIDENCE.has(record.confidence)) return 'invalid-schema';
+  if (!Number.isInteger(record.evidence_count) || record.evidence_count < 1) return 'invalid-schema';
+  return '';
+}
+
+function readAgentFeedback(projectDir) {
+  const file = path.join(projectDir, 'agent-feedback.jsonl');
+  if (!fs.existsSync(file)) {
+    return {
+      status: 'missing',
+      file,
+      records: 0,
+      by_signal: {},
+      by_agent: {},
+      promotable: 0,
+      invalid_lines: 0,
+      latest: [],
+    };
+  }
+  try {
+    const records = [];
+    const invalid = [];
+    const lines = safeReadTextFile(file, projectDir).content
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    for (const [index, line] of lines.entries()) {
+      try {
+        const record = JSON.parse(line);
+        const schemaIssue = feedbackSchemaIssue(record);
+        if (schemaIssue) {
+          invalid.push({ line: index + 1, reason: schemaIssue });
+          continue;
+        }
+        const combined = [
+          record.work_item,
+          record.agent,
+          record.signal,
+          record.summary,
+          record.correction,
+        ].join('\n');
+        if (containsProhibitedFeedbackContent(combined)) {
+          invalid.push({ line: index + 1, reason: 'privacy-boundary' });
+          continue;
+        }
+        records.push(record);
+      } catch (err) {
+        invalid.push({ line: index + 1, reason: 'malformed-json' });
+      }
+    }
+    const rollup = rollupFeedback(records);
+    return {
+      status: records.length > 0 ? 'present' : 'invalid',
+      file,
+      records: rollup.records,
+      by_signal: rollup.by_signal,
+      by_agent: rollup.by_agent,
+      promotable: rollup.promotable,
+      invalid_lines: invalid.length,
+      latest: records.slice(-5).map((record) => ({
+        agent: record.agent || '',
+        signal: record.signal || '',
+        summary: record.summary || '',
+        confidence: record.confidence || '',
+        evidence_count: record.evidence_count || 0,
+      })),
+      invalid_reasons: invalid.slice(0, 5),
+    };
+  } catch (err) {
+    return {
+      status: 'invalid',
+      file,
+      records: 0,
+      by_signal: {},
+      by_agent: {},
+      promotable: 0,
+      invalid_lines: 0,
+      latest: [],
+      reason: err.message,
+    };
+  }
+}
+
 function git(args, cwd) {
   const result = spawnSync('git', ['-c', 'core.fsmonitor=false', '-c', 'core.untrackedCache=false', ...args], {
     cwd,
@@ -135,6 +226,7 @@ function freshnessIssues(trends) {
 function riskSignals(trends, learnings) {
   const risks = [];
   const learningStatus = learnings && learnings.check ? learnings.check.status : 'missing';
+  const learningGatePass = learningStatus === 'pass';
   if (learningStatus !== 'pass') {
     addIssue(
       risks,
@@ -143,9 +235,7 @@ function riskSignals(trends, learnings) {
       `Project-learning quality gate is ${learningStatus}.`,
       'forgeflow-learnings --project --check'
     );
-    return risks.slice(0, 8);
   }
-  risks.push(...freshnessIssues(trends));
   const importGaps = trends.import_gaps || {};
   if (importGaps.status === 'attention') {
     addIssue(
@@ -170,8 +260,11 @@ function riskSignals(trends, learnings) {
     if (item.severity === 'info') continue;
     addIssue(risks, item.severity || 'attention', 'context-advisor', item.reason, item.command);
   }
-  for (const item of topItems(learnings.risk_areas, 3)) {
-    addIssue(risks, 'attention', 'project-learnings', item, 'inspect project-learnings.md');
+  risks.push(...freshnessIssues(trends));
+  if (learningGatePass) {
+    for (const item of topItems(learnings.risk_areas, 3)) {
+      addIssue(risks, 'attention', 'project-learnings', item, 'inspect project-learnings.md');
+    }
   }
   return risks.slice(0, 8);
 }
@@ -208,10 +301,24 @@ function reviewPrep(trends, intelligenceDraft) {
   ].filter(Boolean).filter((value, index, list) => list.indexOf(value) === index).slice(0, 6);
   const looksRunnable = (value) => /^(\/?forgeflow|scripts\/|node\s+scripts\/|npm\s+|pnpm\s+|yarn\s+|git\s+)/.test(String(value || '').trim());
   const refreshFirst = nextActions.filter(looksRunnable);
+  const feedback = intelligenceDraft.agent_feedback || {};
+  const feedbackNotes = [];
+  const corrective = (feedback.by_signal && ((feedback.by_signal.incorrect || 0) + (feedback.by_signal.unclear || 0) + (feedback.by_signal.ignored || 0))) || 0;
+  if (corrective > 0) feedbackNotes.push(`${corrective} corrective agent-feedback signal(s) recorded; inspect ${feedback.file || 'agent-feedback.jsonl'} before reusing similar guidance. Advisory only; verify against current code and tests.`);
+  if (feedback.promotable > 0) feedbackNotes.push(`${feedback.promotable} feedback signal(s) are promotable when reviewed and still supported.`);
+  if (feedback.invalid_lines > 0) feedbackNotes.push(`${feedback.invalid_lines} agent-feedback line(s) were skipped by JSON/privacy validation.`);
+  for (const item of (feedback.latest || []).slice(-3)) {
+    if (item.signal && item.summary) {
+      feedbackNotes.push(`${item.agent || 'agent'} ${item.signal}: ${item.summary} [confidence: ${item.confidence || 'unknown'}, evidence: ${item.evidence_count || 0}, advisory-only]`);
+    }
+  }
   return {
     trust_summary: `Trust state is ${intelligenceDraft.trust_state}; project freshness ${intelligenceDraft.freshness.project}; latest insights ${intelligenceDraft.freshness.latest_insights}.`,
     refresh_first: refreshFirst,
-    review_notes: nextActions.filter((item) => !looksRunnable(item)),
+    review_notes: [
+      ...nextActions.filter((item) => !looksRunnable(item)),
+      ...feedbackNotes,
+    ],
     read_first: readFirst,
     validate_first: topItems(intelligenceDraft.validation_patterns, 5),
   };
@@ -223,12 +330,20 @@ function buildProjectIntelligence(opts = {}) {
   assertSafeDirectory(projectDir);
   const jsonOut = path.resolve(opts.out || defaultJsonOut(projectDir));
   const markdownOut = markdownOutFor(jsonOut);
-  const learnings = showProjectLearnings({ root, projectDir, refreshCodeMap: false, check: true });
-  const trends = showProjectTrends({ root, projectDir, refresh: Boolean(opts.refresh) });
+  let learnings = null;
+  let trends = null;
+  if (opts.refresh) {
+    trends = showProjectTrends({ root, projectDir, refresh: true });
+    learnings = showProjectLearnings({ root, projectDir, refreshCodeMap: false, check: true });
+  } else {
+    learnings = showProjectLearnings({ root, projectDir, refreshCodeMap: true, check: true });
+    trends = showProjectTrends({ root, projectDir, refresh: false });
+  }
   const risks = riskSignals(trends, learnings);
   const learningGatePass = learnings.check && learnings.check.status === 'pass';
   const hotFiles = learningGatePass ? topItems(learnings.hot_files_and_modules, 8) : [];
   const recommendations = trends.recommendations || [];
+  const agentFeedback = readAgentFeedback(projectDir);
   const intelligence = {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
@@ -253,6 +368,7 @@ function buildProjectIntelligence(opts = {}) {
     hot_files: hotFiles,
     recommended_next_actions: learningGatePass ? topItems(learnings.recommended_approach_for_next_work, 8) : [],
     validation_patterns: learningGatePass ? topItems(learnings.validation_patterns, 5) : [],
+    agent_feedback: agentFeedback,
     recommendations,
     artifacts: {
       json: jsonOut,
@@ -307,12 +423,33 @@ function renderMarkdown(intelligence) {
   lines.push('', '### Validate First', '', ...(intelligence.review_prep.validate_first.length > 0 ? intelligence.review_prep.validate_first.map((item) => `- ${item}`) : ['- (none)']));
   lines.push('', '## Recommended Next Actions', '', ...(intelligence.recommended_next_actions.length > 0 ? intelligence.recommended_next_actions.map((item) => `- ${item}`) : ['- (none)']));
   lines.push('', '## Validation Patterns', '', ...(intelligence.validation_patterns.length > 0 ? intelligence.validation_patterns.map((item) => `- ${item}`) : ['- (none)']));
+  lines.push('', '## Agent Feedback', '');
+  lines.push(`- Status: ${intelligence.agent_feedback.status}`);
+  lines.push(`- Records: ${intelligence.agent_feedback.records}`);
+  lines.push(`- Promotable: ${intelligence.agent_feedback.promotable}`);
+  lines.push(`- Invalid lines skipped: ${intelligence.agent_feedback.invalid_lines || 0}`);
+  lines.push('- Boundary: advisory only; verify against current code, tests, and review artifacts before relying on feedback.');
+  const signalSummary = Object.entries(intelligence.agent_feedback.by_signal || {}).map(([signal, count]) => `${signal}: ${count}`).join(', ');
+  lines.push(`- Signals: ${signalSummary || '(none)'}`);
+  const agentSummary = Object.entries(intelligence.agent_feedback.by_agent || {}).map(([agent, count]) => `${agent}: ${count}`).join(', ');
+  lines.push(`- Agents: ${agentSummary || '(none)'}`);
+  if ((intelligence.agent_feedback.invalid_reasons || []).length > 0) {
+    const skipped = intelligence.agent_feedback.invalid_reasons.map((item) => `line ${item.line} ${item.reason}`).join(', ');
+    lines.push(`- Skipped detail: ${skipped}`);
+  }
+  if (intelligence.agent_feedback.latest.length > 0) {
+    lines.push('', '### Latest Feedback', '');
+    for (const item of intelligence.agent_feedback.latest) {
+      lines.push(`- ${item.agent} ${item.signal}: ${item.summary} [confidence: ${item.confidence || 'unknown'}, evidence: ${item.evidence_count || 0}, advisory-only]`);
+    }
+  }
   lines.push('', '## Sources', '');
   lines.push(`- Project learnings: ${intelligence.artifacts.project_learnings || '(missing)'}`);
   lines.push(`- Code map history: ${intelligence.artifacts.code_map_history || '(missing)'}`);
   lines.push(`- Code topology: ${intelligence.artifacts.code_topology || '(missing)'}`);
   lines.push(`- Latest insights report: ${intelligence.artifacts.latest_insights_report || '(missing)'}`);
   lines.push(`- Failure digest: ${intelligence.artifacts.failure_digest || '(missing)'}`);
+  lines.push(`- Agent feedback: ${intelligence.agent_feedback.file || '(missing)'}`);
   lines.push('', '## Artifacts', '', `- JSON: ${intelligence.artifacts.json}`, `- Markdown: ${intelligence.artifacts.markdown}`);
   return `${lines.join('\n')}\n`;
 }

@@ -101,8 +101,11 @@ function containsProhibitedFeedbackContent(value) {
     || /=>/.test(text)
     || /\b[A-Za-z_$][\w$]*\s*\([^)]*\)/.test(text)
     || /\b[A-Za-z_$][\w$.[\]-]*\s*=\s*\S+/.test(text)
+    || /\bfile:\/\/\S+/i.test(text)
+    || /\[[^\]]+\]\(\s*(?:file|https?|ssh|git):\/\/[^)]+\)/i.test(text)
     || /['"]?(statusLine|hooks|permissions|env|apiKey|token|password|secret)['"]?\s*:/i.test(text)
     || /(?:^|\n)\s*['"]?[A-Za-z][\w.-]*['"]?\s*:\s*\S+/.test(text)
+    || /\b(?:localhost|127\.0\.0\.1|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|[A-Za-z0-9.-]+\.(?:internal|local|corp|intranet))(?:[/:?#]\S*)?/i.test(text)
     || /\bcustomer(?:\s+name)?\s*[:=]/i.test(text)
     || /\b(private|internal)\s+(architecture|topology|network|endpoint|service)\b/i.test(text);
 }

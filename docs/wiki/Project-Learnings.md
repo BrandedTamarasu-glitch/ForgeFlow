@@ -39,6 +39,8 @@ Structured candidates may also include `confidence` (`low`, `medium`, or `high`)
 
 Use `scripts/forgeflow/record-agent-feedback.js` when a reviewer, implementer, or planner gave guidance that was useful, unclear, ignored, or incorrect. The helper writes local feedback to `.forgeflow/<project-name>/agent-feedback.jsonl`. Add `--promote` only after the feedback has medium or high confidence and `--evidence-count 2` or higher; promotion appends a structured project-learning candidate with a proof-boundary reminder.
 
+The project intelligence rollup summarizes that feedback as advisory signal only. It can show corrective feedback counts, skipped invalid/private lines, promotable counts, confidence/evidence metadata, and latest summaries in review-prep notes, but agents must still verify current code, tests, and review artifacts before relying on the feedback.
+
 From Claude Code, run:
 
 ```text
@@ -56,7 +58,7 @@ For a single review-prep summary, build the project intelligence rollup:
 scripts/forgeflow/build-project-intelligence.js --json
 ```
 
-It writes `.forgeflow/<project-name>/context/project-intelligence-rollup.json` and `.md` with trust state, freshness, Git provenance, top risks, hot files, validation patterns, recommended next actions, artifact pointers, and a review-prep block. The review-prep block separates runnable refresh commands, advisory notes, files/signals to read first, and validation patterns to run first. The rollup synthesizes existing local artifacts; it does not replace raw trends, code maps, failure digests, or project learnings.
+It writes `.forgeflow/<project-name>/context/project-intelligence-rollup.json` and `.md` with trust state, freshness, Git provenance, top risks, hot files, validation patterns, agent-feedback summary, recommended next actions, artifact pointers, and a review-prep block. The review-prep block separates runnable refresh commands, advisory notes, files/signals to read first, and validation patterns to run first. The separate agent-feedback section shows advisory feedback metadata, skipped-line counts, skipped reasons, and by-agent counts. The rollup refreshes project learnings and compact code-map context before synthesis unless `--refresh` already refreshed trends and project guidance; it does not replace raw trends, code maps, failure digests, feedback logs, or project learnings.
 
 Check the local artifact before relying on it:
 

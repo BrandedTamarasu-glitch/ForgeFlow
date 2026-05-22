@@ -15,6 +15,8 @@ const root = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-project-intelligen
 const projectDir = path.join(root, '.forgeflow', path.basename(root));
 const contextDir = path.join(projectDir, 'context');
 fs.mkdirSync(contextDir, { recursive: true });
+fs.mkdirSync(path.join(root, 'src'), { recursive: true });
+fs.writeFileSync(path.join(root, 'src', 'app.ts'), "import './missing';\nexport const value = 1;\n");
 fs.writeFileSync(path.join(projectDir, 'project-learning-candidates.jsonl'), [
   JSON.stringify({
     category: 'risk-area',
@@ -38,6 +40,35 @@ fs.writeFileSync(path.join(projectDir, 'project-learning-candidates.jsonl'), [
     category: 'recommended-approach',
     learning: 'Start auth work by reading session helpers.',
     confidence: 'medium',
+    evidence_count: 2,
+  }),
+].join('\n'));
+fs.writeFileSync(path.join(projectDir, 'agent-feedback.jsonl'), [
+  JSON.stringify({
+    schema_version: '1',
+    agent: 'smith_reviewer',
+    signal: 'incorrect',
+    summary: 'Flagged a safe query as unsafe',
+    confidence: 'high',
+    evidence_count: 2,
+  }),
+  JSON.stringify({
+    schema_version: '1',
+    agent: 'warden_reviewer',
+    signal: 'useful',
+    summary: 'Caught missing permission check',
+    confidence: 'medium',
+    evidence_count: 1,
+  }),
+  '{not-json',
+  '"not-an-object"',
+  '42',
+  JSON.stringify({
+    schema_version: '1',
+    agent: 'warden_reviewer',
+    signal: 'incorrect',
+    summary: 'Review https://example.internal/team before approving',
+    confidence: 'high',
     evidence_count: 2,
   }),
 ].join('\n'));
@@ -83,6 +114,9 @@ const latestReportPath = path.join(projectDir, 'context', 'latest', 'latest-insi
 const latestReport = fs.existsSync(latestReportPath) ? JSON.parse(fs.readFileSync(latestReportPath, 'utf8')) : null;
 const customOut = path.join(projectDir, 'context', 'custom-rollup');
 const custom = buildProjectIntelligence({ root, projectDir, out: customOut });
+const historyBeforeRefresh = fs.readFileSync(path.join(contextDir, 'code-map-history.jsonl'), 'utf8').trim().split(/\r?\n/).filter(Boolean).length;
+buildProjectIntelligence({ root, projectDir, out: path.join(projectDir, 'context', 'refresh-rollup.json'), refresh: true });
+const historyAfterRefresh = fs.readFileSync(path.join(contextDir, 'code-map-history.jsonl'), 'utf8').trim().split(/\r?\n/).filter(Boolean).length;
 const cliJson = buildProjectIntelligence(parseArgs([
   '--root',
   root,
@@ -123,6 +157,11 @@ const syntheticPrep = reviewPrep({
     { command: 'forgeflow-code-map' },
     { command: 'Split scope before review.' },
   ],
+  agent_feedback: {
+    file: path.join(projectDir, 'agent-feedback.jsonl'),
+    by_signal: { incorrect: 1, unclear: 1 },
+    promotable: 1,
+  },
   hot_files: ['src/auth/session.ts'],
   validation_patterns: ['Run auth regression tests before review.'],
 });
@@ -144,16 +183,19 @@ const checks = [
   ['latest insights read after learning check refresh', latestReport && result.artifacts.latest_insights_report && result.artifacts.latest_insights_report.endsWith('latest-insights-report.json') && result.guidance.latest_insights_status === latestReport.status],
   ['includes project learning risk', result.top_risks.some((item) => item.source === 'project-learnings')],
   ['project learning risk uses readable label', result.top_risks.some((item) => item.source === 'project-learnings' && !item.summary.includes('{'))],
-  ['includes import gap risk', result.top_risks.some((item) => item.source === 'import-gaps')],
+  ['includes import gap risk', result.top_risks.some((item) => item.source === 'import-gaps') && syntheticRisks.some((item) => item.source === 'import-gaps')],
   ['includes hot file', result.hot_files.some((item) => item.includes('src/auth/session.ts'))],
   ['includes next action', result.recommended_next_actions.length > 0],
+  ['includes agent feedback summary', result.agent_feedback.status === 'present' && result.agent_feedback.records === 2 && result.agent_feedback.invalid_lines === 4 && result.agent_feedback.by_signal.incorrect === 1 && !result.agent_feedback.by_signal.undefined && result.agent_feedback.by_agent.warden_reviewer === 1 && result.agent_feedback.promotable === 1 && result.agent_feedback.latest.some((item) => item.agent === 'smith_reviewer')],
   ['includes review prep', result.review_prep && result.review_prep.trust_summary && result.review_prep.refresh_first.length > 0 && result.review_prep.read_first.length > 0 && result.review_prep.validate_first.length > 0],
-  ['markdown renders sections', markdown.includes('# Forgeflow Project Intelligence') && markdown.includes('not a source of truth') && markdown.includes('## Top Risks') && markdown.includes('## Review Prep') && markdown.includes('### Refresh First') && markdown.includes('### Review Notes') && markdown.includes('### Read First') && markdown.includes('## Sources') && markdown.includes('Project learnings:') && markdown.includes('Code map history:') && markdown.includes('## Artifacts')],
+  ['review prep includes feedback notes', result.review_prep.review_notes.some((item) => item.includes('corrective agent-feedback') && item.includes('Advisory only')) && result.review_prep.review_notes.some((item) => item.includes('promotable')) && result.review_prep.review_notes.some((item) => item.includes('agent-feedback line(s) were skipped')) && result.review_prep.review_notes.some((item) => item.includes('Flagged a safe query as unsafe') && item.includes('confidence: high') && item.includes('evidence: 2'))],
+  ['markdown renders sections', markdown.includes('# Forgeflow Project Intelligence') && markdown.includes('not a source of truth') && markdown.includes('## Top Risks') && markdown.includes('## Review Prep') && markdown.includes('### Refresh First') && markdown.includes('### Review Notes') && markdown.includes('### Read First') && markdown.includes('## Agent Feedback') && markdown.includes('advisory only') && markdown.includes('confidence: high') && markdown.includes('evidence: 2') && markdown.includes('Invalid lines skipped: 4') && markdown.includes('Agents: smith_reviewer: 1, warden_reviewer: 1') && markdown.includes('privacy-boundary') && markdown.includes('invalid-schema') && !markdown.includes('example.internal') && markdown.includes('## Sources') && markdown.includes('Project learnings:') && markdown.includes('Agent feedback:') && markdown.includes('Code map history:') && markdown.includes('## Artifacts')],
   ['cli json works', cliJson.schema_version === '1' && cliJson.artifacts.json.endsWith('project-intelligence-rollup.json')],
   ['custom out does not collide', custom.artifacts.json === customOut && custom.artifacts.markdown === `${customOut}.md` && fs.existsSync(custom.artifacts.json) && fs.existsSync(custom.artifacts.markdown)],
+  ['refresh records one code-map snapshot', historyAfterRefresh === historyBeforeRefresh + 1],
   ['risk synthesis combines sources', syntheticRisks.length >= 4 && syntheticRisks.some((item) => item.source === 'context-advisor')],
-  ['risk synthesis blocks failed learning gate', blockedLearningRisks.length === 1 && blockedLearningRisks[0].next_action === 'forgeflow-learnings --project --check' && !blockedLearningRisks[0].summary.includes('Should not be trusted')],
-  ['review prep dedupes and combines priorities', syntheticPrep.read_first.filter((item) => item === 'src/auth/session.ts').length === 1 && syntheticPrep.refresh_first.includes('forgeflow-trends --refresh') && syntheticPrep.refresh_first.includes('forgeflow-code-map') && !syntheticPrep.refresh_first.includes('Split scope before review.') && syntheticPrep.review_notes.includes('Split scope before review.') && syntheticPrep.validate_first.includes('Run auth regression tests before review.')],
+  ['risk synthesis keeps current risks when learning gate fails', blockedLearningRisks[0].next_action === 'forgeflow-learnings --project --check' && blockedLearningRisks.some((item) => item.source === 'project-freshness') && !blockedLearningRisks.some((item) => item.summary.includes('Should not be trusted'))],
+  ['review prep dedupes and combines priorities', syntheticPrep.read_first.filter((item) => item === 'src/auth/session.ts').length === 1 && syntheticPrep.refresh_first.includes('forgeflow-trends --refresh') && syntheticPrep.refresh_first.includes('forgeflow-code-map') && !syntheticPrep.refresh_first.includes('Split scope before review.') && syntheticPrep.review_notes.includes('Split scope before review.') && syntheticPrep.review_notes.some((item) => item.includes('corrective agent-feedback')) && syntheticPrep.validate_first.includes('Run auth regression tests before review.')],
   ['trust current when clean', trustState({ latest_insights: { status: 'injected', check_status: 'pass', freshness: { status: 'current' } }, freshness: { status: 'current' } }, { check: { status: 'pass' } }, []) === 'current'],
   ['trust blocked on failed gate', trustState({ latest_insights: { status: 'injected', check_status: 'fail', freshness: { status: 'current' } }, freshness: { status: 'current' } }, { check: { status: 'pass' } }, []) === 'blocked'],
   ['trust attention without learning check', trustState({ latest_insights: { status: 'injected', check_status: 'pass', freshness: { status: 'current' } }, freshness: { status: 'current' } }, {}, []) === 'attention'],

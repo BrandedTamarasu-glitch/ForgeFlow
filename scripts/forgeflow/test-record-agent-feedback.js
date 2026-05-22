@@ -117,6 +117,8 @@ function rejectedFeedback(summary) {
   }
 }
 const privateUrl = rejectedFeedback('The internal dashboard URL is https://example.internal/team');
+const barePrivateHost = rejectedFeedback('Review example.internal/team before approving');
+const fileLink = rejectedFeedback('Open [local file](file:///etc/passwd) before review');
 const sourceSnippet = rejectedFeedback('Suggested changing const query = sql`select * from users`');
 const inlineSnippet = rejectedFeedback('The reviewer cited `updateUser()` directly');
 const settingsBlob = rejectedFeedback('statusLine: node /private/hook.js');
@@ -136,6 +138,8 @@ const checks = [
   ['failed promotion does not write feedback', !fs.existsSync(lowPromotionFile)],
   ['plain promotion output names learning file', promotedPlain.status === 0 && promotedPlain.stdout.includes('Project learning promoted to')],
   ['private url rejected', privateUrl.status === 1 && privateUrl.stderr.includes('privacy boundary')],
+  ['bare private host rejected', barePrivateHost.status === 1 && barePrivateHost.stderr.includes('privacy boundary')],
+  ['file link rejected', fileLink.status === 1 && fileLink.stderr.includes('privacy boundary')],
   ['source snippet rejected', sourceSnippet.status === 1 && sourceSnippet.stderr.includes('privacy boundary')],
   ['inline snippet rejected', inlineSnippet.status === 1 && inlineSnippet.stderr.includes('privacy boundary')],
   ['settings blob rejected', settingsBlob.status === 1 && settingsBlob.stderr.includes('privacy boundary')],
