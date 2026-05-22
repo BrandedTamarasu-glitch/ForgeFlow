@@ -628,6 +628,26 @@ function topologyReport(topologyResult, root) {
   };
 }
 
+function latestFailureDigest(outDir, root, maxChars = 2500) {
+  const file = path.join(outDir, 'failure-digest.md');
+  if (!fs.existsSync(file)) return '(none)';
+  try {
+    const content = safeReadTextFile(file, outDir).content;
+    return truncate([
+      `Artifact: ${path.relative(root, file)}`,
+      '',
+      content.replace(/^# Forgeflow Failure Digest\s*/u, '').trim(),
+    ].join('\n'), maxChars);
+  } catch (err) {
+    return [
+      `Artifact: ${path.relative(root, file)}`,
+      '',
+      `Unavailable: ${err.message}`,
+      'Agents should inspect current command output or rerun `forgeflow-failure-digest` before relying on this artifact.',
+    ].join('\n');
+  }
+}
+
 function rulePack(agent, route, manifest) {
   const kinds = new Set(manifest.map((file) => file.kind));
   const rules = [];
@@ -662,7 +682,7 @@ function relevantFilesForAgent(agent, manifest) {
   return selected.length > 0 ? selected : manifest.slice(0, 10);
 }
 
-function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, projectCodeMap, topologySummary, task) {
+function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, latestFailure, projectCodeMap, topologySummary, task) {
   const relevant = relevantFilesForAgent(agent, manifest);
   const rules = rulePack(agent, route, manifest);
   return [
@@ -688,6 +708,9 @@ function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestI
     '',
     '## Latest Insights',
     latestInsights.replace(/^# Forgeflow Project Learnings[^\n]*\s*/u, '').trim() || '(none)',
+    '',
+    '## Latest Failure Digest',
+    latestFailure,
     '',
     '## Project Code Map',
     projectCodeMap,
@@ -739,6 +762,8 @@ function buildContextPack(opts) {
   const topologyContext = buildTopologyContext(root, outDir, route.files);
   const latestInsightsResult = buildLatestInsightsResult(root, 5000, { codeMap: topologyContext ? topologyContext.topology : undefined });
   const latestInsights = latestInsightsResult.markdown;
+  const latestFailure = latestFailureDigest(outDir, root);
+  const latestFailurePath = path.join(outDir, 'failure-digest.md');
   const projectCodeMap = projectCodeMapFromTopology(root, topologyContext);
   const projectCodeMapPath = path.join(outDir, 'project-code-map.md');
   const topologySummary = compactTopology(topologyContext);
@@ -747,7 +772,7 @@ function buildContextPack(opts) {
   const packets = {};
 
   for (const agent of agents) {
-    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, projectCodeMap, topologySummary, opts.task);
+    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, latestFailure, projectCodeMap, topologySummary, opts.task);
     const file = path.join(packetDir, `${agent}.md`);
     writeFileSafe(file, content);
     packets[agent] = path.relative(root, file);
@@ -778,6 +803,7 @@ function buildContextPack(opts) {
     memory_hits_path: path.relative(root, path.join(outDir, 'memory-hits.md')),
     latest_insights_path: path.relative(root, path.join(outDir, 'latest-insights.md')),
     latest_insights_report_path: path.relative(root, path.join(outDir, 'latest-insights-report.json')),
+    latest_failure_digest_path: fs.existsSync(latestFailurePath) ? path.relative(root, latestFailurePath) : null,
     project_code_map_path: topologyContext ? path.relative(root, projectCodeMapPath) : null,
     project_code_topology_path: topologyContext ? path.relative(root, topologyContext.out) : null,
     code_topology_path: topologyContext ? path.relative(root, topologyContext.out) : null,

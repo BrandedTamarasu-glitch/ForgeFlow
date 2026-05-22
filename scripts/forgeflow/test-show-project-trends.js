@@ -113,6 +113,28 @@ fs.writeFileSync(path.join(latestDir, 'latest-insights-report.json'), JSON.strin
   check_status: 'pass',
   issue_count: 0,
 }, null, 2));
+fs.writeFileSync(path.join(latestDir, 'failure-digest.md'), [
+  '# Forgeflow Failure Digest',
+  '',
+  'Generated at: 2026-05-20T00:01:00Z',
+  'Mode: failed-test',
+  'Status: compact',
+  'Raw required: no',
+  'Reason: test failure summarized',
+  'Input lines: 120',
+  'Output lines: 12',
+  'Omitted lines: 108',
+  '',
+  '## Evidence References',
+  '- line 7: FAIL test validates failure digest',
+  '',
+  '## Compact Output',
+  '```text',
+  'FAIL test validates failure digest',
+  'Expected digest to be surfaced',
+  '```',
+  '',
+].join('\n'));
 
 const result = showProjectTrends({ root, projectDir });
 const markdown = renderMarkdown(result);
@@ -228,14 +250,15 @@ const checks = [
   ['summarizes freshness', result.freshness.status === 'attention' && result.freshness.issues.some((item) => item.code === 'project-learnings-generated-at-missing')],
   ['recommends refresh for stale artifacts', staleGuidance.recommendations.some((item) => item.command === 'forgeflow-trends --refresh')],
   ['summarizes latest insights', result.latest_insights.status === 'injected' && result.latest_insights.check_status === 'pass' && result.latest_insights.freshness.status === 'current'],
+  ['summarizes latest failure digest', result.failure_digest.status === 'compact' && result.failure_digest.mode === 'failed-test' && result.failure_digest.omitted_lines === 108 && result.failure_digest.summary.includes('FAIL test validates failure digest')],
   ['detects stale latest insights', staleInsightsFreshness.status === 'attention' && staleInsightsFreshness.issues.some((item) => item.code === 'latest-insights-commit-stale')],
   ['detects stale code map freshness', staleFreshness.status === 'attention' && staleFreshness.issues.some((item) => item.code === 'code-map-commit-stale') && staleFreshness.issues.some((item) => item.code === 'code-map-dirty-stale')],
   ['detects stale project learning code-map consumption', staleLearningFreshness.status === 'attention' && staleLearningFreshness.issues.some((item) => item.code === 'project-learnings-code-map-stale')],
   ['allows refresh smoke code-map lag', refreshLagFreshness.status === 'current'],
   ['detects missing freshness inputs', missingFreshness.status === 'missing' && missingFreshness.issues.some((item) => item.code === 'code-map-missing') && missingFreshness.issues.some((item) => item.code === 'project-learnings-missing')],
   ['summarizes advisor', result.advisor.budget_status === 'warn' && result.advisor.code_map_trends_status === 'attention' && result.advisor.recommendations.some((item) => item.action === 'trim-budget-violation')],
-  ['renders markdown', markdown.includes('# Forgeflow Project Trends') && markdown.includes('## Recommendations') && markdown.includes('Unresolved imports delta: 1') && markdown.includes('## Import Gaps') && markdown.includes('Needs review: 1') && markdown.includes('forgeflow-code-map') && markdown.includes('## Latest Insights') && markdown.includes('Narrow file scope')],
-  ['cli json works', cli.status === 0 && cliJson.code_map.trend.status === 'compared' && cliJson.project_learnings.consumed_code_map_trend === true && Boolean(cliJson.freshness) && cliJson.latest_insights.status === 'injected' && cliJson.import_gaps.status === 'attention'],
+  ['renders markdown', markdown.includes('# Forgeflow Project Trends') && markdown.includes('## Recommendations') && markdown.includes('Unresolved imports delta: 1') && markdown.includes('## Import Gaps') && markdown.includes('Needs review: 1') && markdown.includes('forgeflow-code-map') && markdown.includes('## Latest Insights') && markdown.includes('## Latest Failure Digest') && markdown.includes('FAIL test validates failure digest') && markdown.includes('Narrow file scope')],
+  ['cli json works', cli.status === 0 && cliJson.code_map.trend.status === 'compared' && cliJson.project_learnings.consumed_code_map_trend === true && Boolean(cliJson.freshness) && cliJson.latest_insights.status === 'injected' && cliJson.failure_digest.status === 'compact' && cliJson.import_gaps.status === 'attention'],
   ['refresh cli works', refreshCli.status === 0 && refreshCliJson.refresh && refreshCliJson.refresh.check_status === 'pass'],
   ['missing option value exits usage', missingValue.status === 2 && missingValue.stderr.includes('Missing value for --project-dir')],
 ];

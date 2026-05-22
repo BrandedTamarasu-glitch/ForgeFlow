@@ -110,6 +110,28 @@ fs.writeFileSync(path.join(contextDir, 'latest', 'latest-insights-report.json'),
   check_status: 'pass',
   issue_count: 0,
 }, null, 2));
+fs.writeFileSync(path.join(contextDir, 'latest', 'failure-digest.md'), [
+  '# Forgeflow Failure Digest',
+  '',
+  'Generated at: 2026-05-20T00:01:00Z',
+  'Mode: failed-test',
+  'Status: compact',
+  'Raw required: no',
+  'Reason: report fixture failure summarized',
+  'Input lines: 90',
+  'Output lines: 9',
+  'Omitted lines: 81',
+  '',
+  '## Evidence References',
+  '- line 4: FAIL report fixture',
+  '',
+  '## Compact Output',
+  '```text',
+  'FAIL report fixture',
+  'Expected report to surface digest',
+  '```',
+  '',
+].join('\n'));
 
 const now = new Date('2026-05-20T00:00:00.000Z');
 const cutoff = cutoffForPeriod('month', now);
@@ -191,14 +213,15 @@ const checks = [
   ['includes project trends', report.project_trends.code_map.trend.status === 'compared' && report.project_trends.freshness.status === 'current'],
   ['includes import gaps', report.project_trends.import_gaps.status === 'attention' && report.project_trends.import_gaps.unresolved_total === 1 && report.recommendations.some((item) => item.command === 'forgeflow-code-map')],
   ['includes latest insights readiness', report.latest_insights.status === 'injected' && report.latest_insights.check_status === 'pass' && report.latest_insights.freshness.status === 'current'],
+  ['includes latest failure digest', report.project_trends.failure_digest.status === 'compact' && report.project_trends.failure_digest.summary.includes('FAIL report fixture')],
   ['recommends refresh for stale latest insights', staleReport.recommendations.some((item) => item.command === 'forgeflow-trends --refresh') && staleMarkdown.includes('forgeflow-trends --refresh')],
   ['refreshes project trends when requested', refreshedReport.project_trends.refresh && refreshedReport.project_trends.refresh.check_status === 'pass'],
   ['includes live drift when enabled', reportWithDrift.drift.status === 'missing' || reportWithDrift.drift.status === 'fail' || reportWithDrift.drift.status === 'pass'],
   ['records report log', report.report_history.recorded === true && fs.readFileSync(path.join(patternsDir, '.report-log.jsonl'), 'utf8').trim().split(/\r?\n/).length >= 2],
   ['computes report trend', report.report_history.trend.status === 'compared' && report.report_history.trend.invocation_delta === 3],
-  ['derives priorities', report.priorities.some((item) => item.includes('smith'))],
-  ['renders markdown sections', markdown.includes('## 8. Project Trends') && markdown.includes('## 9. Priorities') && markdown.includes('Import gaps: attention') && markdown.includes('Latest insights: injected') && markdown.includes('Latest insights freshness: current')],
-  ['cli json works', cli.status === 0 && cliJson.metrics.false_positives.flagged.length === 1 && cliJson.report_history.recorded === true && cliJson.project_trends.refresh.check_status === 'pass' && cliJson.project_trends.import_gaps.status === 'attention'],
+  ['derives priorities', report.priorities.some((item) => item.includes('smith')) && report.priorities.some((item) => item.includes('latest failure digest'))],
+  ['renders markdown sections', markdown.includes('## 8. Project Trends') && markdown.includes('## 9. Priorities') && markdown.includes('Import gaps: attention') && markdown.includes('Latest insights: injected') && markdown.includes('Latest insights freshness: current') && markdown.includes('Latest failure digest: compact') && markdown.includes('FAIL report fixture')],
+  ['cli json works', cli.status === 0 && cliJson.metrics.false_positives.flagged.length === 1 && cliJson.report_history.recorded === true && cliJson.project_trends.refresh.check_status === 'pass' && cliJson.project_trends.failure_digest.status === 'compact' && cliJson.project_trends.import_gaps.status === 'attention'],
   ['invalid period exits usage', badPeriod.status === 2 && badPeriod.stderr.includes('Invalid --period')],
 ];
 

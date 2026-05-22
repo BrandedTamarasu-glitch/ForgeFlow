@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { adviseContext } = require('./advise-context');
+const { safeReadTextFile } = require('./file-safety');
 const {
   currentGitState,
   latestInsightsFreshness,
@@ -60,8 +61,84 @@ function readFile(file) {
 }
 
 function parseGeneratedAt(markdown) {
-  const match = String(markdown || '').match(/^- Generated at:\s*(.+)$/mu);
+  const match = String(markdown || '').match(/^-?\s*Generated at:\s*(.+)$/mu);
   return match ? match[1].trim() : '';
+}
+
+function parseLineValue(markdown, label) {
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = String(markdown || '').match(new RegExp(`^-?\\s*${escaped}:\\s*(.+)$`, 'mu'));
+  return match ? match[1].trim() : '';
+}
+
+function parseNumberValue(markdown, label) {
+  const value = Number.parseInt(parseLineValue(markdown, label), 10);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function parseFailureDigest(markdown, file) {
+  const compactMatch = String(markdown || '').match(/## Compact Output\s*\n+`{3,}[^\n]*\n([\s\S]*?)\n`{3,}/u);
+  const evidenceMatch = String(markdown || '').match(/## Evidence References\s*\n+([\s\S]*?)(?:\n## |\n?$)/u);
+  const refs = evidenceMatch
+    ? evidenceMatch[1].split(/\r?\n/).map((line) => line.trim()).filter((line) => line.startsWith('- ')).slice(0, 5)
+    : [];
+  const compactLines = compactMatch
+    ? compactMatch[1].split(/\r?\n/).map((line) => line.trim()).filter(Boolean).slice(0, 5)
+    : [];
+  const status = parseLineValue(markdown, 'Status') || 'unknown';
+  const rawRequired = /^yes$/iu.test(parseLineValue(markdown, 'Raw required'));
+  return {
+    status,
+    path: file,
+    present: true,
+    generated_at: parseGeneratedAt(markdown),
+    mode: parseLineValue(markdown, 'Mode') || '',
+    raw_required: rawRequired,
+    reason: parseLineValue(markdown, 'Reason') || '',
+    input_lines: parseNumberValue(markdown, 'Input lines'),
+    output_lines: parseNumberValue(markdown, 'Output lines'),
+    omitted_lines: parseNumberValue(markdown, 'Omitted lines'),
+    refs,
+    summary: compactLines.join(' | ').slice(0, 500),
+  };
+}
+
+function latestFailureDigest(projectDir) {
+  const file = path.join(projectDir, 'context', 'latest', 'failure-digest.md');
+  if (!fs.existsSync(file)) {
+    return {
+      status: 'missing',
+      path: file,
+      present: false,
+      generated_at: '',
+      mode: '',
+      raw_required: false,
+      reason: 'No latest failure digest artifact is present.',
+      input_lines: 0,
+      output_lines: 0,
+      omitted_lines: 0,
+      refs: [],
+      summary: '',
+    };
+  }
+  try {
+    return parseFailureDigest(safeReadTextFile(file, projectDir).content, file);
+  } catch (err) {
+    return {
+      status: 'invalid',
+      path: file,
+      present: true,
+      generated_at: '',
+      mode: '',
+      raw_required: true,
+      reason: `failure-digest.md could not be read safely: ${err.message}`,
+      input_lines: 0,
+      output_lines: 0,
+      omitted_lines: 0,
+      refs: [],
+      summary: '',
+    };
+  }
 }
 
 function latestCodeMapTrend(history) {
@@ -197,7 +274,7 @@ function latestImportGaps(contextDir, limit = 5) {
   };
 }
 
-function trendRecommendations({ freshness, latestInsights, refresh, importGaps }) {
+function trendRecommendations({ freshness, latestInsights, refresh, importGaps, failureDigest }) {
   const recommendations = [];
   const hasProjectFreshnessIssue = freshness && freshness.issues && freshness.issues.length > 0;
   const insightsFreshness = latestInsights && latestInsights.freshness ? latestInsights.freshness : null;
@@ -226,6 +303,14 @@ function trendRecommendations({ freshness, latestInsights, refresh, importGaps }
       reason: `Code map has ${importGaps.production_total} production-scope import gap(s).`,
     });
   }
+  if (failureDigest && failureDigest.status === 'invalid') {
+    recommendations.push({
+      severity: 'attention',
+      action: 'refresh-failure-digest',
+      command: 'forgeflow-failure-digest',
+      reason: failureDigest.reason,
+    });
+  }
   return recommendations;
 }
 
@@ -248,6 +333,7 @@ function showProjectTrends(opts = {}) {
   const current = currentGitState(root);
   const latestInsights = latestInsightsReadiness(projectDir, root);
   const importGaps = latestImportGaps(contextDir);
+  const failureDigest = latestFailureDigest(projectDir);
 
   const freshness = projectFreshness({
     current,
@@ -265,6 +351,7 @@ function showProjectTrends(opts = {}) {
       code_map_history: fs.existsSync(historyPath) ? path.relative(root, historyPath) : null,
       project_learnings: fs.existsSync(learningsPath) ? path.relative(root, learningsPath) : null,
       latest_insights_report: fs.existsSync(latestInsights.path) ? path.relative(root, latestInsights.path) : null,
+      failure_digest: fs.existsSync(failureDigest.path) ? path.relative(root, failureDigest.path) : null,
     },
     code_map: {
       history_snapshots: history.length,
@@ -280,6 +367,7 @@ function showProjectTrends(opts = {}) {
     project_learnings: projectLearnings,
     freshness,
     latest_insights: latestInsights,
+    failure_digest: failureDigest,
     advisor: {
       budget_status: advisor.budget.status,
       code_topology_status: advisor.code_topology.status,
@@ -296,7 +384,7 @@ function showProjectTrends(opts = {}) {
       percent_saved: advisor.summary.percent_saved,
     },
   };
-  result.recommendations = trendRecommendations({ freshness, latestInsights, refresh, importGaps });
+  result.recommendations = trendRecommendations({ freshness, latestInsights, refresh, importGaps, failureDigest });
   return result;
 }
 
@@ -354,6 +442,17 @@ function renderMarkdown(result) {
     `- Freshness: ${result.latest_insights.freshness ? result.latest_insights.freshness.status : 'unknown'}`,
     `- Issues: ${result.latest_insights.freshness && result.latest_insights.freshness.issues.length > 0 ? result.latest_insights.freshness.issues.map((item) => `${item.code}: ${item.message}`).join('; ') : '(none)'}`,
     '',
+    '## Latest Failure Digest',
+    '',
+    `- Status: ${result.failure_digest.status}`,
+    `- Mode: ${result.failure_digest.mode || '(none)'}`,
+    `- Raw required: ${result.failure_digest.raw_required ? 'yes' : 'no'}`,
+    `- Generated at: ${result.failure_digest.generated_at || '(none)'}`,
+    `- Omitted lines: ${result.failure_digest.omitted_lines || 0}`,
+    `- Reason: ${result.failure_digest.reason || '(none)'}`,
+    `- Evidence refs: ${result.failure_digest.refs.length > 0 ? result.failure_digest.refs.join('; ') : '(none)'}`,
+    `- First signal: ${result.failure_digest.summary || '(none)'}`,
+    '',
     '## Project Learnings',
     '',
     `- Present: ${result.project_learnings.present ? 'yes' : 'no'}`,
@@ -398,6 +497,7 @@ module.exports = {
   latestCodeMapTrend,
   parseProjectLearnings,
   latestImportGaps,
+  latestFailureDigest,
   projectFreshness,
   renderMarkdown,
   showProjectTrends,

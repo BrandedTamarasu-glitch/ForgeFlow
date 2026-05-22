@@ -362,6 +362,15 @@ function derivePriorities(report) {
   if (report.project_trends.import_gaps && report.project_trends.import_gaps.status === 'attention') {
     priorities.push('Review code-map import gaps before relying on static topology guidance.');
   }
+  if (report.project_trends.failure_digest && report.project_trends.failure_digest.present) {
+    if (report.project_trends.failure_digest.status === 'invalid') {
+      priorities.push('Regenerate the latest failure digest before relying on failure summaries.');
+    } else if (report.project_trends.failure_digest.raw_required) {
+      priorities.push('Inspect raw failure output because the latest failure digest marked raw output as required.');
+    } else if (report.project_trends.failure_digest.summary) {
+      priorities.push(`Use the latest failure digest before rerunning broad validation: ${report.project_trends.failure_digest.summary}`);
+    }
+  }
   if (report.context.recommendations && report.context.recommendations.length > 0) {
     priorities.push(...report.context.recommendations.slice(0, 2).map((item) => item.command || item.reason));
   }
@@ -468,6 +477,7 @@ function renderMarkdown(report) {
   const freshness = projectTrends.freshness || {};
   const advisor = projectTrends.advisor || {};
   const importGaps = projectTrends.import_gaps || {};
+  const failureDigest = projectTrends.failure_digest || {};
   const latestInsights = report.latest_insights || {};
   const context = report.context || {};
   const lines = [
@@ -563,6 +573,11 @@ function renderMarkdown(report) {
     if (latestInsights.reason) lines.push(`- Latest insights reason: ${latestInsights.reason}`);
     if (latestInsights.check_status) lines.push(`- Latest insights quality gate: ${latestInsights.check_status}`);
     if (latestInsights.freshness) lines.push(`- Latest insights freshness: ${latestInsights.freshness.status}`);
+    lines.push(`- Latest failure digest: ${failureDigest.status || 'missing'}${failureDigest.mode ? ` (${failureDigest.mode})` : ''}`);
+    if (failureDigest.generated_at) lines.push(`- Latest failure digest generated: ${failureDigest.generated_at}`);
+    if (failureDigest.reason) lines.push(`- Latest failure digest reason: ${failureDigest.reason}`);
+    if (failureDigest.present) lines.push(`- Latest failure digest raw required: ${failureDigest.raw_required ? 'yes' : 'no'}`);
+    if (failureDigest.summary) lines.push(`- Latest failure digest first signal: ${failureDigest.summary}`);
   }
 
   lines.push('', '## 9. Priorities', '');
