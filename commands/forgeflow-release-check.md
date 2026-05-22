@@ -29,6 +29,7 @@ Run these commands from `$REPO_ROOT`:
 
 ```bash
 node scripts/forgeflow/test-command-coverage.js
+node scripts/forgeflow/test-command-argument-safety.js
 node scripts/forgeflow/test-doc-links.js
 node scripts/forgeflow/test-plugin-manifest.js
 node scripts/forgeflow/test-release-version.js
@@ -86,6 +87,7 @@ If any command fails, stop and report the failed command plus its output. Do not
 
 <success_criteria>
 - [ ] Command coverage test passes
+- [ ] Command argument safety test passes
 - [ ] Local README/wiki link test passes
 - [ ] Plugin manifest test passes
 - [ ] Release version drift test passes

@@ -39,7 +39,11 @@ Compact-output helper is not installed. Run /update-forgeflow, then retry /forge
 Run:
 
 ```bash
-"${HELPER_DIR}/compact-command-output.js" $ARGUMENTS
+ARGS=()
+# Append only validated values for --mode, --command, --file, and --json.
+if [ -n "$VALIDATED_MODE" ]; then ARGS+=(--mode "$VALIDATED_MODE"); fi
+if [ -n "$VALIDATED_COMMAND" ]; then ARGS+=(--command "$VALIDATED_COMMAND"); fi
+"${HELPER_DIR}/compact-command-output.js" "${ARGS[@]}"
 ```
 
 </process>

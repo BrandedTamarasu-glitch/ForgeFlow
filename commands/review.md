@@ -146,7 +146,7 @@ if [ ! -x "${HELPER_DIR}/explain-review-route.js" ] && [ -x "$HOME/.claude/forge
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
 DEFAULT_CALIBRATION=".forgeflow/${PROJECT_NAME}/calibration-summary.json"
-CALIBRATION_ARG=""
+ROUTE_ARGS=()
 
 if echo "$ARGUMENTS" | grep -q -- '--calibration '; then
   CALIBRATION_PATH=$(echo "$ARGUMENTS" | sed -n 's/.*--calibration \([^ ]*\).*/\1/p' | head -1)
@@ -157,21 +157,22 @@ else
 fi
 
 if [ -n "$CALIBRATION_PATH" ] && [ -f "$CALIBRATION_PATH" ]; then
-  CALIBRATION_ARG="--calibration $CALIBRATION_PATH"
+  ROUTE_ARGS+=(--calibration "$CALIBRATION_PATH")
 fi
 
-MODE_ARG=""
 if echo "$ARGUMENTS" | grep -q -- '--mode '; then
   MODE_OVERRIDE=$(echo "$ARGUMENTS" | sed -n 's/.*--mode \([^ ]*\).*/\1/p' | head -1)
-  MODE_ARG="--mode $MODE_OVERRIDE"
+  case "$MODE_OVERRIDE" in
+    skip|thin|full|deep) ROUTE_ARGS+=(--mode "$MODE_OVERRIDE") ;;
+    *) echo "Invalid review mode: $MODE_OVERRIDE"; exit 2 ;;
+  esac
 fi
 
-CI_ARG=""
 if [ "$CI_MODE" = "true" ]; then
-  CI_ARG="--ci"
+  ROUTE_ARGS+=(--ci)
 fi
 
-ROUTING_JSON=$("${HELPER_DIR}/explain-review-route.js" --json --files /tmp/_review_files_unique_$$ --lines "$LINES_CHANGED" --tracked-lines "$TRACKED_LINES_CHANGED" --untracked-lines "$UNTRACKED_LINES_CHANGED" $MODE_ARG $CI_ARG $CALIBRATION_ARG)
+ROUTING_JSON=$("${HELPER_DIR}/explain-review-route.js" --json --files /tmp/_review_files_unique_$$ --lines "$LINES_CHANGED" --tracked-lines "$TRACKED_LINES_CHANGED" --untracked-lines "$UNTRACKED_LINES_CHANGED" "${ROUTE_ARGS[@]}")
 ROUTING_MODE=$(printf '%s' "$ROUTING_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log(JSON.parse(s).mode))')
 ROUTING_VERIFIER=$(printf '%s' "$ROUTING_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log(JSON.parse(s).verifier||"not-required"))')
 ROUTING_TELEMETRY_HINTS=$(printf '%s' "$ROUTING_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log((JSON.parse(s).telemetry_hints||[]).map(h=>`${h.type}:${h.class}`).join(", ")))')
@@ -285,7 +286,8 @@ Use the listed files directly.
 
 **If $ARGUMENTS looks like a git ref** (e.g., HEAD~3, main..HEAD, a commit SHA):
 ```bash
-git diff --name-only $ARGUMENTS
+RESOLVED_REF="<validated user ref or range>"
+git diff --name-only "${RESOLVED_REF}"
 ```
 
 If no files found, tell the user and exit.
@@ -413,9 +415,7 @@ if ! echo "$ARGUMENTS" | grep -q -- '--no-context-pack' && [ -x "${HELPER_DIR}/b
   "${HELPER_DIR}/build-context-pack.js" \
     --files /tmp/_review_files_unique_$$ \
     --lines "$LINES_CHANGED" \
-    $MODE_ARG \
-    $CI_ARG \
-    $CALIBRATION_ARG \
+    "${ROUTE_ARGS[@]}" \
     "${TASK_ARGS[@]}" \
     --out "$CONTEXT_PACK_DIR" \
     --json

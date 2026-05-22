@@ -54,12 +54,16 @@ Project trends helper is not installed. Run /update-forgeflow, then retry /forge
 
 ## Step 2: Render trends
 
-Pass through `--refresh` and `--json` from `$ARGUMENTS`.
+Before Bash, parse `$ARGUMENTS` in the assistant layer. Accept only `--refresh` and `--json`. Reject unexpected flags or shell metacharacters. Build `ARGS` only from validated values.
 
 Run:
 
 ```bash
-"${HELPER_DIR}/show-project-trends.js" $ARGUMENTS
+ARGS=()
+# Append --refresh and --json only when requested.
+if [ "$WANTS_REFRESH" = "true" ]; then ARGS+=(--refresh); fi
+if [ "$WANTS_JSON" = "true" ]; then ARGS+=(--json); fi
+"${HELPER_DIR}/show-project-trends.js" "${ARGS[@]}"
 ```
 
 Print the helper output directly.

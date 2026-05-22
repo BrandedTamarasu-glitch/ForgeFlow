@@ -30,7 +30,12 @@ Noisy-command advisor is not installed. Run /update-forgeflow, then retry /forge
 Run:
 
 ```bash
-"${HELPER_DIR}/advise-noisy-command.js" $ARGUMENTS
+ARGS=()
+# Append only validated values, for example:
+# ARGS+=(--command "npm test")
+# ARGS+=(--json)
+if [ -n "$VALIDATED_COMMAND" ]; then ARGS+=(--command "$VALIDATED_COMMAND"); fi
+"${HELPER_DIR}/advise-noisy-command.js" "${ARGS[@]}"
 ```
 
 </process>

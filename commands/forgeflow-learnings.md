@@ -122,7 +122,11 @@ Choose either current-project mode (`--project`/`--check`) or cross-project patt
 When `${HELPER_DIR}/rollup-pattern-learnings.js` exists, run it with only cross-project flags and print its output directly:
 
 ```bash
-"${HELPER_DIR}/rollup-pattern-learnings.js" $ARGUMENTS
+ARGS=()
+# Append only validated cross-project flags.
+if [ -n "$VALIDATED_PERIOD" ]; then ARGS+=(--period "$VALIDATED_PERIOD"); fi
+if [ "$WANTS_DRY_RUN" = "true" ]; then ARGS+=(--dry-run); fi
+"${HELPER_DIR}/rollup-pattern-learnings.js" "${ARGS[@]}"
 ```
 
 The helper owns scanning `.forgeflow/<project>/learnings.jsonl` and `project-learning-candidates.jsonl`, period filtering, known-pattern matching, source-mix reporting, candidate clustering, JSON/Markdown output, and `.learnings-log.jsonl` self-logging. If the helper is missing, continue with the manual fallback below and tell the user to run `/update-forgeflow`.

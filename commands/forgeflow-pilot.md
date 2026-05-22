@@ -45,10 +45,17 @@ Pilot script helper is not installed. Run /update-forgeflow, then retry /forgefl
 
 ## Step 2: Render script
 
-Pass through `$ARGUMENTS`.
+Before Bash, parse `$ARGUMENTS` in the assistant layer. Accept only `--runtime claude-code|codex`, `--project-name <name>`, `--path maintainer|new-user`, and `--json`. Reject unexpected flags or shell metacharacters. Build `ARGS` only from validated values.
 
 ```bash
-node "${HELPER_DIR}/render-pilot-script.js" $ARGUMENTS
+ARGS=()
+# Append only validated values, for example:
+# ARGS+=(--runtime "codex")
+# ARGS+=(--path "new-user")
+# ARGS+=(--json)
+if [ -n "$VALIDATED_RUNTIME" ]; then ARGS+=(--runtime "$VALIDATED_RUNTIME"); fi
+if [ -n "$VALIDATED_PATH" ]; then ARGS+=(--path "$VALIDATED_PATH"); fi
+node "${HELPER_DIR}/render-pilot-script.js" "${ARGS[@]}"
 ```
 
 Print the helper output directly.

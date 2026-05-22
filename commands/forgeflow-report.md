@@ -66,7 +66,11 @@ fi
 When `${HELPER_DIR}/render-forgeflow-report.js` exists, run it and print its output directly:
 
 ```bash
-"${HELPER_DIR}/render-forgeflow-report.js" $ARGUMENTS
+ARGS=()
+# Append only validated values for --period, --refresh, --no-drift, and --json.
+if [ -n "$VALIDATED_PERIOD" ]; then ARGS+=(--period "$VALIDATED_PERIOD"); fi
+if [ "$WANTS_REFRESH" = "true" ]; then ARGS+=(--refresh); fi
+"${HELPER_DIR}/render-forgeflow-report.js" "${ARGS[@]}"
 ```
 
 This helper owns parsing, aggregation, Markdown/JSON rendering, project-trends integration, and `.report-log.jsonl` self-logging. If the helper is missing, continue with the manual fallback below and tell the user to run `/update-forgeflow` after the report.

@@ -59,14 +59,18 @@ Code map helper is not installed. Run /update-forgeflow, then retry /forgeflow-c
 
 ## Step 2: Build arguments
 
-Pass through `--json`, `--project-dir <dir>`, `--out <markdown>`, `--max-hotspots N`, and `--history-limit N` from `$ARGUMENTS`.
+Before Bash, parse `$ARGUMENTS` in the assistant layer. Accept only `--json`, `--project-dir <dir>`, `--out <markdown>`, `--max-hotspots N`, and `--history-limit N`. Reject unexpected flags or shell metacharacters. Build `ARGS` only from validated values.
 
 ## Step 3: Render map
 
 Run:
 
 ```bash
-"${HELPER_DIR}/show-code-map.js" $ARGUMENTS
+ARGS=()
+# Append only validated values for the supported flags.
+if [ -n "$VALIDATED_MAX_HOTSPOTS" ]; then ARGS+=(--max-hotspots "$VALIDATED_MAX_HOTSPOTS"); fi
+if [ "$WANTS_JSON" = "true" ]; then ARGS+=(--json); fi
+"${HELPER_DIR}/show-code-map.js" "${ARGS[@]}"
 ```
 
 Print the helper output directly.

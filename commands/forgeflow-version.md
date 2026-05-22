@@ -39,7 +39,11 @@ scripts/forgeflow/update-forgeflow.js
 ## Step 2: Run Helper
 
 ```bash
-"${HELPER_DIR}/forgeflow-version.js" $ARGUMENTS
+ARGS=()
+# Append only --json and --offline when requested.
+if [ "$WANTS_JSON" = "true" ]; then ARGS+=(--json); fi
+if [ "$WANTS_OFFLINE" = "true" ]; then ARGS+=(--offline); fi
+"${HELPER_DIR}/forgeflow-version.js" "${ARGS[@]}"
 ```
 
 ## Step 3: Interpret

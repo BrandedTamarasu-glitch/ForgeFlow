@@ -29,7 +29,13 @@ if [ ! -x "${HELPER_DIR}/update-forgeflow.js" ] && [ -x "$HOME/.claude/forgeflow
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
 if [ -x "${HELPER_DIR}/update-forgeflow.js" ]; then
-  "${HELPER_DIR}/update-forgeflow.js" $ARGUMENTS
+  ARGS=()
+  # Append only validated --repair, --rollback, --json, and --dry-run flags.
+  if [ "$WANTS_REPAIR" = "true" ]; then ARGS+=(--repair); fi
+  if [ "$WANTS_ROLLBACK" = "true" ]; then ARGS+=(--rollback); fi
+  if [ "$WANTS_JSON" = "true" ]; then ARGS+=(--json); fi
+  if [ "$WANTS_DRY_RUN" = "true" ]; then ARGS+=(--dry-run); fi
+  "${HELPER_DIR}/update-forgeflow.js" "${ARGS[@]}"
   exit $?
 fi
 ```

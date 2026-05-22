@@ -64,7 +64,11 @@ fi
 When `${HELPER_DIR}/check-agent-drift.js` exists, run it and print its output directly:
 
 ```bash
-"${HELPER_DIR}/check-agent-drift.js" $ARGUMENTS
+ARGS=()
+# Append only validated values for --agent, --canonical, --threshold, and --json.
+if [ -n "$VALIDATED_THRESHOLD" ]; then ARGS+=(--threshold "$VALIDATED_THRESHOLD"); fi
+if [ "$WANTS_JSON" = "true" ]; then ARGS+=(--json); fi
+"${HELPER_DIR}/check-agent-drift.js" "${ARGS[@]}"
 ```
 
 The helper owns section parsing, scoring, JSON/Markdown rendering, filtering, threshold handling, and actionable exit codes. If it is missing, continue with the manual fallback below and tell the user to run `/update-forgeflow` after the report.

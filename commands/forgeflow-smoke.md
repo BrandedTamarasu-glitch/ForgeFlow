@@ -51,10 +51,16 @@ Smoke helper is not installed. Run /update-forgeflow, then retry /forgeflow-smok
 
 ## Step 2: Run smoke
 
-Pass through `$ARGUMENTS`.
+Before Bash, parse `$ARGUMENTS` in the assistant layer. Accept only `--mode downstream|source|full`, `--json`, `--root <dir>`, `--project-dir <dir>`, and `--patterns-dir <dir>`. Reject unexpected flags or shell metacharacters. Build `ARGS` only from validated values.
 
 ```bash
-node "${HELPER_DIR}/smoke-check.js" $ARGUMENTS
+ARGS=()
+# Append only validated values, for example:
+# ARGS+=(--mode "source")
+# ARGS+=(--json)
+if [ -n "$VALIDATED_MODE" ]; then ARGS+=(--mode "$VALIDATED_MODE"); fi
+if [ "$WANTS_JSON" = "true" ]; then ARGS+=(--json); fi
+node "${HELPER_DIR}/smoke-check.js" "${ARGS[@]}"
 ```
 
 Print the helper output directly.

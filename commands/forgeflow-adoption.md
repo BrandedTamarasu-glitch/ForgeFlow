@@ -52,6 +52,8 @@ ARGS=()
 # ARGS+=(--project-name "My Project")
 # ARGS+=(--path "new-user")
 # ARGS+=(--json)
+if [ -n "$VALIDATED_RUNTIME" ]; then ARGS+=(--runtime "$VALIDATED_RUNTIME"); fi
+if [ -n "$VALIDATED_PATH" ]; then ARGS+=(--path "$VALIDATED_PATH"); fi
 node "${HELPER_DIR}/render-adoption-pack.js" "${ARGS[@]}"
 ```
 
