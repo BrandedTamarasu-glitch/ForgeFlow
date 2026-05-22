@@ -137,6 +137,7 @@ function runSourceSmoke(root, helperRepoRoot = helperRoot()) {
     sourceCheck(root, 'install-manifest', 'scripts/forgeflow/test-install-manifest.js', helperRepoRoot),
     sourceCheck(root, 'update-forgeflow', 'scripts/forgeflow/test-update-forgeflow.js', helperRepoRoot),
     sourceCheck(root, 'dogfood-self-test', 'scripts/forgeflow/test-dogfood-self-test.js', helperRepoRoot),
+    sourceCheck(root, 'installed-runtime-dogfood', 'scripts/forgeflow/test-installed-runtime-dogfood.js', helperRepoRoot),
   ];
 }
 

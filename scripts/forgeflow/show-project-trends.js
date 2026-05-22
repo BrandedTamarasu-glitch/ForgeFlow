@@ -312,9 +312,9 @@ function topList(items, limit = 5) {
   return (items || []).slice(0, limit);
 }
 
-function refreshProjectGuidance(projectDir) {
+function refreshProjectGuidance(projectDir, root) {
   const { showProjectLearnings } = require('./show-project-learnings');
-  const result = showProjectLearnings({ projectDir, check: true });
+  const result = showProjectLearnings({ root, projectDir, check: true });
   return {
     status: result.check && result.check.status === 'pass' ? 'pass' : 'attention',
     project_learnings: result.out || '',
@@ -401,7 +401,7 @@ function showProjectTrends(opts = {}) {
   const root = opts.root || repoRoot();
   const projectDir = opts.projectDir || defaultProjectDir(root);
   assertSafeDirectory(projectDir);
-  const refresh = opts.refresh ? refreshProjectGuidance(projectDir) : null;
+  const refresh = opts.refresh ? refreshProjectGuidance(projectDir, root) : null;
   const contextDir = path.join(projectDir, 'context');
   const historyPath = path.join(contextDir, 'code-map-history.jsonl');
   const learningsPath = path.join(projectDir, 'project-learnings.md');

@@ -17,7 +17,7 @@ const SECTION_ORDER = [
 ];
 
 function usage() {
-  console.error('Usage: show-project-learnings.js [--project-dir <dir>] [--check] [--json]');
+  console.error('Usage: show-project-learnings.js [--root <dir>] [--project-dir <dir>] [--check] [--json]');
 }
 
 function argumentError(message, exitOnError) {
@@ -42,13 +42,17 @@ function requireValue(argv, name, index, exitOnError = true) {
 function parseArgs(argv, options = {}) {
   const exitOnError = options.exitOnError !== false;
   const opts = {
+    root: '',
     projectDir: '',
     check: false,
     json: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg === '--project-dir') {
+    if (arg === '--root') {
+      opts.root = path.resolve(requireValue(argv, arg, i, exitOnError));
+      i += 1;
+    } else if (arg === '--project-dir') {
       opts.projectDir = path.resolve(requireValue(argv, arg, i, exitOnError));
       i += 1;
     } else if (arg === '--check') {
@@ -190,7 +194,7 @@ function renderCheckSummary(result) {
 }
 
 function showProjectLearnings(opts = {}) {
-  const root = repoRoot();
+  const root = opts.root ? repoRoot(opts.root) : repoRoot();
   const projectDir = opts.projectDir || defaultProjectDir(root);
   if (shouldRefreshProjectCodeMap(root, projectDir, opts)) {
     showCodeMap({ root, projectDir });

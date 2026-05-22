@@ -461,7 +461,7 @@ function buildLatestInsightsResult(root, maxChars = 3000, opts = {}) {
   }
   try {
     assertSafeDirectory(projectDir);
-    const result = showProjectLearnings({ projectDir, refreshCodeMap: false, codeMap: opts.codeMap });
+    const result = showProjectLearnings({ root, projectDir, refreshCodeMap: false, codeMap: opts.codeMap });
     const check = checkProjectLearnings({ projectDir });
     if (check.status !== 'pass') {
       return {

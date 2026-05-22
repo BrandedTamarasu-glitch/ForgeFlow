@@ -45,6 +45,13 @@ const parsedCheckJson = showProjectLearnings(parseArgs([
   '--check',
   '--json',
 ], { exitOnError: false }));
+const parsedRootJson = showProjectLearnings(parseArgs([
+  '--root',
+  repoRoot,
+  '--project-dir',
+  projectDir,
+  '--json',
+], { exitOnError: false }));
 let missingValue = { status: 0, stderr: '' };
 try {
   parseArgs(['--project-dir'], { exitOnError: false });
@@ -66,6 +73,7 @@ const checks = [
   ['cli markdown works', cliMarkdown.status === 0 && cliMarkdown.stdout.includes('## Validation Patterns')],
   ['cli json works', parsedJson.sources.learning_candidates === 2],
   ['cli check json works', parsedCheckJson.check.status === 'pass' && parsedCheckJson.context_smoke.status === 'skipped'],
+  ['cli root json works', parsedRootJson.project_dir === projectDir && parsedRootJson.sources.learning_candidates === 2],
   ['missing option value exits usage', missingValue.status === 2 && missingValue.stderr.includes('Missing value for --project-dir')],
 ];
 

@@ -55,6 +55,7 @@ node scripts/forgeflow/test-show-project-learnings.js
 node scripts/forgeflow/test-show-project-trends.js
 node scripts/forgeflow/test-smoke-check.js
 node scripts/forgeflow/test-dogfood-self-test.js
+node scripts/forgeflow/test-installed-runtime-dogfood.js
 node scripts/forgeflow/smoke-check.js --mode source --json
 node scripts/forgeflow/test-render-pilot-script.js
 node scripts/forgeflow/test-check-context-budget.js
@@ -69,7 +70,7 @@ git diff --check
 ```
 
 `test-release-version.js` also guards that `/forgeflow-health`, `/forgeflow-trends`, `/forgeflow-report`, and the README all expose the same `/forgeflow-trends --refresh` stale-guidance next action.
-`test-dogfood-self-test.js` is listed directly for isolated failure output; `smoke-check.js --mode source --json` also runs it to verify the packaged source-smoke path.
+`test-dogfood-self-test.js` and `test-installed-runtime-dogfood.js` are listed directly for isolated failure output; `smoke-check.js --mode source --json` also runs both to verify packaged source-smoke and installed-runtime paths.
 
 Render the public-summary example before release notes claim evaluation evidence:
 

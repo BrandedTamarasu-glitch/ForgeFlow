@@ -160,7 +160,7 @@ function buildProjectIntelligence(opts = {}) {
   assertSafeDirectory(projectDir);
   const jsonOut = path.resolve(opts.out || defaultJsonOut(projectDir));
   const markdownOut = markdownOutFor(jsonOut);
-  const learnings = showProjectLearnings({ projectDir, refreshCodeMap: false, check: true });
+  const learnings = showProjectLearnings({ root, projectDir, refreshCodeMap: false, check: true });
   const trends = showProjectTrends({ root, projectDir, refresh: Boolean(opts.refresh) });
   const risks = riskSignals(trends, learnings);
   const intelligence = {
