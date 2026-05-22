@@ -45,10 +45,22 @@ Print the short script for the selected runtime:
 scripts/forgeflow/render-pilot-script.js --runtime codex
 ```
 
+For a net-new user evaluating Forgeflow on a first real task, render the new-user path instead:
+
+```bash
+scripts/forgeflow/render-pilot-script.js --runtime codex --path new-user
+```
+
 From Claude Code:
 
 ```text
 /forgeflow-pilot --runtime claude-code
+```
+
+For the new-user path from Claude Code:
+
+```text
+/forgeflow-pilot --runtime claude-code --path new-user
 ```
 
 Use the generated script as the run order for install verification, baseline smoke, trends, report, code map, one bounded work item, final report, evidence capture, and rollup.

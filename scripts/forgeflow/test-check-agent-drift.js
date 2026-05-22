@@ -114,7 +114,7 @@ const checks = [
   ['applies mode-specific expected sections', arbiterReview.status === 'pass' && arbiterReview.per_agent[0].sections.every((section) => section.section !== 'Deviation Protocol')],
   ['treats adapted sections as modified', arbiterReview.per_agent[0].sections.some((section) => section.section === 'Lead Architect Intelligence' && section.status === 'MODIFIED' && section.adapted === true)],
   ['renders markdown', markdown.includes('# Forgeflow Drift Report') && markdown.includes('Actionable Drift')],
-  ['cli json exits actionable', cli.status === 1 && cliJson.per_agent[0].agent === 'smith-review'],
+  ['cli json exits actionable', cli.status === 1 && Array.isArray(cliJson.per_agent) && cliJson.per_agent[0] && cliJson.per_agent[0].agent === 'smith-review'],
   ['bad threshold exits usage', badThreshold.status === 2 && badThreshold.stderr.includes('Invalid --threshold')],
 ];
 
@@ -123,6 +123,11 @@ for (const [name, ok] of checks) {
   if (!ok) {
     failed += 1;
     console.error(`FAIL ${name}`);
+    if (name === 'cli json exits actionable') {
+      console.error(`  status: ${cli.status}`);
+      console.error(`  stdout: ${cli.stdout.trim()}`);
+      console.error(`  stderr: ${cli.stderr.trim()}`);
+    }
   }
 }
 

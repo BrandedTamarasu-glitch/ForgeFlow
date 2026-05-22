@@ -308,7 +308,7 @@ function main() {
   } else {
     process.stdout.write(`${renderMarkdown(result)}\n`);
   }
-  if (result.status === 'fail') process.exit(1);
+  if (result.status === 'fail') process.exitCode = 1;
 }
 
 if (require.main === module) {

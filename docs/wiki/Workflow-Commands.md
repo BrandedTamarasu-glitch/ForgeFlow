@@ -29,7 +29,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-health` | Audit installation, project-local state, latest project-learning quality, latest-insights readiness/freshness, and latest failure-digest freshness; can safely repair `.forgeflow/` scaffolding and budget config. Stale latest insights recommend `/forgeflow-trends --refresh`. |
 | `/forgeflow-learnings --project --check` | Refresh and print current-project learnings, run the quality gate, smoke-test context-pack injection, and report whether latest insights are ready for agent context. Cross-project mode uses the pattern-learnings rollup helper across legacy learnings and project-learning candidates. |
 | `/forgeflow-metrics` | Summarize telemetry, calibration, outcomes, context savings, budget health, and advisor actions. |
-| `/forgeflow-pilot` | Print the repeatable maintainer pilot script and public-safe result template. |
+| `/forgeflow-pilot` | Print the repeatable maintainer pilot script by default, or add `--path new-user` for the first-real-task evaluation path and public-safe result template. |
 | `/forgeflow-report` | Produce a script-backed status report including local metrics, false-positive thresholds, pattern freshness, context trends, project trends, import-gap status, latest-insights readiness/freshness, latest failure-digest status/freshness, and direct next-action recommendations. Add `--refresh` to update project guidance first. |
 | `/forgeflow-release-check` | Run local pre-release checks for command coverage, install, update, health, version, and context helpers. |
 | `/forgeflow-smoke` | Run downstream readiness smoke by default; add `--mode source` for source-tree release guards or `--mode full` for both groups. |

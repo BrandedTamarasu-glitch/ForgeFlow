@@ -11,6 +11,14 @@ Use this page when you know what outcome you want but not which Forgeflow comman
 
 If health reports missing managed files, run `/update-forgeflow --repair`. If the latest update caused a managed-file problem, run `/update-forgeflow --rollback`.
 
+## Try Forgeflow For The First Time
+
+1. Run `/forgeflow-pilot --path new-user --runtime claude-code` from Claude Code, or `scripts/forgeflow/render-pilot-script.js --path new-user --runtime codex` from a checkout.
+2. Follow the generated readiness, project-orientation, first-work-item, and decision steps.
+3. Keep the first task small enough to judge setup friction, guidance quality, review usefulness, and whether the next task starts with better project context.
+
+Use the default maintainer path when a project owner is running a broader pilot across a real branch. Use the new-user path when the goal is to help one person decide whether Forgeflow is worth adopting.
+
 ## Refresh Project Guidance
 
 1. Run `/forgeflow-trends --refresh`.
@@ -68,6 +76,7 @@ If implementation notes are missing or stale, refresh or repair them before ship
 |---|---|
 | Command missing after install | Restart Claude Code, then `/forgeflow-health` |
 | Managed file missing or corrupt | `/update-forgeflow --repair` |
+| First time evaluating Forgeflow | `/forgeflow-pilot --path new-user` |
 | Latest insights stale | `/forgeflow-trends --refresh` |
 | Need readiness confidence | `/forgeflow-smoke` |
 | Failure output is too noisy | `/forgeflow-failure-digest` |

@@ -215,7 +215,7 @@ Forgeflow includes local-only helpers that reduce agent prompt load before revie
 - **Latest-insights state:** `latest-insights-state.js` provides the shared readiness/freshness check used by health, report, and trends so stale guidance is reported consistently.
 - **Forgeflow report:** `render-forgeflow-report.js` combines local telemetry, false-positive thresholds, pattern-log freshness, context savings, project trends, import-gap status, latest-insights readiness/freshness, latest failure-digest status/freshness, and direct next-action recommendations into one Markdown or JSON report. Use `--refresh` to update project guidance first.
 - **Smoke check:** `smoke-check.js` defaults to downstream readiness checks for health, trends refresh, report refresh, and code map. Use `--mode source` for source-tree release guards or `--mode full` for both groups.
-- **Pilot script:** `render-pilot-script.js` prints a maintainer trial script with install verification, smoke, trends, report, code map, one bounded work item, final report, evidence capture, rollup, and a public-safe result template.
+- **Pilot script:** `render-pilot-script.js` prints a maintainer trial script by default and a first-real-task new-user path with `--path new-user`. Both paths cover install/readiness checks, project guidance, one bounded work item, review, evidence capture, rollup, and a public-safe result template.
 - **Pattern learnings:** `rollup-pattern-learnings.js` scans cross-project `.forgeflow/<project>/learnings.jsonl` plus `project-learning-candidates.jsonl`, clusters known/candidate patterns with source-mix labels, and records `.learnings-log.jsonl` for `/forgeflow-report`.
 
 Review context packs keep local memory hits bounded by default. If memory context dominates packet size, lower `build-context-pack.js --max-memory-chars` or split the review scope.
@@ -279,6 +279,18 @@ scripts/forgeflow/rollup-pilot-evidence.js --json
 ```
 
 The pilot script prints the bounded trial path and public-safe result template. The rollup stays local under `.forgeflow/<project-name>/` and summarizes pilot count, support categories, findings, review minutes, and the next recommended action.
+
+For a net-new user deciding whether Forgeflow is worth adopting, render the first-real-task path:
+
+```bash
+scripts/forgeflow/render-pilot-script.js --path new-user --runtime codex
+```
+
+From Claude Code:
+
+```text
+/forgeflow-pilot --path new-user --runtime claude-code
+```
 
 Project learning rollups are planned around:
 
