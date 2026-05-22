@@ -367,12 +367,54 @@ const invalidDigestSynthesis = invalidDigestResult.synthesis_input;
 const invalidDigestPacket = Object.values(invalidDigestSynthesis.agent_packets)
   .map((packet) => fs.readFileSync(path.join(repoRoot, packet), 'utf8'))
   .join('\n');
+const rawDigestOutDir = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-raw-digest-'));
+fs.writeFileSync(path.join(rawDigestOutDir, 'failure-digest.md'), [
+  '# Forgeflow Failure Digest',
+  '',
+  'Generated at: 2026-05-20T00:01:00Z',
+  'Git available: yes',
+  `Git commit: ${spawnSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: repoRoot, encoding: 'utf8' }).stdout.trim()}`,
+  'Git dirty: yes',
+  'Mode: failed-test',
+  'Status: compact',
+  'Raw required: yes',
+  'Reason: raw fixture requires inspection',
+  'Input lines: 10',
+  'Output lines: 10',
+  'Omitted lines: 0',
+  '',
+  '## Evidence References',
+  '- line 1: RAW_SECRET_PACKET_MARKER',
+  '',
+  '## Compact Output',
+  '```text',
+  'RAW_SECRET_PACKET_MARKER',
+  '```',
+  '',
+].join('\n'));
+const rawDigestResult = buildContextPack({
+  filesPath: path.join(repoRoot, 'fixtures/context-pack/review.files'),
+  linesChanged: 80,
+  task: 'Review raw-required failure digest handling',
+  out: rawDigestOutDir,
+  modeOverride: '',
+  calibrationPath: '',
+  ci: false,
+  maxMemoryChars: 12000,
+  maxDiffChars: 18000,
+});
+const rawDigestSynthesis = rawDigestResult.synthesis_input;
+const rawDigestPacket = Object.values(rawDigestSynthesis.agent_packets)
+  .map((packet) => fs.readFileSync(path.join(repoRoot, packet), 'utf8'))
+  .join('\n');
 
 const route = JSON.parse(fs.readFileSync(path.join(outDir, 'route.json'), 'utf8'));
 const manifest = JSON.parse(fs.readFileSync(path.join(outDir, 'file-manifest.json'), 'utf8'));
 const synthesis = JSON.parse(fs.readFileSync(path.join(outDir, 'synthesis-input.json'), 'utf8'));
 const telemetry = JSON.parse(fs.readFileSync(path.join(outDir, 'context-telemetry.json'), 'utf8'));
 const insightsReport = JSON.parse(fs.readFileSync(path.join(outDir, 'latest-insights-report.json'), 'utf8'));
+const artifactManifest = JSON.parse(fs.readFileSync(path.join(outDir, 'packet-artifacts.json'), 'utf8'));
+const artifactManifestMarkdown = fs.readFileSync(path.join(outDir, 'packet-artifacts.md'), 'utf8');
 const topology = JSON.parse(fs.readFileSync(path.join(outDir, 'code-topology.json'), 'utf8'));
 const codeMapHistoryPath = path.join(outDir, 'code-map-history.jsonl');
 const noisyManifest = JSON.parse(fs.readFileSync(path.join(noisyOutDir, 'file-manifest.json'), 'utf8'));
@@ -412,6 +454,11 @@ const checks = [
   ['latest failure digest linked', synthesis.latest_failure_digest_path && synthesis.latest_failure_digest_path.endsWith('failure-digest.md')],
   ['latest failure digest freshness linked', synthesis.latest_failure_digest_freshness && synthesis.latest_failure_digest_freshness.status === 'attention'],
   ['latest failure digest triage linked', synthesis.latest_failure_digest_triage && synthesis.latest_failure_digest_triage.state === 'stale' && synthesis.latest_failure_digest_triage.usefulness === 'limited'],
+  ['packet artifact manifest linked', synthesis.packet_artifact_manifest_path && synthesis.packet_artifact_manifest_path.endsWith('packet-artifacts.json')],
+  ['packet artifact manifest written', artifactManifest.artifacts.some((item) => item.name === 'latest-failure-digest' && item.decision === 'metadata-only' && item.reason === 'digest-stale')],
+  ['packet artifact manifest markdown written', artifactManifestMarkdown.includes('| latest-failure-digest | metadata-only | digest-stale | forgeflow-failure-digest |')],
+  ['packet artifact manifest covers latest insights', artifactManifest.artifacts.some((item) => item.name === 'latest-insights' && item.decision === 'included' && item.status === 'injected')],
+  ['packet artifact manifest covers topology provenance', artifactManifest.artifacts.some((item) => item.name === 'code-topology' && item.decision === 'included' && item.provenance && item.provenance.source === 'build-context-pack')],
   ['project code map linked to current pack', synthesis.project_code_map_path === path.relative(repoRoot, path.join(outDir, 'project-code-map.md'))],
   ['project code topology linked to current pack', synthesis.project_code_topology_path === synthesis.code_topology_path],
   ['code topology linked', synthesis.code_topology_path.endsWith('code-topology.json')],
@@ -427,7 +474,8 @@ const checks = [
   ['code topology summary has changed section count', Number.isInteger(synthesis.code_topology_summary.summary.changed_sections)],
   ['code topology summary has section ranges', synthesis.code_topology_summary.changed_file_neighbors.every((item) => (item.sections || []).every((section) => Number.isInteger(section.end_line)))],
   ['agent packet includes latest insights', wardenPacket.includes('## Latest Insights')],
-  ['agent packet includes latest failure digest', wardenPacket.includes('## Latest Failure Digest') && wardenPacket.includes('Freshness: attention') && wardenPacket.includes('Triage state: stale') && wardenPacket.includes('Usefulness: limited') && wardenPacket.includes('FAIL context packet fixture')],
+  ['agent packet includes artifact trust manifest', wardenPacket.includes('## Packet Artifact Trust') && wardenPacket.includes('| latest-failure-digest | metadata-only | digest-stale | forgeflow-failure-digest |')],
+  ['agent packet gates stale failure digest body', wardenPacket.includes('## Latest Failure Digest') && wardenPacket.includes('Freshness: attention') && wardenPacket.includes('Triage state: stale') && wardenPacket.includes('Digest body skipped') && !wardenPacket.includes('FAIL context packet fixture')],
   ['agent packet latest insights omit stale topology', !wardenPacket.includes('legacy/stale-topology.js')],
   ['agent packet includes current project code map', wardenPacket.includes('## Project Code Map') && wardenPacket.includes('Artifact:') && wardenPacket.includes('code-topology.json')],
   ['agent packet includes provenance', wardenPacket.includes('Provenance:')],
@@ -458,7 +506,10 @@ const checks = [
   ['symlink project root memory does not leak', symlinkProjectCli.status === 0 && !symlinkProjectHits.includes('TOP_SECRET_PROJECT_ROOT_MARKER') && !symlinkProjectPackets.includes('TOP_SECRET_PROJECT_ROOT_MARKER')],
   ['symlink out ancestor blocked', symlinkOutCli.status === 1 && symlinkOutCli.stderr.includes('symlinked directory')],
   ['invalid failure digest triage linked', invalidDigestSynthesis.latest_failure_digest_triage && invalidDigestSynthesis.latest_failure_digest_triage.state === 'invalid' && invalidDigestSynthesis.latest_failure_digest_triage.usefulness === 'not-usable'],
+  ['invalid failure digest artifact metadata-only', invalidDigestSynthesis.packet_artifacts.some((item) => item.name === 'latest-failure-digest' && item.decision === 'metadata-only' && item.reason === 'digest-invalid')],
   ['invalid failure digest packet includes triage', invalidDigestPacket.includes('Triage state: invalid') && invalidDigestPacket.includes('Usefulness: not-usable')],
+  ['raw-required failure digest artifact metadata-only', rawDigestSynthesis.packet_artifacts.some((item) => item.name === 'latest-failure-digest' && item.decision === 'metadata-only' && item.reason === 'digest-raw-required' && item.next_action === 'inspect-raw-failure-output')],
+  ['raw-required failure digest body not injected', rawDigestPacket.includes('Triage state: raw-required') && rawDigestPacket.includes('Digest body skipped') && !rawDigestPacket.includes('RAW_SECRET_PACKET_MARKER')],
 ];
 
 let failed = 0;

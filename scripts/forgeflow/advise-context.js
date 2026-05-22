@@ -321,13 +321,20 @@ function recommend(summary, budget) {
   }
 
   for (const violation of budget.violations) {
+    const splitSuggestion = {
+      strategy: 'split-before-review',
+      first_slice: 'Run a narrower context pack for the highest-risk changed files only.',
+      second_slice: 'Run a follow-up packet for remaining docs, tests, or lower-risk files after the first review is resolved.',
+      command: 'Rebuild context with a smaller --files list or lower --lines value before spawning agents.',
+    };
     recommendations.push({
       severity: budget.status === 'fail' ? 'high' : 'warn',
       action: 'trim-budget-violation',
       kind: violation.kind,
       file: violation.file,
       reason: `${violation.kind} is ${violation.over_by} estimated compact tokens over budget.`,
-      command: 'Narrow file scope, lower line limits, or split the task before spawning agents.',
+      command: splitSuggestion.command,
+      split_suggestion: splitSuggestion,
     });
   }
 
@@ -431,6 +438,9 @@ function renderMarkdown(result) {
     for (const item of result.recommendations) {
       lines.push(`- ${item.severity.toUpperCase()}: ${item.reason}`);
       lines.push(`  Action: ${item.command}`);
+      if (item.split_suggestion) {
+        lines.push(`  Split: ${item.split_suggestion.first_slice} Then ${item.split_suggestion.second_slice}`);
+      }
     }
   }
 

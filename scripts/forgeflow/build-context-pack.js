@@ -663,6 +663,16 @@ function latestFailureDigest(outDir, root, maxChars = 2500) {
     return {
       markdown: '(none)',
       freshness: { status: 'not-applicable', current_commit: '', current_dirty: false, issues: [] },
+      triage: null,
+      artifact: {
+        name: 'latest-failure-digest',
+        path: path.relative(root, file),
+        decision: 'skipped',
+        reason: 'failure-digest-missing',
+        status: 'missing',
+        freshness: 'not-applicable',
+        next_action: 'forgeflow-failure-digest',
+      },
     };
   }
   try {
@@ -670,16 +680,29 @@ function latestFailureDigest(outDir, root, maxChars = 2500) {
     const digest = parseFailureDigest(content, file);
     const freshness = failureDigestFreshness(digest, currentGitState(root));
     const triage = classifyFailureDigest(digest, freshness);
+    const safeToInject = freshness.status !== 'attention' && triage.state === 'usable';
+    const artifact = {
+      name: 'latest-failure-digest',
+      path: path.relative(root, file),
+      decision: safeToInject ? 'included' : 'metadata-only',
+      reason: safeToInject ? 'current-digest' : `digest-${triage.state}`,
+      status: digest.status || 'unknown',
+      freshness: freshness.status,
+      triage: triage.state,
+      next_action: triage.next_action.command || triage.next_action.action || '',
+    };
     const warning = freshness.status === 'attention'
       ? [
         'Freshness: attention',
         `Issues: ${freshness.issues.map((item) => `${item.code}: ${item.message}`).join('; ')}`,
-        'Agents should verify against current command output before relying on this digest.',
+        'Digest body was not injected because it is stale for the current checkout.',
         '',
       ]
       : [`Freshness: ${freshness.status}`, ''];
-    return {
-      markdown: truncate([
+    const body = safeToInject
+      ? content.replace(/^# Forgeflow Failure Digest\s*/u, '').trim()
+      : 'Digest body skipped. Use the next action above and current command output before relying on this artifact.';
+    const markdown = truncate([
         `Artifact: ${path.relative(root, file)}`,
         '',
         ...warning,
@@ -689,10 +712,13 @@ function latestFailureDigest(outDir, root, maxChars = 2500) {
         `Next action: ${triage.next_action.command || triage.next_action.action || '(none)'}`,
         `Next action reason: ${triage.next_action.reason}`,
         '',
-        content.replace(/^# Forgeflow Failure Digest\s*/u, '').trim(),
-      ].join('\n'), maxChars),
+        body,
+      ].join('\n'), maxChars);
+    return {
+      markdown,
       freshness,
       triage,
+      artifact,
     };
   } catch (err) {
     const freshness = {
@@ -725,8 +751,84 @@ function latestFailureDigest(outDir, root, maxChars = 2500) {
       ].join('\n'),
       freshness,
       triage,
+      artifact: {
+        name: 'latest-failure-digest',
+        path: path.relative(root, file),
+        decision: 'metadata-only',
+        reason: 'digest-invalid',
+        status: 'invalid',
+        freshness: 'invalid',
+        triage: triage.state,
+        next_action: triage.next_action.command || triage.next_action.action || '',
+      },
     };
   }
+}
+
+function artifactDecision(name, pathValue, decision, reason, extra = {}) {
+  return {
+    name,
+    path: pathValue || '',
+    decision,
+    reason,
+    ...extra,
+  };
+}
+
+function latestInsightsArtifact(report, root, outDir) {
+  const status = report ? report.status || 'unknown' : 'missing';
+  return artifactDecision(
+    'latest-insights',
+    path.relative(root, path.join(outDir, 'latest-insights.md')),
+    status === 'injected' ? 'included' : 'metadata-only',
+    status === 'injected' ? 'quality-check-passing' : `latest-insights-${status}`,
+    {
+      status,
+      check_status: report ? report.check_status || '' : '',
+      issue_count: report ? Number(report.issue_count || 0) : 0,
+      next_action: status === 'injected' ? '' : 'forgeflow-learnings --project --check',
+    },
+  );
+}
+
+function packetArtifactManifest({ root, outDir, latestInsightsResult, latestFailure, topologyContext, projectCodeMapPath }) {
+  const artifacts = [
+    artifactDecision('diff-summary', path.relative(root, path.join(outDir, 'diff-summary.md')), 'included', 'current-diff-scope'),
+    artifactDecision('memory-hits', path.relative(root, path.join(outDir, 'memory-hits.md')), 'included', 'local-memory-filtered'),
+    latestInsightsArtifact(latestInsightsResult.report, root, outDir),
+    latestFailure.artifact || artifactDecision('latest-failure-digest', path.relative(root, path.join(outDir, 'failure-digest.md')), 'skipped', 'failure-digest-unavailable'),
+    artifactDecision(
+      'project-code-map',
+      topologyContext ? path.relative(root, projectCodeMapPath) : '',
+      topologyContext ? 'included' : 'skipped',
+      topologyContext ? 'current-topology-derived' : 'no-js-ts-files',
+    ),
+    artifactDecision(
+      'code-topology',
+      topologyContext ? path.relative(root, topologyContext.out) : '',
+      topologyContext ? 'included' : 'skipped',
+      topologyContext ? 'current-build-context-pack-run' : 'no-js-ts-files',
+      topologyContext && topologyContext.topology ? { provenance: topologyContext.topology.provenance || null } : {},
+    ),
+  ];
+  return {
+    schema_version: '1',
+    generated_at: new Date().toISOString(),
+    artifacts,
+  };
+}
+
+function renderArtifactManifest(manifest) {
+  const lines = [
+    '# Packet Artifact Trust',
+    '',
+    '| Artifact | Decision | Reason | Next Action |',
+    '|---|---|---|---|',
+  ];
+  for (const artifact of manifest.artifacts || []) {
+    lines.push(`| ${artifact.name} | ${artifact.decision} | ${artifact.reason || '(none)'} | ${artifact.next_action || '(none)'} |`);
+  }
+  return lines.join('\n');
 }
 
 function rulePack(agent, route, manifest) {
@@ -763,7 +865,7 @@ function relevantFilesForAgent(agent, manifest) {
   return selected.length > 0 ? selected : manifest.slice(0, 10);
 }
 
-function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, latestFailure, projectCodeMap, topologySummary, task) {
+function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, latestFailure, projectCodeMap, topologySummary, artifactManifestMarkdown, task) {
   const relevant = relevantFilesForAgent(agent, manifest);
   const rules = rulePack(agent, route, manifest);
   return [
@@ -783,6 +885,9 @@ function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestI
     '',
     '## Local Rule Pack',
     ...rules.map((rule) => `- ${rule}`),
+    '',
+    '## Packet Artifact Trust',
+    artifactManifestMarkdown.replace(/^# Packet Artifact Trust\s*/u, '').trim() || '(none)',
     '',
     '## Memory Hits',
     memoryHits.replace(/^# Memory Hits\s*/u, '').trim() || '(none)',
@@ -849,11 +954,13 @@ function buildContextPack(opts) {
   const projectCodeMapPath = path.join(outDir, 'project-code-map.md');
   const topologySummary = compactTopology(topologyContext);
   const topology = topologyReport(topologyContext, root);
+  const artifactManifest = packetArtifactManifest({ root, outDir, latestInsightsResult, latestFailure, topologyContext, projectCodeMapPath });
+  const artifactManifestMarkdown = renderArtifactManifest(artifactManifest);
   const agents = route.agents.included || [];
   const packets = {};
 
   for (const agent of agents) {
-    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, latestFailure.markdown, projectCodeMap, topologySummary, opts.task);
+    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, latestFailure.markdown, projectCodeMap, topologySummary, artifactManifestMarkdown, opts.task);
     const file = path.join(packetDir, `${agent}.md`);
     writeFileSafe(file, content);
     packets[agent] = path.relative(root, file);
@@ -887,6 +994,8 @@ function buildContextPack(opts) {
     latest_failure_digest_path: fs.existsSync(latestFailurePath) ? path.relative(root, latestFailurePath) : null,
     latest_failure_digest_freshness: latestFailure.freshness,
     latest_failure_digest_triage: latestFailure.triage || null,
+    packet_artifact_manifest_path: path.relative(root, path.join(outDir, 'packet-artifacts.json')),
+    packet_artifacts: artifactManifest.artifacts,
     project_code_map_path: topologyContext ? path.relative(root, projectCodeMapPath) : null,
     project_code_topology_path: topologyContext ? path.relative(root, topologyContext.out) : null,
     code_topology_path: topologyContext ? path.relative(root, topologyContext.out) : null,
@@ -912,6 +1021,8 @@ function buildContextPack(opts) {
   writeFileSafe(path.join(outDir, 'latest-insights.md'), `${latestInsights || '# Latest Insights\n\n(none)'}\n`);
   writeFileSafe(projectCodeMapPath, `# Project Code Map\n\n${projectCodeMap}\n`);
   writeJson(path.join(outDir, 'latest-insights-report.json'), latestInsightsResult.report);
+  writeJson(path.join(outDir, 'packet-artifacts.json'), artifactManifest);
+  writeFileSafe(path.join(outDir, 'packet-artifacts.md'), `${artifactManifestMarkdown}\n`);
   const telemetryPath = path.join(outDir, 'context-telemetry.json');
   writeTelemetry(telemetryPath, telemetry);
   writeJson(path.join(outDir, 'synthesis-input.json'), synthesisInput);

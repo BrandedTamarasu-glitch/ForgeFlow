@@ -443,6 +443,7 @@ function showProjectTrends(opts = {}) {
         action: item.action,
         command: item.command,
         reason: item.reason,
+        split_suggestion: item.split_suggestion || null,
       })),
       estimated_compact_tokens: advisor.summary.totals.estimated_compact_tokens,
       estimated_saved_tokens: advisor.summary.totals.estimated_saved_tokens,
@@ -540,7 +541,13 @@ function renderMarkdown(result) {
     `- Percent saved: ${result.advisor.percent_saved}%`,
     `- Recommendations: ${result.advisor.recommendation_actions.join(', ') || '(none)'}`,
     ...(result.advisor.recommendations.length > 0
-      ? result.advisor.recommendations.map((item) => `- Next: ${item.command}: ${item.reason}`)
+      ? result.advisor.recommendations.flatMap((item) => {
+        const lines = [`- Next: ${item.command}: ${item.reason}`];
+        if (item.split_suggestion) {
+          lines.push(`- Split: ${item.split_suggestion.first_slice} Then ${item.split_suggestion.second_slice}`);
+        }
+        return lines;
+      })
       : []),
   ].join('\n');
 }

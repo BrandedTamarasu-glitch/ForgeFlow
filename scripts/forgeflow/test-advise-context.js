@@ -312,6 +312,8 @@ const checks = [
   ['code map trends render', markdown.includes('## Code Map Trends') && markdown.includes('New high fan-in: scripts/forgeflow/build-context-pack.js')],
   ['budget warns', result.budget.status === 'warn'],
   ['budget recommendation', result.recommendations.some((item) => item.action === 'trim-budget-violation')],
+  ['budget recommendation includes split suggestion', result.recommendations.some((item) => item.action === 'trim-budget-violation' && item.split_suggestion && item.split_suggestion.strategy === 'split-before-review')],
+  ['budget markdown includes split suggestion', markdown.includes('Split: Run a narrower context pack')],
   ['compaction recommendation', result.recommendations.some((item) => item.action === 'improve-compaction')],
   ['small low savings not noisy', !smallLowSavings.recommendations.some((item) => item.action === 'improve-compaction')],
   ['latest telemetry preferred', deduped.summary.files === 1 && deduped.summary.by_kind['code-topology'].estimated_compact_tokens === 100 && deduped.code_topology.status === 'covered'],
