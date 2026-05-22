@@ -12,8 +12,10 @@ const STATIC_FILES = new Set([
 ]);
 const RUNTIME_HELPERS = [
   'scripts/forgeflow/advise-context.js',
+  'scripts/forgeflow/advise-noisy-command.js',
   'scripts/forgeflow/agent-chat-off.sh',
   'scripts/forgeflow/agent-chat-on.sh',
+  'scripts/forgeflow/build-failure-digest.js',
   'scripts/forgeflow/build-code-topology.js',
   'scripts/forgeflow/build-context-pack.js',
   'scripts/forgeflow/build-memory-context.js',
@@ -23,6 +25,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/check-context-budget.js',
   'scripts/forgeflow/check-implementation-notes.js',
   'scripts/forgeflow/check-project-learnings.js',
+  'scripts/forgeflow/compact-command-output.js',
   'scripts/forgeflow/context-telemetry.js',
   'scripts/forgeflow/ensure-forgeflow-state.sh',
   'scripts/forgeflow/explain-review-route.js',

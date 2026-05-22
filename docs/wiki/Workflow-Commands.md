@@ -22,6 +22,9 @@ Forgeflow can be used as a full lifecycle or as targeted commands.
 | `/audit` | Run a deeper systems/security/craft audit. |
 | `/dashboard` | Start the optional local metrics dashboard on port 4003. |
 | `/forgeflow-code-map` | Generate a compact project code map with topology, sections, changed-section hints, import-gap triage, Git provenance, and generated artifact paths. |
+| `/forgeflow-compact-output` | Compact allowlisted noisy command output while preserving exact output for unsafe command classes. |
+| `/forgeflow-failure-digest` | Build a compact failure digest from test, typecheck, lint, or log output. |
+| `/forgeflow-noisy-command` | Get advisory-only suggestions for narrower noisy command invocations. |
 | `/forgeflow-drift` | Check whether agent prompts have drifted from canonical shared intelligence references using the script-backed drift helper. |
 | `/forgeflow-health` | Audit installation, project-local state, latest project-learning quality, and latest-insights readiness/freshness; can safely repair `.forgeflow/` scaffolding and budget config. Stale latest insights recommend `/forgeflow-trends --refresh`. |
 | `/forgeflow-learnings --project --check` | Refresh and print current-project learnings, run the quality gate, smoke-test context-pack injection, and report whether latest insights are ready for agent context. Cross-project mode uses the pattern-learnings rollup helper across legacy learnings and project-learning candidates. |

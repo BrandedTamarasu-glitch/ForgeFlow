@@ -85,6 +85,34 @@ When writing an agent prompt, every voice or style rule must be testable — if 
 
 ---
 
+## 5. Safe Command Output Reduction
+
+**Pattern:** Development commands often emit far more output than agents need. Passing tests, progress bars, repeated log lines, unbounded directory listings, and giant JSON dumps can dominate context without adding decision value.
+
+**Risk:** Output reduction is safe only for human-narrative output. It is unsafe for machine-exact output where byte-level completeness is load-bearing.
+
+**Safe classes:**
+- Test runners: keep failures, assertions, stack frames, and failure file paths.
+- Build/typecheck: keep errors and warnings grouped by file when possible.
+- Lint: keep violations, rules, and file/line references.
+- Logs: keep warnings/errors/fatal lines and dedupe repeats.
+- Grep/search: group by file and truncate long lines.
+- Directory listings: bound depth and exclude generated directories.
+- JSON: compact formatting only when parsing succeeds.
+
+**Unsafe classes that must remain raw:**
+- Diffs, patches, and anything intended for `git apply` or `patch`
+- SHAs, hashes, exact file lists, and name-only/status output consumed by tools
+- Exit-code-bearing output when the full transcript is needed to diagnose the command
+
+**Rule of thumb:**
+Use narrow invocations first. Prefer `git diff --stat`, `git log --oneline -20`, bounded `find`, test failure tails, no-color typecheck output, and focused grep. If a compactor cannot parse safely, it must return raw output with an explicit reason. Silent empty output is always a correctness bug.
+
+**Review-time check:**
+Flag any helper or command that compacts `git diff`, patches, exact file lists, SHAs, or tool-fed output. Require tests proving unsafe output passes through raw and malformed input fails loud.
+
+---
+
 ## Promotion criteria
 
 A pattern qualifies for this file when it meets all of:

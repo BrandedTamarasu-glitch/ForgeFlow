@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { safeReadTextFile } = require('./file-safety');
 
 function git(args, cwd) {
   const result = spawnSync('git', args, { cwd, encoding: 'utf8' });
@@ -83,7 +84,7 @@ function latestInsightsReadiness(projectDir, root) {
     };
   }
   try {
-    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const parsed = JSON.parse(safeReadTextFile(file, projectDir).content);
     return {
       status: parsed.status || 'unknown',
       path: file,

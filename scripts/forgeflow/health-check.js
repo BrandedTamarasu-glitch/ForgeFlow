@@ -4,6 +4,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { seedBudgetConfig } = require('./seed-budget-config');
 const { checkProjectLearnings } = require('./check-project-learnings');
+const { safeReadTextFile } = require('./file-safety');
 const {
   latestInsightsFreshness,
   latestInsightsReadiness: readLatestInsightsReadiness,
@@ -209,7 +210,7 @@ function latestImplementationNotesCheck(ffDir) {
     };
   }
   try {
-    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const parsed = JSON.parse(safeReadTextFile(file, ffDir).content);
     const issues = Array.isArray(parsed.issues) ? parsed.issues : [];
     return {
       status: parsed.status || 'unknown',
@@ -240,7 +241,18 @@ function latestPilotRollup(ffDir) {
       next_fix_layer: '',
     };
   }
-  const content = fs.readFileSync(file, 'utf8');
+  let content = '';
+  try {
+    content = safeReadTextFile(file, ffDir).content;
+  } catch (_err) {
+    return {
+      status: 'invalid',
+      path: file,
+      pilot_count: 0,
+      decision: '',
+      next_fix_layer: '',
+    };
+  }
   const pilotCount = Number.parseInt((content.match(/^Pilot count:\s*(\d+)/m) || [])[1] || '0', 10);
   return {
     status: 'present',
@@ -284,7 +296,19 @@ function latestProjectLearnings(ffDir) {
       command: 'forgeflow-learnings --project',
     };
   }
-  const content = fs.readFileSync(file, 'utf8');
+  let content = '';
+  try {
+    content = safeReadTextFile(file, ffDir).content;
+  } catch (_err) {
+    return {
+      status: 'invalid',
+      path: file,
+      recurring_pitfalls: 0,
+      risk_areas: 0,
+      recommended_approach: '',
+      command: 'forgeflow-learnings --project',
+    };
+  }
   return {
     status: 'present',
     path: file,
