@@ -293,6 +293,22 @@ From Claude Code:
 /forgeflow-pilot --path new-user --runtime claude-code
 ```
 
+To capture whether agent guidance helped or needed correction, record local feedback:
+
+```bash
+scripts/forgeflow/record-agent-feedback.js \
+  --agent smith_reviewer \
+  --signal incorrect \
+  --summary "Flagged a safe query as unsafe" \
+  --correction "The query used parameter binding" \
+  --confidence high \
+  --evidence-count 2 \
+  --promote \
+  --json
+```
+
+Feedback stays local in `.forgeflow/<project-name>/agent-feedback.jsonl`. Promotion is explicit and requires medium or high confidence with at least two pieces of evidence.
+
 Project learning rollups are planned around:
 
 ```text

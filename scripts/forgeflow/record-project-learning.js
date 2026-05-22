@@ -170,7 +170,6 @@ function recordProjectLearning(opts = {}) {
   const projectDir = opts.projectDir || defaultProjectDir(root);
   const out = path.join(projectDir, 'project-learning-candidates.jsonl');
   const entries = loadEntries(opts);
-  fs.mkdirSync(projectDir, { recursive: true });
   for (const entry of entries) {
     appendFileSafe(out, `${JSON.stringify(entry)}\n`);
   }

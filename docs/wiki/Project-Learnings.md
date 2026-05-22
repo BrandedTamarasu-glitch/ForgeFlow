@@ -37,6 +37,8 @@ Use `scripts/forgeflow/record-project-learning.js` for explicit categories: `rec
 
 Structured candidates may also include `confidence` (`low`, `medium`, or `high`), `evidence_count`, and compact `application_guidance` to show how much support the guidance has and how agents should use it. The rollup keeps that weight visible in agent-facing insight bullets, uses `evidence_count` when ranking risk areas and hot files, and writes `Generated at` freshness metadata.
 
+Use `scripts/forgeflow/record-agent-feedback.js` when a reviewer, implementer, or planner gave guidance that was useful, unclear, ignored, or incorrect. The helper writes local feedback to `.forgeflow/<project-name>/agent-feedback.jsonl`. Add `--promote` only after the feedback has medium or high confidence and `--evidence-count 2` or higher; promotion appends a structured project-learning candidate with a proof-boundary reminder.
+
 From Claude Code, run:
 
 ```text
