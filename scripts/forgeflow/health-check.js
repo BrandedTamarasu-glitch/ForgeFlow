@@ -11,6 +11,7 @@ const {
   inspectProjectLearnings,
   refreshFailureDigest,
   refreshProjectTrends,
+  renderRecommendationList,
   uniqueRecommendations,
 } = require('./guidance-contract');
 const {
@@ -552,9 +553,7 @@ function renderMarkdown(result) {
   }
   if (result.recommendations && result.recommendations.length > 0) {
     lines.push('## Recommendations', '');
-    for (const item of result.recommendations) {
-      lines.push(`- ${item.command}: ${item.reason}`);
-    }
+    lines.push(...renderRecommendationList(result.recommendations));
     lines.push('');
   }
   lines.push('## Checks', '');

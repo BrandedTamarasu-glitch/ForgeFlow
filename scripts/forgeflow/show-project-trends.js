@@ -8,6 +8,7 @@ const {
   inspectRefresh,
   refreshFailureDigest,
   refreshProjectTrends,
+  renderRecommendationList,
   reviewImportGaps,
   uniqueRecommendations,
 } = require('./guidance-contract');
@@ -376,6 +377,17 @@ function trendRecommendations({ freshness, latestInsights, refresh, importGaps, 
   return uniqueRecommendations(recommendations);
 }
 
+function renderAdvisorRecommendations(recommendations) {
+  const items = recommendations || [];
+  if (items.length === 0) return [];
+  return items.flatMap((item) => [
+    ...renderRecommendationList([item]),
+    ...(item.split_suggestion
+      ? [`  - Split: ${item.split_suggestion.first_slice} Then ${item.split_suggestion.second_slice}`]
+      : []),
+  ]);
+}
+
 function showProjectTrends(opts = {}) {
   const root = opts.root || repoRoot();
   const projectDir = opts.projectDir || defaultProjectDir(root);
@@ -443,6 +455,8 @@ function showProjectTrends(opts = {}) {
         action: item.action,
         command: item.command,
         reason: item.reason,
+        evidence: item.evidence || '',
+        clears: item.clears || '',
         split_suggestion: item.split_suggestion || null,
       })),
       estimated_compact_tokens: advisor.summary.totals.estimated_compact_tokens,
@@ -465,9 +479,7 @@ function renderMarkdown(result) {
     '',
     '## Recommendations',
     '',
-    ...(result.recommendations.length > 0
-      ? result.recommendations.map((item) => `- ${item.command}: ${item.reason}`)
-      : ['- (none)']),
+    ...renderRecommendationList(result.recommendations),
     '',
     '## Code Map Trend',
     '',
@@ -540,15 +552,7 @@ function renderMarkdown(result) {
     `- Code map trends: ${result.advisor.code_map_trends_status}`,
     `- Percent saved: ${result.advisor.percent_saved}%`,
     `- Recommendations: ${result.advisor.recommendation_actions.join(', ') || '(none)'}`,
-    ...(result.advisor.recommendations.length > 0
-      ? result.advisor.recommendations.flatMap((item) => {
-        const lines = [`- Next: ${item.command}: ${item.reason}`];
-        if (item.split_suggestion) {
-          lines.push(`- Split: ${item.split_suggestion.first_slice} Then ${item.split_suggestion.second_slice}`);
-        }
-        return lines;
-      })
-      : []),
+    ...renderAdvisorRecommendations(result.advisor.recommendations),
   ].join('\n');
 }
 

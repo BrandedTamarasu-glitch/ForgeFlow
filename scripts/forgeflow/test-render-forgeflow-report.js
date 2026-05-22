@@ -331,7 +331,7 @@ const checks = [
   ['includes latest insights readiness', report.latest_insights.status === 'injected' && report.latest_insights.check_status === 'pass' && report.latest_insights.freshness.status === 'current'],
   ['includes latest failure digest', report.project_trends.failure_digest.status === 'compact' && report.project_trends.failure_digest.freshness.status === 'current' && report.project_trends.failure_digest.summary.includes('FAIL report fixture')],
   ['includes latest failure digest triage', report.project_trends.failure_digest.triage.state === 'usable' && report.project_trends.failure_digest.triage.confidence === 'high'],
-  ['recommends refresh for stale latest insights', staleReport.recommendations.some((item) => item.command === 'forgeflow-trends --refresh') && staleMarkdown.includes('forgeflow-trends --refresh')],
+  ['recommends refresh for stale latest insights', staleReport.recommendations.some((item) => item.command === 'forgeflow-trends --refresh') && staleMarkdown.includes('forgeflow-trends --refresh') && staleMarkdown.includes('Evidence:') && staleMarkdown.includes('Clears:')],
   ['refreshes project trends when requested', refreshedReport.project_trends.refresh && refreshedReport.project_trends.refresh.check_status === 'pass'],
   ['includes live drift when enabled', reportWithDrift.drift.status === 'missing' || reportWithDrift.drift.status === 'fail' || reportWithDrift.drift.status === 'pass'],
   ['records report log', report.report_history.recorded === true && fs.readFileSync(path.join(patternsDir, '.report-log.jsonl'), 'utf8').trim().split(/\r?\n/).length >= 2],

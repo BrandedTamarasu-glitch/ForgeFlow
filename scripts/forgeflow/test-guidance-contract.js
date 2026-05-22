@@ -6,6 +6,8 @@ const {
   inspectRefresh,
   refreshFailureDigest,
   refreshProjectTrends,
+  renderRecommendation,
+  renderRecommendationList,
   reviewImportGaps,
   uniqueRecommendations,
 } = require('./guidance-contract');
@@ -22,14 +24,20 @@ const unique = uniqueRecommendations([
   inspectProjectLearnings(),
   failureDigest,
 ]);
+const mergedLearningGate = unique.find((item) => item.command === 'forgeflow-learnings --project --check');
 
 const checks = [
   ['exports canonical statuses', GUIDANCE_STATUS.CURRENT === 'current' && GUIDANCE_STATUS.ATTENTION === 'attention' && GUIDANCE_STATUS.NOT_APPLICABLE === 'not-applicable'],
   ['refresh recommendation canonical', refresh.action === 'refresh-project-trends' && refresh.command === 'forgeflow-trends --refresh' && refresh.reason.includes('Project guidance artifacts')],
+  ['refresh recommendation explains gate', refresh.evidence.includes('freshness checks') && refresh.clears.includes('both report current')],
   ['import gaps includes count', importGaps.action === 'review-import-gaps' && importGaps.reason.includes('3 production-scope import gap')],
   ['failure digest override keeps action', failureDigest.action === 'refresh-failure-digest' && failureDigest.reason === 'Digest fixture is stale.'],
+  ['render recommendation includes reason evidence clears', renderRecommendation(refresh).includes('Project guidance artifacts') && renderRecommendation(refresh).includes('Evidence:') && renderRecommendation(refresh).includes('Clears:')],
+  ['render recommendation list handles empty', renderRecommendationList([])[0] === '- (none)'],
+  ['render recommendation list splits explainability', renderRecommendationList([refresh]).length === 3 && renderRecommendationList([refresh])[1].startsWith('  - Evidence:') && renderRecommendationList([refresh])[2].startsWith('  - Clears:')],
   ['dedupes by command', unique.length === 3 && unique.filter((item) => item.command === 'forgeflow-trends --refresh').length === 1 && unique.filter((item) => item.command === 'forgeflow-learnings --project --check').length === 1],
-  ['dedupe preserves duplicate diagnostics', unique.find((item) => item.command === 'forgeflow-trends --refresh').reason.includes('Different surface, same action.') && unique.find((item) => item.command === 'forgeflow-learnings --project --check').related_actions.includes('inspect-project-learnings')],
+  ['dedupe preserves duplicate diagnostics', unique.find((item) => item.command === 'forgeflow-trends --refresh').reason.includes('Different surface, same action.') && mergedLearningGate.related_actions.includes('inspect-project-learnings')],
+  ['dedupe preserves duplicate explainability', mergedLearningGate.evidence.includes('Latest-insights readiness') && mergedLearningGate.evidence.includes('project-learning checker') && mergedLearningGate.clears.includes('latest-insights readiness') && mergedLearningGate.clears.includes('project-learning checker')],
   ['learning gate command shared', inspectLearningGate().command === 'forgeflow-learnings --project --check' && inspectProjectLearnings().command === 'forgeflow-learnings --project --check'],
 ];
 

@@ -315,6 +315,8 @@ function recommend(summary, budget) {
       severity: 'info',
       action: 'generate-context-telemetry',
       reason: 'No context telemetry artifacts were found.',
+      evidence: 'The context telemetry scan found zero usable telemetry files.',
+      clears: 'Cleared when a Forgeflow command records context, memory, scope, or topology telemetry.',
       command: 'Run the relevant Forgeflow command so context pack, memory context, or scope telemetry can be recorded.',
     });
     return uniqueRecommendations(recommendations);
@@ -333,6 +335,8 @@ function recommend(summary, budget) {
       kind: violation.kind,
       file: violation.file,
       reason: `${violation.kind} is ${violation.over_by} estimated compact tokens over budget.`,
+      evidence: `Budget check reported ${violation.kind} above its configured compact-token limit.`,
+      clears: 'Cleared when the generated packet is under the configured context budget.',
       command: splitSuggestion.command,
       split_suggestion: splitSuggestion,
     });
@@ -345,6 +349,8 @@ function recommend(summary, budget) {
         action: 'improve-compaction',
         kind,
         reason: `${kind} saved only ${bucket.percent_saved}% versus baseline.`,
+        evidence: `${kind} telemetry is above 2000 compact tokens and below 20% estimated savings.`,
+        clears: 'Cleared when generated context is narrower or compacts enough to meet the savings threshold.',
         command: 'Prefer scope packets and compact memory before full artifact reads; remove repeated low-signal sections from generated packets.',
       });
     }
@@ -355,6 +361,8 @@ function recommend(summary, budget) {
       severity: 'info',
       action: 'context-healthy',
       reason: `Context telemetry shows ${summary.percent_saved}% estimated savings with no budget violations.`,
+      evidence: 'Context telemetry is present, savings are at least 50%, and no budget violations were detected.',
+      clears: 'No action needed while the current telemetry remains under budget.',
       command: 'Use the generated agent packets as the primary context source.',
     });
   }
@@ -386,6 +394,8 @@ function adviseContext(opts = {}) {
       severity: 'warn',
       action: 'review-code-map-unresolved-growth',
       reason: `Code-map history shows ${codeMapTrend.unresolved_imports_delta} new unresolved import(s).`,
+      evidence: 'The latest code-map trend increased unresolved imports compared with the previous snapshot.',
+      clears: 'Cleared when the next code-map trend shows no unresolved-import growth or the gaps are triaged.',
       command: 'Run /forgeflow-code-map and inspect unresolved imports before relying on topology guidance.',
     });
   }
@@ -394,6 +404,8 @@ function adviseContext(opts = {}) {
       severity: 'info',
       action: 'review-code-map-new-hotspots',
       reason: 'Code-map history shows new fan-in/fan-out hotspots.',
+      evidence: 'The latest code-map trend introduced new high fan-in or fan-out files.',
+      clears: 'Cleared when the hotspots are reviewed or stop appearing as new in the trend.',
       command: 'Use the code-map Trends section to prioritize review and planning reads.',
     });
   }

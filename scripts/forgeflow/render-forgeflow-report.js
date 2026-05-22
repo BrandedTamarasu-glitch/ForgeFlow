@@ -13,6 +13,7 @@ const {
 const {
   inspectLearningGate,
   refreshProjectTrends,
+  renderRecommendationList,
   uniqueRecommendations,
 } = require('./guidance-contract');
 const {
@@ -608,9 +609,7 @@ function renderMarkdown(report) {
   lines.push('', '## 9. Priorities', '');
   if (report.recommendations.length > 0) {
     lines.push('### Recommendations', '');
-    for (const item of report.recommendations) {
-      lines.push(`- ${item.command}: ${item.reason}`);
-    }
+    lines.push(...renderRecommendationList(report.recommendations));
     lines.push('');
     lines.push('### Derived Priorities', '');
   }
