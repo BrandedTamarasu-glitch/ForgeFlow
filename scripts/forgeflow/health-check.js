@@ -5,6 +5,7 @@ const { spawnSync } = require('child_process');
 const { seedBudgetConfig } = require('./seed-budget-config');
 const { checkProjectLearnings } = require('./check-project-learnings');
 const { assertSafeDirectory, safeReadTextFile, writeFileSafe } = require('./file-safety');
+const { classifyFailureDigest } = require('./failure-digest-triage');
 const {
   inspectLearningGate,
   inspectProjectLearnings,
@@ -435,6 +436,7 @@ function runHealthCheck(opts = {}) {
     commit_short: gitRepo ? git(['rev-parse', '--short', 'HEAD'], root) : '',
     dirty: gitRepo ? git(['status', '--short'], root).split(/\r?\n/).filter(Boolean).length > 0 : false,
   });
+  failureDigest.triage = classifyFailureDigest(failureDigest, failureDigest.freshness);
   const projectLearningsCheck = latestProjectLearningsCheck(ffDir);
   const recommendations = healthRecommendations({ latestInsights, projectLearningsCheck, failureDigest });
   return {
@@ -534,6 +536,15 @@ function renderMarkdown(result) {
     if (latest.mode) lines.push(`- Mode: ${latest.mode}`);
     if (latest.generated_at) lines.push(`- Generated at: ${latest.generated_at}`);
     if (latest.freshness) lines.push(`- Freshness: ${latest.freshness.status}`);
+    if (latest.triage) {
+      lines.push(`- Triage state: ${latest.triage.state}`);
+      lines.push(`- Usefulness: ${latest.triage.usefulness}`);
+      lines.push(`- Confidence: ${latest.triage.confidence}`);
+      if (latest.triage.next_action) {
+        lines.push(`- Next action: ${latest.triage.next_action.command || latest.triage.next_action.action || '(none)'}`);
+        if (latest.triage.next_action.reason) lines.push(`- Next action reason: ${latest.triage.next_action.reason}`);
+      }
+    }
     lines.push(`- Raw required: ${latest.raw_required ? 'yes' : 'no'}`);
     if (latest.reason) lines.push(`- Reason: ${latest.reason}`);
     lines.push(`- Report: ${latest.path}`);

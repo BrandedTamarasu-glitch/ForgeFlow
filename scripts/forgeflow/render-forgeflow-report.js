@@ -593,6 +593,15 @@ function renderMarkdown(report) {
     if (failureDigest.reason) lines.push(`- Latest failure digest reason: ${failureDigest.reason}`);
     if (failureDigest.present) lines.push(`- Latest failure digest raw required: ${failureDigest.raw_required ? 'yes' : 'no'}`);
     if (failureDigest.freshness) lines.push(`- Latest failure digest freshness: ${failureDigest.freshness.status}`);
+    if (failureDigest.triage) {
+      lines.push(`- Latest failure digest triage: ${failureDigest.triage.state}`);
+      lines.push(`- Latest failure digest usefulness: ${failureDigest.triage.usefulness}`);
+      lines.push(`- Latest failure digest confidence: ${failureDigest.triage.confidence}`);
+      if (failureDigest.triage.next_action) {
+        lines.push(`- Latest failure digest next action: ${failureDigest.triage.next_action.command || failureDigest.triage.next_action.action || '(none)'}`);
+        if (failureDigest.triage.next_action.reason) lines.push(`- Latest failure digest next action reason: ${failureDigest.triage.next_action.reason}`);
+      }
+    }
     if (failureDigest.summary) lines.push(`- Latest failure digest first signal: ${failureDigest.summary}`);
   }
 

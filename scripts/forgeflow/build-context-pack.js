@@ -13,6 +13,7 @@ const {
 const { buildMemoryIndex } = require('./index-memory');
 const { showProjectLearnings } = require('./show-project-learnings');
 const { checkProjectLearnings } = require('./check-project-learnings');
+const { classifyFailureDigest } = require('./failure-digest-triage');
 const { failureDigestFreshness, parseFailureDigest } = require('./show-project-trends');
 const {
   attachCodeMapHistory,
@@ -668,6 +669,7 @@ function latestFailureDigest(outDir, root, maxChars = 2500) {
     const content = safeReadTextFile(file, outDir).content;
     const digest = parseFailureDigest(content, file);
     const freshness = failureDigestFreshness(digest, currentGitState(root));
+    const triage = classifyFailureDigest(digest, freshness);
     const warning = freshness.status === 'attention'
       ? [
         'Freshness: attention',
@@ -681,9 +683,16 @@ function latestFailureDigest(outDir, root, maxChars = 2500) {
         `Artifact: ${path.relative(root, file)}`,
         '',
         ...warning,
+        `Triage state: ${triage.state}`,
+        `Usefulness: ${triage.usefulness}`,
+        `Confidence: ${triage.confidence}`,
+        `Next action: ${triage.next_action.command || triage.next_action.action || '(none)'}`,
+        `Next action reason: ${triage.next_action.reason}`,
+        '',
         content.replace(/^# Forgeflow Failure Digest\s*/u, '').trim(),
       ].join('\n'), maxChars),
       freshness,
+      triage,
     };
   } catch (err) {
     const freshness = {
@@ -692,14 +701,30 @@ function latestFailureDigest(outDir, root, maxChars = 2500) {
       current_dirty: false,
       issues: [{ code: 'failure-digest-invalid', severity: 'attention', message: err.message }],
     };
+    const triage = classifyFailureDigest({
+      status: 'invalid',
+      present: true,
+      raw_required: true,
+      reason: `failure-digest.md could not be read safely: ${err.message}`,
+      input_lines: 0,
+      output_lines: 0,
+      refs: [],
+    }, freshness);
     return {
       markdown: [
         `Artifact: ${path.relative(root, file)}`,
         '',
         `Unavailable: ${err.message}`,
+        `Triage state: ${triage.state}`,
+        `Usefulness: ${triage.usefulness}`,
+        `Confidence: ${triage.confidence}`,
+        `Next action: ${triage.next_action.command || triage.next_action.action || '(none)'}`,
+        `Next action reason: ${triage.next_action.reason}`,
+        '',
         'Agents should inspect current command output or rerun `forgeflow-failure-digest` before relying on this artifact.',
       ].join('\n'),
       freshness,
+      triage,
     };
   }
 }
@@ -861,6 +886,7 @@ function buildContextPack(opts) {
     latest_insights_report_path: path.relative(root, path.join(outDir, 'latest-insights-report.json')),
     latest_failure_digest_path: fs.existsSync(latestFailurePath) ? path.relative(root, latestFailurePath) : null,
     latest_failure_digest_freshness: latestFailure.freshness,
+    latest_failure_digest_triage: latestFailure.triage || null,
     project_code_map_path: topologyContext ? path.relative(root, projectCodeMapPath) : null,
     project_code_topology_path: topologyContext ? path.relative(root, topologyContext.out) : null,
     code_topology_path: topologyContext ? path.relative(root, topologyContext.out) : null,

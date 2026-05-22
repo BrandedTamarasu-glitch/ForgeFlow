@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { adviseContext } = require('./advise-context');
 const { assertSafeDirectory, safeReadTextFile } = require('./file-safety');
+const { classifyFailureDigest } = require('./failure-digest-triage');
 const {
   inspectRefresh,
   refreshFailureDigest,
@@ -118,6 +119,15 @@ function parseFailureDigest(markdown, file) {
     input_lines: parseNumberValue(markdown, 'Input lines'),
     output_lines: parseNumberValue(markdown, 'Output lines'),
     omitted_lines: parseNumberValue(markdown, 'Omitted lines'),
+    triage: {
+      state: parseLineValue(markdown, 'Triage state') || '',
+      usefulness: parseLineValue(markdown, 'Usefulness') || '',
+      confidence: parseLineValue(markdown, 'Confidence') || '',
+      next_action: {
+        command: parseLineValue(markdown, 'Next action') || '',
+        reason: parseLineValue(markdown, 'Next action reason') || '',
+      },
+    },
     refs,
     summary: compactLines.join(' | ').slice(0, 500),
   };
@@ -388,6 +398,7 @@ function showProjectTrends(opts = {}) {
   const importGaps = latestImportGaps(contextDir);
   const failureDigest = latestFailureDigest(projectDir);
   failureDigest.freshness = failureDigestFreshness(failureDigest, current);
+  failureDigest.triage = classifyFailureDigest(failureDigest, failureDigest.freshness);
 
   const freshness = projectFreshness({
     current,
@@ -506,6 +517,11 @@ function renderMarkdown(result) {
     `- Omitted lines: ${result.failure_digest.omitted_lines || 0}`,
     `- Freshness: ${result.failure_digest.freshness ? result.failure_digest.freshness.status : 'unknown'}`,
     `- Freshness issues: ${result.failure_digest.freshness && result.failure_digest.freshness.issues.length > 0 ? result.failure_digest.freshness.issues.map((item) => `${item.code}: ${item.message}`).join('; ') : '(none)'}`,
+    `- Triage state: ${result.failure_digest.triage ? result.failure_digest.triage.state : '(unknown)'}`,
+    `- Usefulness: ${result.failure_digest.triage ? result.failure_digest.triage.usefulness : '(unknown)'}`,
+    `- Confidence: ${result.failure_digest.triage ? result.failure_digest.triage.confidence : '(unknown)'}`,
+    `- Next action: ${result.failure_digest.triage && result.failure_digest.triage.next_action ? result.failure_digest.triage.next_action.command || result.failure_digest.triage.next_action.action || '(none)' : '(none)'}`,
+    `- Next action reason: ${result.failure_digest.triage && result.failure_digest.triage.next_action && result.failure_digest.triage.next_action.reason ? result.failure_digest.triage.next_action.reason : '(none)'}`,
     `- Reason: ${result.failure_digest.reason || '(none)'}`,
     `- Evidence refs: ${result.failure_digest.refs.length > 0 ? result.failure_digest.refs.join('; ') : '(none)'}`,
     `- First signal: ${result.failure_digest.summary || '(none)'}`,

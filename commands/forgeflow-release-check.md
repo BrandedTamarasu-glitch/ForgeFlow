@@ -39,6 +39,7 @@ node scripts/forgeflow/test-update-forgeflow.js
 node scripts/forgeflow/test-health-check.js
 node scripts/forgeflow/test-forgeflow-version.js
 node scripts/forgeflow/test-guidance-contract.js
+node scripts/forgeflow/test-failure-digest.js
 node scripts/forgeflow/test-check-agent-drift.js
 node scripts/forgeflow/test-render-forgeflow-report.js
 node scripts/forgeflow/test-render-evaluation-report.js
@@ -87,6 +88,7 @@ If any command fails, stop and report the failed command plus its output. Do not
 - [ ] Template installer test passes
 - [ ] Install manifest and install smoke tests pass
 - [ ] Update, health, and version helper tests pass
+- [ ] Failure digest compaction and triage tests pass
 - [ ] Agent drift helper test passes
 - [ ] Forgeflow report helper test passes
 - [ ] Evaluation report smoke test and public-summary render pass

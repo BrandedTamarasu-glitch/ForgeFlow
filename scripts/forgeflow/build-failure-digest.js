@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { compactCommandOutput } = require('./compact-command-output');
 const { safeReadTextFile, writeFileSafe } = require('./file-safety');
+const { classifyFailureDigest } = require('./failure-digest-triage');
 const { currentGitState, repoRoot } = require('./latest-insights-state');
 
 function usage() {
@@ -85,6 +86,16 @@ function extractFailureRefs(text) {
 function renderDigest(result, refs, gitState = null) {
   const fence = result.output.includes('````') ? '`````' : '````';
   const git = gitState || { available: false, commit_short: '', dirty: false };
+  const status = result.status === 'compacted' ? 'compact' : result.status;
+  const triage = classifyFailureDigest({
+    status,
+    present: true,
+    raw_required: result.raw_required,
+    reason: result.reason,
+    input_lines: result.input_lines,
+    output_lines: result.output_lines,
+    refs,
+  });
   const lines = [
     '# Forgeflow Failure Digest',
     '',
@@ -93,12 +104,17 @@ function renderDigest(result, refs, gitState = null) {
     `Git commit: ${git.commit_short || '(unknown)'}`,
     `Git dirty: ${git.dirty ? 'yes' : 'no'}`,
     `Mode: ${result.mode || 'unknown'}`,
-    `Status: ${result.status}`,
+    `Status: ${status}`,
     `Raw required: ${result.raw_required ? 'yes' : 'no'}`,
     `Reason: ${result.reason}`,
     `Input lines: ${result.input_lines}`,
     `Output lines: ${result.output_lines}`,
     `Omitted lines: ${result.omitted_lines}`,
+    `Triage state: ${triage.state}`,
+    `Usefulness: ${triage.usefulness}`,
+    `Confidence: ${triage.confidence}`,
+    `Next action: ${triage.next_action.command || triage.next_action.action || '(none)'}`,
+    `Next action reason: ${triage.next_action.reason}`,
     '',
     '## Evidence References',
     '',
@@ -130,15 +146,26 @@ function buildFailureDigest(input, opts = {}) {
     maxLineChars: opts.maxLineChars || 220,
   });
   const refs = extractFailureRefs(result.output || input);
+  const status = result.status === 'compacted' ? 'compact' : result.status;
+  const triage = classifyFailureDigest({
+    status,
+    present: true,
+    raw_required: result.raw_required,
+    reason: result.reason,
+    input_lines: result.input_lines,
+    output_lines: result.output_lines,
+    refs,
+  });
   const markdown = renderDigest(result, refs, git);
   return {
     schema_version: '1',
     generated_at: new Date().toISOString(),
     git,
-    status: result.status,
+    status,
     mode: result.mode,
     raw_required: result.raw_required,
     reason: result.reason,
+    triage,
     refs,
     compact: result,
     markdown,

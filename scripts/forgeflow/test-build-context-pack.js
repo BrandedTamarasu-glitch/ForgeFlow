@@ -348,6 +348,25 @@ const symlinkOutCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/build-con
   cwd: symlinkOutRoot,
   encoding: 'utf8',
 });
+const invalidDigestOutDir = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-invalid-digest-'));
+const invalidDigestOutside = path.join(invalidDigestOutDir, 'outside-failure-digest.md');
+fs.writeFileSync(invalidDigestOutside, '# Forgeflow Failure Digest\n\nStatus: compact\n');
+fs.symlinkSync(invalidDigestOutside, path.join(invalidDigestOutDir, 'failure-digest.md'));
+const invalidDigestResult = buildContextPack({
+  filesPath: path.join(repoRoot, 'fixtures/context-pack/review.files'),
+  linesChanged: 80,
+  task: 'Review unreadable failure digest handling',
+  out: invalidDigestOutDir,
+  modeOverride: '',
+  calibrationPath: '',
+  ci: false,
+  maxMemoryChars: 12000,
+  maxDiffChars: 18000,
+});
+const invalidDigestSynthesis = invalidDigestResult.synthesis_input;
+const invalidDigestPacket = Object.values(invalidDigestSynthesis.agent_packets)
+  .map((packet) => fs.readFileSync(path.join(repoRoot, packet), 'utf8'))
+  .join('\n');
 
 const route = JSON.parse(fs.readFileSync(path.join(outDir, 'route.json'), 'utf8'));
 const manifest = JSON.parse(fs.readFileSync(path.join(outDir, 'file-manifest.json'), 'utf8'));
@@ -392,6 +411,7 @@ const checks = [
   ['latest insights report linked', synthesis.latest_insights_report_path.endsWith('latest-insights-report.json')],
   ['latest failure digest linked', synthesis.latest_failure_digest_path && synthesis.latest_failure_digest_path.endsWith('failure-digest.md')],
   ['latest failure digest freshness linked', synthesis.latest_failure_digest_freshness && synthesis.latest_failure_digest_freshness.status === 'attention'],
+  ['latest failure digest triage linked', synthesis.latest_failure_digest_triage && synthesis.latest_failure_digest_triage.state === 'stale' && synthesis.latest_failure_digest_triage.usefulness === 'limited'],
   ['project code map linked to current pack', synthesis.project_code_map_path === path.relative(repoRoot, path.join(outDir, 'project-code-map.md'))],
   ['project code topology linked to current pack', synthesis.project_code_topology_path === synthesis.code_topology_path],
   ['code topology linked', synthesis.code_topology_path.endsWith('code-topology.json')],
@@ -407,7 +427,7 @@ const checks = [
   ['code topology summary has changed section count', Number.isInteger(synthesis.code_topology_summary.summary.changed_sections)],
   ['code topology summary has section ranges', synthesis.code_topology_summary.changed_file_neighbors.every((item) => (item.sections || []).every((section) => Number.isInteger(section.end_line)))],
   ['agent packet includes latest insights', wardenPacket.includes('## Latest Insights')],
-  ['agent packet includes latest failure digest', wardenPacket.includes('## Latest Failure Digest') && wardenPacket.includes('Freshness: attention') && wardenPacket.includes('FAIL context packet fixture')],
+  ['agent packet includes latest failure digest', wardenPacket.includes('## Latest Failure Digest') && wardenPacket.includes('Freshness: attention') && wardenPacket.includes('Triage state: stale') && wardenPacket.includes('Usefulness: limited') && wardenPacket.includes('FAIL context packet fixture')],
   ['agent packet latest insights omit stale topology', !wardenPacket.includes('legacy/stale-topology.js')],
   ['agent packet includes current project code map', wardenPacket.includes('## Project Code Map') && wardenPacket.includes('Artifact:') && wardenPacket.includes('code-topology.json')],
   ['agent packet includes provenance', wardenPacket.includes('Provenance:')],
@@ -437,6 +457,8 @@ const checks = [
   ['symlink project root latest insights does not leak', symlinkProjectCli.status === 0 && !symlinkProjectLatest.includes('TOP_SECRET_PROJECT_ROOT_MARKER')],
   ['symlink project root memory does not leak', symlinkProjectCli.status === 0 && !symlinkProjectHits.includes('TOP_SECRET_PROJECT_ROOT_MARKER') && !symlinkProjectPackets.includes('TOP_SECRET_PROJECT_ROOT_MARKER')],
   ['symlink out ancestor blocked', symlinkOutCli.status === 1 && symlinkOutCli.stderr.includes('symlinked directory')],
+  ['invalid failure digest triage linked', invalidDigestSynthesis.latest_failure_digest_triage && invalidDigestSynthesis.latest_failure_digest_triage.state === 'invalid' && invalidDigestSynthesis.latest_failure_digest_triage.usefulness === 'not-usable'],
+  ['invalid failure digest packet includes triage', invalidDigestPacket.includes('Triage state: invalid') && invalidDigestPacket.includes('Usefulness: not-usable')],
 ];
 
 let failed = 0;
