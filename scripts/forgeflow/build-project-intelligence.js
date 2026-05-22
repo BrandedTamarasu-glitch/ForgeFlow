@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 const { assertSafeDirectory, writeFileSafe } = require('./file-safety');
 const { showProjectLearnings } = require('./show-project-learnings');
 const { showProjectTrends } = require('./show-project-trends');
@@ -83,6 +84,35 @@ function topItems(items, limit = 5) {
   return (items || []).map(trimBullet).filter(Boolean).slice(0, limit);
 }
 
+function git(args, cwd) {
+  const result = spawnSync('git', ['-c', 'core.fsmonitor=false', '-c', 'core.untrackedCache=false', ...args], {
+    cwd,
+    encoding: 'utf8',
+  });
+  if (result.status !== 0) return '';
+  return result.stdout.trim();
+}
+
+function gitProvenance(root) {
+  const topLevel = git(['rev-parse', '--show-toplevel'], root);
+  if (!topLevel) {
+    return {
+      available: false,
+      branch: '',
+      commit_short: '',
+      dirty: false,
+      dirty_available: false,
+    };
+  }
+  return {
+    available: true,
+    branch: git(['branch', '--show-current'], root),
+    commit_short: git(['rev-parse', '--short', 'HEAD'], root),
+    dirty: false,
+    dirty_available: false,
+  };
+}
+
 function addIssue(out, severity, source, summary, nextAction = '') {
   if (!summary) return;
   out.push({ severity, source, summary, next_action: nextAction });
@@ -103,7 +133,19 @@ function freshnessIssues(trends) {
 }
 
 function riskSignals(trends, learnings) {
-  const risks = [...freshnessIssues(trends)];
+  const risks = [];
+  const learningStatus = learnings && learnings.check ? learnings.check.status : 'missing';
+  if (learningStatus !== 'pass') {
+    addIssue(
+      risks,
+      learningStatus === 'fail' ? 'high' : 'attention',
+      'project-learnings',
+      `Project-learning quality gate is ${learningStatus}.`,
+      'forgeflow-learnings --project --check'
+    );
+    return risks.slice(0, 8);
+  }
+  risks.push(...freshnessIssues(trends));
   const importGaps = trends.import_gaps || {};
   if (importGaps.status === 'attention') {
     addIssue(
@@ -154,6 +196,27 @@ function trustState(trends, learnings, risks) {
   return 'attention';
 }
 
+function reviewPrep(trends, intelligenceDraft) {
+  const readFirst = [
+    ...topItems(intelligenceDraft.hot_files, 5),
+    ...topItems((trends.code_map && trends.code_map.new_high_fan_in) || [], 3),
+    ...topItems((trends.code_map && trends.code_map.new_high_fan_out) || [], 3),
+  ].filter((value, index, list) => list.indexOf(value) === index).slice(0, 8);
+  const nextActions = [
+    ...intelligenceDraft.top_risks.map((risk) => risk.next_action),
+    ...intelligenceDraft.recommendations.map((item) => item.command || item.action),
+  ].filter(Boolean).filter((value, index, list) => list.indexOf(value) === index).slice(0, 6);
+  const looksRunnable = (value) => /^(\/?forgeflow|scripts\/|node\s+scripts\/|npm\s+|pnpm\s+|yarn\s+|git\s+)/.test(String(value || '').trim());
+  const refreshFirst = nextActions.filter(looksRunnable);
+  return {
+    trust_summary: `Trust state is ${intelligenceDraft.trust_state}; project freshness ${intelligenceDraft.freshness.project}; latest insights ${intelligenceDraft.freshness.latest_insights}.`,
+    refresh_first: refreshFirst,
+    review_notes: nextActions.filter((item) => !looksRunnable(item)),
+    read_first: readFirst,
+    validate_first: topItems(intelligenceDraft.validation_patterns, 5),
+  };
+}
+
 function buildProjectIntelligence(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const projectDir = path.resolve(opts.projectDir || defaultProjectDir(root));
@@ -163,10 +226,16 @@ function buildProjectIntelligence(opts = {}) {
   const learnings = showProjectLearnings({ root, projectDir, refreshCodeMap: false, check: true });
   const trends = showProjectTrends({ root, projectDir, refresh: Boolean(opts.refresh) });
   const risks = riskSignals(trends, learnings);
+  const learningGatePass = learnings.check && learnings.check.status === 'pass';
+  const hotFiles = learningGatePass ? topItems(learnings.hot_files_and_modules, 8) : [];
+  const recommendations = trends.recommendations || [];
   const intelligence = {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
     project_dir: projectDir,
+    provenance: {
+      git: gitProvenance(root),
+    },
     trust_state: trustState(trends, learnings, risks),
     freshness: {
       project: trends.freshness ? trends.freshness.status : 'missing',
@@ -181,10 +250,10 @@ function buildProjectIntelligence(opts = {}) {
       consumed_code_map_trend: Boolean(learnings.sources && learnings.sources.code_map_trend === 'compared'),
     },
     top_risks: risks,
-    hot_files: topItems(learnings.hot_files_and_modules, 8),
-    recommended_next_actions: topItems(learnings.recommended_approach_for_next_work, 8),
-    validation_patterns: topItems(learnings.validation_patterns, 5),
-    recommendations: trends.recommendations || [],
+    hot_files: hotFiles,
+    recommended_next_actions: learningGatePass ? topItems(learnings.recommended_approach_for_next_work, 8) : [],
+    validation_patterns: learningGatePass ? topItems(learnings.validation_patterns, 5) : [],
+    recommendations,
     artifacts: {
       json: jsonOut,
       markdown: markdownOut,
@@ -195,6 +264,7 @@ function buildProjectIntelligence(opts = {}) {
       latest_insights_report: trends.paths ? trends.paths.latest_insights_report : null,
     },
   };
+  intelligence.review_prep = reviewPrep(trends, intelligence);
   fs.mkdirSync(path.dirname(jsonOut), { recursive: true });
   writeFileSafe(jsonOut, `${JSON.stringify(intelligence, null, 2)}\n`);
   writeFileSafe(markdownOut, renderMarkdown(intelligence));
@@ -207,6 +277,7 @@ function renderMarkdown(intelligence) {
     '',
     `Generated at: ${intelligence.generated_at}`,
     `Trust state: ${intelligence.trust_state}`,
+    `Git: ${intelligence.provenance.git.available ? `${intelligence.provenance.git.branch || '(detached)'} ${intelligence.provenance.git.commit_short || '(unknown)'}${intelligence.provenance.git.dirty_available ? (intelligence.provenance.git.dirty ? ' dirty' : ' clean') : ' dirty-state-not-checked'}` : '(unavailable)'}`,
     '',
     'This is a synthesis of local Forgeflow artifacts, not a source of truth. Verify decisions against the raw artifacts, current code, and current validation output.',
     '',
@@ -228,6 +299,12 @@ function renderMarkdown(intelligence) {
     }
   }
   lines.push('', '## Hot Files', '', ...(intelligence.hot_files.length > 0 ? intelligence.hot_files.map((item) => `- ${item}`) : ['- (none)']));
+  lines.push('', '## Review Prep', '');
+  lines.push(`- Trust summary: ${intelligence.review_prep.trust_summary}`);
+  lines.push('', '### Refresh First', '', ...(intelligence.review_prep.refresh_first.length > 0 ? intelligence.review_prep.refresh_first.map((item) => `- ${item}`) : ['- (none)']));
+  lines.push('', '### Review Notes', '', ...(intelligence.review_prep.review_notes.length > 0 ? intelligence.review_prep.review_notes.map((item) => `- ${item}`) : ['- (none)']));
+  lines.push('', '### Read First', '', ...(intelligence.review_prep.read_first.length > 0 ? intelligence.review_prep.read_first.map((item) => `- ${item}`) : ['- (none)']));
+  lines.push('', '### Validate First', '', ...(intelligence.review_prep.validate_first.length > 0 ? intelligence.review_prep.validate_first.map((item) => `- ${item}`) : ['- (none)']));
   lines.push('', '## Recommended Next Actions', '', ...(intelligence.recommended_next_actions.length > 0 ? intelligence.recommended_next_actions.map((item) => `- ${item}`) : ['- (none)']));
   lines.push('', '## Validation Patterns', '', ...(intelligence.validation_patterns.length > 0 ? intelligence.validation_patterns.map((item) => `- ${item}`) : ['- (none)']));
   lines.push('', '## Sources', '');
@@ -262,6 +339,7 @@ if (require.main === module) {
 module.exports = {
   buildProjectIntelligence,
   parseArgs,
+  reviewPrep,
   renderMarkdown,
   riskSignals,
   trustState,

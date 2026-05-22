@@ -56,7 +56,7 @@ For a single review-prep summary, build the project intelligence rollup:
 scripts/forgeflow/build-project-intelligence.js --json
 ```
 
-It writes `.forgeflow/<project-name>/context/project-intelligence-rollup.json` and `.md` with trust state, freshness, top risks, hot files, validation patterns, recommended next actions, and artifact pointers. The rollup synthesizes existing local artifacts; it does not replace raw trends, code maps, failure digests, or project learnings.
+It writes `.forgeflow/<project-name>/context/project-intelligence-rollup.json` and `.md` with trust state, freshness, Git provenance, top risks, hot files, validation patterns, recommended next actions, artifact pointers, and a review-prep block. The review-prep block separates runnable refresh commands, advisory notes, files/signals to read first, and validation patterns to run first. The rollup synthesizes existing local artifacts; it does not replace raw trends, code maps, failure digests, or project learnings.
 
 Check the local artifact before relying on it:
 

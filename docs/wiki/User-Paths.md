@@ -47,9 +47,10 @@ Use `/forgeflow-noisy-command` when the problem is excessive output volume and y
 ## Prepare For Review
 
 1. Run `/forgeflow-trends --refresh`.
-2. Run `/review` for Claude Code or `$forge-review` for Codex.
-3. If the context advisor reports a budget warning, split the file scope before spawning reviewers.
-4. Fix review findings, then rerun review until the final verdict is approved.
+2. Run `scripts/forgeflow/build-project-intelligence.js --json` when you want one compact review-prep summary before spawning reviewers.
+3. Run `/review` for Claude Code or `$forge-review` for Codex.
+4. If the context advisor reports a budget warning, split the file scope before spawning reviewers.
+5. Fix review findings, then rerun review until the final verdict is approved.
 
 Use `/review-auto` only when the fixes are conservative and safe to apply automatically.
 
