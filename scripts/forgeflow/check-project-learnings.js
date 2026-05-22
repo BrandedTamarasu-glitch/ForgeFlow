@@ -22,11 +22,13 @@ const VALID_CATEGORIES = new Set([
   'recommended-approach',
 ]);
 const VALID_CONFIDENCE = new Set(['low', 'medium', 'high']);
+const VALID_STATUS = new Set(['active', 'stale', 'superseded']);
 const SENSITIVE_PATTERNS = [
   ['private-key', /-----BEGIN [A-Z ]*PRIVATE KEY-----/i],
   ['assignment-secret', /\b(api[_-]?key|password|passwd|secret|token)\s*[:=]/i],
   ['long-token-like-value', /\b[A-Z0-9]{20,}\b/],
   ['private-url', /\b(?:https?|ssh|git):\/\/(?:[^/\s:@]+:[^/\s@]+@|[^/\s]*(?:localhost|127\.0\.0\.1|10\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.|\.internal\b|\.local\b|internal\.|intranet\.|corp\.))/i],
+  ['private-url', /\bgit@[^:\s]+:[^\s)]+/i],
 ];
 const STALE_AFTER_DAYS = 30;
 
@@ -138,7 +140,9 @@ function generatedAt(content) {
 
 function staleGeneratedAtIssue(content, source, now = new Date()) {
   const value = generatedAt(content);
-  if (!value || value === 'unknown') return null;
+  if (!value || value === 'unknown') {
+    return issue('warn', 'freshness-missing', 'Project learnings generated_at metadata is missing; refresh before relying on agent guidance', { source });
+  }
   const timestamp = Date.parse(value);
   if (Number.isNaN(timestamp)) {
     return issue('warn', 'freshness-invalid', 'Project learnings generated_at metadata is invalid', { source });
@@ -192,6 +196,15 @@ function checkCandidates(file) {
     }
     if (value.application_guidance !== undefined && String(value.application_guidance || '').trim().length > 240) {
       issues.push(issue('fail', 'candidate-application-guidance-oversized', 'Project learning candidate application_guidance is too long', { source: file, line: record.line }));
+    }
+    if (value.status !== undefined && !VALID_STATUS.has(String(value.status).trim().toLowerCase())) {
+      issues.push(issue('fail', 'candidate-status-invalid', 'Project learning candidate has invalid status', { source: file, line: record.line }));
+    }
+    if (value.superseded_by !== undefined && String(value.superseded_by || '').trim().length > 240) {
+      issues.push(issue('fail', 'candidate-superseded-by-oversized', 'Project learning candidate superseded_by is too long', { source: file, line: record.line }));
+    }
+    if (String(value.status || '').trim().toLowerCase() === 'superseded' && !String(value.superseded_by || '').trim()) {
+      issues.push(issue('warn', 'candidate-superseded-by-missing', 'Superseded project learning candidate should explain the replacement guidance', { source: file, line: record.line }));
     }
   }
   return { records: records.length, issues };

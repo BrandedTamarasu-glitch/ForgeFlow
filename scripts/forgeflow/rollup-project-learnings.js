@@ -75,7 +75,8 @@ function containsSensitiveContent(value) {
     /-----BEGIN [A-Z ]*PRIVATE KEY-----/i,
     /\b(api[_-]?key|password|passwd|secret|token)\s*[:=]/i,
     /\b[A-Z0-9]{20,}\b/,
-    /https?:\/\/[^\s)]+/i,
+    /\b(?:https?|ssh|git):\/\/[^\s)]+/i,
+    /\bgit@[^:\s]+:[^\s)]+/i,
   ].some((pattern) => pattern.test(String(value || '')));
 }
 
@@ -123,6 +124,27 @@ function confidence(entry) {
 
 function applicationGuidance(entry) {
   return safeText(entry && entry.application_guidance ? entry.application_guidance : '');
+}
+
+function candidateStatus(entry) {
+  const value = cleanText(entry && entry.status ? entry.status : 'active').toLowerCase();
+  return ['active', 'stale', 'superseded'].includes(value) ? value : 'invalid';
+}
+
+function activeLearningCandidates(candidates) {
+  return (Array.isArray(candidates) ? candidates : []).filter((entry) => candidateStatus(entry) === 'active');
+}
+
+function inactiveLearningSummary(candidates, maxItems = 5) {
+  return (Array.isArray(candidates) ? candidates : [])
+    .filter((entry) => ['stale', 'superseded', 'invalid'].includes(candidateStatus(entry)))
+    .slice(0, maxItems)
+    .map((entry) => ({
+      status: candidateStatus(entry),
+      learning: safeText(entry && entry.learning),
+      superseded_by: safeText(entry && entry.superseded_by),
+    }))
+    .filter((entry) => entry.learning);
 }
 
 function weightedLearning(entry) {
@@ -259,7 +281,8 @@ function buildRollup(inputs = {}, opts = {}) {
   const maxItems = Number.isFinite(opts.maxItems) && opts.maxItems > 0 ? opts.maxItems : DEFAULT_MAX_ITEMS;
   const notes = inputs.notes || {};
   const reviewOutcomes = Array.isArray(inputs.reviewOutcomes) ? inputs.reviewOutcomes : [];
-  const learningCandidates = Array.isArray(inputs.learningCandidates) ? inputs.learningCandidates : [];
+  const allLearningCandidates = Array.isArray(inputs.learningCandidates) ? inputs.learningCandidates : [];
+  const learningCandidates = activeLearningCandidates(allLearningCandidates);
   const shipSummary = inputs.shipSummary || {};
   const codeMap = inputs.codeMap || null;
   const codeMapHistory = Array.isArray(inputs.codeMapHistory) ? inputs.codeMapHistory : [];
@@ -346,7 +369,11 @@ function buildRollup(inputs = {}, opts = {}) {
     generated_at: opts.generatedAt || new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
     sources: {
       implementation_notes: Boolean(inputs.hasImplementationNotes),
-      learning_candidates: learningCandidates.length,
+      learning_candidates: allLearningCandidates.length,
+      learning_candidates_active: learningCandidates.length,
+      learning_candidates_inactive: allLearningCandidates.filter((entry) => ['stale', 'superseded'].includes(candidateStatus(entry))).length,
+      learning_candidates_invalid: allLearningCandidates.filter((entry) => candidateStatus(entry) === 'invalid').length,
+      learning_candidates_inactive_examples: inactiveLearningSummary(allLearningCandidates),
       review_outcomes: reviewOutcomes.length,
       ship_summary: Boolean(inputs.hasShipSummary),
       code_map: Boolean(inputs.hasCodeMap),
@@ -386,7 +413,10 @@ function renderMarkdown(rollup) {
     '',
     `- Generated at: ${rollup.generated_at || 'unknown'}`,
     `- Implementation notes: ${rollup.sources.implementation_notes ? 'present' : 'missing'}`,
-    `- Learning candidates: ${rollup.sources.learning_candidates}`,
+    `- Learning candidates: ${rollup.sources.learning_candidates_active || 0} active, ${rollup.sources.learning_candidates_inactive || 0} inactive, ${rollup.sources.learning_candidates_invalid || 0} invalid`,
+    ...(Array.isArray(rollup.sources.learning_candidates_inactive_examples) && rollup.sources.learning_candidates_inactive_examples.length > 0
+      ? rollup.sources.learning_candidates_inactive_examples.map((entry) => `  - ${entry.status}: ${entry.learning}${entry.superseded_by ? ` (replace with: ${entry.superseded_by})` : ''}`)
+      : []),
     `- Review outcomes: ${rollup.sources.review_outcomes}`,
     `- Ship summary: ${rollup.sources.ship_summary ? 'present' : 'missing'}`,
     `- Code map: ${rollup.sources.code_map ? `${rollup.sources.code_map_sections} sections, ${rollup.sources.code_map_changed_sections} changed` : 'missing'}`,
@@ -477,6 +507,9 @@ if (require.main === module) {
 
 module.exports = {
   buildRollup,
+  activeLearningCandidates,
+  candidateStatus,
+  inactiveLearningSummary,
   containsSensitiveContent,
   parseImplementationNotes,
   renderMarkdown,

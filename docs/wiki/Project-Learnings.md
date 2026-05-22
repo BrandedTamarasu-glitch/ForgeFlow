@@ -35,7 +35,7 @@ Atlas can also record structured candidates in:
 
 Use `scripts/forgeflow/record-project-learning.js` for explicit categories: `recurring-pitfall`, `stable-decision`, `risk-area`, `validation-pattern`, `hot-file`, `repeated-follow-up`, and `recommended-approach`.
 
-Structured candidates may also include `confidence` (`low`, `medium`, or `high`), `evidence_count`, and compact `application_guidance` to show how much support the guidance has and how agents should use it. The rollup keeps that weight visible in agent-facing insight bullets, uses `evidence_count` when ranking risk areas and hot files, and writes `Generated at` freshness metadata.
+Structured candidates may also include `confidence` (`low`, `medium`, or `high`), `evidence_count`, compact `application_guidance`, `status` (`active`, `stale`, or `superseded`), and `superseded_by` replacement guidance. The rollup keeps support weight visible in active agent-facing insight bullets, uses active candidates' `evidence_count` when ranking risk areas and hot files, omits inactive candidates from guidance, shows a compact inactive-candidate source summary, and writes `Generated at` freshness metadata.
 
 Use `scripts/forgeflow/record-agent-feedback.js` when a reviewer, implementer, or planner gave guidance that was useful, unclear, ignored, or incorrect. The helper writes local feedback to `.forgeflow/<project-name>/agent-feedback.jsonl`. Add `--promote` only after the feedback has medium or high confidence and `--evidence-count 2` or higher; promotion appends a structured project-learning candidate with a proof-boundary reminder.
 
@@ -64,7 +64,7 @@ Check the local artifact before relying on it:
 scripts/forgeflow/check-project-learnings.js --json
 ```
 
-The checker catches sensitive content, placeholder-only output, oversized packets, duplicate bullets, malformed structured candidates, invalid confidence metadata, oversized application guidance, stale generated metadata, and missing proof-boundary text. `/forgeflow-health` surfaces non-passing project-learning checks when present.
+The checker catches sensitive content, placeholder-only output, oversized packets, duplicate bullets, malformed structured candidates, invalid confidence or status metadata, oversized application or replacement guidance, stale generated metadata, and missing proof-boundary text. `/forgeflow-health` surfaces non-passing project-learning checks when present.
 
 ## What Goes In
 

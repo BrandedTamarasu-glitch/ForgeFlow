@@ -337,7 +337,7 @@ For the current checkout, `show-project-learnings.js` refreshes the compact code
 
 `/ship` refreshes the file during handoff prep, and `/forgeflow-health` surfaces the latest local summary plus latest-insights readiness/freshness when they exist.
 During `/implement`, Atlas refreshes project learnings after implementation-note consolidation when the helper is available.
-Structured candidates are stored locally in `.forgeflow/<project-name>/project-learning-candidates.jsonl` when Atlas records explicit learning categories. Candidates may include `confidence` (`low`, `medium`, or `high`), `evidence_count`, and compact `application_guidance` so agents can distinguish repeated, well-supported guidance from early signal and know how to apply it. Rollups include `Generated at` freshness metadata.
+Structured candidates are stored locally in `.forgeflow/<project-name>/project-learning-candidates.jsonl` when Atlas records explicit learning categories. Candidates may include `confidence` (`low`, `medium`, or `high`), `evidence_count`, compact `application_guidance`, `status` (`active`, `stale`, or `superseded`), and `superseded_by` replacement guidance. Rollups keep inactive candidates in local history but omit them from agent-facing guidance. Rollups include `Generated at` freshness metadata.
 
 From Claude Code, use the command view:
 

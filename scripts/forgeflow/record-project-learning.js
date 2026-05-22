@@ -14,11 +14,12 @@ const VALID_CATEGORIES = new Set([
   'recommended-approach',
 ]);
 const VALID_CONFIDENCE = new Set(['low', 'medium', 'high']);
+const VALID_STATUS = new Set(['active', 'stale', 'superseded']);
 
 function usage() {
   console.error([
     'Usage: record-project-learning.js [--project-dir <dir>] --input <json-file> [--json]',
-    '       record-project-learning.js [--project-dir <dir>] --category <category> --learning <text> [--source <text>] [--evidence <text>] [--confidence low|medium|high] [--evidence-count <n>] [--application-guidance <text>] [--json]',
+    '       record-project-learning.js [--project-dir <dir>] --category <category> --learning <text> [--source <text>] [--evidence <text>] [--confidence low|medium|high] [--evidence-count <n>] [--application-guidance <text>] [--status active|stale|superseded] [--superseded-by <text>] [--json]',
   ].join('\n'));
 }
 
@@ -33,6 +34,8 @@ function parseArgs(argv) {
     confidence: '',
     evidenceCount: null,
     applicationGuidance: '',
+    status: '',
+    supersededBy: '',
     json: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
@@ -55,6 +58,10 @@ function parseArgs(argv) {
       opts.evidenceCount = Number.parseInt(argv[++i] || '0', 10);
     } else if (arg === '--application-guidance') {
       opts.applicationGuidance = argv[++i] || '';
+    } else if (arg === '--status') {
+      opts.status = argv[++i] || '';
+    } else if (arg === '--superseded-by') {
+      opts.supersededBy = argv[++i] || '';
     } else if (arg === '--json') {
       opts.json = true;
     } else if (arg === '--help' || arg === '-h') {
@@ -88,7 +95,8 @@ function containsSensitiveContent(value) {
     /-----BEGIN [A-Z ]*PRIVATE KEY-----/i,
     /\b(api[_-]?key|password|passwd|secret|token)\s*[:=]/i,
     /\b[A-Z0-9]{20,}\b/,
-    /https?:\/\/[^\s)]+/i,
+    /\b(?:https?|ssh|git):\/\/[^\s)]+/i,
+    /\bgit@[^:\s]+:[^\s)]+/i,
   ].some((pattern) => pattern.test(String(value || '')));
 }
 
@@ -124,6 +132,22 @@ function normalizeApplicationGuidance(value) {
   return guidance;
 }
 
+function normalizeStatus(value) {
+  const status = cleanText(value || 'active').toLowerCase();
+  if (!VALID_STATUS.has(status)) {
+    throw new Error(`Invalid project learning status: ${status}`);
+  }
+  return status;
+}
+
+function normalizeSupersededBy(value) {
+  const text = cleanText(value || '');
+  if (text.length > 240) {
+    throw new Error('Project learning superseded_by must be 240 characters or fewer');
+  }
+  return text;
+}
+
 function normalizeEntry(entry) {
   const normalized = {
     schema_version: '1',
@@ -135,6 +159,8 @@ function normalizeEntry(entry) {
     confidence: normalizeConfidence(entry.confidence),
     evidence_count: normalizeEvidenceCount(entry.evidence_count ?? entry.evidenceCount),
     application_guidance: normalizeApplicationGuidance(entry.application_guidance ?? entry.applicationGuidance),
+    status: normalizeStatus(entry.status),
+    superseded_by: normalizeSupersededBy(entry.superseded_by ?? entry.supersededBy),
   };
   if (!VALID_CATEGORIES.has(normalized.category)) {
     throw new Error(`Invalid project learning category: ${normalized.category}`);
@@ -142,7 +168,7 @@ function normalizeEntry(entry) {
   if (!normalized.learning) {
     throw new Error('Project learning is required');
   }
-  const combined = `${normalized.category}\n${normalized.learning}\n${normalized.source}\n${normalized.evidence}\n${normalized.application_guidance}`;
+  const combined = `${normalized.category}\n${normalized.learning}\n${normalized.source}\n${normalized.evidence}\n${normalized.application_guidance}\n${normalized.superseded_by}`;
   if (containsSensitiveContent(combined)) {
     throw new Error('Project learning appears to contain sensitive content');
   }
@@ -162,6 +188,8 @@ function loadEntries(opts) {
     confidence: opts.confidence,
     evidenceCount: opts.evidenceCount,
     applicationGuidance: opts.applicationGuidance,
+    status: opts.status,
+    supersededBy: opts.supersededBy,
   })];
 }
 
@@ -203,6 +231,7 @@ if (require.main === module) {
 module.exports = {
   VALID_CATEGORIES,
   VALID_CONFIDENCE,
+  VALID_STATUS,
   containsSensitiveContent,
   recordProjectLearning,
 };
