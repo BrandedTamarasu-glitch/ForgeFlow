@@ -23,6 +23,7 @@ const checks = [
   ['runtime helpers include version helper', RUNTIME_HELPERS.includes('scripts/forgeflow/forgeflow-version.js')],
   ['runtime helpers include template installer', RUNTIME_HELPERS.includes('scripts/forgeflow/install-template.js')],
   ['runtime helpers include latest insights state', RUNTIME_HELPERS.includes('scripts/forgeflow/latest-insights-state.js')],
+  ['runtime helpers include project intelligence', RUNTIME_HELPERS.includes('scripts/forgeflow/build-project-intelligence.js')],
   ['runtime helpers include guidance contract', RUNTIME_HELPERS.includes('scripts/forgeflow/guidance-contract.js')],
   ['runtime helpers include failure digest triage', RUNTIME_HELPERS.includes('scripts/forgeflow/failure-digest-triage.js')],
   ['runtime helpers include implementation notes recorder', RUNTIME_HELPERS.includes('scripts/forgeflow/record-implementation-notes.js')],

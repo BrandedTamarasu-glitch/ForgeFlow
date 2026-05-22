@@ -198,6 +198,7 @@ Forgeflow includes local-only helpers that reduce agent prompt load before revie
 - **Context packs:** `build-context-pack.js` prepares bounded reviewer packets and a synthesis input file from the changed files, including latest insights, latest failure-digest context when present, compact project code-map guidance, changed-neighborhood topology context, changed-section hints, provenance metadata, topology trend history, and a JSON topology summary when JS/TS files are in scope.
 - **Code topology:** `build-code-topology.js` builds a static JS/TS import graph with fan-in/fan-out hotspots, changed-file neighbors, source symbols with line ranges, changed sections, Markdown headings, Git provenance, and import-gap details for unresolved or dynamic imports. It resolves relative imports, source-suffix modules, extensionless TSX re-exports, tsconfig/jsconfig path aliases, common `@/` and `~/` src aliases, and literal dynamic imports when the target source file exists.
 - **Project code map:** `show-code-map.js` renders a compact maintainer-facing summary of topology, hotspots, sections, changed sections, import gaps, provenance, trend deltas, and artifact paths. Import gaps are classified as production or test/fixture scope so trends and smoke checks escalate the right work. Code-map history retains the latest 50 snapshots by default.
+- **Project intelligence rollup:** `build-project-intelligence.js` synthesizes project trends, project learnings, import gaps, failure-digest freshness, context advisor state, hot files, validation patterns, and next actions into `.forgeflow/<project-name>/context/project-intelligence-rollup.{json,md}`.
 - **Resolved edge summary:** project code maps show relative, alias, literal dynamic, source-suffix, and JS/JSX compatibility edge counts, plus compact alias and dynamic edge examples so users can understand why topology edge counts changed.
 - **Import-gap triage:** code-map, trends, smoke, report, and context packs group import gaps into likely expected gaps versus gaps needing review, with categories for asset/data imports, non-literal dynamic imports, suffix-resolution gaps, aliases, local missing modules, and test fixtures.
 - **Safe command-output reduction:** `compact-command-output.js`, `build-failure-digest.js`, and `advise-noisy-command.js` compact only allowlisted human-narrative output, preserve raw output for correctness-critical commands, stamp failure digests with Git provenance, and advise narrower invocations before large logs enter context.
@@ -304,6 +305,12 @@ Refresh the local rollup after several work items:
 
 ```bash
 scripts/forgeflow/show-project-learnings.js
+```
+
+Build the compact project intelligence rollup before planning or review:
+
+```bash
+scripts/forgeflow/build-project-intelligence.js --json
 ```
 
 For the current checkout, `show-project-learnings.js` refreshes the compact code map before rolling up insights. The rollup adds structural hotspots, changed-section files, and code-map trend deltas to Hot Files And Modules, Risk Areas, and next-work guidance.

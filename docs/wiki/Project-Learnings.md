@@ -48,6 +48,14 @@ That refreshes the artifact and prints the insight sections in a user-facing ord
 
 Review context packs also include compact **Latest Insights**, **Latest Failure Digest**, and **Project Code Map** sections in each agent packet. Agents can use them to adjust attention while reviewing, but they still need current code, test, and artifact evidence for every finding. Context packs inject the insights only when the project-learnings checker passes; warn or fail results produce a compact quality-gate warning instead. Failure digests include freshness metadata so stale summaries are labeled before agents use them. The generated context pack includes `latest-insights-report.json` with the gate status and top check issues.
 
+For a single review-prep summary, build the project intelligence rollup:
+
+```bash
+scripts/forgeflow/build-project-intelligence.js --json
+```
+
+It writes `.forgeflow/<project-name>/context/project-intelligence-rollup.json` and `.md` with trust state, freshness, top risks, hot files, validation patterns, recommended next actions, and artifact pointers. The rollup synthesizes existing local artifacts; it does not replace raw trends, code maps, failure digests, or project learnings.
+
 Check the local artifact before relying on it:
 
 ```bash

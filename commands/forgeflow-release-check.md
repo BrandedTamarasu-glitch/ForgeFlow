@@ -52,6 +52,7 @@ node scripts/forgeflow/test-rollup-pilot-evidence.js
 node scripts/forgeflow/test-rollup-project-learnings.js
 node scripts/forgeflow/test-show-project-learnings.js
 node scripts/forgeflow/test-show-project-trends.js
+node scripts/forgeflow/test-build-project-intelligence.js
 node scripts/forgeflow/test-smoke-check.js
 node scripts/forgeflow/smoke-check.js --mode source --json
 node scripts/forgeflow/test-render-pilot-script.js
@@ -101,6 +102,7 @@ If any command fails, stop and report the failed command plus its output. Do not
 - [ ] Project learnings rollup test passes
 - [ ] Project learnings display test passes
 - [ ] Project trends display test passes
+- [ ] Project intelligence rollup test passes
 - [ ] Smoke check test passes
 - [ ] Source-mode smoke release guards pass
 - [ ] Pilot script renderer test passes
