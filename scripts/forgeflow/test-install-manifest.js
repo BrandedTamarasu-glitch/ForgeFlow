@@ -27,6 +27,7 @@ const checks = [
   ['runtime helpers include guidance contract', RUNTIME_HELPERS.includes('scripts/forgeflow/guidance-contract.js')],
   ['runtime helpers include failure digest triage', RUNTIME_HELPERS.includes('scripts/forgeflow/failure-digest-triage.js')],
   ['runtime helpers include agent feedback recorder', RUNTIME_HELPERS.includes('scripts/forgeflow/record-agent-feedback.js')],
+  ['runtime helpers include adoption pack renderer', RUNTIME_HELPERS.includes('scripts/forgeflow/render-adoption-pack.js')],
   ['runtime helpers include implementation notes recorder', RUNTIME_HELPERS.includes('scripts/forgeflow/record-implementation-notes.js')],
   ['runtime helpers include implementation notes checker', RUNTIME_HELPERS.includes('scripts/forgeflow/check-implementation-notes.js')],
   ['runtime helpers include project learnings checker', RUNTIME_HELPERS.includes('scripts/forgeflow/check-project-learnings.js')],

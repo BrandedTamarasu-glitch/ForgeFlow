@@ -45,6 +45,7 @@ node scripts/forgeflow/test-check-agent-drift.js
 node scripts/forgeflow/test-render-forgeflow-report.js
 node scripts/forgeflow/test-render-evaluation-report.js
 node scripts/forgeflow/render-evaluation-report.js --outcomes fixtures/evaluation/sample-outcomes.jsonl --public --out /tmp/forgeflow-public-evaluation-summary.md
+node scripts/forgeflow/test-render-adoption-pack.js
 node scripts/forgeflow/test-record-pilot-evidence.js
 node scripts/forgeflow/test-record-agent-feedback.js
 node scripts/forgeflow/test-record-project-learning.js
@@ -96,6 +97,7 @@ If any command fails, stop and report the failed command plus its output. Do not
 - [ ] Agent drift helper test passes
 - [ ] Forgeflow report helper test passes
 - [ ] Evaluation report smoke test and public-summary render pass
+- [ ] Adoption pack renderer test passes
 - [ ] Pilot evidence recorder test passes
 - [ ] Agent feedback recorder test passes
 - [ ] Project learning recorder test passes

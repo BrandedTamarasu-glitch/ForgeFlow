@@ -45,6 +45,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/record-project-learning.js',
   'scripts/forgeflow/record-review-outcome.js',
   'scripts/forgeflow/record-implementation-notes.js',
+  'scripts/forgeflow/render-adoption-pack.js',
   'scripts/forgeflow/render-forgeflow-report.js',
   'scripts/forgeflow/render-pilot-script.js',
   'scripts/forgeflow/render-ship-presentation.js',

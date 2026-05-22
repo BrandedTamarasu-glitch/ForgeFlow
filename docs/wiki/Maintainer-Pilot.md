@@ -45,6 +45,20 @@ Print the short script for the selected runtime:
 scripts/forgeflow/render-pilot-script.js --runtime codex
 ```
 
+If the user is still deciding whether Forgeflow is a fit, print the adoption pack first:
+
+```bash
+scripts/forgeflow/render-adoption-pack.js --runtime codex
+```
+
+The adoption pack also summarizes existing local pilot-evidence rollups when they exist, so rerun it after recording evidence to see the current repeat, expand, stop-and-fix, or defer signal.
+
+From Claude Code:
+
+```text
+/forgeflow-adoption --runtime claude-code
+```
+
 For a net-new user evaluating Forgeflow on a first real task, render the new-user path instead:
 
 ```bash
