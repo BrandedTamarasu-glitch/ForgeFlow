@@ -1,15 +1,57 @@
 #!/usr/bin/env node
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 
+function safeRepoPath(relativePath, base = repoRoot) {
+  if (!relativePath || path.isAbsolute(relativePath) || relativePath.split(/[\\/]+/).includes('..')) {
+    throw new Error(`Unsafe release-version path: ${relativePath}`);
+  }
+  const root = path.resolve(base);
+  const file = path.join(root, relativePath);
+  const resolved = path.resolve(file);
+  if (!resolved.startsWith(`${root}${path.sep}`)) {
+    throw new Error(`Release-version path escapes repo: ${relativePath}`);
+  }
+  return file;
+}
+
+function regularFile(relativePath, base = repoRoot) {
+  const root = path.resolve(base);
+  const file = safeRepoPath(relativePath, root);
+  try {
+    const parts = relativePath.split(/[\\/]+/);
+    let current = root;
+    for (const part of parts.slice(0, -1)) {
+      current = path.join(current, part);
+      const parentStat = fs.lstatSync(current);
+      if (!parentStat.isDirectory() || parentStat.isSymbolicLink()) return false;
+    }
+    const stat = fs.lstatSync(file);
+    if (!stat.isFile() || stat.isSymbolicLink()) return false;
+    const rootReal = fs.realpathSync(root);
+    const fileReal = fs.realpathSync(file);
+    return fileReal.startsWith(`${rootReal}${path.sep}`);
+  } catch (_err) {
+    return false;
+  }
+}
+
+function readText(relativePath, base = repoRoot) {
+  if (!regularFile(relativePath, base)) {
+    throw new Error(`Expected regular repo file: ${relativePath}`);
+  }
+  return fs.readFileSync(safeRepoPath(relativePath, base), 'utf8');
+}
+
 function readJson(relativePath) {
-  return JSON.parse(fs.readFileSync(path.join(repoRoot, relativePath), 'utf8'));
+  return JSON.parse(readText(relativePath));
 }
 
 function fileExists(relativePath) {
-  return fs.existsSync(path.join(repoRoot, relativePath));
+  return regularFile(relativePath);
 }
 
 function changelogCandidates(version) {
@@ -23,24 +65,31 @@ function changelogCandidates(version) {
 const plugin = readJson('.claude-plugin/plugin.json');
 const marketplace = readJson('.claude-plugin/marketplace.json');
 const marketplaceEntry = marketplace.plugins.find((entry) => entry.name === plugin.name);
-const releaseProcess = fs.readFileSync(path.join(repoRoot, 'docs/wiki/Release-Process.md'), 'utf8');
-const releaseCheck = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-release-check.md'), 'utf8');
-const learningsCommand = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-learnings.md'), 'utf8');
-const healthCommand = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-health.md'), 'utf8');
-const reportCommand = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-report.md'), 'utf8');
-const pilotCommand = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-pilot.md'), 'utf8');
-const trendsCommand = fs.readFileSync(path.join(repoRoot, 'commands/forgeflow-trends.md'), 'utf8');
-const reviewCommand = fs.readFileSync(path.join(repoRoot, 'commands/review.md'), 'utf8');
-const reviewAutoCommand = fs.readFileSync(path.join(repoRoot, 'commands/review-auto.md'), 'utf8');
-const shipCommand = fs.readFileSync(path.join(repoRoot, 'commands/ship.md'), 'utf8');
-const handoffCommand = fs.readFileSync(path.join(repoRoot, 'commands/handoff.md'), 'utf8');
-const readme = fs.readFileSync(path.join(repoRoot, 'README.md'), 'utf8');
-const hostedDocs = fs.readFileSync(path.join(repoRoot, 'docs/index.html'), 'utf8');
+const releaseProcess = readText('docs/wiki/Release-Process.md');
+const releaseCheck = readText('commands/forgeflow-release-check.md');
+const learningsCommand = readText('commands/forgeflow-learnings.md');
+const healthCommand = readText('commands/forgeflow-health.md');
+const reportCommand = readText('commands/forgeflow-report.md');
+const pilotCommand = readText('commands/forgeflow-pilot.md');
+const trendsCommand = readText('commands/forgeflow-trends.md');
+const reviewCommand = readText('commands/review.md');
+const reviewAutoCommand = readText('commands/review-auto.md');
+const shipCommand = readText('commands/ship.md');
+const handoffCommand = readText('commands/handoff.md');
+const readme = readText('README.md');
+const hostedDocs = readText('docs/index.html');
 
 const semver = /^\d+\.\d+\.\d+$/;
 const changelogs = changelogCandidates(plugin.version);
 const matchingChangelog = changelogs.find(fileExists);
 const matchingChangelogLink = matchingChangelog && `./${matchingChangelog.replace(/^docs\//, '')}`;
+const symlinkFixture = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-release-version-symlink-'));
+const symlinkOutside = path.join(symlinkFixture, 'outside');
+const symlinkRoot = path.join(symlinkFixture, 'repo');
+fs.mkdirSync(path.join(symlinkOutside, 'commands'), { recursive: true });
+fs.mkdirSync(symlinkRoot, { recursive: true });
+fs.writeFileSync(path.join(symlinkOutside, 'commands', 'forgeflow-release-check.md'), 'spoof\n');
+fs.symlinkSync(path.join(symlinkOutside, 'commands'), path.join(symlinkRoot, 'commands'));
 
 const checks = [
   ['plugin version is semver', semver.test(plugin.version)],
@@ -49,6 +98,7 @@ const checks = [
   ['marketplace description mentions Claude Code', marketplaceEntry?.description?.includes('Claude Code')],
   ['marketplace description mentions Codex', marketplaceEntry?.description?.includes('Codex')],
   ['matching changelog exists', Boolean(matchingChangelog)],
+  ['release-version rejects symlinked parent dirs', regularFile('commands/forgeflow-release-check.md', symlinkRoot) === false],
   ['hosted docs link matching changelog', matchingChangelogLink && hostedDocs.includes(`href="${matchingChangelogLink}"`)],
   ['README links release process', readme.includes('docs/wiki/Release-Process.md')],
   ['README links release gate', readme.includes('docs/wiki/Release-Gate.md')],
@@ -82,6 +132,7 @@ const checks = [
   ['release check runs project trends display test', releaseCheck.includes('node scripts/forgeflow/test-show-project-trends.js')],
   ['release check runs project intelligence test', releaseCheck.includes('node scripts/forgeflow/test-build-project-intelligence.js')],
   ['release check runs smoke check test', releaseCheck.includes('node scripts/forgeflow/test-smoke-check.js')],
+  ['release check runs dogfood self-test', releaseCheck.includes('node scripts/forgeflow/test-dogfood-self-test.js')],
   ['release check runs source smoke', releaseCheck.includes('node scripts/forgeflow/smoke-check.js --mode source --json')],
   ['release check runs pilot script test', releaseCheck.includes('node scripts/forgeflow/test-render-pilot-script.js')],
   ['README mentions smoke check helper', readme.includes('scripts/forgeflow/smoke-check.js --json')],

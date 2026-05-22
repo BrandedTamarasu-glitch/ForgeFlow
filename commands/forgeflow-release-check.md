@@ -57,6 +57,7 @@ node scripts/forgeflow/test-show-project-learnings.js
 node scripts/forgeflow/test-show-project-trends.js
 node scripts/forgeflow/test-build-project-intelligence.js
 node scripts/forgeflow/test-smoke-check.js
+node scripts/forgeflow/test-dogfood-self-test.js
 node scripts/forgeflow/smoke-check.js --mode source --json
 node scripts/forgeflow/test-render-pilot-script.js
 node scripts/forgeflow/test-seed-budget-config.js
@@ -72,6 +73,7 @@ git diff --check
 ```
 
 `test-release-version.js` guards that `/forgeflow-health`, `/forgeflow-trends`, `/forgeflow-report`, and the README all expose `/forgeflow-trends --refresh` as the stale-guidance next action.
+`test-dogfood-self-test.js` is listed directly so failures are easy to isolate; `smoke-check.js --mode source --json` also runs it to verify the packaged source-smoke path.
 
 ## Step 3: Report
 
@@ -110,6 +112,7 @@ If any command fails, stop and report the failed command plus its output. Do not
 - [ ] Project trends display test passes
 - [ ] Project intelligence rollup test passes
 - [ ] Smoke check test passes
+- [ ] Dogfood self-test passes
 - [ ] Source-mode smoke release guards pass
 - [ ] Pilot script renderer test passes
 - [ ] Context budget/advisor smoke tests pass

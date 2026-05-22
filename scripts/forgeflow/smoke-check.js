@@ -93,8 +93,8 @@ function helperRoot() {
 }
 
 function resolveNodeTestRoot(root, script, helperRepoRoot = helperRoot()) {
-  const candidates = [root, helperRepoRoot];
-  return candidates.find((candidate) => fs.existsSync(path.join(candidate, script))) || null;
+  void helperRepoRoot;
+  return fs.existsSync(path.join(root, script)) ? root : null;
 }
 
 function runOptionalNodeTest(root, script, displayCommand, helperRepoRoot = helperRoot()) {
@@ -136,6 +136,7 @@ function runSourceSmoke(root, helperRepoRoot = helperRoot()) {
     sourceCheck(root, 'release-version', 'scripts/forgeflow/test-release-version.js', helperRepoRoot),
     sourceCheck(root, 'install-manifest', 'scripts/forgeflow/test-install-manifest.js', helperRepoRoot),
     sourceCheck(root, 'update-forgeflow', 'scripts/forgeflow/test-update-forgeflow.js', helperRepoRoot),
+    sourceCheck(root, 'dogfood-self-test', 'scripts/forgeflow/test-dogfood-self-test.js', helperRepoRoot),
   ];
 }
 

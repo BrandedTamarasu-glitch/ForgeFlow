@@ -2,6 +2,8 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { spawnSync } = require('child_process');
+const { runHealthCheck } = require('./health-check');
 const {
   combineStatus,
   healthStatus,
@@ -14,13 +16,36 @@ const {
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-smoke-check-'));
-const patternsDir = path.join(repoRoot, '.forgeflow', 'test-smoke-patterns');
+const downstreamRoot = path.join(tmp, 'downstream-project');
+const patternsDir = path.join(downstreamRoot, 'forgeflow-patterns');
+fs.mkdirSync(downstreamRoot, { recursive: true });
 fs.mkdirSync(patternsDir, { recursive: true });
 const fakeHelperRoot = path.join(tmp, 'installed-helper-root');
 fs.mkdirSync(fakeHelperRoot, { recursive: true });
 
+function git(root, args) {
+  const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' });
+  if (result.status !== 0) throw new Error(result.stderr || result.stdout);
+}
+
+function write(file, content) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, content);
+}
+
+git(downstreamRoot, ['init']);
+git(downstreamRoot, ['config', 'user.email', 'forgeflow@example.invalid']);
+git(downstreamRoot, ['config', 'user.name', 'Forgeflow Test']);
+write(path.join(downstreamRoot, 'README.md'), '# Downstream\n');
+write(path.join(downstreamRoot, 'src/app.ts'), 'export const value = 1;\n');
+git(downstreamRoot, ['add', 'README.md', 'src/app.ts']);
+git(downstreamRoot, ['commit', '-m', 'init']);
+write(path.join(downstreamRoot, 'src/app.ts'), 'export const value = 2;\n');
+runHealthCheck({ root: downstreamRoot, fix: true });
+process.chdir(downstreamRoot);
+
 const result = smokeCheck({
-  root: repoRoot,
+  root: downstreamRoot,
   patternsDir,
 });
 const sourceResult = smokeCheck({
@@ -29,7 +54,7 @@ const sourceResult = smokeCheck({
   patternsDir,
 });
 const fullResult = smokeCheck({
-  root: repoRoot,
+  root: downstreamRoot,
   mode: 'full',
   patternsDir,
 });
@@ -48,7 +73,7 @@ const checks = [
   ['default is downstream mode', result.mode === 'downstream'],
   ['includes downstream checks', ['health', 'trends-refresh', 'report-refresh', 'code-map'].every((name) => result.checks.some((item) => item.name === name))],
   ['default excludes source checks', !result.checks.some((item) => item.name === 'doc-links' || item.name === 'release-version')],
-  ['source mode includes release checks', sourceResult.mode === 'source' && ['command-coverage', 'doc-links', 'plugin-manifest', 'release-version', 'install-manifest', 'update-forgeflow'].every((name) => sourceResult.checks.some((item) => item.name === name))],
+  ['source mode includes release checks', sourceResult.mode === 'source' && ['command-coverage', 'doc-links', 'plugin-manifest', 'release-version', 'install-manifest', 'update-forgeflow', 'dogfood-self-test'].every((name) => sourceResult.checks.some((item) => item.name === name))],
   ['full mode includes both check groups', fullResult.mode === 'full' && ['health', 'code-map', 'doc-links', 'release-version'].every((name) => fullResult.checks.some((item) => item.name === name))],
   ['trends refresh present', result.checks.find((item) => item.name === 'trends-refresh').refresh_status === 'pass'],
   ['trends exposes failure digest freshness', Boolean(result.checks.find((item) => item.name === 'trends-refresh').failure_digest_freshness)],
@@ -57,7 +82,7 @@ const checks = [
   ['markdown renders table', markdown.includes('# Forgeflow Smoke Check (downstream)') && markdown.includes('| Check | Status | Command | Summary |')],
   ['skips repo tests when unavailable downstream', downstreamDocLinks.status === 'skip' && downstreamDocLinks.reason.includes('source-tree test not available')],
   ['source mode skips repo tests when unavailable downstream', skippedSourceChecks.every((item) => item.status === 'skip')],
-  ['resolves repo tests from helper root', resolveNodeTestRoot(tmp, 'scripts/forgeflow/test-doc-links.js', repoRoot) === repoRoot],
+  ['does not fall back to helper repo for source checks', resolveNodeTestRoot(tmp, 'scripts/forgeflow/test-doc-links.js', repoRoot) === null],
 ];
 
 let failed = 0;
