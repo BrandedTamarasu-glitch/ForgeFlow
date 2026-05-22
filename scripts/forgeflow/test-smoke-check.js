@@ -59,8 +59,16 @@ const fullResult = smokeCheck({
   patternsDir,
 });
 const markdown = renderMarkdown(result);
+const healthCheck = result.checks.find((item) => item.name === 'health');
+const trendsCheck = result.checks.find((item) => item.name === 'trends-refresh');
+const reportCheck = result.checks.find((item) => item.name === 'report-refresh');
 const downstreamDocLinks = runOptionalNodeTest(tmp, 'scripts/forgeflow/test-doc-links.js', 'node scripts/forgeflow/test-doc-links.js', fakeHelperRoot);
 const skippedSourceChecks = runSourceSmoke(tmp, fakeHelperRoot);
+const allSkippedSourceResult = smokeCheck({
+  root: tmp,
+  mode: 'source',
+  patternsDir,
+});
 
 const checks = [
   ['combines pass', combineStatus([{ status: 'pass' }, { status: 'pass' }]) === 'pass'],
@@ -75,13 +83,18 @@ const checks = [
   ['default excludes source checks', !result.checks.some((item) => item.name === 'doc-links' || item.name === 'release-version')],
   ['source mode includes release checks', sourceResult.mode === 'source' && ['command-coverage', 'doc-links', 'plugin-manifest', 'release-version', 'install-manifest', 'update-forgeflow', 'dogfood-self-test', 'installed-runtime-dogfood'].every((name) => sourceResult.checks.some((item) => item.name === name))],
   ['full mode includes both check groups', fullResult.mode === 'full' && ['health', 'code-map', 'doc-links', 'release-version'].every((name) => fullResult.checks.some((item) => item.name === name))],
-  ['trends refresh present', result.checks.find((item) => item.name === 'trends-refresh').refresh_status === 'pass'],
-  ['trends exposes failure digest freshness', Boolean(result.checks.find((item) => item.name === 'trends-refresh').failure_digest_freshness)],
-  ['report refresh present', result.checks.find((item) => item.name === 'report-refresh').refresh_status === 'pass'],
-  ['report exposes failure digest freshness', Boolean(result.checks.find((item) => item.name === 'report-refresh').failure_digest_freshness)],
+  ['trends refresh present', trendsCheck.refresh_status === 'pass'],
+  ['trends exposes failure digest freshness', Boolean(trendsCheck.failure_digest_freshness)],
+  ['report refresh present', reportCheck.refresh_status === 'pass'],
+  ['report exposes failure digest freshness', Boolean(reportCheck.failure_digest_freshness)],
+  ['check recommendations include explanation', [healthCheck, trendsCheck, reportCheck].filter((item) => item.recommendations.length > 0).every((item) => item.reason && item.evidence && item.clears && item.next_actions.length > 0)],
+  ['warn fail checks include explanation', result.checks.filter((item) => item.status === 'warn' || item.status === 'fail').every((item) => item.reason && item.evidence && item.clears && item.next_actions.length > 0)],
+  ['markdown renders recommendation evidence', markdown.includes('Evidence:') && markdown.includes('Clears:') && markdown.includes('Next:')],
+  ['markdown warning does not lead with pass summary', !markdown.includes('| health | warn | forgeflow-health | pass ')],
   ['markdown renders table', markdown.includes('# Forgeflow Smoke Check (downstream)') && markdown.includes('| Check | Status | Command | Summary |')],
   ['skips repo tests when unavailable downstream', downstreamDocLinks.status === 'skip' && downstreamDocLinks.reason.includes('source-tree test not available')],
   ['source mode skips repo tests when unavailable downstream', skippedSourceChecks.every((item) => item.status === 'skip')],
+  ['source mode fails when all release guards skip', allSkippedSourceResult.status === 'fail' && allSkippedSourceResult.checks.some((item) => item.name === 'source-release-guards' && item.reason && item.evidence && item.clears && item.next_actions.length > 0)],
   ['does not fall back to helper repo for source checks', resolveNodeTestRoot(tmp, 'scripts/forgeflow/test-doc-links.js', repoRoot) === null],
 ];
 

@@ -6,6 +6,7 @@ const { runHealthCheck } = require('./health-check');
 const { showCodeMap } = require('./show-code-map');
 const { showProjectTrends } = require('./show-project-trends');
 const { buildReport } = require('./render-forgeflow-report');
+const { explainRecommendations } = require('./guidance-contract');
 
 function usage() {
   console.error('Usage: smoke-check.js [--mode downstream|source|full] [--root <dir>] [--project-dir <dir>] [--patterns-dir <dir>] [--json]');
@@ -85,7 +86,19 @@ function combineStatus(checks) {
 }
 
 function check(name, status, detail = {}) {
-  return { name, status, ...detail };
+  const explanation = detail.recommendations && detail.recommendations.length > 0
+    ? explainRecommendations(detail.recommendations)
+    : null;
+  return {
+    name,
+    status,
+    ...(explanation && explanation.next_actions.length > 0 ? explanation : {}),
+    ...detail,
+  };
+}
+
+function nextAction(command, reason) {
+  return [{ action: command.replace(/\s+/g, '-'), command, reason, evidence: '', clears: '' }];
 }
 
 function helperRoot() {
@@ -167,9 +180,22 @@ function runDownstreamSmoke({ root, projectDir, patternsDir }) {
       command: 'forgeflow-health',
       summary: health.status,
       recommendations: health.recommendations,
+      ...(health.status !== 'pass' ? {
+        reason: 'Forgeflow health check did not pass.',
+        evidence: `Health status is ${health.status}.`,
+        clears: 'Run forgeflow-health --fix for safe repairs, then rerun forgeflow-health.',
+        next_actions: nextAction('forgeflow-health --fix', 'Apply safe health repairs before rerunning smoke.'),
+      } : {}),
     })) - 1;
   } catch (err) {
-    healthIndex = checks.push(check('health', 'fail', { command: 'forgeflow-health', error: err.message })) - 1;
+    healthIndex = checks.push(check('health', 'fail', {
+      command: 'forgeflow-health',
+      error: err.message,
+      reason: 'Forgeflow health check could not complete.',
+      evidence: err.message,
+      clears: 'Fix the health helper error, then rerun forgeflow-health.',
+      next_actions: nextAction('forgeflow-health', 'Rerun health after fixing the helper error.'),
+    })) - 1;
   }
 
   let trends = null;
@@ -181,6 +207,12 @@ function runDownstreamSmoke({ root, projectDir, patternsDir }) {
     const refreshStatus = trends.refresh ? trends.refresh.status : 'missing';
     const trendStatus = refreshStatus === 'pass' && freshness === 'current' && latestFreshness === 'current' ? 'pass' : 'fail';
     const warningActions = (trends.recommendations || []).map((item) => item.action);
+    const trendExplanation = trendStatus === 'pass' ? {} : {
+      reason: 'Project trends refresh did not make guidance current.',
+      evidence: `Refresh status ${refreshStatus}; project freshness ${freshness}; latest-insights freshness ${latestFreshness}.`,
+      clears: 'Run forgeflow-trends --refresh after resolving project-learning or latest-insights gate issues.',
+      next_actions: nextAction('forgeflow-trends --refresh', 'Refresh project trends and latest insights for the current checkout.'),
+    };
     checks.push(check('trends-refresh', trendStatus === 'pass' && warningActions.length > 0 ? 'warn' : trendStatus, {
       command: 'forgeflow-trends --refresh',
       refresh_status: refreshStatus,
@@ -189,9 +221,17 @@ function runDownstreamSmoke({ root, projectDir, patternsDir }) {
       failure_digest_freshness: failureDigestFreshness,
       recommendations: trends.recommendations || [],
       import_gaps: trends.import_gaps || null,
+      ...trendExplanation,
     }));
   } catch (err) {
-    checks.push(check('trends-refresh', 'fail', { command: 'forgeflow-trends --refresh', error: err.message }));
+    checks.push(check('trends-refresh', 'fail', {
+      command: 'forgeflow-trends --refresh',
+      error: err.message,
+      reason: 'Project trends refresh could not complete.',
+      evidence: err.message,
+      clears: 'Fix the trends refresh error, then rerun forgeflow-trends --refresh.',
+      next_actions: nextAction('forgeflow-trends --refresh', 'Rerun trends refresh after fixing the helper error.'),
+    }));
   }
 
   if (healthIndex >= 0 && health) {
@@ -217,6 +257,16 @@ function runDownstreamSmoke({ root, projectDir, patternsDir }) {
     const reportStatus = refreshStatus === 'pass' && latestFreshness === 'current'
       ? (budgetStatus === 'pass' && failureDigestFreshness !== 'attention' ? 'pass' : 'warn')
       : 'fail';
+    const reportExplanation = reportStatus === 'pass' ? {} : {
+      reason: reportStatus === 'fail'
+        ? 'Forgeflow report refresh did not make latest insights current.'
+        : 'Forgeflow report refreshed but advisory report gates still need attention.',
+      evidence: `Refresh status ${refreshStatus}; latest-insights freshness ${latestFreshness}; budget status ${budgetStatus}; failure-digest freshness ${failureDigestFreshness}.`,
+      clears: reportStatus === 'fail'
+        ? 'Run forgeflow-report --refresh --no-drift after resolving latest-insights freshness issues.'
+        : 'Trim context scope or refresh the failure digest until report advisory gates return pass.',
+      next_actions: nextAction('forgeflow-report --refresh --no-drift', 'Refresh the report and inspect remaining advisory gates.'),
+    };
     checks.push(check('report-refresh', reportStatus, {
       command: 'forgeflow-report --refresh --no-drift',
       refresh_status: refreshStatus,
@@ -225,15 +275,29 @@ function runDownstreamSmoke({ root, projectDir, patternsDir }) {
       failure_digest_freshness: failureDigestFreshness,
       recommendations: report.recommendations || [],
       priorities: report.priorities || [],
+      ...reportExplanation,
     }));
   } catch (err) {
-    checks.push(check('report-refresh', 'fail', { command: 'forgeflow-report --refresh --no-drift', error: err.message }));
+    checks.push(check('report-refresh', 'fail', {
+      command: 'forgeflow-report --refresh --no-drift',
+      error: err.message,
+      reason: 'Forgeflow report refresh could not complete.',
+      evidence: err.message,
+      clears: 'Fix the report refresh error, then rerun forgeflow-report --refresh --no-drift.',
+      next_actions: nextAction('forgeflow-report --refresh --no-drift', 'Rerun report refresh after fixing the helper error.'),
+    }));
   }
 
   try {
     const codeMap = showCodeMap({ root, projectDir, recordHistory: false });
     const gaps = codeMap.summary.import_gaps || {};
     const productionTotal = gaps.limits ? gaps.limits.production_total || 0 : 0;
+    const codeMapExplanation = productionTotal > 0 ? {
+      reason: 'Code map has production-scope import gaps.',
+      evidence: `${productionTotal} production-scope import gap(s) need review.`,
+      clears: 'Run forgeflow-code-map, then fix, classify, or accept the reported production-scope gaps.',
+      next_actions: nextAction('forgeflow-code-map', 'Review production-scope import gaps.'),
+    } : {};
     checks.push(check('code-map', productionTotal > 0 ? 'warn' : 'pass', {
       command: 'forgeflow-code-map',
       unresolved_total: gaps.limits ? gaps.limits.unresolved_total : 0,
@@ -243,9 +307,17 @@ function runDownstreamSmoke({ root, projectDir, patternsDir }) {
       expected_total: gaps.triage ? gaps.triage.expected_total || 0 : 0,
       needs_review_total: gaps.triage ? gaps.triage.needs_review_total || 0 : 0,
       triage_categories: gaps.triage ? gaps.triage.categories.slice(0, 5) : [],
+      ...codeMapExplanation,
     }));
   } catch (err) {
-    checks.push(check('code-map', 'fail', { command: 'forgeflow-code-map', error: err.message }));
+    checks.push(check('code-map', 'fail', {
+      command: 'forgeflow-code-map',
+      error: err.message,
+      reason: 'Forgeflow code map could not complete.',
+      evidence: err.message,
+      clears: 'Fix the code-map helper error, then rerun forgeflow-code-map.',
+      next_actions: nextAction('forgeflow-code-map', 'Rerun code map after fixing the helper error.'),
+    }));
   }
 
   return checks;
@@ -262,7 +334,17 @@ function smokeCheck(opts = {}) {
     checks.push(...runDownstreamSmoke({ root, projectDir, patternsDir }));
   }
   if (mode === 'source' || mode === 'full') {
-    checks.push(...runSourceSmoke(root));
+    const sourceChecks = runSourceSmoke(root);
+    checks.push(...sourceChecks);
+    if (sourceChecks.length > 0 && sourceChecks.every((item) => item.status === 'skip')) {
+      checks.push(check('source-release-guards', 'fail', {
+        command: 'forgeflow-smoke --mode source',
+        reason: 'Source-mode release guards were not available in this checkout.',
+        evidence: 'Every source release check was skipped because source-tree tests were not found.',
+        clears: 'Run source-mode smoke from the Forgeflow source checkout, or use downstream smoke for installed project readiness.',
+        next_actions: nextAction('forgeflow-smoke --mode source', 'Rerun from a Forgeflow source checkout where release tests are present.'),
+      }));
+    }
   }
 
   return {
@@ -288,10 +370,21 @@ function renderMarkdown(result) {
     '|---|---|---|---|',
   ];
   for (const item of result.checks) {
-    const summary = item.error
-      || item.summary
-      || item.reason
-      || (item.recommendations && item.recommendations.length > 0 ? item.recommendations.map((entry) => entry.command || entry.reason).join(', ') : '');
+    const nextActions = (item.next_actions || [])
+      .map((entry) => entry.command || entry.action || entry.reason)
+      .filter(Boolean)
+      .join(', ');
+    const primarySummary = item.status === 'warn' || item.status === 'fail'
+      ? (item.reason || item.error || item.summary || '')
+      : (item.error || item.summary || item.reason || '');
+    const summaryParts = [
+      primarySummary,
+      item.evidence ? `Evidence: ${item.evidence}` : '',
+      item.clears ? `Clears: ${item.clears}` : '',
+      nextActions ? `Next: ${nextActions}` : '',
+      !item.reason && item.recommendations && item.recommendations.length > 0 ? item.recommendations.map((entry) => entry.command || entry.reason).join(', ') : '',
+    ].filter(Boolean);
+    const summary = summaryParts.join(' ');
     lines.push(`| ${item.name} | ${item.status} | ${item.command || ''} | ${String(summary || '').replace(/\|/g, '\\|')} |`);
   }
   return lines.join('\n');

@@ -153,9 +153,35 @@ function renderRecommendationList(items) {
   });
 }
 
+function explainRecommendations(items) {
+  const recommendations = uniqueRecommendations(items || []);
+  const nextActions = recommendations
+    .filter((item) => item && (item.command || item.action || item.reason))
+    .map((item) => ({
+      action: item.action || '',
+      related_actions: item.related_actions || [],
+      command: item.command || '',
+      reason: item.reason || '',
+      evidence: item.evidence || '',
+      clears: item.clears || '',
+    }));
+  const collect = (field) => nextActions
+    .map((item) => item[field])
+    .filter(Boolean)
+    .filter((value, index, list) => list.indexOf(value) === index)
+    .join(' Also: ');
+  return {
+    reason: collect('reason'),
+    evidence: collect('evidence'),
+    clears: collect('clears'),
+    next_actions: nextActions,
+  };
+}
+
 module.exports = {
   GUIDANCE_STATUS,
   RECOMMENDATIONS,
+  explainRecommendations,
   inspectLearningGate,
   inspectProjectLearnings,
   inspectRefresh,
