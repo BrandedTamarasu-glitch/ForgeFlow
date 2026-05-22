@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow - V4.3.9 Changelog</title>
+  <style>
+    body { background: #0d0d0d; color: #ddd8cc; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.65; margin: 0; }
+    main { max-width: 820px; margin: 0 auto; padding: 72px 32px 96px; }
+    .version { color: #7a7670; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
+    h1 { font-size: 40px; font-weight: 400; line-height: 1.15; margin: 14px 0 20px; }
+    h2 { border-top: 1px solid #303030; color: #f0a232; font-size: 18px; font-weight: 600; margin: 42px 0 18px; padding-top: 28px; }
+    p, li { color: #c9c2b6; }
+    code { background: #1c1c1c; border: 1px solid #303030; border-radius: 4px; color: #f0c070; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 1px 5px; }
+    a { color: #f0a232; text-decoration: underline; text-underline-offset: 0.16em; }
+    .nav { display: flex; justify-content: space-between; margin-top: 52px; padding-top: 24px; border-top: 1px solid #303030; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="version">Forgeflow V4.3.9 · 22 May 2026</div>
+    <h1>Release: First-Run Adoption And Project Intelligence</h1>
+    <p>
+      Forgeflow 4.3.9 focuses on helping a new user understand whether Forgeflow is worth using, then carrying project learning forward across work items.
+    </p>
+
+    <h2>New User And Adoption Flow</h2>
+    <ul>
+      <li><code>/forgeflow-pilot --path new-user</code> prints a first-real-task trial path with readiness, project orientation, implementation, review, and decision steps.</li>
+      <li><code>/forgeflow-adoption</code> prints a concise adoption pack with fit guidance, proof boundaries, first-trial steps, existing pilot evidence, and repeat, expand, fix, or defer criteria.</li>
+      <li>The adoption pack summarizes local pilot-evidence rollups when available without exposing raw project artifacts.</li>
+    </ul>
+
+    <h2>Learning And Guidance</h2>
+    <ul>
+      <li>Quality gate recommendations now include evidence and clear conditions so users know why a warning appeared and what resolves it.</li>
+      <li><code>build-project-intelligence.js</code> synthesizes trends, code topology, project learnings, validation patterns, risks, and recommended next actions into local rollup artifacts.</li>
+      <li><code>record-agent-feedback.js</code> captures local feedback on useful, unclear, ignored, or incorrect agent guidance with explicit promotion rules and privacy guards.</li>
+    </ul>
+
+    <h2>Validation</h2>
+    <ul>
+      <li>Release checks now cover the adoption pack, project intelligence rollup, agent feedback recorder, and enhanced guidance contract.</li>
+      <li>Full local release-gate validation passed before tagging.</li>
+      <li>Specialist review approved the adoption flow and feedback recorder after command-safety and privacy-boundary fixes.</li>
+    </ul>
+
+    <div class="nav">
+      <a href="./v4.3.8.html">&larr; V4.3.8</a>
+      <span>V4.3.9</span>
+    </div>
+  </main>
+</body>
+</html>
