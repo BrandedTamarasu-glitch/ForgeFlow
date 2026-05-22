@@ -25,6 +25,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 - [Forgeflow 4.3 Release Brief](Forgeflow-4.3-Release-Brief.md)
 - [Project Learnings](Project-Learnings)
 - [Maintainer Pilot](Maintainer-Pilot)
+- [Adoption Pack](Adoption-Pack)
 - [Team Privacy Boundaries](Team-Privacy-Boundaries)
 - [Support Triage](Support-Triage)
 - [Team Adoption Criteria](Team-Adoption-Criteria)
@@ -70,7 +71,7 @@ Forgeflow separates software delivery into phases and assigns each phase to agen
 
 The current build also adds local context intelligence: bounded context packets, compact memory summaries, scope manifests, context telemetry, budget checks, health repair, smoke checks, pilot scripts, and trend-aware context recommendations. These helpers keep agent prompts smaller while preserving the local project memory needed for end-to-end work. Local artifact reads and writes reject symlinks, include untracked work in generated context, and can fail CI when context budgets are exceeded.
 
-Forgeflow also carries implementation context and pilot evidence forward. `/implement` maintains local implementation notes, `/ship` checks and summarizes those notes, `/forgeflow-smoke` verifies the local stabilization path, and `/forgeflow-pilot` prints either the default maintainer-trial script or a first-real-task new-user path with evidence capture and support/adoption rollups under `.forgeflow/<project-name>/`.
+Forgeflow also carries implementation context and pilot evidence forward. `/implement` maintains local implementation notes, `/ship` checks and summarizes those notes, `/forgeflow-smoke` verifies the local stabilization path, `/forgeflow-adoption` prints a public-safe adoption pack and small-team handoff checklist, and `/forgeflow-pilot` prints either the default maintainer-trial script or a first-real-task new-user path with evidence capture and support/adoption rollups under `.forgeflow/<project-name>/`.
 
 Project learnings are the next local memory layer: a durable, user-editable summary of recurring pitfalls, stable decisions, risk areas, validation patterns, and recommended approaches across work items. Agents can use that file as guidance in later phases while still verifying current code and artifacts.
 

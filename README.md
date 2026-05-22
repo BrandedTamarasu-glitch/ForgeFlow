@@ -217,7 +217,7 @@ Forgeflow includes local-only helpers that reduce agent prompt load before revie
 - **Forgeflow report:** `render-forgeflow-report.js` combines local telemetry, false-positive thresholds, pattern-log freshness, context savings, project trends, import-gap status, latest-insights readiness/freshness, latest failure-digest status/freshness, and direct next-action recommendations into one Markdown or JSON report. Use `--refresh` to update project guidance first.
 - **Smoke check:** `smoke-check.js` defaults to downstream readiness checks for health, trends refresh, report refresh, and code map. Warn/fail checks include reason, evidence, clearing guidance, and next actions in JSON and Markdown. Use `--mode source` for source-tree release guards plus packaged and installed-runtime dogfood self-tests, or `--mode full` for both groups.
 - **Pilot script:** `render-pilot-script.js` prints a maintainer trial script by default and a first-real-task new-user path with `--path new-user`. Both paths cover install/readiness checks, project guidance, one bounded work item, review, evidence capture, rollup, and a public-safe result template.
-- **Adoption pack:** `render-adoption-pack.js` gives net-new users a concise fit guide, first-trial path, existing pilot-evidence rollup, recommended action, owner lane, blocker, proof boundary, and repeat/expand/fix/defer decision rubric.
+- **Adoption pack:** `render-adoption-pack.js` gives net-new users a concise fit guide, first-trial path, existing pilot-evidence rollup, recommended action, owner lane, blocker, public-safe summary, small-team handoff checklist, proof boundary, and repeat/expand/fix/defer decision rubric.
 - **Pattern learnings:** `rollup-pattern-learnings.js` scans cross-project `.forgeflow/<project>/learnings.jsonl` plus `project-learning-candidates.jsonl`, clusters known/candidate patterns with source-mix labels, and records `.learnings-log.jsonl` for `/forgeflow-report`.
 
 Review context packs keep local memory hits bounded by default. If memory context dominates packet size, lower `build-context-pack.js --max-memory-chars` or split the review scope.
@@ -296,6 +296,8 @@ From Claude Code:
 /forgeflow-adoption --runtime claude-code
 /forgeflow-pilot --path new-user --runtime claude-code
 ```
+
+The adoption pack is the “why should I use this?” view. It includes a public-safe aggregate summary and small-team handoff checklist so the next decision can be repeat, expand, stop-and-fix, or defer without sharing raw `.forgeflow/` records.
 
 To capture whether agent guidance helped or needed correction, record local feedback:
 
@@ -382,6 +384,7 @@ It runs on `http://127.0.0.1:4003` and reads local telemetry files from `~/.clau
 - [Why Forgeflow](docs/wiki/Why-Forgeflow.md)
 - [Project learnings](docs/wiki/Project-Learnings.md)
 - [Maintainer pilot](docs/wiki/Maintainer-Pilot.md)
+- [Adoption pack](docs/wiki/Adoption-Pack.md)
 - [Team privacy boundaries](docs/wiki/Team-Privacy-Boundaries.md)
 - [Support triage](docs/wiki/Support-Triage.md)
 - [Team adoption criteria](docs/wiki/Team-Adoption-Criteria.md)

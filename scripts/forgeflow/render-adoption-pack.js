@@ -2,6 +2,20 @@
 const path = require('path');
 const { buildPilotScript } = require('./render-pilot-script');
 const { rollupPilotEvidence } = require('./rollup-pilot-evidence');
+const PUBLIC_SAFE_BLOCKERS = new Set([
+  'install',
+  'health',
+  'settings',
+  'template-installer',
+  'codex-discovery',
+  'agent-routing',
+  'context-budget',
+  'review-quality',
+  'privacy',
+  'docs',
+  'first-review-blocked',
+  'repeated-support-category',
+]);
 
 function usage() {
   console.error('Usage: render-adoption-pack.js [--runtime claude-code|codex] [--project-name <name>] [--path maintainer|new-user] [--json]');
@@ -56,6 +70,8 @@ function buildAdoptionPack(opts = {}) {
   const projectDir = path.join(process.cwd(), pilot.project_dir);
   const rollup = rollupPilotEvidence({ projectDir });
   const nextAction = adoptionNextAction(rollup, pilot);
+  const publicSummary = publicSafeSummary(rollup, pilot, nextAction);
+  const smallTeamHandoff = smallTeamHandoffPlan(pilot, nextAction);
   const trialEvidence = {
     status: rollup.pilot_count > 0 ? 'available' : 'not-recorded',
     pilot_count: rollup.pilot_count,
@@ -94,11 +110,21 @@ function buildAdoptionPack(opts = {}) {
       commands: step.commands,
     })),
     trial_evidence: trialEvidence,
+    public_safe_summary: publicSummary,
+    small_team_handoff: smallTeamHandoff,
     decision_rubric: {
       repeat_pilot: 'Use when setup worked and at least one signal was useful, but evidence is still thin.',
       expand_small_team: 'Use when setup is repeatable, findings are actionable, privacy boundaries are clear, and friction is manageable.',
       stop_and_fix: 'Use when install, privacy, routing, evidence quality, or review usefulness blocks another trial.',
       defer: 'Use when the workflow works but the team does not need more process right now.',
+    },
+    decision_template: {
+      decision: '<repeat-pilot|expand-small-team|stop-and-fix|defer>',
+      decision_reason: '<short evidence-backed reason>',
+      owner: '<maintainer|team-lead|forgeflow-maintainer>',
+      blocker: '<public-safe blocker category or none>',
+      next_command: '<command to run next>',
+      next_review_date: '<date or not scheduled>',
     },
     proof_boundary: [
       'Forgeflow output is guidance until verified against current code, tests, and artifacts.',
@@ -113,13 +139,75 @@ function buildAdoptionPack(opts = {}) {
   };
 }
 
+function publicSafeSummary(rollup, pilot, nextAction) {
+  const hasEvidence = rollup && rollup.pilot_count > 0;
+  return {
+    sharing_level: 'public-safe',
+    runtime: pilot.runtime,
+    path: pilot.path,
+    evidence_status: hasEvidence ? 'available' : 'not-recorded',
+    pilot_count: hasEvidence ? rollup.pilot_count : 0,
+    decision: hasEvidence ? adoptionDecisionFromRollup(rollup) : 'repeat-pilot',
+    recommended_action: nextAction.action,
+    owner: nextAction.owner,
+    blocker: publicSafeBlocker(nextAction.blocker),
+    review_minutes: hasEvidence ? rollup.review_minutes : 0,
+    confirmed_findings: hasEvidence && rollup.findings ? rollup.findings.confirmed : 0,
+    rejected_findings: hasEvidence && rollup.findings ? rollup.findings.rejected : 0,
+    deferred_findings: hasEvidence && rollup.findings ? rollup.findings.deferred : 0,
+    note: 'Share aggregate counts and decisions only; keep raw .forgeflow evidence local unless the project explicitly approves sharing.',
+  };
+}
+
+function adoptionDecisionFromRollup(rollup) {
+  const decision = rollup && rollup.decision ? rollup.decision : '';
+  if (decision === 'fix-now') return 'stop-and-fix';
+  if (decision === 'run-another-pilot') return 'repeat-pilot';
+  if (decision === 'expand-small-team') return 'expand-small-team';
+  if (decision === 'defer') return 'defer';
+  return 'repeat-pilot';
+}
+
+function publicSafeBlocker(value) {
+  const key = String(value || '').trim();
+  if (!key) return '';
+  return PUBLIC_SAFE_BLOCKERS.has(key) ? key : 'unclassified-support-category';
+}
+
+function shellQuote(value) {
+  return `'${String(value || '').replace(/'/g, "'\\''")}'`;
+}
+
+function projectNameArg(pilot) {
+  return shellQuote(pilot.project_name);
+}
+
+function smallTeamHandoffPlan(pilot, nextAction) {
+  const command = pilot.runtime === 'claude-code'
+    ? `/forgeflow-pilot --runtime claude-code --project-name ${projectNameArg(pilot)} --path maintainer`
+    : `scripts/forgeflow/render-pilot-script.js --runtime codex --project-name ${projectNameArg(pilot)} --path maintainer`;
+  return {
+    status: nextAction.action === 'expand-small-team' ? 'ready-to-expand' : 'not-ready-yet',
+    owner: nextAction.action === 'expand-small-team' ? 'team-lead' : nextAction.owner,
+    candidate_count: 'one or two maintainers',
+    command,
+    prerequisites: [
+      'Keep the same privacy boundary and sharing level from the first trial.',
+      'Pick one bounded branch per added maintainer.',
+      'Record pilot evidence after each trial before changing rollout scope.',
+      'Stop and fix before expanding if install, privacy, routing, or review quality blocks the first review.',
+    ],
+    next_check: 'Rerender the adoption pack after the next recorded trial.',
+  };
+}
+
 function firstCountKey(counts) {
   return Object.entries(counts || {}).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] || '';
 }
 
 function adoptionCommand(pilot) {
-  if (pilot.runtime === 'claude-code') return `/forgeflow-adoption --runtime claude-code --project-name "${pilot.project_name}" --path ${pilot.path}`;
-  return `scripts/forgeflow/render-adoption-pack.js --runtime codex --project-name "${pilot.project_name}" --path ${pilot.path}`;
+  if (pilot.runtime === 'claude-code') return `/forgeflow-adoption --runtime claude-code --project-name ${projectNameArg(pilot)} --path ${pilot.path}`;
+  return `scripts/forgeflow/render-adoption-pack.js --runtime codex --project-name ${projectNameArg(pilot)} --path ${pilot.path}`;
 }
 
 function healthCommand(pilot) {
@@ -128,8 +216,8 @@ function healthCommand(pilot) {
 }
 
 function pilotCommand(pilot) {
-  if (pilot.runtime === 'claude-code') return `/forgeflow-pilot --runtime claude-code --project-name "${pilot.project_name}" --path ${pilot.path}`;
-  return `scripts/forgeflow/render-pilot-script.js --runtime codex --project-name "${pilot.project_name}" --path ${pilot.path}`;
+  if (pilot.runtime === 'claude-code') return `/forgeflow-pilot --runtime claude-code --project-name ${projectNameArg(pilot)} --path ${pilot.path}`;
+  return `scripts/forgeflow/render-pilot-script.js --runtime codex --project-name ${projectNameArg(pilot)} --path ${pilot.path}`;
 }
 
 function adoptionNextAction(rollup, pilot) {
@@ -171,8 +259,8 @@ function adoptionNextAction(rollup, pilot) {
       blocker: '',
       fix_layer: '',
       command: pilot.runtime === 'claude-code'
-        ? `/forgeflow-pilot --runtime claude-code --project-name "${pilot.project_name}" --path maintainer`
-        : `scripts/forgeflow/render-pilot-script.js --runtime codex --project-name "${pilot.project_name}" --path maintainer`,
+        ? `/forgeflow-pilot --runtime claude-code --project-name ${projectNameArg(pilot)} --path maintainer`
+        : `scripts/forgeflow/render-pilot-script.js --runtime codex --project-name ${projectNameArg(pilot)} --path maintainer`,
       reason: 'Pilot evidence includes an expand-small-team decision and no blocking repeated friction.',
     };
   }
@@ -200,6 +288,15 @@ function countLines(counts) {
   const entries = Object.entries(counts || {});
   if (entries.length === 0) return ['- none recorded'];
   return entries.map(([name, count]) => `- ${name}: ${count}`);
+}
+
+function publicSafeCountLines(counts) {
+  const safeCounts = {};
+  for (const [name, count] of Object.entries(counts || {})) {
+    const safeName = publicSafeBlocker(name);
+    safeCounts[safeName || 'unclassified-support-category'] = (safeCounts[safeName || 'unclassified-support-category'] || 0) + count;
+  }
+  return countLines(safeCounts);
 }
 
 function renderMarkdown(pack) {
@@ -250,9 +347,9 @@ function renderMarkdown(pack) {
       `- Command: \`${pack.trial_evidence.next_action.command}\``,
       `- Reason: ${pack.trial_evidence.next_action.reason}`,
     );
-    if (pack.trial_evidence.next_action.blocker) lines.push(`- Blocker: ${pack.trial_evidence.next_action.blocker}`);
+    if (pack.trial_evidence.next_action.blocker) lines.push(`- Blocker: ${publicSafeBlocker(pack.trial_evidence.next_action.blocker)}`);
     if (pack.trial_evidence.next_action.fix_layer) lines.push(`- Fix layer: ${pack.trial_evidence.next_action.fix_layer}`);
-    lines.push('', 'Health results:', '', ...countLines(pack.trial_evidence.health_results), '', 'Support categories:', '', ...countLines(pack.trial_evidence.support_categories), '');
+    lines.push('', 'Health results:', '', ...countLines(pack.trial_evidence.health_results), '', 'Support categories:', '', ...publicSafeCountLines(pack.trial_evidence.support_categories), '');
   } else {
     lines.push(
       'No pilot evidence has been recorded yet. Run the first trial, record evidence, then rerender this pack to see adoption signal.',
@@ -266,8 +363,40 @@ function renderMarkdown(pack) {
       '',
     );
   }
+  lines.push('## Public-Safe Summary', '');
+  lines.push(
+    `- Sharing level: ${pack.public_safe_summary.sharing_level}`,
+    `- Evidence status: ${pack.public_safe_summary.evidence_status}`,
+    `- Pilot count: ${pack.public_safe_summary.pilot_count}`,
+    `- Decision: ${pack.public_safe_summary.decision}`,
+    `- Recommended action: ${pack.public_safe_summary.recommended_action}`,
+    `- Owner: ${pack.public_safe_summary.owner}`,
+  );
+  if (pack.public_safe_summary.blocker) lines.push(`- Blocker: ${pack.public_safe_summary.blocker}`);
+  lines.push(
+    `- Findings: ${pack.public_safe_summary.confirmed_findings} confirmed, ${pack.public_safe_summary.rejected_findings} rejected, ${pack.public_safe_summary.deferred_findings} deferred`,
+    `- Review minutes: ${pack.public_safe_summary.review_minutes}`,
+    `- Note: ${pack.public_safe_summary.note}`,
+    '',
+    '## Small-Team Handoff',
+    '',
+    `- Status: ${pack.small_team_handoff.status}`,
+    `- Owner: ${pack.small_team_handoff.owner}`,
+    `- Candidate count: ${pack.small_team_handoff.candidate_count}`,
+    `- Command: \`${pack.small_team_handoff.command}\``,
+    `- Next check: ${pack.small_team_handoff.next_check}`,
+    '',
+    'Prerequisites:',
+    '',
+    ...pack.small_team_handoff.prerequisites.map((item) => `- ${item}`),
+    '',
+  );
   lines.push('## Decision Rubric', '');
   for (const [key, value] of Object.entries(pack.decision_rubric)) {
+    lines.push(`- ${key}: ${value}`);
+  }
+  lines.push('', '## Decision Template', '');
+  for (const [key, value] of Object.entries(pack.decision_template)) {
     lines.push(`- ${key}: ${value}`);
   }
   lines.push('', '## Proof Boundary', '', ...pack.proof_boundary.map((item) => `- ${item}`), '', '## Follow-Up Commands', '');
@@ -292,6 +421,10 @@ if (require.main === module) main();
 
 module.exports = {
   adoptionNextAction,
+  adoptionDecisionFromRollup,
   buildAdoptionPack,
+  publicSafeSummary,
   renderMarkdown,
+  shellQuote,
+  smallTeamHandoffPlan,
 };
