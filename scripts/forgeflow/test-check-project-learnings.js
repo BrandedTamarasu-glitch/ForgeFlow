@@ -3,7 +3,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
-const { checkProjectLearnings } = require('./check-project-learnings');
+const { checkProjectLearnings, parseArgs } = require('./check-project-learnings');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-check-project-learnings-'));
@@ -169,9 +169,12 @@ const invalidMetadataResult = checkProjectLearnings({ projectDir: invalidMetadat
 const missingBoundaryResult = checkProjectLearnings({ projectDir: missingBoundary });
 const staleResult = checkProjectLearnings({ projectDir: stale, now: new Date('2026-05-20T00:00:00Z') });
 const missingFreshnessResult = checkProjectLearnings({ projectDir: missingFreshness });
-const missingArg = spawnSync(path.join(repoRoot, 'scripts/forgeflow/check-project-learnings.js'), [
-  '--project-dir',
-], { encoding: 'utf8' });
+let missingArg = { status: 0, stderr: '' };
+try {
+  parseArgs(['--project-dir'], { exitOnError: false });
+} catch (err) {
+  missingArg = { status: err.exitCode || 1, stderr: err.message };
+}
 
 const checks = [
   ['good passes', goodResult.status === 'pass'],

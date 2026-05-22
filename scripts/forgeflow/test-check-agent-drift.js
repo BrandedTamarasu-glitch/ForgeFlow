@@ -2,15 +2,14 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { spawnSync } = require('child_process');
 const {
   checkAgentDrift,
   jaccardPercent,
+  parseArgs,
   parseSections,
   renderMarkdown,
 } = require('./check-agent-drift');
 
-const repoRoot = path.resolve(__dirname, '..', '..');
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-agent-drift-'));
 const sharedDir = path.join(root, 'agents', '_shared');
 const agentsDir = path.join(root, 'agents');
@@ -88,8 +87,7 @@ fs.writeFileSync(path.join(agentsDir, 'arbiter-review.md'), [
 ].join('\n'));
 const arbiterReview = checkAgentDrift({ root, canonical: 'arbiter-intelligence', agent: 'arbiter-review', threshold: 70 });
 const markdown = renderMarkdown(focused);
-const cli = spawnSync(process.execPath, [
-  path.join(repoRoot, 'scripts/forgeflow/check-agent-drift.js'),
+const cliOpts = parseArgs([
   '--root',
   root,
   '--canonical',
@@ -97,13 +95,17 @@ const cli = spawnSync(process.execPath, [
   '--agent',
   'smith-review',
   '--json',
-], { encoding: 'utf8' });
-const cliJson = cli.stdout ? JSON.parse(cli.stdout) : {};
-const badThreshold = spawnSync(process.execPath, [
-  path.join(repoRoot, 'scripts/forgeflow/check-agent-drift.js'),
-  '--threshold',
-  '101',
-], { encoding: 'utf8' });
+], { exitOnError: false });
+const cliJson = checkAgentDrift(cliOpts);
+const cliStatus = cliJson.status === 'fail' ? 1 : 0;
+let badThresholdExitCode = 0;
+let badThresholdMessage = '';
+try {
+  parseArgs(['--threshold', '101'], { exitOnError: false });
+} catch (err) {
+  badThresholdExitCode = err.exitCode || 1;
+  badThresholdMessage = err.message;
+}
 
 const checks = [
   ['parses sections', parsed.length === 2 && parsed[0].heading === 'Shared Checklist'],
@@ -114,8 +116,8 @@ const checks = [
   ['applies mode-specific expected sections', arbiterReview.status === 'pass' && arbiterReview.per_agent[0].sections.every((section) => section.section !== 'Deviation Protocol')],
   ['treats adapted sections as modified', arbiterReview.per_agent[0].sections.some((section) => section.section === 'Lead Architect Intelligence' && section.status === 'MODIFIED' && section.adapted === true)],
   ['renders markdown', markdown.includes('# Forgeflow Drift Report') && markdown.includes('Actionable Drift')],
-  ['cli json exits actionable', cli.status === 1 && Array.isArray(cliJson.per_agent) && cliJson.per_agent[0] && cliJson.per_agent[0].agent === 'smith-review'],
-  ['bad threshold exits usage', badThreshold.status === 2 && badThreshold.stderr.includes('Invalid --threshold')],
+  ['cli json exits actionable', cliStatus === 1 && Array.isArray(cliJson.per_agent) && cliJson.per_agent[0] && cliJson.per_agent[0].agent === 'smith-review'],
+  ['bad threshold exits usage', badThresholdExitCode === 2 && badThresholdMessage.includes('Invalid --threshold')],
 ];
 
 let failed = 0;
@@ -124,9 +126,8 @@ for (const [name, ok] of checks) {
     failed += 1;
     console.error(`FAIL ${name}`);
     if (name === 'cli json exits actionable') {
-      console.error(`  status: ${cli.status}`);
-      console.error(`  stdout: ${cli.stdout.trim()}`);
-      console.error(`  stderr: ${cli.stderr.trim()}`);
+      console.error(`  status: ${cliStatus}`);
+      console.error(`  result: ${JSON.stringify(cliJson)}`);
     }
   }
 }

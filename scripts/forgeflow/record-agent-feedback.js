@@ -233,6 +233,7 @@ if (require.main === module) main();
 module.exports = {
   containsProhibitedFeedbackContent,
   normalizeFeedback,
+  parseArgs,
   promotionCategory,
   recordAgentFeedback,
   rollupFeedback,

@@ -2,15 +2,14 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { spawnSync } = require('child_process');
 const {
   buildRollup,
   containsSensitiveContent,
+  parseArgs,
   parseImplementationNotes,
   rollupProjectLearnings,
 } = require('./rollup-project-learnings');
 
-const repoRoot = path.resolve(__dirname, '..', '..');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-project-learnings-'));
 const projectDir = path.join(tmp, '.forgeflow', 'Demo');
 const shipDir = path.join(projectDir, 'ship');
@@ -205,15 +204,17 @@ const manual = buildRollup({
   hasImplementationNotes: true,
   hasShipSummary: false,
 }, { maxItems: 2, generatedAt: '2026-05-20T00:00:00Z' });
-const cliJson = spawnSync(path.join(repoRoot, 'scripts/forgeflow/rollup-project-learnings.js'), [
+const cliResult = rollupProjectLearnings(parseArgs([
   '--project-dir',
   projectDir,
   '--json',
-], { encoding: 'utf8' });
-const missingValue = spawnSync(path.join(repoRoot, 'scripts/forgeflow/rollup-project-learnings.js'), [
-  '--project-dir',
-], { encoding: 'utf8' });
-const cliResult = cliJson.status === 0 ? JSON.parse(cliJson.stdout) : {};
+], { exitOnError: false }));
+let missingValue = { status: 0, stderr: '' };
+try {
+  parseArgs(['--project-dir'], { exitOnError: false });
+} catch (err) {
+  missingValue = { status: err.exitCode || 1, stderr: err.message };
+}
 
 const checks = [
   ['parses decision pipe metadata', notes.decisions[0] === 'Markdown stays canonical - local state should stay editable'],
@@ -245,7 +246,7 @@ const checks = [
   ['markdown omits sensitive note', !rendered.includes('SHOULD_NOT_RENDER')],
   ['manual rollup uses notes', manual.stable_decisions.some((line) => line.includes('Markdown stays canonical'))],
   ['manual rollup accepts generated timestamp', manual.generated_at === '2026-05-20T00:00:00Z'],
-  ['cli emits json', cliJson.status === 0 && cliResult.out === out],
+  ['cli emits json', cliResult.out === out],
   ['missing option value exits usage', missingValue.status === 2 && missingValue.stderr.includes('Missing value for --project-dir')],
 ];
 

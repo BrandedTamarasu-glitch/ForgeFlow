@@ -233,5 +233,6 @@ module.exports = {
   VALID_CONFIDENCE,
   VALID_STATUS,
   containsSensitiveContent,
+  parseArgs,
   recordProjectLearning,
 };

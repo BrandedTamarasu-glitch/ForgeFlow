@@ -3,7 +3,13 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
-const { buildContextPack, buildLatestInsights, buildLatestInsightsResult, compactProjectCodeMap } = require('./build-context-pack');
+const {
+  buildContextPack,
+  buildLatestInsights,
+  buildLatestInsightsResult,
+  compactProjectCodeMap,
+  jsonSummary,
+} = require('./build-context-pack');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 const repoProjectContextDir = path.join(repoRoot, '.forgeflow', path.basename(repoRoot), 'context');
@@ -99,6 +105,46 @@ const noisyResult = buildContextPack({
   maxMemoryChars: 12000,
   maxDiffChars: 18000,
 });
+const explicitRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-explicit-root-'));
+spawnSync('git', ['init'], { cwd: explicitRoot, encoding: 'utf8' });
+spawnSync('git', ['config', 'user.email', 'forgeflow@example.invalid'], { cwd: explicitRoot, encoding: 'utf8' });
+spawnSync('git', ['config', 'user.name', 'Forgeflow Test'], { cwd: explicitRoot, encoding: 'utf8' });
+fs.mkdirSync(path.join(explicitRoot, 'src'), { recursive: true });
+fs.writeFileSync(path.join(explicitRoot, 'README.md'), '# Explicit Root\n');
+fs.writeFileSync(path.join(explicitRoot, 'src/app.ts'), [
+  'export function app() {',
+  '  return 1;',
+  '}',
+  '',
+].join('\n'));
+spawnSync('git', ['add', 'README.md', 'src/app.ts'], { cwd: explicitRoot, encoding: 'utf8' });
+spawnSync('git', ['commit', '-m', 'init'], { cwd: explicitRoot, encoding: 'utf8' });
+fs.writeFileSync(path.join(explicitRoot, 'src/app.ts'), [
+  'export function app() {',
+  '  return 2;',
+  '}',
+  '',
+].join('\n'));
+fs.writeFileSync(path.join(explicitRoot, 'src/new.ts'), 'export const newValue = 1;\n');
+fs.writeFileSync(path.join(explicitRoot, 'review.files'), 'src/app.ts\nsrc/new.ts\n');
+const unrelatedCwd = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-unrelated-cwd-'));
+const previousCwd = process.cwd();
+process.chdir(unrelatedCwd);
+let explicitRootResult = null;
+try {
+  explicitRootResult = buildContextPack({
+    root: explicitRoot,
+    out: path.join(explicitRoot, '.forgeflow', path.basename(explicitRoot), 'context', 'latest'),
+    task: 'Review explicit root context pack',
+    modeOverride: '',
+    calibrationPath: '',
+    ci: false,
+    maxMemoryChars: 4000,
+    maxDiffChars: 8000,
+  });
+} finally {
+  process.chdir(previousCwd);
+}
 const topologyGuidanceOutDir = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-topology-guidance-'));
 const topologyGuidanceFiles = path.join(topologyGuidanceOutDir, 'review.files');
 fs.writeFileSync(topologyGuidanceFiles, [
@@ -189,33 +235,53 @@ fs.writeFileSync(path.join(insightsProjectDir, 'project-learnings.md'), [
 const blockedInsights = buildLatestInsights(insightsRoot);
 const blockedInsightsResult = buildLatestInsightsResult(insightsRoot);
 const cliOutDir = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-cli-'));
-const cli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/build-context-pack.js'), [
-  '--files',
-  path.join(repoRoot, 'fixtures/context-pack/review.files'),
-  '--lines',
-  '80',
-  '--task',
-  'Review login flow token load context packing',
-  '--out',
-  cliOutDir,
-  '--json',
-], {
-  cwd: repoRoot,
-  encoding: 'utf8',
+const cliResult = buildContextPack({
+  filesPath: path.join(repoRoot, 'fixtures/context-pack/review.files'),
+  linesChanged: 80,
+  task: 'Review login flow token load context packing',
+  out: cliOutDir,
+  maxMemoryChars: 12000,
+  maxDiffChars: 18000,
 });
-const cliJson = cli.status === 0 ? JSON.parse(cli.stdout) : null;
+const cliJson = jsonSummary(cliResult);
+const explicitRootCliOutDir = path.join(explicitRoot, '.forgeflow', path.basename(explicitRoot), 'context', 'cli-root');
+process.chdir(unrelatedCwd);
+let explicitRootCliResult = null;
+try {
+  explicitRootCliResult = buildContextPack({
+    root: explicitRoot,
+    filesPath: 'review.files',
+    linesChanged: 3,
+    trackedLines: 2,
+    untrackedLines: 1,
+    out: path.relative(explicitRoot, explicitRootCliOutDir),
+    task: 'Review explicit root context pack',
+    maxMemoryChars: 4000,
+    maxDiffChars: 8000,
+  });
+} finally {
+  process.chdir(previousCwd);
+}
+const explicitRootCliJson = explicitRootCliResult ? {
+  root: explicitRootCliResult.root,
+  files: explicitRootCliResult.route.files,
+  lines_changed: explicitRootCliResult.route.lines_changed,
+  tracked_lines: explicitRootCliResult.route.tracked_lines,
+  untracked_lines: explicitRootCliResult.route.untracked_lines,
+} : null;
 const untrackedRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-untracked-'));
 spawnSync('git', ['init'], { cwd: untrackedRoot, encoding: 'utf8' });
 fs.writeFileSync(path.join(untrackedRoot, 'untracked-helper.js'), 'export const value = 1;\n');
 const untrackedOutDir = path.join(untrackedRoot, '.forgeflow', path.basename(untrackedRoot), 'context', 'latest');
-const untrackedCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/build-context-pack.js'), [
-  '--out',
-  untrackedOutDir,
-  '--json',
-], {
-  cwd: untrackedRoot,
-  encoding: 'utf8',
-});
+let untrackedCli = { status: 0 };
+process.chdir(untrackedRoot);
+try {
+  buildContextPack({ out: untrackedOutDir });
+} catch (err) {
+  untrackedCli = { status: 1, stderr: err.message };
+} finally {
+  process.chdir(previousCwd);
+}
 const untrackedDiffSummary = fs.existsSync(path.join(untrackedOutDir, 'diff-summary.md'))
   ? fs.readFileSync(path.join(untrackedOutDir, 'diff-summary.md'), 'utf8')
   : '';
@@ -226,15 +292,18 @@ fs.writeFileSync(path.join(budgetRoot, '.forgeflow-budget.json'), JSON.stringify
   max_compact_tokens: 1,
   warn_only: false,
 }, null, 2));
-const budgetCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/build-context-pack.js'), [
-  '--out',
-  path.join(budgetRoot, '.forgeflow', path.basename(budgetRoot), 'context', 'latest'),
-  '--ci',
-  '--json',
-], {
-  cwd: budgetRoot,
-  encoding: 'utf8',
-});
+let budgetCli = { status: 0, stderr: '' };
+process.chdir(budgetRoot);
+try {
+  buildContextPack({
+    out: path.join(budgetRoot, '.forgeflow', path.basename(budgetRoot), 'context', 'latest'),
+    ci: true,
+  });
+} catch (err) {
+  budgetCli = { status: 1, stderr: err.message };
+} finally {
+  process.chdir(previousCwd);
+}
 const symlinkOutDir = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-symlink-'));
 const outsideDiff = path.join(symlinkOutDir, 'outside-diff.md');
 const symlinkDiff = path.join(symlinkOutDir, 'diff-summary.md');
@@ -263,17 +332,19 @@ const outsideMemory = path.join(symlinkMemoryRoot, 'outside-memory.md');
 fs.writeFileSync(outsideMemory, '# Secret Memory\n\n- TOP_SECRET_MARKER session token leak\n');
 fs.symlinkSync(outsideMemory, path.join(symlinkMemoryProject, 'project-learnings.md'));
 const symlinkMemoryOut = path.join(symlinkMemoryProject, 'context', 'latest');
-const symlinkMemoryCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/build-context-pack.js'), [
-  '--out',
-  symlinkMemoryOut,
-  '--task',
-  'Review session token behavior',
-  '--json',
-], {
-  cwd: symlinkMemoryRoot,
-  encoding: 'utf8',
-});
-const symlinkMemoryResult = symlinkMemoryCli.status === 0 ? JSON.parse(symlinkMemoryCli.stdout) : {};
+let symlinkMemoryCli = { status: 0 };
+let symlinkMemoryResult = {};
+process.chdir(symlinkMemoryRoot);
+try {
+  symlinkMemoryResult = buildContextPack({
+    out: symlinkMemoryOut,
+    task: 'Review session token behavior',
+  });
+} catch (err) {
+  symlinkMemoryCli = { status: 1, stderr: err.message };
+} finally {
+  process.chdir(previousCwd);
+}
 const symlinkMemorySynthesis = JSON.parse(fs.readFileSync(path.join(symlinkMemoryOut, 'synthesis-input.json'), 'utf8'));
 const symlinkMemoryHits = fs.readFileSync(path.join(symlinkMemoryOut, 'memory-hits.md'), 'utf8');
 const symlinkMemoryPackets = Object.values(symlinkMemorySynthesis.agent_packets)
@@ -298,17 +369,19 @@ fs.writeFileSync(outsideIndex, JSON.stringify({
 }, null, 2));
 fs.symlinkSync(outsideIndex, path.join(symlinkIndexDir, 'memory-index.json'));
 const symlinkIndexOut = path.join(symlinkIndexProject, 'context', 'latest');
-const symlinkIndexCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/build-context-pack.js'), [
-  '--out',
-  symlinkIndexOut,
-  '--task',
-  'Review session token behavior',
-  '--no-memory-index',
-  '--json',
-], {
-  cwd: symlinkIndexRoot,
-  encoding: 'utf8',
-});
+let symlinkIndexCli = { status: 0 };
+process.chdir(symlinkIndexRoot);
+try {
+  buildContextPack({
+    out: symlinkIndexOut,
+    task: 'Review session token behavior',
+    memoryIndex: false,
+  });
+} catch (err) {
+  symlinkIndexCli = { status: 1, stderr: err.message };
+} finally {
+  process.chdir(previousCwd);
+}
 const symlinkIndexHits = symlinkIndexCli.status === 0 && fs.existsSync(path.join(symlinkIndexOut, 'memory-hits.md'))
   ? fs.readFileSync(path.join(symlinkIndexOut, 'memory-hits.md'), 'utf8')
   : '';
@@ -328,16 +401,18 @@ fs.writeFileSync(path.join(symlinkProjectTarget, 'project-learnings.md'), [
 ].join('\n'));
 fs.symlinkSync(symlinkProjectTarget, symlinkProjectLink);
 const symlinkProjectOut = path.join(symlinkProjectRoot, 'safe-out', 'context', 'latest');
-const symlinkProjectCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/build-context-pack.js'), [
-  '--out',
-  symlinkProjectOut,
-  '--task',
-  'Review session token behavior',
-  '--json',
-], {
-  cwd: symlinkProjectRoot,
-  encoding: 'utf8',
-});
+let symlinkProjectCli = { status: 0 };
+process.chdir(symlinkProjectRoot);
+try {
+  buildContextPack({
+    out: symlinkProjectOut,
+    task: 'Review session token behavior',
+  });
+} catch (err) {
+  symlinkProjectCli = { status: 1, stderr: err.message };
+} finally {
+  process.chdir(previousCwd);
+}
 const symlinkProjectLatest = symlinkProjectCli.status === 0 && fs.existsSync(path.join(symlinkProjectOut, 'latest-insights.md'))
   ? fs.readFileSync(path.join(symlinkProjectOut, 'latest-insights.md'), 'utf8')
   : '';
@@ -357,14 +432,17 @@ const symlinkOutTarget = path.join(symlinkOutRoot, 'outside-out-target');
 const symlinkOutLink = path.join(symlinkOutRoot, '.forgeflow-link');
 fs.mkdirSync(symlinkOutTarget, { recursive: true });
 fs.symlinkSync(symlinkOutTarget, symlinkOutLink);
-const symlinkOutCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/build-context-pack.js'), [
-  '--out',
-  path.join(symlinkOutLink, 'context', 'latest'),
-  '--json',
-], {
-  cwd: symlinkOutRoot,
-  encoding: 'utf8',
-});
+let symlinkOutCli = { status: 0, stderr: '' };
+process.chdir(symlinkOutRoot);
+try {
+  buildContextPack({
+    out: path.join(symlinkOutLink, 'context', 'latest'),
+  });
+} catch (err) {
+  symlinkOutCli = { status: 1, stderr: err.message };
+} finally {
+  process.chdir(previousCwd);
+}
 const invalidDigestOutDir = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-invalid-digest-'));
 const invalidDigestOutside = path.join(invalidDigestOutDir, 'outside-failure-digest.md');
 fs.writeFileSync(invalidDigestOutside, '# Forgeflow Failure Digest\n\nStatus: compact\n');
@@ -513,17 +591,24 @@ const checks = [
   ['noisy manifest sanitized', noisyManifest.files.length === 3],
   ['no noisy decoration in manifest', !noisyManifest.files.some((file) => file.path.includes('Changes') || file.path.includes('|'))],
   ['noisy result full mode', noisyResult.route.mode === 'full-mode'],
+  ['explicit root preserved from unrelated cwd', explicitRootResult.root === explicitRoot && explicitRootResult.synthesis_input.repo_root === explicitRoot],
+  ['explicit root reports project dir', explicitRootResult.project_dir === path.join(explicitRoot, '.forgeflow', path.basename(explicitRoot)) && explicitRootResult.synthesis_input.project_dir === explicitRootResult.project_dir],
+  ['explicit root changed files captured', explicitRootResult.route.files.includes('src/app.ts') && explicitRootResult.route.files.includes('src/new.ts')],
+  ['explicit root untracked lines captured', explicitRootResult.route.untracked_lines > 0],
+  ['explicit root manifest resolves files', explicitRootResult.manifest.some((file) => file.path === 'src/new.ts' && file.exists === true)],
+  ['explicit root explicit line sources preserved', explicitRootCliJson && explicitRootCliJson.lines_changed === 3 && explicitRootCliJson.tracked_lines === 2 && explicitRootCliJson.untracked_lines === 1],
   ['passing insights include project guidance', passingInsights.includes('Check docs drift before release.')],
   ['passing insights report injected', passingInsightsResult.report.status === 'injected' && passingInsightsResult.report.check_status === 'pass'],
   ['blocked insights use quality gate', blockedInsights.includes('Quality Gate') && blockedInsights.includes('quality check returned FAIL')],
   ['blocked insights report explains reason', blockedInsightsResult.report.status === 'blocked' && blockedInsightsResult.report.issues.some((issue) => issue.code === 'candidate-category-invalid')],
   ['blocked insights omit malformed candidate body', !blockedInsights.includes('This malformed candidate should block injection.')],
   ['compact project code map renders', compactMap.includes('Sections mapped: 12')],
-  ['cli json exposes code topology', cli.status === 0 && cliJson.code_topology.available === true && cliJson.code_topology.paths.graph.endsWith('code-topology.json')],
+  ['cli json exposes code topology', cliJson.code_topology.available === true && cliJson.code_topology.paths.graph.endsWith('code-topology.json')],
+  ['cli root override works from unrelated cwd', explicitRootCliJson.root === explicitRoot && explicitRootCliJson.files.includes('src/app.ts') && explicitRootCliJson.files.includes('src/new.ts')],
   ['untracked file included in diff summary', untrackedCli.status === 0 && untrackedDiffSummary.includes('?? untracked-helper.js')],
   ['ci budget violation fails predictably', budgetCli.status === 1 && budgetCli.stderr.includes('Context pack budget exceeded')],
   ['symlink context pack destination blocked', symlinkPackBlocked && fs.readFileSync(outsideDiff, 'utf8') === 'do not overwrite\n'],
-  ['symlink memory fallback does not leak', symlinkMemoryCli.status === 0 && !symlinkMemoryHits.includes('TOP_SECRET_MARKER') && !symlinkMemoryPackets.includes('TOP_SECRET_MARKER') && symlinkMemorySynthesis.memory_index_path === null && symlinkMemoryResult.mode],
+  ['symlink memory fallback does not leak', symlinkMemoryCli.status === 0 && !symlinkMemoryHits.includes('TOP_SECRET_MARKER') && !symlinkMemoryPackets.includes('TOP_SECRET_MARKER') && symlinkMemorySynthesis.memory_index_path === null && symlinkMemoryResult.route && symlinkMemoryResult.route.mode],
   ['symlink memory index does not leak', symlinkIndexCli.status === 0 && !symlinkIndexHits.includes('TOP_SECRET_INDEX_MARKER')],
   ['symlink project root latest insights does not leak', symlinkProjectCli.status === 0 && !symlinkProjectLatest.includes('TOP_SECRET_PROJECT_ROOT_MARKER')],
   ['symlink project root memory does not leak', symlinkProjectCli.status === 0 && !symlinkProjectHits.includes('TOP_SECRET_PROJECT_ROOT_MARKER') && !symlinkProjectPackets.includes('TOP_SECRET_PROJECT_ROOT_MARKER')],

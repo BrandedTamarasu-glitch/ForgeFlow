@@ -195,7 +195,7 @@ These records are local-first. They are meant to help you understand false posit
 
 Forgeflow includes local-only helpers that reduce agent prompt load before review or implementation work starts:
 
-- **Context packs:** `build-context-pack.js` prepares bounded reviewer packets and a synthesis input file from the changed files, including latest insights, latest failure-digest context when present, compact project code-map guidance, changed-neighborhood topology context, topology-guided review focus, changed-section hints, provenance metadata, topology trend history, and a JSON topology summary when JS/TS files are in scope.
+- **Context packs:** `build-context-pack.js` prepares bounded reviewer packets and a synthesis input file from the changed files, including latest insights, latest failure-digest context when present, compact project code-map guidance, changed-neighborhood topology context, topology-guided review focus, changed-section hints, provenance metadata, topology trend history, and a JSON topology summary when JS/TS files are in scope. Use `--root <repo>` when compiling packets for a target checkout from another current directory.
 - **Code topology:** `build-code-topology.js` builds a static JS/TS import graph with fan-in/fan-out hotspots, changed-file neighbors, topology-guided review focus, source symbols with line ranges, changed sections, Markdown headings, Git provenance, and import-gap details for unresolved or dynamic imports. It resolves relative imports, source-suffix modules, extensionless TSX re-exports, tsconfig/jsconfig path aliases, common `@/` and `~/` src aliases, and literal dynamic imports when the target source file exists.
 - **Project code map:** `show-code-map.js` renders a compact maintainer-facing summary of topology, hotspots, sections, changed sections, import gaps, provenance, trend deltas, and artifact paths. Import gaps are classified as production or test/fixture scope so trends and smoke checks escalate the right work. Code-map history retains the latest 50 snapshots by default.
 - **Project intelligence rollup:** `build-project-intelligence.js` synthesizes project trends, project learnings, import gaps, failure-digest freshness, context advisor state, hot files, validation patterns, and next actions into `.forgeflow/<project-name>/context/project-intelligence-rollup.{json,md}`.
@@ -227,7 +227,7 @@ Review and ship commands now keep the approval handoff explicit: `/review` recor
 Useful commands:
 
 ```bash
-scripts/forgeflow/build-context-pack.js --json
+scripts/forgeflow/build-context-pack.js --root . --json
 scripts/forgeflow/check-agent-drift.js --json
 scripts/forgeflow/build-code-topology.js --json
 scripts/forgeflow/show-code-map.js --json

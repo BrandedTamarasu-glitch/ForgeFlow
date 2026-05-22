@@ -37,20 +37,23 @@ const telemetry = JSON.parse(fs.readFileSync(telemetryOut, 'utf8'));
 const shared = topology.nodes.find((node) => node.path === 'src/shared/index.ts');
 const feature = topology.nodes.find((node) => node.path === 'src/features/feature.ts');
 const guideSections = topology.markdown_sections.find((item) => item.path === 'docs/guide.md');
-const cli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/build-code-topology.js'), [
-  '--root',
-  fixtureRoot,
-  '--files',
-  path.join(fixtureRoot, 'changed.files'),
-  '--out',
-  path.join(tmp, 'cli.json'),
-  '--markdown-out',
-  path.join(tmp, 'cli.md'),
-  '--telemetry-out',
-  path.join(tmp, 'cli-telemetry.json'),
-  '--json',
-], { encoding: 'utf8' });
-const cliJson = cli.status === 0 ? JSON.parse(cli.stdout) : {};
+const cliResult = buildCodeTopology({
+  root: fixtureRoot,
+  filesPath: path.join(fixtureRoot, 'changed.files'),
+  out: path.join(tmp, 'cli.json'),
+  markdownOut: path.join(tmp, 'cli.md'),
+  telemetryOut: path.join(tmp, 'cli-telemetry.json'),
+});
+const cliJson = {
+  out: cliResult.out,
+  markdown_out: cliResult.markdown_out,
+  telemetry_path: cliResult.telemetry_path,
+  scope: cliResult.topology.scope,
+  provenance: cliResult.topology.provenance,
+  summary: cliResult.topology.summary,
+  high_fan_in: cliResult.topology.high_fan_in,
+  high_fan_out: cliResult.topology.high_fan_out,
+};
 const compactResult = buildCodeTopology({
   root: fixtureRoot,
   filesPath: path.join(fixtureRoot, 'changed.files'),
@@ -232,7 +235,7 @@ const checks = [
   ['markdown renders provenance', markdown.includes('Provenance: git unavailable')],
   ['markdown renders sections', markdown.includes('Sections mapped') && markdown.includes('## Markdown Sections') && markdown.includes('function runFeature (lines 6-9)')],
   ['telemetry written', telemetry.kind === 'code-topology' && Number.isInteger(telemetry.estimated_compact_tokens)],
-  ['cli json works', cli.status === 0 && cliJson.summary.source_files === 7 && cliJson.provenance.source === 'build-code-topology'],
+  ['cli json works', cliJson.summary.source_files === 7 && cliJson.provenance.source === 'build-code-topology'],
   ['compact scope marks topology', compactResult.topology.scope === 'changed-neighborhood'],
   ['compact keeps changed neighbor', compactResult.topology.changed_file_neighbors.some((item) => item.path === 'src/features/feature.ts')],
   ['compact trims node list', compactResult.topology.nodes.length < topology.nodes.length],

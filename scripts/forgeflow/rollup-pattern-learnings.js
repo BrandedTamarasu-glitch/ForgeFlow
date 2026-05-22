@@ -34,17 +34,27 @@ function usage() {
   ].join('\n'));
 }
 
-function requireValue(argv, name, index) {
-  const value = argv[index + 1] || '';
-  if (!value || value.startsWith('--')) {
-    console.error(`Missing value for ${name}`);
+function argumentError(message, exitOnError) {
+  if (exitOnError) {
+    console.error(message);
     usage();
     process.exit(2);
+  }
+  const err = new Error(message);
+  err.exitCode = 2;
+  throw err;
+}
+
+function requireValue(argv, name, index, exitOnError = true) {
+  const value = argv[index + 1] || '';
+  if (!value || value.startsWith('--')) {
+    argumentError(`Missing value for ${name}`, exitOnError);
   }
   return value;
 }
 
-function parseArgs(argv) {
+function parseArgs(argv, options = {}) {
+  const exitOnError = options.exitOnError !== false;
   const opts = {
     root: os.homedir(),
     patternsDir: '',
@@ -57,19 +67,19 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--root') {
-      opts.root = path.resolve(requireValue(argv, arg, i));
+      opts.root = path.resolve(requireValue(argv, arg, i, exitOnError));
       i += 1;
     } else if (arg === '--patterns-dir') {
-      opts.patternsDir = path.resolve(requireValue(argv, arg, i));
+      opts.patternsDir = path.resolve(requireValue(argv, arg, i, exitOnError));
       i += 1;
     } else if (arg === '--period') {
-      opts.period = requireValue(argv, arg, i);
+      opts.period = requireValue(argv, arg, i, exitOnError);
       i += 1;
     } else if (arg === '--min-projects') {
-      opts.minProjects = Number.parseInt(requireValue(argv, arg, i), 10);
+      opts.minProjects = Number.parseInt(requireValue(argv, arg, i, exitOnError), 10);
       i += 1;
     } else if (arg === '--min-occurrences') {
-      opts.minOccurrences = Number.parseInt(requireValue(argv, arg, i), 10);
+      opts.minOccurrences = Number.parseInt(requireValue(argv, arg, i, exitOnError), 10);
       i += 1;
     } else if (arg === '--dry-run') {
       opts.dryRun = true;
@@ -77,25 +87,20 @@ function parseArgs(argv) {
       opts.json = true;
     } else if (arg === '--help' || arg === '-h') {
       usage();
-      process.exit(0);
+      if (exitOnError) process.exit(0);
+      return opts;
     } else {
-      console.error(`Unknown argument: ${arg}`);
-      usage();
-      process.exit(2);
+      argumentError(`Unknown argument: ${arg}`, exitOnError);
     }
   }
   if (!['week', 'month', 'all'].includes(opts.period)) {
-    console.error(`Invalid --period: ${opts.period}`);
-    usage();
-    process.exit(2);
+    argumentError(`Invalid --period: ${opts.period}`, exitOnError);
   }
   if (!Number.isFinite(opts.minProjects) || opts.minProjects < 1) {
-    console.error('Invalid --min-projects. Expected positive integer.');
-    process.exit(2);
+    argumentError('Invalid --min-projects. Expected positive integer.', exitOnError);
   }
   if (!Number.isFinite(opts.minOccurrences) || opts.minOccurrences < 1) {
-    console.error('Invalid --min-occurrences. Expected positive integer.');
-    process.exit(2);
+    argumentError('Invalid --min-occurrences. Expected positive integer.', exitOnError);
   }
   return opts;
 }
@@ -424,6 +429,7 @@ module.exports = {
   candidateFiles,
   learningFiles,
   learningSourceFiles,
+  parseArgs,
   renderMarkdown,
   renderSourceMix,
   rollupPatternLearnings,

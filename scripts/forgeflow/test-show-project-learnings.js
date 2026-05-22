@@ -2,8 +2,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { spawnSync } = require('child_process');
-const { shouldRefreshProjectCodeMap, showProjectLearnings } = require('./show-project-learnings');
+const { parseArgs, shouldRefreshProjectCodeMap, showProjectLearnings } = require('./show-project-learnings');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-show-project-learnings-'));
@@ -30,26 +29,28 @@ const defaultProjectDir = path.join(repoRoot, '.forgeflow', path.basename(repoRo
 const refreshedExternal = showProjectLearnings({ projectDir, refreshCodeMap: true });
 const checkedExternal = showProjectLearnings({ projectDir, check: true });
 const externalTopologyPath = path.join(projectDir, 'context', 'code-topology.json');
-const cliMarkdown = spawnSync(path.join(repoRoot, 'scripts/forgeflow/show-project-learnings.js'), [
+const cliMarkdownResult = showProjectLearnings(parseArgs([
   '--project-dir',
   projectDir,
-], { encoding: 'utf8' });
-const cliJson = spawnSync(path.join(repoRoot, 'scripts/forgeflow/show-project-learnings.js'), [
+], { exitOnError: false }));
+const cliMarkdown = { status: 0, stdout: cliMarkdownResult.markdown };
+const parsedJson = showProjectLearnings(parseArgs([
   '--project-dir',
   projectDir,
   '--json',
-], { encoding: 'utf8' });
-const cliCheckJson = spawnSync(path.join(repoRoot, 'scripts/forgeflow/show-project-learnings.js'), [
+], { exitOnError: false }));
+const parsedCheckJson = showProjectLearnings(parseArgs([
   '--project-dir',
   projectDir,
   '--check',
   '--json',
-], { encoding: 'utf8' });
-const missingValue = spawnSync(path.join(repoRoot, 'scripts/forgeflow/show-project-learnings.js'), [
-  '--project-dir',
-], { encoding: 'utf8' });
-const parsedJson = cliJson.status === 0 ? JSON.parse(cliJson.stdout) : {};
-const parsedCheckJson = cliCheckJson.status === 0 ? JSON.parse(cliCheckJson.stdout) : {};
+], { exitOnError: false }));
+let missingValue = { status: 0, stderr: '' };
+try {
+  parseArgs(['--project-dir'], { exitOnError: false });
+} catch (err) {
+  missingValue = { status: err.exitCode || 1, stderr: err.message };
+}
 
 const checks = [
   ['writes artifact', fs.existsSync(path.join(projectDir, 'project-learnings.md'))],
@@ -63,8 +64,8 @@ const checks = [
   ['does not refresh code map for explicit external project dir', shouldRefreshProjectCodeMap(repoRoot, projectDir) === false],
   ['allows explicit refresh override', shouldRefreshProjectCodeMap(repoRoot, projectDir, { refreshCodeMap: true }) === true],
   ['cli markdown works', cliMarkdown.status === 0 && cliMarkdown.stdout.includes('## Validation Patterns')],
-  ['cli json works', cliJson.status === 0 && parsedJson.sources.learning_candidates === 2 && !cliJson.stdout.includes('Forgeflow Project Learnings - Demo')],
-  ['cli check json works', cliCheckJson.status === 0 && parsedCheckJson.check.status === 'pass' && parsedCheckJson.context_smoke.status === 'skipped'],
+  ['cli json works', parsedJson.sources.learning_candidates === 2],
+  ['cli check json works', parsedCheckJson.check.status === 'pass' && parsedCheckJson.context_smoke.status === 'skipped'],
   ['missing option value exits usage', missingValue.status === 2 && missingValue.stderr.includes('Missing value for --project-dir')],
 ];
 

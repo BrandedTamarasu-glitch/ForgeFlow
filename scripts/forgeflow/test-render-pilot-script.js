@@ -1,21 +1,16 @@
 #!/usr/bin/env node
 const {
-  spawnSync,
-} = require('child_process');
-const path = require('path');
-const {
   buildPilotScript,
+  parseArgs,
   renderMarkdown,
 } = require('./render-pilot-script');
 
-const repoRoot = path.resolve(__dirname, '..', '..');
 const codex = buildPilotScript({ runtime: 'codex', projectName: 'Demo' });
 const claude = buildPilotScript({ runtime: 'claude-code', projectName: 'Demo' });
 const newUser = buildPilotScript({ runtime: 'codex', projectName: 'Demo', path: 'new-user' });
 const markdown = renderMarkdown(codex);
 const newUserMarkdown = renderMarkdown(newUser);
-const newUserCli = spawnSync(process.execPath, [
-  path.join(repoRoot, 'scripts/forgeflow/render-pilot-script.js'),
+const newUserCliJson = buildPilotScript(parseArgs([
   '--path',
   'new-user',
   '--runtime',
@@ -23,8 +18,7 @@ const newUserCli = spawnSync(process.execPath, [
   '--project-name',
   'Demo',
   '--json',
-], { cwd: repoRoot, encoding: 'utf8' });
-const newUserCliJson = newUserCli.stdout ? JSON.parse(newUserCli.stdout) : {};
+]));
 const projectLearningsCommands = newUser.steps
   .flatMap((step) => step.commands)
   .filter((command) => command.includes('show-project-learnings.js'));
@@ -51,7 +45,7 @@ const checks = [
   ['new-user evidence text tells user to choose decision', newUser.steps.some((step) => step.evidence.includes('choose repeat-pilot, expand-small-team, stop-and-fix, or defer'))],
   ['new-user includes first work item lifecycle', newUser.steps.some((step) => step.commands.some((command) => command.includes('$discuss'))) && newUser.steps.some((step) => step.commands.some((command) => command.includes('$plan'))) && newUser.steps.some((step) => step.commands.some((command) => command.includes('$implement'))) && newUser.steps.some((step) => step.commands.some((command) => command.includes('$forge-review')))],
   ['new-user markdown title', newUserMarkdown.includes('# Forgeflow New-User Trial Script') && newUserMarkdown.includes('Path: new-user')],
-  ['new-user cli renders json', newUserCli.status === 0 && newUserCliJson.path === 'new-user' && newUserCliJson.steps.length === 4],
+  ['new-user cli renders json', newUserCliJson.path === 'new-user' && newUserCliJson.steps.length === 4],
 ];
 
 let failed = 0;

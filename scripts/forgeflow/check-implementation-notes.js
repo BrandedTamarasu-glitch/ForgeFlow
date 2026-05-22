@@ -27,7 +27,19 @@ function usage() {
   ].join('\n'));
 }
 
-function parseArgs(argv) {
+function argumentError(message, exitOnError) {
+  if (exitOnError) {
+    console.error(message);
+    usage();
+    process.exit(2);
+  }
+  const err = new Error(message);
+  err.exitCode = 2;
+  throw err;
+}
+
+function parseArgs(argv, options = {}) {
+  const exitOnError = options.exitOnError !== false;
   const opts = {
     projectDir: '',
     file: '',
@@ -38,9 +50,7 @@ function parseArgs(argv) {
   function requireValue(name, index) {
     const value = argv[index + 1] || '';
     if (!value || value.startsWith('--')) {
-      console.error(`Missing value for ${name}`);
-      usage();
-      process.exit(2);
+      argumentError(`Missing value for ${name}`, exitOnError);
     }
     return path.resolve(value);
   }
@@ -61,11 +71,10 @@ function parseArgs(argv) {
       opts.json = true;
     } else if (arg === '--help' || arg === '-h') {
       usage();
-      process.exit(0);
+      if (exitOnError) process.exit(0);
+      return opts;
     } else {
-      console.error(`Unknown argument: ${arg}`);
-      usage();
-      process.exit(2);
+      argumentError(`Unknown argument: ${arg}`, exitOnError);
     }
   }
   return opts;
@@ -263,5 +272,6 @@ if (require.main === module) {
 module.exports = {
   checkImplementationNotes,
   looksLikeRawLog,
+  parseArgs,
   parseNotes,
 };

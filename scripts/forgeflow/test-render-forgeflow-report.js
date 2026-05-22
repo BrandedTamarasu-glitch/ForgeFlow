@@ -7,11 +7,11 @@ const {
   buildReport,
   collectMetrics,
   cutoffForPeriod,
+  parseArgs,
   renderMarkdown,
   summarizePatternLog,
 } = require('./render-forgeflow-report');
 
-const repoRoot = path.resolve(__dirname, '..', '..');
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-report-'));
 const metricsRoot = path.join(root, 'metrics-root');
 const patternsDir = path.join(root, 'forgeflow-patterns');
@@ -189,7 +189,7 @@ const refreshedReport = buildReport({
   refresh: true,
   record: false,
 });
-const cli = spawnSync(process.execPath, [path.join(repoRoot, 'scripts/forgeflow/render-forgeflow-report.js'),
+const cliOpts = parseArgs([
   '--root',
   root,
   '--metrics-root',
@@ -201,12 +201,16 @@ const cli = spawnSync(process.execPath, [path.join(repoRoot, 'scripts/forgeflow/
   '--refresh',
   '--no-drift',
   '--json',
-], { encoding: 'utf8' });
-const cliJson = cli.status === 0 ? JSON.parse(cli.stdout) : {};
-const badPeriod = spawnSync(process.execPath, [path.join(repoRoot, 'scripts/forgeflow/render-forgeflow-report.js'),
-  '--period',
-  'year',
-], { encoding: 'utf8' });
+], { exitOnError: false });
+const cliJson = buildReport(cliOpts);
+let badPeriodExitCode = 0;
+let badPeriodMessage = '';
+try {
+  parseArgs(['--period', 'year'], { exitOnError: false });
+} catch (err) {
+  badPeriodExitCode = err.exitCode || 1;
+  badPeriodMessage = err.message;
+}
 const symlinkPatternsTarget = path.join(root, 'outside-pattern-target');
 const symlinkPatternsDir = path.join(root, 'forgeflow-patterns-symlink');
 fs.mkdirSync(symlinkPatternsTarget, { recursive: true });
@@ -338,8 +342,8 @@ const checks = [
   ['computes report trend', report.report_history.trend.status === 'compared' && report.report_history.trend.invocation_delta === 3],
   ['derives priorities', report.priorities.some((item) => item.includes('smith')) && report.priorities.some((item) => item.includes('latest failure digest'))],
   ['renders markdown sections', markdown.includes('## 8. Project Trends') && markdown.includes('## 9. Priorities') && markdown.includes('Import gaps: attention') && markdown.includes('Latest insights: injected') && markdown.includes('Latest insights freshness: current') && markdown.includes('Latest failure digest: compact') && markdown.includes('Latest failure digest freshness: current') && markdown.includes('Latest failure digest triage: usable') && markdown.includes('FAIL report fixture')],
-  ['cli json works', cli.status === 0 && cliJson.metrics.false_positives.flagged.length === 1 && cliJson.report_history.recorded === true && cliJson.project_trends.refresh.check_status === 'pass' && cliJson.project_trends.failure_digest.status === 'compact' && cliJson.project_trends.import_gaps.status === 'attention'],
-  ['invalid period exits usage', badPeriod.status === 2 && badPeriod.stderr.includes('Invalid --period')],
+  ['cli json works', cliJson.metrics.false_positives.flagged.length === 1 && cliJson.report_history.recorded === true && cliJson.project_trends.refresh.check_status === 'pass' && cliJson.project_trends.failure_digest.status === 'compact' && cliJson.project_trends.import_gaps.status === 'attention'],
+  ['invalid period exits usage', badPeriodExitCode === 2 && badPeriodMessage.includes('Invalid --period')],
   ['symlink patterns dir blocked', symlinkPatternsBlocked],
   ['symlink ancestor patterns dir blocked', symlinkAncestorPatternsBlocked],
   ['out-of-root patterns dir blocked before read', outOfRootPatternsBlocked],

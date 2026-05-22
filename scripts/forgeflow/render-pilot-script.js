@@ -256,5 +256,6 @@ if (require.main === module) {
 
 module.exports = {
   buildPilotScript,
+  parseArgs,
   renderMarkdown,
 };

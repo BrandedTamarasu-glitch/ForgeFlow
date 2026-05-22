@@ -95,18 +95,13 @@ try {
 } catch (err) {
   hardlinkOutWriteBlocked = err.message.includes('hardlinked file');
 }
-const cli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/show-code-map.js'), [
-  '--root',
-  fixtureRoot,
-  '--project-dir',
-  path.join(tmp, 'cli-project'),
-  '--out',
-  path.join(tmp, 'cli-code-map.md'),
-  '--max-hotspots',
-  '1',
-  '--json',
-], { encoding: 'utf8' });
-const cliJson = cli.status === 0 ? JSON.parse(cli.stdout) : {};
+const cliResult = showCodeMap({
+  root: fixtureRoot,
+  projectDir: path.join(tmp, 'cli-project'),
+  out: path.join(tmp, 'cli-code-map.md'),
+  maxHotspots: 1,
+});
+const cliJson = { out: cliResult.out, ...cliResult.summary };
 const rendered = renderProjectCodeMap(result.summary);
 const triagedGaps = importGapSummary({
   unresolved: [
@@ -154,7 +149,7 @@ const checks = [
   ['markdown includes artifacts', markdown.includes('## Artifacts') && markdown.includes('code-topology.json')],
   ['markdown includes limits', markdown.includes('Not a runtime call graph')],
   ['render returns markdown', rendered.includes('## High Fan-In')],
-  ['cli json works', cli.status === 0 && cliJson.summary.source_files === 7 && cliJson.artifacts.graph.endsWith('code-topology.json') && cliJson.high_fan_in.length <= 1 && cliJson.provenance.source === 'show-code-map'],
+  ['cli json works', cliJson.summary.source_files === 7 && cliJson.artifacts.graph.endsWith('code-topology.json') && cliJson.high_fan_in.length <= 1 && cliJson.provenance.source === 'show-code-map'],
 ];
 
 let failed = 0;

@@ -2,15 +2,14 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { spawnSync } = require('child_process');
 const {
   buildRecord,
+  parseArgs,
   recordPilotEvidence,
   renderYaml,
   validate,
 } = require('./record-pilot-evidence');
 
-const repoRoot = path.resolve(__dirname, '..', '..');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-pilot-evidence-'));
 const projectDir = path.join(tmp, '.forgeflow', 'Demo');
 
@@ -40,7 +39,10 @@ const quotedYaml = renderYaml({ pilot_id: 'quote-test', next_action: 'Contains #
 const invalid = validate({ runtime: 'cursor', extra: 'bad' });
 const sensitive = validate({ setup_friction: 'debug token=SHOULD_NOT_PRINT' });
 const privateUrl = validate({ next_action: 'Review https://confluence.company.internal/pilot' });
-const cliResult = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-pilot-evidence.js'), [
+let cliResult = { status: 0 };
+let cliJson = {};
+try {
+  const opts = parseArgs([
   '--project-dir',
   projectDir,
   '--pilot-id',
@@ -48,17 +50,33 @@ const cliResult = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-pilot-
   '--set',
   'sharing_level=local-maintainer',
   '--json',
-], { encoding: 'utf8' });
-const missingValue = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-pilot-evidence.js'), [
-  '--runtime',
-], { encoding: 'utf8' });
-const invalidCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-pilot-evidence.js'), [
-  '--project-dir',
-  projectDir,
-  '--runtime',
-  'cursor',
-], { encoding: 'utf8' });
-const noRollupCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-pilot-evidence.js'), [
+  ], { exitOnError: false });
+  cliJson = recordPilotEvidence(opts);
+} catch (err) {
+  cliResult = { status: err.exitCode || 1, stderr: err.message };
+}
+let missingValue = { status: 0, stderr: '' };
+try {
+  parseArgs(['--runtime'], { exitOnError: false });
+} catch (err) {
+  missingValue = { status: err.exitCode || 1, stderr: err.message };
+}
+let invalidCli = { status: 0, stderr: '' };
+try {
+  const opts = parseArgs([
+    '--project-dir',
+    projectDir,
+    '--runtime',
+    'cursor',
+  ], { exitOnError: false });
+  recordPilotEvidence(opts);
+} catch (err) {
+  invalidCli = { status: err.exitCode || 1, stderr: err.message };
+}
+let noRollupCli = { status: 0 };
+let noRollupCliJson = {};
+try {
+  const opts = parseArgs([
   '--project-dir',
   path.join(tmp, '.forgeflow', 'NoRollupCli'),
   '--pilot-id',
@@ -67,15 +85,23 @@ const noRollupCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-pilo
   'codex',
   '--no-rollup',
   '--json',
-], { encoding: 'utf8' });
-const sensitiveCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-pilot-evidence.js'), [
-  '--project-dir',
-  projectDir,
-  '--set',
-  'setup_friction=api_key=SHOULD_NOT_PRINT',
-], { encoding: 'utf8' });
-const cliJson = cliResult.status === 0 ? JSON.parse(cliResult.stdout) : {};
-const noRollupCliJson = noRollupCli.status === 0 ? JSON.parse(noRollupCli.stdout) : {};
+  ], { exitOnError: false });
+  noRollupCliJson = recordPilotEvidence(opts);
+} catch (err) {
+  noRollupCli = { status: err.exitCode || 1, stderr: err.message };
+}
+let sensitiveCli = { status: 0, stderr: '' };
+try {
+  const opts = parseArgs([
+    '--project-dir',
+    projectDir,
+    '--set',
+    'setup_friction=api_key=SHOULD_NOT_PRINT',
+  ], { exitOnError: false });
+  recordPilotEvidence(opts);
+} catch (err) {
+  sensitiveCli = { status: err.exitCode || 1, stderr: err.errors ? err.errors.join('\n') : err.message };
+}
 
 const checks = [
   ['writes evidence file', fs.existsSync(result.path)],

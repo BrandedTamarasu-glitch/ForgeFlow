@@ -2,15 +2,14 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { spawnSync } = require('child_process');
 const {
   buildRollup,
+  parseArgs,
   parseFlatYaml,
   rollupPilotEvidence,
   splitCategories,
 } = require('./rollup-pilot-evidence');
 
-const repoRoot = path.resolve(__dirname, '..', '..');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-pilot-rollup-'));
 const projectDir = path.join(tmp, '.forgeflow', 'Demo');
 const evidenceDir = path.join(projectDir, 'pilot-evidence');
@@ -51,15 +50,17 @@ const manual = buildRollup([
   { runtime: 'codex', support_categories: 'docs health', adoption_decision: 'repeat-pilot' },
   { runtime: 'codex', support_categories: 'health', adoption_decision: 'repeat-pilot' },
 ], []);
-const cliJson = spawnSync(path.join(repoRoot, 'scripts/forgeflow/rollup-pilot-evidence.js'), [
+const cliResult = rollupPilotEvidence(parseArgs([
   '--project-dir',
   projectDir,
   '--json',
-], { encoding: 'utf8' });
-const missingValue = spawnSync(path.join(repoRoot, 'scripts/forgeflow/rollup-pilot-evidence.js'), [
-  '--project-dir',
-], { encoding: 'utf8' });
-const cliResult = cliJson.status === 0 ? JSON.parse(cliJson.stdout) : {};
+], { exitOnError: false }));
+let missingValue = { status: 0, stderr: '' };
+try {
+  parseArgs(['--project-dir'], { exitOnError: false });
+} catch (err) {
+  missingValue = { status: err.exitCode || 1, stderr: err.message };
+}
 
 const checks = [
   ['rolls up pilot count', result.pilot_count === 2],
@@ -75,7 +76,7 @@ const checks = [
   ['parses quoted scalar', parsed.next_action === 'Contains # marker'],
   ['splits category strings', splitCategories('docs, health settings').length === 3],
   ['manual repeated issue counts', manual.repeat_issue_count === 1],
-  ['cli emits json', cliJson.status === 0 && cliResult.pilot_count === 2],
+  ['cli emits json', cliResult.pilot_count === 2],
   ['missing option value exits usage', missingValue.status === 2 && missingValue.stderr.includes('Missing value for --project-dir')],
 ];
 

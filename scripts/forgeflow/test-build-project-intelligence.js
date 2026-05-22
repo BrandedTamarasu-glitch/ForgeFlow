@@ -2,15 +2,14 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { spawnSync } = require('child_process');
 const {
   buildProjectIntelligence,
+  parseArgs,
   renderMarkdown,
   riskSignals,
   trustState,
 } = require('./build-project-intelligence');
 
-const repoRoot = path.resolve(__dirname, '..', '..');
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-project-intelligence-'));
 const projectDir = path.join(root, '.forgeflow', path.basename(root));
 const contextDir = path.join(projectDir, 'context');
@@ -83,14 +82,13 @@ const latestReportPath = path.join(projectDir, 'context', 'latest', 'latest-insi
 const latestReport = fs.existsSync(latestReportPath) ? JSON.parse(fs.readFileSync(latestReportPath, 'utf8')) : null;
 const customOut = path.join(projectDir, 'context', 'custom-rollup');
 const custom = buildProjectIntelligence({ root, projectDir, out: customOut });
-const cli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/build-project-intelligence.js'), [
+const cliJson = buildProjectIntelligence(parseArgs([
   '--root',
   root,
   '--project-dir',
   projectDir,
   '--json',
-], { encoding: 'utf8' });
-const cliJson = cli.status === 0 ? JSON.parse(cli.stdout) : {};
+], { exitOnError: false }));
 const syntheticRisks = riskSignals({
   freshness: { issues: [{ message: 'Project freshness stale.' }] },
   latest_insights: { freshness: { issues: [] } },
@@ -115,7 +113,7 @@ const checks = [
   ['includes hot file', result.hot_files.some((item) => item.includes('src/auth/session.ts'))],
   ['includes next action', result.recommended_next_actions.length > 0],
   ['markdown renders sections', markdown.includes('# Forgeflow Project Intelligence') && markdown.includes('not a source of truth') && markdown.includes('## Top Risks') && markdown.includes('## Sources') && markdown.includes('Project learnings:') && markdown.includes('Code map history:') && markdown.includes('## Artifacts')],
-  ['cli json works', cli.status === 0 && cliJson.schema_version === '1' && cliJson.artifacts.json.endsWith('project-intelligence-rollup.json')],
+  ['cli json works', cliJson.schema_version === '1' && cliJson.artifacts.json.endsWith('project-intelligence-rollup.json')],
   ['custom out does not collide', custom.artifacts.json === customOut && custom.artifacts.markdown === `${customOut}.md` && fs.existsSync(custom.artifacts.json) && fs.existsSync(custom.artifacts.markdown)],
   ['risk synthesis combines sources', syntheticRisks.length >= 4 && syntheticRisks.some((item) => item.source === 'context-advisor')],
   ['trust current when clean', trustState({ latest_insights: { status: 'injected', check_status: 'pass', freshness: { status: 'current' } }, freshness: { status: 'current' } }, { check: { status: 'pass' } }, []) === 'current'],

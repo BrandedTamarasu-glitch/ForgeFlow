@@ -2,10 +2,10 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { spawnSync } = require('child_process');
 const {
   failureDigestFreshness,
   latestInsightsFreshness,
+  parseArgs,
   parseProjectLearnings,
   projectFreshness,
   renderMarkdown,
@@ -145,15 +145,17 @@ const markdown = renderMarkdown(result);
 const splitIndex = markdown.indexOf('Split: Run a narrower context pack');
 const budgetIndex = markdown.indexOf('Rebuild context with a smaller --files list');
 const nextAdvisorIndex = markdown.indexOf('Code-map history shows 1 new unresolved import');
-const cli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/show-project-trends.js'), [
+const cliJson = showProjectTrends(parseArgs([
   '--project-dir',
   projectDir,
   '--json',
-], { encoding: 'utf8' });
-const cliJson = cli.status === 0 ? JSON.parse(cli.stdout) : {};
-const missingValue = spawnSync(path.join(repoRoot, 'scripts/forgeflow/show-project-trends.js'), [
-  '--project-dir',
-], { encoding: 'utf8' });
+], { exitOnError: false }));
+let missingValue = { status: 0, stderr: '' };
+try {
+  parseArgs(['--project-dir'], { exitOnError: false });
+} catch (err) {
+  missingValue = { status: err.exitCode || 1, stderr: err.message };
+}
 const parsedLearnings = parseProjectLearnings(fs.readFileSync(path.join(projectDir, 'project-learnings.md'), 'utf8'));
 const staleFreshness = projectFreshness({
   current: { available: true, commit_short: 'ccccccc', dirty: true },
@@ -382,13 +384,12 @@ fs.writeFileSync(path.join(customLatestDir, 'latest-insights-report.json'), JSON
   issue_count: 0,
 }, null, 2));
 const customProjectResult = showProjectTrends({ root: repoRoot, projectDir: customProjectDir });
-const refreshCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/show-project-trends.js'), [
+const refreshCliJson = showProjectTrends(parseArgs([
   '--project-dir',
   projectDir,
   '--refresh',
   '--json',
-], { encoding: 'utf8' });
-const refreshCliJson = refreshCli.status === 0 ? JSON.parse(refreshCli.stdout) : {};
+], { exitOnError: false }));
 
 const checks = [
   ['summarizes history count', result.code_map.history_snapshots === 2],
@@ -417,8 +418,8 @@ const checks = [
   ['summarizes advisor', result.advisor.budget_status === 'warn' && result.advisor.code_map_trends_status === 'attention' && result.advisor.recommendations.some((item) => item.action === 'trim-budget-violation' && item.evidence && item.clears && item.split_suggestion && item.split_suggestion.strategy === 'split-before-review')],
   ['advisor split stays with parent recommendation', budgetIndex >= 0 && splitIndex > budgetIndex && (nextAdvisorIndex === -1 || splitIndex < nextAdvisorIndex)],
   ['renders markdown', markdown.includes('# Forgeflow Project Trends') && markdown.includes('## Recommendations') && markdown.includes('Evidence:') && markdown.includes('Clears:') && markdown.includes('Unresolved imports delta: 1') && markdown.includes('## Import Gaps') && markdown.includes('Needs review: 1') && markdown.includes('forgeflow-code-map') && markdown.includes('## Latest Insights') && markdown.includes('## Latest Failure Digest') && markdown.includes('Git: bbbbbbb clean') && markdown.includes('Freshness: current') && markdown.includes('Triage state: usable') && markdown.includes('FAIL test validates failure digest') && markdown.includes('Rebuild context with a smaller --files list') && markdown.includes('Cleared when the generated packet is under the configured context budget') && markdown.includes('Split: Run a narrower context pack')],
-  ['cli json works', cli.status === 0 && cliJson.code_map.trend.status === 'compared' && cliJson.project_learnings.consumed_code_map_trend === true && Boolean(cliJson.freshness) && cliJson.latest_insights.status === 'injected' && cliJson.failure_digest.status === 'compact' && cliJson.failure_digest.freshness.status === 'attention' && cliJson.failure_digest.triage.state === 'stale' && cliJson.recommendations.some((item) => item.command === 'forgeflow-failure-digest') && cliJson.import_gaps.status === 'attention'],
-  ['refresh cli works', refreshCli.status === 0 && refreshCliJson.refresh && refreshCliJson.refresh.check_status === 'pass'],
+  ['cli json works', cliJson.code_map.trend.status === 'compared' && cliJson.project_learnings.consumed_code_map_trend === true && Boolean(cliJson.freshness) && cliJson.latest_insights.status === 'injected' && cliJson.failure_digest.status === 'compact' && cliJson.failure_digest.freshness.status === 'attention' && cliJson.failure_digest.triage.state === 'stale' && cliJson.recommendations.some((item) => item.command === 'forgeflow-failure-digest') && cliJson.import_gaps.status === 'attention'],
+  ['refresh cli works', refreshCliJson.refresh && refreshCliJson.refresh.check_status === 'pass'],
   ['missing option value exits usage', missingValue.status === 2 && missingValue.stderr.includes('Missing value for --project-dir')],
 ];
 

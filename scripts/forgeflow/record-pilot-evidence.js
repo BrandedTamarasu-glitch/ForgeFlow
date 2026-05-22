@@ -55,17 +55,27 @@ function usage() {
   ].join('\n'));
 }
 
-function requireValue(argv, name, index) {
-  const value = argv[index + 1] || '';
-  if (!value || value.startsWith('--')) {
-    console.error(`Missing value for ${name}`);
+function argumentError(message, exitOnError) {
+  if (exitOnError) {
+    console.error(message);
     usage();
     process.exit(2);
+  }
+  const err = new Error(message);
+  err.exitCode = 2;
+  throw err;
+}
+
+function requireValue(argv, name, index, exitOnError = true) {
+  const value = argv[index + 1] || '';
+  if (!value || value.startsWith('--')) {
+    argumentError(`Missing value for ${name}`, exitOnError);
   }
   return value;
 }
 
-function parseArgs(argv) {
+function parseArgs(argv, options = {}) {
+  const exitOnError = options.exitOnError !== false;
   const opts = {
     projectDir: '',
     out: '',
@@ -84,23 +94,21 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--project-dir') {
-      opts.projectDir = path.resolve(requireValue(argv, arg, i));
+      opts.projectDir = path.resolve(requireValue(argv, arg, i, exitOnError));
       i += 1;
     } else if (arg === '--out') {
-      opts.out = path.resolve(requireValue(argv, arg, i));
+      opts.out = path.resolve(requireValue(argv, arg, i, exitOnError));
       i += 1;
     } else if (arg === '--set') {
-      const pair = requireValue(argv, arg, i);
+      const pair = requireValue(argv, arg, i, exitOnError);
       const split = pair.indexOf('=');
       if (split <= 0) {
-        console.error(`Invalid --set value: ${pair}`);
-        usage();
-        process.exit(2);
+        argumentError(`Invalid --set value: ${pair}`, exitOnError);
       }
       opts.values[pair.slice(0, split)] = pair.slice(split + 1);
       i += 1;
     } else if (aliases[arg]) {
-      opts.values[aliases[arg]] = requireValue(argv, arg, i);
+      opts.values[aliases[arg]] = requireValue(argv, arg, i, exitOnError);
       i += 1;
     } else if (arg === '--json') {
       opts.json = true;
@@ -108,11 +116,10 @@ function parseArgs(argv) {
       opts.rollup = false;
     } else if (arg === '--help' || arg === '-h') {
       usage();
-      process.exit(0);
+      if (exitOnError) process.exit(0);
+      return opts;
     } else {
-      console.error(`Unknown argument: ${arg}`);
-      usage();
-      process.exit(2);
+      argumentError(`Unknown argument: ${arg}`, exitOnError);
     }
   }
   return opts;
@@ -242,6 +249,7 @@ if (require.main === module) {
 
 module.exports = {
   buildRecord,
+  parseArgs,
   recordPilotEvidence,
   renderYaml,
   validate,

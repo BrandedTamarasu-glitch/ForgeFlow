@@ -112,26 +112,33 @@ Classify the diff so the Forgeflow team can skip trivial changes, run thin on sm
 ### 0.5a. Collect routing signals
 
 ```bash
+PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+PROJECT_NAME="$(basename "$PROJECT_ROOT")"
+REVIEW_TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/forgeflow-review.XXXXXX") || exit 1
+trap 'rm -rf "$REVIEW_TMP_DIR"' EXIT
+REVIEW_FILES="${REVIEW_TMP_DIR}/files"
+REVIEW_FILES_UNIQUE="${REVIEW_TMP_DIR}/files.unique"
+
 # Use the same file set that Step 1 will resolve — and use the same CI/interactive
 # diff source. In CI the working tree is clean (checkout produces no diff vs HEAD),
 # so we must diff against the PR base branch; interactively we diff the working tree.
 if [ -n "${GITHUB_BASE_REF:-}" ] || echo "$ARGUMENTS" | grep -q -- '--pr '; then
   BASE_REF="${GITHUB_BASE_REF:-main}"
   git fetch origin "${BASE_REF}" 2>/dev/null || true
-  git diff --name-only "origin/${BASE_REF}..HEAD" 2>/dev/null > /tmp/_review_files_$$
+  git diff --name-only "origin/${BASE_REF}..HEAD" 2>/dev/null > "$REVIEW_FILES"
   TRACKED_LINES_CHANGED=$(git diff --numstat "origin/${BASE_REF}..HEAD" 2>/dev/null | awk '{s+=$1+$2} END {print s+0}')
   UNTRACKED_LINES_CHANGED=0
   LINES_CHANGED="$TRACKED_LINES_CHANGED"
 else
-  git diff --name-only HEAD 2>/dev/null > /tmp/_review_files_$$
-  git diff --name-only --cached 2>/dev/null >> /tmp/_review_files_$$
-  git ls-files --others --exclude-standard 2>/dev/null >> /tmp/_review_files_$$
+  git diff --name-only HEAD 2>/dev/null > "$REVIEW_FILES"
+  git diff --name-only --cached 2>/dev/null >> "$REVIEW_FILES"
+  git ls-files --others --exclude-standard 2>/dev/null >> "$REVIEW_FILES"
   TRACKED_LINES_CHANGED=$(git diff --numstat HEAD 2>/dev/null | awk '{s+=$1+$2} END {print s+0}')
-  UNTRACKED_LINES_CHANGED=$(git ls-files --others --exclude-standard 2>/dev/null | while IFS= read -r file; do [ -f "$file" ] && wc -l < "$file"; done | awk '{s+=$1} END {print s+0}')
+  UNTRACKED_LINES_CHANGED=$(git ls-files --others --exclude-standard 2>/dev/null | while IFS= read -r file; do [ -f "$file" ] && [ ! -L "$file" ] && wc -l < "$file"; done | awk '{s+=$1} END {print s+0}')
   LINES_CHANGED=$((TRACKED_LINES_CHANGED + UNTRACKED_LINES_CHANGED))
 fi
-sort -u /tmp/_review_files_$$ > /tmp/_review_files_unique_$$
-FILES=$(cat /tmp/_review_files_unique_$$)
+sort -u "$REVIEW_FILES" > "$REVIEW_FILES_UNIQUE"
+FILES=$(cat "$REVIEW_FILES_UNIQUE")
 FILE_COUNT=$(echo "$FILES" | grep -c . || echo 0)
 ```
 
@@ -140,7 +147,6 @@ FILE_COUNT=$(echo "$FILES" | grep -c . || echo 0)
 If a Forgeflow route helper exists in project-local `scripts/forgeflow/` or the installed `$HOME/.claude/forgeflow/scripts/forgeflow/` helper root, use it as the authoritative classifier so Claude and Codex reviews share the same routing policy:
 
 ```bash
-PROJECT_NAME=$(basename "$(pwd)")
 HELPER_DIR="scripts/forgeflow"
 if [ ! -x "${HELPER_DIR}/explain-review-route.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/explain-review-route.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
@@ -172,7 +178,7 @@ if [ "$CI_MODE" = "true" ]; then
   ROUTE_ARGS+=(--ci)
 fi
 
-ROUTING_JSON=$("${HELPER_DIR}/explain-review-route.js" --json --files /tmp/_review_files_unique_$$ --lines "$LINES_CHANGED" --tracked-lines "$TRACKED_LINES_CHANGED" --untracked-lines "$UNTRACKED_LINES_CHANGED" "${ROUTE_ARGS[@]}")
+ROUTING_JSON=$("${HELPER_DIR}/explain-review-route.js" --json --root "$PROJECT_ROOT" --files "$REVIEW_FILES_UNIQUE" --lines "$LINES_CHANGED" --tracked-lines "$TRACKED_LINES_CHANGED" --untracked-lines "$UNTRACKED_LINES_CHANGED" "${ROUTE_ARGS[@]}")
 ROUTING_MODE=$(printf '%s' "$ROUTING_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log(JSON.parse(s).mode))')
 ROUTING_VERIFIER=$(printf '%s' "$ROUTING_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log(JSON.parse(s).verifier||"not-required"))')
 ROUTING_TELEMETRY_HINTS=$(printf '%s' "$ROUTING_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log((JSON.parse(s).telemetry_hints||[]).map(h=>`${h.type}:${h.class}`).join(", ")))')
@@ -252,7 +258,7 @@ claude -p "$(cat <<EOF
 Classify this diff into skip-mode | thin-mode | full-mode | deep-mode using the rules in Step 0.5b of /review. Output only the mode label on a single line, nothing else.
 
 FILES:
-$(cat /tmp/_review_files_unique_$$)
+$(cat "$REVIEW_FILES_UNIQUE")
 
 DIFF STATS:
 $(git diff --stat HEAD 2>/dev/null | tail -20)
@@ -379,8 +385,9 @@ Note: Lumen always participates. Frontend files activate his frontend hat. His c
 ## Step 3: Load Atlas's persistent context
 
 ```bash
-PROJECT_NAME=$(basename "$(pwd)")
-FORGEFLOW_DIR=".forgeflow/${PROJECT_NAME}"
+PROJECT_ROOT="${PROJECT_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
+PROJECT_NAME="${PROJECT_NAME:-$(basename "$PROJECT_ROOT")}"
+FORGEFLOW_DIR="${PROJECT_ROOT}/.forgeflow/${PROJECT_NAME}"
 mkdir -p "${FORGEFLOW_DIR}/agent-notes"
 ```
 
@@ -413,8 +420,11 @@ if ! echo "$ARGUMENTS" | grep -q -- '--no-context-pack' && [ -x "${HELPER_DIR}/b
     TASK_ARGS=(--task "$ARGUMENTS")
   fi
   "${HELPER_DIR}/build-context-pack.js" \
-    --files /tmp/_review_files_unique_$$ \
+    --root "$PROJECT_ROOT" \
+    --files "$REVIEW_FILES_UNIQUE" \
     --lines "$LINES_CHANGED" \
+    --tracked-lines "$TRACKED_LINES_CHANGED" \
+    --untracked-lines "$UNTRACKED_LINES_CHANGED" \
     "${ROUTE_ARGS[@]}" \
     "${TASK_ARGS[@]}" \
     --out "$CONTEXT_PACK_DIR" \

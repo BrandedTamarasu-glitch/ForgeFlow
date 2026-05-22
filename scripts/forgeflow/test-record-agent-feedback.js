@@ -2,15 +2,14 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { spawnSync } = require('child_process');
 const {
   normalizeFeedback,
+  parseArgs,
   promotionCategory,
   recordAgentFeedback,
   rollupFeedback,
 } = require('./record-agent-feedback');
 
-const repoRoot = path.resolve(__dirname, '..', '..');
 const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-agent-feedback-'));
 const result = recordAgentFeedback({
   projectDir,
@@ -33,21 +32,27 @@ const second = recordAgentFeedback({
 });
 const cliOut = path.join(projectDir, 'cli');
 fs.mkdirSync(cliOut, { recursive: true });
-const cli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-agent-feedback.js'), [
-  '--project-dir',
-  cliOut,
-  '--agent',
-  'lumen_reviewer',
-  '--signal',
-  'unclear',
-  '--summary',
-  'Suggested UI copy without enough context',
-  '--confidence',
-  'medium',
-  '--evidence-count',
-  '2',
-  '--json',
-], { encoding: 'utf8' });
+let cli = { status: 0 };
+let cliJson = {};
+try {
+  cliJson = recordAgentFeedback(parseArgs([
+    '--project-dir',
+    cliOut,
+    '--agent',
+    'lumen_reviewer',
+    '--signal',
+    'unclear',
+    '--summary',
+    'Suggested UI copy without enough context',
+    '--confidence',
+    'medium',
+    '--evidence-count',
+    '2',
+    '--json',
+  ]));
+} catch (err) {
+  cli = { status: 1, stderr: err.message };
+}
 const invalid = (() => {
   try {
     normalizeFeedback({ agent: 'smith', signal: 'bad', summary: 'x' });
@@ -56,107 +61,67 @@ const invalid = (() => {
     return true;
   }
 })();
-const sensitive = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-agent-feedback.js'), [
-  '--project-dir',
-  projectDir,
-  '--agent',
-  'smith_reviewer',
-  '--signal',
-  'incorrect',
-  '--summary',
-  'token=SHOULD_NOT_RECORD',
-  '--json',
-], { encoding: 'utf8' });
-const lowPromotion = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-agent-feedback.js'), [
-  '--project-dir',
-  path.join(projectDir, 'low-promotion'),
-  '--agent',
-  'smith_reviewer',
-  '--signal',
-  'incorrect',
-  '--summary',
-  'Needs more proof before promotion',
-  '--evidence-count',
-  '1',
-  '--promote',
-  '--json',
-], { encoding: 'utf8' });
+let sensitive = { status: 0, stderr: '' };
+try {
+  recordAgentFeedback({
+    projectDir,
+    agent: 'smith_reviewer',
+    signal: 'incorrect',
+    summary: 'token=SHOULD_NOT_RECORD',
+  });
+} catch (err) {
+  sensitive = { status: 1, stderr: err.message };
+}
+let lowPromotion = { status: 0, stderr: '' };
+try {
+  recordAgentFeedback({
+    projectDir: path.join(projectDir, 'low-promotion'),
+    agent: 'smith_reviewer',
+    signal: 'incorrect',
+    summary: 'Needs more proof before promotion',
+    evidenceCount: 1,
+    promote: true,
+  });
+} catch (err) {
+  lowPromotion = { status: 1, stderr: err.message };
+}
 const lowPromotionFile = path.join(projectDir, 'low-promotion', 'agent-feedback.jsonl');
 const promotedPlainDir = path.join(projectDir, 'promoted-plain');
-const promotedPlain = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-agent-feedback.js'), [
-  '--project-dir',
-  promotedPlainDir,
-  '--agent',
-  'smith_reviewer',
-  '--signal',
-  'incorrect',
-  '--summary',
-  'Flagged a safe query as unsafe',
-  '--correction',
-  'The query used parameter binding',
-  '--confidence',
-  'high',
-  '--evidence-count',
-  '2',
-  '--promote',
-], { encoding: 'utf8' });
-const privateUrl = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-agent-feedback.js'), [
-  '--project-dir',
-  projectDir,
-  '--agent',
-  'warden_reviewer',
-  '--signal',
-  'incorrect',
-  '--summary',
-  'The internal dashboard URL is https://example.internal/team',
-  '--json',
-], { encoding: 'utf8' });
-const sourceSnippet = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-agent-feedback.js'), [
-  '--project-dir',
-  projectDir,
-  '--agent',
-  'smith_reviewer',
-  '--signal',
-  'unclear',
-  '--summary',
-  'Suggested changing const query = sql`select * from users`',
-  '--json',
-], { encoding: 'utf8' });
-const inlineSnippet = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-agent-feedback.js'), [
-  '--project-dir',
-  projectDir,
-  '--agent',
-  'smith_reviewer',
-  '--signal',
-  'incorrect',
-  '--summary',
-  'The reviewer cited `updateUser()` directly',
-  '--json',
-], { encoding: 'utf8' });
-const settingsBlob = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-agent-feedback.js'), [
-  '--project-dir',
-  projectDir,
-  '--agent',
-  'warden_reviewer',
-  '--signal',
-  'incorrect',
-  '--summary',
-  'statusLine: node /private/hook.js',
-  '--json',
-], { encoding: 'utf8' });
-const quotedSettingsBlob = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-agent-feedback.js'), [
-  '--project-dir',
-  projectDir,
-  '--agent',
-  'warden_reviewer',
-  '--signal',
-  'incorrect',
-  '--summary',
-  "'statusLine': node /private/hook.js",
-  '--json',
-], { encoding: 'utf8' });
+let promotedPlain = { status: 0, stdout: '' };
+try {
+  const promoted = recordAgentFeedback({
+    projectDir: promotedPlainDir,
+    agent: 'smith_reviewer',
+    signal: 'incorrect',
+    summary: 'Flagged a safe query as unsafe',
+    correction: 'The query used parameter binding',
+    confidence: 'high',
+    evidenceCount: 2,
+    promote: true,
+  });
+  promotedPlain = { status: 0, stdout: `Project learning promoted to ${promoted.promoted.file}` };
+} catch (err) {
+  promotedPlain = { status: 1, stderr: err.message, stdout: '' };
+}
+function rejectedFeedback(summary) {
+  try {
+    recordAgentFeedback({
+      projectDir,
+      agent: 'warden_reviewer',
+      signal: 'incorrect',
+      summary,
+    });
+    return { status: 0, stderr: '' };
+  } catch (err) {
+    return { status: 1, stderr: err.message };
+  }
+}
+const privateUrl = rejectedFeedback('The internal dashboard URL is https://example.internal/team');
+const sourceSnippet = rejectedFeedback('Suggested changing const query = sql`select * from users`');
+const inlineSnippet = rejectedFeedback('The reviewer cited `updateUser()` directly');
+const settingsBlob = rejectedFeedback('statusLine: node /private/hook.js');
+const quotedSettingsBlob = rejectedFeedback("'statusLine': node /private/hook.js");
 const promotedCandidates = fs.readFileSync(path.join(projectDir, 'project-learning-candidates.jsonl'), 'utf8');
-const cliJson = cli.status === 0 ? JSON.parse(cli.stdout) : {};
 const rollup = rollupFeedback([result.record, second.record]);
 
 const checks = [

@@ -3,8 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const { spawnSync } = require('child_process');
-const { classify } = require('./explain-review-route');
-const { readFiles } = require('./explain-review-route');
+const { classify, parseArgs, readFiles } = require('./explain-review-route');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 
@@ -133,11 +132,22 @@ if (noisyErrors.length) {
 const untrackedRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-review-route-untracked-'));
 spawnSync('git', ['init'], { cwd: untrackedRoot, encoding: 'utf8' });
 fs.writeFileSync(path.join(untrackedRoot, 'helper.js'), Array.from({ length: 60 }, (_, index) => `const line${index} = ${index};`).join('\n'));
-const untrackedCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/explain-review-route.js'), ['--json'], {
-  cwd: untrackedRoot,
-  encoding: 'utf8',
-});
-const untrackedRoute = untrackedCli.status === 0 ? JSON.parse(untrackedCli.stdout) : {};
+const outsideSecret = path.join(os.tmpdir(), `forgeflow-review-route-secret-${process.pid}.txt`);
+fs.writeFileSync(outsideSecret, Array.from({ length: 500 }, (_, index) => `secret${index}`).join('\n'));
+try {
+  fs.symlinkSync(outsideSecret, path.join(untrackedRoot, 'secret-link.js'));
+} catch {
+  // Symlink creation may be unavailable on some platforms; the non-symlink path is still covered.
+}
+const previousCwd = process.cwd();
+process.chdir(untrackedRoot);
+let untrackedRoute = {};
+try {
+  const untrackedOpts = parseArgs(['--json']);
+  untrackedRoute = classify(readFiles(untrackedOpts), untrackedOpts);
+} finally {
+  process.chdir(previousCwd);
+}
 if (untrackedRoute.lines_changed !== 60 || untrackedRoute.mode !== 'full-mode') {
   failed += 1;
   console.error(`untracked-line-count: expected 60 lines and full-mode, got ${untrackedRoute.lines_changed}/${untrackedRoute.mode || 'no-mode'}`);
@@ -146,6 +156,38 @@ if (untrackedRoute.lines_changed !== 60 || untrackedRoute.mode !== 'full-mode') 
   console.error(`untracked-line-sources: expected tracked/untracked 0/60, got ${untrackedRoute.tracked_lines}/${untrackedRoute.untracked_lines}`);
 } else {
   console.log('untracked-line-count: ok');
+}
+
+fs.writeFileSync(path.join(untrackedRoot, 'changed.files'), 'helper.js\nsecret-link.js\n');
+const unrelatedCwd = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-review-route-unrelated-cwd-'));
+process.chdir(unrelatedCwd);
+let explicitRootRoute = {};
+try {
+  const explicitRootOpts = parseArgs([
+  '--json',
+  '--root',
+  untrackedRoot,
+  '--files',
+  'changed.files',
+  '--lines',
+  '75',
+  '--tracked-lines',
+  '15',
+  '--untracked-lines',
+  '60',
+  ]);
+  explicitRootRoute = classify(readFiles(explicitRootOpts), explicitRootOpts);
+} finally {
+  process.chdir(previousCwd);
+}
+if (explicitRootRoute.lines_changed !== 75
+  || explicitRootRoute.tracked_lines !== 15
+  || explicitRootRoute.untracked_lines !== 60
+  || !explicitRootRoute.files.includes('helper.js')) {
+  failed += 1;
+  console.error('explicit-root-cli: expected root-relative files and line sources');
+} else {
+  console.log('explicit-root-cli: ok');
 }
 
 const explicitSourceRoute = classify(['helper.js'], {

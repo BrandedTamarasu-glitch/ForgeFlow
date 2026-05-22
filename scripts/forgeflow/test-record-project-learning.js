@@ -2,10 +2,8 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { spawnSync } = require('child_process');
-const { recordProjectLearning } = require('./record-project-learning');
+const { parseArgs, recordProjectLearning } = require('./record-project-learning');
 
-const repoRoot = path.resolve(__dirname, '..', '..');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-project-learning-'));
 const projectDir = path.join(tmp, '.forgeflow', 'Demo');
 const input = path.join(tmp, 'learnings.json');
@@ -31,7 +29,16 @@ fs.writeFileSync(input, JSON.stringify([
 const result = recordProjectLearning({ projectDir, input });
 const file = path.join(projectDir, 'project-learning-candidates.jsonl');
 const records = fs.readFileSync(file, 'utf8').trim().split(/\r?\n/).map((line) => JSON.parse(line));
-const cliResult = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-project-learning.js'), [
+function runRecord(argv) {
+  try {
+    const opts = parseArgs(argv);
+    recordProjectLearning(opts);
+    return { status: 0, stderr: '' };
+  } catch (err) {
+    return { status: 1, stderr: err.message };
+  }
+}
+const cliResult = runRecord([
   '--project-dir',
   projectDir,
   '--category',
@@ -51,8 +58,8 @@ const cliResult = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-projec
   '--superseded-by',
   'Use project intelligence rollup guidance instead.',
   '--json',
-], { encoding: 'utf8' });
-const invalidStatus = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-project-learning.js'), [
+]);
+const invalidStatus = runRecord([
   '--project-dir',
   projectDir,
   '--category',
@@ -61,8 +68,8 @@ const invalidStatus = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-pr
   'Should fail',
   '--status',
   'retired',
-], { encoding: 'utf8' });
-const oversizedSupersededBy = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-project-learning.js'), [
+]);
+const oversizedSupersededBy = runRecord([
   '--project-dir',
   projectDir,
   '--category',
@@ -71,8 +78,8 @@ const oversizedSupersededBy = spawnSync(path.join(repoRoot, 'scripts/forgeflow/r
   'Should fail',
   '--superseded-by',
   'x'.repeat(241),
-], { encoding: 'utf8' });
-const invalidConfidence = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-project-learning.js'), [
+]);
+const invalidConfidence = runRecord([
   '--project-dir',
   projectDir,
   '--category',
@@ -81,8 +88,8 @@ const invalidConfidence = spawnSync(path.join(repoRoot, 'scripts/forgeflow/recor
   'Should fail',
   '--confidence',
   'certain',
-], { encoding: 'utf8' });
-const invalidEvidenceCount = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-project-learning.js'), [
+]);
+const invalidEvidenceCount = runRecord([
   '--project-dir',
   projectDir,
   '--category',
@@ -91,8 +98,8 @@ const invalidEvidenceCount = spawnSync(path.join(repoRoot, 'scripts/forgeflow/re
   'Should fail',
   '--evidence-count',
   '0',
-], { encoding: 'utf8' });
-const oversizedGuidance = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-project-learning.js'), [
+]);
+const oversizedGuidance = runRecord([
   '--project-dir',
   projectDir,
   '--category',
@@ -101,31 +108,31 @@ const oversizedGuidance = spawnSync(path.join(repoRoot, 'scripts/forgeflow/recor
   'Should fail',
   '--application-guidance',
   'x'.repeat(241),
-], { encoding: 'utf8' });
-const invalidCategory = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-project-learning.js'), [
+]);
+const invalidCategory = runRecord([
   '--project-dir',
   projectDir,
   '--category',
   'bad-category',
   '--learning',
   'Should fail',
-], { encoding: 'utf8' });
-const sensitive = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-project-learning.js'), [
+]);
+const sensitive = runRecord([
   '--project-dir',
   projectDir,
   '--category',
   'risk-area',
   '--learning',
   'token: SHOULD_NOT_WRITE',
-], { encoding: 'utf8' });
-const privateUrl = spawnSync(path.join(repoRoot, 'scripts/forgeflow/record-project-learning.js'), [
+]);
+const privateUrl = runRecord([
   '--project-dir',
   projectDir,
   '--category',
   'risk-area',
   '--learning',
   'Internal repo ssh://git.internal/team/private.git should fail',
-], { encoding: 'utf8' });
+]);
 const symlinkProjectDir = path.join(tmp, '.forgeflow', 'SymlinkDemo');
 fs.mkdirSync(symlinkProjectDir, { recursive: true });
 const outsideCandidates = path.join(tmp, 'outside-candidates.jsonl');

@@ -40,8 +40,9 @@ const DEFAULT_MAX_DIFF_CHARS = 18000;
 
 function usage() {
   console.error([
-    'Usage: build-context-pack.js [--out <dir>] [--files <path>] [--lines <n>]',
-    '       [--mode skip|thin|full|deep] [--calibration <path>] [--task <text>]',
+    'Usage: build-context-pack.js [--root <dir>] [--out <dir>] [--files <path>] [--lines <n>]',
+    '       [--tracked-lines <n>] [--untracked-lines <n>] [--mode skip|thin|full|deep]',
+    '       [--calibration <path>] [--task <text>]',
     '       [--max-memory-chars <n>] [--max-diff-chars <n>] [--no-memory-index] [--ci] [--json]',
   ].join('\n'));
 }
@@ -49,8 +50,11 @@ function usage() {
 function parseArgs(argv) {
   const opts = {
     out: '',
+    root: '',
     filesPath: '',
     linesChanged: null,
+    trackedLines: null,
+    untrackedLines: null,
     modeOverride: '',
     calibrationPath: '',
     task: '',
@@ -63,16 +67,22 @@ function parseArgs(argv) {
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg === '--out') {
-      opts.out = path.resolve(argv[++i] || '');
+    if (arg === '--root') {
+      opts.root = path.resolve(argv[++i] || '');
+    } else if (arg === '--out') {
+      opts.out = argv[++i] || '';
     } else if (arg === '--files') {
-      opts.filesPath = path.resolve(argv[++i] || '');
+      opts.filesPath = argv[++i] || '';
     } else if (arg === '--lines') {
       opts.linesChanged = Number.parseInt(argv[++i] || '0', 10);
+    } else if (arg === '--tracked-lines') {
+      opts.trackedLines = Number.parseInt(argv[++i] || '0', 10);
+    } else if (arg === '--untracked-lines') {
+      opts.untrackedLines = Number.parseInt(argv[++i] || '0', 10);
     } else if (arg === '--mode') {
       opts.modeOverride = argv[++i] || '';
     } else if (arg === '--calibration') {
-      opts.calibrationPath = path.resolve(argv[++i] || '');
+      opts.calibrationPath = argv[++i] || '';
     } else if (arg === '--task') {
       opts.task = argv[++i] || '';
     } else if (arg === '--max-memory-chars') {
@@ -99,7 +109,25 @@ function parseArgs(argv) {
     console.error(`Invalid --mode: ${opts.modeOverride}`);
     process.exit(2);
   }
-  return opts;
+  return normalizePathOptions(opts);
+}
+
+function normalizePathOptions(opts) {
+  const normalized = { ...opts };
+  if (normalized.root) {
+    normalized.root = path.resolve(normalized.root);
+  }
+  const root = normalized.root || process.cwd();
+  if (normalized.out) {
+    normalized.out = path.isAbsolute(normalized.out) ? normalized.out : path.join(root, normalized.out);
+  }
+  if (normalized.filesPath) {
+    normalized.filesPath = path.isAbsolute(normalized.filesPath) ? normalized.filesPath : path.join(root, normalized.filesPath);
+  }
+  if (normalized.calibrationPath) {
+    normalized.calibrationPath = path.isAbsolute(normalized.calibrationPath) ? normalized.calibrationPath : path.join(root, normalized.calibrationPath);
+  }
+  return normalized;
 }
 
 function git(args, cwd) {
@@ -168,8 +196,11 @@ function buildFileManifest(files, root) {
 
 function readChangedFiles(opts) {
   return readFiles({
+    root: opts.root,
     filesPath: opts.filesPath,
     linesChanged: opts.linesChanged,
+    trackedLines: opts.trackedLines,
+    untrackedLines: opts.untrackedLines,
     modeOverride: opts.modeOverride,
     calibrationPath: opts.calibrationPath,
     ci: opts.ci,
@@ -937,24 +968,29 @@ function rawMemoryChars(root) {
 }
 
 function buildContextPack(opts) {
-  const root = repoRoot();
-  const files = readChangedFiles(opts);
-  const calibration = readJson(opts.calibrationPath);
+  const normalizedOpts = normalizePathOptions(opts || {});
+  const root = normalizedOpts.root ? repoRoot(normalizedOpts.root) : repoRoot();
+  const effectiveOpts = { ...normalizedOpts, root };
+  const files = readChangedFiles(effectiveOpts);
+  const calibration = readJson(effectiveOpts.calibrationPath);
   const route = classify(files, {
-    filesPath: opts.filesPath,
-    linesChanged: opts.linesChanged,
-    modeOverride: opts.modeOverride,
+    root,
+    filesPath: effectiveOpts.filesPath,
+    linesChanged: effectiveOpts.linesChanged,
+    trackedLines: effectiveOpts.trackedLines,
+    untrackedLines: effectiveOpts.untrackedLines,
+    modeOverride: effectiveOpts.modeOverride,
     calibration,
-    ci: opts.ci,
+    ci: effectiveOpts.ci,
   });
-  const outDir = opts.out || defaultOutDir(root);
+  const outDir = effectiveOpts.out || defaultOutDir(root);
   const packetDir = path.join(outDir, 'agent-packets');
   ensureDir(packetDir);
 
   const manifest = buildFileManifest(route.files, root);
-  const diffSummary = buildDiffSummary(route.files, root, opts);
-  const memoryIndexPath = ensureMemoryIndex(root, opts.memoryIndex !== false);
-  const memoryHits = buildMemoryHits(root, route.files, route, opts.task, opts.maxMemoryChars, memoryIndexPath);
+  const diffSummary = buildDiffSummary(route.files, root, effectiveOpts);
+  const memoryIndexPath = ensureMemoryIndex(root, effectiveOpts.memoryIndex !== false);
+  const memoryHits = buildMemoryHits(root, route.files, route, effectiveOpts.task, effectiveOpts.maxMemoryChars, memoryIndexPath);
   const topologyContext = buildTopologyContext(root, outDir, route.files);
   const latestInsightsResult = buildLatestInsightsResult(root, 5000, { codeMap: topologyContext ? topologyContext.topology : undefined });
   const latestInsights = latestInsightsResult.markdown;
@@ -970,7 +1006,7 @@ function buildContextPack(opts) {
   const packets = {};
 
   for (const agent of agents) {
-    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, latestFailure.markdown, projectCodeMap, topologySummary, artifactManifestMarkdown, opts.task);
+    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, latestFailure.markdown, projectCodeMap, topologySummary, artifactManifestMarkdown, effectiveOpts.task);
     const file = path.join(packetDir, `${agent}.md`);
     writeFileSafe(file, content);
     packets[agent] = path.relative(root, file);
@@ -996,6 +1032,7 @@ function buildContextPack(opts) {
     schema_version: '1',
     generated_at: new Date().toISOString(),
     repo_root: root,
+    project_dir: defaultProjectDir(root),
     route_path: path.relative(root, path.join(outDir, 'route.json')),
     diff_summary_path: path.relative(root, path.join(outDir, 'diff-summary.md')),
     memory_hits_path: path.relative(root, path.join(outDir, 'memory-hits.md')),
@@ -1019,8 +1056,8 @@ function buildContextPack(opts) {
     file_manifest_path: path.relative(root, path.join(outDir, 'file-manifest.json')),
     agent_packets: packets,
     limits: {
-      max_memory_chars: opts.maxMemoryChars,
-      max_diff_chars: opts.maxDiffChars,
+      max_memory_chars: effectiveOpts.maxMemoryChars,
+      max_diff_chars: effectiveOpts.maxDiffChars,
     },
   };
 
@@ -1044,15 +1081,17 @@ function buildContextPack(opts) {
     maxCompactTokens: 16000,
     maxCompactTokensSet: false,
     kindLimits: {},
-    warnOnly: !opts.ci,
-    warnOnlySet: Boolean(opts.ci),
+    warnOnly: !effectiveOpts.ci,
+    warnOnlySet: Boolean(effectiveOpts.ci),
   }, readConfig(budgetConfigPath)));
-  if (opts.ci && budget.violations.length > 0) {
+  if (effectiveOpts.ci && budget.violations.length > 0) {
     const detail = budget.violations.map((item) => `${item.kind} over by ${item.over_by}`).join(', ');
     throw new Error(`Context pack budget exceeded: ${detail}`);
   }
 
   return {
+    root,
+    project_dir: defaultProjectDir(root),
     out_dir: outDir,
     route,
     manifest,
@@ -1067,15 +1106,7 @@ function main() {
   const opts = parseArgs(process.argv.slice(2));
   const result = buildContextPack(opts);
   if (opts.json) {
-    console.log(JSON.stringify({
-      out_dir: result.out_dir,
-      mode: result.route.mode,
-      agents: result.route.agents.included,
-      packet_count: Object.keys(result.synthesis_input.agent_packets).length,
-      estimated_saved_tokens: result.telemetry.estimated_saved_tokens,
-      code_topology: result.topology,
-      budget: result.budget,
-    }, null, 2));
+    console.log(JSON.stringify(jsonSummary(result), null, 2));
   } else {
     console.log(`Context pack: ${result.out_dir}`);
     console.log(`Route: ${result.route.mode}`);
@@ -1084,6 +1115,24 @@ function main() {
       console.log(`Code topology: ${result.topology.paths.review_focus}`);
     }
   }
+}
+
+function jsonSummary(result) {
+  return {
+    root: result.root,
+    project_dir: result.project_dir,
+    out_dir: result.out_dir,
+    mode: result.route.mode,
+    agents: result.route.agents.included,
+    files: result.route.files,
+    lines_changed: result.route.lines_changed,
+    tracked_lines: result.route.tracked_lines,
+    untracked_lines: result.route.untracked_lines,
+    packet_count: Object.keys(result.synthesis_input.agent_packets).length,
+    estimated_saved_tokens: result.telemetry.estimated_saved_tokens,
+    code_topology: result.topology,
+    budget: result.budget,
+  };
 }
 
 if (require.main === module) {
@@ -1099,6 +1148,7 @@ module.exports = {
   buildContextPack,
   buildLatestInsights,
   buildLatestInsightsResult,
+  jsonSummary,
   buildMemoryHits,
   compactProjectCodeMap,
   currentGitState,

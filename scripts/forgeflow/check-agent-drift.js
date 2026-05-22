@@ -35,17 +35,27 @@ function usage() {
   console.error('Usage: check-agent-drift.js [--root <dir>] [--agent <name>] [--canonical <name>] [--threshold N] [--json]');
 }
 
-function requireValue(argv, name, index) {
-  const value = argv[index + 1] || '';
-  if (!value || value.startsWith('--')) {
-    console.error(`Missing value for ${name}`);
+function argumentError(message, exitOnError) {
+  if (exitOnError) {
+    console.error(message);
     usage();
     process.exit(2);
+  }
+  const err = new Error(message);
+  err.exitCode = 2;
+  throw err;
+}
+
+function requireValue(argv, name, index, exitOnError = true) {
+  const value = argv[index + 1] || '';
+  if (!value || value.startsWith('--')) {
+    argumentError(`Missing value for ${name}`, exitOnError);
   }
   return value;
 }
 
-function parseArgs(argv) {
+function parseArgs(argv, options = {}) {
+  const exitOnError = options.exitOnError !== false;
   const opts = {
     root: '',
     agent: '',
@@ -56,32 +66,29 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--root') {
-      opts.root = path.resolve(requireValue(argv, arg, i));
+      opts.root = path.resolve(requireValue(argv, arg, i, exitOnError));
       i += 1;
     } else if (arg === '--agent') {
-      opts.agent = requireValue(argv, arg, i).replace(/\.md$/, '');
+      opts.agent = requireValue(argv, arg, i, exitOnError).replace(/\.md$/, '');
       i += 1;
     } else if (arg === '--canonical') {
-      opts.canonical = requireValue(argv, arg, i).replace(/\.md$/, '');
+      opts.canonical = requireValue(argv, arg, i, exitOnError).replace(/\.md$/, '');
       i += 1;
     } else if (arg === '--threshold') {
-      opts.threshold = Number.parseInt(requireValue(argv, arg, i), 10);
+      opts.threshold = Number.parseInt(requireValue(argv, arg, i, exitOnError), 10);
       i += 1;
     } else if (arg === '--json') {
       opts.json = true;
     } else if (arg === '--help' || arg === '-h') {
       usage();
-      process.exit(0);
+      if (exitOnError) process.exit(0);
+      return opts;
     } else {
-      console.error(`Unknown argument: ${arg}`);
-      usage();
-      process.exit(2);
+      argumentError(`Unknown argument: ${arg}`, exitOnError);
     }
   }
   if (!Number.isFinite(opts.threshold) || opts.threshold < 0 || opts.threshold > 100) {
-    console.error('Invalid --threshold. Expected 0-100.');
-    usage();
-    process.exit(2);
+    argumentError('Invalid --threshold. Expected 0-100.', exitOnError);
   }
   return opts;
 }
@@ -326,5 +333,6 @@ module.exports = {
   compareSection,
   jaccardPercent,
   parseSections,
+  parseArgs,
   renderMarkdown,
 };

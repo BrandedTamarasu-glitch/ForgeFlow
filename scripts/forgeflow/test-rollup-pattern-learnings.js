@@ -2,15 +2,14 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { spawnSync } = require('child_process');
 const {
+  parseArgs,
   rollupPatternLearnings,
   renderMarkdown,
   renderSourceMix,
   scoreKnownPattern,
 } = require('./rollup-pattern-learnings');
 
-const repoRoot = path.resolve(__dirname, '..', '..');
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-pattern-learnings-'));
 const patternsDir = path.join(root, 'forgeflow-patterns');
 const alphaDir = path.join(root, 'alpha', '.forgeflow', 'Alpha');
@@ -69,20 +68,22 @@ const recorded = rollupPatternLearnings({
   now: new Date('2026-05-20T00:00:00Z'),
 });
 const markdown = renderMarkdown(recorded);
-const cli = spawnSync(process.execPath, [
-  path.join(repoRoot, 'scripts/forgeflow/rollup-pattern-learnings.js'),
+const cliOpts = parseArgs([
   '--root',
   root,
   '--patterns-dir',
   patternsDir,
   '--json',
-], { encoding: 'utf8' });
-const cliJson = cli.status === 0 ? JSON.parse(cli.stdout) : {};
-const badPeriod = spawnSync(process.execPath, [
-  path.join(repoRoot, 'scripts/forgeflow/rollup-pattern-learnings.js'),
-  '--period',
-  'quarter',
-], { encoding: 'utf8' });
+], { exitOnError: false });
+const cliJson = rollupPatternLearnings(cliOpts);
+let badPeriodExitCode = 0;
+let badPeriodMessage = '';
+try {
+  parseArgs(['--period', 'quarter'], { exitOnError: false });
+} catch (err) {
+  badPeriodExitCode = err.exitCode || 1;
+  badPeriodMessage = err.message;
+}
 
 const checks = [
   ['scores known pattern', scoreKnownPattern('schema enum type mismatch in TypeScript signature') === 'Type Safety & Schema Mismatches'],
@@ -95,8 +96,8 @@ const checks = [
   ['writes learning log', fs.readFileSync(path.join(patternsDir, '.learnings-log.jsonl'), 'utf8').includes('"learnings_total":8')],
   ['renders source mix', renderSourceMix({ 'legacy-learning': 2, 'project-learning-candidate': 1 }) === 'legacy: 2, project candidates: 1'],
   ['renders markdown', markdown.includes('# Forgeflow Learnings - all') && markdown.includes('Candidates for promotion') && markdown.includes('Sources: project candidates: 3') && markdown.includes('project-learning-candidate')],
-  ['cli json works', cli.status === 0 && cliJson.projects_scanned === 2 && cliJson.candidates.length === 2],
-  ['bad period exits usage', badPeriod.status === 2 && badPeriod.stderr.includes('Invalid --period')],
+  ['cli json works', cliJson.projects_scanned === 2 && cliJson.candidates.length === 2],
+  ['bad period exits usage', badPeriodExitCode === 2 && badPeriodMessage.includes('Invalid --period')],
 ];
 
 let failed = 0;

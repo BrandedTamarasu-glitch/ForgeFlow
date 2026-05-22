@@ -12,7 +12,7 @@ In a repo checkout, examples use `scripts/forgeflow/`. A Claude install from `/u
 
 | Capability | Helper | Purpose |
 |---|---|---|
-| Review context packs | `scripts/forgeflow/build-context-pack.js` | Builds bounded reviewer packets and synthesis input from the current change, including latest insights, latest failure-digest context when present, and compact topology-guided review focus for JS/TS changes. |
+| Review context packs | `scripts/forgeflow/build-context-pack.js` | Builds bounded reviewer packets and synthesis input from the current change, including latest insights, latest failure-digest context when present, and compact topology-guided review focus for JS/TS changes. Pass `--root <repo>` when the helper is launched from outside the target checkout. |
 | Code topology | `scripts/forgeflow/build-code-topology.js` | Builds a static JS/TS import graph with fan-in/fan-out hotspots, changed-file neighbors, topology-guided review focus, and import-gap details for unresolved or dynamic imports. It resolves relative imports, source-suffix modules, extensionless TSX re-exports, tsconfig/jsconfig path aliases, common `@/` and `~/` src aliases, and literal dynamic imports when the target source file exists. |
 | Memory index | `scripts/forgeflow/index-memory.js` | Indexes local Forgeflow memory so helpers can find relevant history cheaply. |
 | Compact memory context | `scripts/forgeflow/build-memory-context.js` | Produces a concise project-memory summary for research, plan, consult, and implement workflows. |
@@ -62,7 +62,7 @@ When present, `.forgeflow/<project-name>/project-learnings.md` should be treated
 For review:
 
 ```bash
-scripts/forgeflow/build-context-pack.js --json
+scripts/forgeflow/build-context-pack.js --root . --json
 scripts/forgeflow/check-agent-drift.js --json
 scripts/forgeflow/build-code-topology.js --json
 scripts/forgeflow/show-code-map.js --json

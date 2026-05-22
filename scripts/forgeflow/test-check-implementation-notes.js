@@ -3,7 +3,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
-const { checkImplementationNotes, looksLikeRawLog } = require('./check-implementation-notes');
+const { checkImplementationNotes, looksLikeRawLog, parseArgs } = require('./check-implementation-notes');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-check-notes-'));
@@ -156,13 +156,18 @@ const sensitiveCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/check-impl
   sensitive,
   '--json',
 ], { encoding: 'utf8' });
-const missingArgCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/check-implementation-notes.js'), [
-  '--project-dir',
-], { encoding: 'utf8' });
-const nextFlagArgCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/check-implementation-notes.js'), [
-  '--file',
-  '--json',
-], { encoding: 'utf8' });
+let missingArgCli = { status: 0, stderr: '' };
+try {
+  parseArgs(['--project-dir'], { exitOnError: false });
+} catch (err) {
+  missingArgCli = { status: err.exitCode || 1, stderr: err.message };
+}
+let nextFlagArgCli = { status: 0, stderr: '' };
+try {
+  parseArgs(['--file', '--json'], { exitOnError: false });
+} catch (err) {
+  nextFlagArgCli = { status: err.exitCode || 1, stderr: err.message };
+}
 
 const checks = [
   ['good notes pass', goodResult.status === 'pass'],

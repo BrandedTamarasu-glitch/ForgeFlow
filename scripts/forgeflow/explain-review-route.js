@@ -3,12 +3,13 @@ const fs = require('fs');
 const path = require('path');
 
 function usage() {
-  console.error('Usage: explain-review-route.js [--json] [--files <path>] [--lines <n>] [--tracked-lines <n>] [--untracked-lines <n>] [--mode skip|thin|full|deep] [--calibration <path>] [--ci]');
+  console.error('Usage: explain-review-route.js [--json] [--root <dir>] [--files <path>] [--lines <n>] [--tracked-lines <n>] [--untracked-lines <n>] [--mode skip|thin|full|deep] [--calibration <path>] [--ci]');
 }
 
 function parseArgs(argv) {
   const opts = {
     json: false,
+    root: '',
     filesPath: '',
     linesChanged: null,
     trackedLines: null,
@@ -22,6 +23,8 @@ function parseArgs(argv) {
     const arg = argv[i];
     if (arg === '--json') {
       opts.json = true;
+    } else if (arg === '--root') {
+      opts.root = path.resolve(argv[++i] || '');
     } else if (arg === '--ci') {
       opts.ci = true;
     } else if (arg === '--files') {
@@ -46,6 +49,14 @@ function parseArgs(argv) {
     }
   }
 
+  const root = opts.root || process.cwd();
+  if (opts.filesPath) {
+    opts.filesPath = path.isAbsolute(opts.filesPath) ? opts.filesPath : path.join(root, opts.filesPath);
+  }
+  if (opts.calibrationPath) {
+    opts.calibrationPath = path.isAbsolute(opts.calibrationPath) ? opts.calibrationPath : path.join(root, opts.calibrationPath);
+  }
+
   if (opts.modeOverride && !['skip', 'thin', 'full', 'deep'].includes(opts.modeOverride)) {
     console.error(`Invalid --mode: ${opts.modeOverride}`);
     process.exit(2);
@@ -59,16 +70,16 @@ function readFiles(opts) {
     return sanitizeFileList(fs.readFileSync(opts.filesPath, 'utf8').split(/\r?\n/));
   }
 
-  const output = runGit(['diff', '--name-only', 'HEAD'])
-    .concat(runGit(['diff', '--name-only', '--cached']))
-    .concat(runGit(['ls-files', '--others', '--exclude-standard']));
+  const output = runGit(['diff', '--name-only', 'HEAD'], opts.root)
+    .concat(runGit(['diff', '--name-only', '--cached'], opts.root))
+    .concat(runGit(['ls-files', '--others', '--exclude-standard'], opts.root));
 
   return sanitizeFileList(output);
 }
 
-function runGit(args) {
+function runGit(args, cwd = '') {
   const { spawnSync } = require('child_process');
-  const result = spawnSync('git', args, { encoding: 'utf8' });
+  const result = spawnSync('git', args, { cwd: cwd || process.cwd(), encoding: 'utf8' });
   if (result.status !== 0) {
     return [];
   }
@@ -105,13 +116,14 @@ function sanitizeFileList(lines) {
   return [...new Set(lines.map(sanitizeFileLine).filter(Boolean))].sort();
 }
 
-function countChangedLineSources(filesPath) {
+function countChangedLineSources(filesPath, root = '') {
   if (filesPath) {
     return null;
   }
 
   const { spawnSync } = require('child_process');
-  const result = spawnSync('git', ['diff', '--numstat', 'HEAD'], { encoding: 'utf8' });
+  const cwd = root || process.cwd();
+  const result = spawnSync('git', ['diff', '--numstat', 'HEAD'], { cwd, encoding: 'utf8' });
 
   const trackedLines = result.status === 0 ? result.stdout.split(/\r?\n/).reduce((sum, line) => {
     const [added, deleted] = line.split(/\s+/);
@@ -119,7 +131,7 @@ function countChangedLineSources(filesPath) {
     const del = Number.parseInt(deleted, 10);
     return sum + (Number.isFinite(add) ? add : 0) + (Number.isFinite(del) ? del : 0);
   }, 0) : 0;
-  const untrackedLines = countUntrackedLines();
+  const untrackedLines = countUntrackedLines(root);
   return {
     tracked: trackedLines,
     untracked: untrackedLines,
@@ -127,16 +139,18 @@ function countChangedLineSources(filesPath) {
   };
 }
 
-function countChangedLines(filesPath) {
-  const sources = countChangedLineSources(filesPath);
+function countChangedLines(filesPath, root = '') {
+  const sources = countChangedLineSources(filesPath, root);
   return sources ? sources.total : null;
 }
 
-function countFileLines(file) {
+function countFileLines(file, root = '') {
   try {
-    const stat = fs.statSync(file);
+    const target = root && !path.isAbsolute(file) ? path.join(root, file) : file;
+    const stat = fs.lstatSync(target);
+    if (stat.isSymbolicLink()) return 0;
     if (!stat.isFile()) return 0;
-    const data = fs.readFileSync(file);
+    const data = fs.readFileSync(target);
     if (data.length === 0) return 0;
     let lines = 0;
     for (const byte of data) {
@@ -148,11 +162,11 @@ function countFileLines(file) {
   }
 }
 
-function countUntrackedLines() {
-  return runGit(['ls-files', '--others', '--exclude-standard'])
+function countUntrackedLines(root = '') {
+  return runGit(['ls-files', '--others', '--exclude-standard'], root)
     .map(sanitizeFileLine)
     .filter(Boolean)
-    .reduce((sum, file) => sum + countFileLines(file), 0);
+    .reduce((sum, file) => sum + countFileLines(file, root), 0);
 }
 
 function readCalibration(opts) {
@@ -274,7 +288,7 @@ function buildTelemetryHints(files, calibration) {
 }
 
 function classify(files, opts) {
-  const computedLineSources = countChangedLineSources(opts.filesPath);
+  const computedLineSources = countChangedLineSources(opts.filesPath, opts.root);
   const trackedLines = opts.trackedLines ?? (computedLineSources ? computedLineSources.tracked : null);
   const untrackedLines = opts.untrackedLines ?? (computedLineSources ? computedLineSources.untracked : null);
   const linesChanged = opts.linesChanged ?? (computedLineSources ? computedLineSources.total : null) ?? 0;
