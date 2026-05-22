@@ -1,5 +1,7 @@
 # Quick Start
 
+For common outcomes such as install/update, refresh, failure investigation, review prep, ship, and release prep, use [User Paths](User-Paths). This page keeps the first-run setup steps compact.
+
 ## Clone
 
 ```bash

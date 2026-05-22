@@ -52,6 +52,7 @@ const checks = [
   ['hosted docs link matching changelog', matchingChangelogLink && hostedDocs.includes(`href="${matchingChangelogLink}"`)],
   ['README links release process', readme.includes('docs/wiki/Release-Process.md')],
   ['README links release gate', readme.includes('docs/wiki/Release-Gate.md')],
+  ['README links user paths', readme.includes('docs/wiki/User-Paths.md')],
   ['README links project learnings', readme.includes('docs/wiki/Project-Learnings.md')],
   ['README mentions project learnings check command', readme.includes('/forgeflow-learnings --project --check')],
   ['learnings command supports project check', learningsCommand.includes('--check') && learningsCommand.includes('show-project-learnings.js') && learningsCommand.includes('context-pack smoke')],

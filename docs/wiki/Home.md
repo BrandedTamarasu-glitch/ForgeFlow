@@ -43,6 +43,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 - [Field Validation](Field-Validation)
 - [Clean Checkout Install Verification](Clean-Checkout-Install-Verification)
 - [Quick Start](Quick-Start)
+- [User Paths](User-Paths)
 - [Codex First Run](Codex-First-Run)
 - [Demos](Demos)
 - [Dashboard](Dashboard)

@@ -54,6 +54,8 @@ $discuss -> $research -> $plan -> $consult -> $implement -> $forge-review -> $sh
 
 ## Quick Start
 
+For a path-by-path command map, start with [User Paths](docs/wiki/User-Paths.md). It covers install/update, refresh, failure investigation, review prep, ship, and release prep without repeating every command detail.
+
 Clone the repository:
 
 ```bash
@@ -333,6 +335,7 @@ It runs on `http://127.0.0.1:4003` and reads local telemetry files from `~/.clau
 
 - [Hosted docs entry](docs/index.html)
 - [Wiki source](docs/wiki/Home.md)
+- [User paths](docs/wiki/User-Paths.md)
 - [Forgeflow 4.3 release brief](docs/wiki/Forgeflow-4.3-Release-Brief.md)
 - [Why Forgeflow](docs/wiki/Why-Forgeflow.md)
 - [Project learnings](docs/wiki/Project-Learnings.md)

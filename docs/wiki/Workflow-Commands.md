@@ -1,6 +1,6 @@
 # Workflow Commands
 
-Forgeflow can be used as a full lifecycle or as targeted commands.
+Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-based routing, start with [User Paths](User-Paths). This command reference lists what each command does after you know the path.
 
 ## Lifecycle
 
