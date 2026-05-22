@@ -34,6 +34,7 @@ node scripts/forgeflow/test-plugin-manifest.js
 node scripts/forgeflow/test-release-version.js
 node scripts/forgeflow/test-install-template.js
 node scripts/forgeflow/test-install-manifest.js
+node scripts/forgeflow/test-runtime-helper-contract.js
 node scripts/forgeflow/test-install-smoke.js
 node scripts/forgeflow/test-update-forgeflow.js
 node scripts/forgeflow/test-health-check.js
@@ -87,6 +88,7 @@ If any command fails, stop and report the failed command plus its output. Do not
 - [ ] Release version drift test passes
 - [ ] Template installer test passes
 - [ ] Install manifest and install smoke tests pass
+- [ ] Runtime helper contract matrix test passes
 - [ ] Update, health, and version helper tests pass
 - [ ] Failure digest compaction and triage tests pass
 - [ ] Agent drift helper test passes

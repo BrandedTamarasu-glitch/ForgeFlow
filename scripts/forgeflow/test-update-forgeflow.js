@@ -3,6 +3,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const {
+  renderMarkdown,
   rollbackForgeflow,
   updateForgeflow,
   versionPath,
@@ -74,6 +75,7 @@ async function run() {
     repo: 'local/repo',
     current: latest,
     latest,
+    missingRequired: ['scripts/forgeflow/smoke-check.js'],
     plan: {
       firstRun: false,
       files: ['scripts/forgeflow/smoke-check.js'],
@@ -81,6 +83,7 @@ async function run() {
     },
     fetcher: localFetcher,
   });
+  const autoRepairMarkdown = renderMarkdown(autoRepair);
 
   const repairHome = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-update-repair-'));
   fs.writeFileSync(versionPath(repairHome), `${latest}\n`);
@@ -127,13 +130,17 @@ async function run() {
     ['runtime helper installed', fs.existsSync(path.join(home, 'forgeflow', 'scripts', 'forgeflow', 'health-check.js'))],
     ['test helper skipped by manifest', !fs.existsSync(path.join(home, 'forgeflow', 'scripts', 'forgeflow', 'test-health-check.js'))],
     ['runtime helper executable', (fs.statSync(path.join(home, 'forgeflow', 'scripts', 'forgeflow', 'health-check.js')).mode & 0o111) !== 0],
+    ['affected command reported', first.affected_commands.some((item) => item.command === 'commands/forgeflow-health.md' && item.helpers.includes('scripts/forgeflow/health-check.js'))],
     ['partial status', partial.status === 'partial'],
     ['partial version not advanced', fs.readFileSync(versionPath(partialHome), 'utf8').trim() === previous],
     ['partial deleted reported', partial.deleted.includes('commands/old.md')],
     ['up to date', upToDate.status === 'up-to-date'],
+    ['up to date has no affected commands', upToDate.affected_commands.length === 0],
     ['latest incomplete auto repairs', autoRepair.status === 'repaired' && autoRepair.repair_needed === true],
     ['latest incomplete reports missing managed files', autoRepair.missing_required.includes('scripts/forgeflow/smoke-check.js')],
     ['latest incomplete installs missing helper', fs.existsSync(path.join(incompleteHome, 'forgeflow', 'scripts', 'forgeflow', 'smoke-check.js'))],
+    ['auto repair affected commands scoped to missing helper', autoRepair.affected_commands.every((item) => item.helpers.includes('scripts/forgeflow/smoke-check.js'))],
+    ['auto repair markdown renders affected commands', autoRepairMarkdown.includes('Affected commands:')],
     ['repair status', repaired.status === 'repaired'],
     ['repair installs missing file', fs.existsSync(path.join(repairHome, 'forgeflow', 'scripts', 'forgeflow', 'health-check.js'))],
     ['repair writes version', fs.readFileSync(versionPath(repairHome), 'utf8').trim() === latest],

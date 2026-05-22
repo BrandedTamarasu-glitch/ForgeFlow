@@ -64,6 +64,7 @@ const checks = [
   ['release check runs version drift test', releaseCheck.includes('node scripts/forgeflow/test-release-version.js')],
   ['release check runs guidance contract test', releaseCheck.includes('node scripts/forgeflow/test-guidance-contract.js')],
   ['release check runs failure digest test', releaseCheck.includes('node scripts/forgeflow/test-failure-digest.js')],
+  ['release check runs runtime helper contract test', releaseCheck.includes('node scripts/forgeflow/test-runtime-helper-contract.js')],
   ['release check runs agent drift test', releaseCheck.includes('node scripts/forgeflow/test-check-agent-drift.js')],
   ['release check runs forgeflow report test', releaseCheck.includes('node scripts/forgeflow/test-render-forgeflow-report.js')],
   ['release check runs evaluation report test', releaseCheck.includes('node scripts/forgeflow/test-render-evaluation-report.js')],

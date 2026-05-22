@@ -13,6 +13,7 @@ node scripts/forgeflow/test-plugin-manifest.js
 node scripts/forgeflow/test-release-version.js
 node scripts/forgeflow/test-install-template.js
 node scripts/forgeflow/test-install-manifest.js
+node scripts/forgeflow/test-runtime-helper-contract.js
 node scripts/forgeflow/test-install-smoke.js
 node scripts/forgeflow/test-update-forgeflow.js
 node scripts/forgeflow/test-health-check.js

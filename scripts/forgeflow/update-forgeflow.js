@@ -10,6 +10,7 @@ const {
   RUNTIME_HELPERS,
   STATIC_FILES,
 } = require('./install-manifest');
+const { affectedCommandsForSources } = require('./runtime-helper-contract');
 
 const DEFAULT_REPO = 'BrandedTamarasu-glitch/ForgeFlow';
 
@@ -373,8 +374,9 @@ async function updateForgeflow(opts = {}) {
       current,
       latest,
       repair_needed: false,
-      missing_required: [],
-      files: [],
+    missing_required: [],
+    affected_commands: [],
+    files: [],
       synced: [],
       failed: [],
       deleted: [],
@@ -408,6 +410,9 @@ async function updateForgeflow(opts = {}) {
     fs.mkdirSync(home, { recursive: true });
     fs.writeFileSync(versionPath(home), `${latest}\n`);
   }
+  const affectedSources = repairNeeded && missingRequired.length > 0
+    ? missingRequired
+    : [...plan.files, ...plan.deleted];
 
   return {
     schema_version: '1',
@@ -418,6 +423,7 @@ async function updateForgeflow(opts = {}) {
     repair: effectiveRepair,
     repair_needed: repairNeeded,
     missing_required: missingRequired,
+    affected_commands: affectedCommandsForSources(affectedSources, { root: path.resolve(__dirname, '..', '..') }),
     files: plan.files,
     synced: installed.synced,
     failed: failures,
@@ -475,6 +481,12 @@ function renderMarkdown(result) {
   if (result.deleted.length > 0) {
     lines.push('', result.removed && result.removed.length > 0 ? 'Files removed:' : 'Removed upstream, not present locally:');
     for (const item of result.deleted) lines.push(`  ${item}`);
+  }
+  if (result.affected_commands && result.affected_commands.length > 0) {
+    lines.push('', 'Affected commands:');
+    for (const item of result.affected_commands) {
+      lines.push(`  ${item.command}: ${item.helpers.map((helper) => path.basename(helper)).join(', ')}`);
+    }
   }
   if (result.backup?.created) {
     lines.push('', `Rollback snapshot: ${result.backup.path}`);

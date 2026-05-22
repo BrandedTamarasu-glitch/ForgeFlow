@@ -33,6 +33,7 @@ const checks = [
   ['runtime helpers include pilot evidence rollup', RUNTIME_HELPERS.includes('scripts/forgeflow/rollup-pilot-evidence.js')],
   ['runtime helpers include pattern learnings rollup', RUNTIME_HELPERS.includes('scripts/forgeflow/rollup-pattern-learnings.js')],
   ['runtime helpers include project learnings rollup', RUNTIME_HELPERS.includes('scripts/forgeflow/rollup-project-learnings.js')],
+  ['runtime helpers include runtime contract', RUNTIME_HELPERS.includes('scripts/forgeflow/runtime-helper-contract.js')],
   ['runtime helpers include project learnings display', RUNTIME_HELPERS.includes('scripts/forgeflow/show-project-learnings.js')],
   ['runtime helpers include forgeflow report', RUNTIME_HELPERS.includes('scripts/forgeflow/render-forgeflow-report.js')],
   ['runtime helpers include pilot script renderer', RUNTIME_HELPERS.includes('scripts/forgeflow/render-pilot-script.js')],
@@ -44,6 +45,7 @@ const checks = [
   ['test helper not consumer managed', !isManagedSource('scripts/forgeflow/test-health-check.js')],
   ['non managed rejected', !isManagedSource('services/dashboard/server.js')],
   ['path escape rejected', !isManagedSource('../scripts/forgeflow/health-check.js')],
+  ['command traversal rejected', !isManagedSource('commands/../pwned.md')],
 ];
 
 let failed = 0;

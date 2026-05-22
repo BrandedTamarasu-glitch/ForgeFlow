@@ -50,6 +50,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/rollup-pattern-learnings.js',
   'scripts/forgeflow/rollup-pilot-evidence.js',
   'scripts/forgeflow/rollup-project-learnings.js',
+  'scripts/forgeflow/runtime-helper-contract.js',
   'scripts/forgeflow/seed-budget-config.js',
   'scripts/forgeflow/show-code-map.js',
   'scripts/forgeflow/show-project-learnings.js',
@@ -99,8 +100,13 @@ function normalize(file) {
   return String(file || '').replace(/\\/g, '/').replace(/^\/+/, '');
 }
 
+function hasUnsafePathSegment(file) {
+  return normalize(file).split('/').some((segment) => !segment || segment === '..' || segment === '.');
+}
+
 function categoryFor(source) {
   const file = normalize(source);
+  if (hasUnsafePathSegment(file)) return '';
   if (/^agents\/[^/]+\.md$/.test(file)) return 'agent';
   if (/^agents\/_shared\/[^/]+\.md$/.test(file)) return 'shared-agent';
   if (/^commands\/[^/]+(?:\/[^/]+)?\.md$/.test(file)) return 'command';
@@ -175,6 +181,7 @@ module.exports = {
   STATIC_FILES,
   categoryFor,
   destinationFor,
+  hasUnsafePathSegment,
   isManagedSource,
   manifestEntry,
   shouldPreserveDestination,

@@ -60,9 +60,9 @@ EXPECTED_RUNTIME_HELPERS=(
   advise-context.js advise-noisy-command.js agent-chat-off.sh agent-chat-on.sh build-code-topology.js build-context-pack.js build-failure-digest.js build-memory-context.js
   build-scope-manifest.js check-agent-drift.js check-codex-agent-drift.js check-context-budget.js check-implementation-notes.js check-project-learnings.js context-telemetry.js
   compact-command-output.js
-  ensure-forgeflow-state.sh explain-review-route.js file-safety.js forgeflow-version.js generate-codex-agent-stubs.js health-check.js
+  ensure-forgeflow-state.sh explain-review-route.js failure-digest-triage.js file-safety.js forgeflow-version.js generate-codex-agent-stubs.js guidance-contract.js health-check.js
   index-memory.js install-manifest.js install-template.js latest-insights-state.js record-implementation-notes.js record-pilot-evidence.js record-project-learning.js record-review-outcome.js render-evaluation-report.js render-forgeflow-report.js render-pilot-script.js render-ship-presentation.js
-  rollup-pattern-learnings.js rollup-pilot-evidence.js rollup-project-learnings.js seed-budget-config.js show-code-map.js show-project-learnings.js show-project-trends.js ship-ci-status.sh ship-open-pr.sh ship-prepare.sh summarize-calibration.js
+  rollup-pattern-learnings.js rollup-pilot-evidence.js rollup-project-learnings.js runtime-helper-contract.js seed-budget-config.js show-code-map.js show-project-learnings.js show-project-trends.js ship-ci-status.sh ship-open-pr.sh ship-prepare.sh summarize-calibration.js
   smoke-check.js summarize-context-telemetry.js update-forgeflow.js
 )
 ```
