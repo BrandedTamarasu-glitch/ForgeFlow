@@ -112,6 +112,33 @@ fs.writeFileSync(latestInsightsReportPath, JSON.stringify({
 }, null, 2));
 const withInsightsReadiness = runHealthCheck({ root, fix: false });
 const withInsightsReadinessMarkdown = renderMarkdown(withInsightsReadiness);
+const failureDigestPath = path.join(root, '.forgeflow', project, 'context', 'latest', 'failure-digest.md');
+fs.writeFileSync(failureDigestPath, [
+  '# Forgeflow Failure Digest',
+  '',
+  'Generated at: 2026-05-20T00:01:00Z',
+  'Git available: no',
+  'Git commit: (unknown)',
+  'Git dirty: yes',
+  'Mode: failed-test',
+  'Status: compact',
+  'Raw required: no',
+  'Reason: health fixture failure summarized',
+  'Input lines: 20',
+  'Output lines: 4',
+  'Omitted lines: 16',
+  '',
+  '## Evidence References',
+  '- src/bad.test.ts:12',
+  '',
+  '## Compact Output',
+  '```text',
+  'FAIL health fixture',
+  '```',
+  '',
+].join('\n'));
+const withFailureDigest = runHealthCheck({ root, fix: false });
+const withFailureDigestMarkdown = renderMarkdown(withFailureDigest);
 fs.writeFileSync(latestInsightsReportPath, JSON.stringify({
   schema_version: '1',
   status: 'injected',
@@ -186,6 +213,8 @@ const checks = [
   ['bad project learnings recommends check', withBadProjectLearnings.recommendations.some((item) => item.command === 'forgeflow-learnings --project --check')],
   ['latest insights readiness summarized', withInsightsReadiness.latest_insights_readiness.status === 'injected' && withInsightsReadiness.latest_insights_readiness.check_status === 'pass' && withInsightsReadiness.latest_insights_readiness.freshness.status === 'current'],
   ['latest insights readiness renders', withInsightsReadinessMarkdown.includes('## Latest Insights Readiness') && withInsightsReadinessMarkdown.includes('Status: injected') && withInsightsReadinessMarkdown.includes('Freshness: current')],
+  ['latest failure digest summarized', withFailureDigest.latest_failure_digest.status === 'compact' && withFailureDigest.latest_failure_digest.freshness.status === 'current'],
+  ['latest failure digest renders', withFailureDigestMarkdown.includes('## Latest Failure Digest') && withFailureDigestMarkdown.includes('Freshness: current')],
   ['stale latest insights recommends refresh', withStaleInsights.recommendations.some((item) => item.command === 'forgeflow-trends --refresh') && withStaleInsightsMarkdown.includes('## Recommendations')],
   ['blocked latest insights recommends check', withBlockedInsights.recommendations.some((item) => item.command === 'forgeflow-learnings --project --check') && withBlockedInsightsMarkdown.includes('forgeflow-learnings --project --check')],
   ['idempotent no changes', again.changes.length === 0],

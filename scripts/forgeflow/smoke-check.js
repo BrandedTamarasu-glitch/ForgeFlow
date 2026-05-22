@@ -175,6 +175,7 @@ function runDownstreamSmoke({ root, projectDir, patternsDir }) {
     trends = showProjectTrends({ root, projectDir, refresh: true });
     const freshness = trends.freshness ? trends.freshness.status : 'missing';
     const latestFreshness = trends.latest_insights && trends.latest_insights.freshness ? trends.latest_insights.freshness.status : 'missing';
+    const failureDigestFreshness = trends.failure_digest && trends.failure_digest.freshness ? trends.failure_digest.freshness.status : 'not-applicable';
     const refreshStatus = trends.refresh ? trends.refresh.status : 'missing';
     const trendStatus = refreshStatus === 'pass' && freshness === 'current' && latestFreshness === 'current' ? 'pass' : 'fail';
     const warningActions = (trends.recommendations || []).map((item) => item.action);
@@ -183,6 +184,7 @@ function runDownstreamSmoke({ root, projectDir, patternsDir }) {
       refresh_status: refreshStatus,
       freshness,
       latest_insights_freshness: latestFreshness,
+      failure_digest_freshness: failureDigestFreshness,
       recommendations: trends.recommendations || [],
       import_gaps: trends.import_gaps || null,
     }));
@@ -205,16 +207,20 @@ function runDownstreamSmoke({ root, projectDir, patternsDir }) {
   try {
     report = buildReport({ root, projectDir, patternsDir, refresh: true, noDrift: true, record: false });
     const latestFreshness = report.latest_insights && report.latest_insights.freshness ? report.latest_insights.freshness.status : 'missing';
+    const failureDigestFreshness = report.project_trends && report.project_trends.failure_digest && report.project_trends.failure_digest.freshness
+      ? report.project_trends.failure_digest.freshness.status
+      : 'not-applicable';
     const budgetStatus = report.context && report.context.budget ? report.context.budget.status : 'missing';
     const refreshStatus = report.project_trends && report.project_trends.refresh ? report.project_trends.refresh.status : 'missing';
     const reportStatus = refreshStatus === 'pass' && latestFreshness === 'current'
-      ? (budgetStatus === 'pass' ? 'pass' : 'warn')
+      ? (budgetStatus === 'pass' && failureDigestFreshness !== 'attention' ? 'pass' : 'warn')
       : 'fail';
     checks.push(check('report-refresh', reportStatus, {
       command: 'forgeflow-report --refresh --no-drift',
       refresh_status: refreshStatus,
       budget_status: budgetStatus,
       latest_insights_freshness: latestFreshness,
+      failure_digest_freshness: failureDigestFreshness,
       recommendations: report.recommendations || [],
       priorities: report.priorities || [],
     }));

@@ -365,6 +365,8 @@ function derivePriorities(report) {
   if (report.project_trends.failure_digest && report.project_trends.failure_digest.present) {
     if (report.project_trends.failure_digest.status === 'invalid') {
       priorities.push('Regenerate the latest failure digest before relying on failure summaries.');
+    } else if (report.project_trends.failure_digest.freshness && report.project_trends.failure_digest.freshness.status === 'attention') {
+      priorities.push('Refresh the latest failure digest before relying on failure summaries for the current checkout.');
     } else if (report.project_trends.failure_digest.raw_required) {
       priorities.push('Inspect raw failure output because the latest failure digest marked raw output as required.');
     } else if (report.project_trends.failure_digest.summary) {
@@ -577,6 +579,7 @@ function renderMarkdown(report) {
     if (failureDigest.generated_at) lines.push(`- Latest failure digest generated: ${failureDigest.generated_at}`);
     if (failureDigest.reason) lines.push(`- Latest failure digest reason: ${failureDigest.reason}`);
     if (failureDigest.present) lines.push(`- Latest failure digest raw required: ${failureDigest.raw_required ? 'yes' : 'no'}`);
+    if (failureDigest.freshness) lines.push(`- Latest failure digest freshness: ${failureDigest.freshness.status}`);
     if (failureDigest.summary) lines.push(`- Latest failure digest first signal: ${failureDigest.summary}`);
   }
 

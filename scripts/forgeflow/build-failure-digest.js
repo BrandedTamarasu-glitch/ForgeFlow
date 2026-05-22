@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { compactCommandOutput } = require('./compact-command-output');
 const { safeReadTextFile, writeFileSafe } = require('./file-safety');
+const { currentGitState, repoRoot } = require('./latest-insights-state');
 
 function usage() {
   console.error('Usage: build-failure-digest.js --mode <test|typecheck|lint|logs> [--command <cmd>] [--file <path>] [--out <path>] [--json]');
@@ -81,12 +82,16 @@ function extractFailureRefs(text) {
   return refs;
 }
 
-function renderDigest(result, refs) {
+function renderDigest(result, refs, gitState = null) {
   const fence = result.output.includes('````') ? '`````' : '````';
+  const git = gitState || { available: false, commit_short: '', dirty: false };
   const lines = [
     '# Forgeflow Failure Digest',
     '',
     `Generated at: ${new Date().toISOString()}`,
+    `Git available: ${git.available ? 'yes' : 'no'}`,
+    `Git commit: ${git.commit_short || '(unknown)'}`,
+    `Git dirty: ${git.dirty ? 'yes' : 'no'}`,
     `Mode: ${result.mode || 'unknown'}`,
     `Status: ${result.status}`,
     `Raw required: ${result.raw_required ? 'yes' : 'no'}`,
@@ -116,6 +121,8 @@ function renderDigest(result, refs) {
 }
 
 function buildFailureDigest(input, opts = {}) {
+  const root = opts.root || repoRoot();
+  const git = currentGitState(root);
   const result = compactCommandOutput(input, {
     mode: opts.mode || 'test',
     command: opts.command || '',
@@ -123,10 +130,11 @@ function buildFailureDigest(input, opts = {}) {
     maxLineChars: opts.maxLineChars || 220,
   });
   const refs = extractFailureRefs(result.output || input);
-  const markdown = renderDigest(result, refs);
+  const markdown = renderDigest(result, refs, git);
   return {
     schema_version: '1',
     generated_at: new Date().toISOString(),
+    git,
     status: result.status,
     mode: result.mode,
     raw_required: result.raw_required,

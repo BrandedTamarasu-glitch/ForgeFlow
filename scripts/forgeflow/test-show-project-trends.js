@@ -4,6 +4,7 @@ const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const {
+  failureDigestFreshness,
   latestInsightsFreshness,
   parseProjectLearnings,
   projectFreshness,
@@ -117,6 +118,9 @@ fs.writeFileSync(path.join(latestDir, 'failure-digest.md'), [
   '# Forgeflow Failure Digest',
   '',
   'Generated at: 2026-05-20T00:01:00Z',
+  'Git available: yes',
+  'Git commit: bbbbbbb',
+  'Git dirty: no',
   'Mode: failed-test',
   'Status: compact',
   'Raw required: no',
@@ -164,6 +168,10 @@ const staleLearningFreshness = projectFreshness({
     consumed_code_map_history_snapshots: 2,
   },
 });
+const staleFailureDigestFreshness = failureDigestFreshness({
+  present: true,
+  git: { available: true, commit_short: 'bbbbbbb', dirty: false },
+}, { available: true, commit_short: 'ccccccc', dirty: true });
 const refreshLagFreshness = projectFreshness({
   current: { available: true, commit_short: 'bbbbbbb', dirty: false },
   latest: { generated_at: '2026-05-20T00:00:00Z', commit_short: 'bbbbbbb', dirty: false },
@@ -250,15 +258,16 @@ const checks = [
   ['summarizes freshness', result.freshness.status === 'attention' && result.freshness.issues.some((item) => item.code === 'project-learnings-generated-at-missing')],
   ['recommends refresh for stale artifacts', staleGuidance.recommendations.some((item) => item.command === 'forgeflow-trends --refresh')],
   ['summarizes latest insights', result.latest_insights.status === 'injected' && result.latest_insights.check_status === 'pass' && result.latest_insights.freshness.status === 'current'],
-  ['summarizes latest failure digest', result.failure_digest.status === 'compact' && result.failure_digest.mode === 'failed-test' && result.failure_digest.omitted_lines === 108 && result.failure_digest.summary.includes('FAIL test validates failure digest')],
+  ['summarizes latest failure digest', result.failure_digest.status === 'compact' && result.failure_digest.mode === 'failed-test' && result.failure_digest.git.commit_short === 'bbbbbbb' && result.failure_digest.git.dirty === false && result.failure_digest.freshness.status === 'current' && result.failure_digest.omitted_lines === 108 && result.failure_digest.summary.includes('FAIL test validates failure digest')],
+  ['detects stale failure digest freshness', staleFailureDigestFreshness.status === 'attention' && staleFailureDigestFreshness.issues.some((item) => item.code === 'failure-digest-commit-stale') && staleFailureDigestFreshness.issues.some((item) => item.code === 'failure-digest-dirty-stale')],
   ['detects stale latest insights', staleInsightsFreshness.status === 'attention' && staleInsightsFreshness.issues.some((item) => item.code === 'latest-insights-commit-stale')],
   ['detects stale code map freshness', staleFreshness.status === 'attention' && staleFreshness.issues.some((item) => item.code === 'code-map-commit-stale') && staleFreshness.issues.some((item) => item.code === 'code-map-dirty-stale')],
   ['detects stale project learning code-map consumption', staleLearningFreshness.status === 'attention' && staleLearningFreshness.issues.some((item) => item.code === 'project-learnings-code-map-stale')],
   ['allows refresh smoke code-map lag', refreshLagFreshness.status === 'current'],
   ['detects missing freshness inputs', missingFreshness.status === 'missing' && missingFreshness.issues.some((item) => item.code === 'code-map-missing') && missingFreshness.issues.some((item) => item.code === 'project-learnings-missing')],
   ['summarizes advisor', result.advisor.budget_status === 'warn' && result.advisor.code_map_trends_status === 'attention' && result.advisor.recommendations.some((item) => item.action === 'trim-budget-violation')],
-  ['renders markdown', markdown.includes('# Forgeflow Project Trends') && markdown.includes('## Recommendations') && markdown.includes('Unresolved imports delta: 1') && markdown.includes('## Import Gaps') && markdown.includes('Needs review: 1') && markdown.includes('forgeflow-code-map') && markdown.includes('## Latest Insights') && markdown.includes('## Latest Failure Digest') && markdown.includes('FAIL test validates failure digest') && markdown.includes('Narrow file scope')],
-  ['cli json works', cli.status === 0 && cliJson.code_map.trend.status === 'compared' && cliJson.project_learnings.consumed_code_map_trend === true && Boolean(cliJson.freshness) && cliJson.latest_insights.status === 'injected' && cliJson.failure_digest.status === 'compact' && cliJson.import_gaps.status === 'attention'],
+  ['renders markdown', markdown.includes('# Forgeflow Project Trends') && markdown.includes('## Recommendations') && markdown.includes('Unresolved imports delta: 1') && markdown.includes('## Import Gaps') && markdown.includes('Needs review: 1') && markdown.includes('forgeflow-code-map') && markdown.includes('## Latest Insights') && markdown.includes('## Latest Failure Digest') && markdown.includes('Git: bbbbbbb clean') && markdown.includes('Freshness: current') && markdown.includes('FAIL test validates failure digest') && markdown.includes('Narrow file scope')],
+  ['cli json works', cli.status === 0 && cliJson.code_map.trend.status === 'compared' && cliJson.project_learnings.consumed_code_map_trend === true && Boolean(cliJson.freshness) && cliJson.latest_insights.status === 'injected' && cliJson.failure_digest.status === 'compact' && cliJson.failure_digest.freshness.status === 'attention' && cliJson.recommendations.some((item) => item.command === 'forgeflow-failure-digest') && cliJson.import_gaps.status === 'attention'],
   ['refresh cli works', refreshCli.status === 0 && refreshCliJson.refresh && refreshCliJson.refresh.check_status === 'pass'],
   ['missing option value exits usage', missingValue.status === 2 && missingValue.stderr.includes('Missing value for --project-dir')],
 ];

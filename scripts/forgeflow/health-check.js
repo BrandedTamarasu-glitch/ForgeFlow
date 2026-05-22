@@ -9,6 +9,7 @@ const {
   latestInsightsFreshness,
   latestInsightsReadiness: readLatestInsightsReadiness,
 } = require('./latest-insights-state');
+const { failureDigestFreshness, latestFailureDigest } = require('./show-project-trends');
 const {
   RUNTIME_HELPERS,
   STATIC_FILES,
@@ -350,7 +351,7 @@ function latestInsightsReadiness(ffDir) {
   return readLatestInsightsReadiness(ffDir, path.dirname(path.dirname(ffDir)));
 }
 
-function healthRecommendations({ latestInsights, projectLearningsCheck }) {
+function healthRecommendations({ latestInsights, projectLearningsCheck, failureDigest }) {
   const recommendations = [];
   const freshness = latestInsights && latestInsights.freshness ? latestInsights.freshness : null;
   if (freshness && freshness.issues && freshness.issues.length > 0) {
@@ -375,6 +376,21 @@ function healthRecommendations({ latestInsights, projectLearningsCheck }) {
       action: 'inspect-project-learnings',
       command: 'forgeflow-learnings --project --check',
       reason: 'Project learnings quality gate is not passing.',
+    });
+  }
+  if (failureDigest && failureDigest.status === 'invalid') {
+    recommendations.push({
+      severity: 'attention',
+      action: 'refresh-failure-digest',
+      command: 'forgeflow-failure-digest',
+      reason: failureDigest.reason,
+    });
+  } else if (failureDigest && failureDigest.freshness && failureDigest.freshness.status === 'attention') {
+    recommendations.push({
+      severity: 'attention',
+      action: 'refresh-failure-digest',
+      command: 'forgeflow-failure-digest',
+      reason: 'Latest failure digest is stale for the current checkout.',
     });
   }
   return recommendations;
@@ -427,8 +443,14 @@ function runHealthCheck(opts = {}) {
 
   const failures = checks.filter((item) => item.status === 'fail');
   const latestInsights = latestInsightsReadiness(ffDir);
+  const failureDigest = latestFailureDigest(ffDir);
+  failureDigest.freshness = failureDigestFreshness(failureDigest, {
+    available: gitRepo,
+    commit_short: gitRepo ? git(['rev-parse', '--short', 'HEAD'], root) : '',
+    dirty: gitRepo ? git(['status', '--short'], root).split(/\r?\n/).filter(Boolean).length > 0 : false,
+  });
   const projectLearningsCheck = latestProjectLearningsCheck(ffDir);
-  const recommendations = healthRecommendations({ latestInsights, projectLearningsCheck });
+  const recommendations = healthRecommendations({ latestInsights, projectLearningsCheck, failureDigest });
   return {
     schema_version: '1',
     root,
@@ -442,6 +464,7 @@ function runHealthCheck(opts = {}) {
     latest_project_learnings: latestProjectLearnings(ffDir),
     latest_project_learnings_check: projectLearningsCheck,
     latest_insights_readiness: latestInsights,
+    latest_failure_digest: failureDigest,
     recommendations,
   };
 }
@@ -515,6 +538,18 @@ function renderMarkdown(result) {
     if (latest.check_status) lines.push(`- Quality gate: ${latest.check_status}`);
     if (latest.freshness) lines.push(`- Freshness: ${latest.freshness.status}`);
     lines.push(`- Issues: ${latest.issue_count}`);
+    lines.push(`- Report: ${latest.path}`);
+    lines.push('');
+  }
+  if (result.latest_failure_digest && result.latest_failure_digest.present) {
+    const latest = result.latest_failure_digest;
+    lines.push('## Latest Failure Digest', '');
+    lines.push(`- Status: ${latest.status}`);
+    if (latest.mode) lines.push(`- Mode: ${latest.mode}`);
+    if (latest.generated_at) lines.push(`- Generated at: ${latest.generated_at}`);
+    if (latest.freshness) lines.push(`- Freshness: ${latest.freshness.status}`);
+    lines.push(`- Raw required: ${latest.raw_required ? 'yes' : 'no'}`);
+    if (latest.reason) lines.push(`- Reason: ${latest.reason}`);
     lines.push(`- Report: ${latest.path}`);
     lines.push('');
   }

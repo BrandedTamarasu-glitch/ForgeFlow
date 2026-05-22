@@ -87,11 +87,19 @@ function parseFailureDigest(markdown, file) {
     : [];
   const status = parseLineValue(markdown, 'Status') || 'unknown';
   const rawRequired = /^yes$/iu.test(parseLineValue(markdown, 'Raw required'));
+  const gitAvailable = parseLineValue(markdown, 'Git available');
+  const gitCommit = parseLineValue(markdown, 'Git commit');
+  const gitDirty = parseLineValue(markdown, 'Git dirty');
   return {
     status,
     path: file,
     present: true,
     generated_at: parseGeneratedAt(markdown),
+    git: {
+      available: /^yes$/iu.test(gitAvailable),
+      commit_short: gitCommit && gitCommit !== '(unknown)' ? gitCommit : '',
+      dirty: /^yes$/iu.test(gitDirty),
+    },
     mode: parseLineValue(markdown, 'Mode') || '',
     raw_required: rawRequired,
     reason: parseLineValue(markdown, 'Reason') || '',
@@ -111,6 +119,11 @@ function latestFailureDigest(projectDir) {
       path: file,
       present: false,
       generated_at: '',
+      git: {
+        available: false,
+        commit_short: '',
+        dirty: false,
+      },
       mode: '',
       raw_required: false,
       reason: 'No latest failure digest artifact is present.',
@@ -129,6 +142,11 @@ function latestFailureDigest(projectDir) {
       path: file,
       present: true,
       generated_at: '',
+      git: {
+        available: false,
+        commit_short: '',
+        dirty: false,
+      },
       mode: '',
       raw_required: true,
       reason: `failure-digest.md could not be read safely: ${err.message}`,
@@ -139,6 +157,45 @@ function latestFailureDigest(projectDir) {
       summary: '',
     };
   }
+}
+
+function failureDigestFreshness(digest, current) {
+  const issues = [];
+  if (!digest || !digest.present) {
+    return {
+      status: 'not-applicable',
+      current_commit: current.commit_short || '',
+      current_dirty: Boolean(current.dirty),
+      issues,
+    };
+  }
+  const recorded = digest.git || {};
+  if (!recorded.commit_short && recorded.available !== false) {
+    issues.push({
+      code: 'failure-digest-provenance-missing',
+      severity: 'attention',
+      message: 'Latest failure digest does not include git provenance.',
+    });
+  } else if (current.available && current.commit_short && recorded.commit_short && current.commit_short !== recorded.commit_short) {
+    issues.push({
+      code: 'failure-digest-commit-stale',
+      severity: 'attention',
+      message: `Latest failure digest was generated for ${recorded.commit_short}, current HEAD is ${current.commit_short}.`,
+    });
+  }
+  if (current.available && current.dirty && !recorded.dirty) {
+    issues.push({
+      code: 'failure-digest-dirty-stale',
+      severity: 'attention',
+      message: 'Current worktree has local changes that the latest clean failure digest did not include.',
+    });
+  }
+  return {
+    status: freshnessStatus(issues),
+    current_commit: current.commit_short || '',
+    current_dirty: Boolean(current.dirty),
+    issues,
+  };
 }
 
 function latestCodeMapTrend(history) {
@@ -311,6 +368,14 @@ function trendRecommendations({ freshness, latestInsights, refresh, importGaps, 
       reason: failureDigest.reason,
     });
   }
+  if (failureDigest && failureDigest.freshness && failureDigest.freshness.status === 'attention') {
+    recommendations.push({
+      severity: 'attention',
+      action: 'refresh-failure-digest',
+      command: 'forgeflow-failure-digest',
+      reason: 'Latest failure digest is stale for the current checkout.',
+    });
+  }
   return recommendations;
 }
 
@@ -334,6 +399,7 @@ function showProjectTrends(opts = {}) {
   const latestInsights = latestInsightsReadiness(projectDir, root);
   const importGaps = latestImportGaps(contextDir);
   const failureDigest = latestFailureDigest(projectDir);
+  failureDigest.freshness = failureDigestFreshness(failureDigest, current);
 
   const freshness = projectFreshness({
     current,
@@ -445,10 +511,13 @@ function renderMarkdown(result) {
     '## Latest Failure Digest',
     '',
     `- Status: ${result.failure_digest.status}`,
+    `- Git: ${result.failure_digest.git && result.failure_digest.git.available ? `${result.failure_digest.git.commit_short || '(unknown)'}${result.failure_digest.git.dirty ? ' dirty' : ' clean'}` : '(unavailable)'}`,
     `- Mode: ${result.failure_digest.mode || '(none)'}`,
     `- Raw required: ${result.failure_digest.raw_required ? 'yes' : 'no'}`,
     `- Generated at: ${result.failure_digest.generated_at || '(none)'}`,
     `- Omitted lines: ${result.failure_digest.omitted_lines || 0}`,
+    `- Freshness: ${result.failure_digest.freshness ? result.failure_digest.freshness.status : 'unknown'}`,
+    `- Freshness issues: ${result.failure_digest.freshness && result.failure_digest.freshness.issues.length > 0 ? result.failure_digest.freshness.issues.map((item) => `${item.code}: ${item.message}`).join('; ') : '(none)'}`,
     `- Reason: ${result.failure_digest.reason || '(none)'}`,
     `- Evidence refs: ${result.failure_digest.refs.length > 0 ? result.failure_digest.refs.join('; ') : '(none)'}`,
     `- First signal: ${result.failure_digest.summary || '(none)'}`,
@@ -498,6 +567,8 @@ module.exports = {
   parseProjectLearnings,
   latestImportGaps,
   latestFailureDigest,
+  parseFailureDigest,
+  failureDigestFreshness,
   projectFreshness,
   renderMarkdown,
   showProjectTrends,

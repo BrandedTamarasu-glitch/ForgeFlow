@@ -12,6 +12,7 @@ const {
 const { buildMemoryIndex } = require('./index-memory');
 const { showProjectLearnings } = require('./show-project-learnings');
 const { checkProjectLearnings } = require('./check-project-learnings');
+const { failureDigestFreshness, parseFailureDigest } = require('./show-project-trends');
 const {
   attachCodeMapHistory,
   historyPathForTopologyOut,
@@ -630,21 +631,49 @@ function topologyReport(topologyResult, root) {
 
 function latestFailureDigest(outDir, root, maxChars = 2500) {
   const file = path.join(outDir, 'failure-digest.md');
-  if (!fs.existsSync(file)) return '(none)';
+  if (!fs.existsSync(file)) {
+    return {
+      markdown: '(none)',
+      freshness: { status: 'not-applicable', current_commit: '', current_dirty: false, issues: [] },
+    };
+  }
   try {
     const content = safeReadTextFile(file, outDir).content;
-    return truncate([
-      `Artifact: ${path.relative(root, file)}`,
-      '',
-      content.replace(/^# Forgeflow Failure Digest\s*/u, '').trim(),
-    ].join('\n'), maxChars);
+    const digest = parseFailureDigest(content, file);
+    const freshness = failureDigestFreshness(digest, currentGitState(root));
+    const warning = freshness.status === 'attention'
+      ? [
+        'Freshness: attention',
+        `Issues: ${freshness.issues.map((item) => `${item.code}: ${item.message}`).join('; ')}`,
+        'Agents should verify against current command output before relying on this digest.',
+        '',
+      ]
+      : [`Freshness: ${freshness.status}`, ''];
+    return {
+      markdown: truncate([
+        `Artifact: ${path.relative(root, file)}`,
+        '',
+        ...warning,
+        content.replace(/^# Forgeflow Failure Digest\s*/u, '').trim(),
+      ].join('\n'), maxChars),
+      freshness,
+    };
   } catch (err) {
-    return [
-      `Artifact: ${path.relative(root, file)}`,
-      '',
-      `Unavailable: ${err.message}`,
-      'Agents should inspect current command output or rerun `forgeflow-failure-digest` before relying on this artifact.',
-    ].join('\n');
+    const freshness = {
+      status: 'invalid',
+      current_commit: '',
+      current_dirty: false,
+      issues: [{ code: 'failure-digest-invalid', severity: 'attention', message: err.message }],
+    };
+    return {
+      markdown: [
+        `Artifact: ${path.relative(root, file)}`,
+        '',
+        `Unavailable: ${err.message}`,
+        'Agents should inspect current command output or rerun `forgeflow-failure-digest` before relying on this artifact.',
+      ].join('\n'),
+      freshness,
+    };
   }
 }
 
@@ -772,7 +801,7 @@ function buildContextPack(opts) {
   const packets = {};
 
   for (const agent of agents) {
-    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, latestFailure, projectCodeMap, topologySummary, opts.task);
+    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, latestFailure.markdown, projectCodeMap, topologySummary, opts.task);
     const file = path.join(packetDir, `${agent}.md`);
     writeFileSafe(file, content);
     packets[agent] = path.relative(root, file);
@@ -804,6 +833,7 @@ function buildContextPack(opts) {
     latest_insights_path: path.relative(root, path.join(outDir, 'latest-insights.md')),
     latest_insights_report_path: path.relative(root, path.join(outDir, 'latest-insights-report.json')),
     latest_failure_digest_path: fs.existsSync(latestFailurePath) ? path.relative(root, latestFailurePath) : null,
+    latest_failure_digest_freshness: latestFailure.freshness,
     project_code_map_path: topologyContext ? path.relative(root, projectCodeMapPath) : null,
     project_code_topology_path: topologyContext ? path.relative(root, topologyContext.out) : null,
     code_topology_path: topologyContext ? path.relative(root, topologyContext.out) : null,

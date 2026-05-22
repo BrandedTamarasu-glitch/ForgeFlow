@@ -16,6 +16,7 @@ const fenced = buildFailureDigest('diff --git a/a b/a\n```\n+boom\n', { mode: 't
 const checks = [
   ['extracts refs', extractFailureRefs(input).some((item) => item.file === 'src/bad.test.ts' && item.line === 12)],
   ['renders markdown', digest.markdown.includes('# Forgeflow Failure Digest') && digest.markdown.includes('src/bad.test.ts:12:4')],
+  ['records git provenance', digest.git && typeof digest.git.available === 'boolean' && digest.markdown.includes('Git available:') && digest.markdown.includes('Git commit:') && digest.markdown.includes('Git dirty:')],
   ['compacts failures', digest.compact.status === 'compacted' && !digest.compact.output.includes('PASS src/ok.test.ts')],
   ['preserves unsafe raw output', unsafe.raw_required === true && unsafe.markdown.includes('Raw required: yes')],
   ['uses longer markdown fence', fenced.markdown.includes('````text') && fenced.markdown.includes('\n```\n')],
