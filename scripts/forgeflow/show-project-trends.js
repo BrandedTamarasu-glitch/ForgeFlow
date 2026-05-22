@@ -2,7 +2,14 @@
 const fs = require('fs');
 const path = require('path');
 const { adviseContext } = require('./advise-context');
-const { safeReadTextFile } = require('./file-safety');
+const { assertSafeDirectory, safeReadTextFile } = require('./file-safety');
+const {
+  inspectRefresh,
+  refreshFailureDigest,
+  refreshProjectTrends,
+  reviewImportGaps,
+  uniqueRecommendations,
+} = require('./guidance-contract');
 const {
   currentGitState,
   latestInsightsFreshness,
@@ -56,8 +63,13 @@ function defaultProjectDir(root) {
   return path.join(root, '.forgeflow', path.basename(root));
 }
 
-function readFile(file) {
-  return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+function readFile(file, root = path.dirname(file)) {
+  if (!fs.existsSync(file)) return '';
+  try {
+    return safeReadTextFile(file, root).content;
+  } catch (_err) {
+    return '';
+  }
 }
 
 function parseGeneratedAt(markdown) {
@@ -293,18 +305,18 @@ function refreshProjectGuidance(projectDir) {
   };
 }
 
-function readJson(file) {
+function readJson(file, root = path.dirname(file)) {
   if (!file || !fs.existsSync(file)) return null;
   try {
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
+    return JSON.parse(safeReadTextFile(file, root).content);
   } catch (_err) {
     return null;
   }
 }
 
 function latestImportGaps(contextDir, limit = 5) {
-  const topology = readJson(path.join(contextDir, 'code-topology.json'))
-    || readJson(path.join(contextDir, 'latest', 'code-topology.json'));
+  const topology = readJson(path.join(contextDir, 'code-topology.json'), contextDir)
+    || readJson(path.join(contextDir, 'latest', 'code-topology.json'), contextDir);
   if (!topology || topology.schema_version !== '1') {
     return {
       status: 'missing',
@@ -337,51 +349,27 @@ function trendRecommendations({ freshness, latestInsights, refresh, importGaps, 
   const insightsFreshness = latestInsights && latestInsights.freshness ? latestInsights.freshness : null;
   const hasInsightsFreshnessIssue = insightsFreshness && insightsFreshness.issues && insightsFreshness.issues.length > 0;
   if ((hasProjectFreshnessIssue || hasInsightsFreshnessIssue) && !refresh) {
-    recommendations.push({
-      severity: 'attention',
-      action: 'refresh-project-trends',
-      command: 'forgeflow-trends --refresh',
-      reason: 'Project guidance artifacts are stale or missing for the current checkout.',
-    });
+    recommendations.push(refreshProjectTrends());
   }
   if (refresh && refresh.status !== 'pass') {
-    recommendations.push({
-      severity: 'attention',
-      action: 'inspect-refresh',
-      command: 'forgeflow-learnings --project --check',
-      reason: 'The trends refresh did not complete cleanly.',
-    });
+    recommendations.push(inspectRefresh());
   }
   if (importGaps && importGaps.status === 'attention') {
-    recommendations.push({
-      severity: 'attention',
-      action: 'review-import-gaps',
-      command: 'forgeflow-code-map',
-      reason: `Code map has ${importGaps.production_total} production-scope import gap(s).`,
-    });
+    recommendations.push(reviewImportGaps(importGaps.production_total));
   }
   if (failureDigest && failureDigest.status === 'invalid') {
-    recommendations.push({
-      severity: 'attention',
-      action: 'refresh-failure-digest',
-      command: 'forgeflow-failure-digest',
-      reason: failureDigest.reason,
-    });
+    recommendations.push(refreshFailureDigest({ reason: failureDigest.reason }));
   }
   if (failureDigest && failureDigest.freshness && failureDigest.freshness.status === 'attention') {
-    recommendations.push({
-      severity: 'attention',
-      action: 'refresh-failure-digest',
-      command: 'forgeflow-failure-digest',
-      reason: 'Latest failure digest is stale for the current checkout.',
-    });
+    recommendations.push(refreshFailureDigest());
   }
-  return recommendations;
+  return uniqueRecommendations(recommendations);
 }
 
 function showProjectTrends(opts = {}) {
   const root = opts.root || repoRoot();
   const projectDir = opts.projectDir || defaultProjectDir(root);
+  assertSafeDirectory(projectDir);
   const refresh = opts.refresh ? refreshProjectGuidance(projectDir) : null;
   const contextDir = path.join(projectDir, 'context');
   const historyPath = path.join(contextDir, 'code-map-history.jsonl');
@@ -389,7 +377,7 @@ function showProjectTrends(opts = {}) {
   const history = readCodeMapHistory(historyPath);
   const trend = latestCodeMapTrend(history);
   const latest = history.length > 0 ? history[history.length - 1] : null;
-  const projectLearnings = parseProjectLearnings(readFile(learningsPath));
+  const projectLearnings = parseProjectLearnings(readFile(learningsPath, projectDir));
   const advisor = adviseContext({
     root: projectDir,
     codeMapHistoryFiles: fs.existsSync(historyPath) ? [historyPath] : [],

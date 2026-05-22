@@ -4,7 +4,14 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { seedBudgetConfig } = require('./seed-budget-config');
 const { checkProjectLearnings } = require('./check-project-learnings');
-const { safeReadTextFile } = require('./file-safety');
+const { assertSafeDirectory, safeReadTextFile, writeFileSafe } = require('./file-safety');
+const {
+  inspectLearningGate,
+  inspectProjectLearnings,
+  refreshFailureDigest,
+  refreshProjectTrends,
+  uniqueRecommendations,
+} = require('./guidance-contract');
 const {
   latestInsightsFreshness,
   latestInsightsReadiness: readLatestInsightsReadiness,
@@ -99,7 +106,7 @@ function addGitignoreEntry(root) {
   }
   const prior = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
   const prefix = prior && !prior.endsWith('\n') ? '\n' : '';
-  fs.writeFileSync(file, `${prior}${prefix}.forgeflow/\n`);
+  writeFileSafe(file, `${prior}${prefix}.forgeflow/\n`);
 }
 
 function gitignoreState(root) {
@@ -139,6 +146,7 @@ function skip(name, detail = {}) {
 }
 
 function safeMkdir(dir) {
+  assertSafeDirectory(dir);
   fs.mkdirSync(dir, { recursive: true });
 }
 
@@ -187,13 +195,15 @@ function addInstallChecks(checks, installRoot) {
     const entry = manifestEntry(source, installRoot);
     if (!entry) continue;
     const exists = fs.existsSync(entry.destination);
-    const executable = entry.executable ? (exists && ((fs.statSync(entry.destination).mode & 0o111) !== 0)) : true;
+    const stat = exists ? fs.lstatSync(entry.destination) : null;
+    const regularFile = Boolean(stat && stat.isFile() && !stat.isSymbolicLink());
+    const executable = entry.executable ? (regularFile && ((stat.mode & 0o111) !== 0)) : true;
     const label = entry.category === 'runtime-script'
       ? `runtime helper ${path.basename(source)}`
       : (entry.category === 'template' || entry.category === 'hook'
         ? `${entry.category} ${path.basename(source)}`
         : `${entry.category} ${source}`);
-    checks.push(check(label, exists && executable, `run update-forgeflow to install ${source}`, {
+    checks.push(check(label, regularFile && executable, `run update-forgeflow to install ${source}`, {
       path: entry.destination,
     }));
   }
@@ -347,60 +357,36 @@ function latestProjectLearningsCheck(ffDir) {
   }
 }
 
-function latestInsightsReadiness(ffDir) {
-  return readLatestInsightsReadiness(ffDir, path.dirname(path.dirname(ffDir)));
+function latestInsightsReadiness(ffDir, root = path.dirname(path.dirname(ffDir))) {
+  return readLatestInsightsReadiness(ffDir, root);
 }
 
 function healthRecommendations({ latestInsights, projectLearningsCheck, failureDigest }) {
   const recommendations = [];
   const freshness = latestInsights && latestInsights.freshness ? latestInsights.freshness : null;
   if (freshness && freshness.issues && freshness.issues.length > 0) {
-    recommendations.push({
-      severity: 'attention',
-      action: 'refresh-latest-insights',
-      command: 'forgeflow-trends --refresh',
-      reason: 'Latest insights are stale or missing for the current checkout.',
-    });
+    recommendations.push(refreshProjectTrends());
   }
   if (latestInsights && ['blocked', 'error', 'invalid'].includes(latestInsights.status)) {
-    recommendations.push({
-      severity: 'attention',
-      action: 'inspect-learning-gate',
-      command: 'forgeflow-learnings --project --check',
-      reason: 'Latest insights are not ready for agent context.',
-    });
+    recommendations.push(inspectLearningGate());
   }
   if (projectLearningsCheck && ['warn', 'fail', 'invalid'].includes(projectLearningsCheck.status)) {
-    recommendations.push({
-      severity: 'attention',
-      action: 'inspect-project-learnings',
-      command: 'forgeflow-learnings --project --check',
-      reason: 'Project learnings quality gate is not passing.',
-    });
+    recommendations.push(inspectProjectLearnings());
   }
   if (failureDigest && failureDigest.status === 'invalid') {
-    recommendations.push({
-      severity: 'attention',
-      action: 'refresh-failure-digest',
-      command: 'forgeflow-failure-digest',
-      reason: failureDigest.reason,
-    });
+    recommendations.push(refreshFailureDigest({ reason: failureDigest.reason }));
   } else if (failureDigest && failureDigest.freshness && failureDigest.freshness.status === 'attention') {
-    recommendations.push({
-      severity: 'attention',
-      action: 'refresh-failure-digest',
-      command: 'forgeflow-failure-digest',
-      reason: 'Latest failure digest is stale for the current checkout.',
-    });
+    recommendations.push(refreshFailureDigest());
   }
-  return recommendations;
+  return uniqueRecommendations(recommendations);
 }
 
 function runHealthCheck(opts = {}) {
   const requestedRoot = opts.root || process.cwd();
   const gitRepo = isGitRepo(requestedRoot);
   const root = opts.root ? path.resolve(opts.root) : repoRoot(requestedRoot);
-  const ffDir = forgeflowDir(root);
+  const ffDir = opts.projectDir ? path.resolve(opts.projectDir) : forgeflowDir(root);
+  assertSafeDirectory(ffDir);
   const notesDir = path.join(ffDir, 'agent-notes');
   const budgetPath = path.join(root, '.forgeflow-budget.json');
   const checks = [];
@@ -442,7 +428,7 @@ function runHealthCheck(opts = {}) {
   addInstallChecks(checks, opts.installRoot);
 
   const failures = checks.filter((item) => item.status === 'fail');
-  const latestInsights = latestInsightsReadiness(ffDir);
+  const latestInsights = latestInsightsReadiness(ffDir, root);
   const failureDigest = latestFailureDigest(ffDir);
   failureDigest.freshness = failureDigestFreshness(failureDigest, {
     available: gitRepo,

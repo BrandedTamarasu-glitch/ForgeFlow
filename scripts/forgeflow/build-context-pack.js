@@ -5,6 +5,7 @@ const { spawnSync } = require('child_process');
 const { classify, readFiles } = require('./explain-review-route');
 const { buildCodeTopology } = require('./build-code-topology');
 const {
+  assertSafeDirectory,
   safeReadTextFile,
   writeFileSafe,
   writeJsonSafe,
@@ -111,12 +112,14 @@ function repoRoot(cwd = process.cwd()) {
 }
 
 function ensureDir(dir) {
+  assertSafeDirectory(dir);
   fs.mkdirSync(dir, { recursive: true });
 }
 
-function readJson(file) {
+function readJson(file, root = '') {
   if (!file || !fs.existsSync(file)) return null;
-  return JSON.parse(fs.readFileSync(file, 'utf8'));
+  const content = root ? safeReadTextFile(file, root).content : fs.readFileSync(file, 'utf8');
+  return JSON.parse(content);
 }
 
 function defaultOutDir(root) {
@@ -260,6 +263,7 @@ function ensureMemoryIndex(root, enabled) {
   const projectDir = defaultProjectDir(root);
   if (!fs.existsSync(projectDir)) return null;
   try {
+    assertSafeDirectory(projectDir);
     const result = buildMemoryIndex({
       projectDir,
       out: defaultMemoryIndexPath(root),
@@ -272,7 +276,12 @@ function ensureMemoryIndex(root, enabled) {
 
 function buildMemoryHitsFromIndex(root, indexPath, files, route, task, maxChars) {
   if (!indexPath || !fs.existsSync(indexPath)) return null;
-  const index = readJson(indexPath);
+  let index = null;
+  try {
+    index = readJson(indexPath, defaultProjectDir(root));
+  } catch (_err) {
+    return null;
+  }
   if (!index || !Array.isArray(index.records)) return null;
   const keys = keywords(files, route, task);
   const hits = [];
@@ -312,6 +321,12 @@ function buildMemoryHitsFromIndex(root, indexPath, files, route, task, maxChars)
 }
 
 function buildMemoryHits(root, files, route, task, maxChars, indexPath = null) {
+  const projectDir = defaultProjectDir(root);
+  try {
+    if (fs.existsSync(projectDir)) assertSafeDirectory(projectDir);
+  } catch (_err) {
+    return '# Memory Hits\n\n(no local memory hits: unsafe project directory)';
+  }
   const indexed = buildMemoryHitsFromIndex(root, indexPath, files, route, task, maxChars);
   if (indexed) return indexed;
 
@@ -322,7 +337,7 @@ function buildMemoryHits(root, files, route, task, maxChars, indexPath = null) {
     const rel = path.relative(root, file);
     let lines = [];
     try {
-      lines = safeReadTextFile(file, defaultProjectDir(root)).content.split(/\r?\n/);
+      lines = safeReadTextFile(file, projectDir).content.split(/\r?\n/);
     } catch (_err) {
       continue;
     }
@@ -413,6 +428,7 @@ function buildLatestInsightsResult(root, maxChars = 3000, opts = {}) {
     };
   }
   try {
+    assertSafeDirectory(projectDir);
     const result = showProjectLearnings({ projectDir, refreshCodeMap: false, codeMap: opts.codeMap });
     const check = checkProjectLearnings({ projectDir });
     if (check.status !== 'pass') {
@@ -446,13 +462,24 @@ function compactProjectCodeMap(root, maxChars = 2500) {
   const codeMapPath = path.join(projectDir, 'context', 'project-code-map.md');
   const topologyPath = path.join(projectDir, 'context', 'code-topology.json');
   if (fs.existsSync(codeMapPath)) {
+    let content = '';
+    try {
+      content = safeReadTextFile(codeMapPath, projectDir).content;
+    } catch (_err) {
+      return '(none)';
+    }
     return truncate([
       `Artifact: ${path.relative(root, codeMapPath)}`,
       '',
-      firstLines(fs.readFileSync(codeMapPath, 'utf8').replace(/^# Forgeflow Project Code Map\s*/u, '').trim(), 80),
+      firstLines(content.replace(/^# Forgeflow Project Code Map\s*/u, '').trim(), 80),
     ].join('\n'), maxChars);
   }
-  const topology = readJson(topologyPath);
+  let topology = null;
+  try {
+    topology = readJson(topologyPath, projectDir);
+  } catch (_err) {
+    topology = null;
+  }
   if (!topology || !topology.summary) return '(none)';
   const lines = [
     `Artifact: ${path.relative(root, topologyPath)}`,

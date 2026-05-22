@@ -207,6 +207,119 @@ const badPeriod = spawnSync(process.execPath, [path.join(repoRoot, 'scripts/forg
   '--period',
   'year',
 ], { encoding: 'utf8' });
+const symlinkPatternsTarget = path.join(root, 'outside-pattern-target');
+const symlinkPatternsDir = path.join(root, 'forgeflow-patterns-symlink');
+fs.mkdirSync(symlinkPatternsTarget, { recursive: true });
+fs.symlinkSync(symlinkPatternsTarget, symlinkPatternsDir);
+let symlinkPatternsBlocked = false;
+try {
+  buildReport({
+    root,
+    metricsRoot,
+    patternsDir: symlinkPatternsDir,
+    projectDir,
+    noDrift: true,
+    now,
+  });
+} catch (err) {
+  symlinkPatternsBlocked = err.message.includes('symlinked directory');
+}
+const symlinkAncestorTarget = path.join(root, 'outside-pattern-ancestor-target');
+const symlinkAncestorLink = path.join(root, 'forgeflow-patterns-ancestor-link');
+const symlinkAncestorPatternsDir = path.join(symlinkAncestorLink, 'nested');
+fs.mkdirSync(symlinkAncestorTarget, { recursive: true });
+fs.symlinkSync(symlinkAncestorTarget, symlinkAncestorLink);
+fs.mkdirSync(symlinkAncestorPatternsDir, { recursive: true });
+let symlinkAncestorPatternsBlocked = false;
+try {
+  buildReport({
+    root,
+    metricsRoot,
+    patternsDir: symlinkAncestorPatternsDir,
+    projectDir,
+    noDrift: true,
+    now,
+  });
+} catch (err) {
+  symlinkAncestorPatternsBlocked = err.message.includes('symlinked directory');
+}
+const outOfRootPatternsDir = path.join(os.tmpdir(), `forgeflow-outside-patterns-${process.pid}`);
+fs.mkdirSync(outOfRootPatternsDir, { recursive: true });
+fs.writeFileSync(path.join(outOfRootPatternsDir, '.report-log.jsonl'), [
+  JSON.stringify({ schema_version: '1', ts: '2026-05-01T00:00:00.000Z', period: 'month', total_invocations: 999, flagged_reviewers: 0, drifted_agents: 0 }),
+  '',
+].join('\n'));
+let outOfRootPatternsBlocked = false;
+try {
+  buildReport({
+    root,
+    metricsRoot,
+    patternsDir: outOfRootPatternsDir,
+    projectDir,
+    noDrift: true,
+    now,
+    record: false,
+  });
+} catch (err) {
+  outOfRootPatternsBlocked = err.message.includes('outside allowed patterns directories');
+}
+const symlinkLearningsLogTarget = path.join(root, 'outside-learnings-log.jsonl');
+fs.writeFileSync(symlinkLearningsLogTarget, [
+  JSON.stringify({ ts: '2026-05-10T00:00:00.000Z', projects_scanned: 99, learnings_total: 99, updates_applied: 99, candidates: 99 }),
+  '',
+].join('\n'));
+const originalLearningsLog = fs.readFileSync(path.join(patternsDir, '.learnings-log.jsonl'), 'utf8');
+fs.unlinkSync(path.join(patternsDir, '.learnings-log.jsonl'));
+fs.symlinkSync(symlinkLearningsLogTarget, path.join(patternsDir, '.learnings-log.jsonl'));
+const symlinkLearningsPatterns = summarizePatternLog(patternsDir, cutoff, now);
+fs.unlinkSync(path.join(patternsDir, '.learnings-log.jsonl'));
+fs.writeFileSync(path.join(patternsDir, '.learnings-log.jsonl'), originalLearningsLog);
+const customProjectDir = path.join(root, 'custom-forgeflow-state');
+const customContextDir = path.join(customProjectDir, 'context');
+const customLatestDir = path.join(customContextDir, 'latest');
+fs.mkdirSync(customLatestDir, { recursive: true });
+fs.writeFileSync(path.join(customContextDir, 'code-map-history.jsonl'), '');
+fs.writeFileSync(path.join(customProjectDir, 'project-learnings.md'), '# Project Learnings\n');
+fs.writeFileSync(path.join(customLatestDir, 'latest-insights-report.json'), JSON.stringify({
+  schema_version: '1',
+  status: 'injected',
+  reason: 'quality-check-passing',
+  generated_at: '2026-05-20T00:00:00.000Z',
+  git: {
+    available: true,
+    commit_short: 'stale',
+    dirty: false,
+  },
+  check_status: 'pass',
+  issue_count: 0,
+}, null, 2));
+const customProjectReport = buildReport({
+  root,
+  metricsRoot,
+  patternsDir,
+  projectDir: customProjectDir,
+  noDrift: true,
+  now,
+  record: false,
+});
+const symlinkReportProjectTarget = path.join(root, 'outside-report-project-target');
+const symlinkReportProjectDir = path.join(root, '.forgeflow', 'SymlinkReportProject');
+fs.mkdirSync(symlinkReportProjectTarget, { recursive: true });
+fs.symlinkSync(symlinkReportProjectTarget, symlinkReportProjectDir);
+let symlinkReportProjectBlocked = false;
+try {
+  buildReport({
+    root,
+    metricsRoot,
+    patternsDir,
+    projectDir: symlinkReportProjectDir,
+    noDrift: true,
+    now,
+    record: false,
+  });
+} catch (err) {
+  symlinkReportProjectBlocked = err.message.includes('symlinked directory');
+}
 
 const checks = [
   ['collects metrics files', metrics.files === 1 && metrics.commands['/review'] === 2 && metrics.commands['/review-auto'] === 2],
@@ -226,6 +339,12 @@ const checks = [
   ['renders markdown sections', markdown.includes('## 8. Project Trends') && markdown.includes('## 9. Priorities') && markdown.includes('Import gaps: attention') && markdown.includes('Latest insights: injected') && markdown.includes('Latest insights freshness: current') && markdown.includes('Latest failure digest: compact') && markdown.includes('Latest failure digest freshness: current') && markdown.includes('FAIL report fixture')],
   ['cli json works', cli.status === 0 && cliJson.metrics.false_positives.flagged.length === 1 && cliJson.report_history.recorded === true && cliJson.project_trends.refresh.check_status === 'pass' && cliJson.project_trends.failure_digest.status === 'compact' && cliJson.project_trends.import_gaps.status === 'attention'],
   ['invalid period exits usage', badPeriod.status === 2 && badPeriod.stderr.includes('Invalid --period')],
+  ['symlink patterns dir blocked', symlinkPatternsBlocked],
+  ['symlink ancestor patterns dir blocked', symlinkAncestorPatternsBlocked],
+  ['out-of-root patterns dir blocked before read', outOfRootPatternsBlocked],
+  ['symlink learnings log not read', symlinkLearningsPatterns.totals.updates_applied === 0],
+  ['custom project dir uses caller root for insights freshness', customProjectReport.latest_insights.freshness.current_commit === commitShort && customProjectReport.latest_insights.freshness.issues.some((item) => item.code === 'latest-insights-commit-stale')],
+  ['symlink report project root blocked', symlinkReportProjectBlocked],
 ];
 
 let failed = 0;

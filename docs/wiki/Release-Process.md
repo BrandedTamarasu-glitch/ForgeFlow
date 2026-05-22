@@ -41,6 +41,8 @@ node scripts/forgeflow/test-install-smoke.js
 node scripts/forgeflow/test-update-forgeflow.js
 node scripts/forgeflow/test-health-check.js
 node scripts/forgeflow/test-forgeflow-version.js
+node scripts/forgeflow/test-guidance-contract.js
+node scripts/forgeflow/test-check-agent-drift.js
 node scripts/forgeflow/test-render-evaluation-report.js
 node scripts/forgeflow/test-seed-budget-config.js
 node scripts/forgeflow/test-record-pilot-evidence.js

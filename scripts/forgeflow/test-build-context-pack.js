@@ -49,6 +49,7 @@ fs.writeFileSync(seededTopologyPath, JSON.stringify({
     'legacy/stale-topology.js': [{ kind: 'function', name: 'stale', line: 1, end_line: 1, changed_lines: [1] }],
   },
 }, null, 2));
+const compactMap = compactProjectCodeMap(repoRoot);
 const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-'));
 fs.writeFileSync(path.join(outDir, 'failure-digest.md'), [
   '# Forgeflow Failure Digest',
@@ -261,6 +262,92 @@ const symlinkMemoryHits = fs.readFileSync(path.join(symlinkMemoryOut, 'memory-hi
 const symlinkMemoryPackets = Object.values(symlinkMemorySynthesis.agent_packets)
   .map((packet) => fs.readFileSync(path.join(symlinkMemoryRoot, packet), 'utf8'))
   .join('\n');
+const symlinkIndexRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-index-symlink-'));
+spawnSync('git', ['init'], { cwd: symlinkIndexRoot, encoding: 'utf8' });
+fs.writeFileSync(path.join(symlinkIndexRoot, 'src-auth-session.js'), 'export const session = true;\n');
+const symlinkIndexProject = path.join(symlinkIndexRoot, '.forgeflow', path.basename(symlinkIndexRoot));
+const symlinkIndexDir = path.join(symlinkIndexProject, 'index');
+fs.mkdirSync(symlinkIndexDir, { recursive: true });
+const outsideIndex = path.join(symlinkIndexRoot, 'outside-memory-index.json');
+fs.writeFileSync(outsideIndex, JSON.stringify({
+  schema_version: '1',
+  records: [
+    {
+      source: 'outside',
+      text: 'TOP_SECRET_INDEX_MARKER session token leak',
+      keywords: ['session'],
+    },
+  ],
+}, null, 2));
+fs.symlinkSync(outsideIndex, path.join(symlinkIndexDir, 'memory-index.json'));
+const symlinkIndexOut = path.join(symlinkIndexProject, 'context', 'latest');
+const symlinkIndexCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/build-context-pack.js'), [
+  '--out',
+  symlinkIndexOut,
+  '--task',
+  'Review session token behavior',
+  '--no-memory-index',
+  '--json',
+], {
+  cwd: symlinkIndexRoot,
+  encoding: 'utf8',
+});
+const symlinkIndexHits = symlinkIndexCli.status === 0 && fs.existsSync(path.join(symlinkIndexOut, 'memory-hits.md'))
+  ? fs.readFileSync(path.join(symlinkIndexOut, 'memory-hits.md'), 'utf8')
+  : '';
+const symlinkProjectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-project-root-symlink-'));
+spawnSync('git', ['init'], { cwd: symlinkProjectRoot, encoding: 'utf8' });
+fs.writeFileSync(path.join(symlinkProjectRoot, 'src-auth-session.js'), 'export const session = true;\n');
+fs.mkdirSync(path.join(symlinkProjectRoot, '.forgeflow'), { recursive: true });
+const symlinkProjectTarget = path.join(symlinkProjectRoot, 'outside-project-target');
+const symlinkProjectLink = path.join(symlinkProjectRoot, '.forgeflow', path.basename(symlinkProjectRoot));
+fs.mkdirSync(symlinkProjectTarget, { recursive: true });
+fs.writeFileSync(path.join(symlinkProjectTarget, 'project-learnings.md'), [
+  '# Project Learnings',
+  '',
+  '## Recurring Pitfalls',
+  '- TOP_SECRET_PROJECT_ROOT_MARKER',
+  '',
+].join('\n'));
+fs.symlinkSync(symlinkProjectTarget, symlinkProjectLink);
+const symlinkProjectOut = path.join(symlinkProjectRoot, 'safe-out', 'context', 'latest');
+const symlinkProjectCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/build-context-pack.js'), [
+  '--out',
+  symlinkProjectOut,
+  '--task',
+  'Review session token behavior',
+  '--json',
+], {
+  cwd: symlinkProjectRoot,
+  encoding: 'utf8',
+});
+const symlinkProjectLatest = symlinkProjectCli.status === 0 && fs.existsSync(path.join(symlinkProjectOut, 'latest-insights.md'))
+  ? fs.readFileSync(path.join(symlinkProjectOut, 'latest-insights.md'), 'utf8')
+  : '';
+const symlinkProjectHits = symlinkProjectCli.status === 0 && fs.existsSync(path.join(symlinkProjectOut, 'memory-hits.md'))
+  ? fs.readFileSync(path.join(symlinkProjectOut, 'memory-hits.md'), 'utf8')
+  : '';
+const symlinkProjectSynthesis = symlinkProjectCli.status === 0 && fs.existsSync(path.join(symlinkProjectOut, 'synthesis-input.json'))
+  ? JSON.parse(fs.readFileSync(path.join(symlinkProjectOut, 'synthesis-input.json'), 'utf8'))
+  : { agent_packets: {} };
+const symlinkProjectPackets = Object.values(symlinkProjectSynthesis.agent_packets || {})
+  .map((packet) => fs.readFileSync(path.join(symlinkProjectRoot, packet), 'utf8'))
+  .join('\n');
+const symlinkOutRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-out-symlink-'));
+spawnSync('git', ['init'], { cwd: symlinkOutRoot, encoding: 'utf8' });
+fs.writeFileSync(path.join(symlinkOutRoot, 'review.js'), 'export const value = 1;\n');
+const symlinkOutTarget = path.join(symlinkOutRoot, 'outside-out-target');
+const symlinkOutLink = path.join(symlinkOutRoot, '.forgeflow-link');
+fs.mkdirSync(symlinkOutTarget, { recursive: true });
+fs.symlinkSync(symlinkOutTarget, symlinkOutLink);
+const symlinkOutCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/build-context-pack.js'), [
+  '--out',
+  path.join(symlinkOutLink, 'context', 'latest'),
+  '--json',
+], {
+  cwd: symlinkOutRoot,
+  encoding: 'utf8',
+});
 
 const route = JSON.parse(fs.readFileSync(path.join(outDir, 'route.json'), 'utf8'));
 const manifest = JSON.parse(fs.readFileSync(path.join(outDir, 'file-manifest.json'), 'utf8'));
@@ -271,7 +358,6 @@ const topology = JSON.parse(fs.readFileSync(path.join(outDir, 'code-topology.jso
 const codeMapHistoryPath = path.join(outDir, 'code-map-history.jsonl');
 const noisyManifest = JSON.parse(fs.readFileSync(path.join(noisyOutDir, 'file-manifest.json'), 'utf8'));
 const wardenPacket = fs.readFileSync(path.join(repoRoot, synthesis.agent_packets.warden_reviewer), 'utf8');
-const compactMap = compactProjectCodeMap(repoRoot);
 if (previousProjectCodeMap === null) {
   fs.unlinkSync(seededProjectCodeMapPath);
 } else {
@@ -347,6 +433,10 @@ const checks = [
   ['ci budget violation fails predictably', budgetCli.status === 1 && budgetCli.stderr.includes('Context pack budget exceeded')],
   ['symlink context pack destination blocked', symlinkPackBlocked && fs.readFileSync(outsideDiff, 'utf8') === 'do not overwrite\n'],
   ['symlink memory fallback does not leak', symlinkMemoryCli.status === 0 && !symlinkMemoryHits.includes('TOP_SECRET_MARKER') && !symlinkMemoryPackets.includes('TOP_SECRET_MARKER') && symlinkMemorySynthesis.memory_index_path === null && symlinkMemoryResult.mode],
+  ['symlink memory index does not leak', symlinkIndexCli.status === 0 && !symlinkIndexHits.includes('TOP_SECRET_INDEX_MARKER')],
+  ['symlink project root latest insights does not leak', symlinkProjectCli.status === 0 && !symlinkProjectLatest.includes('TOP_SECRET_PROJECT_ROOT_MARKER')],
+  ['symlink project root memory does not leak', symlinkProjectCli.status === 0 && !symlinkProjectHits.includes('TOP_SECRET_PROJECT_ROOT_MARKER') && !symlinkProjectPackets.includes('TOP_SECRET_PROJECT_ROOT_MARKER')],
+  ['symlink out ancestor blocked', symlinkOutCli.status === 1 && symlinkOutCli.stderr.includes('symlinked directory')],
 ];
 
 let failed = 0;

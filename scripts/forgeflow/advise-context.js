@@ -12,6 +12,8 @@ const {
   readConfig,
 } = require('./check-context-budget');
 const { compareCodeMapTrend } = require('./show-code-map');
+const { uniqueRecommendations } = require('./guidance-contract');
+const { appendFileSafe, isPathInside, safeReadTextFile } = require('./file-safety');
 
 function usage() {
   console.error([
@@ -87,10 +89,17 @@ function defaultHistoryPath(root) {
   return path.join(root, 'context-advisor-history.jsonl');
 }
 
-function readHistory(historyPath) {
+function assertHistoryPath(historyPath, root) {
+  if (!isPathInside(root, historyPath)) {
+    throw new Error(`Refusing context advisor history outside root: ${historyPath}`);
+  }
+}
+
+function readHistory(historyPath, root) {
   if (!historyPath || !fs.existsSync(historyPath)) return [];
+  assertHistoryPath(historyPath, root);
   const records = [];
-  for (const line of fs.readFileSync(historyPath, 'utf8').split(/\r?\n/)) {
+  for (const line of safeReadTextFile(historyPath, root).content.split(/\r?\n/)) {
     if (!line.trim()) continue;
     try {
       const record = JSON.parse(line);
@@ -139,9 +148,9 @@ function compareTrend(current, previous) {
   };
 }
 
-function appendHistory(historyPath, record) {
-  fs.mkdirSync(path.dirname(historyPath), { recursive: true });
-  fs.appendFileSync(historyPath, `${JSON.stringify(record)}\n`);
+function appendHistory(historyPath, root, record) {
+  assertHistoryPath(historyPath, root);
+  appendFileSafe(historyPath, `${JSON.stringify(record)}\n`);
 }
 
 function topologyCoverage(files) {
@@ -308,7 +317,7 @@ function recommend(summary, budget) {
       reason: 'No context telemetry artifacts were found.',
       command: 'Run the relevant Forgeflow command so context pack, memory context, or scope telemetry can be recorded.',
     });
-    return recommendations;
+    return uniqueRecommendations(recommendations);
   }
 
   for (const violation of budget.violations) {
@@ -343,7 +352,7 @@ function recommend(summary, budget) {
     });
   }
 
-  return recommendations;
+  return uniqueRecommendations(recommendations);
 }
 
 function adviseContext(opts = {}) {
@@ -382,7 +391,7 @@ function adviseContext(opts = {}) {
     });
   }
   const historyPath = opts.history || defaultHistoryPath(root);
-  const history = readHistory(historyPath);
+  const history = readHistory(historyPath, root);
   const record = historyRecord(result, opts.now || new Date());
   result.history = {
     path: historyPath,
@@ -392,9 +401,10 @@ function adviseContext(opts = {}) {
     trend: compareTrend(record, history[history.length - 1]),
   };
   if (opts.record) {
-    appendHistory(historyPath, record);
+    appendHistory(historyPath, root, record);
     result.history.recorded = true;
   }
+  result.recommendations = uniqueRecommendations(result.recommendations);
   return result;
 }
 

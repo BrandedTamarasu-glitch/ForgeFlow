@@ -144,7 +144,7 @@ function healthStatus(health, trends) {
   const recommendations = health.recommendations || [];
   if (recommendations.length === 0) return 'pass';
   const unresolved = recommendations.filter((item) => {
-    if (item.action !== 'refresh-latest-insights') return true;
+    if (!['refresh-project-trends', 'refresh-latest-insights'].includes(item.action)) return true;
     const freshness = trends && trends.latest_insights && trends.latest_insights.freshness
       ? trends.latest_insights.freshness.status
       : 'missing';
@@ -198,7 +198,7 @@ function runDownstreamSmoke({ root, projectDir, patternsDir }) {
       ...checks[healthIndex],
       status,
       resolved_recommendations: status === 'pass'
-        ? (health.recommendations || []).filter((item) => item.action === 'refresh-latest-insights')
+        ? (health.recommendations || []).filter((item) => ['refresh-project-trends', 'refresh-latest-insights'].includes(item.action))
         : [],
     };
   }

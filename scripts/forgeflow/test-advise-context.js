@@ -171,6 +171,39 @@ const notDeduped = adviseContext({
   warnOnlySet: true,
 });
 
+const duplicateBudgetRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-advisor-duplicate-budget-'));
+const duplicateBudgetContextDir = path.join(duplicateBudgetRoot, 'Forgeflow', 'context');
+fs.mkdirSync(duplicateBudgetContextDir, { recursive: true });
+fs.writeFileSync(path.join(duplicateBudgetContextDir, 'context-telemetry.json'), `${JSON.stringify({
+  schema_version: '1',
+  kind: 'context-pack',
+  baseline_chars: 20000,
+  compact_chars: 12000,
+  saved_chars: 8000,
+  estimated_baseline_tokens: 5000,
+  estimated_compact_tokens: 3000,
+  estimated_saved_tokens: 2000,
+})}\n`);
+fs.writeFileSync(path.join(duplicateBudgetContextDir, 'scope-telemetry.json'), `${JSON.stringify({
+  schema_version: '1',
+  kind: 'scope-manifest',
+  baseline_chars: 24000,
+  compact_chars: 10000,
+  saved_chars: 14000,
+  estimated_baseline_tokens: 6000,
+  estimated_compact_tokens: 2500,
+  estimated_saved_tokens: 3500,
+})}\n`);
+const duplicateBudget = adviseContext({
+  root: duplicateBudgetRoot,
+  config,
+  maxCompactTokens: 1000,
+  maxCompactTokensSet: true,
+  kindLimits: {},
+  warnOnly: true,
+  warnOnlySet: true,
+});
+
 const historyPath = path.join(root, 'history', 'context-advisor.jsonl');
 const firstRecorded = adviseContext({
   root,
@@ -211,6 +244,63 @@ const secondRecorded = adviseContext({
 
 const historyLines = fs.readFileSync(historyPath, 'utf8').trim().split(/\r?\n/);
 const markdown = renderMarkdown(result);
+const symlinkHistoryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-advisor-history-symlink-'));
+const symlinkHistoryContextDir = path.join(symlinkHistoryRoot, 'Forgeflow', 'context');
+fs.mkdirSync(symlinkHistoryContextDir, { recursive: true });
+fs.writeFileSync(path.join(symlinkHistoryContextDir, 'context-telemetry.json'), `${JSON.stringify({
+  schema_version: '1',
+  kind: 'context-pack',
+  baseline_chars: 8000,
+  compact_chars: 4000,
+  saved_chars: 4000,
+  estimated_baseline_tokens: 2000,
+  estimated_compact_tokens: 1000,
+  estimated_saved_tokens: 1000,
+})}\n`);
+const outsideHistory = path.join(symlinkHistoryRoot, 'outside-history.jsonl');
+fs.writeFileSync(outsideHistory, `${JSON.stringify({
+  schema_version: '1',
+  ts: '2026-05-15T10:00:00.000Z',
+  estimated_compact_tokens: 999999,
+  estimated_saved_tokens: 0,
+  percent_saved: 0,
+  budget_violations: 99,
+})}\n`);
+const symlinkHistoryPath = path.join(symlinkHistoryRoot, 'history.jsonl');
+fs.symlinkSync(outsideHistory, symlinkHistoryPath);
+let symlinkHistoryBlocked = false;
+try {
+  adviseContext({
+    root: symlinkHistoryRoot,
+    config,
+    history: symlinkHistoryPath,
+    record: true,
+    maxCompactTokens: 2000,
+    maxCompactTokensSet: true,
+    kindLimits: {},
+    warnOnly: true,
+    warnOnlySet: true,
+  });
+} catch (err) {
+  symlinkHistoryBlocked = err.message.includes('symlinked file');
+}
+const outsideHistoryPath = path.join(os.tmpdir(), `forgeflow-context-advisor-outside-${process.pid}.jsonl`);
+let outsideHistoryBlocked = false;
+try {
+  adviseContext({
+    root: symlinkHistoryRoot,
+    config,
+    history: outsideHistoryPath,
+    record: true,
+    maxCompactTokens: 2000,
+    maxCompactTokensSet: true,
+    kindLimits: {},
+    warnOnly: true,
+    warnOnlySet: true,
+  });
+} catch (err) {
+  outsideHistoryBlocked = err.message.includes('outside root');
+}
 
 const checks = [
   ['files summarized', result.summary.files === 2],
@@ -226,12 +316,15 @@ const checks = [
   ['small low savings not noisy', !smallLowSavings.recommendations.some((item) => item.action === 'improve-compaction')],
   ['latest telemetry preferred', deduped.summary.files === 1 && deduped.summary.by_kind['code-topology'].estimated_compact_tokens === 100 && deduped.code_topology.status === 'covered'],
   ['dedupe can be disabled', notDeduped.summary.files === 2 && notDeduped.code_topology.files === 2],
+  ['duplicate budget recommendations merged', duplicateBudget.recommendations.filter((item) => item.action === 'trim-budget-violation').length === 1 && duplicateBudget.recommendations[0].reason.includes('Also:')],
   ['empty recommendation', empty.recommendations.some((item) => item.action === 'generate-context-telemetry')],
   ['history first recorded', firstRecorded.history.recorded === true],
   ['history compared', secondRecorded.history.trend.status === 'compared'],
   ['history compact delta', secondRecorded.history.trend.compact_token_delta === -500],
   ['history saved delta', secondRecorded.history.trend.saved_token_delta === 1500],
   ['history has two lines', historyLines.length === 2],
+  ['symlink history blocked', symlinkHistoryBlocked],
+  ['outside history blocked', outsideHistoryBlocked],
 ];
 
 let failed = 0;

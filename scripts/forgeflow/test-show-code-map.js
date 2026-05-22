@@ -44,6 +44,57 @@ const graphPath = path.resolve(fixtureRoot, result.summary.artifacts.graph);
 const graph = JSON.parse(fs.readFileSync(graphPath, 'utf8'));
 const historyPath = path.join(projectDir, 'context', 'code-map-history.jsonl');
 const retainedHistoryPath = path.join(retainedProjectDir, 'context', 'code-map-history.jsonl');
+const symlinkHistoryProjectDir = path.join(tmp, 'symlink-history-project');
+const symlinkHistoryPath = path.join(symlinkHistoryProjectDir, 'context', 'code-map-history.jsonl');
+const symlinkHistoryTarget = path.join(tmp, 'outside-code-map-history.jsonl');
+fs.mkdirSync(path.dirname(symlinkHistoryPath), { recursive: true });
+fs.writeFileSync(symlinkHistoryTarget, 'do not overwrite\n');
+fs.symlinkSync(symlinkHistoryTarget, symlinkHistoryPath);
+let symlinkHistoryWriteBlocked = false;
+try {
+  showCodeMap({
+    root: fixtureRoot,
+    projectDir: symlinkHistoryProjectDir,
+    out: path.join(tmp, 'symlink-history-code-map.md'),
+    maxHotspots: 5,
+  });
+} catch (err) {
+  symlinkHistoryWriteBlocked = err.message.includes('symlinked file');
+}
+const symlinkOutProjectDir = path.join(tmp, 'symlink-out-project');
+const symlinkOut = path.join(symlinkOutProjectDir, 'context', 'project-code-map.md');
+const symlinkOutTarget = path.join(tmp, 'outside-project-code-map.md');
+fs.mkdirSync(path.dirname(symlinkOut), { recursive: true });
+fs.writeFileSync(symlinkOutTarget, 'do not overwrite\n');
+fs.symlinkSync(symlinkOutTarget, symlinkOut);
+let symlinkOutWriteBlocked = false;
+try {
+  showCodeMap({
+    root: fixtureRoot,
+    projectDir: symlinkOutProjectDir,
+    out: symlinkOut,
+    maxHotspots: 5,
+  });
+} catch (err) {
+  symlinkOutWriteBlocked = err.message.includes('symlinked file');
+}
+const hardlinkOutProjectDir = path.join(tmp, 'hardlink-out-project');
+const hardlinkOut = path.join(hardlinkOutProjectDir, 'context', 'project-code-map.md');
+const hardlinkOutTarget = path.join(tmp, 'outside-hardlink-project-code-map.md');
+fs.mkdirSync(path.dirname(hardlinkOut), { recursive: true });
+fs.writeFileSync(hardlinkOutTarget, 'do not overwrite\n');
+fs.linkSync(hardlinkOutTarget, hardlinkOut);
+let hardlinkOutWriteBlocked = false;
+try {
+  showCodeMap({
+    root: fixtureRoot,
+    projectDir: hardlinkOutProjectDir,
+    out: hardlinkOut,
+    maxHotspots: 5,
+  });
+} catch (err) {
+  hardlinkOutWriteBlocked = err.message.includes('hardlinked file');
+}
 const cli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/show-code-map.js'), [
   '--root',
   fixtureRoot,
@@ -77,6 +128,9 @@ const checks = [
   ['writes topology graph', fs.existsSync(graphPath)],
   ['writes code map history', fs.existsSync(historyPath) && fs.readFileSync(historyPath, 'utf8').trim().split(/\r?\n/).length === 2],
   ['retains bounded history', fs.existsSync(retainedHistoryPath) && fs.readFileSync(retainedHistoryPath, 'utf8').trim().split(/\r?\n/).length === 2],
+  ['symlink history write blocked', symlinkHistoryWriteBlocked && fs.readFileSync(symlinkHistoryTarget, 'utf8') === 'do not overwrite\n'],
+  ['symlink markdown write blocked', symlinkOutWriteBlocked && fs.readFileSync(symlinkOutTarget, 'utf8') === 'do not overwrite\n'],
+  ['hardlink markdown write blocked', hardlinkOutWriteBlocked && fs.readFileSync(hardlinkOutTarget, 'utf8') === 'do not overwrite\n'],
   ['history compactor keeps latest records', compactCodeMapHistory([{ id: 1 }, { id: 2 }, { id: 3 }], 2).map((item) => item.id).join(',') === '2,3'],
   ['writes compact topology graph', graph.scope === 'changed-neighborhood'],
   ['summary includes provenance', result.summary.provenance && result.summary.provenance.source === 'show-code-map'],

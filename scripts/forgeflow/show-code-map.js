@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { buildCodeTopology } = require('./build-code-topology');
+const { safeReadTextFile, writeFileSafe } = require('./file-safety');
 const DEFAULT_HISTORY_LIMIT = 50;
 
 function usage() {
@@ -367,7 +368,13 @@ function projectCodeMapSummary(topology, artifacts, opts = {}) {
 
 function readCodeMapHistory(historyPath) {
   if (!historyPath || !fs.existsSync(historyPath)) return [];
-  return fs.readFileSync(historyPath, 'utf8')
+  let content = '';
+  try {
+    content = safeReadTextFile(historyPath, path.dirname(historyPath)).content;
+  } catch (_err) {
+    return [];
+  }
+  return content
     .split(/\r?\n/)
     .filter(Boolean)
     .map((line) => {
@@ -457,8 +464,7 @@ function compactCodeMapHistory(history, limit = DEFAULT_HISTORY_LIMIT) {
 }
 
 function writeCodeMapHistory(historyPath, history) {
-  fs.mkdirSync(path.dirname(historyPath), { recursive: true });
-  fs.writeFileSync(historyPath, history.map((item) => JSON.stringify(item)).join('\n') + (history.length > 0 ? '\n' : ''), 'utf8');
+  writeFileSafe(historyPath, history.map((item) => JSON.stringify(item)).join('\n') + (history.length > 0 ? '\n' : ''), 'utf8');
 }
 
 function attachCodeMapHistory(root, summary, historyPath, opts = {}) {
@@ -638,8 +644,7 @@ function showCodeMap(opts = {}) {
   attachCodeMapHistory(root, summary, opts.history || defaultHistoryPath(root, projectDir), { record: opts.recordHistory, limit: opts.historyLimit });
   const markdown = renderProjectCodeMap(summary);
   const out = opts.out || defaultOut(root, projectDir);
-  fs.mkdirSync(path.dirname(out), { recursive: true });
-  fs.writeFileSync(out, markdown);
+  writeFileSafe(out, markdown);
   return {
     out,
     summary,

@@ -239,6 +239,146 @@ fs.writeFileSync(path.join(infoLatestDir, 'latest-insights-report.json'), JSON.s
   issue_count: 0,
 }, null, 2));
 const infoOnlyGaps = showProjectTrends({ root, projectDir: infoProjectDir });
+const symlinkProjectDir = path.join(root, '.forgeflow', 'SymlinkLearning');
+const symlinkContextDir = path.join(symlinkProjectDir, 'context');
+const symlinkLatestDir = path.join(symlinkContextDir, 'latest');
+fs.mkdirSync(symlinkLatestDir, { recursive: true });
+fs.writeFileSync(path.join(symlinkContextDir, 'code-map-history.jsonl'), '');
+fs.writeFileSync(path.join(symlinkLatestDir, 'latest-insights-report.json'), JSON.stringify({
+  schema_version: '1',
+  status: 'injected',
+  reason: 'quality-check-passing',
+  generated_at: '2026-05-20T00:00:00.000Z',
+  git: { available: false, commit_short: '', dirty: true },
+  check_status: 'pass',
+  issue_count: 0,
+}, null, 2));
+const outsideLearning = path.join(root, 'outside-project-learnings.md');
+fs.writeFileSync(outsideLearning, '# Secret\n\n- SHOULD_NOT_LEAK\n');
+fs.symlinkSync(outsideLearning, path.join(symlinkProjectDir, 'project-learnings.md'));
+const symlinkLearningResult = showProjectTrends({ root, projectDir: symlinkProjectDir });
+const symlinkTopologyProjectDir = path.join(root, '.forgeflow', 'SymlinkTopology');
+const symlinkTopologyContextDir = path.join(symlinkTopologyProjectDir, 'context');
+const symlinkTopologyLatestDir = path.join(symlinkTopologyContextDir, 'latest');
+fs.mkdirSync(symlinkTopologyLatestDir, { recursive: true });
+fs.writeFileSync(path.join(symlinkTopologyContextDir, 'code-map-history.jsonl'), '');
+fs.writeFileSync(path.join(symlinkTopologyProjectDir, 'project-learnings.md'), [
+  '# Project Learnings',
+  '',
+  '## Sources',
+  '',
+  '- Generated at: 2026-05-20T00:00:00Z',
+  '',
+].join('\n'));
+fs.writeFileSync(path.join(symlinkTopologyLatestDir, 'latest-insights-report.json'), JSON.stringify({
+  schema_version: '1',
+  status: 'injected',
+  reason: 'quality-check-passing',
+  generated_at: '2026-05-20T00:00:00.000Z',
+  git: { available: false, commit_short: '', dirty: true },
+  check_status: 'pass',
+  issue_count: 0,
+}, null, 2));
+const outsideTopology = path.join(root, 'outside-code-topology.json');
+fs.writeFileSync(outsideTopology, JSON.stringify({
+  schema_version: '1',
+  unresolved: [
+    { source: 'src/leak.ts', specifier: './secret', kind: 'import' },
+  ],
+  skipped_dynamic: [],
+}, null, 2));
+fs.symlinkSync(outsideTopology, path.join(symlinkTopologyContextDir, 'code-topology.json'));
+const symlinkTopologyResult = showProjectTrends({ root, projectDir: symlinkTopologyProjectDir });
+const hardlinkTopologyProjectDir = path.join(root, '.forgeflow', 'HardlinkTopology');
+const hardlinkTopologyContextDir = path.join(hardlinkTopologyProjectDir, 'context');
+const hardlinkTopologyLatestDir = path.join(hardlinkTopologyContextDir, 'latest');
+fs.mkdirSync(hardlinkTopologyLatestDir, { recursive: true });
+fs.writeFileSync(path.join(hardlinkTopologyContextDir, 'code-map-history.jsonl'), '');
+fs.writeFileSync(path.join(hardlinkTopologyProjectDir, 'project-learnings.md'), [
+  '# Project Learnings',
+  '',
+  '## Sources',
+  '',
+  '- Generated at: 2026-05-20T00:00:00Z',
+  '',
+].join('\n'));
+fs.writeFileSync(path.join(hardlinkTopologyLatestDir, 'latest-insights-report.json'), JSON.stringify({
+  schema_version: '1',
+  status: 'injected',
+  reason: 'quality-check-passing',
+  generated_at: '2026-05-20T00:00:00.000Z',
+  git: { available: false, commit_short: '', dirty: true },
+  check_status: 'pass',
+  issue_count: 0,
+}, null, 2));
+const outsideHardlinkTopology = path.join(root, 'outside-hardlink-code-topology.json');
+fs.writeFileSync(outsideHardlinkTopology, JSON.stringify({
+  schema_version: '1',
+  unresolved: [
+    { source: 'src/hardlink-leak.ts', specifier: './secret', kind: 'import' },
+  ],
+  skipped_dynamic: [],
+}, null, 2));
+fs.linkSync(outsideHardlinkTopology, path.join(hardlinkTopologyContextDir, 'code-topology.json'));
+const hardlinkTopologyResult = showProjectTrends({ root, projectDir: hardlinkTopologyProjectDir });
+const symlinkHistoryProjectDir = path.join(root, '.forgeflow', 'SymlinkHistory');
+const symlinkHistoryContextDir = path.join(symlinkHistoryProjectDir, 'context');
+const symlinkHistoryLatestDir = path.join(symlinkHistoryContextDir, 'latest');
+fs.mkdirSync(symlinkHistoryLatestDir, { recursive: true });
+fs.writeFileSync(path.join(symlinkHistoryProjectDir, 'project-learnings.md'), '# Project Learnings\n');
+fs.writeFileSync(path.join(symlinkHistoryLatestDir, 'latest-insights-report.json'), JSON.stringify({
+  schema_version: '1',
+  status: 'injected',
+  reason: 'quality-check-passing',
+  generated_at: '2026-05-20T00:00:00.000Z',
+  git: { available: false, commit_short: '', dirty: true },
+  check_status: 'pass',
+  issue_count: 0,
+}, null, 2));
+const outsideHistory = path.join(root, 'outside-code-map-history.jsonl');
+fs.writeFileSync(outsideHistory, `${JSON.stringify({
+  schema_version: '1',
+  generated_at: '2026-05-20T00:00:00Z',
+  summary: {
+    source_files: 99,
+    local_edges: 99,
+    unresolved_imports: 99,
+    skipped_dynamic_imports: 0,
+    sections: 99,
+    changed_sections: 99,
+    markdown_section_files: 0,
+  },
+  high_fan_in: [{ path: 'src/leaked-history.ts', fan_in: 99, fan_out: 0 }],
+  high_fan_out: [],
+})}\n`);
+fs.symlinkSync(outsideHistory, path.join(symlinkHistoryContextDir, 'code-map-history.jsonl'));
+const symlinkHistoryResult = showProjectTrends({ root, projectDir: symlinkHistoryProjectDir });
+const symlinkProjectTargetDir = path.join(root, 'outside-symlink-project-target');
+const symlinkRootProjectDir = path.join(root, '.forgeflow', 'SymlinkProjectRoot');
+fs.mkdirSync(symlinkProjectTargetDir, { recursive: true });
+fs.symlinkSync(symlinkProjectTargetDir, symlinkRootProjectDir);
+let symlinkProjectBlocked = false;
+try {
+  showProjectTrends({ root, projectDir: symlinkRootProjectDir });
+} catch (err) {
+  symlinkProjectBlocked = err.message.includes('symlinked directory');
+}
+const customProjectDir = path.join(root, 'custom-forgeflow-state');
+const customContextDir = path.join(customProjectDir, 'context');
+const customLatestDir = path.join(customContextDir, 'latest');
+fs.mkdirSync(customLatestDir, { recursive: true });
+fs.writeFileSync(path.join(customContextDir, 'code-map-history.jsonl'), '');
+fs.writeFileSync(path.join(customProjectDir, 'project-learnings.md'), '# Project Learnings\n');
+fs.writeFileSync(path.join(customLatestDir, 'latest-insights-report.json'), JSON.stringify({
+  schema_version: '1',
+  status: 'injected',
+  reason: 'quality-check-passing',
+  generated_at: '2026-05-20T00:00:00.000Z',
+  git: { available: true, commit_short: 'stale', dirty: false },
+  check_status: 'pass',
+  issue_count: 0,
+}, null, 2));
+const customProjectResult = showProjectTrends({ root: repoRoot, projectDir: customProjectDir });
 const refreshCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/show-project-trends.js'), [
   '--project-dir',
   projectDir,
@@ -254,6 +394,12 @@ const checks = [
   ['summarizes import gaps', result.import_gaps.status === 'attention' && result.import_gaps.unresolved_total === 1 && result.import_gaps.skipped_dynamic_total === 1 && result.recommendations.some((item) => item.command === 'forgeflow-code-map')],
   ['summarizes import gap triage', result.import_gaps.triage.expected_total === 1 && result.import_gaps.triage.needs_review_total === 1 && result.import_gaps.triage.categories.some((item) => item.category === 'local-module-missing')],
   ['keeps test fixture import gaps informational', infoOnlyGaps.import_gaps.status === 'info' && infoOnlyGaps.import_gaps.production_total === 0 && infoOnlyGaps.import_gaps.test_fixture_total === 1 && !infoOnlyGaps.recommendations.some((item) => item.command === 'forgeflow-code-map')],
+  ['symlink project learnings not read', symlinkLearningResult.project_learnings.present === false && !JSON.stringify(symlinkLearningResult).includes('SHOULD_NOT_LEAK')],
+  ['symlink topology not read', symlinkTopologyResult.import_gaps.status === 'missing' && !JSON.stringify(symlinkTopologyResult).includes('src/leak.ts')],
+  ['hardlink topology not read', hardlinkTopologyResult.import_gaps.status === 'missing' && !JSON.stringify(hardlinkTopologyResult).includes('src/hardlink-leak.ts')],
+  ['symlink history not read', symlinkHistoryResult.code_map.history_snapshots === 0 && !JSON.stringify(symlinkHistoryResult).includes('src/leaked-history.ts')],
+  ['symlink project root blocked', symlinkProjectBlocked],
+  ['custom project dir uses caller root for insights freshness', customProjectResult.latest_insights.freshness.current_commit !== '' && customProjectResult.latest_insights.freshness.issues.some((item) => item.code === 'latest-insights-commit-stale')],
   ['detects learning consumption', result.project_learnings.consumed_code_map_trend === true && parsedLearnings.consumed_code_map_trend === true && parsedLearnings.consumed_code_map_history_snapshots === 2 && parsedLearnings.generated_at === ''],
   ['summarizes freshness', result.freshness.status === 'attention' && result.freshness.issues.some((item) => item.code === 'project-learnings-generated-at-missing')],
   ['recommends refresh for stale artifacts', staleGuidance.recommendations.some((item) => item.command === 'forgeflow-trends --refresh')],

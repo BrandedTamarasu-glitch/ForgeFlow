@@ -5,6 +5,17 @@ const path = require('path');
 const { adviseContext } = require('./advise-context');
 const { checkAgentDrift } = require('./check-agent-drift');
 const {
+  appendFileSafe,
+  assertSafeDirectory,
+  isPathInside,
+  safeReadTextFile,
+} = require('./file-safety');
+const {
+  inspectLearningGate,
+  refreshProjectTrends,
+  uniqueRecommendations,
+} = require('./guidance-contract');
+const {
   latestInsightsFreshness,
   latestInsightsReadiness: readLatestInsightsReadiness,
 } = require('./latest-insights-state');
@@ -112,10 +123,16 @@ function defaultPatternsDir(root = process.cwd(), home = os.homedir()) {
   return fs.existsSync(local) ? local : path.join(home, '.claude', 'forgeflow-patterns');
 }
 
-function readJsonl(file) {
+function readJsonl(file, root = '') {
   const records = [];
   if (!file || !fs.existsSync(file)) return records;
-  for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
+  let content = '';
+  try {
+    content = root ? safeReadTextFile(file, root).content : fs.readFileSync(file, 'utf8');
+  } catch (_err) {
+    return records;
+  }
+  for (const line of content.split(/\r?\n/)) {
     if (!line.trim()) continue;
     try {
       records.push(JSON.parse(line));
@@ -242,7 +259,7 @@ function sortObject(object) {
 
 function summarizePatternLog(patternsDir, cutoff, now = new Date()) {
   const file = path.join(patternsDir, '.learnings-log.jsonl');
-  const records = readJsonl(file).filter((record) => record && record.ts);
+  const records = readJsonl(file, patternsDir).filter((record) => record && record.ts);
   const latest = records.slice().sort((a, b) => String(a.ts).localeCompare(String(b.ts))).pop() || null;
   const periodRecords = records.filter((record) => inWindow(record, cutoff));
   const totals = periodRecords.reduce((acc, record) => {
@@ -294,8 +311,8 @@ function projectTrendsSummary(root, projectDir, opts = {}) {
   }
 }
 
-function latestInsightsReadiness(projectDir) {
-  return readLatestInsightsReadiness(projectDir, path.dirname(path.dirname(projectDir)));
+function latestInsightsReadiness(projectDir, root) {
+  return readLatestInsightsReadiness(projectDir, root);
 }
 
 function driftSummary(noDrift, opts = {}) {
@@ -311,8 +328,21 @@ function reportLogPath(patternsDir) {
   return path.join(patternsDir, '.report-log.jsonl');
 }
 
-function readReportHistory(patternsDir) {
-  return readJsonl(reportLogPath(patternsDir)).filter((record) => record && record.schema_version === '1');
+function assertSafePatternsDir(patternsDir, root) {
+  assertSafeDirectory(patternsDir);
+  const realDir = fs.existsSync(patternsDir) ? fs.realpathSync(patternsDir) : path.resolve(patternsDir);
+  const allowed = [
+    path.resolve(root),
+    path.join(os.homedir(), '.claude', 'forgeflow-patterns'),
+  ];
+  if (!allowed.some((dir) => isPathInside(dir, realDir))) {
+    throw new Error(`Refusing report log outside allowed patterns directories: ${patternsDir}`);
+  }
+}
+
+function readReportHistory(patternsDir, root) {
+  assertSafePatternsDir(patternsDir, root);
+  return readJsonl(reportLogPath(patternsDir), patternsDir).filter((record) => record && record.schema_version === '1');
 }
 
 function trendVsPrior(history, current, period) {
@@ -334,9 +364,9 @@ function trendVsPrior(history, current, period) {
   };
 }
 
-function writeReportLog(patternsDir, record) {
-  fs.mkdirSync(patternsDir, { recursive: true });
-  fs.appendFileSync(reportLogPath(patternsDir), `${JSON.stringify(record)}\n`);
+function writeReportLog(patternsDir, record, root) {
+  assertSafePatternsDir(patternsDir, root);
+  appendFileSafe(reportLogPath(patternsDir), `${JSON.stringify(record)}\n`);
 }
 
 function derivePriorities(report) {
@@ -380,33 +410,15 @@ function derivePriorities(report) {
 }
 
 function reportRecommendations(report) {
-  const recommendations = [];
-  const seen = new Set();
-  function add(item) {
-    if (!item || !item.command || seen.has(item.command)) return;
-    seen.add(item.command);
-    recommendations.push(item);
-  }
-
-  for (const item of report.project_trends.recommendations || []) add(item);
+  const recommendations = [...(report.project_trends.recommendations || [])];
   const freshness = report.latest_insights.freshness || null;
   if (freshness && freshness.issues && freshness.issues.length > 0) {
-    add({
-      severity: 'attention',
-      action: 'refresh-project-trends',
-      command: 'forgeflow-trends --refresh',
-      reason: 'Project guidance artifacts are stale or missing for the current checkout.',
-    });
+    recommendations.push(refreshProjectTrends());
   }
   if (['blocked', 'error', 'invalid'].includes(report.latest_insights.status)) {
-    add({
-      severity: 'attention',
-      action: 'inspect-learning-gate',
-      command: 'forgeflow-learnings --project --check',
-      reason: 'Latest insights are not ready for agent context.',
-    });
+    recommendations.push(inspectLearningGate());
   }
-  return recommendations;
+  return uniqueRecommendations(recommendations);
 }
 
 function buildReport(opts = {}) {
@@ -416,15 +428,16 @@ function buildReport(opts = {}) {
   const cutoff = opts.cutoff || cutoffForPeriod(period, now);
   const metricsRoot = opts.metricsRoot || defaultMetricsRoot();
   const patternsDir = opts.patternsDir || defaultPatternsDir(root);
-  const history = readReportHistory(patternsDir);
+  const history = readReportHistory(patternsDir, root);
   const metrics = collectMetrics(metricsRoot, cutoff);
   const patterns = summarizePatternLog(patternsDir, cutoff, now);
-  const projectTrends = projectTrendsSummary(root, opts.projectDir || path.join(root, '.forgeflow', path.basename(root)), {
+  const projectDir = opts.projectDir || path.join(root, '.forgeflow', path.basename(root));
+  assertSafeDirectory(projectDir);
+  const projectTrends = projectTrendsSummary(root, projectDir, {
     refresh: Boolean(opts.refresh),
   });
   const context = contextSummary(root);
-  const projectDir = opts.projectDir || path.join(root, '.forgeflow', path.basename(root));
-  const latestInsights = latestInsightsReadiness(projectDir);
+  const latestInsights = latestInsightsReadiness(projectDir, root);
   const drift = driftSummary(Boolean(opts.noDrift), { root });
   const logRecord = {
     schema_version: '1',
@@ -459,7 +472,7 @@ function buildReport(opts = {}) {
   report.recommendations = reportRecommendations(report);
   report.priorities = derivePriorities(report);
   if (opts.record !== false) {
-    writeReportLog(patternsDir, logRecord);
+    writeReportLog(patternsDir, logRecord, root);
     report.report_history.recorded = true;
   }
   return report;

@@ -14,6 +14,9 @@ function safeReadTextFile(file, root = path.dirname(file)) {
   if (!stat.isFile()) {
     throw new Error(`Refusing to read non-regular file: ${file}`);
   }
+  if (stat.nlink > 1) {
+    throw new Error(`Refusing to read hardlinked file: ${file}`);
+  }
   const realRoot = fs.realpathSync(root);
   const realFile = fs.realpathSync(file);
   if (!isPathInside(realRoot, realFile)) {
@@ -35,16 +38,37 @@ function assertSafeDestination(file) {
   if (!stat.isFile()) {
     throw new Error(`Refusing to write non-regular file: ${file}`);
   }
+  if (stat.nlink > 1) {
+    throw new Error(`Refusing to write hardlinked file: ${file}`);
+  }
+}
+
+function assertSafeDirectory(dir) {
+  const parent = path.dirname(dir);
+  if (fs.existsSync(dir)) {
+    const stat = fs.lstatSync(dir);
+    if (stat.isSymbolicLink()) {
+      throw new Error(`Refusing to use symlinked directory: ${dir}`);
+    }
+    if (!stat.isDirectory()) {
+      throw new Error(`Refusing to use non-directory path: ${dir}`);
+    }
+    if (parent && parent !== dir) assertSafeDirectory(parent);
+    return;
+  }
+  if (parent && parent !== dir) assertSafeDirectory(parent);
 }
 
 function writeFileSafe(file, content, options) {
   assertSafeDestination(file);
+  assertSafeDirectory(path.dirname(file));
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, content, options);
 }
 
 function appendFileSafe(file, content, options) {
   assertSafeDestination(file);
+  assertSafeDirectory(path.dirname(file));
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.appendFileSync(file, content, options);
 }
@@ -55,6 +79,7 @@ function writeJsonSafe(file, value) {
 
 module.exports = {
   appendFileSafe,
+  assertSafeDirectory,
   assertSafeDestination,
   isPathInside,
   safeReadTextFile,

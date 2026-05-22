@@ -14,7 +14,7 @@ const {
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-smoke-check-'));
-const patternsDir = path.join(tmp, 'forgeflow-patterns');
+const patternsDir = path.join(repoRoot, '.forgeflow', 'test-smoke-patterns');
 fs.mkdirSync(patternsDir, { recursive: true });
 const fakeHelperRoot = path.join(tmp, 'installed-helper-root');
 fs.mkdirSync(fakeHelperRoot, { recursive: true });
@@ -41,7 +41,8 @@ const checks = [
   ['combines pass', combineStatus([{ status: 'pass' }, { status: 'pass' }]) === 'pass'],
   ['combines warn', combineStatus([{ status: 'pass' }, { status: 'warn' }]) === 'warn'],
   ['combines fail', combineStatus([{ status: 'warn' }, { status: 'fail' }]) === 'fail'],
-  ['resolves health refresh warning', healthStatus({ status: 'pass', recommendations: [{ action: 'refresh-latest-insights' }] }, { refresh: { status: 'pass' }, latest_insights: { freshness: { status: 'current' } } }) === 'pass'],
+  ['resolves health refresh warning', healthStatus({ status: 'pass', recommendations: [{ action: 'refresh-project-trends' }] }, { refresh: { status: 'pass' }, latest_insights: { freshness: { status: 'current' } } }) === 'pass'],
+  ['keeps legacy refresh action compatible', healthStatus({ status: 'pass', recommendations: [{ action: 'refresh-latest-insights' }] }, { refresh: { status: 'pass' }, latest_insights: { freshness: { status: 'current' } } }) === 'pass'],
   ['keeps unresolved health warning', healthStatus({ status: 'pass', recommendations: [{ action: 'inspect-settings' }] }, { refresh: { status: 'pass' }, latest_insights: { freshness: { status: 'current' } } }) === 'warn'],
   ['runs without failure', result.status === 'pass' || result.status === 'warn'],
   ['default is downstream mode', result.mode === 'downstream'],

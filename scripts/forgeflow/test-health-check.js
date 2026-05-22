@@ -169,10 +169,41 @@ fs.writeFileSync(latestInsightsReportPath, JSON.stringify({
 }, null, 2));
 const withBlockedInsights = runHealthCheck({ root, fix: false });
 const withBlockedInsightsMarkdown = renderMarkdown(withBlockedInsights);
+const customInsightsRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-health-custom-root-'));
+spawnSync('git', ['init'], { cwd: customInsightsRoot, encoding: 'utf8' });
+fs.writeFileSync(path.join(customInsightsRoot, 'README.md'), '# Custom\n');
+spawnSync('git', ['add', 'README.md'], { cwd: customInsightsRoot, encoding: 'utf8' });
+spawnSync('git', ['commit', '-m', 'init'], { cwd: customInsightsRoot, encoding: 'utf8' });
+const customProjectDir = path.join(root, '.forgeflow', 'CustomExternal');
+const customLatestDir = path.join(customProjectDir, 'context', 'latest');
+fs.mkdirSync(customLatestDir, { recursive: true });
+fs.writeFileSync(path.join(customLatestDir, 'latest-insights-report.json'), JSON.stringify({
+  schema_version: '1',
+  status: 'injected',
+  reason: 'quality-check-passing',
+  generated_at: '2026-05-20T00:00:00.000Z',
+  git: {
+    available: true,
+    commit_short: 'stale',
+    dirty: false,
+  },
+  check_status: 'pass',
+  issue_count: 0,
+}, null, 2));
+const customInsights = runHealthCheck({ root: customInsightsRoot, projectDir: customProjectDir, fix: false });
 const again = runHealthCheck({ root, fix: true });
 const installed = runHealthCheck({ root, installRoot, fix: false });
 fs.unlinkSync(manifestEntry('scripts/forgeflow/health-check.js', installRoot).destination);
 const missingInstalled = runHealthCheck({ root, installRoot, fix: false });
+fs.writeFileSync(manifestEntry('scripts/forgeflow/health-check.js', installRoot).destination, 'helper\n');
+fs.chmodSync(manifestEntry('scripts/forgeflow/health-check.js', installRoot).destination, 0o755);
+const symlinkInstalledTarget = path.join(installRoot, 'outside-health-check.js');
+fs.writeFileSync(symlinkInstalledTarget, 'helper\n');
+fs.chmodSync(symlinkInstalledTarget, 0o755);
+fs.unlinkSync(manifestEntry('scripts/forgeflow/health-check.js', installRoot).destination);
+fs.symlinkSync(symlinkInstalledTarget, manifestEntry('scripts/forgeflow/health-check.js', installRoot).destination);
+const symlinkInstalled = runHealthCheck({ root, installRoot, fix: false });
+fs.unlinkSync(manifestEntry('scripts/forgeflow/health-check.js', installRoot).destination);
 fs.writeFileSync(manifestEntry('scripts/forgeflow/health-check.js', installRoot).destination, 'helper\n');
 fs.chmodSync(manifestEntry('scripts/forgeflow/health-check.js', installRoot).destination, 0o755);
 fs.unlinkSync(manifestEntry('templates/ship-presentation.html', installRoot).destination);
@@ -190,6 +221,19 @@ try {
   symlinkGitignoreCheck = runHealthCheck({ root: symlinkRoot, fix: true }).checks.find((item) => item.name === 'gitignore .forgeflow/');
 } catch (_err) {
   symlinkGitignoreCheck = { status: 'skip' };
+}
+const symlinkProjectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-health-project-symlink-'));
+spawnSync('git', ['init'], { cwd: symlinkProjectRoot, encoding: 'utf8' });
+const symlinkProjectTarget = path.join(symlinkProjectRoot, 'outside-project-target');
+const symlinkProjectDir = path.join(symlinkProjectRoot, '.forgeflow', 'SymlinkProject');
+fs.mkdirSync(path.dirname(symlinkProjectDir), { recursive: true });
+fs.mkdirSync(symlinkProjectTarget, { recursive: true });
+fs.symlinkSync(symlinkProjectTarget, symlinkProjectDir);
+let symlinkProjectHealthBlocked = false;
+try {
+  runHealthCheck({ root: symlinkProjectRoot, projectDir: symlinkProjectDir, fix: true });
+} catch (err) {
+  symlinkProjectHealthBlocked = err.message.includes('symlinked directory');
 }
 
 const checks = [
@@ -217,9 +261,11 @@ const checks = [
   ['latest failure digest renders', withFailureDigestMarkdown.includes('## Latest Failure Digest') && withFailureDigestMarkdown.includes('Freshness: current')],
   ['stale latest insights recommends refresh', withStaleInsights.recommendations.some((item) => item.command === 'forgeflow-trends --refresh') && withStaleInsightsMarkdown.includes('## Recommendations')],
   ['blocked latest insights recommends check', withBlockedInsights.recommendations.some((item) => item.command === 'forgeflow-learnings --project --check') && withBlockedInsightsMarkdown.includes('forgeflow-learnings --project --check')],
+  ['custom project dir uses health root for insights freshness', customInsights.latest_insights_readiness.freshness.current_commit !== '' && customInsights.latest_insights_readiness.freshness.issues.some((item) => item.code === 'latest-insights-commit-stale')],
   ['idempotent no changes', again.changes.length === 0],
   ['installed runtime passes', installed.status === 'pass'],
   ['missing runtime fails', missingInstalled.status === 'fail'],
+  ['symlink runtime fails', symlinkInstalled.status === 'fail'],
   ['runtime check included', installed.checks.some((item) => item.name === 'runtime helper health-check.js')],
   ['template check included', installed.checks.some((item) => item.name === 'template ship-presentation.html')],
   ['agent install check included', installed.checks.some((item) => item.name === 'agent agents/compass-plan.md')],
@@ -231,6 +277,7 @@ const checks = [
   ['skip renders next step', renderMarkdown(nonGit).includes('next: cd into a git project')],
   ['verbose accepted by cli', verbose.status === 0],
   ['symlink gitignore unsafe', symlinkGitignoreCheck.status === 'skip' || (symlinkGitignoreState.safe === false && symlinkGitignoreCheck.status === 'fail')],
+  ['symlink project dir blocked', symlinkProjectHealthBlocked],
 ];
 
 let failed = 0;
