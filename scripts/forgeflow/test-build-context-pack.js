@@ -99,6 +99,23 @@ const noisyResult = buildContextPack({
   maxMemoryChars: 12000,
   maxDiffChars: 18000,
 });
+const topologyGuidanceOutDir = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-topology-guidance-'));
+const topologyGuidanceFiles = path.join(topologyGuidanceOutDir, 'review.files');
+fs.writeFileSync(topologyGuidanceFiles, [
+  'scripts/forgeflow/build-context-pack.js',
+  '',
+].join('\n'));
+const topologyGuidanceResult = buildContextPack({
+  filesPath: topologyGuidanceFiles,
+  linesChanged: 40,
+  task: 'Review context-pack topology guidance',
+  out: topologyGuidanceOutDir,
+  modeOverride: '',
+  calibrationPath: '',
+  ci: false,
+  maxMemoryChars: 12000,
+  maxDiffChars: 18000,
+});
 const insightsRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-latest-insights-'));
 const insightsProjectDir = path.join(insightsRoot, '.forgeflow', path.basename(insightsRoot));
 fs.mkdirSync(insightsProjectDir, { recursive: true });
@@ -416,6 +433,10 @@ const insightsReport = JSON.parse(fs.readFileSync(path.join(outDir, 'latest-insi
 const artifactManifest = JSON.parse(fs.readFileSync(path.join(outDir, 'packet-artifacts.json'), 'utf8'));
 const artifactManifestMarkdown = fs.readFileSync(path.join(outDir, 'packet-artifacts.md'), 'utf8');
 const topology = JSON.parse(fs.readFileSync(path.join(outDir, 'code-topology.json'), 'utf8'));
+const topologyGuidanceSynthesis = JSON.parse(fs.readFileSync(path.join(topologyGuidanceOutDir, 'synthesis-input.json'), 'utf8'));
+const topologyGuidancePacket = Object.values(topologyGuidanceSynthesis.agent_packets || {})
+  .map((packet) => fs.readFileSync(path.join(repoRoot, packet), 'utf8'))
+  .join('\n');
 const codeMapHistoryPath = path.join(outDir, 'code-map-history.jsonl');
 const noisyManifest = JSON.parse(fs.readFileSync(path.join(noisyOutDir, 'file-manifest.json'), 'utf8'));
 const wardenPacket = fs.readFileSync(path.join(repoRoot, synthesis.agent_packets.warden_reviewer), 'utf8');
@@ -470,6 +491,7 @@ const checks = [
   ['code topology summary has history', synthesis.code_topology_summary.history && synthesis.code_topology_summary.history.recorded === true],
   ['code topology summary has hotspots', synthesis.code_topology_summary.high_fan_in.length > 0 && synthesis.code_topology_summary.high_fan_out.length > 0],
   ['code topology summary has neighbor list', Array.isArray(synthesis.code_topology_summary.changed_file_neighbors)],
+  ['code topology summary has route guidance', topologyGuidanceSynthesis.code_topology_summary.changed_file_neighbors.some((item) => item.review_guidance && item.review_guidance.route_hints.length > 0)],
   ['code topology summary has section count', Number.isInteger(synthesis.code_topology_summary.summary.sections)],
   ['code topology summary has changed section count', Number.isInteger(synthesis.code_topology_summary.summary.changed_sections)],
   ['code topology summary has section ranges', synthesis.code_topology_summary.changed_file_neighbors.every((item) => (item.sections || []).every((section) => Number.isInteger(section.end_line)))],
@@ -481,6 +503,7 @@ const checks = [
   ['agent packet includes provenance', wardenPacket.includes('Provenance:')],
   ['agent packet omits stale project code map', !wardenPacket.includes('Sections mapped: 12')],
   ['agent packet includes code topology', wardenPacket.includes('## Code Topology') && wardenPacket.includes('sections') && wardenPacket.includes('static JS/TS import graph only')],
+  ['agent packet includes topology-guided review focus', topologyGuidancePacket.includes('## Code Topology') && topologyGuidancePacket.includes('topology-guided focus') && topologyGuidancePacket.includes('topology hint')],
   ['agent packet escapes markdown paths', wardenPacket.includes('src/auth/session\\.ts')],
   ['telemetry token estimate', Number.isInteger(telemetry.estimated_compact_tokens)],
   ['code topology includes changed files', topology.changed_files.includes('src/auth/session.ts')],

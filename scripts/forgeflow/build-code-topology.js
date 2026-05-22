@@ -722,6 +722,9 @@ function changedNeighbors(nodes, changedFiles, changedSectionMap = {}) {
       reason: `imports ${file}`,
       direction: 'dependent',
     }));
+    const readNext = [...dependencies, ...dependents]
+      .sort((a, b) => a.path.localeCompare(b.path))
+      .slice(0, 20);
     changes.push({
       path: file,
       fan_in: node.fan_in,
@@ -730,12 +733,41 @@ function changedNeighbors(nodes, changedFiles, changedSectionMap = {}) {
       changed_sections: changedSectionMap[file] || [],
       dependencies,
       dependents,
-      read_next: [...dependencies, ...dependents]
-        .sort((a, b) => a.path.localeCompare(b.path))
-        .slice(0, 20),
+      read_next: readNext,
+      review_guidance: reviewGuidance({
+        file,
+        node,
+        dependencies,
+        dependents,
+        readNext,
+        changedSections: changedSectionMap[file] || [],
+      }),
     });
   }
   return changes;
+}
+
+function reviewGuidance({ file, node, dependencies, dependents, readNext, changedSections }) {
+  const focus = [];
+  if (node.fan_in >= 3) focus.push('high-fan-in-change');
+  if (node.fan_out >= 3) focus.push('high-fan-out-change');
+  if (dependents.length > 0) focus.push('dependent-regression-surface');
+  if (dependencies.length > 0) focus.push('dependency-contract-surface');
+  if (changedSections.length > 0) focus.push('changed-section-validation');
+  const routeHints = [];
+  if (dependents.length > 0) routeHints.push('review dependents before final verdict because they import this changed file');
+  if (dependencies.length > 0) routeHints.push('inspect dependencies when changed behavior relies on imported contracts');
+  if (changedSections.length > 0) routeHints.push('target tests and manual checks around changed sections first');
+  if (node.fan_in >= 3 || node.fan_out >= 3) routeHints.push('treat as a topology hub; require current file/test evidence before reporting defects');
+  return {
+    file,
+    focus,
+    read_next: readNext.slice(0, 5),
+    route_hints: routeHints,
+    validation_hint: changedSections.length > 0
+      ? `Prioritize validation around ${changedSections.slice(0, 3).map((section) => section.name).join(', ')}.`
+      : 'Use topology only to choose follow-up reads; do not treat it as proof.',
+  };
 }
 
 function renderMarkdown(topology) {
@@ -783,6 +815,12 @@ function renderMarkdown(topology) {
       } else {
         for (const next of item.read_next) lines.push(`- read next: ${md(next.path)} (${md(next.reason)})`);
       }
+      if (item.review_guidance) {
+        lines.push('- topology-guided review focus:');
+        lines.push(`  - focus: ${(item.review_guidance.focus || []).map(md).join(', ') || 'static-neighborhood-only'}`);
+        for (const hint of (item.review_guidance.route_hints || []).slice(0, 4)) lines.push(`  - ${md(hint)}`);
+        lines.push(`  - validation: ${md(item.review_guidance.validation_hint)}`);
+      }
       lines.push('');
     }
   }
@@ -811,6 +849,11 @@ function compactTopology(topology) {
     sections: compactSections(item.sections),
     changed_sections: compactSections(item.changed_sections),
     read_next: (item.read_next || []).slice(0, 5),
+    review_guidance: item.review_guidance ? {
+      ...item.review_guidance,
+      read_next: (item.review_guidance.read_next || []).slice(0, 5),
+      route_hints: (item.review_guidance.route_hints || []).slice(0, 4),
+    } : null,
   });
   const keep = new Set();
   for (const item of topology.high_fan_in) keep.add(item.path);
@@ -966,4 +1009,5 @@ module.exports = {
   resolveLocalImport,
   sectionsForChangedLines,
   withSectionRanges,
+  reviewGuidance,
 };

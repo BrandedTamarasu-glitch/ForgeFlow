@@ -615,6 +615,11 @@ function compactTopology(topologyResult) {
       if (item.changed_sections && item.changed_sections.length > 0) {
         lines.push(`  - changed sections: ${item.changed_sections.slice(0, 5).map((section) => `${md(section.name)}:${section.line}-${section.end_line} changed ${section.changed_lines.join('/')}`).join(', ')}`);
       }
+      if (item.review_guidance) {
+        const focus = (item.review_guidance.focus || []).slice(0, 5).join(', ') || 'static-neighborhood-only';
+        lines.push(`  - topology-guided focus: ${md(focus)}`);
+        for (const hint of (item.review_guidance.route_hints || []).slice(0, 3)) lines.push(`  - topology hint: ${md(hint)}`);
+      }
     }
   }
   lines.push('', 'Limits: static JS/TS import graph only; not a runtime call graph.');
@@ -643,6 +648,11 @@ function topologyReport(topologyResult, root) {
       sections: (item.sections || []).slice(0, 10),
       changed_sections: (item.changed_sections || []).slice(0, 10),
       read_next: item.read_next.slice(0, 5),
+      review_guidance: item.review_guidance ? {
+        ...item.review_guidance,
+        read_next: (item.review_guidance.read_next || []).slice(0, 5),
+        route_hints: (item.review_guidance.route_hints || []).slice(0, 4),
+      } : null,
     })),
     markdown_sections: (topology.markdown_sections || []).slice(0, 5).map((item) => ({
       path: item.path,

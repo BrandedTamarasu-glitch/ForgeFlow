@@ -12,6 +12,7 @@ const {
   resolveLocalImport,
   sectionsForChangedLines,
   withSectionRanges,
+  reviewGuidance,
 } = require('./build-code-topology');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
@@ -184,6 +185,14 @@ const resolverResult = buildCodeTopology({
   markdownOut: path.join(tmp, 'resolver-topology.md'),
   telemetryOut: path.join(tmp, 'resolver-topology-telemetry.json'),
 });
+const manualGuidance = reviewGuidance({
+  file: 'src/shared/index.ts',
+  node: { fan_in: 4, fan_out: 3 },
+  dependencies: [{ path: 'src/config.ts', reason: 'src/shared/index.ts imports this file', direction: 'dependency' }],
+  dependents: [{ path: 'src/app.ts', reason: 'imports src/shared/index.ts', direction: 'dependent' }],
+  readNext: [{ path: 'src/app.ts', reason: 'imports src/shared/index.ts', direction: 'dependent' }],
+  changedSections: [{ name: 'shared', line: 1, end_line: 4, changed_lines: [2] }],
+});
 
 const checks = [
   ['result paths', result.out === out && result.markdown_out === markdownOut && result.telemetry_path === telemetryOut],
@@ -214,10 +223,12 @@ const checks = [
   ['high fan-out detects feature', topology.high_fan_out.some((item) => item.path === 'src/features/feature.ts' && item.fan_out === 2)],
   ['changed neighbor includes dependent', feature.imported_by.includes('src/app/main.ts') && topology.changed_file_neighbors[0].read_next.some((item) => item.path === 'src/app/main.ts')],
   ['changed neighbor includes sections', topology.changed_file_neighbors[0].sections.some((item) => item.name === 'runFeature')],
+  ['changed neighbor includes route guidance', topology.changed_file_neighbors[0].review_guidance && topology.changed_file_neighbors[0].review_guidance.route_hints.some((hint) => hint.includes('dependents'))],
+  ['manual guidance classifies hubs', manualGuidance.focus.includes('high-fan-in-change') && manualGuidance.focus.includes('high-fan-out-change') && manualGuidance.validation_hint.includes('shared')],
   ['unresolved import reported', topology.unresolved.some((item) => item.source === 'src/features/feature.ts' && item.specifier === './missing')],
   ['markdown escapes unresolved imports', markdown.includes('bad\\]\\#missing')],
   ['dynamic import reported', topology.skipped_dynamic.some((item) => item.source === 'src/features/feature.ts')],
-  ['markdown renders review focus', markdown.includes('## Changed File Neighbors') && markdown.includes('Static JS/TS module graph only.')],
+  ['markdown renders review focus', markdown.includes('## Changed File Neighbors') && markdown.includes('topology-guided review focus') && markdown.includes('Static JS/TS module graph only.')],
   ['markdown renders provenance', markdown.includes('Provenance: git unavailable')],
   ['markdown renders sections', markdown.includes('Sections mapped') && markdown.includes('## Markdown Sections') && markdown.includes('function runFeature (lines 6-9)')],
   ['telemetry written', telemetry.kind === 'code-topology' && Number.isInteger(telemetry.estimated_compact_tokens)],
