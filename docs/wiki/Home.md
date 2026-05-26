@@ -12,6 +12,10 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 
 - [Hosted Docs Entry](../index.html)
 - [Why Forgeflow](Why-Forgeflow)
+- [Forgeflow 4.3.15 Patch Notes](../changelogs/v4.3.15.html)
+- [Forgeflow 4.3.14 Patch Notes](../changelogs/v4.3.14.html)
+- [Forgeflow 4.3.13 Patch Notes](../changelogs/v4.3.13.html)
+- [Forgeflow 4.3.12 Patch Notes](../changelogs/v4.3.12.html)
 - [Forgeflow 4.3.11 Patch Notes](../changelogs/v4.3.11.html)
 - [Forgeflow 4.3.10 Patch Notes](../changelogs/v4.3.10.html)
 - [Forgeflow 4.3.9 Patch Notes](../changelogs/v4.3.9.html)
@@ -70,11 +74,11 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 
 Forgeflow separates software delivery into phases and assigns each phase to agents with explicit responsibilities. This keeps planning, implementation, validation, and final judgment from collapsing into one overbroad prompt.
 
-The current build also adds local context intelligence: bounded context packets, compact memory summaries, scope manifests, context telemetry, budget checks, health repair, smoke checks, pilot scripts, and trend-aware context recommendations. These helpers keep agent prompts smaller while preserving the local project memory needed for end-to-end work. Local artifact reads and writes reject symlinks, include untracked work in generated context, and can fail CI when context budgets are exceeded.
+The current build also adds local context intelligence: bounded context packets, compact memory summaries, scope manifests, context telemetry, budget checks, health repair, smoke checks, release-to-install readiness preflight, pilot scripts, project intelligence, and trend-aware context recommendations. These helpers keep agent prompts smaller while preserving the local project memory needed for end-to-end work. Local artifact reads and writes reject symlinks, include untracked work in generated context, and can fail CI when context budgets are exceeded.
 
 Forgeflow also carries implementation context and pilot evidence forward. `/implement` maintains local implementation notes, `/ship` checks and summarizes those notes, `/forgeflow-smoke` verifies the local stabilization path, `/forgeflow-adoption` prints a public-safe adoption pack and small-team handoff checklist, and `/forgeflow-pilot` prints either the default maintainer-trial script or a first-real-task new-user path with evidence capture and support/adoption rollups under `.forgeflow/<project-name>/`.
 
-Project learnings are the next local memory layer: a durable, user-editable summary of recurring pitfalls, stable decisions, risk areas, validation patterns, and recommended approaches across work items. Agents can use that file as guidance in later phases while still verifying current code and artifacts.
+Project learnings are the local project memory layer: a durable, user-editable summary of recurring pitfalls, stable decisions, risk areas, validation patterns, and recommended approaches across work items. Project intelligence turns those signals into readiness, review-prep, next-work briefs, and advisory next-work candidates while agents still verify current code and artifacts.
 
 ## Agent Cast
 

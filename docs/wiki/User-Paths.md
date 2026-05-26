@@ -67,9 +67,10 @@ If implementation notes are missing or stale, refresh or repair them before ship
 
 1. Update version metadata and release notes.
 2. Run `/forgeflow-release-check`.
-3. Render the public evaluation summary if release notes cite evaluation evidence.
-4. Run `/forgeflow-smoke --mode source` for source-tree release guards when you want a shorter local check.
-5. Tag and publish only after release checks pass.
+3. Run `/forgeflow-release-readiness` to execute the release-check list and the release-to-install source preflight.
+4. Render the public evaluation summary if release notes cite evaluation evidence.
+5. Run `/forgeflow-smoke --mode source` for source-tree release guards when you want a shorter local check.
+6. Tag and publish only after release checks pass.
 
 ## Quick Symptom Map
 
@@ -84,4 +85,4 @@ If implementation notes are missing or stale, refresh or repair them before ship
 | Output volume is too high | `/forgeflow-noisy-command` |
 | Review context is over budget | Split scope, then rerun review prep |
 | Need current project trends | `/forgeflow-trends --refresh` |
-| Need release confidence | `/forgeflow-release-check` |
+| Need release confidence | `/forgeflow-release-readiness` |

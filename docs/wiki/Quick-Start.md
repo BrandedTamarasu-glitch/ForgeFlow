@@ -113,11 +113,13 @@ scripts/forgeflow/explain-review-route.js --json
 scripts/forgeflow/summarize-calibration.js --json
 scripts/forgeflow/record-review-outcome.js --summary .forgeflow/<project>/review-outcomes.jsonl --json
 scripts/forgeflow/build-context-pack.js --json
+scripts/forgeflow/build-project-intelligence.js --json
 scripts/forgeflow/build-memory-context.js --json
 scripts/forgeflow/build-scope-manifest.js --json
 scripts/forgeflow/summarize-context-telemetry.js --root .forgeflow --json
 scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json
 scripts/forgeflow/advise-context.js --root .forgeflow --record --json
+scripts/forgeflow/render-release-readiness.js --plan-only --json
 ```
 
 If you installed through `/update-forgeflow` and do not have a local checkout, replace `scripts/forgeflow/` with:

@@ -44,8 +44,10 @@ The current build is no longer only a multi-agent review experiment. It includes
 - `/forgeflow-version` for install status and upstream drift
 - `/forgeflow-health` for install and project-local diagnostics
 - `/update-forgeflow --repair` and `--rollback` for recovery
-- `/forgeflow-release-check` for pre-release validation
+- `/forgeflow-release-check` and `/forgeflow-release-readiness` for pre-release validation and release-to-install preflight checks
 - context savings and budget reports
+- project intelligence with readiness, review-prep, next-work briefs, and advisory next-work candidates
+- pilot evidence with normalized state-aware fields and public-safe adoption summaries
 - evaluation reports with workflow comparison, quality rates, and public-safe summaries
 
 Run it on one real branch and compare the result against no-agent or single-agent review. Forgeflow is designed to make that comparison visible instead of relying on vibe.

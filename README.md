@@ -325,7 +325,7 @@ scripts/forgeflow/record-agent-feedback.js \
 Feedback stays local in `.forgeflow/<project-name>/agent-feedback.jsonl`. Promotion is explicit and requires medium or high confidence with at least two pieces of evidence.
 Project intelligence reads the local feedback log as advisory signal only. `scripts/forgeflow/rollup-agent-feedback.js --json` gives the same feedback its own quality rollup by reviewer, signal, promotable count, corrective count, skipped invalid/private lines, filtered advisory examples, correction themes, manual-promotion candidates, and stale markers. Promoted project-learning candidates still require the same confidence/evidence gate and current-code verification.
 
-Project learning rollups are planned around:
+Project learning rollups use:
 
 ```text
 .forgeflow/<project-name>/project-learnings.md
@@ -433,7 +433,7 @@ Release checks guard stale-guidance next actions so `/forgeflow-health`, `/forge
 
 ## Current Status
 
-Forgeflow is a local-first developer workflow for turning product intent into shipped code with explicit planning, implementation, review, verification, and release handoff. It currently targets Claude Code and Codex users who are comfortable installing command/agent files and running local scripts. The current work is shifting from broad feature expansion to stabilization: real maintainer trials, smoke automation, report/readme/wiki polish, and targeted fixes from observed use.
+Forgeflow is a local-first developer workflow for turning product intent into shipped code with explicit planning, implementation, review, verification, and release handoff. It targets Claude Code and Codex users who are comfortable installing command/agent files and running local scripts. The current build emphasizes operational confidence: guided repair, smoke automation, project intelligence, release-to-install preflight checks, pilot evidence, and targeted fixes from observed use.
 
 ## License
 

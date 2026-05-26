@@ -4,7 +4,7 @@ Forgeflow is currently a local-first developer workflow for Claude Code and Code
 
 ## Current Focus
 
-Forgeflow now has the local install, health, repair, rollback, release, docs, demo, template-installer, evaluation, adoption, field-validation, distribution-readiness, team-trial guidance, learning path, code topology, project trends, and report surfaces needed for broader use. The current phase is stabilization: run bounded maintainer trials, automate the smoke path, collect public-safe summaries, and make targeted fixes from observed evidence.
+Forgeflow now has the local install, health, repair, rollback, release, docs, demo, template-installer, evaluation, adoption, field-validation, distribution-readiness, team-trial guidance, learning path, code topology, project trends, project intelligence, release-to-install preflight, and report surfaces needed for broader use. The current phase is evidence-driven stabilization: run bounded maintainer trials, keep smoke and release checks green, collect public-safe summaries, and make targeted fixes from observed evidence.
 
 ## Pilot Evidence Collection Work
 
@@ -138,6 +138,11 @@ Exit criteria:
 - CI and headless-review deferral guidance gated on team-trial demand
 - completed team-trial readiness guidance for pilots, privacy, support triage, adoption criteria, and CI deferrals
 - pilot evidence log for capturing one real maintainer trial without exposing raw local state
+- project intelligence readiness, review-prep, next-work brief, and advisory next-work item candidates
+- agent-feedback rollup and manual promotion path into project-learning candidates
+- release-to-install preflight in release readiness for managed runtime helper source checks
+- updater partial-repair bootstrap handling for installs missing newer helper dependencies
+- normalized state-aware pilot evidence fields for project-intelligence readiness, living project-map status, and agent-feedback signal
 - pilot public-summary runbook for privacy-gated aggregate evidence from real trials
 - pilot support rollup for repeated blocker categories across maintainer trials
 - pilot adoption comparison worksheet for repeat, expand, stop-and-fix, and defer decisions

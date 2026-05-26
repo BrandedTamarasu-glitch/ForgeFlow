@@ -32,6 +32,7 @@ When running from a checkout instead of Claude Code, run the same release checks
 
 ```bash
 node scripts/forgeflow/test-command-coverage.js
+node scripts/forgeflow/test-command-argument-safety.js
 node scripts/forgeflow/test-doc-links.js
 node scripts/forgeflow/test-plugin-manifest.js
 node scripts/forgeflow/test-release-version.js
@@ -42,17 +43,28 @@ node scripts/forgeflow/test-install-smoke.js
 node scripts/forgeflow/test-update-forgeflow.js
 node scripts/forgeflow/test-health-check.js
 node scripts/forgeflow/test-forgeflow-version.js
+node scripts/forgeflow/test-render-guided-repair.js
 node scripts/forgeflow/test-guidance-contract.js
 node scripts/forgeflow/test-failure-digest.js
 node scripts/forgeflow/test-check-agent-drift.js
+node scripts/forgeflow/test-render-forgeflow-report.js
+node scripts/forgeflow/test-render-release-notes.js
+node scripts/forgeflow/test-render-release-readiness.js
 node scripts/forgeflow/test-render-evaluation-report.js
+node scripts/forgeflow/render-evaluation-report.js --outcomes fixtures/evaluation/sample-outcomes.jsonl --public --out /tmp/forgeflow-public-evaluation-summary.md
+node scripts/forgeflow/test-privacy-boundary.js
+node scripts/forgeflow/test-render-adoption-pack.js
 node scripts/forgeflow/test-seed-budget-config.js
 node scripts/forgeflow/test-record-pilot-evidence.js
+node scripts/forgeflow/test-record-agent-feedback.js
+node scripts/forgeflow/test-rollup-agent-feedback.js
 node scripts/forgeflow/test-record-project-learning.js
+node scripts/forgeflow/test-rollup-pattern-learnings.js
 node scripts/forgeflow/test-rollup-pilot-evidence.js
 node scripts/forgeflow/test-rollup-project-learnings.js
 node scripts/forgeflow/test-show-project-learnings.js
 node scripts/forgeflow/test-show-project-trends.js
+node scripts/forgeflow/test-build-project-intelligence.js
 node scripts/forgeflow/test-smoke-check.js
 node scripts/forgeflow/test-dogfood-self-test.js
 node scripts/forgeflow/test-installed-runtime-dogfood.js
