@@ -4,15 +4,99 @@ const os = require('os');
 const path = require('path');
 const {
   isMissingRuntimeHelperContractError,
+  missingRequiredManagedFiles,
   renderMarkdown,
+  requiredManagedSources,
   rollbackForgeflow,
   updateForgeflow,
   versionPath,
 } = require('./update-forgeflow');
+const {
+  isManagedSource,
+  manifestEntry,
+} = require('./install-manifest');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 const latest = '1111111111111111111111111111111111111111';
 const previous = '0000000000000000000000000000000000000000';
+const CANONICAL_NON_REQUIRED_MANAGED_SOURCES = [
+  'agents/_shared/arbiter-intelligence.md',
+  'agents/_shared/lumen-design-principles.md',
+  'agents/_shared/rules.md',
+  'agents/_shared/smith-craft.md',
+  'agents/_shared/warden-security-intelligence.md',
+  'agents/aegis.md',
+  'agents/arbiter-consult.md',
+  'agents/arbiter-implement.md',
+  'agents/arbiter-review.md',
+  'agents/atlas-consult.md',
+  'agents/atlas-early.md',
+  'agents/atlas-implement.md',
+  'agents/atlas-present.md',
+  'agents/atlas-review.md',
+  'agents/compass-discuss.md',
+  'agents/compass-implement.md',
+  'agents/compass-plan.md',
+  'agents/compass-present.md',
+  'agents/compass-research.md',
+  'agents/compass-review.md',
+  'agents/lumen-consult.md',
+  'agents/lumen-implement.md',
+  'agents/lumen-review.md',
+  'agents/smith-audit.md',
+  'agents/smith-consult.md',
+  'agents/smith-implement.md',
+  'agents/smith-review.md',
+  'agents/warden-audit.md',
+  'agents/warden-consult.md',
+  'agents/warden-implement.md',
+  'agents/warden-review.md',
+  'commands/agent-chat/off.md',
+  'commands/agent-chat/on.md',
+  'commands/audit.md',
+  'commands/ci-wrapper.md',
+  'commands/consult.md',
+  'commands/create-agent.md',
+  'commands/dashboard.md',
+  'commands/debate.md',
+  'commands/discuss.md',
+  'commands/fleet.md',
+  'commands/forgeflow-adoption.md',
+  'commands/forgeflow-code-map.md',
+  'commands/forgeflow-compact-output.md',
+  'commands/forgeflow-drift.md',
+  'commands/forgeflow-failure-digest.md',
+  'commands/forgeflow-health.md',
+  'commands/forgeflow-learnings.md',
+  'commands/forgeflow-metrics.md',
+  'commands/forgeflow-noisy-command.md',
+  'commands/forgeflow-pilot.md',
+  'commands/forgeflow-release-check.md',
+  'commands/forgeflow-release-readiness.md',
+  'commands/forgeflow-repair.md',
+  'commands/forgeflow-report.md',
+  'commands/forgeflow-smoke.md',
+  'commands/forgeflow-sync.md',
+  'commands/forgeflow-trends.md',
+  'commands/forgeflow-version.md',
+  'commands/handoff.md',
+  'commands/implement.md',
+  'commands/plan.md',
+  'commands/quick.md',
+  'commands/research.md',
+  'commands/review-auto.md',
+  'commands/review.md',
+  'commands/ship.md',
+  'commands/sync-upstream.md',
+  'commands/ui-iterate.md',
+  'commands/update-forgeflow.md',
+  'forgeflow-patterns/auto-fix-patterns.md',
+  'forgeflow-patterns/recurring-blockers.md',
+  'forgeflow-patterns/tooling-patterns.md',
+  'forgeflow-patterns/verdict-trends.md',
+  'project-rules/commit-hygiene.md',
+  'project-rules/dev-environment.md',
+];
 
 async function localFetcher(_repo, _sha, source) {
   return fs.readFileSync(path.join(repoRoot, source), 'utf8');
@@ -23,7 +107,76 @@ async function failingFetcher(_repo, _sha, source) {
   return localFetcher(_repo, _sha, source);
 }
 
+function walk(dir, files = []) {
+  if (!fs.existsSync(dir)) return files;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const file = path.join(dir, entry.name);
+    if (entry.isDirectory()) walk(file, files);
+    else if (entry.isFile()) files.push(path.relative(repoRoot, file).replace(/\\/g, '/'));
+  }
+  return files;
+}
+
+function allManagedSources() {
+  return walk(repoRoot)
+    .filter(isManagedSource)
+    .filter((source) => !manifestEntry(source)?.preserve)
+    .sort();
+}
+
+function installedManagedSources(home, sources) {
+  return sources
+    .map((source) => manifestEntry(source, home))
+    .filter(Boolean)
+    .filter((entry) => !entry.preserve && fs.existsSync(entry.destination))
+    .map((entry) => entry.source)
+    .sort();
+}
+
+function copySourceToHome(source, home) {
+  const entry = manifestEntry(source, home);
+  if (!entry || entry.preserve) return;
+  fs.mkdirSync(path.dirname(entry.destination), { recursive: true });
+  fs.copyFileSync(path.join(repoRoot, source), entry.destination);
+  if (entry.executable) fs.chmodSync(entry.destination, 0o755);
+}
+
+function sameList(left, right) {
+  return left.length === right.length && left.every((item, index) => item === right[index]);
+}
+
 async function run() {
+  const requiredSources = requiredManagedSources();
+  const freshHomeSources = [...new Set([...requiredSources, ...CANONICAL_NON_REQUIRED_MANAGED_SOURCES])].sort();
+  const managedSources = allManagedSources();
+  const freshHome = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-update-fresh-'));
+  const freshInstall = await updateForgeflow({
+    home: freshHome,
+    repo: 'local/repo',
+    current: '',
+    latest,
+    plan: {
+      firstRun: true,
+      files: freshHomeSources,
+      deleted: [],
+    },
+    fetcher: localFetcher,
+  });
+  const freshRepairHome = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-update-fresh-repair-'));
+  const freshRepair = await updateForgeflow({
+    home: freshRepairHome,
+    repo: 'local/repo',
+    current: '',
+    latest,
+    repair: true,
+    plan: {
+      firstRun: false,
+      files: freshHomeSources,
+      deleted: [],
+    },
+    fetcher: localFetcher,
+  });
+
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-update-home-'));
   const first = await updateForgeflow({
     home,
@@ -71,12 +224,14 @@ async function run() {
 
   const incompleteHome = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-update-incomplete-'));
   fs.writeFileSync(versionPath(incompleteHome), `${latest}\n`);
+  for (const source of requiredSources.filter((source) => source !== 'scripts/forgeflow/smoke-check.js')) {
+    copySourceToHome(source, incompleteHome);
+  }
   const autoRepair = await updateForgeflow({
     home: incompleteHome,
     repo: 'local/repo',
     current: latest,
     latest,
-    missingRequired: ['scripts/forgeflow/smoke-check.js'],
     plan: {
       firstRun: false,
       files: ['scripts/forgeflow/smoke-check.js'],
@@ -127,6 +282,20 @@ async function run() {
   const nestedMissingError = Object.assign(new Error("Cannot find module './other'"), { code: 'MODULE_NOT_FOUND' });
 
   const checks = [
+    ['canonical managed source list matches checkout', sameList(managedSources, freshHomeSources)],
+    ['fresh home updates', freshInstall.status === 'updated' && freshInstall.first_run === true],
+    ['fresh home writes version', fs.readFileSync(versionPath(freshHome), 'utf8').trim() === latest],
+    ['fresh home syncs canonical files', installedManagedSources(freshHome, freshHomeSources).length === freshHomeSources.length],
+    ['fresh home has no missing required files', missingRequiredManagedFiles(freshHome).length === 0],
+    ['fresh home installs commands', fs.existsSync(path.join(freshHome, 'commands', 'review.md'))],
+    ['fresh home installs runtime helper', fs.existsSync(path.join(freshHome, 'forgeflow', 'scripts', 'forgeflow', 'update-forgeflow.js'))],
+    ['fresh home keeps runtime helpers executable', requiredSources.every((source) => {
+      const entry = manifestEntry(source, freshHome);
+      return Boolean(entry && (!entry.executable || ((fs.statSync(entry.destination).mode & 0o111) !== 0)));
+    })],
+    ['fresh home repair bootstraps canonical files', freshRepair.status === 'repaired' && installedManagedSources(freshRepairHome, freshHomeSources).length === freshHomeSources.length],
+    ['fresh home repair writes version', fs.readFileSync(versionPath(freshRepairHome), 'utf8').trim() === latest],
+    ['fresh home repair has no missing required files', missingRequiredManagedFiles(freshRepairHome).length === 0],
     ['first updated', first.status === 'updated'],
     ['version written', fs.readFileSync(versionPath(home), 'utf8').trim() === latest],
     ['command installed', fs.existsSync(path.join(home, 'commands', 'review.md'))],
