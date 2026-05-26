@@ -262,6 +262,98 @@ The standard `metadata` object also gains `push_error: string | null` — popula
 
 The same `schema_version: "1"` covers both `/review --ci` and `/review-auto --ci` outputs. Consumers distinguish by the presence of the `auto_fix_*` keys.
 
+## Local artifact contracts
+
+These local helper artifacts also use additive `schema_version: "1"` contracts. They are local operational artifacts, not public-safe reports unless a helper explicitly says it redacts for public sharing.
+
+### Project intelligence rollup
+
+Produced by `scripts/forgeflow/build-project-intelligence.js --json` at `.forgeflow/<project>/context/project-intelligence-rollup.json`.
+
+Required top-level fields:
+
+- `schema_version: "1"`
+- `generated_at`
+- `project_dir`
+- `provenance.git`
+- `trust_state`
+- `readiness`
+- `freshness`
+- `guidance`
+- `top_risks`
+- `hot_files`
+- `recommended_next_actions`
+- `validation_patterns`
+- `agent_feedback`
+- `review_outcomes`
+- `review_prep`
+- `next_work_brief`
+- `next_work_items`
+- `recommendations`
+- `artifacts`
+
+`readiness.state` is one of `ready`, `needs-refresh`, `needs-triage`, or `blocked`. `next_work_items[]` entries include `title`, `priority`, `source`, `why`, `start_with[]`, `validate_with[]`, and `proof_boundary`.
+
+`review_outcomes` contains aggregate counts only: `status`, `records`, `invalid_lines`, `learning_signals`, `totals`, and `top_classes`. It does not copy raw review notes or finding detail.
+
+### Review outcome summary
+
+Produced by `scripts/forgeflow/record-review-outcome.js --summary <jsonl> --json`.
+
+Required top-level fields:
+
+- `schema_version: "1"`
+- `records`
+- `modes`
+- `agents`
+- `totals`
+- `learning_signals`
+- `classes`
+
+`learning_signals` always includes `true_positive`, `false_positive`, `missed_issue`, `stale_guidance`, and `manual_promotion_candidate`. The first three are derived from confirmed findings, rejected findings, and post-merge regressions. Manual input may only supply `stale_guidance` and `manual_promotion_candidate`.
+
+### Release readiness
+
+Produced by `scripts/forgeflow/render-release-readiness.js --json`.
+
+Required top-level fields:
+
+- `schema_version: "1"`
+- `generated_at`
+- `root`
+- `status`
+- `mode`
+- `command_count`
+- `install_preflight`
+- `categories`
+- `blockers`
+- `checks`
+- `snapshot`
+- `comparison`
+- `boundary`
+
+`mode` is `plan-only` or `run`. `status` is `planned`, `ready`, or `blocked`. `comparison.status` is `no-baseline`, `unchanged`, `changed`, or `regressed`.
+
+### Version support snapshot
+
+Produced by `scripts/forgeflow/forgeflow-version.js --snapshot --json` and saved at `~/.claude/forgeflow/version-snapshot.json`.
+
+Required top-level fields:
+
+- `schema_version: "1"`
+- `repo`
+- `home`
+- `installed`
+- `upstream`
+- `paths`
+- `path_status`
+- `runtime_helpers`
+- `snapshot`
+- `status`
+- `action`
+
+When the helper is run offline, `upstream.status` is `skipped-offline`. The snapshot may include local filesystem paths and should be treated as local support data.
+
 ## Schema evolution
 
 Additive changes that do not break existing consumers do not bump `schema_version`:
