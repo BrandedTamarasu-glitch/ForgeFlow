@@ -224,6 +224,10 @@ function freshnessIssues(trends) {
 }
 
 function riskSignals(trends, learnings) {
+  return collectRiskSignals(trends, learnings).slice(0, 8);
+}
+
+function collectRiskSignals(trends, learnings) {
   const risks = [];
   const learningStatus = learnings && learnings.check ? learnings.check.status : 'missing';
   const learningGatePass = learningStatus === 'pass';
@@ -266,7 +270,7 @@ function riskSignals(trends, learnings) {
       addIssue(risks, 'attention', 'project-learnings', item, 'inspect project-learnings.md');
     }
   }
-  return risks.slice(0, 8);
+  return risks;
 }
 
 function trustState(trends, learnings, risks) {
@@ -287,6 +291,111 @@ function trustState(trends, learnings, risks) {
     return 'current';
   }
   return 'attention';
+}
+
+function readinessState(trends = {}, learnings = {}, risks = [], recommendations = []) {
+  const reasons = [];
+  const clearing = [];
+  const learningStatus = learnings.check ? learnings.check.status : 'missing';
+  const latest = trends.latest_insights || {};
+  const projectFreshness = trends.freshness ? trends.freshness.status : 'missing';
+  const latestFreshness = latest.freshness ? latest.freshness.status : 'missing';
+  const failureDigest = trends.failure_digest || {};
+  const failureDigestFreshness = failureDigest.freshness ? failureDigest.freshness.status : 'not-applicable';
+  const importGaps = trends.import_gaps || {};
+  const advisorStatus = trends.advisor ? (trends.advisor.budget_status || (trends.advisor.budget && trends.advisor.budget.status) || '') : '';
+
+  function note(reason, command) {
+    if (reason && !reasons.includes(reason)) reasons.push(reason);
+    if (command && !clearing.includes(command)) clearing.push(command);
+  }
+
+  if (learningStatus === 'fail') note('Project-learning quality gate is failing.', 'forgeflow-learnings --project --check');
+  if (latest.check_status && latest.check_status !== 'pass') note(`Latest-insights quality gate is ${latest.check_status}.`, 'forgeflow-trends --refresh');
+  if (risks.some((risk) => risk.severity === 'high' || risk.severity === 'fail')) {
+    for (const risk of risks.filter((item) => item.severity === 'high' || item.severity === 'fail')) {
+      note(`${risk.source}: ${risk.summary}`, risk.next_action);
+    }
+  }
+  if (reasons.length > 0) {
+    return {
+      state: 'blocked',
+      reasons,
+      clearing_commands: clearing,
+      evidence: {
+        project_freshness: projectFreshness,
+        latest_insights_freshness: latestFreshness,
+        failure_digest_freshness: failureDigestFreshness,
+        project_learnings_gate: learningStatus,
+        latest_insights_gate: latest.check_status || '',
+        import_gaps: importGaps.status || 'missing',
+        context_budget: advisorStatus || 'unknown',
+      },
+    };
+  }
+
+  if (projectFreshness !== 'current' || latestFreshness !== 'current' || failureDigestFreshness === 'attention' || learningStatus !== 'pass') {
+    if (projectFreshness !== 'current') note(`Project guidance freshness is ${projectFreshness}.`, 'forgeflow-trends --refresh');
+    if (latestFreshness !== 'current') note(`Latest-insights freshness is ${latestFreshness}.`, 'forgeflow-trends --refresh');
+    if (failureDigestFreshness === 'attention') note('Failure digest is stale for the current checkout.', 'forgeflow-failure-digest');
+    if (learningStatus !== 'pass') note(`Project-learning quality gate is ${learningStatus}.`, 'forgeflow-learnings --project --check');
+    return {
+      state: 'needs-refresh',
+      reasons,
+      clearing_commands: clearing,
+      evidence: {
+        project_freshness: projectFreshness,
+        latest_insights_freshness: latestFreshness,
+        failure_digest_freshness: failureDigestFreshness,
+        project_learnings_gate: learningStatus,
+        latest_insights_gate: latest.check_status || '',
+        import_gaps: importGaps.status || 'missing',
+        context_budget: advisorStatus || 'unknown',
+      },
+    };
+  }
+
+  if (importGaps.status === 'attention' || ['warn', 'fail'].includes(advisorStatus) || recommendations.some((item) => item.severity && item.severity !== 'info')) {
+    if (importGaps.status === 'attention') note(`${importGaps.production_total || 0} production-scope import gap(s) need review.`, 'forgeflow-code-map');
+    if (['warn', 'fail'].includes(advisorStatus)) note(`Context budget advisor is ${advisorStatus}.`, 'check-context-budget --root .forgeflow --warn-only --json');
+    for (const item of recommendations.filter((entry) => entry.severity && entry.severity !== 'info')) {
+      note(item.reason || item.action, item.command);
+    }
+  }
+  for (const risk of risks) {
+    note(`${risk.source}: ${risk.summary}`, risk.next_action);
+  }
+  if (reasons.length > 0) {
+    return {
+      state: 'needs-triage',
+      reasons,
+      clearing_commands: clearing,
+      evidence: {
+        project_freshness: projectFreshness,
+        latest_insights_freshness: latestFreshness,
+        failure_digest_freshness: failureDigestFreshness,
+        project_learnings_gate: learningStatus,
+        latest_insights_gate: latest.check_status || '',
+        import_gaps: importGaps.status || 'missing',
+        context_budget: advisorStatus || 'unknown',
+      },
+    };
+  }
+
+  return {
+    state: 'ready',
+    reasons: ['Project intelligence inputs are current and no triage signals are active.'],
+    clearing_commands: [],
+    evidence: {
+      project_freshness: projectFreshness,
+      latest_insights_freshness: latestFreshness,
+      failure_digest_freshness: failureDigestFreshness,
+      project_learnings_gate: learningStatus,
+      latest_insights_gate: latest.check_status || '',
+      import_gaps: importGaps.status || 'missing',
+      context_budget: advisorStatus || 'unknown',
+    },
+  };
 }
 
 function reviewPrep(trends, intelligenceDraft) {
@@ -339,11 +448,13 @@ function buildProjectIntelligence(opts = {}) {
     learnings = showProjectLearnings({ root, projectDir, refreshCodeMap: true, check: true });
     trends = showProjectTrends({ root, projectDir, refresh: false });
   }
-  const risks = riskSignals(trends, learnings);
+  const allRisks = collectRiskSignals(trends, learnings);
+  const risks = allRisks.slice(0, 8);
   const learningGatePass = learnings.check && learnings.check.status === 'pass';
   const hotFiles = learningGatePass ? topItems(learnings.hot_files_and_modules, 8) : [];
   const recommendations = trends.recommendations || [];
   const agentFeedback = readAgentFeedback(projectDir);
+  const readiness = readinessState(trends, learnings, allRisks, recommendations);
   const intelligence = {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
@@ -351,7 +462,8 @@ function buildProjectIntelligence(opts = {}) {
     provenance: {
       git: gitProvenance(root),
     },
-    trust_state: trustState(trends, learnings, risks),
+    trust_state: trustState(trends, learnings, allRisks),
+    readiness,
     freshness: {
       project: trends.freshness ? trends.freshness.status : 'missing',
       latest_insights: trends.latest_insights && trends.latest_insights.freshness ? trends.latest_insights.freshness.status : 'missing',
@@ -393,6 +505,7 @@ function renderMarkdown(intelligence) {
     '',
     `Generated at: ${intelligence.generated_at}`,
     `Trust state: ${intelligence.trust_state}`,
+    `Readiness: ${intelligence.readiness ? intelligence.readiness.state : 'unknown'}`,
     `Git: ${intelligence.provenance.git.available ? `${intelligence.provenance.git.branch || '(detached)'} ${intelligence.provenance.git.commit_short || '(unknown)'}${intelligence.provenance.git.dirty_available ? (intelligence.provenance.git.dirty ? ' dirty' : ' clean') : ' dirty-state-not-checked'}` : '(unavailable)'}`,
     '',
     'This is a synthesis of local Forgeflow artifacts, not a source of truth. Verify decisions against the raw artifacts, current code, and current validation output.',
@@ -402,6 +515,13 @@ function renderMarkdown(intelligence) {
     `- Project guidance: ${intelligence.freshness.project}`,
     `- Latest insights: ${intelligence.freshness.latest_insights}`,
     `- Failure digest: ${intelligence.freshness.failure_digest}`,
+    '',
+    '## Readiness',
+    '',
+    `- State: ${intelligence.readiness ? intelligence.readiness.state : 'unknown'}`,
+    `- Reasons: ${intelligence.readiness && intelligence.readiness.reasons.length > 0 ? intelligence.readiness.reasons.join('; ') : '(none)'}`,
+    `- Clearing commands: ${intelligence.readiness && intelligence.readiness.clearing_commands.length > 0 ? intelligence.readiness.clearing_commands.join('; ') : '(none)'}`,
+    `- Evidence: project ${intelligence.readiness ? intelligence.readiness.evidence.project_freshness : 'unknown'}, latest-insights ${intelligence.readiness ? intelligence.readiness.evidence.latest_insights_freshness : 'unknown'}, failure-digest ${intelligence.readiness ? intelligence.readiness.evidence.failure_digest_freshness : 'unknown'}, learning-gate ${intelligence.readiness ? intelligence.readiness.evidence.project_learnings_gate : 'unknown'}, import-gaps ${intelligence.readiness ? intelligence.readiness.evidence.import_gaps : 'unknown'}, context-budget ${intelligence.readiness ? intelligence.readiness.evidence.context_budget : 'unknown'}`,
     '',
     '## Top Risks',
     '',
@@ -475,8 +595,10 @@ if (require.main === module) {
 
 module.exports = {
   buildProjectIntelligence,
+  collectRiskSignals,
   parseArgs,
   reviewPrep,
+  readinessState,
   renderMarkdown,
   riskSignals,
   trustState,
