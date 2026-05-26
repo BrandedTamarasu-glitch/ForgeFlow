@@ -4,11 +4,12 @@ const https = require('https');
 const os = require('os');
 const path = require('path');
 const { manifestEntry, RUNTIME_HELPERS } = require('./install-manifest');
+const { writeJsonSafe } = require('./file-safety');
 
 const DEFAULT_REPO = 'BrandedTamarasu-glitch/ForgeFlow';
 
 function usage() {
-  console.error('Usage: forgeflow-version.js [--home <dir>] [--repo owner/name] [--json] [--offline]');
+  console.error('Usage: forgeflow-version.js [--home <dir>] [--repo owner/name] [--json] [--offline] [--snapshot]');
 }
 
 function parseArgs(argv) {
@@ -17,6 +18,7 @@ function parseArgs(argv) {
     repo: DEFAULT_REPO,
     json: false,
     offline: false,
+    snapshot: false,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -29,6 +31,8 @@ function parseArgs(argv) {
       opts.json = true;
     } else if (arg === '--offline') {
       opts.offline = true;
+    } else if (arg === '--snapshot') {
+      opts.snapshot = true;
     } else if (arg === '--help' || arg === '-h') {
       usage();
       process.exit(0);
@@ -70,6 +74,10 @@ function request(url) {
 
 function versionFile(home) {
   return path.join(home, 'forgeflow-version');
+}
+
+function versionSnapshotPath(home) {
+  return path.join(home, 'forgeflow', 'version-snapshot.json');
 }
 
 function readInstalledVersion(home) {
@@ -199,6 +207,10 @@ async function getVersionStatus(opts = {}) {
     missing_required: missingRequiredPaths(result.paths),
   };
   result.runtime_helpers = runtimeHelperInventory(home);
+  result.snapshot = {
+    path: versionSnapshotPath(home),
+    saved: false,
+  };
 
   if (!opts.offline) {
     try {
@@ -255,6 +267,15 @@ async function getVersionStatus(opts = {}) {
   return result;
 }
 
+function saveVersionSnapshot(result) {
+  result.snapshot = {
+    path: versionSnapshotPath(result.home),
+    saved: true,
+  };
+  writeJsonSafe(result.snapshot.path, result);
+  return result;
+}
+
 function shortSha(sha) {
   return sha ? sha.slice(0, 7) : 'none';
 }
@@ -286,6 +307,9 @@ function renderMarkdown(result) {
 
   lines.push('', '## Paths', '');
   lines.push(`- Home: ${result.home}`);
+  if (result.snapshot) {
+    lines.push(`- Snapshot: ${result.snapshot.saved ? `saved to ${result.snapshot.path}` : result.snapshot.path}`);
+  }
   lines.push(`- Version file: ${result.installed.path}`);
   lines.push(`- Runtime helpers: ${result.paths.helper_root.path} (${yesNo(result.paths.helper_root.exists)})`);
   lines.push(`- Updater helper: ${result.paths.updater.path} (${yesNo(result.paths.updater.exists)})`);
@@ -315,6 +339,7 @@ function renderMarkdown(result) {
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
   const result = await getVersionStatus(opts);
+  if (opts.snapshot) saveVersionSnapshot(result);
   if (opts.json) console.log(JSON.stringify(result, null, 2));
   else console.log(renderMarkdown(result));
   if (['corrupt-version'].includes(result.status)) process.exit(1);
@@ -333,6 +358,8 @@ module.exports = {
   readInstalledVersion,
   renderMarkdown,
   runtimeHelperInventory,
+  saveVersionSnapshot,
   repairAction,
   shortSha,
+  versionSnapshotPath,
 };

@@ -7,7 +7,9 @@ const {
   readInstalledVersion,
   renderMarkdown,
   runtimeHelperInventory,
+  saveVersionSnapshot,
   shortSha,
+  versionSnapshotPath,
 } = require('./forgeflow-version');
 const { manifestEntry, RUNTIME_HELPERS } = require('./install-manifest');
 
@@ -55,6 +57,7 @@ async function main() {
 
   const missing = await getVersionStatus({ home: missingHome, offline: true });
   const installed = await getVersionStatus({ home: installedHome, offline: true });
+  const savedInstalled = saveVersionSnapshot(await getVersionStatus({ home: installedHome, offline: true }));
   const corrupt = await getVersionStatus({ home: corruptHome, offline: true });
   const partial = await getVersionStatus({ home: partialHome, offline: true });
   const oneMissing = await getVersionStatus({ home: oneMissingHome, offline: true });
@@ -71,6 +74,8 @@ async function main() {
     ['missing action', missing.status === 'not-installed'],
     ['installed offline status', installed.status === 'installed-offline'],
     ['installed helper path exists', installed.paths.helper_root.exists === true],
+    ['installed snapshot path exposed', installed.snapshot.path === versionSnapshotPath(installedHome) && installed.snapshot.saved === false],
+    ['snapshot writes support artifact', savedInstalled.snapshot.saved === true && fs.existsSync(savedInstalled.snapshot.path) && JSON.parse(fs.readFileSync(savedInstalled.snapshot.path, 'utf8')).runtime_helpers.present === RUNTIME_HELPERS.length],
     ['installed command path exists', installed.paths.version_command.exists === true],
     ['installed runtime inventory complete', installed.runtime_helpers.status === 'complete' && installed.runtime_helpers.present === RUNTIME_HELPERS.length],
     ['partial install asks repair with fallback', partial.status === 'repair-needed' && partial.action === 'Run scripts/forgeflow/update-forgeflow.js --repair from a local Forgeflow checkout.'],
@@ -83,7 +88,7 @@ async function main() {
     ['one missing markdown lists exact helper', oneMissingMarkdown.includes(omittedSource) && oneMissingMarkdown.includes('/update-forgeflow --repair')],
     ['invalid helper path asks repair', invalidHelper.status === 'repair-needed' && invalidHelper.runtime_helpers.missing.some((item) => item.source === invalidSource && item.issue === 'not-regular-file')],
     ['corrupt status', corrupt.status === 'corrupt-version'],
-    ['markdown includes next step', markdown.includes('## Next Step')],
+    ['markdown includes next step', markdown.includes('## Next Step') && markdown.includes('Snapshot:')],
   ];
 
   let failed = 0;

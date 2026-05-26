@@ -6,7 +6,7 @@ Use this page when you know what outcome you want but not which Forgeflow comman
 
 1. Run `/update-forgeflow`.
 2. Restart Claude Code so new commands and hooks are discovered.
-3. Run `/forgeflow-version`.
+3. Run `/forgeflow-version`. Add `--snapshot` when you want a local support artifact for installed version, helper inventory, and repair guidance.
 4. Run `/forgeflow-health`.
 
 If health reports missing managed files, run `/update-forgeflow --repair`. If the latest update caused a managed-file problem, run `/update-forgeflow --rollback`.

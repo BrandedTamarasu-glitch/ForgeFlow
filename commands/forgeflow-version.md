@@ -1,7 +1,7 @@
 ---
 name: forgeflow-version
 description: Show installed Forgeflow version, upstream status, release tag, helper paths, and next update action
-argument-hint: "[--json] [--offline]"
+argument-hint: "[--json] [--offline] [--snapshot]"
 allowed-tools:
   - Bash
 ---
@@ -13,6 +13,7 @@ Report the installed Forgeflow commit and compare it with upstream `main`. Use t
 $ARGUMENTS:
 - `--json` — emit machine-readable helper output.
 - `--offline` — skip GitHub lookups and report local install paths only.
+- `--snapshot` — write a local support snapshot to `~/.claude/forgeflow/version-snapshot.json`.
 </context>
 
 <process>
@@ -40,9 +41,10 @@ scripts/forgeflow/update-forgeflow.js
 
 ```bash
 ARGS=()
-# Append only --json and --offline when requested.
+# Append only --json, --offline, and --snapshot when requested.
 if [ "$WANTS_JSON" = "true" ]; then ARGS+=(--json); fi
 if [ "$WANTS_OFFLINE" = "true" ]; then ARGS+=(--offline); fi
+if [ "$WANTS_SNAPSHOT" = "true" ]; then ARGS+=(--snapshot); fi
 "${HELPER_DIR}/forgeflow-version.js" "${ARGS[@]}"
 ```
 
@@ -63,5 +65,6 @@ if [ "$WANTS_OFFLINE" = "true" ]; then ARGS+=(--offline); fi
 - [ ] Reports latest GitHub release tag when available
 - [ ] Reports installed helper and command paths
 - [ ] Reports installed runtime helper inventory and missing or invalid helper sources
+- [ ] Writes a local support snapshot when `--snapshot` is requested
 - [ ] Gives exactly one concrete next action
 </success_criteria>
