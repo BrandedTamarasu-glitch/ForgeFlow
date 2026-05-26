@@ -150,10 +150,13 @@ const changedSectionNeighbor = changedSectionResult.topology.changed_file_neighb
 const resolverRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-code-topology-resolver-'));
 fs.mkdirSync(path.join(resolverRoot, 'src/types'), { recursive: true });
 fs.mkdirSync(path.join(resolverRoot, 'src/assets'), { recursive: true });
+fs.mkdirSync(path.join(resolverRoot, 'src/shared'), { recursive: true });
 fs.writeFileSync(path.join(resolverRoot, 'src/types/audit.types.ts'), 'export type AuditRecord = { id: string };\n');
 fs.writeFileSync(path.join(resolverRoot, 'src/types/missing.model.ts'), 'export type ExistingModel = { id: string };\n');
 fs.writeFileSync(path.join(resolverRoot, 'src/assets/password-icon.tsx'), 'export default function PasswordIcon() { return null; }\n');
 fs.writeFileSync(path.join(resolverRoot, 'src/assets/new-password-icon.tsx'), 'export default function NewPasswordIcon() { return null; }\n');
+fs.writeFileSync(path.join(resolverRoot, 'src/shared/logger.ts'), 'export const logger = console;\n');
+fs.writeFileSync(path.join(resolverRoot, 'src/tool.py'), 'print("unsupported")\n');
 fs.mkdirSync(path.join(resolverRoot, 'src/routes'), { recursive: true });
 fs.mkdirSync(path.join(resolverRoot, 'src/auth/view'), { recursive: true });
 fs.writeFileSync(path.join(resolverRoot, 'tsconfig.json'), JSON.stringify({
@@ -161,8 +164,14 @@ fs.writeFileSync(path.join(resolverRoot, 'tsconfig.json'), JSON.stringify({
     baseUrl: '.',
     paths: {
       '@/*': ['src/*'],
+      'app/*': ['src/*'],
       '*': ['types/*'],
     },
+  },
+}, null, 2));
+fs.writeFileSync(path.join(resolverRoot, 'package.json'), JSON.stringify({
+  imports: {
+    '#shared/*': './src/shared/*',
   },
 }, null, 2));
 fs.writeFileSync(path.join(resolverRoot, 'src/routes/dashboard.tsx'), 'export default function Dashboard() { return null; }\n');
@@ -176,9 +185,11 @@ fs.writeFileSync(path.join(resolverRoot, 'src/app.ts'), [
   "import type { AuditRecord } from './types/audit.types';",
   "import { PasswordIcon, NewPasswordIcon } from './assets';",
   "import Dashboard from '@/routes/dashboard';",
+  "import LoginRoute from 'app/auth/view/login';",
+  "import { logger } from '#shared/logger';",
   "const loadLogin = () => import('@/auth/view/login');",
   "import type { MissingModel } from './types/actually-missing.model';",
-  'export const icons = [PasswordIcon, NewPasswordIcon, Dashboard, loadLogin];',
+  'export const icons = [PasswordIcon, NewPasswordIcon, Dashboard, LoginRoute, logger, loadLogin];',
   'export type AppAuditRecord = AuditRecord & MissingModel;',
   '',
 ].join('\n'));
@@ -187,6 +198,52 @@ const resolverResult = buildCodeTopology({
   out: path.join(tmp, 'resolver-topology.json'),
   markdownOut: path.join(tmp, 'resolver-topology.md'),
   telemetryOut: path.join(tmp, 'resolver-topology-telemetry.json'),
+});
+const packageScopeRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-code-topology-package-scope-'));
+fs.mkdirSync(path.join(packageScopeRoot, 'packages/a/src/shared'), { recursive: true });
+fs.mkdirSync(path.join(packageScopeRoot, 'packages/a/examples/src'), { recursive: true });
+fs.mkdirSync(path.join(packageScopeRoot, 'packages/b/src'), { recursive: true });
+fs.writeFileSync(path.join(packageScopeRoot, 'packages/a/package.json'), JSON.stringify({
+  imports: {
+    '#shared/*': './src/shared/*',
+  },
+}, null, 2));
+fs.writeFileSync(path.join(packageScopeRoot, 'packages/a/examples/package.json'), JSON.stringify({
+  name: 'nested-example',
+}, null, 2));
+fs.writeFileSync(path.join(packageScopeRoot, 'packages/a/src/shared/logger.ts'), 'export const logger = console;\n');
+fs.writeFileSync(path.join(packageScopeRoot, 'packages/a/src/app.ts'), "import { logger } from '#shared/logger';\nexport const a = logger;\n");
+fs.writeFileSync(path.join(packageScopeRoot, 'packages/a/examples/src/app.ts'), "import { logger } from '#shared/logger';\nexport const example = logger;\n");
+fs.writeFileSync(path.join(packageScopeRoot, 'packages/b/src/app.ts'), "import { logger } from '#shared/logger';\nexport const b = logger;\n");
+const packageScopeResult = buildCodeTopology({
+  root: packageScopeRoot,
+  out: path.join(tmp, 'package-scope-topology.json'),
+  markdownOut: path.join(tmp, 'package-scope-topology.md'),
+  telemetryOut: path.join(tmp, 'package-scope-topology-telemetry.json'),
+});
+const rootPackageScopeRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-code-topology-root-package-scope-'));
+fs.mkdirSync(path.join(rootPackageScopeRoot, 'src/shared'), { recursive: true });
+fs.mkdirSync(path.join(rootPackageScopeRoot, 'packages/b/src'), { recursive: true });
+fs.writeFileSync(path.join(rootPackageScopeRoot, 'package.json'), JSON.stringify({
+  imports: {
+    '#shared/*': './src/shared/*',
+    '#escape/*': '../src/shared/*',
+    '#internal-escape/*': './foo/../../src/shared/*',
+    '#dep': 'some-package',
+  },
+}, null, 2));
+fs.writeFileSync(path.join(rootPackageScopeRoot, 'packages/b/package.json'), JSON.stringify({
+  name: 'nested-package',
+}, null, 2));
+fs.writeFileSync(path.join(rootPackageScopeRoot, 'src/shared/logger.ts'), 'export const logger = console;\n');
+fs.writeFileSync(path.join(rootPackageScopeRoot, 'src/app.ts'), "import { logger } from '#shared/logger';\nexport const rootApp = logger;\n");
+fs.writeFileSync(path.join(rootPackageScopeRoot, 'src/unsafe.ts'), "import escape from '#escape/logger';\nimport internalEscape from '#internal-escape/logger';\nimport dep from '#dep';\nexport const unsafe = [escape, internalEscape, dep];\n");
+fs.writeFileSync(path.join(rootPackageScopeRoot, 'packages/b/src/app.ts'), "import { logger } from '#shared/logger';\nexport const nestedApp = logger;\n");
+const rootPackageScopeResult = buildCodeTopology({
+  root: rootPackageScopeRoot,
+  out: path.join(tmp, 'root-package-scope-topology.json'),
+  markdownOut: path.join(tmp, 'root-package-scope-topology.md'),
+  telemetryOut: path.join(tmp, 'root-package-scope-topology-telemetry.json'),
 });
 const manualGuidance = reviewGuidance({
   file: 'src/shared/index.ts',
@@ -216,7 +273,7 @@ const checks = [
   ['resolves extensionless tsx export', resolveLocalImport('src/assets/index.ts', './password-icon', new Set(['src/assets/password-icon.tsx'])).target === 'src/assets/password-icon.tsx'],
   ['resolves common src alias fallback', resolveLocalImport('packages/app/src/app.ts', '@/routes/dashboard', new Set(['packages/app/src/routes/dashboard.tsx'])).target === 'packages/app/src/routes/dashboard.tsx'],
   ['tracks local edges', topology.edges.some((edge) => edge.source === 'src/app/main.ts' && edge.target === 'src/features/feature.ts')],
-  ['summarizes resolved edge types', resolverResult.topology.resolved_edges.alias >= 2 && resolverResult.topology.resolved_edges.dynamic === 1 && resolverResult.topology.resolved_edges.source_suffix === 1 && resolverResult.topology.resolved_edges.examples.alias.some((item) => item.specifier === '@/routes/dashboard')],
+  ['summarizes resolved edge types', resolverResult.topology.resolved_edges.alias >= 4 && resolverResult.topology.resolved_edges.dynamic === 1 && resolverResult.topology.resolved_edges.source_suffix === 1 && resolverResult.topology.resolved_edges.examples.alias.some((item) => item.specifier === '@/routes/dashboard')],
   ['tracks commonjs edge', topology.edges.some((edge) => edge.source === 'src/lib/legacy.js' && edge.target === 'src/shared/index.ts' && edge.kind === 'require')],
   ['tracks re-export edge', topology.edges.some((edge) => edge.source === 'src/lib/helper.ts' && edge.target === 'src/shared/index.ts' && edge.kind === 'export-from')],
   ['resolves js specifier to ts file', topology.edges.some((edge) => edge.source === 'src/app/main.ts' && edge.target === 'src/lib/helper.ts' && edge.specifier === '../lib/helper.js')],
@@ -247,7 +304,11 @@ const checks = [
   ['git provenance records dirty repo', gitResult.topology.provenance.git_available === true && gitResult.topology.provenance.dirty === true && gitResult.topology.provenance.untracked_files === 1],
   ['git scan skips deleted tracked source', !gitResult.topology.nodes.some((node) => node.path === 'src/tracked.ts') && gitResult.topology.denied.some((item) => item.path === 'src/tracked.ts' && item.reason === 'missing source path')],
   ['changed section detected from git diff', changedSectionResult.topology.summary.changed_sections === 1 && changedSectionNeighbor.changed_sections[0].name === 'target' && changedSectionNeighbor.changed_sections[0].end_line === 7],
-  ['resolver fixture resolves suffix tsx alias and dynamic edges', resolverResult.topology.edges.some((edge) => edge.source === 'src/app.ts' && edge.target === 'src/types/audit.types.ts') && resolverResult.topology.edges.some((edge) => edge.source === 'src/assets/index.ts' && edge.target === 'src/assets/password-icon.tsx') && resolverResult.topology.edges.some((edge) => edge.source === 'src/assets/index.ts' && edge.target === 'src/assets/new-password-icon.tsx') && resolverResult.topology.edges.some((edge) => edge.source === 'src/app.ts' && edge.target === 'src/routes/dashboard.tsx' && edge.kind === 'import') && resolverResult.topology.edges.some((edge) => edge.source === 'src/app.ts' && edge.target === 'src/auth/view/login.tsx' && edge.kind === 'dynamic-import')],
+  ['resolver fixture resolves suffix tsx alias and dynamic edges', resolverResult.topology.edges.some((edge) => edge.source === 'src/app.ts' && edge.target === 'src/types/audit.types.ts') && resolverResult.topology.edges.some((edge) => edge.source === 'src/assets/index.ts' && edge.target === 'src/assets/password-icon.tsx') && resolverResult.topology.edges.some((edge) => edge.source === 'src/assets/index.ts' && edge.target === 'src/assets/new-password-icon.tsx') && resolverResult.topology.edges.some((edge) => edge.source === 'src/app.ts' && edge.target === 'src/routes/dashboard.tsx' && edge.kind === 'import') && resolverResult.topology.edges.some((edge) => edge.source === 'src/app.ts' && edge.target === 'src/auth/view/login.tsx' && edge.specifier === 'app/auth/view/login') && resolverResult.topology.edges.some((edge) => edge.source === 'src/app.ts' && edge.target === 'src/shared/logger.ts' && edge.specifier === '#shared/logger') && resolverResult.topology.edges.some((edge) => edge.source === 'src/app.ts' && edge.target === 'src/auth/view/login.tsx' && edge.kind === 'dynamic-import')],
+  ['package imports are scoped to nearest package root', packageScopeResult.topology.edges.some((edge) => edge.source === 'packages/a/src/app.ts' && edge.target === 'packages/a/src/shared/logger.ts') && !packageScopeResult.topology.edges.some((edge) => edge.source === 'packages/b/src/app.ts' && edge.target === 'packages/a/src/shared/logger.ts') && !packageScopeResult.topology.edges.some((edge) => edge.source === 'packages/a/examples/src/app.ts' && edge.target === 'packages/a/src/shared/logger.ts') && packageScopeResult.topology.external.some((item) => item.source === 'packages/b/src/app.ts' && item.specifier === '#shared/logger') && packageScopeResult.topology.external.some((item) => item.source === 'packages/a/examples/src/app.ts' && item.specifier === '#shared/logger')],
+  ['root package imports do not leak into nested packages', rootPackageScopeResult.topology.edges.some((edge) => edge.source === 'src/app.ts' && edge.target === 'src/shared/logger.ts') && !rootPackageScopeResult.topology.edges.some((edge) => edge.source === 'packages/b/src/app.ts' && edge.target === 'src/shared/logger.ts') && rootPackageScopeResult.topology.external.some((item) => item.source === 'packages/b/src/app.ts' && item.specifier === '#shared/logger')],
+  ['package imports ignore external and escaping targets', !rootPackageScopeResult.topology.edges.some((edge) => edge.source === 'src/unsafe.ts' && (edge.specifier === '#escape/logger' || edge.specifier === '#internal-escape/logger' || edge.specifier === '#dep')) && rootPackageScopeResult.topology.external.some((item) => item.source === 'src/unsafe.ts' && item.specifier === '#escape/logger') && rootPackageScopeResult.topology.external.some((item) => item.source === 'src/unsafe.ts' && item.specifier === '#internal-escape/logger') && rootPackageScopeResult.topology.external.some((item) => item.source === 'src/unsafe.ts' && item.specifier === '#dep')],
+  ['reports unsupported language scope', resolverResult.topology.summary.unsupported_source_files === 1 && resolverResult.topology.unsupported_languages.status === 'partial-js-ts-only' && resolverResult.topology.unsupported_languages.languages.some((item) => item.language === 'Python' && item.examples.includes('src/tool.py')) && resolverResult.markdown.includes('## Unsupported Language Scope')],
   ['resolver fixture ignores catch-all path aliases for packages', resolveLocalImport('src/app.ts', 'react', new Set(['types/react.ts']), [{ pattern: '*', prefix: '', suffix: '', exact: false, targetPrefix: 'types/', targetSuffix: '', baseUrl: '.', source: 'tsconfig.json' }]).status === 'external'],
   ['resolver fixture keeps genuinely missing suffix unresolved', resolverResult.topology.unresolved.some((item) => item.source === 'src/app.ts' && item.specifier === './types/actually-missing.model') && !resolverResult.topology.unresolved.some((item) => item.specifier === './types/audit.types') && !resolverResult.topology.unresolved.some((item) => item.specifier === './password-icon') && !resolverResult.topology.skipped_dynamic.some((item) => item.expression.includes('@/auth/view/login'))],
   ['symlink source denied', symlinkResult.topology.nodes.length === 0 && (!fs.existsSync(path.join(symlinkRoot, 'src/linked.ts')) || symlinkResult.topology.denied.some((item) => item.reason === 'symbolic links are not accepted'))],

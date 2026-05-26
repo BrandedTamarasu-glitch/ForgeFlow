@@ -346,6 +346,7 @@ function projectCodeMapSummary(topology, artifacts, opts = {}) {
     high_fan_in: topology.high_fan_in.slice(0, maxHotspots),
     high_fan_out: topology.high_fan_out.slice(0, maxHotspots),
     resolved_edges: topology.resolved_edges || null,
+    unsupported_languages: topology.unsupported_languages || null,
     changed_sections: changedSectionList(topology),
     changed_file_neighbors: topology.changed_file_neighbors.slice(0, maxHotspots).map((item) => ({
       path: item.path,
@@ -648,6 +649,7 @@ function renderProjectCodeMap(summary) {
     `- External imports: ${summary.summary.external_imports}`,
     `- Unresolved imports: ${summary.summary.unresolved_imports}`,
     `- Skipped dynamic imports: ${summary.summary.skipped_dynamic_imports}`,
+    `- Unsupported-language files: ${summary.summary.unsupported_source_files || 0}`,
     `- Sections mapped: ${summary.summary.sections}`,
     `- Changed sections: ${summary.summary.changed_sections}`,
     `- Markdown section files: ${summary.summary.markdown_section_files}`,
@@ -663,6 +665,17 @@ function renderProjectCodeMap(summary) {
         `- JS/JSX compatibility edges: ${summary.resolved_edges.js_compat}`,
       ]
       : ['(not available)']),
+    '',
+    '## Unsupported Language Scope',
+    '',
+    ...(summary.unsupported_languages && summary.unsupported_languages.languages.length > 0
+      ? [
+        `- Status: ${summary.unsupported_languages.status}`,
+        `- Files outside JS/TS graph: ${summary.unsupported_languages.total_files}`,
+        ...summary.unsupported_languages.languages.slice(0, 8).map((item) => `- ${md(item.language)} (${md(item.extension)}): ${item.count} file(s)`),
+        `- Guidance: ${md(summary.unsupported_languages.guidance)}`,
+      ]
+      : ['- None detected.']),
     '',
     '### Alias Edge Examples',
     '',

@@ -18,6 +18,21 @@ const SOURCE_SUFFIX_EXTENSIONS = new Set([
   '.hooks', '.model', '.models', '.schema', '.service', '.store', '.type', '.types',
   '.util', '.utils',
 ]);
+const UNSUPPORTED_SOURCE_EXTENSIONS = {
+  '.py': 'Python',
+  '.go': 'Go',
+  '.rb': 'Ruby',
+  '.rs': 'Rust',
+  '.java': 'Java',
+  '.cs': 'C#',
+  '.php': 'PHP',
+  '.swift': 'Swift',
+  '.kt': 'Kotlin',
+  '.scala': 'Scala',
+  '.dart': 'Dart',
+  '.vue': 'Vue SFC',
+  '.svelte': 'Svelte',
+};
 
 function usage() {
   console.error([
@@ -196,6 +211,7 @@ function readFiles(root) {
   const denied = [];
   const sourceFiles = [];
   const sectionFiles = [];
+  const unsupportedFiles = [];
   for (const file of files.map(normalize).sort()) {
     const reason = deniedPath(file);
     if (reason) {
@@ -216,10 +232,12 @@ function readFiles(root) {
     }
     if (isSourceFile(file)) sourceFiles.push(file);
     if (isSectionFile(file)) sectionFiles.push(file);
+    if (UNSUPPORTED_SOURCE_EXTENSIONS[path.extname(file).toLowerCase()]) unsupportedFiles.push(file);
   }
   return {
     sourceFiles: [...new Set(sourceFiles)].sort(),
     sectionFiles: [...new Set(sectionFiles)].sort(),
+    unsupportedFiles: [...new Set(unsupportedFiles)].sort(),
     denied: [...walked.denied, ...denied].sort((a, b) => a.path.localeCompare(b.path)),
   };
 }
@@ -529,9 +547,7 @@ function readJsonFile(file) {
 }
 
 function tsConfigAliasRules(root) {
-  const configFiles = readTrackedFiles(root)
-    .filter((file) => /(^|\/)(tsconfig|jsconfig)(\.[^/]*)?\.json$/i.test(file))
-    .filter((file) => !deniedPath(file));
+  const configFiles = configFilesFor(root, /(^|\/)(tsconfig|jsconfig)(\.[^/]*)?\.json$/i);
   const rules = [];
   for (const file of configFiles) {
     const config = readJsonFile(path.join(root, file));
@@ -563,10 +579,84 @@ function tsConfigAliasRules(root) {
   return rules;
 }
 
+function configFilesFor(root, pattern) {
+  const tracked = readTrackedFiles(root);
+  const files = tracked.length > 0 ? tracked : walkFiles(root).found;
+  return files
+    .map(normalize)
+    .filter((file) => pattern.test(file))
+    .filter((file) => !deniedPath(file));
+}
+
+function normalizePackageTarget(target) {
+  const text = String(target || '');
+  if (!text.startsWith('./')) return '';
+  const relative = text.replace(/^\.\//, '');
+  if (relative.split(/[\\/]+/).includes('..')) return '';
+  const normalized = normalize(relative);
+  if (!normalized || normalized === '..' || normalized.startsWith('../') || path.isAbsolute(normalized)) return '';
+  return normalized;
+}
+
+function packageImportAliasRules(root) {
+  const packageFiles = configFilesFor(root, /(^|\/)package\.json$/i);
+  const packageRoots = packageFiles.map((file) => normalize(path.dirname(file))).sort((a, b) => b.length - a.length);
+  const rules = [];
+  for (const file of packageFiles) {
+    const config = readJsonFile(path.join(root, file));
+    const imports = config && config.imports && typeof config.imports === 'object' ? config.imports : {};
+    const baseUrl = normalize(path.dirname(file));
+    for (const [pattern, targetValue] of Object.entries(imports)) {
+      if (!pattern.startsWith('#')) continue;
+      const targets = Array.isArray(targetValue) ? targetValue : [targetValue];
+      const targetList = Array.isArray(targets) ? targets : [targets];
+      const starIndex = pattern.indexOf('*');
+      const prefix = starIndex >= 0 ? pattern.slice(0, starIndex) : pattern;
+      const suffix = starIndex >= 0 ? pattern.slice(starIndex + 1) : '';
+      for (const target of targetList.filter(Boolean)) {
+        if (typeof target === 'object') continue;
+        const targetText = normalizePackageTarget(target);
+        if (!targetText) continue;
+        const targetStarIndex = targetText.indexOf('*');
+        rules.push({
+          pattern,
+          prefix,
+          suffix,
+          exact: starIndex < 0,
+          targetPrefix: targetStarIndex >= 0 ? targetText.slice(0, targetStarIndex) : targetText,
+          targetSuffix: targetStarIndex >= 0 ? targetText.slice(targetStarIndex + 1) : '',
+          baseUrl,
+          source: file,
+          scopeRoot: baseUrl,
+          packageRoots,
+        });
+      }
+    }
+  }
+  return rules;
+}
+
+function aliasRules(root) {
+  return [...tsConfigAliasRules(root), ...packageImportAliasRules(root)];
+}
+
+function nearestPackageRoot(fromFile, packageRoots = []) {
+  const from = normalize(fromFile);
+  const sorted = packageRoots.slice().sort((a, b) => b.length - a.length);
+  for (const root of sorted) {
+    if (!root || root === '.') continue;
+    if (from === root || from.startsWith(`${root}/`)) return root;
+  }
+  return '.';
+}
+
 function aliasCandidateBases(fromFile, specifier, aliasRules = []) {
   const bases = [];
   for (const rule of aliasRules) {
     if (rule.pattern === '*') continue;
+    if (rule.scopeRoot) {
+      if (nearestPackageRoot(fromFile, rule.packageRoots || []) !== rule.scopeRoot) continue;
+    }
     if (rule.exact) {
       if (specifier !== rule.prefix) continue;
       bases.push(normalize(path.join(rule.baseUrl, rule.targetPrefix)));
@@ -603,7 +693,7 @@ function resolveLocalImport(fromFile, specifier, sourceSet, aliasRules = []) {
 
 function buildGraph(root, sourceFiles, sectionMap = {}) {
   const sourceSet = new Set(sourceFiles);
-  const aliasRules = tsConfigAliasRules(root);
+  const aliasRulesForRoot = aliasRules(root);
   const nodes = Object.fromEntries(sourceFiles.map((file) => [file, {
     path: file,
     imports: [],
@@ -625,7 +715,7 @@ function buildGraph(root, sourceFiles, sectionMap = {}) {
       skipped_dynamic.push({ source: file, ...skipped });
     }
     for (const item of parsed.imports) {
-      const resolved = resolveLocalImport(file, item.specifier, sourceSet, aliasRules);
+      const resolved = resolveLocalImport(file, item.specifier, sourceSet, aliasRulesForRoot);
       if (resolved.status === 'resolved') {
         edges.push({ source: file, target: resolved.target, specifier: item.specifier, kind: item.kind });
         nodes[file].imports.push(resolved.target);
@@ -651,6 +741,27 @@ function buildGraph(root, sourceFiles, sectionMap = {}) {
     unresolved: unresolved.sort((a, b) => a.source.localeCompare(b.source) || a.specifier.localeCompare(b.specifier)),
     external: external.sort((a, b) => a.source.localeCompare(b.source) || a.specifier.localeCompare(b.specifier)),
     skipped_dynamic: skipped_dynamic.sort((a, b) => a.source.localeCompare(b.source) || a.expression.localeCompare(b.expression)),
+  };
+}
+
+function unsupportedLanguageSummary(files) {
+  const buckets = {};
+  for (const file of files || []) {
+    const ext = path.extname(file).toLowerCase();
+    const language = UNSUPPORTED_SOURCE_EXTENSIONS[ext];
+    if (!language) continue;
+    if (!buckets[language]) buckets[language] = { language, extension: ext, count: 0, examples: [] };
+    buckets[language].count += 1;
+    if (buckets[language].examples.length < 5) buckets[language].examples.push(file);
+  }
+  const languages = Object.values(buckets).sort((a, b) => b.count - a.count || a.language.localeCompare(b.language));
+  return {
+    status: languages.length > 0 ? 'partial-js-ts-only' : 'js-ts-only',
+    total_files: languages.reduce((total, item) => total + item.count, 0),
+    languages,
+    guidance: languages.length > 0
+      ? 'Static topology currently maps JS/TS imports only. Treat this as partial guidance when unsupported-language files are in scope.'
+      : 'Static topology found only JS/TS source extensions in the scanned source set.',
   };
 }
 
@@ -832,6 +943,18 @@ function renderMarkdown(topology) {
   lines.push(...(topology.markdown_sections.length > 0
     ? topology.markdown_sections.slice(0, 20).map((item) => `- ${md(item.path)}: ${item.sections.slice(0, 5).map((section) => `${md(section.name)} (${section.line}-${section.end_line})`).join(', ')}`)
     : ['(none)']), '');
+  lines.push('## Unsupported Language Scope', '');
+  if (topology.unsupported_languages && topology.unsupported_languages.languages.length > 0) {
+    lines.push(`- Status: ${md(topology.unsupported_languages.status)}`);
+    lines.push(`- Files outside JS/TS graph: ${topology.unsupported_languages.total_files}`);
+    for (const item of topology.unsupported_languages.languages.slice(0, 8)) {
+      lines.push(`- ${md(item.language)} (${md(item.extension)}): ${item.count} file(s). Examples: ${item.examples.map(md).join(', ')}`);
+    }
+    lines.push(`- Guidance: ${md(topology.unsupported_languages.guidance)}`);
+  } else {
+    lines.push('- None detected.');
+  }
+  lines.push('');
   lines.push('## Limits', '');
   lines.push('- Static JS/TS module graph only.');
   lines.push('- Sections are static exported/common symbol and Markdown heading hints only.');
@@ -898,7 +1021,8 @@ function buildCodeTopology(opts = {}) {
   const markdownOut = opts.markdownOut || defaultMarkdownOut(root);
   const telemetryOut = opts.telemetryOut || defaultTelemetryOut(root);
   const maxHotspots = Number.isFinite(opts.maxHotspots) && opts.maxHotspots > 0 ? opts.maxHotspots : DEFAULT_MAX_HOTSPOTS;
-  const { sourceFiles, sectionFiles, denied } = readFiles(root);
+  const { sourceFiles, sectionFiles, unsupportedFiles, denied } = readFiles(root);
+  const unsupportedLanguages = unsupportedLanguageSummary(unsupportedFiles);
   const generatedAt = new Date().toISOString();
   const sectionMap = buildSectionMap(root, sectionFiles);
   const changedLineMap = changedLinesFromGit(root, opts.filesPath || '');
@@ -924,8 +1048,10 @@ function buildCodeTopology(opts = {}) {
     }),
     source_extensions: SOURCE_EXTENSIONS,
     section_extensions: [...SOURCE_EXTENSIONS, ...MARKDOWN_EXTENSIONS],
+    unsupported_languages: unsupportedLanguages,
     summary: {
       source_files: sourceFiles.length,
+      unsupported_source_files: unsupportedLanguages.total_files,
       local_edges: graph.edges.length,
       external_imports: graph.external.length,
       unresolved_imports: graph.unresolved.length,
