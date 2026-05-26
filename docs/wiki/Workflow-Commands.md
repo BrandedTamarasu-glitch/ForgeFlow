@@ -42,6 +42,8 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 
 Living project-map categories include baseline, missing-history, new hotspot, cooling hotspot, import-gap growth/reduction per metric, changed-section churn, graph-growth score, and stable structure. They are static JS/TS import and section signals only.
 
+Release-readiness blockers include a kind. `execution-environment` means the local runner could not spawn a documented check because local process spawning was denied. Run that listed command directly in the same trusted local environment used for release validation, or rerun release readiness where local process spawning is permitted. `missing-command` means a local executable or PATH prerequisite is missing and should be restored before rerunning readiness.
+
 ## Codex Skills
 
 Codex users can invoke skills directly:

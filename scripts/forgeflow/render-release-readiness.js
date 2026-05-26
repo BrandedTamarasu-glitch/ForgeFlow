@@ -134,6 +134,32 @@ function runCommand(root, command, runner = spawnSync) {
   };
 }
 
+function blockerKind(item) {
+  const output = String(item.stderr || item.stdout || '');
+  if (/spawnSync\s+\S+\s+E(?:PERM|ACCES)\b/i.test(output)) return 'execution-environment';
+  if (/spawnSync\s+\S+\s+ENOENT\b/i.test(output)) return 'missing-command';
+  if (/release readiness refuses to run command outside the release-check allowlist/i.test(output)) return 'allowlist';
+  if (item.command === 'read commands/forgeflow-release-check.md') return 'release-check-source';
+  return 'command-failure';
+}
+
+function clearingAction(item) {
+  const kind = blockerKind(item);
+  if (kind === 'execution-environment') {
+    return 'Run the listed release-check command directly in the same trusted local environment you use for release validation, or rerun release readiness where local process spawning is permitted.';
+  }
+  if (kind === 'missing-command') {
+    return 'Install or restore the missing local command, then rerun release readiness.';
+  }
+  if (kind === 'allowlist') {
+    return 'Keep release readiness commands in the documented local node/git allowlist, or move the command to a manual release-check step.';
+  }
+  if (kind === 'release-check-source') {
+    return 'Restore commands/forgeflow-release-check.md and rerun release readiness.';
+  }
+  return `Fix the failure and rerun ${item.command}`;
+}
+
 function summarizeCategory(items) {
   const failed = items.filter((item) => item.status === 'fail');
   const planned = items.filter((item) => item.status === 'planned');
@@ -197,11 +223,12 @@ function buildReleaseReadiness(opts = {}) {
     command_count: checks.length,
     categories,
     blockers: failures.map((item) => ({
+      kind: blockerKind(item),
       category: item.category,
       command: item.command,
       exit_code: item.exit_code,
       output: item.stderr || item.stdout,
-      clears: `Fix the failure and rerun ${item.command}`,
+      clears: clearingAction(item),
     })),
     checks,
     boundary: 'Release readiness is advisory and non-mutating. It never tags, pushes, publishes, or calls GitHub.',
@@ -230,6 +257,7 @@ function renderMarkdown(result) {
   } else {
     for (const blocker of result.blockers) {
       lines.push(`- ${blocker.command}`);
+      lines.push(`  - Kind: ${blocker.kind}`);
       lines.push(`  - Category: ${blocker.category}`);
       lines.push(`  - Exit: ${blocker.exit_code}`);
       if (blocker.output) lines.push(`  - Output: ${blocker.output.replace(/\s+/g, ' ')}`);
@@ -259,6 +287,8 @@ module.exports = {
   allowedCommand,
   buildReleaseReadiness,
   commandCategory,
+  blockerKind,
+  clearingAction,
   parseArgs,
   renderMarkdown,
   releaseCheckEnv,
