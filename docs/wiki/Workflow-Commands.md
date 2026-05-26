@@ -46,6 +46,8 @@ Context packs include a compact living-map guidance block for reviewers and synt
 
 Release-readiness blockers include a kind. `execution-environment` means the local runner could not spawn a documented check because local process spawning was denied. Run that listed command directly in the same trusted local environment used for release validation, or rerun release readiness where local process spawning is permitted. `missing-command` means a local executable or PATH prerequisite is missing and should be restored before rerunning readiness. The release-to-install preflight checks source-tree presence and ownership only; syntax, helper contract, update, health, and installed-runtime behavior are still verified by the release-check commands.
 
+Use `scripts/forgeflow/test-doc-links.js --report` when release docs drift and you need an actionable Markdown report instead of only failing test lines.
+
 ## Codex Skills
 
 Codex users can invoke skills directly:

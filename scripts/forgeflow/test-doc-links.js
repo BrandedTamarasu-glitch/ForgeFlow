@@ -11,6 +11,37 @@ const docs = [
     .map((file) => `docs/wiki/${file}`),
 ];
 
+function usage() {
+  console.error('Usage: test-doc-links.js [--json] [--report]');
+}
+
+function parseArgs(argv) {
+  const opts = {
+    json: false,
+    report: false,
+  };
+  for (const arg of argv) {
+    if (arg === '--json') opts.json = true;
+    else if (arg === '--report') opts.report = true;
+    else if (arg === '--help' || arg === '-h') {
+      usage();
+      process.exit(0);
+    } else {
+      throw new Error(`Unknown argument: ${arg}`);
+    }
+  }
+  return opts;
+}
+
+function issue(code, source, message, fix) {
+  return {
+    code,
+    source,
+    message,
+    fix,
+  };
+}
+
 function read(relativePath) {
   const file = path.join(repoRoot, relativePath);
   if (!isRepoRegularFile(file)) {
@@ -155,52 +186,135 @@ function firstMarkdownLinkHref(markdown, predicate) {
   return '';
 }
 
-const failures = [];
-for (const source of docs) {
-  const markdown = read(source);
-  for (const target of localLinks(markdown)) {
-    const resolved = resolveTarget(source, target);
-    if (!isRepoRegularFile(resolved)) {
-      failures.push(`${source}: missing local link ${target}`);
+function validateDocs() {
+  const failures = [];
+  for (const source of docs) {
+    const markdown = read(source);
+    for (const target of localLinks(markdown)) {
+      const resolved = resolveTarget(source, target);
+      if (!isRepoRegularFile(resolved)) {
+        failures.push(issue(
+          'missing-local-link',
+          source,
+          `Missing local link target: ${target}`,
+          `Update or remove the local link ${target}.`
+        ));
+      }
     }
   }
-}
 
-const plugin = JSON.parse(read('.claude-plugin/plugin.json'));
-const latestChangelogs = changelogCandidates(plugin.version);
-const latestChangelog = latestChangelogs.find((candidate) => isRepoRegularFile(path.join(repoRoot, candidate)));
-const latestChangelogHref = latestChangelog && `./${latestChangelog.replace(/^docs\//, '')}`;
-const latestWikiChangelogHref = latestChangelog && `../${latestChangelog.replace(/^docs\//, '')}`;
-const hostedDocs = read('docs/index.html');
-const wikiHome = read('docs/wiki/Home.md');
-if (!latestChangelog) {
-  failures.push(`missing changelog for plugin version ${plugin.version}: ${latestChangelogs.join(' or ')}`);
-}
-const releaseNotesHref = htmlCardHrefByTitle(hostedDocs, 'Release Notes');
-if (latestChangelogHref && releaseNotesHref !== latestChangelogHref) {
-  failures.push(`docs/index.html: Release Notes card must link ${latestChangelogHref}`);
-}
-const startHere = sectionAfterHeading(wikiHome, '## Start Here');
-const startHereLatestHref = firstMarkdownLinkHref(startHere, (href) => href.startsWith('../changelogs/'));
-if (latestWikiChangelogHref && startHereLatestHref !== latestWikiChangelogHref) {
-  failures.push(`docs/wiki/Home.md: Start Here must link ${latestWikiChangelogHref}`);
-}
-
-const releaseCheckCommands = releaseCommands(read('commands/forgeflow-release-check.md'));
-for (const doc of ['docs/wiki/Release-Gate.md', 'docs/wiki/Release-Process.md']) {
-  const commands = releaseCommands(read(doc));
-  const diff = commandListDiff(releaseCheckCommands, commands);
-  for (const command of diff.missing) {
-    failures.push(`${doc}: release-check command missing from docs: ${command}`);
+  const plugin = JSON.parse(read('.claude-plugin/plugin.json'));
+  const latestChangelogs = changelogCandidates(plugin.version);
+  const latestChangelog = latestChangelogs.find((candidate) => isRepoRegularFile(path.join(repoRoot, candidate)));
+  const latestChangelogHref = latestChangelog && `./${latestChangelog.replace(/^docs\//, '')}`;
+  const latestWikiChangelogHref = latestChangelog && `../${latestChangelog.replace(/^docs\//, '')}`;
+  const hostedDocs = read('docs/index.html');
+  const wikiHome = read('docs/wiki/Home.md');
+  if (!latestChangelog) {
+    failures.push(issue(
+      'missing-latest-changelog',
+      'docs/changelogs',
+      `Missing changelog for plugin version ${plugin.version}: ${latestChangelogs.join(' or ')}`,
+      'Add the matching changelog file or correct the plugin version.'
+    ));
   }
-  for (const command of diff.extra) {
-    failures.push(`${doc}: extra release-check command not in command source: ${command}`);
+  const releaseNotesHref = htmlCardHrefByTitle(hostedDocs, 'Release Notes');
+  if (latestChangelogHref && releaseNotesHref !== latestChangelogHref) {
+    failures.push(issue(
+      'hosted-docs-release-notes-stale',
+      'docs/index.html',
+      `Release Notes card links ${releaseNotesHref || '(missing)'}, expected ${latestChangelogHref}`,
+      `Update the Release Notes card href to ${latestChangelogHref}.`
+    ));
+  }
+  const startHere = sectionAfterHeading(wikiHome, '## Start Here');
+  const startHereLatestHref = firstMarkdownLinkHref(startHere, (href) => href.startsWith('../changelogs/'));
+  if (latestWikiChangelogHref && startHereLatestHref !== latestWikiChangelogHref) {
+    failures.push(issue(
+      'wiki-home-release-notes-stale',
+      'docs/wiki/Home.md',
+      `Start Here first changelog link is ${startHereLatestHref || '(missing)'}, expected ${latestWikiChangelogHref}`,
+      `Move ${latestWikiChangelogHref} to the top of the Start Here changelog links.`
+    ));
+  }
+
+  const releaseCheckCommands = releaseCommands(read('commands/forgeflow-release-check.md'));
+  for (const doc of ['docs/wiki/Release-Gate.md', 'docs/wiki/Release-Process.md']) {
+    const commands = releaseCommands(read(doc));
+    const diff = commandListDiff(releaseCheckCommands, commands);
+    for (const command of diff.missing) {
+      failures.push(issue(
+        'release-command-missing',
+        doc,
+        `Release-check command missing from docs: ${command}`,
+        `Add ${command} to the release-check command block.`
+      ));
+    }
+    for (const command of diff.extra) {
+      failures.push(issue(
+        'release-command-extra',
+        doc,
+        `Extra release-check command not in command source: ${command}`,
+        `Remove ${command} or add it to commands/forgeflow-release-check.md.`
+      ));
+    }
+  }
+
+  return {
+    schema_version: '1',
+    status: failures.length > 0 ? 'fail' : 'pass',
+    checked_files: docs.length,
+    failures,
+  };
+}
+
+function renderReport(result) {
+  const lines = [
+    '# Forgeflow Docs Drift Report',
+    '',
+    `Status: ${result.status}`,
+    `Checked files: ${result.checked_files}`,
+    '',
+  ];
+  if (result.failures.length === 0) {
+    lines.push('No docs drift found.');
+  } else {
+    lines.push('## Drift Findings', '');
+    for (const failure of result.failures) {
+      lines.push(`- ${failure.source}: ${failure.message}`);
+      lines.push(`  - Code: ${failure.code}`);
+      lines.push(`  - Fix: ${failure.fix}`);
+    }
+  }
+  return `${lines.join('\n')}\n`;
+}
+
+function main() {
+  const opts = parseArgs(process.argv.slice(2));
+  const result = validateDocs();
+  if (opts.json) {
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  } else if (opts.report) {
+    process.stdout.write(renderReport(result));
+  } else if (result.failures.length > 0) {
+    for (const failure of result.failures) console.error(`FAIL ${failure.source}: ${failure.message}`);
+  } else {
+    console.log(`doc links: ok (${result.checked_files} files)`);
+  }
+  if (result.failures.length > 0) process.exit(1);
+}
+
+if (require.main === module) {
+  try {
+    main();
+  } catch (err) {
+    console.error(err.message);
+    usage();
+    process.exit(1);
   }
 }
 
-if (failures.length > 0) {
-  for (const failure of failures) console.error(`FAIL ${failure}`);
-  process.exit(1);
-}
-
-console.log(`doc links: ok (${docs.length} files)`);
+module.exports = {
+  renderReport,
+  validateDocs,
+};

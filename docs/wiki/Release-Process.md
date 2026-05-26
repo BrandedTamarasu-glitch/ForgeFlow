@@ -34,6 +34,7 @@ When running from a checkout instead of Claude Code, run the same release checks
 node scripts/forgeflow/test-command-coverage.js
 node scripts/forgeflow/test-command-argument-safety.js
 node scripts/forgeflow/test-doc-links.js
+node scripts/forgeflow/test-doc-drift-report.js
 node scripts/forgeflow/test-plugin-manifest.js
 node scripts/forgeflow/test-release-version.js
 node scripts/forgeflow/test-install-template.js
