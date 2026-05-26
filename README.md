@@ -189,7 +189,7 @@ scripts/forgeflow/summarize-calibration.js --json
 scripts/forgeflow/record-review-outcome.js --summary .forgeflow/<project>/review-outcomes.jsonl --json
 ```
 
-These records are local-first. They are meant to help you understand false positives, verifier outcomes, accepted findings, review time, and auto-fix quality.
+These records are local-first. They are meant to help you understand false positives, verifier outcomes, accepted findings, review time, and auto-fix quality. Review outcomes also expose aggregate learning signals for true positives, false positives, missed issues, stale guidance, and manual promotion candidates so later planning can distinguish useful reviewer guidance from guidance that should be corrected.
 
 ## Local Context Intelligence
 

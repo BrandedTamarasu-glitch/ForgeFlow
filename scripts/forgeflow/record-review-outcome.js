@@ -50,6 +50,25 @@ function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
+const LEARNING_SIGNAL_KEYS = [
+  'true_positive',
+  'false_positive',
+  'missed_issue',
+  'stale_guidance',
+  'manual_promotion_candidate',
+];
+
+const MANUAL_LEARNING_SIGNAL_KEYS = [
+  'stale_guidance',
+  'manual_promotion_candidate',
+];
+
+const MANUAL_LEARNING_SIGNAL_KEY_SET = new Set(MANUAL_LEARNING_SIGNAL_KEYS);
+
+function emptyLearningSignals() {
+  return Object.fromEntries(LEARNING_SIGNAL_KEYS.map((key) => [key, 0]));
+}
+
 function validateOutcome(record) {
   const errors = [];
   if (!record || typeof record !== 'object' || Array.isArray(record)) {
@@ -84,6 +103,22 @@ function validateOutcome(record) {
   }
   if (typeof outcome.auto_fix_success !== 'boolean') errors.push('outcome.auto_fix_success must be a boolean');
   if (typeof outcome.post_merge_regression !== 'boolean') errors.push('outcome.post_merge_regression must be a boolean');
+  if (outcome.learning_signals !== undefined) {
+    if (!outcome.learning_signals || typeof outcome.learning_signals !== 'object' || Array.isArray(outcome.learning_signals)) {
+      errors.push('outcome.learning_signals must be an object');
+    } else {
+      for (const field of Object.keys(outcome.learning_signals)) {
+        if (!MANUAL_LEARNING_SIGNAL_KEY_SET.has(field)) {
+          errors.push(`outcome.learning_signals.${field} is not supported`);
+        }
+      }
+      for (const field of MANUAL_LEARNING_SIGNAL_KEYS) {
+        if (outcome.learning_signals[field] !== undefined && (!Number.isInteger(outcome.learning_signals[field]) || outcome.learning_signals[field] < 0)) {
+          errors.push(`outcome.learning_signals.${field} must be a non-negative integer`);
+        }
+      }
+    }
+  }
 
   return errors;
 }
@@ -122,6 +157,7 @@ function emptySummary() {
       auto_fix_failed: 0,
       post_merge_regression: 0,
     },
+    learning_signals: emptyLearningSignals(),
     classes: {},
   };
 }
@@ -155,6 +191,14 @@ function applyOutcome(summary, record) {
   summary.totals.auto_fix_success += outcome.auto_fix_success ? 1 : 0;
   summary.totals.auto_fix_failed += outcome.auto_fix_success ? 0 : 1;
   summary.totals.post_merge_regression += outcome.post_merge_regression ? 1 : 0;
+  summary.learning_signals.true_positive += outcome.findings_confirmed;
+  summary.learning_signals.false_positive += outcome.findings_rejected;
+  summary.learning_signals.missed_issue += outcome.post_merge_regression ? 1 : 0;
+  for (const [signal, value] of Object.entries(outcome.learning_signals || {})) {
+    if (summary.learning_signals[signal] !== undefined && Number.isInteger(value) && value > 0) {
+      summary.learning_signals[signal] += value;
+    }
+  }
 
   for (const decision of asArray(review.verifier_decisions)) {
     const normalizedDecision = normalize(decision.decision);

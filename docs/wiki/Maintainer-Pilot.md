@@ -97,6 +97,8 @@ Record the review outcome after human triage:
 scripts/forgeflow/record-review-outcome.js --summary .forgeflow/$(basename "$PWD")/review-outcomes.jsonl --json
 ```
 
+Use optional `outcome.learning_signals` only for signals that are not already derivable from the review counts, such as `stale_guidance` or `manual_promotion_candidate`.
+
 Create the local pilot evidence note:
 
 ```bash

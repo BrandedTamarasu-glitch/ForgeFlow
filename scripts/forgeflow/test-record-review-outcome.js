@@ -16,8 +16,24 @@ if (errors.length > 0) {
 }
 
 const summary = summarize([record]);
+const learningRecord = JSON.parse(JSON.stringify(record));
+learningRecord.change_id = 'learning-signals';
+learningRecord.outcome.findings_confirmed = 1;
+learningRecord.outcome.findings_rejected = 2;
+learningRecord.outcome.post_merge_regression = true;
+learningRecord.outcome.learning_signals = {
+  stale_guidance: 1,
+  manual_promotion_candidate: 1,
+};
+const learningSummary = summarize([learningRecord]);
 const invalidWorkflow = JSON.parse(JSON.stringify(record));
 invalidWorkflow.review.workflow = 'many-agents';
+const invalidLearningSignals = JSON.parse(JSON.stringify(record));
+invalidLearningSignals.outcome.learning_signals = { stale_guidance: -1 };
+const unknownLearningSignals = JSON.parse(JSON.stringify(record));
+unknownLearningSignals.outcome.learning_signals = { maybe_bug: 1 };
+const derivedLearningSignals = JSON.parse(JSON.stringify(record));
+derivedLearningSignals.outcome.learning_signals = { true_positive: 1 };
 const checks = [
   ['records', summary.records === 1],
   ['mode', summary.modes['full-mode'] === 1],
@@ -25,7 +41,11 @@ const checks = [
   ['rejected', summary.totals.findings_rejected === 1],
   ['verifier confirmed', summary.totals.verifier_confirmed === 1],
   ['accessibility class', summary.classes.accessibility.findings_confirmed === 1],
+  ['learning signals distinguish outcomes', learningSummary.learning_signals.true_positive === 1 && learningSummary.learning_signals.false_positive === 2 && learningSummary.learning_signals.missed_issue === 1 && learningSummary.learning_signals.stale_guidance === 1 && learningSummary.learning_signals.manual_promotion_candidate === 1],
   ['invalid workflow rejected', validateOutcome(invalidWorkflow).some((error) => error.includes('review.workflow'))],
+  ['invalid learning signals rejected', validateOutcome(invalidLearningSignals).some((error) => error.includes('outcome.learning_signals.stale_guidance'))],
+  ['unknown learning signals rejected', validateOutcome(unknownLearningSignals).some((error) => error.includes('outcome.learning_signals.maybe_bug'))],
+  ['derived learning signals rejected', validateOutcome(derivedLearningSignals).some((error) => error.includes('outcome.learning_signals.true_positive'))],
 ];
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'review-outcome-'));

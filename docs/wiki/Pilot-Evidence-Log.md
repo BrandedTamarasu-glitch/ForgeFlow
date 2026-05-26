@@ -86,6 +86,8 @@ scripts/forgeflow/record-review-outcome.js \
   --json
 ```
 
+Outcome records can include optional `outcome.learning_signals` counts for `stale_guidance` and `manual_promotion_candidate`. Confirmed findings, rejected findings, and post-merge regressions are also rolled into true-positive, false-positive, and missed-issue learning signals automatically.
+
 If sharing rules allow a public summary:
 
 ```bash
