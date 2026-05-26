@@ -77,7 +77,7 @@ for (const file of walk(commandsRoot)) {
   if (rel === 'commands/forgeflow-release-readiness.md') {
     const nodeInvocations = markdown.split(/\r?\n/).filter((line) => /\bnode\s+"\$\{HELPER_DIR\}\/render-release-readiness\.js"/.test(line));
     const unsafeNodeInvocations = nodeInvocations.filter((line) => !/env -u NODE_OPTIONS -u NODE_PATH node/.test(line));
-    if (nodeInvocations.length !== 4 || unsafeNodeInvocations.length > 0) {
+    if (nodeInvocations.length !== 1 || unsafeNodeInvocations.length > 0) {
       failures.push(`${rel}: release readiness must launch node through env -u NODE_OPTIONS -u NODE_PATH`);
     }
   }

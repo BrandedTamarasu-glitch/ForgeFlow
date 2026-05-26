@@ -2,13 +2,13 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
-const { safeReadTextFile } = require('./file-safety');
+const { safeReadTextFile, writeJsonSafe } = require('./file-safety');
 const { RUNTIME_HELPERS, isManagedSource } = require('./install-manifest');
 
 const MAX_OUTPUT_CHARS = 1200;
 
 function usage() {
-  console.error('Usage: render-release-readiness.js [--root <repo>] [--plan-only] [--json] [--baseline <json>]');
+  console.error('Usage: render-release-readiness.js [--root <repo>] [--plan-only] [--json] [--baseline <json>] [--compare-last] [--save-current]');
 }
 
 function requireValue(argv, name, index) {
@@ -23,6 +23,8 @@ function parseArgs(argv) {
     planOnly: false,
     json: false,
     baseline: '',
+    compareLast: false,
+    saveCurrent: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -36,6 +38,10 @@ function parseArgs(argv) {
     } else if (arg === '--baseline') {
       opts.baseline = path.resolve(requireValue(argv, arg, i));
       i += 1;
+    } else if (arg === '--compare-last') {
+      opts.compareLast = true;
+    } else if (arg === '--save-current') {
+      opts.saveCurrent = true;
     } else if (arg === '--help' || arg === '-h') {
       usage();
       process.exit(0);
@@ -44,6 +50,14 @@ function parseArgs(argv) {
     }
   }
   return opts;
+}
+
+function defaultProjectDir(root) {
+  return path.join(root, '.forgeflow', path.basename(root));
+}
+
+function lastSnapshotPath(root) {
+  return path.join(defaultProjectDir(root), 'release-readiness', 'last.json');
 }
 
 function readReleaseCheck(root) {
@@ -420,6 +434,7 @@ function buildReleaseReadiness(opts = {}) {
   }
   const failures = checks.filter((item) => item.status === 'fail');
   const planned = checks.filter((item) => item.status === 'planned');
+  const snapshotPath = lastSnapshotPath(root);
   const result = {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
@@ -438,10 +453,21 @@ function buildReleaseReadiness(opts = {}) {
       clears: clearingAction(item),
     })),
     checks,
-    boundary: 'Release readiness is advisory and non-mutating. It never tags, pushes, publishes, or calls GitHub.',
+    snapshot: {
+      path: snapshotPath,
+      saved: false,
+    },
+    boundary: opts.saveCurrent
+      ? 'Release readiness is advisory and release-safe. It wrote the requested local readiness snapshot, but it never tags, pushes, publishes, or calls GitHub.'
+      : 'Release readiness is advisory and non-mutating unless --save-current is passed. It never tags, pushes, publishes, or calls GitHub.',
   };
-  const baselineRead = readBaselineResult(opts.baseline || '');
-  result.comparison = compareReleaseReadiness(result, baselineRead.result, opts.baseline || '', baselineRead.error);
+  const baselinePath = opts.compareLast && !opts.baseline ? snapshotPath : opts.baseline || '';
+  const baselineRead = readBaselineResult(baselinePath);
+  result.comparison = compareReleaseReadiness(result, baselineRead.result, baselinePath, baselineRead.error);
+  if (opts.saveCurrent) {
+    result.snapshot.saved = true;
+    writeJsonSafe(snapshotPath, result);
+  }
   return result;
 }
 
@@ -452,6 +478,7 @@ function renderMarkdown(result) {
     `Status: ${result.status}`,
     `Mode: ${result.mode}`,
     `Commands: ${result.command_count}`,
+    `Snapshot: ${result.snapshot && result.snapshot.saved ? `saved to ${result.snapshot.path}` : (result.snapshot ? result.snapshot.path : '(none)')}`,
     '',
     result.boundary,
     '',
