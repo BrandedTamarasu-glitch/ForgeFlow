@@ -38,6 +38,10 @@ const markdown = renderMarkdown(result);
 const readinessCommands = releaseReadinessCommands(fs.readFileSync(path.join(root, 'commands', 'forgeflow-release-check.md'), 'utf8'));
 const missingRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-release-readiness-missing-'));
 const missingResult = buildReleaseReadiness({ root: missingRoot, runner });
+const spawnError = buildReleaseReadiness({
+  root,
+  runner: (bin, args) => ({ status: 0, stdout: '', stderr: '', error: new Error(`spawnSync ${bin} EPERM ${args.length}`) }),
+});
 process.env.NODE_OPTIONS = '--require=/tmp/forgeflow-should-not-load.js';
 process.env.NODE_PATH = '/tmp/forgeflow-should-not-be-used';
 const strippedEnv = releaseCheckEnv();
@@ -52,6 +56,7 @@ const checks = [
   ['readiness includes full release checklist commands', readinessCommands.some((command) => command.startsWith('node scripts/forgeflow/render-evaluation-report.js --outcomes')) && result.categories.quality.total === 2],
   ['plan-only does not run', planned.status === 'planned' && planned.checks.every((item) => item.status === 'planned')],
   ['missing release check fails closed', missingResult.status === 'blocked' && missingResult.blockers[0].command === 'read commands/forgeflow-release-check.md'],
+  ['spawn error fails closed even with zero status', spawnError.status === 'blocked' && spawnError.blockers.length === 7 && spawnError.blockers.every((item) => item.output.includes('EPERM'))],
   ['markdown renders blockers', markdown.includes('# Forgeflow Release Readiness') && markdown.includes('install helper missing') && markdown.includes('Release readiness is advisory')],
   ['allows release commands', allowedCommand('node scripts/forgeflow/test-release-version.js') && allowedCommand('node scripts/forgeflow/smoke-check.js --mode source --json') && allowedCommand('node scripts/forgeflow/render-evaluation-report.js --outcomes fixtures/evaluation/sample-outcomes.jsonl --public --out /tmp/forgeflow-public-evaluation-summary.md') && allowedCommand('git diff --check')],
   ['rejects unsafe commands', !allowedCommand('curl https://example.com') && !allowedCommand('node scripts/forgeflow/test-release-version.js; rm -rf /')],

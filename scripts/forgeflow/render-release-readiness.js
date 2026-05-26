@@ -118,6 +118,14 @@ function runCommand(root, command, runner = spawnSync) {
   }
   const [bin, ...args] = tokenizeCommand(command);
   const result = runner(bin, args, { cwd: root, encoding: 'utf8', env: releaseCheckEnv() });
+  if (result.error) {
+    return {
+      status: 'fail',
+      exit_code: result.status ?? null,
+      stdout: String(result.stdout || '').trim().slice(0, MAX_OUTPUT_CHARS),
+      stderr: String(result.error.message || result.stderr || '').trim().slice(0, MAX_OUTPUT_CHARS),
+    };
+  }
   return {
     status: result.status === 0 ? 'pass' : 'fail',
     exit_code: result.status,
