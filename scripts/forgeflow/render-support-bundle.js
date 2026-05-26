@@ -1,0 +1,340 @@
+#!/usr/bin/env node
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const { writeFileSafe } = require('./file-safety');
+const { getVersionStatus } = require('./forgeflow-version');
+const { runHealthCheck } = require('./health-check');
+const { buildReleaseReadiness } = require('./render-release-readiness');
+const { smokeCheck } = require('./smoke-check');
+const { showProjectTrends } = require('./show-project-trends');
+
+function usage() {
+  console.error('Usage: render-support-bundle.js [--root <dir>] [--project-dir <dir>] [--out <json>] [--home <dir>] [--json]');
+}
+
+function requireValue(argv, name, index) {
+  const value = argv[index + 1] || '';
+  if (!value || value.startsWith('--')) {
+    console.error(`Missing value for ${name}`);
+    usage();
+    process.exit(2);
+  }
+  return value;
+}
+
+function parseArgs(argv) {
+  const opts = {
+    root: process.cwd(),
+    projectDir: '',
+    out: '',
+    home: path.join(os.homedir(), '.claude'),
+    json: false,
+  };
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    if (arg === '--root') {
+      opts.root = path.resolve(requireValue(argv, arg, i));
+      i += 1;
+    } else if (arg === '--project-dir') {
+      opts.projectDir = path.resolve(requireValue(argv, arg, i));
+      i += 1;
+    } else if (arg === '--out') {
+      opts.out = path.resolve(requireValue(argv, arg, i));
+      i += 1;
+    } else if (arg === '--home') {
+      opts.home = path.resolve(requireValue(argv, arg, i));
+      i += 1;
+    } else if (arg === '--json') {
+      opts.json = true;
+    } else if (arg === '--help' || arg === '-h') {
+      usage();
+      process.exit(0);
+    } else {
+      console.error(`Unknown argument: ${arg}`);
+      usage();
+      process.exit(2);
+    }
+  }
+  return opts;
+}
+
+function defaultProjectDir(root) {
+  return path.join(root, '.forgeflow', path.basename(root));
+}
+
+function defaultOut(projectDir) {
+  return path.join(projectDir, 'support', 'support-bundle.json');
+}
+
+function markdownOutFor(jsonOut) {
+  return /\.json$/i.test(jsonOut) ? jsonOut.replace(/\.json$/i, '.md') : `${jsonOut}.md`;
+}
+
+function statusRank(status) {
+  return { fail: 3, blocked: 3, warn: 2, attention: 2, planned: 1, pass: 0, ready: 0, current: 0 }[status] ?? 1;
+}
+
+function combineStatuses(statuses) {
+  return statuses.reduce((worst, status) => (statusRank(status) > statusRank(worst) ? status : worst), 'pass');
+}
+
+function summarizeVersion(version) {
+  return {
+    status: version.status,
+    bundle_status: versionBundleStatus(version.status),
+    installed: version.installed ? version.installed.status : 'unknown',
+    upstream: version.upstream ? version.upstream.status : 'unknown',
+    runtime_helpers: version.runtime_helpers ? {
+      status: version.runtime_helpers.status,
+      present: version.runtime_helpers.present,
+      expected: version.runtime_helpers.expected,
+      missing: (version.runtime_helpers.missing || []).map((item) => item.source),
+    } : null,
+    action: version.action || '',
+    snapshot: version.snapshot || null,
+  };
+}
+
+function versionBundleStatus(status) {
+  if (['repair-needed', 'corrupt-version'].includes(status)) return 'fail';
+  if (['outdated', 'not-installed', 'installed-unknown-upstream'].includes(status)) return 'warn';
+  return 'pass';
+}
+
+function summarizeHealth(health, projectDir) {
+  return {
+    status: health.status,
+    project_dir: projectDir,
+    failures: (health.failures || []).map((item) => item.name || item.message || item.reason).filter(Boolean),
+    warnings: (health.warnings || []).map((item) => item.name || item.message || item.reason).filter(Boolean),
+    recommendations: health.recommendations || [],
+  };
+}
+
+function summarizeSmoke(smoke) {
+  return {
+    status: smoke.status,
+    mode: smoke.mode,
+    project_dir: smoke.project_dir,
+    checks: (smoke.checks || []).map((item) => ({
+      name: item.name,
+      status: item.status,
+      command: item.command || '',
+      reason: item.reason || item.error || '',
+      clears: item.clears || '',
+    })),
+  };
+}
+
+function summarizeReadiness(readiness) {
+  return {
+    status: readiness.status,
+    mode: readiness.mode,
+    command_count: readiness.command_count,
+    blockers: (readiness.blockers || []).map((item) => ({
+      kind: item.kind,
+      category: item.category,
+      command: item.command,
+      clears: item.clears,
+    })),
+    comparison: readiness.comparison ? {
+      status: readiness.comparison.status,
+      newly_failing: (readiness.comparison.newly_failing || []).length,
+      cleared_blockers: (readiness.comparison.cleared_blockers || []).length,
+    } : null,
+  };
+}
+
+function releaseReadinessSafe(root) {
+  const sourceRoot = path.resolve(__dirname, '..', '..');
+  if (path.resolve(root) !== sourceRoot) {
+    return {
+      schema_version: '1',
+      status: 'skip',
+      mode: 'source-only',
+      command_count: 0,
+      blockers: [],
+      comparison: null,
+      reason: 'release readiness runs only from the Forgeflow source checkout',
+    };
+  }
+  return buildReleaseReadiness({ root, planOnly: true });
+}
+
+function summarizeTrends(trends) {
+  return {
+    status: trends.refresh ? trends.refresh.status : 'not-run',
+    freshness: trends.freshness ? trends.freshness.status : 'missing',
+    latest_insights: trends.latest_insights ? trends.latest_insights.status : 'missing',
+    latest_insights_freshness: trends.latest_insights && trends.latest_insights.freshness ? trends.latest_insights.freshness.status : 'missing',
+    failure_digest: trends.failure_digest ? trends.failure_digest.status : 'missing',
+    import_gaps: trends.import_gaps ? trends.import_gaps.status : 'missing',
+    advisor: trends.advisor ? trends.advisor.budget_status || 'unknown' : 'missing',
+    recommendations: trends.recommendations || [],
+  };
+}
+
+function summarizeDocs(docs) {
+  return {
+    status: docs.status,
+    checked_files: docs.checked_files,
+    failures: (docs.failures || []).map((item) => ({
+      code: item.code,
+      source: item.source,
+      message: item.message,
+      fix: item.fix,
+    })),
+  };
+}
+
+function validateDocsSafe(root) {
+  const sourceRoot = path.resolve(__dirname, '..', '..');
+  if (path.resolve(root) !== sourceRoot) {
+    return {
+      status: 'skip',
+      checked_files: 0,
+      failures: [],
+      reason: 'docs drift validator runs only from the Forgeflow source checkout',
+    };
+  }
+  const validator = path.join(sourceRoot, 'scripts', 'forgeflow', 'test-doc-links.js');
+  if (!fs.existsSync(validator)) {
+    return {
+      status: 'skip',
+      checked_files: 0,
+      failures: [],
+      reason: 'source-tree docs drift validator not available',
+    };
+  }
+  return require(validator).validateDocs();
+}
+
+function renderMarkdown(bundle) {
+  const lines = [
+    '# Forgeflow Support Bundle',
+    '',
+    `Generated at: ${bundle.generated_at}`,
+    `Status: ${bundle.status}`,
+    `Root: ${bundle.root}`,
+    `Project dir: ${bundle.project_dir}`,
+    '',
+    bundle.privacy_boundary,
+    '',
+    '## Summary',
+    '',
+    `- Version: ${bundle.sections.version.status}`,
+    `- Health: ${bundle.sections.health.status}`,
+    `- Smoke: ${bundle.sections.smoke.status}`,
+    `- Release readiness: ${bundle.sections.release_readiness.status} (${bundle.sections.release_readiness.mode})`,
+    `- Docs drift: ${bundle.sections.docs_drift.status}`,
+    `- Trends freshness: ${bundle.sections.trends.freshness}`,
+    '',
+    '## Next Actions',
+    '',
+  ];
+  if (bundle.next_actions.length === 0) {
+    lines.push('- None.');
+  } else {
+    for (const item of bundle.next_actions) {
+      lines.push(`- ${item.command}: ${item.reason}`);
+    }
+  }
+  lines.push('', '## Artifacts', '', `- JSON: ${bundle.artifacts.json}`, `- Markdown: ${bundle.artifacts.markdown}`);
+  return `${lines.join('\n')}\n`;
+}
+
+function collectNextActions(bundle) {
+  const actions = [];
+  function add(command, reason) {
+    if (!command || actions.some((item) => item.command === command && item.reason === reason)) return;
+    actions.push({ command, reason });
+  }
+  if (bundle.sections.version.action) add('/forgeflow-version', bundle.sections.version.action);
+  for (const recommendation of bundle.sections.health.recommendations || []) {
+    add(recommendation.command || recommendation.action, recommendation.reason || 'Health check recommendation.');
+  }
+  for (const check of bundle.sections.smoke.checks || []) {
+    if (check.status === 'warn' || check.status === 'fail') add(check.command || '/forgeflow-smoke', check.clears || check.reason || 'Smoke check needs attention.');
+  }
+  for (const blocker of bundle.sections.release_readiness.blockers || []) {
+    add(blocker.command, blocker.clears || 'Release readiness blocker.');
+  }
+  for (const failure of bundle.sections.docs_drift.failures || []) {
+    add(failure.source, failure.fix || failure.message);
+  }
+  for (const recommendation of bundle.sections.trends.recommendations || []) {
+    add(recommendation.command || recommendation.action, recommendation.reason || 'Project trend recommendation.');
+  }
+  return actions.slice(0, 12);
+}
+
+async function buildSupportBundle(opts = {}) {
+  const root = path.resolve(opts.root || process.cwd());
+  const projectDir = path.resolve(opts.projectDir || defaultProjectDir(root));
+  const jsonOut = path.resolve(opts.out || defaultOut(projectDir));
+  const markdownOut = markdownOutFor(jsonOut);
+  const version = await getVersionStatus({ home: opts.home || path.join(os.homedir(), '.claude'), offline: true });
+  const health = runHealthCheck({ root, projectDir });
+  const smoke = smokeCheck({ root, projectDir, mode: 'downstream' });
+  const releaseReadiness = releaseReadinessSafe(root);
+  const docsDrift = validateDocsSafe(root);
+  const trends = showProjectTrends({ root, projectDir, refresh: false });
+  const bundle = {
+    schema_version: '1',
+    generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
+    root,
+    project_dir: projectDir,
+    status: 'pass',
+    privacy_boundary: 'Local support bundle. It summarizes local Forgeflow state and may include local paths; do not publish without reviewing/redacting for the target audience.',
+    sections: {
+      version: summarizeVersion(version),
+      health: summarizeHealth(health, projectDir),
+      smoke: summarizeSmoke(smoke),
+      release_readiness: summarizeReadiness(releaseReadiness),
+      docs_drift: summarizeDocs(docsDrift),
+      trends: summarizeTrends(trends),
+    },
+    next_actions: [],
+    artifacts: {
+      json: jsonOut,
+      markdown: markdownOut,
+    },
+  };
+  bundle.status = combineStatuses([
+    bundle.sections.version.bundle_status,
+    bundle.sections.health.status,
+    bundle.sections.smoke.status,
+    bundle.sections.release_readiness.status,
+    bundle.sections.docs_drift.status,
+    bundle.sections.trends.freshness,
+  ]);
+  bundle.next_actions = collectNextActions(bundle);
+  fs.mkdirSync(path.dirname(jsonOut), { recursive: true });
+  writeFileSafe(jsonOut, `${JSON.stringify(bundle, null, 2)}\n`);
+  writeFileSafe(markdownOut, renderMarkdown(bundle));
+  return bundle;
+}
+
+async function main() {
+  const opts = parseArgs(process.argv.slice(2));
+  const bundle = await buildSupportBundle(opts);
+  if (opts.json) process.stdout.write(`${JSON.stringify(bundle, null, 2)}\n`);
+  else process.stdout.write(renderMarkdown(bundle));
+  if (bundle.status === 'fail' || bundle.status === 'blocked') process.exit(1);
+}
+
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(err.message);
+    process.exit(1);
+  });
+}
+
+module.exports = {
+  buildSupportBundle,
+  collectNextActions,
+  combineStatuses,
+  parseArgs,
+  renderMarkdown,
+};

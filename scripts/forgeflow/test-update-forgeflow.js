@@ -76,6 +76,7 @@ const CANONICAL_NON_REQUIRED_MANAGED_SOURCES = [
   'commands/forgeflow-repair.md',
   'commands/forgeflow-report.md',
   'commands/forgeflow-smoke.md',
+  'commands/forgeflow-support.md',
   'commands/forgeflow-sync.md',
   'commands/forgeflow-trends.md',
   'commands/forgeflow-version.md',

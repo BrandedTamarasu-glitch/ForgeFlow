@@ -52,6 +52,7 @@ node scripts/forgeflow/test-check-agent-drift.js
 node scripts/forgeflow/test-render-forgeflow-report.js
 node scripts/forgeflow/test-render-release-notes.js
 node scripts/forgeflow/test-render-release-readiness.js
+node scripts/forgeflow/test-render-support-bundle.js
 node scripts/forgeflow/test-render-evaluation-report.js
 node scripts/forgeflow/render-evaluation-report.js --outcomes fixtures/evaluation/sample-outcomes.jsonl --public --out /tmp/forgeflow-public-evaluation-summary.md
 node scripts/forgeflow/test-privacy-boundary.js
