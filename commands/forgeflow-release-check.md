@@ -40,6 +40,7 @@ node scripts/forgeflow/test-install-smoke.js
 node scripts/forgeflow/test-update-forgeflow.js
 node scripts/forgeflow/test-health-check.js
 node scripts/forgeflow/test-forgeflow-version.js
+node scripts/forgeflow/test-render-guided-repair.js
 node scripts/forgeflow/test-guidance-contract.js
 node scripts/forgeflow/test-failure-digest.js
 node scripts/forgeflow/test-check-agent-drift.js

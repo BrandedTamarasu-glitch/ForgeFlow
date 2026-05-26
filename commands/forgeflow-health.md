@@ -49,7 +49,7 @@ EXPECTED_SHARED_AGENT_FILES=(
 )
 EXPECTED_COMMANDS=(
   audit ci-wrapper consult create-agent dashboard debate discuss fleet
-  forgeflow-adoption forgeflow-code-map forgeflow-compact-output forgeflow-drift forgeflow-failure-digest forgeflow-health forgeflow-learnings forgeflow-metrics forgeflow-noisy-command forgeflow-pilot forgeflow-release-check forgeflow-report forgeflow-smoke forgeflow-sync forgeflow-trends forgeflow-version
+  forgeflow-adoption forgeflow-code-map forgeflow-compact-output forgeflow-drift forgeflow-failure-digest forgeflow-health forgeflow-learnings forgeflow-metrics forgeflow-noisy-command forgeflow-pilot forgeflow-release-check forgeflow-repair forgeflow-report forgeflow-smoke forgeflow-sync forgeflow-trends forgeflow-version
   handoff implement plan quick research review review-auto ship sync-upstream ui-iterate update-forgeflow
 )
 EXPECTED_SUBDIR_COMMANDS=(agent-chat/on agent-chat/off)
@@ -61,7 +61,7 @@ EXPECTED_RUNTIME_HELPERS=(
   build-scope-manifest.js check-agent-drift.js check-codex-agent-drift.js check-context-budget.js check-implementation-notes.js check-project-learnings.js context-telemetry.js
   compact-command-output.js
   ensure-forgeflow-state.sh explain-review-route.js failure-digest-triage.js file-safety.js forgeflow-version.js generate-codex-agent-stubs.js guidance-contract.js health-check.js
-  index-memory.js install-manifest.js install-template.js latest-insights-state.js privacy-boundary.js record-agent-feedback.js record-implementation-notes.js record-pilot-evidence.js record-project-learning.js record-review-outcome.js render-adoption-pack.js render-evaluation-report.js render-forgeflow-report.js render-release-notes.js render-pilot-script.js render-ship-presentation.js
+  index-memory.js install-manifest.js install-template.js latest-insights-state.js privacy-boundary.js record-agent-feedback.js record-implementation-notes.js record-pilot-evidence.js record-project-learning.js record-review-outcome.js render-adoption-pack.js render-evaluation-report.js render-forgeflow-report.js render-guided-repair.js render-release-notes.js render-pilot-script.js render-ship-presentation.js
   rollup-agent-feedback.js rollup-pattern-learnings.js rollup-pilot-evidence.js rollup-project-learnings.js runtime-helper-contract.js seed-budget-config.js show-code-map.js show-project-learnings.js show-project-trends.js ship-ci-status.sh ship-open-pr.sh ship-prepare.sh summarize-calibration.js
   smoke-check.js summarize-context-telemetry.js update-forgeflow.js
 )
