@@ -576,7 +576,60 @@ function projectCodeMapFromTopology(root, topologyResult, maxChars = 4500) {
   };
   const summary = projectCodeMapSummary(topologyResult.topology, artifacts, { maxHotspots: 5 });
   topologyResult.code_map_history = attachCodeMapHistory(root, summary, historyPathForTopologyOut(topologyResult.out));
+  topologyResult.project_code_map_summary = summary;
   return truncate(compactCodeMapFromSummary(summary), maxChars);
+}
+
+function livingMapReviewGuidance(summary) {
+  const living = summary && summary.living_project_map ? summary.living_project_map : null;
+  if (!living) {
+    return {
+      status: 'missing',
+      caveat: 'Static living project-map categories unavailable.',
+      categories: [],
+      guidance: [],
+    };
+  }
+  const categories = (living.categories || []).slice(0, 8).map((item) => ({
+    category: item.category || '',
+    severity: item.severity || '',
+    metric: item.metric || '',
+    count: item.count,
+    score: item.score,
+    paths: (item.paths || []).slice(0, 5),
+    next_action: item.next_action || '',
+  }));
+  return {
+    status: living.status || 'unknown',
+    caveat: living.caveat || 'Static JS/TS import and section trend only; not a runtime call graph or dependency severity model.',
+    categories,
+    guidance: categories.map((item) => {
+      const paths = item.paths.length > 0 ? ` (${item.paths.join(', ')})` : '';
+      return `${item.category}${paths}: prioritization guidance only; verify with current code, tests, and artifacts.`;
+    }),
+  };
+}
+
+function renderLivingMapGuidance(guidance) {
+  const result = guidance || livingMapReviewGuidance(null);
+  const lines = [
+    `Status: ${result.status || 'unknown'}`,
+    `Caveat: ${result.caveat || 'Static living project-map categories unavailable.'}`,
+    'Use these categories to prioritize review attention only. They are not findings, proof of runtime behavior, or dependency severity.',
+    '',
+  ];
+  if (!result.categories || result.categories.length === 0) {
+    lines.push('(none)');
+    return lines.join('\n');
+  }
+  for (const item of result.categories) {
+    const value = item.score === undefined ? item.count : `score ${item.score}`;
+    lines.push(`- ${md(item.category)}: ${value === undefined ? 'n/a' : value} (${md(item.severity)})`);
+    if (item.metric) lines.push(`  - Metric: ${md(item.metric)}`);
+    if (item.paths && item.paths.length > 0) lines.push(`  - Paths: ${item.paths.map(md).join(', ')}`);
+    if (item.next_action) lines.push(`  - Next: ${md(item.next_action)}`);
+  }
+  return lines.join('\n');
 }
 
 function truncate(text, maxChars) {
@@ -906,7 +959,7 @@ function relevantFilesForAgent(agent, manifest) {
   return selected.length > 0 ? selected : manifest.slice(0, 10);
 }
 
-function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, latestFailure, projectCodeMap, topologySummary, artifactManifestMarkdown, task) {
+function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, latestFailure, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, task) {
   const relevant = relevantFilesForAgent(agent, manifest);
   const rules = rulePack(agent, route, manifest);
   return [
@@ -941,6 +994,9 @@ function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestI
     '',
     '## Project Code Map',
     projectCodeMap,
+    '',
+    '## Living Map Guidance',
+    renderLivingMapGuidance(livingMapGuidance),
     '',
     '## Code Topology',
     topologySummary,
@@ -998,6 +1054,8 @@ function buildContextPack(opts) {
   const latestFailurePath = path.join(outDir, 'failure-digest.md');
   const projectCodeMap = projectCodeMapFromTopology(root, topologyContext);
   const projectCodeMapPath = path.join(outDir, 'project-code-map.md');
+  const livingMapSummary = topologyContext ? topologyContext.project_code_map_summary : null;
+  const livingMapGuidance = livingMapReviewGuidance(livingMapSummary);
   const topologySummary = compactTopology(topologyContext);
   const topology = topologyReport(topologyContext, root);
   const artifactManifest = packetArtifactManifest({ root, outDir, latestInsightsResult, latestFailure, topologyContext, projectCodeMapPath });
@@ -1006,7 +1064,7 @@ function buildContextPack(opts) {
   const packets = {};
 
   for (const agent of agents) {
-    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, latestFailure.markdown, projectCodeMap, topologySummary, artifactManifestMarkdown, effectiveOpts.task);
+    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, latestFailure.markdown, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, effectiveOpts.task);
     const file = path.join(packetDir, `${agent}.md`);
     writeFileSafe(file, content);
     packets[agent] = path.relative(root, file);
@@ -1051,6 +1109,7 @@ function buildContextPack(opts) {
     code_topology_provenance: topologyContext && topologyContext.topology ? topologyContext.topology.provenance || null : null,
     code_topology_history: topologyContext ? topologyContext.code_map_history || null : null,
     code_topology_summary: topology,
+    living_map_guidance: livingMapGuidance,
     memory_index_path: memoryIndexPath ? path.relative(root, memoryIndexPath) : null,
     context_telemetry_path: path.relative(root, path.join(outDir, 'context-telemetry.json')),
     file_manifest_path: path.relative(root, path.join(outDir, 'file-manifest.json')),
@@ -1153,6 +1212,8 @@ module.exports = {
   compactProjectCodeMap,
   currentGitState,
   projectCodeMapFromTopology,
+  livingMapReviewGuidance,
+  renderLivingMapGuidance,
   fileKind,
   rulePack,
 };
