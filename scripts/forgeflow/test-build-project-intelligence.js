@@ -81,6 +81,55 @@ fs.writeFileSync(path.join(projectDir, 'agent-feedback.jsonl'), [
     evidence_count: 2,
   }),
 ].join('\n'));
+fs.writeFileSync(path.join(projectDir, 'review-outcomes.jsonl'), [
+  JSON.stringify({
+    schema_version: '1',
+    recorded_at: '2026-05-20T00:00:00Z',
+    change_id: 'review-learning-1',
+    review: {
+      mode: 'full-mode',
+      workflow: 'forgeflow',
+      agents_used: ['smith_reviewer', 'warden_reviewer'],
+      verifier_decisions: [{ reviewer: 'warden', class: 'auth/session', decision: 'confirmed' }],
+    },
+    outcome: {
+      findings_total: 3,
+      findings_confirmed: 1,
+      findings_rejected: 2,
+      review_minutes: 12,
+      auto_fix_success: true,
+      post_merge_regression: true,
+      learning_signals: {
+        stale_guidance: 1,
+        manual_promotion_candidate: 1,
+      },
+      finding_classes: [
+        { class: 'auth/session', total: 2, confirmed: 1, rejected: 1 },
+        { class: 'stale-guidance', total: 1, confirmed: 0, rejected: 1 },
+      ],
+    },
+  }),
+  '{not-json',
+  JSON.stringify({
+    schema_version: '1',
+    change_id: 'invalid-learning',
+    review: {
+      mode: 'full-mode',
+      workflow: 'forgeflow',
+      agents_used: [],
+      verifier_decisions: [],
+    },
+    outcome: {
+      findings_total: 1,
+      findings_confirmed: 1,
+      findings_rejected: 0,
+      review_minutes: 1,
+      auto_fix_success: true,
+      post_merge_regression: false,
+      learning_signals: { true_positive: 1 },
+    },
+  }),
+].join('\n'));
 fs.writeFileSync(path.join(contextDir, 'code-map-history.jsonl'), `${JSON.stringify({
   generated_at: '2026-05-21T00:00:00Z',
   commit_short: 'aaaaaaa',
@@ -270,6 +319,17 @@ const sameSourceRiskItems = nextWorkItems({
   ],
   agent_feedback: { by_signal: {} },
 });
+const cappedPriorityItems = nextWorkItems({
+  readiness: { state: 'needs-triage', reasons: ['triage needed'], clearing_commands: ['forgeflow-code-map'] },
+  review_prep: { read_first: [], validate_first: [], refresh_first: [], review_notes: [] },
+  top_risks: [
+    { severity: 'high', source: 'security', summary: 'High risk one.', next_action: 'inspect security' },
+    { severity: 'high', source: 'schema', summary: 'High risk two.', next_action: 'inspect schema' },
+    { severity: 'high', source: 'runtime', summary: 'High risk three.', next_action: 'inspect runtime' },
+  ],
+  agent_feedback: { by_signal: { incorrect: 1 } },
+  review_outcomes: { file: 'review-outcomes.jsonl', learning_signals: { false_positive: 1, stale_guidance: 1, missed_issue: 0 } },
+});
 const readyState = readinessState({
   freshness: { status: 'current' },
   latest_insights: { check_status: 'pass', freshness: { status: 'current' } },
@@ -343,12 +403,14 @@ const checks = [
   ['includes next action', result.recommended_next_actions.length > 0],
   ['includes agent feedback summary', result.agent_feedback.status === 'present' && result.agent_feedback.records === 2 && result.agent_feedback.invalid_lines === 4 && result.agent_feedback.by_signal.incorrect === 1 && !result.agent_feedback.by_signal.undefined && result.agent_feedback.by_agent.warden_reviewer === 1 && result.agent_feedback.promotable === 1 && result.agent_feedback.latest.some((item) => item.agent === 'smith_reviewer')],
   ['includes feedback learning signals', result.agent_feedback.correction_themes.some((item) => item.theme.includes('flagged a safe query') && item.manual_promotion.includes('human confirms')) && result.agent_feedback.promotion_candidates.some((item) => item.agent === 'smith_reviewer' && item.manual_promotion.includes('--promote')) && result.agent_feedback.stale_markers.status === 'stale'],
+  ['includes review outcome learning signals', result.review_outcomes.status === 'present' && result.review_outcomes.records === 1 && result.review_outcomes.invalid_lines === 2 && result.review_outcomes.learning_signals.true_positive === 1 && result.review_outcomes.learning_signals.false_positive === 2 && result.review_outcomes.learning_signals.missed_issue === 1 && result.review_outcomes.learning_signals.stale_guidance === 1 && result.review_outcomes.learning_signals.manual_promotion_candidate === 1 && result.review_outcomes.top_classes.some((item) => item.name === 'auth/session' && item.findings_confirmed === 1)],
   ['includes review prep', result.review_prep && result.review_prep.trust_summary && result.review_prep.refresh_first.length > 0 && result.review_prep.read_first.length > 0 && result.review_prep.validate_first.length > 0],
-  ['includes next work brief', result.next_work_brief && result.next_work_brief.state === result.readiness.state && !result.next_work_brief.read_first.includes('forgeflow-code-map') && result.next_work_brief.read_first.some((item) => item.includes('src/auth/session.ts')) && result.next_work_brief.avoid_first.some((item) => item.includes('static import gaps')) && !result.next_work_brief.validate_first.includes('forgeflow-code-map') && result.next_work_brief.proof_boundary.some((item) => item.includes('orientation only'))],
-  ['includes next work items', Array.isArray(result.next_work_items) && result.next_work_items.length > 0 && result.next_work_items.length <= 5 && result.next_work_items.some((item) => item.title.includes('needs-triage') && item.source === 'readiness' && item.start_with.includes('forgeflow-code-map') && item.validate_with.includes('scripts/forgeflow/build-project-intelligence.js --json')) && result.next_work_items.some((item) => item.source === 'agent-feedback' && item.proof_boundary.includes('advisory only')) && result.next_work_items.every((item) => item.proof_boundary && Array.isArray(item.start_with) && Array.isArray(item.validate_with))],
+  ['includes next work brief', result.next_work_brief && result.next_work_brief.state === result.readiness.state && !result.next_work_brief.read_first.includes('forgeflow-code-map') && result.next_work_brief.read_first.some((item) => item.includes('src/auth/session.ts')) && result.next_work_brief.avoid_first.some((item) => item.includes('static import gaps')) && result.next_work_brief.avoid_first.some((item) => item.includes('review-outcome learning signals')) && result.next_work_brief.avoid_first.some((item) => item.includes('regression-oriented validation')) && !result.next_work_brief.validate_first.includes('forgeflow-code-map') && result.next_work_brief.proof_boundary.some((item) => item.includes('orientation only'))],
+  ['includes next work items', Array.isArray(result.next_work_items) && result.next_work_items.length > 0 && result.next_work_items.length <= 5 && result.next_work_items.some((item) => item.title.includes('needs-triage') && item.source === 'readiness' && item.start_with.includes('forgeflow-code-map') && item.validate_with.includes('scripts/forgeflow/build-project-intelligence.js --json')) && result.next_work_items.some((item) => item.source === 'agent-feedback' && item.proof_boundary.includes('advisory only')) && result.next_work_items.some((item) => item.source === 'review-outcomes' && item.priority === 'high' && item.why.includes('stale-guidance') && item.proof_boundary.includes('aggregate guidance')) && result.next_work_items.every((item) => item.proof_boundary && Array.isArray(item.start_with) && Array.isArray(item.validate_with))],
   ['review prep includes feedback notes', result.review_prep.review_notes.some((item) => item.includes('corrective agent-feedback') && item.includes('Advisory only')) && result.review_prep.review_notes.some((item) => item.includes('promotable')) && result.review_prep.review_notes.some((item) => item.includes('Correction theme:')) && result.review_prep.review_notes.some((item) => item.includes('Promotion candidate:')) && result.review_prep.review_notes.some((item) => item.includes('Agent-feedback staleness marker is stale') && item.includes('old records')) && result.review_prep.review_notes.some((item) => item.includes('agent-feedback line(s) were skipped')) && result.review_prep.review_notes.some((item) => item.includes('Flagged a safe query as unsafe') && item.includes('confidence: high') && item.includes('evidence: 2'))],
-  ['markdown renders sections', markdown.includes('# Forgeflow Project Intelligence') && markdown.includes('not a source of truth') && markdown.includes('## Readiness') && markdown.includes('- State:') && markdown.includes('Clearing commands:') && markdown.includes('## Top Risks') && markdown.includes('## Review Prep') && markdown.includes('## Next Work Brief') && markdown.includes('## Next Work Items') && markdown.includes('Start with:') && markdown.includes('Validate with:') && markdown.includes('Boundary:') && markdown.includes('### Avoid First') && markdown.includes('### Proof Boundary') && markdown.includes('orientation only') && markdown.includes('### Refresh First') && markdown.includes('### Review Notes') && markdown.includes('### Read First') && markdown.includes('## Agent Feedback') && markdown.includes('advisory only') && markdown.includes('Staleness: stale') && markdown.includes('old records') && markdown.includes('### Correction Themes') && markdown.includes('### Promotion Candidates') && markdown.includes('confidence: high') && markdown.includes('evidence: 2') && markdown.includes('Invalid lines skipped: 4') && markdown.includes('Agents: smith_reviewer: 1, warden_reviewer: 1') && markdown.includes('privacy-boundary') && markdown.includes('invalid-schema') && !markdown.includes('example.internal') && markdown.includes('## Sources') && markdown.includes('Project learnings:') && markdown.includes('Agent feedback:') && markdown.includes('Code map history:') && markdown.includes('## Artifacts')],
-  ['next work view renders compact candidates', nextWorkView.includes('# Forgeflow Next Work Items') && nextWorkView.includes('Readiness: needs-triage') && nextWorkView.includes('Advisory candidates only') && nextWorkView.includes('1. [medium]') && nextWorkView.includes('Start with:') && nextWorkView.includes('Validate with:') && nextWorkView.includes('Boundary:') && nextWorkView.includes(result.artifacts.json) && !nextWorkView.includes('## Agent Feedback')],
+  ['review prep includes review outcome notes', result.review_prep.review_notes.some((item) => item.includes('false-positive review outcome')) && result.review_prep.review_notes.some((item) => item.includes('missed-issue signal')) && result.review_prep.review_notes.some((item) => item.includes('stale-guidance signal')) && result.review_prep.review_notes.some((item) => item.includes('manual promotion candidate')) && result.review_prep.review_notes.some((item) => item.includes('review-outcome line(s) were skipped'))],
+  ['markdown renders sections', markdown.includes('# Forgeflow Project Intelligence') && markdown.includes('not a source of truth') && markdown.includes('## Readiness') && markdown.includes('- State:') && markdown.includes('Clearing commands:') && markdown.includes('## Top Risks') && markdown.includes('## Review Prep') && markdown.includes('## Next Work Brief') && markdown.includes('## Next Work Items') && markdown.includes('Start with:') && markdown.includes('Validate with:') && markdown.includes('Boundary:') && markdown.includes('### Avoid First') && markdown.includes('### Proof Boundary') && markdown.includes('orientation only') && markdown.includes('### Refresh First') && markdown.includes('### Review Notes') && markdown.includes('### Read First') && markdown.includes('## Agent Feedback') && markdown.includes('advisory only') && markdown.includes('Staleness: stale') && markdown.includes('old records') && markdown.includes('### Correction Themes') && markdown.includes('### Promotion Candidates') && markdown.includes('confidence: high') && markdown.includes('evidence: 2') && markdown.includes('Invalid lines skipped: 4') && markdown.includes('Agents: smith_reviewer: 1, warden_reviewer: 1') && markdown.includes('privacy-boundary') && markdown.includes('invalid-schema') && !markdown.includes('example.internal') && markdown.includes('## Review Outcomes') && markdown.includes('Learning signals: true_positive: 1') && markdown.includes('### Repeated Finding Classes') && markdown.includes('Review outcomes:') && markdown.includes('## Sources') && markdown.includes('Project learnings:') && markdown.includes('Agent feedback:') && markdown.includes('Code map history:') && markdown.includes('## Artifacts')],
+  ['next work view renders compact candidates', nextWorkView.includes('# Forgeflow Next Work Items') && nextWorkView.includes('Readiness: needs-triage') && nextWorkView.includes('Advisory candidates only') && nextWorkView.includes('1. [') && nextWorkView.includes('Triage review-outcome learning signals') && nextWorkView.includes('Start with:') && nextWorkView.includes('Validate with:') && nextWorkView.includes('Boundary:') && nextWorkView.includes(result.artifacts.json) && !nextWorkView.includes('## Agent Feedback')],
   ['implementation brief stub renders selected candidate', briefStub.includes('# Forgeflow Implementation Brief Stub') && briefStub.includes('Candidate index: 1') && briefStub.includes('## Scope To Confirm') && briefStub.includes('## Start With') && briefStub.includes('src/auth/session.ts') && briefStub.includes('## Validate With') && briefStub.includes('## Proof Boundary') && briefStub.includes('advisory stub') && briefStub.includes(result.artifacts.json)],
   ['implementation brief stub handles missing candidate', missingBriefStub.includes('No next-work candidate exists at this index') && missingBriefStub.includes('Available candidates:')],
   ['cli json works', cliJson.schema_version === '1' && cliJson.artifacts.json.endsWith('project-intelligence-rollup.json')],
@@ -364,6 +426,7 @@ const checks = [
   ['next work brief has orientation fallback', cleanBrief.avoid_first.length === 1 && cleanBrief.avoid_first[0].includes('orientation only')],
   ['next work items has planning fallback', fallbackItems.length === 1 && fallbackItems[0].source === 'project-intelligence' && fallbackItems[0].priority === 'low' && fallbackItems[0].start_with.includes('scripts/forgeflow/build-project-intelligence.js --json')],
   ['next work items preserves distinct same-source risks', sameSourceRiskItems.filter((item) => item.source === 'context-advisor').length === 2 && sameSourceRiskItems.some((item) => item.why.includes('Budget is tight')) && sameSourceRiskItems.some((item) => item.why.includes('Scope is broad')) && sameSourceRiskItems.every((item) => !Object.prototype.hasOwnProperty.call(item, 'dedupe_key'))],
+  ['next work items preserve high-priority risks under cap', cappedPriorityItems.length === 5 && cappedPriorityItems.filter((item) => item.priority === 'high').length === 3 && cappedPriorityItems.some((item) => item.source === 'security') && cappedPriorityItems.some((item) => item.source === 'schema') && cappedPriorityItems.some((item) => item.source === 'runtime') && cappedPriorityItems.every((item) => !Object.prototype.hasOwnProperty.call(item, 'order'))],
   ['readiness states classify signals', readyState.state === 'ready' && needsRefreshState.state === 'needs-refresh' && needsRefreshState.clearing_commands.includes('forgeflow-trends --refresh') && needsTriageState.state === 'needs-triage' && needsTriageState.clearing_commands.includes('forgeflow-code-map') && budgetTriageState.state === 'needs-triage' && budgetTriageState.evidence.context_budget === 'warn' && blockedState.state === 'blocked' && warnLatestInsightsState.state === 'blocked' && warnLatestInsightsState.clearing_commands.includes('forgeflow-trends --refresh') && blockedState.clearing_commands.includes('forgeflow-trends --refresh')],
   ['trust current when clean', trustState({ latest_insights: { status: 'injected', check_status: 'pass', freshness: { status: 'current' } }, freshness: { status: 'current' } }, { check: { status: 'pass' } }, []) === 'current'],
   ['trust blocked on failed gate', trustState({ latest_insights: { status: 'injected', check_status: 'fail', freshness: { status: 'current' } }, freshness: { status: 'current' } }, { check: { status: 'pass' } }, []) === 'blocked'],

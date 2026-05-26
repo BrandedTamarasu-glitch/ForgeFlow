@@ -4,6 +4,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { assertSafeDirectory, safeReadTextFile, writeFileSafe } = require('./file-safety');
 const { containsProhibitedFeedbackContent, rollupFeedback } = require('./record-agent-feedback');
+const { applyOutcome, validateOutcome } = require('./record-review-outcome');
 const { correctionThemes, promotionCandidates, staleMarkers } = require('./rollup-agent-feedback');
 const { showProjectLearnings } = require('./show-project-learnings');
 const { showProjectTrends } = require('./show-project-trends');
@@ -185,6 +186,101 @@ function readAgentFeedback(projectDir) {
       promotable: 0,
       invalid_lines: 0,
       latest: [],
+      reason: err.message,
+    };
+  }
+}
+
+function emptyReviewOutcomeSummary() {
+  return {
+    schema_version: '1',
+    records: 0,
+    modes: {},
+    agents: {},
+    totals: {
+      findings_total: 0,
+      findings_confirmed: 0,
+      findings_rejected: 0,
+      verifier_confirmed: 0,
+      verifier_rejected: 0,
+      verifier_blocked: 0,
+      review_minutes: 0,
+      auto_fix_success: 0,
+      auto_fix_failed: 0,
+      post_merge_regression: 0,
+    },
+    learning_signals: {
+      true_positive: 0,
+      false_positive: 0,
+      missed_issue: 0,
+      stale_guidance: 0,
+      manual_promotion_candidate: 0,
+    },
+    classes: {},
+  };
+}
+
+function readReviewOutcomes(projectDir) {
+  const file = path.join(projectDir, 'review-outcomes.jsonl');
+  if (!fs.existsSync(file)) {
+    return {
+      status: 'missing',
+      file,
+      records: 0,
+      invalid_lines: 0,
+      learning_signals: emptyReviewOutcomeSummary().learning_signals,
+      totals: emptyReviewOutcomeSummary().totals,
+      classes: {},
+      top_classes: [],
+    };
+  }
+  try {
+    const summary = emptyReviewOutcomeSummary();
+    const invalid = [];
+    const lines = safeReadTextFile(file, projectDir).content
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    for (const [index, line] of lines.entries()) {
+      try {
+        const record = JSON.parse(line);
+        const errors = validateOutcome(record);
+        if (errors.length > 0) {
+          invalid.push({ line: index + 1, reason: 'invalid-schema' });
+          continue;
+        }
+        applyOutcome(summary, record);
+      } catch (err) {
+        invalid.push({ line: index + 1, reason: 'malformed-json' });
+      }
+    }
+    summary.totals.review_minutes = Number(summary.totals.review_minutes.toFixed(2));
+    const topClasses = Object.entries(summary.classes || {})
+      .map(([name, counts]) => ({ name, ...counts }))
+      .sort((a, b) => (b.findings_confirmed - a.findings_confirmed) || (b.findings_total - a.findings_total) || a.name.localeCompare(b.name))
+      .slice(0, 5);
+    return {
+      status: summary.records > 0 ? 'present' : 'invalid',
+      file,
+      records: summary.records,
+      invalid_lines: invalid.length,
+      invalid_reasons: invalid.slice(0, 5),
+      modes: summary.modes,
+      agents: summary.agents,
+      totals: summary.totals,
+      learning_signals: summary.learning_signals,
+      top_classes: topClasses,
+    };
+  } catch (err) {
+    return {
+      status: 'invalid',
+      file,
+      records: 0,
+      invalid_lines: 0,
+      learning_signals: emptyReviewOutcomeSummary().learning_signals,
+      totals: emptyReviewOutcomeSummary().totals,
+      classes: {},
+      top_classes: [],
       reason: err.message,
     };
   }
@@ -426,6 +522,8 @@ function reviewPrep(trends, intelligenceDraft) {
   const looksRunnable = (value) => /^(\/?forgeflow|scripts\/|node\s+scripts\/|npm\s+|pnpm\s+|yarn\s+|git\s+)/.test(String(value || '').trim());
   const refreshFirst = nextActions.filter(looksRunnable);
   const feedback = intelligenceDraft.agent_feedback || {};
+  const outcomes = intelligenceDraft.review_outcomes || {};
+  const outcomeSignals = outcomes.learning_signals || {};
   const feedbackNotes = [];
   const corrective = (feedback.by_signal && ((feedback.by_signal.incorrect || 0) + (feedback.by_signal.unclear || 0) + (feedback.by_signal.ignored || 0))) || 0;
   if (corrective > 0) feedbackNotes.push(`${corrective} corrective agent-feedback signal(s) recorded; inspect ${feedback.file || 'agent-feedback.jsonl'} before reusing similar guidance. Advisory only; verify against current code and tests.`);
@@ -445,12 +543,27 @@ function reviewPrep(trends, intelligenceDraft) {
       feedbackNotes.push(`${item.agent || 'agent'} ${item.signal}: ${item.summary} [confidence: ${item.confidence || 'unknown'}, evidence: ${item.evidence_count || 0}, advisory-only]`);
     }
   }
+  const outcomeNotes = [];
+  if ((outcomes.records || 0) > 0) {
+    const truePositives = outcomeSignals.true_positive || 0;
+    const falsePositives = outcomeSignals.false_positive || 0;
+    const missedIssues = outcomeSignals.missed_issue || 0;
+    const staleGuidance = outcomeSignals.stale_guidance || 0;
+    const promotionCandidates = outcomeSignals.manual_promotion_candidate || 0;
+    if (falsePositives > 0) outcomeNotes.push(`${falsePositives} false-positive review outcome signal(s) recorded; verify similar future findings against current code before escalating.`);
+    if (missedIssues > 0) outcomeNotes.push(`${missedIssues} missed-issue signal(s) recorded after review; prioritize regression evidence and focused tests for similar work.`);
+    if (staleGuidance > 0) outcomeNotes.push(`${staleGuidance} stale-guidance signal(s) recorded; refresh or correct the underlying project guidance before reusing it.`);
+    if (promotionCandidates > 0) outcomeNotes.push(`${promotionCandidates} manual promotion candidate(s) recorded from review outcomes; promote only after current-code verification.`);
+    if (truePositives > 0) outcomeNotes.push(`${truePositives} true-positive review outcome signal(s) recorded; useful reviewer patterns may be worth preserving when still supported.`);
+  }
+  if ((outcomes.invalid_lines || 0) > 0) outcomeNotes.push(`${outcomes.invalid_lines} review-outcome line(s) were skipped by JSON/schema validation.`);
   return {
     trust_summary: `Trust state is ${intelligenceDraft.trust_state}; project freshness ${intelligenceDraft.freshness.project}; latest insights ${intelligenceDraft.freshness.latest_insights}.`,
     refresh_first: refreshFirst,
     review_notes: [
       ...nextActions.filter((item) => !looksRunnable(item)),
       ...feedbackNotes,
+      ...outcomeNotes,
     ],
     read_first: readFirst,
     validate_first: topItems(intelligenceDraft.validation_patterns, 5),
@@ -479,6 +592,13 @@ function nextWorkBrief(intelligenceDraft) {
     : 0;
   if (corrective > 0) {
     avoidFirst.push('Do not reuse prior agent guidance blindly; inspect corrective feedback and verify against current code.');
+  }
+  const reviewSignals = intelligenceDraft.review_outcomes ? intelligenceDraft.review_outcomes.learning_signals || {} : {};
+  if ((reviewSignals.false_positive || 0) > 0 || (reviewSignals.stale_guidance || 0) > 0) {
+    avoidFirst.push('Do not repeat previously rejected or stale review guidance; inspect review-outcome learning signals before escalating similar findings.');
+  }
+  if ((reviewSignals.missed_issue || 0) > 0) {
+    avoidFirst.push('Do not skip regression-oriented validation; review outcomes recorded missed issues on prior work.');
   }
   if (avoidFirst.length === 0) {
     avoidFirst.push('Do not skip current code and validation evidence; this brief is orientation only.');
@@ -534,6 +654,7 @@ function nextWorkItems(intelligenceDraft) {
   const corrective = feedback.by_signal
     ? (feedback.by_signal.incorrect || 0) + (feedback.by_signal.unclear || 0) + (feedback.by_signal.ignored || 0)
     : 0;
+  const outcomeSignals = intelligenceDraft.review_outcomes ? intelligenceDraft.review_outcomes.learning_signals || {} : {};
 
   if (readiness.state && readiness.state !== 'ready') {
     addNextWorkItem(items, {
@@ -547,18 +668,6 @@ function nextWorkItems(intelligenceDraft) {
     });
   }
 
-  for (const risk of (intelligenceDraft.top_risks || []).slice(0, 3)) {
-    addNextWorkItem(items, {
-      title: `Triage ${risk.source} signal`,
-      priority: priorityForSeverity(risk.severity),
-      source: risk.source,
-      why: risk.summary,
-      start_with: [risk.next_action].filter(Boolean),
-      validate_with: review.refresh_first || [],
-      proof_boundary: 'A triaged signal is not a bug fix by itself; verify the raw artifact and current project behavior.',
-    });
-  }
-
   if (corrective > 0) {
     addNextWorkItem(items, {
       title: 'Review corrective agent feedback before reusing guidance',
@@ -568,6 +677,34 @@ function nextWorkItems(intelligenceDraft) {
       start_with: [feedback.file || 'agent-feedback.jsonl', ...(review.review_notes || []).filter((item) => item.includes('corrective agent-feedback')).slice(0, 1)],
       validate_with: ['scripts/forgeflow/build-project-intelligence.js --json'],
       proof_boundary: 'Feedback is advisory only and must be promoted manually only after current-code verification.',
+    });
+  }
+
+  if ((outcomeSignals.stale_guidance || 0) > 0 || (outcomeSignals.false_positive || 0) > 0 || (outcomeSignals.missed_issue || 0) > 0) {
+    const activeSignals = [];
+    if ((outcomeSignals.stale_guidance || 0) > 0) activeSignals.push(`${outcomeSignals.stale_guidance} stale-guidance`);
+    if ((outcomeSignals.false_positive || 0) > 0) activeSignals.push(`${outcomeSignals.false_positive} false-positive`);
+    if ((outcomeSignals.missed_issue || 0) > 0) activeSignals.push(`${outcomeSignals.missed_issue} missed-issue`);
+    addNextWorkItem(items, {
+      title: 'Triage review-outcome learning signals before repeating guidance',
+      priority: (outcomeSignals.missed_issue || 0) > 0 ? 'high' : 'medium',
+      source: 'review-outcomes',
+      why: `${activeSignals.join(', ')} signal(s) may affect future review guidance.`,
+      start_with: [intelligenceDraft.review_outcomes.file || 'review-outcomes.jsonl'],
+      validate_with: ['scripts/forgeflow/build-project-intelligence.js --json', 'scripts/forgeflow/record-review-outcome.js --summary .forgeflow/<project>/review-outcomes.jsonl --json'],
+      proof_boundary: 'Review-outcome learning signals are aggregate guidance only; verify each future finding against current code and tests.',
+    });
+  }
+
+  for (const risk of (intelligenceDraft.top_risks || []).slice(0, 3)) {
+    addNextWorkItem(items, {
+      title: `Triage ${risk.source} signal`,
+      priority: priorityForSeverity(risk.severity),
+      source: risk.source,
+      why: risk.summary,
+      start_with: [risk.next_action].filter(Boolean),
+      validate_with: review.refresh_first || [],
+      proof_boundary: 'A triaged signal is not a bug fix by itself; verify the raw artifact and current project behavior.',
     });
   }
 
@@ -595,7 +732,12 @@ function nextWorkItems(intelligenceDraft) {
     });
   }
 
-  return items.slice(0, 5).map(({ dedupe_key: _dedupeKey, ...item }) => item);
+  const priorityRank = { high: 0, medium: 1, low: 2 };
+  return items
+    .map((item, index) => ({ ...item, order: index }))
+    .sort((a, b) => (priorityRank[a.priority] ?? 1) - (priorityRank[b.priority] ?? 1) || a.order - b.order)
+    .slice(0, 5)
+    .map(({ dedupe_key: _dedupeKey, order: _order, ...item }) => item);
 }
 
 function buildProjectIntelligence(opts = {}) {
@@ -619,6 +761,7 @@ function buildProjectIntelligence(opts = {}) {
   const hotFiles = learningGatePass ? topItems(learnings.hot_files_and_modules, 8) : [];
   const recommendations = trends.recommendations || [];
   const agentFeedback = readAgentFeedback(projectDir);
+  const reviewOutcomes = readReviewOutcomes(projectDir);
   const readiness = readinessState(trends, learnings, allRisks, recommendations);
   const intelligence = {
     schema_version: '1',
@@ -646,6 +789,7 @@ function buildProjectIntelligence(opts = {}) {
     recommended_next_actions: learningGatePass ? topItems(learnings.recommended_approach_for_next_work, 8) : [],
     validation_patterns: learningGatePass ? topItems(learnings.validation_patterns, 5) : [],
     agent_feedback: agentFeedback,
+    review_outcomes: reviewOutcomes,
     recommendations,
     artifacts: {
       json: jsonOut,
@@ -760,6 +904,25 @@ function renderMarkdown(intelligence) {
   lines.push(...((intelligence.agent_feedback.promotion_candidates || []).length > 0
     ? intelligence.agent_feedback.promotion_candidates.map((item) => `- ${item.agent} ${item.signal}: ${item.summary} [confidence: ${item.confidence}, evidence: ${item.evidence_count}] ${item.manual_promotion}`)
     : ['- (none)']));
+  lines.push('', '## Review Outcomes', '');
+  lines.push(`- Status: ${intelligence.review_outcomes.status}`);
+  lines.push(`- Records: ${intelligence.review_outcomes.records}`);
+  lines.push(`- Invalid lines skipped: ${intelligence.review_outcomes.invalid_lines || 0}`);
+  lines.push('- Boundary: aggregate local guidance only; verify every future finding against current code, tests, and review artifacts.');
+  const learningSummary = Object.entries(intelligence.review_outcomes.learning_signals || {}).map(([signal, count]) => `${signal}: ${count}`).join(', ');
+  lines.push(`- Learning signals: ${learningSummary || '(none)'}`);
+  const totals = intelligence.review_outcomes.totals || {};
+  lines.push(`- Findings: total ${totals.findings_total || 0}, confirmed ${totals.findings_confirmed || 0}, rejected ${totals.findings_rejected || 0}, regressions ${totals.post_merge_regression || 0}`);
+  if ((intelligence.review_outcomes.top_classes || []).length > 0) {
+    lines.push('', '### Repeated Finding Classes', '');
+    for (const item of intelligence.review_outcomes.top_classes) {
+      lines.push(`- ${item.name}: confirmed ${item.findings_confirmed || 0}, rejected ${item.findings_rejected || 0}, total ${item.findings_total || 0}`);
+    }
+  }
+  if ((intelligence.review_outcomes.invalid_reasons || []).length > 0) {
+    const skipped = intelligence.review_outcomes.invalid_reasons.map((item) => `line ${item.line} ${item.reason}`).join(', ');
+    lines.push(`- Skipped detail: ${skipped}`);
+  }
   lines.push('', '## Sources', '');
   lines.push(`- Project learnings: ${intelligence.artifacts.project_learnings || '(missing)'}`);
   lines.push(`- Code map history: ${intelligence.artifacts.code_map_history || '(missing)'}`);
@@ -767,6 +930,7 @@ function renderMarkdown(intelligence) {
   lines.push(`- Latest insights report: ${intelligence.artifacts.latest_insights_report || '(missing)'}`);
   lines.push(`- Failure digest: ${intelligence.artifacts.failure_digest || '(missing)'}`);
   lines.push(`- Agent feedback: ${intelligence.agent_feedback.file || '(missing)'}`);
+  lines.push(`- Review outcomes: ${intelligence.review_outcomes.file || '(missing)'}`);
   lines.push('', '## Artifacts', '', `- JSON: ${intelligence.artifacts.json}`, `- Markdown: ${intelligence.artifacts.markdown}`);
   return `${lines.join('\n')}\n`;
 }
