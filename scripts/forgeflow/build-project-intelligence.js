@@ -11,7 +11,7 @@ const VALID_FEEDBACK_SIGNALS = new Set(['useful', 'unclear', 'ignored', 'incorre
 const VALID_FEEDBACK_CONFIDENCE = new Set(['low', 'medium', 'high']);
 
 function usage() {
-  console.error('Usage: build-project-intelligence.js [--root <dir>] [--project-dir <dir>] [--out <path>] [--json]');
+  console.error('Usage: build-project-intelligence.js [--root <dir>] [--project-dir <dir>] [--out <path>] [--json] [--next-work]');
 }
 
 function argumentError(message, exitOnError) {
@@ -40,6 +40,7 @@ function parseArgs(argv, options = {}) {
     projectDir: '',
     out: '',
     json: false,
+    nextWork: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -54,6 +55,8 @@ function parseArgs(argv, options = {}) {
       i += 1;
     } else if (arg === '--json') {
       opts.json = true;
+    } else if (arg === '--next-work') {
+      opts.nextWork = true;
     } else if (arg === '--help' || arg === '-h') {
       usage();
       if (exitOnError) process.exit(0);
@@ -760,11 +763,50 @@ function renderMarkdown(intelligence) {
   return `${lines.join('\n')}\n`;
 }
 
+function renderNextWorkView(intelligence) {
+  const items = intelligence.next_work_items || [];
+  const readiness = intelligence.readiness || {};
+  const lines = [
+    '# Forgeflow Next Work Items',
+    '',
+    `Generated at: ${intelligence.generated_at}`,
+    `Readiness: ${readiness.state || 'unknown'}`,
+    `Trust state: ${intelligence.trust_state || 'unknown'}`,
+    '',
+    'Advisory candidates only. Choose scope from current product intent, then verify against current code, focused tests, full validation, and review evidence.',
+    '',
+  ];
+  if (readiness.state && readiness.state !== 'ready') {
+    lines.push(`Readiness note: ${(readiness.reasons || [])[0] || `state is ${readiness.state}`}`);
+    if ((readiness.clearing_commands || []).length > 0) {
+      lines.push(`Clear first: ${readiness.clearing_commands.join('; ')}`);
+    }
+    lines.push('');
+  }
+  if (items.length === 0) {
+    lines.push('No next-work candidates were generated.');
+  } else {
+    items.forEach((item, index) => {
+      lines.push(`${index + 1}. [${item.priority || 'medium'}] ${item.title}`);
+      if (item.source) lines.push(`   Source: ${item.source}`);
+      if (item.why) lines.push(`   Why: ${item.why}`);
+      lines.push(`   Start with: ${(item.start_with || []).length > 0 ? item.start_with.join('; ') : '(none)'}`);
+      lines.push(`   Validate with: ${(item.validate_with || []).length > 0 ? item.validate_with.join('; ') : '(none)'}`);
+      lines.push(`   Boundary: ${item.proof_boundary || 'Advisory candidate only.'}`);
+      lines.push('');
+    });
+  }
+  lines.push(`Artifacts: ${intelligence.artifacts ? intelligence.artifacts.json : '(missing)'}`);
+  return `${lines.join('\n').replace(/\n{3,}/g, '\n\n')}\n`;
+}
+
 function main() {
   const opts = parseArgs(process.argv.slice(2));
   const result = buildProjectIntelligence(opts);
   if (opts.json) {
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  } else if (opts.nextWork) {
+    process.stdout.write(renderNextWorkView(result));
   } else {
     process.stdout.write(renderMarkdown(result));
   }
@@ -788,6 +830,7 @@ module.exports = {
   reviewPrep,
   readinessState,
   renderMarkdown,
+  renderNextWorkView,
   riskSignals,
   trustState,
 };
