@@ -10,7 +10,20 @@ const {
   RUNTIME_HELPERS,
   STATIC_FILES,
 } = require('./install-manifest');
-const { affectedCommandsForSources } = require('./runtime-helper-contract');
+let affectedCommandsForSources = () => [];
+function isMissingRuntimeHelperContractError(err) {
+  return err
+    && err.code === 'MODULE_NOT_FOUND'
+    && String(err.message || '').includes("'./runtime-helper-contract'");
+}
+try {
+  ({ affectedCommandsForSources } = require('./runtime-helper-contract'));
+} catch (err) {
+  if (!isMissingRuntimeHelperContractError(err)) {
+    throw err;
+  }
+  // Keep the updater usable during repair of installs that are missing newer helper dependencies.
+}
 
 const DEFAULT_REPO = 'BrandedTamarasu-glitch/ForgeFlow';
 
@@ -513,6 +526,7 @@ module.exports = {
   filesForInstall,
   filesForRepair,
   installFiles,
+  isMissingRuntimeHelperContractError,
   deleteFiles,
   missingRequiredManagedFiles,
   renderMarkdown,

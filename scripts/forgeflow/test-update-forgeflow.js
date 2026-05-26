@@ -3,6 +3,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const {
+  isMissingRuntimeHelperContractError,
   renderMarkdown,
   rollbackForgeflow,
   updateForgeflow,
@@ -122,6 +123,8 @@ async function run() {
   });
   const rollbackUpdateRemovedOld = rollbackUpdate.removed.some((item) => item.source === 'commands/old.md') && !fs.existsSync(path.join(rollbackHome, 'commands', 'old.md'));
   const rollback = rollbackForgeflow({ home: rollbackHome });
+  const missingContractError = Object.assign(new Error("Cannot find module './runtime-helper-contract'"), { code: 'MODULE_NOT_FOUND' });
+  const nestedMissingError = Object.assign(new Error("Cannot find module './other'"), { code: 'MODULE_NOT_FOUND' });
 
   const checks = [
     ['first updated', first.status === 'updated'],
@@ -131,6 +134,7 @@ async function run() {
     ['test helper skipped by manifest', !fs.existsSync(path.join(home, 'forgeflow', 'scripts', 'forgeflow', 'test-health-check.js'))],
     ['runtime helper executable', (fs.statSync(path.join(home, 'forgeflow', 'scripts', 'forgeflow', 'health-check.js')).mode & 0o111) !== 0],
     ['affected command reported', first.affected_commands.some((item) => item.command === 'commands/forgeflow-health.md' && item.helpers.includes('scripts/forgeflow/health-check.js'))],
+    ['updater only tolerates missing helper contract', isMissingRuntimeHelperContractError(missingContractError) && !isMissingRuntimeHelperContractError(nestedMissingError) && !isMissingRuntimeHelperContractError(Object.assign(new Error('syntax'), { code: 'ERR' }))],
     ['partial status', partial.status === 'partial'],
     ['partial version not advanced', fs.readFileSync(versionPath(partialHome), 'utf8').trim() === previous],
     ['partial deleted reported', partial.deleted.includes('commands/old.md')],
