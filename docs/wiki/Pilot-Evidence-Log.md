@@ -36,7 +36,7 @@ support_categories:
 context_budget_status:
 project_intelligence_readiness: ready | needs-refresh | needs-triage | blocked | unknown
 living_project_map_status: useful | missing | unclear | not-useful | unknown
-agent_feedback_signal: positive | unclear | negative | missing | unknown
+agent_feedback_signal: positive | unclear | negative | incorrect | missing | unknown
 public_summary_generated: yes | no
 adoption_decision: repeat-pilot | expand-small-team | stop-and-fix | defer
 next_action:
@@ -71,6 +71,8 @@ scripts/forgeflow/record-pilot-evidence.js \
 ```
 
 The recorder rejects obvious secret assignments, private key headers, long token-like values, private/internal URLs, and scp-style internal repo URLs before writing the note.
+
+State-aware fields are normalized before writing. For example, `needs_refresh` becomes `needs-refresh`, `not useful` becomes `not-useful`, and corrective agent feedback becomes `incorrect`.
 
 After writing a note, the recorder refreshes `.forgeflow/<project-name>/pilot-evidence-rollup.md` unless `--no-rollup` is passed.
 

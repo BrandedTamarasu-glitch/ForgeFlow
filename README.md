@@ -290,7 +290,7 @@ scripts/forgeflow/record-pilot-evidence.js --runtime codex --health-result pass 
 scripts/forgeflow/rollup-pilot-evidence.js --json
 ```
 
-The pilot script prints the bounded trial path and public-safe result template. The rollup stays local under `.forgeflow/<project-name>/` and summarizes pilot count, support categories, findings, review minutes, and the next recommended action.
+The pilot script prints the bounded trial path and public-safe result template. The recorder normalizes state-aware evidence fields for project-intelligence readiness, living project-map status, and agent-feedback signal before refreshing the rollup. The rollup stays local under `.forgeflow/<project-name>/` and summarizes pilot count, support categories, findings, review minutes, and the next recommended action.
 
 For a net-new user deciding whether Forgeflow is worth adopting, render the adoption pack and first-real-task path. The generated path starts with guided repair and release-readiness preview, then uses project intelligence, the living project map, project learnings, and agent-feedback signals to decide whether the first task and the next task are getting better:
 

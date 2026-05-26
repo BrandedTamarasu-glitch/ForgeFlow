@@ -24,6 +24,9 @@ const FIELDS = [
   'setup_friction',
   'support_categories',
   'context_budget_status',
+  'project_intelligence_readiness',
+  'living_project_map_status',
+  'agent_feedback_signal',
   'public_summary_generated',
   'adoption_decision',
   'next_action',
@@ -38,6 +41,40 @@ const CHOICES = {
   sharing_level: new Set(['local-maintainer', 'private-team', 'public']),
   public_summary_generated: new Set(['yes', 'no']),
   adoption_decision: new Set(['repeat-pilot', 'expand-small-team', 'stop-and-fix', 'defer']),
+  project_intelligence_readiness: new Set(['ready', 'needs-refresh', 'needs-triage', 'blocked', 'unknown']),
+  living_project_map_status: new Set(['useful', 'missing', 'unclear', 'not-useful', 'unknown']),
+  agent_feedback_signal: new Set(['positive', 'missing', 'unclear', 'negative', 'incorrect', 'unknown']),
+};
+
+const NORMALIZERS = {
+  project_intelligence_readiness: new Map([
+    ['pass', 'ready'],
+    ['current', 'ready'],
+    ['ok', 'ready'],
+    ['needs_refresh', 'needs-refresh'],
+    ['needs refresh', 'needs-refresh'],
+    ['refresh', 'needs-refresh'],
+    ['needs_triage', 'needs-triage'],
+    ['needs triage', 'needs-triage'],
+    ['triage', 'needs-triage'],
+    ['fail', 'blocked'],
+    ['failure', 'blocked'],
+  ]),
+  living_project_map_status: new Map([
+    ['present', 'useful'],
+    ['clear', 'useful'],
+    ['helpful', 'useful'],
+    ['not useful', 'not-useful'],
+    ['not_useful', 'not-useful'],
+    ['no', 'not-useful'],
+  ]),
+  agent_feedback_signal: new Map([
+    ['good', 'positive'],
+    ['useful', 'positive'],
+    ['clear', 'positive'],
+    ['bad', 'negative'],
+    ['corrective', 'incorrect'],
+  ]),
 };
 
 function usage() {
@@ -151,6 +188,26 @@ function yamlScalar(value) {
   return JSON.stringify(value);
 }
 
+function normalizeChoice(field, value) {
+  if (value === undefined || value === null) return '';
+  if (typeof value === 'string' && value !== '' && value.trim() === '') return value;
+  const normalized = String(value).trim().toLowerCase();
+  if (!normalized) return '';
+  return (NORMALIZERS[field] && NORMALIZERS[field].get(normalized)) || normalized;
+}
+
+function normalizeValues(values = {}) {
+  const normalized = {};
+  for (const [field, value] of Object.entries(values)) {
+    normalized[field] = NORMALIZERS[field] ? normalizeChoice(field, value) : value;
+  }
+  return normalized;
+}
+
+function isBlankChoice(value) {
+  return value === undefined || value === null || value === '';
+}
+
 function validate(values) {
   const errors = [];
   for (const key of Object.keys(values)) {
@@ -159,7 +216,7 @@ function validate(values) {
     }
   }
   for (const [key, allowed] of Object.entries(CHOICES)) {
-    if (values[key] && !allowed.has(values[key])) {
+    if (!isBlankChoice(values[key]) && !allowed.has(values[key])) {
       errors.push(`Invalid ${key}`);
     }
   }
@@ -173,7 +230,7 @@ function validate(values) {
 
 function buildRecord(values = {}) {
   const record = Object.fromEntries(FIELDS.map((field) => [field, '']));
-  Object.assign(record, values);
+  Object.assign(record, normalizeValues(values));
   if (!record.date) record.date = today();
   if (!record.pilot_id) record.pilot_id = `${record.date}-${slug(record.runtime || 'pilot')}`;
   return record;
@@ -186,7 +243,7 @@ function renderYaml(record) {
 function recordPilotEvidence(opts = {}) {
   const root = repoRoot();
   const projectDir = opts.projectDir || defaultProjectDir(root);
-  const values = opts.values || {};
+  const values = normalizeValues(opts.values || {});
   const errors = validate(values);
   if (errors.length > 0) {
     const err = new Error(errors.join('\n'));
@@ -240,6 +297,8 @@ if (require.main === module) {
 
 module.exports = {
   buildRecord,
+  normalizeChoice,
+  normalizeValues,
   parseArgs,
   recordPilotEvidence,
   renderYaml,

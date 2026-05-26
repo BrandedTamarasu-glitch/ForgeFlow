@@ -4,6 +4,7 @@ const os = require('os');
 const path = require('path');
 const {
   buildRecord,
+  normalizeChoice,
   parseArgs,
   recordPilotEvidence,
   renderYaml,
@@ -21,6 +22,9 @@ const result = recordPilotEvidence({
     project_type: 'docs-config',
     health_result: 'warn',
     adoption_decision: 'repeat-pilot',
+    project_intelligence_readiness: 'needs_refresh',
+    living_project_map_status: 'not useful',
+    agent_feedback_signal: 'corrective',
     next_action: 'Run one more bounded maintainer branch',
   },
 });
@@ -37,6 +41,21 @@ const noRollupResult = recordPilotEvidence({
 });
 const quotedYaml = renderYaml({ pilot_id: 'quote-test', next_action: 'Contains # marker', date: '2026-05-18' });
 const invalid = validate({ runtime: 'cursor', extra: 'bad' });
+const invalidState = validate({
+  project_intelligence_readiness: 'stale',
+  living_project_map_status: 'maybe',
+  agent_feedback_signal: 'mixed',
+});
+const invalidFalsyState = validate({
+  project_intelligence_readiness: 0,
+  living_project_map_status: false,
+  agent_feedback_signal: null,
+});
+const invalidWhitespaceState = validate({
+  project_intelligence_readiness: '   ',
+  living_project_map_status: '\t',
+  agent_feedback_signal: '\n',
+});
 const sensitive = validate({ setup_friction: 'debug token=SHOULD_NOT_PRINT' });
 const privateUrl = validate({ next_action: 'Review https://confluence.company.internal/pilot' });
 const invalidPrivateRuntime = validate({ runtime: 'https://buildserver' });
@@ -110,10 +129,15 @@ const checks = [
   ['can skip rollup refresh', noRollupResult.rollup_path === ''],
   ['uses pilot evidence dir', result.path.endsWith(path.join('pilot-evidence', 'zach-codex-notes.yml'))],
   ['records chosen fields', content.includes('runtime: codex') && content.includes('project_type: docs-config')],
+  ['normalizes state-aware fields', content.includes('project_intelligence_readiness: needs-refresh') && content.includes('living_project_map_status: not-useful') && content.includes('agent_feedback_signal: incorrect') && result.record.project_intelligence_readiness === 'needs-refresh'],
   ['keeps blank template fields', content.includes('maintainer:') && content.includes('review_minutes:')],
+  ['normalizes common aliases', normalizeChoice('project_intelligence_readiness', 'PASS') === 'ready' && normalizeChoice('living_project_map_status', 'helpful') === 'useful' && normalizeChoice('agent_feedback_signal', 'bad') === 'negative'],
   ['defaults date and pilot id', defaultRecord.date.length === 10 && defaultRecord.pilot_id.includes('claude-code')],
   ['quotes unsafe yaml scalar', quotedYaml.includes('next_action: "Contains # marker"')],
   ['validates unknown and invalid choices', invalid.length === 2],
+  ['validates invalid state-aware choices', invalidState.length === 3 && invalidState.every((item) => item.startsWith('Invalid '))],
+  ['validates falsy non-string state-aware choices', invalidFalsyState.length === 2 && invalidFalsyState.includes('Invalid project_intelligence_readiness') && invalidFalsyState.includes('Invalid living_project_map_status')],
+  ['validates whitespace-only state-aware choices', invalidWhitespaceState.length === 3 && invalidWhitespaceState.every((item) => item.startsWith('Invalid '))],
   ['validates sensitive content', sensitive.some((item) => item.includes('Potential sensitive content in setup_friction'))],
   ['validates private urls', privateUrl.some((item) => item.includes('Potential sensitive content in next_action'))],
   ['invalid enum values are redacted', invalidPrivateRuntime.some((item) => item === 'Invalid runtime') && invalidPrivateRuntime.some((item) => item.includes('Potential sensitive content in runtime')) && !invalidPrivateRuntime.join('\n').includes('buildserver')],
