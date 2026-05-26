@@ -7,6 +7,7 @@ const {
   compactCodeMapHistory,
   importGapSummary,
   importGapScope,
+  livingProjectMapFromTrend,
   renderProjectCodeMap,
   showCodeMap,
 } = require('./show-code-map');
@@ -117,6 +118,45 @@ const triagedGaps = importGapSummary({
   ],
 }, 10);
 const triageCategories = Object.fromEntries(triagedGaps.triage.categories.map((item) => [item.category, item]));
+const attentionMap = livingProjectMapFromTrend({
+  status: 'compared',
+  source_files_delta: 1,
+  local_edges_delta: 2,
+  unresolved_imports_delta: 1,
+  skipped_dynamic_imports_delta: 0,
+  sections_delta: 3,
+  changed_sections_delta: 2,
+  new_high_fan_in: ['src/core.ts'],
+  new_high_fan_out: [],
+  removed_high_fan_in: ['src/old.ts'],
+  removed_high_fan_out: [],
+});
+const stableMap = livingProjectMapFromTrend({
+  status: 'compared',
+  source_files_delta: 0,
+  local_edges_delta: 0,
+  unresolved_imports_delta: 0,
+  skipped_dynamic_imports_delta: 0,
+  sections_delta: 0,
+  changed_sections_delta: 0,
+  new_high_fan_in: [],
+  new_high_fan_out: [],
+  removed_high_fan_in: [],
+  removed_high_fan_out: [],
+});
+const mixedImportGapMap = livingProjectMapFromTrend({
+  status: 'compared',
+  source_files_delta: 0,
+  local_edges_delta: 0,
+  unresolved_imports_delta: 2,
+  skipped_dynamic_imports_delta: -2,
+  sections_delta: 0,
+  changed_sections_delta: 0,
+  new_high_fan_in: [],
+  new_high_fan_out: [],
+  removed_high_fan_in: [],
+  removed_high_fan_out: [],
+});
 
 const checks = [
   ['writes markdown', fs.existsSync(out) && markdown.includes('# Forgeflow Project Code Map')],
@@ -130,7 +170,12 @@ const checks = [
   ['writes compact topology graph', graph.scope === 'changed-neighborhood'],
   ['summary includes provenance', result.summary.provenance && result.summary.provenance.source === 'show-code-map'],
   ['summary includes history', result.summary.history && result.summary.history.recorded === true && result.summary.history.trend.status === 'first-run'],
+  ['summary includes living project map', result.summary.living_project_map && result.summary.living_project_map.categories.some((item) => item.category === 'baseline')],
   ['summary compares history', secondResult.summary.history && secondResult.summary.history.trend.status === 'compared' && secondResult.summary.history.retained_runs === 2],
+  ['compares living project map categories', attentionMap.status === 'attention' && attentionMap.categories.some((item) => item.category === 'new-hotspot' && item.paths.includes('src/core.ts')) && attentionMap.categories.some((item) => item.category === 'import-gap-growth') && attentionMap.categories.some((item) => item.category === 'changed-section-churn') && attentionMap.categories.some((item) => item.category === 'cooling-hotspot')],
+  ['classifies stable living project map', stableMap.status === 'stable' && stableMap.categories[0].category === 'stable-structure'],
+  ['tracks mixed import gap deltas separately', mixedImportGapMap.status === 'attention' && mixedImportGapMap.categories.some((item) => item.category === 'import-gap-growth' && item.metric === 'unresolved imports' && item.count === 2) && mixedImportGapMap.categories.some((item) => item.category === 'import-gap-reduction' && item.metric === 'skipped dynamic imports' && item.count === 2)],
+  ['labels graph growth as score', attentionMap.categories.some((item) => item.category === 'graph-growth' && item.score === 6 && item.deltas.source_files === 1 && item.deltas.local_edges === 2 && item.deltas.sections === 3)],
   ['summary counts source files', result.summary.summary.source_files === 7],
   ['summary includes sections', result.summary.summary.sections >= 8],
   ['summary honors max hotspots', result.summary.high_fan_in.length <= 5 && result.summary.high_fan_out.length <= 5],
@@ -145,6 +190,7 @@ const checks = [
   ['markdown includes provenance', markdown.includes('## Provenance') && markdown.includes('- Source: show\\-code\\-map')],
   ['markdown includes resolved edge summary', markdown.includes('## Resolved Edge Types') && markdown.includes('### Alias Edge Examples') && markdown.includes('### Literal Dynamic Edge Examples')],
   ['markdown includes trends', markdown.includes('## Trends') && markdown.includes('first recorded code-map snapshot')],
+  ['markdown includes living project map', markdown.includes('## Living Project Map') && markdown.includes('Static JS/TS import and section trend only') && markdown.includes('baseline')],
   ['markdown includes import gaps', markdown.includes('## Import Gaps') && markdown.includes('### Triage') && markdown.includes('no matching local JS/TS file') && markdown.includes('non\\-literal dynamic import')],
   ['markdown includes artifacts', markdown.includes('## Artifacts') && markdown.includes('code-topology.json')],
   ['markdown includes limits', markdown.includes('Not a runtime call graph')],

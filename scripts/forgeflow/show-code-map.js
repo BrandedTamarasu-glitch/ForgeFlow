@@ -457,6 +457,113 @@ function compareCodeMapTrend(current, history) {
   };
 }
 
+function livingProjectMapFromTrend(trend = {}) {
+  const categories = [];
+  if (!trend || trend.status === 'first-run') {
+    categories.push({
+      category: 'baseline',
+      severity: 'info',
+      count: 1,
+      paths: [],
+      next_action: 'Run forgeflow-code-map again after a work slice to compare structural movement.',
+    });
+  } else if (trend.status === 'compared') {
+    const newHotspots = [...new Set([...(trend.new_high_fan_in || []), ...(trend.new_high_fan_out || [])])];
+    const coolingHotspots = [...new Set([...(trend.removed_high_fan_in || []), ...(trend.removed_high_fan_out || [])])];
+    const importGapDeltas = [
+      { metric: 'unresolved imports', delta: trend.unresolved_imports_delta || 0 },
+      { metric: 'skipped dynamic imports', delta: trend.skipped_dynamic_imports_delta || 0 },
+    ];
+    if (newHotspots.length > 0) {
+      categories.push({
+        category: 'new-hotspot',
+        severity: 'attention',
+        count: newHotspots.length,
+        paths: newHotspots.slice(0, 8),
+        next_action: 'Review new central files before changing nearby behavior.',
+      });
+    }
+    if (coolingHotspots.length > 0) {
+      categories.push({
+        category: 'cooling-hotspot',
+        severity: 'info',
+        count: coolingHotspots.length,
+        paths: coolingHotspots.slice(0, 8),
+        next_action: 'Treat removed hotspots as lower-priority context unless the current work touched them.',
+      });
+    }
+    for (const item of importGapDeltas.filter((entry) => entry.delta > 0)) {
+      categories.push({
+        category: 'import-gap-growth',
+        severity: 'attention',
+        count: item.delta,
+        paths: [],
+        metric: item.metric,
+        next_action: `Run forgeflow-code-map and inspect ${item.metric} before review.`,
+      });
+    }
+    for (const item of importGapDeltas.filter((entry) => entry.delta < 0)) {
+      categories.push({
+        category: 'import-gap-reduction',
+        severity: 'info',
+        count: Math.abs(item.delta),
+        paths: [],
+        metric: item.metric,
+        next_action: `Keep the ${item.metric} resolver assumptions documented if the reduction came from topology support.`,
+      });
+    }
+    if ((trend.changed_sections_delta || 0) > 0) {
+      categories.push({
+        category: 'changed-section-churn',
+        severity: 'attention',
+        count: trend.changed_sections_delta,
+        paths: [],
+        next_action: 'Focus validation on changed sections and their read-next neighbors.',
+      });
+    }
+    if ((trend.source_files_delta || 0) > 0 || (trend.local_edges_delta || 0) > 0 || (trend.sections_delta || 0) > 0) {
+      categories.push({
+        category: 'graph-growth',
+        severity: 'info',
+        count: 1,
+        score: Math.max(0, trend.source_files_delta || 0) + Math.max(0, trend.local_edges_delta || 0) + Math.max(0, trend.sections_delta || 0),
+        deltas: {
+          source_files: Math.max(0, trend.source_files_delta || 0),
+          local_edges: Math.max(0, trend.local_edges_delta || 0),
+          sections: Math.max(0, trend.sections_delta || 0),
+        },
+        paths: [],
+        next_action: 'Check whether new files and edges are covered by focused tests or review scope.',
+      });
+    }
+    if (categories.length === 0) {
+      categories.push({
+        category: 'stable-structure',
+        severity: 'info',
+        count: 1,
+        paths: [],
+        next_action: 'Use the current map as review context; no structural movement needs separate triage.',
+      });
+    }
+  } else {
+    categories.push({
+      category: 'missing-history',
+      severity: 'attention',
+      count: 1,
+      paths: [],
+      next_action: 'Run forgeflow-code-map to seed code-map history.',
+    });
+  }
+  return {
+    schema_version: '1',
+    status: categories.some((item) => item.severity === 'attention') ? 'attention' : 'stable',
+    trend_status: trend.status || 'missing',
+    categories,
+    next_actions: [...new Set(categories.map((item) => item.next_action))],
+    caveat: 'Static JS/TS import and section trend only; not a runtime call graph or dependency severity model.',
+  };
+}
+
 function compactCodeMapHistory(history, limit = DEFAULT_HISTORY_LIMIT) {
   const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : DEFAULT_HISTORY_LIMIT;
   if (!Array.isArray(history) || history.length <= safeLimit) return history || [];
@@ -477,6 +584,7 @@ function attachCodeMapHistory(root, summary, historyPath, opts = {}) {
     recorded: false,
     trend,
   };
+  summary.living_project_map = livingProjectMapFromTrend(trend);
   if (opts.record !== false) {
     const retainedHistory = compactCodeMapHistory([...history, record], opts.limit);
     writeCodeMapHistory(historyPath, retainedHistory);
@@ -567,6 +675,18 @@ function renderProjectCodeMap(summary) {
     '## Trends',
     '',
     ...renderTrend(summary),
+    '',
+    '## Living Project Map',
+    '',
+    `- Status: ${summary.living_project_map ? summary.living_project_map.status : 'missing'}`,
+    `- Caveat: ${summary.living_project_map ? summary.living_project_map.caveat : 'Static map unavailable.'}`,
+    ...(summary.living_project_map ? summary.living_project_map.categories.flatMap((item) => [
+      `- ${md(item.category)}: ${item.score === undefined ? item.count : `score ${item.score}`} (${md(item.severity)})`,
+      ...(item.metric ? [`  - Metric: ${md(item.metric)}`] : []),
+      ...(item.deltas ? [`  - Deltas: source files +${item.deltas.source_files}, local edges +${item.deltas.local_edges}, sections +${item.deltas.sections}`] : []),
+      `  - Next: ${md(item.next_action)}`,
+      ...(item.paths.length > 0 ? [`  - Paths: ${item.paths.map(md).join(', ')}`] : []),
+    ]) : ['(none)']),
     '',
     '## High Fan-In',
     '',
@@ -683,6 +803,7 @@ module.exports = {
   importGapScope,
   importGapSummary,
   importGapTriage,
+  livingProjectMapFromTrend,
   projectCodeMapSummary,
   readCodeMapHistory,
   renderProjectCodeMap,

@@ -18,7 +18,12 @@ const {
   latestInsightsReadiness,
   repoRoot,
 } = require('./latest-insights-state');
-const { compareCodeMapTrend, importGapSummary, readCodeMapHistory } = require('./show-code-map');
+const {
+  compareCodeMapTrend,
+  importGapSummary,
+  livingProjectMapFromTrend,
+  readCodeMapHistory,
+} = require('./show-code-map');
 
 function usage() {
   console.error('Usage: show-project-trends.js [--project-dir <dir>] [--refresh] [--json]');
@@ -446,6 +451,7 @@ function showProjectTrends(opts = {}) {
       latest_dirty: latest ? Boolean(latest.dirty) : false,
       summary: latest ? latest.summary || null : null,
       trend,
+      living_project_map: livingProjectMapFromTrend(trend),
       new_high_fan_in: topList(trend.new_high_fan_in),
       new_high_fan_out: topList(trend.new_high_fan_out),
     },
@@ -501,6 +507,18 @@ function renderMarkdown(result) {
     `- Changed sections delta: ${trend.changed_sections_delta ?? 0}`,
     `- New high fan-in: ${result.code_map.new_high_fan_in.length > 0 ? result.code_map.new_high_fan_in.join(', ') : '(none)'}`,
     `- New high fan-out: ${result.code_map.new_high_fan_out.length > 0 ? result.code_map.new_high_fan_out.join(', ') : '(none)'}`,
+    '',
+    '## Living Project Map',
+    '',
+    `- Status: ${result.code_map.living_project_map.status}`,
+    `- Caveat: ${result.code_map.living_project_map.caveat}`,
+    ...result.code_map.living_project_map.categories.flatMap((item) => [
+      `- ${item.category}: ${item.score === undefined ? item.count : `score ${item.score}`} (${item.severity})`,
+      ...(item.metric ? [`  - Metric: ${item.metric}`] : []),
+      ...(item.deltas ? [`  - Deltas: source files +${item.deltas.source_files}, local edges +${item.deltas.local_edges}, sections +${item.deltas.sections}`] : []),
+      `  - Next: ${item.next_action}`,
+      ...(item.paths.length > 0 ? [`  - Paths: ${item.paths.join(', ')}`] : []),
+    ]),
     '',
     '## Import Gaps',
     '',

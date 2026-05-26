@@ -21,7 +21,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/review-auto` | Apply conservative safe fixes, refresh/check project learnings, then re-review and record the post-fix approval state. |
 | `/audit` | Run a deeper systems/security/craft audit. |
 | `/dashboard` | Start the optional local metrics dashboard on port 4003. |
-| `/forgeflow-code-map` | Generate a compact project code map with topology, sections, changed-section hints, import-gap triage, Git provenance, and generated artifact paths. |
+| `/forgeflow-code-map` | Generate a compact project code map with topology, sections, changed-section hints, import-gap triage, living project-map categories, Git provenance, and generated artifact paths. |
 | `/forgeflow-compact-output` | Compact allowlisted noisy command output while preserving exact output for unsafe command classes. |
 | `/forgeflow-failure-digest` | Build a compact failure digest from test, typecheck, lint, or log output, with Git provenance for freshness checks. |
 | `/forgeflow-noisy-command` | Get advisory-only suggestions for narrower noisy command invocations. |
@@ -36,9 +36,11 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-release-check` | Run local pre-release checks for command coverage, install, update, health, version, and context helpers. |
 | `/forgeflow-release-readiness` | Run advisory local release readiness checks, group blockers by readiness area, and avoid tagging, pushing, publishing, or GitHub calls. |
 | `/forgeflow-smoke` | Run downstream readiness smoke by default; add `--mode source` for source-tree release guards or `--mode full` for both groups. |
-| `/forgeflow-trends` | Show the current project's code-map trend, import-gap status, artifact freshness, latest-insights readiness/freshness, latest failure-digest provenance/freshness, project-learning consumption, and context-advisor status. Add `--refresh` to refresh project learnings and latest-insights readiness first; stale reports recommend it directly. |
+| `/forgeflow-trends` | Show the current project's code-map trend, living project-map categories, import-gap status, artifact freshness, latest-insights readiness/freshness, latest failure-digest provenance/freshness, project-learning consumption, and context-advisor status. Add `--refresh` to refresh project learnings and latest-insights readiness first; stale reports recommend it directly. |
 | `/forgeflow-version` | Show installed commit, upstream status, latest release, helper paths, and the next update action. |
 | `/ship` | Prepare presentation, PR, CI checks, and release handoff after a passing review-history gate; potential secrets are hard blockers. |
+
+Living project-map categories include baseline, missing-history, new hotspot, cooling hotspot, import-gap growth/reduction per metric, changed-section churn, graph-growth score, and stable structure. They are static JS/TS import and section signals only.
 
 ## Codex Skills
 
