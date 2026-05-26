@@ -3,6 +3,7 @@ const {
   adoptionNextAction,
   buildAdoptionPack,
   renderMarkdown,
+  safePilotProjectDir,
 } = require('./render-adoption-pack');
 const fs = require('fs');
 const os = require('os');
@@ -48,6 +49,14 @@ fs.writeFileSync(path.join(evidenceDir, 'two.yml'), [
 ].join('\n'));
 const withEvidence = buildAdoptionPack({ runtime: 'codex', projectName: 'Demo' });
 const withEvidenceMarkdown = renderMarkdown(withEvidence);
+const traversalPack = buildAdoptionPack({ runtime: 'codex', projectName: '../../tmp/loot' });
+let traversalBlocked = true;
+try {
+  safePilotProjectDir('../tmp/loot');
+  traversalBlocked = false;
+} catch (err) {
+  traversalBlocked = err.message.includes('under .forgeflow');
+}
 const expandAction = adoptionNextAction({
   pilot_count: 1,
   blocked_first_review_count: 0,
@@ -94,7 +103,7 @@ const checks = [
   ['renders small-team handoff', pack.small_team_handoff.status === 'not-ready-yet' && pack.small_team_handoff.command.includes("--project-name 'Demo'") && maintainer.small_team_handoff.command === "/forgeflow-pilot --runtime claude-code --project-name 'Demo' --path maintainer" && expandAction.action === 'expand-small-team' && markdown.includes('## Small-Team Handoff') && markdown.includes('one or two maintainers') && markdown.includes('Record pilot evidence after each trial')],
   ['quotes project name in commands', quoted.small_team_handoff.command === "scripts/forgeflow/render-pilot-script.js --runtime codex --project-name 'demo\"; touch /tmp/pwned; echo \"' --path maintainer"],
   ['empty evidence has next action', pack.trial_evidence.next_action.action === 'run-first-trial' && markdown.includes('Recommended next action')],
-  ['blocked evidence has next action', withEvidence.trial_evidence.next_action.action === 'fix-blocked-first-review' && withEvidence.trial_evidence.next_action.blocker === 'docs'],
+  ['blocked evidence has safe next action', withEvidence.trial_evidence.next_action.action === 'fix-blocked-first-review' && withEvidence.trial_evidence.next_action.blocker === 'docs' && withEvidence.trial_evidence.support_categories['unclassified-support-category'] === 1 && !JSON.stringify(withEvidence).includes('example.internal')],
   ['renders concrete next action', withEvidenceMarkdown.includes('- Action: fix-blocked-first-review') && withEvidenceMarkdown.includes('- Blocker: docs') && withEvidenceMarkdown.includes('- Fix layer: move the missing step closer to the start path')],
   ['expand evidence has next action', expandAction.action === 'expand-small-team' && expandAction.owner === 'team-lead' && expandAction.command.includes('render-pilot-script.js --runtime codex') && expandAction.command.includes('--path maintainer')],
   ['claude expand uses slash pilot', claudeExpandAction.command === "/forgeflow-pilot --runtime claude-code --project-name 'Demo' --path maintainer"],
@@ -107,6 +116,7 @@ const checks = [
   ['maintainer path supported', maintainer.path === 'maintainer' && maintainer.runtime === 'claude-code'],
   ['markdown renders title', markdown.includes('# Forgeflow Adoption Pack') && markdown.includes('## Decision Rubric')],
   ['json serializable', JSON.parse(JSON.stringify(pack)).project_name === 'Demo'],
+  ['project evidence path stays under forgeflow', traversalPack.project_name === '../../tmp/loot' && traversalBlocked],
   ['command avoids raw argument shell pass-through', !commandDoc.includes('render-adoption-pack.js" $ARGUMENTS') && commandDoc.includes('"${ARGS[@]}"')],
 ];
 

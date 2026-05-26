@@ -34,7 +34,7 @@ function parseArgs(argv) {
     } else if (arg === '--path') {
       opts.path = requireValue(argv, arg, i);
       if (!['maintainer', 'new-user'].includes(opts.path)) {
-        console.error(`Invalid --path: ${opts.path}`);
+        console.error('Invalid --path');
         usage();
         process.exit(2);
       }
@@ -51,7 +51,7 @@ function parseArgs(argv) {
     }
   }
   if (!['claude-code', 'codex'].includes(opts.runtime)) {
-    console.error(`Invalid --runtime: ${opts.runtime}`);
+    console.error('Invalid --runtime');
     usage();
     process.exit(2);
   }
@@ -66,6 +66,15 @@ function git(args, cwd = process.cwd()) {
 
 function repoRoot(cwd = process.cwd()) {
   return git(['rev-parse', '--show-toplevel'], cwd) || cwd;
+}
+
+function projectDirSegment(projectName, fallbackName = '') {
+  const cleaned = String(projectName || fallbackName || 'project')
+    .replace(/[\\/]+/g, '-')
+    .replace(/\.\.+/g, '.')
+    .replace(/[\x00-\x1f\x7f]/g, '-')
+    .trim();
+  return (cleaned.replace(/^\.+$/, '') || 'project').slice(0, 120);
 }
 
 function commandFor(runtime, name) {
@@ -180,7 +189,7 @@ function buildPilotScript(opts = {}) {
   const projectName = opts.projectName || path.basename(root);
   const runtime = opts.runtime || 'codex';
   const scriptPath = opts.path || 'maintainer';
-  const projectDir = `.forgeflow/${projectName}`;
+  const projectDir = `.forgeflow/${projectDirSegment(projectName, path.basename(root))}`;
   const steps = scriptPath === 'new-user'
     ? buildNewUserSteps(runtime)
     : buildMaintainerSteps(runtime);
@@ -257,5 +266,6 @@ if (require.main === module) {
 module.exports = {
   buildPilotScript,
   parseArgs,
+  projectDirSegment,
   renderMarkdown,
 };

@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { appendFileSafe } = require('./file-safety');
+const { containsSensitiveContent } = require('./privacy-boundary');
 
 const VALID_CATEGORIES = new Set([
   'recurring-pitfall',
@@ -90,16 +91,6 @@ function defaultProjectDir(root) {
   return path.join(root, '.forgeflow', path.basename(root));
 }
 
-function containsSensitiveContent(value) {
-  return [
-    /-----BEGIN [A-Z ]*PRIVATE KEY-----/i,
-    /\b(api[_-]?key|password|passwd|secret|token)\s*[:=]/i,
-    /\b[A-Z0-9]{20,}\b/,
-    /\b(?:https?|ssh|git):\/\/[^\s)]+/i,
-    /\bgit@[^:\s]+:[^\s)]+/i,
-  ].some((pattern) => pattern.test(String(value || '')));
-}
-
 function cleanText(value) {
   return String(value || '').replace(/\s+/g, ' ').replace(/[|]/g, '/').trim();
 }
@@ -107,7 +98,7 @@ function cleanText(value) {
 function normalizeConfidence(value) {
   const confidence = cleanText(value || 'medium').toLowerCase();
   if (!VALID_CONFIDENCE.has(confidence)) {
-    throw new Error(`Invalid project learning confidence: ${confidence}`);
+    throw new Error('Invalid project learning confidence');
   }
   return confidence;
 }
@@ -135,7 +126,7 @@ function normalizeApplicationGuidance(value) {
 function normalizeStatus(value) {
   const status = cleanText(value || 'active').toLowerCase();
   if (!VALID_STATUS.has(status)) {
-    throw new Error(`Invalid project learning status: ${status}`);
+    throw new Error('Invalid project learning status');
   }
   return status;
 }
@@ -163,7 +154,7 @@ function normalizeEntry(entry) {
     superseded_by: normalizeSupersededBy(entry.superseded_by ?? entry.supersededBy),
   };
   if (!VALID_CATEGORIES.has(normalized.category)) {
-    throw new Error(`Invalid project learning category: ${normalized.category}`);
+    throw new Error('Invalid project learning category');
   }
   if (!normalized.learning) {
     throw new Error('Project learning is required');

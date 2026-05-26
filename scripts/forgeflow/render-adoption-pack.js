@@ -1,21 +1,9 @@
 #!/usr/bin/env node
 const path = require('path');
 const { buildPilotScript } = require('./render-pilot-script');
+const { isPathInside } = require('./file-safety');
+const { publicSafeBlocker, shellQuote } = require('./privacy-boundary');
 const { rollupPilotEvidence } = require('./rollup-pilot-evidence');
-const PUBLIC_SAFE_BLOCKERS = new Set([
-  'install',
-  'health',
-  'settings',
-  'template-installer',
-  'codex-discovery',
-  'agent-routing',
-  'context-budget',
-  'review-quality',
-  'privacy',
-  'docs',
-  'first-review-blocked',
-  'repeated-support-category',
-]);
 
 function usage() {
   console.error('Usage: render-adoption-pack.js [--runtime claude-code|codex] [--project-name <name>] [--path maintainer|new-user] [--json]');
@@ -56,8 +44,8 @@ function parseArgs(argv) {
       throw new Error(`Unknown argument: ${arg}`);
     }
   }
-  if (!['claude-code', 'codex'].includes(opts.runtime)) throw new Error(`Invalid --runtime: ${opts.runtime}`);
-  if (!['maintainer', 'new-user'].includes(opts.path)) throw new Error(`Invalid --path: ${opts.path}`);
+  if (!['claude-code', 'codex'].includes(opts.runtime)) throw new Error('Invalid --runtime');
+  if (!['maintainer', 'new-user'].includes(opts.path)) throw new Error('Invalid --path');
   return opts;
 }
 
@@ -67,7 +55,7 @@ function buildAdoptionPack(opts = {}) {
     projectName: opts.projectName || '',
     path: opts.path || 'new-user',
   });
-  const projectDir = path.join(process.cwd(), pilot.project_dir);
+  const projectDir = safePilotProjectDir(pilot.project_dir);
   const rollup = rollupPilotEvidence({ projectDir });
   const nextAction = adoptionNextAction(rollup, pilot);
   const publicSummary = publicSafeSummary(rollup, pilot, nextAction);
@@ -77,13 +65,13 @@ function buildAdoptionPack(opts = {}) {
     pilot_count: rollup.pilot_count,
     decision: rollup.decision,
     health_results: rollup.health_results,
-    support_categories: rollup.support_categories,
+    support_categories: publicSafeCounts(rollup.support_categories),
     findings: rollup.findings,
     review_minutes: rollup.review_minutes,
     blocked_first_review_count: rollup.blocked_first_review_count,
     repeated_issue_categories: rollup.repeat_issue_count,
     next_fix_layer: rollup.next_fix_layer,
-    next_action: nextAction,
+    next_action: publicSafeNextAction(nextAction),
     rollup_path: path.join(pilot.project_dir, 'pilot-evidence-rollup.md'),
   };
   return {
@@ -139,6 +127,32 @@ function buildAdoptionPack(opts = {}) {
   };
 }
 
+function safePilotProjectDir(projectDir) {
+  const root = process.cwd();
+  const forgeflowRoot = path.join(root, '.forgeflow');
+  const resolved = path.resolve(root, projectDir || '');
+  if (!isPathInside(forgeflowRoot, resolved)) {
+    throw new Error('Pilot project directory must stay under .forgeflow');
+  }
+  return resolved;
+}
+
+function publicSafeCounts(counts) {
+  const safeCounts = {};
+  for (const [name, count] of Object.entries(counts || {})) {
+    const safeName = publicSafeBlocker(name) || 'unclassified-support-category';
+    safeCounts[safeName] = (safeCounts[safeName] || 0) + count;
+  }
+  return safeCounts;
+}
+
+function publicSafeNextAction(action = {}) {
+  return {
+    ...action,
+    blocker: publicSafeBlocker(action.blocker),
+  };
+}
+
 function publicSafeSummary(rollup, pilot, nextAction) {
   const hasEvidence = rollup && rollup.pilot_count > 0;
   return {
@@ -166,16 +180,6 @@ function adoptionDecisionFromRollup(rollup) {
   if (decision === 'expand-small-team') return 'expand-small-team';
   if (decision === 'defer') return 'defer';
   return 'repeat-pilot';
-}
-
-function publicSafeBlocker(value) {
-  const key = String(value || '').trim();
-  if (!key) return '';
-  return PUBLIC_SAFE_BLOCKERS.has(key) ? key : 'unclassified-support-category';
-}
-
-function shellQuote(value) {
-  return `'${String(value || '').replace(/'/g, "'\\''")}'`;
 }
 
 function projectNameArg(pilot) {
@@ -291,12 +295,7 @@ function countLines(counts) {
 }
 
 function publicSafeCountLines(counts) {
-  const safeCounts = {};
-  for (const [name, count] of Object.entries(counts || {})) {
-    const safeName = publicSafeBlocker(name);
-    safeCounts[safeName || 'unclassified-support-category'] = (safeCounts[safeName || 'unclassified-support-category'] || 0) + count;
-  }
-  return countLines(safeCounts);
+  return countLines(publicSafeCounts(counts));
 }
 
 function renderMarkdown(pack) {
@@ -425,6 +424,7 @@ module.exports = {
   buildAdoptionPack,
   publicSafeSummary,
   renderMarkdown,
+  safePilotProjectDir,
   shellQuote,
   smallTeamHandoffPlan,
 };

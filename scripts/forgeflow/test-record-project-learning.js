@@ -69,6 +69,16 @@ const invalidStatus = runRecord([
   '--status',
   'retired',
 ]);
+const sensitiveStatus = runRecord([
+  '--project-dir',
+  projectDir,
+  '--category',
+  'risk-area',
+  '--learning',
+  'Should fail',
+  '--status',
+  'ssh://git@buildserver/repo',
+]);
 const oversizedSupersededBy = runRecord([
   '--project-dir',
   projectDir,
@@ -88,6 +98,16 @@ const invalidConfidence = runRecord([
   'Should fail',
   '--confidence',
   'certain',
+]);
+const sensitiveConfidence = runRecord([
+  '--project-dir',
+  projectDir,
+  '--category',
+  'risk-area',
+  '--learning',
+  'Should fail',
+  '--confidence',
+  'token=SHOULD_NOT_PRINT',
 ]);
 const invalidEvidenceCount = runRecord([
   '--project-dir',
@@ -166,7 +186,9 @@ const checks = [
   ['cli appends lifecycle metadata', cliResult.status === 0 && afterCli.includes('"status":"stale"') && afterCli.includes('Use project intelligence rollup guidance instead.')],
   ['invalid category fails', invalidCategory.status === 1 && invalidCategory.stderr.includes('Invalid project learning category')],
   ['invalid confidence fails', invalidConfidence.status === 1 && invalidConfidence.stderr.includes('Invalid project learning confidence')],
+  ['invalid confidence is redacted', sensitiveConfidence.status === 1 && sensitiveConfidence.stderr.includes('Invalid project learning confidence') && !sensitiveConfidence.stderr.includes('SHOULD_NOT_PRINT')],
   ['invalid status fails', invalidStatus.status === 1 && invalidStatus.stderr.includes('Invalid project learning status')],
+  ['invalid status is redacted', sensitiveStatus.status === 1 && sensitiveStatus.stderr.includes('Invalid project learning status') && !sensitiveStatus.stderr.includes('buildserver')],
   ['invalid evidence count fails', invalidEvidenceCount.status === 1 && invalidEvidenceCount.stderr.includes('evidence_count')],
   ['oversized guidance fails', oversizedGuidance.status === 1 && oversizedGuidance.stderr.includes('application_guidance')],
   ['oversized superseded-by fails', oversizedSupersededBy.status === 1 && oversizedSupersededBy.stderr.includes('superseded_by')],

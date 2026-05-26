@@ -2,6 +2,7 @@
 const {
   buildPilotScript,
   parseArgs,
+  projectDirSegment,
   renderMarkdown,
 } = require('./render-pilot-script');
 
@@ -19,6 +20,7 @@ const newUserCliJson = buildPilotScript(parseArgs([
   'Demo',
   '--json',
 ]));
+const traversalName = buildPilotScript({ runtime: 'codex', projectName: '../../tmp/loot' });
 const projectLearningsCommands = newUser.steps
   .flatMap((step) => step.commands)
   .filter((command) => command.includes('show-project-learnings.js'));
@@ -46,6 +48,7 @@ const checks = [
   ['new-user includes first work item lifecycle', newUser.steps.some((step) => step.commands.some((command) => command.includes('$discuss'))) && newUser.steps.some((step) => step.commands.some((command) => command.includes('$plan'))) && newUser.steps.some((step) => step.commands.some((command) => command.includes('$implement'))) && newUser.steps.some((step) => step.commands.some((command) => command.includes('$forge-review')))],
   ['new-user markdown title', newUserMarkdown.includes('# Forgeflow New-User Trial Script') && newUserMarkdown.includes('Path: new-user')],
   ['new-user cli renders json', newUserCliJson.path === 'new-user' && newUserCliJson.steps.length === 4],
+  ['project dir segment blocks traversal', traversalName.project_name === '../../tmp/loot' && traversalName.project_dir === '.forgeflow/.-.-tmp-loot' && projectDirSegment('GitLab CI') === 'GitLab CI'],
 ];
 
 let failed = 0;

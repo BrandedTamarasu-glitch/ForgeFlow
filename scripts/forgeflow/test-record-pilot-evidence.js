@@ -39,6 +39,7 @@ const quotedYaml = renderYaml({ pilot_id: 'quote-test', next_action: 'Contains #
 const invalid = validate({ runtime: 'cursor', extra: 'bad' });
 const sensitive = validate({ setup_friction: 'debug token=SHOULD_NOT_PRINT' });
 const privateUrl = validate({ next_action: 'Review https://confluence.company.internal/pilot' });
+const invalidPrivateRuntime = validate({ runtime: 'https://buildserver' });
 let cliResult = { status: 0 };
 let cliJson = {};
 try {
@@ -115,11 +116,12 @@ const checks = [
   ['validates unknown and invalid choices', invalid.length === 2],
   ['validates sensitive content', sensitive.some((item) => item.includes('Potential sensitive content in setup_friction'))],
   ['validates private urls', privateUrl.some((item) => item.includes('Potential sensitive content in next_action'))],
+  ['invalid enum values are redacted', invalidPrivateRuntime.some((item) => item === 'Invalid runtime') && invalidPrivateRuntime.some((item) => item.includes('Potential sensitive content in runtime')) && !invalidPrivateRuntime.join('\n').includes('buildserver')],
   ['cli writes json result', cliResult.status === 0 && cliJson.record?.sharing_level === 'local-maintainer'],
   ['cli reports refreshed rollup', cliJson.rollup_path?.endsWith('pilot-evidence-rollup.md')],
   ['cli can skip rollup', noRollupCli.status === 0 && noRollupCliJson.rollup_path === ''],
   ['missing option value exits usage', missingValue.status === 2 && missingValue.stderr.includes('Missing value for --runtime')],
-  ['invalid choice exits failure', invalidCli.status === 1 && invalidCli.stderr.includes('Invalid runtime: cursor')],
+  ['invalid choice exits failure', invalidCli.status === 1 && invalidCli.stderr.includes('Invalid runtime') && !invalidCli.stderr.includes('cursor')],
   ['sensitive cli fails redacted', sensitiveCli.status === 1 && sensitiveCli.stderr.includes('Potential sensitive content in setup_friction') && !sensitiveCli.stderr.includes('SHOULD_NOT_PRINT')],
 ];
 

@@ -10,6 +10,7 @@ forgeflow-patterns/.report-log.jsonl
 # Session files
 /plan.md
 /progress.md
+/handoff.md
 /.claude/
 .claude/handoff.md
 

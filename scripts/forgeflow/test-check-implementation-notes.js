@@ -175,7 +175,7 @@ const checks = [
   ['missing notes warn', missingResult.status === 'warn' && missingResult.issues.some((item) => item.code === 'notes-missing')],
   ['strict missing fails', strictMissingResult.status === 1],
   ['sensitive notes fail', sensitiveResult.status === 'fail' && sensitiveResult.issues.some((item) => item.code === 'sensitive-content')],
-  ['private urls fail', privateUrlResult.status === 'fail' && privateUrlResult.issues.filter((item) => item.code === 'sensitive-content').length === 3],
+  ['private urls fail', privateUrlResult.status === 'fail' && privateUrlResult.issues.filter((item) => item.code === 'sensitive-content').length >= 3],
   ['sensitive output redacted', !sensitiveCli.stdout.includes('SHOULD_NOT_PRINT') && !sensitiveCli.stderr.includes('SHOULD_NOT_PRINT')],
   ['raw ship summary warns', rawShipResult.status === 'warn' && rawShipResult.issues.some((item) => item.code === 'ship-summary-raw-log')],
   ['missing ship summary notes warn', missingShipNotesResult.status === 'warn' && missingShipNotesResult.issues.some((item) => item.code === 'ship-summary-notes-missing')],

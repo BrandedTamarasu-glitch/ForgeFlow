@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { sensitiveIssues: privacySensitiveIssues } = require('./privacy-boundary');
 
 const REQUIRED_SECTIONS = [
   'Recurring Pitfalls',
@@ -23,13 +24,6 @@ const VALID_CATEGORIES = new Set([
 ]);
 const VALID_CONFIDENCE = new Set(['low', 'medium', 'high']);
 const VALID_STATUS = new Set(['active', 'stale', 'superseded']);
-const SENSITIVE_PATTERNS = [
-  ['private-key', /-----BEGIN [A-Z ]*PRIVATE KEY-----/i],
-  ['assignment-secret', /\b(api[_-]?key|password|passwd|secret|token)\s*[:=]/i],
-  ['long-token-like-value', /\b[A-Z0-9]{20,}\b/],
-  ['private-url', /\b(?:https?|ssh|git):\/\/(?:[^/\s:@]+:[^/\s@]+@|[^/\s]*(?:localhost|127\.0\.0\.1|10\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.|\.internal\b|\.local\b|internal\.|intranet\.|corp\.))/i],
-  ['private-url', /\bgit@[^:\s]+:[^\s)]+/i],
-];
 const STALE_AFTER_DAYS = 30;
 
 function usage() {
@@ -96,19 +90,12 @@ function issue(severity, code, message, detail = {}) {
 }
 
 function sensitiveIssues(lines, source) {
-  const issues = [];
-  for (let i = 0; i < lines.length; i += 1) {
-    for (const [pattern, regex] of SENSITIVE_PATTERNS) {
-      if (regex.test(lines[i])) {
-        issues.push(issue('fail', 'sensitive-content', `Potential sensitive content detected in ${source}`, {
-          source,
-          line: i + 1,
-          pattern,
-        }));
-      }
-    }
-  }
-  return issues;
+  return privacySensitiveIssues(lines, source, ({ source: issueSource, line, pattern }) => issue(
+    'fail',
+    'sensitive-content',
+    `Potential sensitive content detected in ${issueSource}`,
+    { source: issueSource, line, pattern }
+  ));
 }
 
 function sectionItems(content, heading) {

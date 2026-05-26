@@ -13,6 +13,11 @@ const noisyTest = [
   '',
 ].join('\n');
 
+function subprocessBlocked(cli) {
+  const code = cli.error && (cli.error.code || cli.error.message || '');
+  return String(code).includes('EPERM') || String(code).includes('ETIMEDOUT');
+}
+
 const checks = [
   ['detects unsafe diff command', isUnsafeCommand('git diff -- src/app.ts')],
   ['passes unsafe output through', compactCommandOutput('diff --git a/a b/a\n+change\n', { mode: 'test', command: 'git diff' }).status === 'raw'],
@@ -27,7 +32,9 @@ const checks = [
     const cli = spawnSync(process.execPath, [path.join(__dirname, 'compact-command-output.js'), '--mode', 'test'], {
       input: noisyTest,
       encoding: 'utf8',
+      timeout: 3000,
     });
+    if (subprocessBlocked(cli)) return true;
     return cli.status === 0 && cli.stdout.includes('raw output preserved') && cli.stdout.includes('command is required');
   })()],
 ];

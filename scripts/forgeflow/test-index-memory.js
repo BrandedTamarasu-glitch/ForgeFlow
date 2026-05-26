@@ -6,7 +6,9 @@ const { buildMemoryIndex } = require('./index-memory');
 const { buildMemoryHits } = require('./build-context-pack');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
-const out = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-memory-index-')), 'memory-index.json');
+const memoryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-memory-index-root-'));
+const memoryProjectDir = path.join(memoryRoot, '.forgeflow', path.basename(memoryRoot));
+const out = path.join(memoryProjectDir, 'index', 'memory-index.json');
 const result = buildMemoryIndex({
   projectDir: path.join(repoRoot, 'fixtures/memory-index'),
   out,
@@ -14,7 +16,7 @@ const result = buildMemoryIndex({
 
 const index = JSON.parse(fs.readFileSync(out, 'utf8'));
 const allText = index.records.map((record) => `${record.kind} ${record.text} ${(record.keywords || []).join(' ')}`).join('\n');
-const memoryHits = buildMemoryHits(repoRoot, ['src/auth/session.ts'], {
+const memoryHits = buildMemoryHits(memoryRoot, ['src/auth/session.ts'], {
   reasons: ['auth-sensitive file changed'],
 }, 'review auth session token behavior', 12000, out);
 const symlinkProject = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-memory-index-symlink-'));
@@ -62,7 +64,7 @@ const checks = [
   ['jsonl indexed', index.records.some((record) => record.kind === 'jsonl' && record.text.includes('Session token reviews'))],
   ['auth keyword', allText.includes('auth')],
   ['session keyword', allText.includes('session')],
-  ['context pack uses index', memoryHits.includes(`Index: ${path.relative(repoRoot, out)}`)],
+  ['context pack uses index', memoryHits.includes(`Index: ${path.relative(memoryRoot, out)}`)],
   ['indexed hit rendered', memoryHits.includes('[jsonl] Session token reviews')],
   ['implementation note hit rendered', memoryHits.includes('implementation-notes.md')],
   ['project learning hit rendered', memoryHits.includes('project-learnings.md')],

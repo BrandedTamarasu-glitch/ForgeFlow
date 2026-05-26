@@ -2,7 +2,8 @@
 const fs = require('fs');
 const path = require('path');
 const { appendFileSafe, assertSafeDestination, assertSafeDirectory } = require('./file-safety');
-const { containsSensitiveContent, recordProjectLearning } = require('./record-project-learning');
+const { containsSensitiveContent } = require('./privacy-boundary');
+const { recordProjectLearning } = require('./record-project-learning');
 
 const VALID_SIGNALS = new Set(['useful', 'unclear', 'ignored', 'incorrect']);
 const VALID_CONFIDENCE = new Set(['low', 'medium', 'high']);
@@ -123,9 +124,9 @@ function normalizeFeedback(opts = {}) {
     evidence_count: Number.isInteger(opts.evidenceCount) ? opts.evidenceCount : Number.parseInt(opts.evidenceCount || '1', 10),
   };
   if (!record.agent) throw new Error('Agent is required');
-  if (!VALID_SIGNALS.has(record.signal)) throw new Error(`Invalid feedback signal: ${record.signal}`);
+  if (!VALID_SIGNALS.has(record.signal)) throw new Error('Invalid feedback signal');
   if (!record.summary) throw new Error('Feedback summary is required');
-  if (!VALID_CONFIDENCE.has(record.confidence)) throw new Error(`Invalid feedback confidence: ${record.confidence}`);
+  if (!VALID_CONFIDENCE.has(record.confidence)) throw new Error('Invalid feedback confidence');
   if (!Number.isInteger(record.evidence_count) || record.evidence_count < 1) {
     throw new Error('Feedback evidence_count must be a positive integer');
   }

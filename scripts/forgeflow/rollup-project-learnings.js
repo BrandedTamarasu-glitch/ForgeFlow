@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { compareCodeMapTrend } = require('./show-code-map');
+const { containsSensitiveContent } = require('./privacy-boundary');
 
 const DEFAULT_MAX_ITEMS = 8;
 
@@ -77,16 +78,6 @@ function defaultProjectDir(root) {
 
 function defaultOut(projectDir) {
   return path.join(projectDir, 'project-learnings.md');
-}
-
-function containsSensitiveContent(value) {
-  return [
-    /-----BEGIN [A-Z ]*PRIVATE KEY-----/i,
-    /\b(api[_-]?key|password|passwd|secret|token)\s*[:=]/i,
-    /\b[A-Z0-9]{20,}\b/,
-    /\b(?:https?|ssh|git):\/\/[^\s)]+/i,
-    /\bgit@[^:\s]+:[^\s)]+/i,
-  ].some((pattern) => pattern.test(String(value || '')));
 }
 
 function cleanText(value) {

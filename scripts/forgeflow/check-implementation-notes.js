@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { sensitiveIssues: privacySensitiveIssues } = require('./privacy-boundary');
 
 const REQUIRED_SECTIONS = [
   ['decisions', 'Decisions'],
@@ -10,14 +11,6 @@ const REQUIRED_SECTIONS = [
   ['deviations', 'Deviations'],
   ['follow_ups', 'Follow-ups'],
   ['validation_notes', 'Validation Notes'],
-];
-
-const SENSITIVE_PATTERNS = [
-  ['private-key', /-----BEGIN [A-Z ]*PRIVATE KEY-----/i],
-  ['assignment-secret', /\b(api[_-]?key|password|passwd|secret|token)\s*[:=]/i],
-  ['long-token-like-value', /\b[A-Z0-9]{20,}\b/],
-  ['private-url', /\b(?:https?|ssh|git):\/\/(?:[^/\s:@]+:[^/\s@]+@|[^/\s]*(?:localhost|127\.0\.0\.1|10\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.|\.internal\b|\.local\b|internal\.|intranet\.|corp\.))/i],
-  ['scp-private-repo-url', /\bgit@[^:\s]*(?:\.internal\b|\.local\b|internal\.|intranet\.|corp\.)[^:\s]*:[^\s]+/i],
 ];
 
 function usage() {
@@ -130,20 +123,12 @@ function parseNotes(content) {
 }
 
 function sensitiveIssues(lines, source) {
-  const findings = [];
-  for (let i = 0; i < lines.length; i += 1) {
-    const line = lines[i];
-    for (const [label, pattern] of SENSITIVE_PATTERNS) {
-      if (pattern.test(line)) {
-        findings.push(issue('fail', 'sensitive-content', `Potential sensitive content detected in ${source}`, {
-          source,
-          line: i + 1,
-          pattern: label,
-        }));
-      }
-    }
-  }
-  return findings;
+  return privacySensitiveIssues(lines, source, ({ source: issueSource, line, pattern }) => issue(
+    'fail',
+    'sensitive-content',
+    `Potential sensitive content detected in ${issueSource}`,
+    { source: issueSource, line, pattern }
+  ));
 }
 
 function looksLikeRawLog(value) {

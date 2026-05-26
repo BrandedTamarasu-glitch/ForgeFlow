@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { containsSensitiveContent } = require('./privacy-boundary');
 
 const VALID_CATEGORIES = new Set(['decision', 'spec-gap', 'tradeoff', 'deviation', 'follow-up', 'validation']);
 
@@ -110,7 +111,7 @@ function normalizeEntry(entry) {
   };
   if (!normalized.agent) normalized.agent = 'Atlas';
   if (!VALID_CATEGORIES.has(normalized.category)) {
-    throw new Error(`Invalid implementation note category: ${normalized.category}`);
+    throw new Error('Invalid implementation note category');
   }
   if (!normalized.note) {
     throw new Error('Implementation note is required');
@@ -120,14 +121,6 @@ function normalizeEntry(entry) {
     throw new Error('Implementation note appears to contain sensitive content');
   }
   return normalized;
-}
-
-function containsSensitiveContent(value) {
-  return [
-    /-----BEGIN [A-Z ]*PRIVATE KEY-----/i,
-    /\b(api[_-]?key|password|passwd|secret|token)\s*[:=]/i,
-    /\b[A-Z0-9]{20,}\b/,
-  ].some((pattern) => pattern.test(String(value || '')));
 }
 
 function loadEntries(opts) {
