@@ -215,6 +215,7 @@ Forgeflow includes local-only helpers that reduce agent prompt load before revie
 - **Project trends:** `show-project-trends.js` summarizes the latest code-map trend, import-gap status, artifact freshness, latest-insights readiness/freshness, latest failure-digest provenance/freshness, project-learning consumption, and advisor status from existing local artifacts. `/forgeflow-report` uses the same helper when available.
 - **Latest-insights state:** `latest-insights-state.js` provides the shared readiness/freshness check used by health, report, and trends so stale guidance is reported consistently.
 - **Privacy boundary:** `privacy-boundary.js` centralizes sensitive-content detection, public-safe blocker normalization, and shell argument quoting for local learning, pilot, feedback, adoption, and implementation-note helpers.
+- **Agent feedback rollup:** `rollup-agent-feedback.js` summarizes local `agent-feedback.jsonl` by reviewer, signal, promotable count, corrective count, skipped invalid/private lines, and filtered advisory examples.
 - **Forgeflow report:** `render-forgeflow-report.js` combines local telemetry, false-positive thresholds, pattern-log freshness, context savings, project trends, import-gap status, latest-insights readiness/freshness, latest failure-digest status/freshness, and direct next-action recommendations into one Markdown or JSON report. Use `--refresh` to update project guidance first.
 - **Release notes draft:** `render-release-notes.js` collects plugin version, matching changelog, recent commits, dirty state, and release-gate commands into a public-safe Markdown or JSON release-note draft.
 - **Smoke check:** `smoke-check.js` defaults to downstream readiness checks for health, trends refresh, report refresh, and code map. Warn/fail checks include reason, evidence, clearing guidance, and next actions in JSON and Markdown. Use `--mode source` for source-tree release guards plus packaged and installed-runtime dogfood self-tests, or `--mode full` for both groups.
@@ -316,7 +317,7 @@ scripts/forgeflow/record-agent-feedback.js \
 ```
 
 Feedback stays local in `.forgeflow/<project-name>/agent-feedback.jsonl`. Promotion is explicit and requires medium or high confidence with at least two pieces of evidence.
-Project intelligence reads the local feedback log as advisory signal only. It summarizes feedback counts, skipped invalid/private lines, confidence/evidence metadata, and review notes, but promoted project-learning candidates still require the same confidence/evidence gate and current-code verification.
+Project intelligence reads the local feedback log as advisory signal only. `scripts/forgeflow/rollup-agent-feedback.js --json` gives the same feedback its own quality rollup by reviewer, signal, promotable count, corrective count, skipped invalid/private lines, and filtered advisory examples. Promoted project-learning candidates still require the same confidence/evidence gate and current-code verification.
 
 Project learning rollups are planned around:
 
