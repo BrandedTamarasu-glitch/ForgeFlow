@@ -103,6 +103,87 @@ function publicSafeExample(record) {
   };
 }
 
+function daysSince(value, now = new Date()) {
+  const timestamp = Date.parse(value || '');
+  if (!Number.isFinite(timestamp)) return null;
+  return Math.floor((now.getTime() - timestamp) / 86400000);
+}
+
+function themeKey(record) {
+  return publicSafeSummary(record.correction || record.summary)
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .slice(0, 8)
+    .join(' ') || 'unspecified feedback theme';
+}
+
+function correctionThemes(records, limit = 5) {
+  const themes = {};
+  for (const record of records.filter((item) => ['incorrect', 'unclear', 'ignored'].includes(item.signal))) {
+    const key = themeKey(record);
+    if (!themes[key]) {
+      themes[key] = {
+        theme: key,
+        count: 0,
+        signals: {},
+        agents: [],
+        latest_examples: [],
+        manual_promotion: 'Only promote after a human confirms the pattern still applies to current code and review artifacts.',
+      };
+    }
+    const theme = themes[key];
+    theme.count += 1;
+    theme.signals[record.signal] = (theme.signals[record.signal] || 0) + 1;
+    if (!theme.agents.includes(record.agent)) theme.agents.push(record.agent);
+    theme.latest_examples.push(publicSafeExample(record));
+    theme.latest_examples = theme.latest_examples.slice(-3);
+  }
+  return Object.values(themes)
+    .sort((a, b) => b.count - a.count || a.theme.localeCompare(b.theme))
+    .slice(0, limit);
+}
+
+function promotionCandidates(records, limit = 5) {
+  return records
+    .filter((record) => record.evidence_count >= 2 && ['medium', 'high'].includes(record.confidence))
+    .map((record) => ({
+      agent: record.agent,
+      signal: record.signal,
+      summary: publicSafeSummary(record.summary),
+      confidence: record.confidence,
+      evidence_count: record.evidence_count,
+      manual_promotion: 'Review current evidence, then rerun record-agent-feedback with --promote if the guidance still holds.',
+    }))
+    .slice(-limit);
+}
+
+function staleMarkers(records, now = new Date()) {
+  const marker = {
+    threshold_days: 30,
+    stale_records: 0,
+    missing_timestamp_records: 0,
+    latest_age_days: null,
+    status: 'current',
+  };
+  const ages = [];
+  for (const record of records) {
+    const age = daysSince(record.ts, now);
+    if (age === null) {
+      marker.missing_timestamp_records += 1;
+      continue;
+    }
+    ages.push(age);
+    if (age > marker.threshold_days) marker.stale_records += 1;
+  }
+  if (ages.length > 0) marker.latest_age_days = Math.min(...ages);
+  if (marker.stale_records > 0) marker.status = 'stale';
+  else if (marker.missing_timestamp_records > 0) marker.status = 'unknown';
+  return marker;
+}
+
 function readFeedback(projectDir) {
   const file = path.join(projectDir, 'agent-feedback.jsonl');
   const valid = [];
@@ -186,6 +267,9 @@ function rollupAgentFeedback(opts = {}) {
       agent: record.agent,
       ...publicSafeExample(record),
     })),
+    correction_themes: correctionThemes(feedback.valid),
+    promotion_candidates: promotionCandidates(feedback.valid),
+    stale_markers: staleMarkers(feedback.valid),
     boundary: 'Advisory only. Verify feedback against current code, tests, and review artifacts before changing agent prompts or project guidance.',
     artifacts: {
       json: out,
@@ -228,6 +312,18 @@ function renderMarkdown(result) {
       }
     }
   }
+  lines.push('', '## Correction Themes', '');
+  lines.push(...(result.correction_themes.length > 0
+    ? result.correction_themes.map((item) => `- ${item.theme}: ${item.count} signal(s), agents ${item.agents.join(', ')}. ${item.manual_promotion}`)
+    : ['- (none)']));
+  lines.push('', '## Promotion Candidates', '');
+  lines.push(...(result.promotion_candidates.length > 0
+    ? result.promotion_candidates.map((item) => `- ${item.agent} ${item.signal}: ${item.summary} [confidence: ${item.confidence}, evidence: ${item.evidence_count}] ${item.manual_promotion}`)
+    : ['- (none)']));
+  lines.push('', '## Staleness', '');
+  lines.push(`- Status: ${result.stale_markers.status}`);
+  lines.push(`- Stale records: ${result.stale_markers.stale_records}`);
+  lines.push(`- Missing timestamps: ${result.stale_markers.missing_timestamp_records}`);
   lines.push('', '## Skipped Lines', '');
   lines.push(...(result.skipped_reasons.length > 0 ? result.skipped_reasons.map((item) => `- line ${item.line}: ${item.reason}`) : ['- (none)']));
   lines.push('', '## Artifacts', '', `- JSON: ${result.artifacts.json}`, `- Markdown: ${result.artifacts.markdown}`, `- Source: ${result.source_file}`, '');
@@ -252,7 +348,10 @@ module.exports = {
   feedbackSchemaIssue,
   parseArgs,
   publicSafeSummary,
+  correctionThemes,
+  promotionCandidates,
   readFeedback,
   renderMarkdown,
   rollupAgentFeedback,
+  staleMarkers,
 };

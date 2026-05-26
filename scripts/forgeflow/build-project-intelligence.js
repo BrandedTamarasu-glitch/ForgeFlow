@@ -4,6 +4,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { assertSafeDirectory, safeReadTextFile, writeFileSafe } = require('./file-safety');
 const { containsProhibitedFeedbackContent, rollupFeedback } = require('./record-agent-feedback');
+const { correctionThemes, promotionCandidates, staleMarkers } = require('./rollup-agent-feedback');
 const { showProjectLearnings } = require('./show-project-learnings');
 const { showProjectTrends } = require('./show-project-trends');
 const VALID_FEEDBACK_SIGNALS = new Set(['useful', 'unclear', 'ignored', 'incorrect']);
@@ -158,6 +159,9 @@ function readAgentFeedback(projectDir) {
         confidence: record.confidence || '',
         evidence_count: record.evidence_count || 0,
       })),
+      correction_themes: correctionThemes(records),
+      promotion_candidates: promotionCandidates(records),
+      stale_markers: staleMarkers(records),
       invalid_reasons: invalid.slice(0, 5),
     };
   } catch (err) {
@@ -415,6 +419,15 @@ function reviewPrep(trends, intelligenceDraft) {
   const corrective = (feedback.by_signal && ((feedback.by_signal.incorrect || 0) + (feedback.by_signal.unclear || 0) + (feedback.by_signal.ignored || 0))) || 0;
   if (corrective > 0) feedbackNotes.push(`${corrective} corrective agent-feedback signal(s) recorded; inspect ${feedback.file || 'agent-feedback.jsonl'} before reusing similar guidance. Advisory only; verify against current code and tests.`);
   if (feedback.promotable > 0) feedbackNotes.push(`${feedback.promotable} feedback signal(s) are promotable when reviewed and still supported.`);
+  for (const item of (feedback.correction_themes || []).slice(0, 3)) {
+    feedbackNotes.push(`Correction theme: ${item.theme} (${item.count} signal(s)); ${item.manual_promotion}`);
+  }
+  for (const item of (feedback.promotion_candidates || []).slice(0, 3)) {
+    feedbackNotes.push(`Promotion candidate: ${item.agent} ${item.signal} feedback with ${item.evidence_count} evidence point(s); ${item.manual_promotion}`);
+  }
+  if (feedback.stale_markers && feedback.stale_markers.status !== 'current') {
+    feedbackNotes.push(`Agent-feedback staleness marker is ${feedback.stale_markers.status}; old records ${feedback.stale_markers.stale_records}, missing timestamps ${feedback.stale_markers.missing_timestamp_records}.`);
+  }
   if (feedback.invalid_lines > 0) feedbackNotes.push(`${feedback.invalid_lines} agent-feedback line(s) were skipped by JSON/privacy validation.`);
   for (const item of (feedback.latest || []).slice(-3)) {
     if (item.signal && item.summary) {
@@ -549,6 +562,9 @@ function renderMarkdown(intelligence) {
   lines.push(`- Promotable: ${intelligence.agent_feedback.promotable}`);
   lines.push(`- Invalid lines skipped: ${intelligence.agent_feedback.invalid_lines || 0}`);
   lines.push('- Boundary: advisory only; verify against current code, tests, and review artifacts before relying on feedback.');
+  if (intelligence.agent_feedback.stale_markers) {
+    lines.push(`- Staleness: ${intelligence.agent_feedback.stale_markers.status} (old records ${intelligence.agent_feedback.stale_markers.stale_records}, missing timestamps ${intelligence.agent_feedback.stale_markers.missing_timestamp_records})`);
+  }
   const signalSummary = Object.entries(intelligence.agent_feedback.by_signal || {}).map(([signal, count]) => `${signal}: ${count}`).join(', ');
   lines.push(`- Signals: ${signalSummary || '(none)'}`);
   const agentSummary = Object.entries(intelligence.agent_feedback.by_agent || {}).map(([agent, count]) => `${agent}: ${count}`).join(', ');
@@ -563,6 +579,14 @@ function renderMarkdown(intelligence) {
       lines.push(`- ${item.agent} ${item.signal}: ${item.summary} [confidence: ${item.confidence || 'unknown'}, evidence: ${item.evidence_count || 0}, advisory-only]`);
     }
   }
+  lines.push('', '### Correction Themes', '');
+  lines.push(...((intelligence.agent_feedback.correction_themes || []).length > 0
+    ? intelligence.agent_feedback.correction_themes.map((item) => `- ${item.theme}: ${item.count} signal(s). ${item.manual_promotion}`)
+    : ['- (none)']));
+  lines.push('', '### Promotion Candidates', '');
+  lines.push(...((intelligence.agent_feedback.promotion_candidates || []).length > 0
+    ? intelligence.agent_feedback.promotion_candidates.map((item) => `- ${item.agent} ${item.signal}: ${item.summary} [confidence: ${item.confidence}, evidence: ${item.evidence_count}] ${item.manual_promotion}`)
+    : ['- (none)']));
   lines.push('', '## Sources', '');
   lines.push(`- Project learnings: ${intelligence.artifacts.project_learnings || '(missing)'}`);
   lines.push(`- Code map history: ${intelligence.artifacts.code_map_history || '(missing)'}`);

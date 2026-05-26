@@ -48,6 +48,7 @@ fs.writeFileSync(path.join(projectDir, 'project-learning-candidates.jsonl'), [
 fs.writeFileSync(path.join(projectDir, 'agent-feedback.jsonl'), [
   JSON.stringify({
     schema_version: '1',
+    ts: '2026-05-20T00:00:00Z',
     agent: 'smith_reviewer',
     signal: 'incorrect',
     summary: 'Flagged a safe query as unsafe',
@@ -56,6 +57,7 @@ fs.writeFileSync(path.join(projectDir, 'agent-feedback.jsonl'), [
   }),
   JSON.stringify({
     schema_version: '1',
+    ts: '2026-04-01T00:00:00Z',
     agent: 'warden_reviewer',
     signal: 'useful',
     summary: 'Caught missing permission check',
@@ -67,6 +69,7 @@ fs.writeFileSync(path.join(projectDir, 'agent-feedback.jsonl'), [
   '42',
   JSON.stringify({
     schema_version: '1',
+    ts: '2026-05-20T00:00:00Z',
     agent: 'warden_reviewer',
     signal: 'incorrect',
     summary: 'Review https://example.internal/team before approving',
@@ -264,9 +267,10 @@ const checks = [
   ['includes hot file', result.hot_files.some((item) => item.includes('src/auth/session.ts'))],
   ['includes next action', result.recommended_next_actions.length > 0],
   ['includes agent feedback summary', result.agent_feedback.status === 'present' && result.agent_feedback.records === 2 && result.agent_feedback.invalid_lines === 4 && result.agent_feedback.by_signal.incorrect === 1 && !result.agent_feedback.by_signal.undefined && result.agent_feedback.by_agent.warden_reviewer === 1 && result.agent_feedback.promotable === 1 && result.agent_feedback.latest.some((item) => item.agent === 'smith_reviewer')],
+  ['includes feedback learning signals', result.agent_feedback.correction_themes.some((item) => item.theme.includes('flagged a safe query') && item.manual_promotion.includes('human confirms')) && result.agent_feedback.promotion_candidates.some((item) => item.agent === 'smith_reviewer' && item.manual_promotion.includes('--promote')) && result.agent_feedback.stale_markers.status === 'stale'],
   ['includes review prep', result.review_prep && result.review_prep.trust_summary && result.review_prep.refresh_first.length > 0 && result.review_prep.read_first.length > 0 && result.review_prep.validate_first.length > 0],
-  ['review prep includes feedback notes', result.review_prep.review_notes.some((item) => item.includes('corrective agent-feedback') && item.includes('Advisory only')) && result.review_prep.review_notes.some((item) => item.includes('promotable')) && result.review_prep.review_notes.some((item) => item.includes('agent-feedback line(s) were skipped')) && result.review_prep.review_notes.some((item) => item.includes('Flagged a safe query as unsafe') && item.includes('confidence: high') && item.includes('evidence: 2'))],
-  ['markdown renders sections', markdown.includes('# Forgeflow Project Intelligence') && markdown.includes('not a source of truth') && markdown.includes('## Readiness') && markdown.includes('- State:') && markdown.includes('Clearing commands:') && markdown.includes('## Top Risks') && markdown.includes('## Review Prep') && markdown.includes('### Refresh First') && markdown.includes('### Review Notes') && markdown.includes('### Read First') && markdown.includes('## Agent Feedback') && markdown.includes('advisory only') && markdown.includes('confidence: high') && markdown.includes('evidence: 2') && markdown.includes('Invalid lines skipped: 4') && markdown.includes('Agents: smith_reviewer: 1, warden_reviewer: 1') && markdown.includes('privacy-boundary') && markdown.includes('invalid-schema') && !markdown.includes('example.internal') && markdown.includes('## Sources') && markdown.includes('Project learnings:') && markdown.includes('Agent feedback:') && markdown.includes('Code map history:') && markdown.includes('## Artifacts')],
+  ['review prep includes feedback notes', result.review_prep.review_notes.some((item) => item.includes('corrective agent-feedback') && item.includes('Advisory only')) && result.review_prep.review_notes.some((item) => item.includes('promotable')) && result.review_prep.review_notes.some((item) => item.includes('Correction theme:')) && result.review_prep.review_notes.some((item) => item.includes('Promotion candidate:')) && result.review_prep.review_notes.some((item) => item.includes('Agent-feedback staleness marker is stale') && item.includes('old records')) && result.review_prep.review_notes.some((item) => item.includes('agent-feedback line(s) were skipped')) && result.review_prep.review_notes.some((item) => item.includes('Flagged a safe query as unsafe') && item.includes('confidence: high') && item.includes('evidence: 2'))],
+  ['markdown renders sections', markdown.includes('# Forgeflow Project Intelligence') && markdown.includes('not a source of truth') && markdown.includes('## Readiness') && markdown.includes('- State:') && markdown.includes('Clearing commands:') && markdown.includes('## Top Risks') && markdown.includes('## Review Prep') && markdown.includes('### Refresh First') && markdown.includes('### Review Notes') && markdown.includes('### Read First') && markdown.includes('## Agent Feedback') && markdown.includes('advisory only') && markdown.includes('Staleness: stale') && markdown.includes('old records') && markdown.includes('### Correction Themes') && markdown.includes('### Promotion Candidates') && markdown.includes('confidence: high') && markdown.includes('evidence: 2') && markdown.includes('Invalid lines skipped: 4') && markdown.includes('Agents: smith_reviewer: 1, warden_reviewer: 1') && markdown.includes('privacy-boundary') && markdown.includes('invalid-schema') && !markdown.includes('example.internal') && markdown.includes('## Sources') && markdown.includes('Project learnings:') && markdown.includes('Agent feedback:') && markdown.includes('Code map history:') && markdown.includes('## Artifacts')],
   ['cli json works', cliJson.schema_version === '1' && cliJson.artifacts.json.endsWith('project-intelligence-rollup.json')],
   ['custom out does not collide', custom.artifacts.json === customOut && custom.artifacts.markdown === `${customOut}.md` && fs.existsSync(custom.artifacts.json) && fs.existsSync(custom.artifacts.markdown)],
   ['refresh records one code-map snapshot', historyAfterRefresh === historyBeforeRefresh + 1],

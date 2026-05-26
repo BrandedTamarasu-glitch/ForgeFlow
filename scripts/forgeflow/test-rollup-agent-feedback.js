@@ -11,10 +11,10 @@ const {
 
 const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-agent-feedback-rollup-'));
 fs.writeFileSync(path.join(projectDir, 'agent-feedback.jsonl'), [
-  JSON.stringify({ schema_version: '1', agent: 'smith_reviewer', signal: 'useful', summary: 'Explained query risk clearly', confidence: 'high', evidence_count: 2 }),
-  JSON.stringify({ schema_version: '1', agent: 'smith_reviewer', signal: 'incorrect', summary: 'Flagged a safe query as unsafe', confidence: 'high', evidence_count: 2 }),
-  JSON.stringify({ schema_version: '1', agent: 'warden_reviewer', signal: 'unclear', summary: 'Asked for proof without naming the boundary', confidence: 'medium', evidence_count: 1 }),
-  JSON.stringify({ schema_version: '1', agent: 'atlas_reviewer', signal: 'ignored', summary: 'Checked /home/corye/.ssh/config during review', confidence: 'medium', evidence_count: 2 }),
+  JSON.stringify({ schema_version: '1', ts: '2026-05-20T00:00:00Z', agent: 'smith_reviewer', signal: 'useful', summary: 'Explained query risk clearly', confidence: 'high', evidence_count: 2 }),
+  JSON.stringify({ schema_version: '1', ts: '2026-05-20T00:00:00Z', agent: 'smith_reviewer', signal: 'incorrect', summary: 'Flagged a safe query as unsafe', confidence: 'high', evidence_count: 2 }),
+  JSON.stringify({ schema_version: '1', ts: '2026-04-01T00:00:00Z', agent: 'warden_reviewer', signal: 'unclear', summary: 'Asked for proof without naming the boundary', confidence: 'medium', evidence_count: 1 }),
+  JSON.stringify({ schema_version: '1', ts: '2026-05-20T00:00:00Z', agent: 'atlas_reviewer', signal: 'ignored', summary: 'Checked /home/corye/.ssh/config during review', confidence: 'medium', evidence_count: 2 }),
   '{bad',
   JSON.stringify({ schema_version: '1', agent: 'warden_reviewer', signal: 'incorrect', summary: 'Review https://example.internal/team', confidence: 'high', evidence_count: 2 }),
 ].join('\n'));
@@ -46,11 +46,14 @@ const checks = [
   ['counts signals', result.by_signal.useful === 1 && result.by_signal.incorrect === 1 && result.by_signal.unclear === 1 && result.by_signal.ignored === 1],
   ['counts agents', result.by_agent.smith_reviewer === 2 && result.by_agent.warden_reviewer === 1],
   ['counts quality', result.promotable === 3 && result.corrective === 3 && result.agents.smith_reviewer.corrective === 1],
+  ['summarizes correction themes', result.correction_themes.length >= 2 && result.correction_themes.some((item) => item.theme.includes('flagged a safe query') && item.manual_promotion.includes('human confirms'))],
+  ['summarizes promotion candidates', result.promotion_candidates.length === 3 && result.promotion_candidates.every((item) => item.manual_promotion.includes('--promote'))],
+  ['summarizes stale markers', result.stale_markers.status === 'stale' && result.stale_markers.stale_records === 1 && result.stale_markers.missing_timestamp_records === 0],
   ['skips invalid and private lines', result.skipped_lines === 2 && result.skipped_reasons.some((item) => item.reason === 'malformed-json') && result.skipped_reasons.some((item) => item.reason === 'privacy-boundary')],
   ['latest examples are safe', result.latest_examples.length === 4 && result.latest_examples.some((item) => item.summary.includes('redacted feedback summary')) && !JSON.stringify(result).includes('example.internal') && !JSON.stringify(result).includes('/home/corye/.ssh/config')],
   ['public safe summary redacts heuristic misses', publicSafeSummary('path=/home/corye/.ssh/config').includes('redacted feedback summary') && publicSafeSummary('Checked /home/corye/.ssh/config').includes('redacted feedback summary')],
   ['status paths covered', missing.status === 'missing' && empty.status === 'empty' && invalid.status === 'invalid'],
-  ['markdown renders advisory rollup', markdown.includes('# Forgeflow Agent Feedback Rollup') && markdown.includes('Advisory only') && markdown.includes('smith_reviewer') && markdown.includes('Skipped lines: 2') && !markdown.includes('example.internal')],
+  ['markdown renders advisory rollup', markdown.includes('# Forgeflow Agent Feedback Rollup') && markdown.includes('Advisory only') && markdown.includes('smith_reviewer') && markdown.includes('## Correction Themes') && markdown.includes('## Promotion Candidates') && markdown.includes('## Staleness') && markdown.includes('Skipped lines: 2') && !markdown.includes('example.internal')],
   ['custom output works', custom.artifacts.json === customOut && custom.artifacts.markdown === customOut.replace(/\.json$/, '.md') && fs.existsSync(custom.artifacts.json)],
 ];
 
