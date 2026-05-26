@@ -1,11 +1,15 @@
 #!/usr/bin/env node
 const path = require('path');
 const os = require('os');
+const fs = require('fs');
+const { spawnSync } = require('child_process');
 const { runHealthCheck } = require('./health-check');
 const { getVersionStatus } = require('./forgeflow-version');
+const { RUNTIME_HELPERS, manifestEntry } = require('./install-manifest');
+const { assertSafeDirectory } = require('./file-safety');
 
 function usage() {
-  console.error('Usage: render-guided-repair.js [--root <dir>] [--install-root <dir>] [--home <dir>] [--json]');
+  console.error('Usage: render-guided-repair.js [--root <dir>] [--install-root <dir>] [--home <dir>] [--no-live-install] [--json]');
 }
 
 function requireValue(argv, name, index) {
@@ -19,6 +23,7 @@ function parseArgs(argv) {
     root: process.cwd(),
     installRoot: '',
     home: '',
+    liveInstall: true,
     json: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
@@ -34,6 +39,8 @@ function parseArgs(argv) {
       i += 1;
     } else if (arg === '--json') {
       opts.json = true;
+    } else if (arg === '--no-live-install') {
+      opts.liveInstall = false;
     } else if (arg === '--help' || arg === '-h') {
       usage();
       process.exit(0);
@@ -50,6 +57,15 @@ function addStep(steps, severity, title, command, reason, clears, actionType = '
   steps.push({ severity, title, action_type: actionType, command, reason, clears });
 }
 
+function mergeStepReason(steps, command, reason) {
+  const step = steps.find((item) => item.command === command && item.severity === 'fail');
+  if (!step || !reason) return false;
+  if (!String(step.reason || '').includes(reason)) {
+    step.reason = `${step.reason || 'Repair required.'} ${reason}`;
+  }
+  return true;
+}
+
 function severityRank(value) {
   return { ok: 0, info: 0, warn: 1, fail: 2 }[value] ?? 1;
 }
@@ -58,6 +74,91 @@ function summarizeStatus(version, health) {
   if (version.status === 'corrupt-version' || health.status === 'fail') return 'fail';
   if (['repair-needed', 'outdated', 'not-installed', 'installed-unknown-upstream'].includes(version.status) || health.recommendations.length > 0) return 'warn';
   return 'pass';
+}
+
+function syntaxCheckEnv() {
+  const env = { ...process.env };
+  delete env.NODE_OPTIONS;
+  delete env.NODE_PATH;
+  return env;
+}
+
+function verifyInstalledRuntime(installRoot) {
+  const helperRoot = path.join(installRoot, 'forgeflow', 'scripts', 'forgeflow');
+  try {
+    assertSafeDirectory(helperRoot);
+  } catch (err) {
+    return {
+      status: 'fail',
+      helper_root: helperRoot,
+      checked: 0,
+      failures: [{
+        name: 'helper-root',
+        source: 'scripts/forgeflow/',
+        status: 'fail',
+        path: helperRoot,
+        reason: err.message,
+      }],
+      checks: [],
+    };
+  }
+  const cleanEnv = syntaxCheckEnv();
+  const checks = RUNTIME_HELPERS.map((source) => {
+    const entry = manifestEntry(source, installRoot);
+    const helper = path.basename(source);
+    const file = entry ? entry.destination : path.join(helperRoot, helper);
+    if (!fs.existsSync(file)) {
+      return {
+        name: helper,
+        source,
+        status: 'fail',
+        path: file,
+        reason: 'installed helper is missing',
+      };
+    }
+    const stat = fs.lstatSync(file);
+    if (!stat.isFile() || stat.isSymbolicLink()) {
+      return {
+        name: helper,
+        source,
+        status: 'fail',
+        path: file,
+        reason: 'installed helper is not a regular file',
+      };
+    }
+    const result = source.endsWith('.sh')
+      ? spawnSync('bash', ['-n', file], { encoding: 'utf8', env: cleanEnv })
+      : spawnSync(process.execPath, ['--check', file], { encoding: 'utf8', env: cleanEnv });
+    if (result.status !== 0) {
+      return {
+        name: helper,
+        source,
+        status: 'fail',
+        path: file,
+        reason: (result.stderr || result.stdout || 'installed helper failed syntax check').trim(),
+      };
+    }
+    return {
+      name: helper,
+      source,
+      status: 'pass',
+      path: file,
+      reason: '',
+    };
+  });
+  const failed = checks.filter((check) => check.status === 'fail');
+  return {
+    status: failed.length > 0 ? 'fail' : 'pass',
+    helper_root: helperRoot,
+    checked: checks.length,
+    failures: failed,
+    checks,
+  };
+}
+
+function summarizeOverallStatus(version, health, installedRuntime) {
+  if (installedRuntime && installedRuntime.status === 'fail') return 'fail';
+  return summarizeStatus(version, health);
 }
 
 async function buildGuidedRepair(opts = {}) {
@@ -72,6 +173,13 @@ async function buildGuidedRepair(opts = {}) {
     root,
     installRoot,
   });
+  const installedRuntime = opts.liveInstall === false ? {
+    status: 'skipped',
+    helper_root: path.join(installRoot, 'forgeflow', 'scripts', 'forgeflow'),
+    checked: 0,
+    failures: [],
+    checks: [],
+  } : verifyInstalledRuntime(installRoot);
   const steps = [];
 
   if (version.status === 'repair-needed') {
@@ -86,13 +194,38 @@ async function buildGuidedRepair(opts = {}) {
     addStep(steps, 'warn', 'Check version online', '/forgeflow-version', 'Offline repair planner could not compare upstream.', 'Version helper can compare upstream status.');
   }
 
-  for (const check of health.checks || []) {
-    if (check.status !== 'fail') continue;
-    const command = check.fix && check.fix.includes('update-forgeflow') ? '/update-forgeflow --repair' : '/forgeflow-health --fix';
-    addStep(steps, 'fail', `Fix health check: ${check.name}`, command, check.reason || check.fix || 'Health check failed.', 'Rerun /forgeflow-health and confirm this check passes.');
+  const healthFailures = (health.checks || []).filter((check) => check.status === 'fail');
+  const installFailures = healthFailures.filter((check) => check.fix && check.fix.includes('update-forgeflow'));
+  const localFailures = healthFailures.filter((check) => !(check.fix && check.fix.includes('update-forgeflow')));
+  if (installFailures.length > 0) {
+    addStep(
+      steps,
+      'fail',
+      'Repair missing managed files',
+      '/update-forgeflow --repair',
+      `${installFailures.length} managed install check(s) failed.`,
+      'Rerun /forgeflow-health and confirm installed managed files pass.',
+    );
+  }
+  for (const check of localFailures) {
+    addStep(steps, 'fail', `Fix health check: ${check.name}`, '/forgeflow-health --fix', check.reason || check.fix || 'Health check failed.', 'Rerun /forgeflow-health and confirm this check passes.');
   }
   for (const rec of health.recommendations || []) {
     addStep(steps, rec.severity === 'fail' ? 'fail' : 'warn', rec.action || 'Health recommendation', rec.command || '/forgeflow-health', rec.reason || rec.evidence || 'Health recommendation is active.', rec.clears || 'Rerun /forgeflow-health.');
+  }
+
+  if (installedRuntime.status === 'fail') {
+    const reason = `${installedRuntime.failures.length} installed runtime helper check(s) failed.`;
+    if (!mergeStepReason(steps, '/update-forgeflow --repair', reason)) {
+      addStep(
+        steps,
+        'fail',
+        'Repair installed runtime helpers',
+        '/update-forgeflow --repair',
+        reason,
+        'Installed runtime helpers exist and pass syntax verification.',
+      );
+    }
   }
 
   addStep(steps, 'info', 'Run downstream smoke after repairs', '/forgeflow-smoke', 'Smoke can refresh project-local readiness artifacts, so guided repair leaves it as an explicit follow-up.', 'Downstream smoke passes.');
@@ -123,9 +256,11 @@ async function buildGuidedRepair(opts = {}) {
     root,
     home,
     install_root: installRoot,
-    status: summarizeStatus(version, health),
+    status: summarizeOverallStatus(version, health, installedRuntime),
     version_status: version.status,
     health_status: health.status,
+    installed_runtime_status: installedRuntime.status,
+    installed_runtime: installedRuntime,
     smoke_status: 'not-run',
     steps,
     boundary: 'Guided repair is advisory and non-mutating. Run commands explicitly; settings.json changes remain manual.',
@@ -139,6 +274,7 @@ function renderMarkdown(result) {
     `Status: ${result.status}`,
     `Version: ${result.version_status}`,
     `Health: ${result.health_status}`,
+    `Installed runtime: ${result.installed_runtime_status}`,
     `Smoke: ${result.smoke_status}`,
     '',
     result.boundary,

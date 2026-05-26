@@ -1,12 +1,12 @@
 ---
 name: forgeflow-repair
-description: Show a non-mutating guided repair plan for Forgeflow install, health, smoke, and manual settings issues
+description: Show a non-mutating guided repair plan for Forgeflow install, installed runtime helpers, health, smoke, and manual settings issues
 argument-hint: "[--json]"
 allowed-tools:
   - Bash
 ---
 
-Run a guided repair plan. This command does not mutate files and never edits `settings.json`.
+Run a guided repair plan. This command verifies installed runtime helper availability and syntax, does not mutate files, and never edits `settings.json`.
 
 ```bash
 HELPER_DIR="scripts/forgeflow"
