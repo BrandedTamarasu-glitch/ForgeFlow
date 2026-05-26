@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow - V4.3.11 Changelog</title>
+  <style>
+    body { background: #0d0d0d; color: #ddd8cc; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.65; margin: 0; }
+    main { max-width: 820px; margin: 0 auto; padding: 72px 32px 96px; }
+    .version { color: #7a7670; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
+    h1 { font-size: 40px; font-weight: 400; line-height: 1.15; margin: 14px 0 20px; }
+    h2 { border-top: 1px solid #303030; color: #f0a232; font-size: 18px; font-weight: 600; margin: 42px 0 18px; padding-top: 28px; }
+    p, li { color: #c9c2b6; }
+    code { background: #1c1c1c; border: 1px solid #303030; border-radius: 4px; color: #f0c070; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 1px 5px; }
+    a { color: #f0a232; text-decoration: underline; text-underline-offset: 0.16em; }
+    .nav { display: flex; justify-content: space-between; margin-top: 52px; padding-top: 24px; border-top: 1px solid #303030; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="version">Forgeflow V4.3.11 · 26 May 2026</div>
+    <h1>Release: Project Intelligence And Adoption Decisions</h1>
+    <p>
+      Forgeflow 4.3.11 packages the net-new adoption track: context packs are easier to run from target checkouts, source smoke explains gate outcomes, project intelligence summarizes local guidance for review prep, and adoption packs now produce public-safe decision handoffs.
+    </p>
+
+    <h2>Context And Smoke</h2>
+    <ul>
+      <li><code>build-context-pack.js --root &lt;repo&gt;</code> supports explicit target roots for cross-checkout review preparation.</li>
+      <li>Source smoke now includes installed-runtime dogfood coverage so packaged helper drift is caught before release.</li>
+      <li>Smoke and downstream gates report clearer pass, warn, and fail reasons with next actions.</li>
+    </ul>
+
+    <h2>Project Intelligence</h2>
+    <ul>
+      <li><code>build-project-intelligence.js</code> writes a compact review-prep rollup with trust state, freshness, Git provenance, top risks, hot files, validation patterns, and artifact pointers.</li>
+      <li>Agent feedback is consumed as advisory-only signal with confidence/evidence metadata, by-agent counts, skipped-line reasons, and schema/privacy revalidation before rollup.</li>
+      <li>Project-learning gate failures no longer hide unrelated freshness, import-gap, failure-digest, or context-advisor risks.</li>
+    </ul>
+
+    <h2>Adoption Pack</h2>
+    <ul>
+      <li><code>render-adoption-pack.js</code> now includes a public-safe summary, fixed decision vocabulary, small-team handoff checklist, and fill-in decision template.</li>
+      <li>Public-safe summaries avoid raw project identity, free-form support categories, private notes, and private host/path strings.</li>
+      <li>Generated handoff commands quote project names safely and preserve Claude Code and Codex runtime paths.</li>
+    </ul>
+
+    <h2>Validation</h2>
+    <ul>
+      <li>Full local release-gate validation passed before tagging.</li>
+      <li>Aegis verified the high-risk privacy and command-safety fixes for project intelligence and adoption summaries.</li>
+      <li>Arbiter and Compass approved the learning and adoption slices before release.</li>
+    </ul>
+
+    <div class="nav">
+      <a href="./v4.3.10.html">&larr; V4.3.10</a>
+      <span>V4.3.11</span>
+    </div>
+  </main>
+</body>
+</html>
