@@ -10,6 +10,7 @@ const {
   parseArgs,
   readinessState,
   renderMarkdown,
+  renderImplementationBriefStub,
   renderNextWorkView,
   reviewPrep,
   riskSignals,
@@ -119,6 +120,8 @@ const result = buildProjectIntelligence({ root, projectDir });
 process.chdir(previousCwd);
 const markdown = renderMarkdown(result);
 const nextWorkView = renderNextWorkView(result);
+const briefStub = renderImplementationBriefStub(result, 1);
+const missingBriefStub = renderImplementationBriefStub(result, 99);
 const latestReportPath = path.join(projectDir, 'context', 'latest', 'latest-insights-report.json');
 const latestReport = fs.existsSync(latestReportPath) ? JSON.parse(fs.readFileSync(latestReportPath, 'utf8')) : null;
 const customOut = path.join(projectDir, 'context', 'custom-rollup');
@@ -139,6 +142,14 @@ const cliNextWorkOpts = parseArgs([
   '--project-dir',
   projectDir,
   '--next-work',
+], { exitOnError: false });
+const cliBriefOpts = parseArgs([
+  '--root',
+  root,
+  '--project-dir',
+  projectDir,
+  '--brief',
+  '1',
 ], { exitOnError: false });
 const syntheticRisks = riskSignals({
   freshness: { issues: [{ message: 'Project freshness stale.' }] },
@@ -338,8 +349,11 @@ const checks = [
   ['review prep includes feedback notes', result.review_prep.review_notes.some((item) => item.includes('corrective agent-feedback') && item.includes('Advisory only')) && result.review_prep.review_notes.some((item) => item.includes('promotable')) && result.review_prep.review_notes.some((item) => item.includes('Correction theme:')) && result.review_prep.review_notes.some((item) => item.includes('Promotion candidate:')) && result.review_prep.review_notes.some((item) => item.includes('Agent-feedback staleness marker is stale') && item.includes('old records')) && result.review_prep.review_notes.some((item) => item.includes('agent-feedback line(s) were skipped')) && result.review_prep.review_notes.some((item) => item.includes('Flagged a safe query as unsafe') && item.includes('confidence: high') && item.includes('evidence: 2'))],
   ['markdown renders sections', markdown.includes('# Forgeflow Project Intelligence') && markdown.includes('not a source of truth') && markdown.includes('## Readiness') && markdown.includes('- State:') && markdown.includes('Clearing commands:') && markdown.includes('## Top Risks') && markdown.includes('## Review Prep') && markdown.includes('## Next Work Brief') && markdown.includes('## Next Work Items') && markdown.includes('Start with:') && markdown.includes('Validate with:') && markdown.includes('Boundary:') && markdown.includes('### Avoid First') && markdown.includes('### Proof Boundary') && markdown.includes('orientation only') && markdown.includes('### Refresh First') && markdown.includes('### Review Notes') && markdown.includes('### Read First') && markdown.includes('## Agent Feedback') && markdown.includes('advisory only') && markdown.includes('Staleness: stale') && markdown.includes('old records') && markdown.includes('### Correction Themes') && markdown.includes('### Promotion Candidates') && markdown.includes('confidence: high') && markdown.includes('evidence: 2') && markdown.includes('Invalid lines skipped: 4') && markdown.includes('Agents: smith_reviewer: 1, warden_reviewer: 1') && markdown.includes('privacy-boundary') && markdown.includes('invalid-schema') && !markdown.includes('example.internal') && markdown.includes('## Sources') && markdown.includes('Project learnings:') && markdown.includes('Agent feedback:') && markdown.includes('Code map history:') && markdown.includes('## Artifacts')],
   ['next work view renders compact candidates', nextWorkView.includes('# Forgeflow Next Work Items') && nextWorkView.includes('Readiness: needs-triage') && nextWorkView.includes('Advisory candidates only') && nextWorkView.includes('1. [medium]') && nextWorkView.includes('Start with:') && nextWorkView.includes('Validate with:') && nextWorkView.includes('Boundary:') && nextWorkView.includes(result.artifacts.json) && !nextWorkView.includes('## Agent Feedback')],
+  ['implementation brief stub renders selected candidate', briefStub.includes('# Forgeflow Implementation Brief Stub') && briefStub.includes('Candidate index: 1') && briefStub.includes('## Scope To Confirm') && briefStub.includes('## Start With') && briefStub.includes('src/auth/session.ts') && briefStub.includes('## Validate With') && briefStub.includes('## Proof Boundary') && briefStub.includes('advisory stub') && briefStub.includes(result.artifacts.json)],
+  ['implementation brief stub handles missing candidate', missingBriefStub.includes('No next-work candidate exists at this index') && missingBriefStub.includes('Available candidates:')],
   ['cli json works', cliJson.schema_version === '1' && cliJson.artifacts.json.endsWith('project-intelligence-rollup.json')],
   ['cli next work option parses', cliNextWorkOpts.nextWork === true && cliNextWorkOpts.json === false],
+  ['cli brief option parses', cliBriefOpts.briefIndex === 1 && cliBriefOpts.json === false],
   ['custom out does not collide', custom.artifacts.json === customOut && custom.artifacts.markdown === `${customOut}.md` && fs.existsSync(custom.artifacts.json) && fs.existsSync(custom.artifacts.markdown)],
   ['refresh records one code-map snapshot', historyAfterRefresh === historyBeforeRefresh + 1],
   ['risk synthesis combines sources', syntheticRisks.length >= 4 && syntheticRisks.some((item) => item.source === 'context-advisor')],

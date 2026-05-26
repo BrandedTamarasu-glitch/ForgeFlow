@@ -11,7 +11,7 @@ const VALID_FEEDBACK_SIGNALS = new Set(['useful', 'unclear', 'ignored', 'incorre
 const VALID_FEEDBACK_CONFIDENCE = new Set(['low', 'medium', 'high']);
 
 function usage() {
-  console.error('Usage: build-project-intelligence.js [--root <dir>] [--project-dir <dir>] [--out <path>] [--json] [--next-work]');
+  console.error('Usage: build-project-intelligence.js [--root <dir>] [--project-dir <dir>] [--out <path>] [--json] [--next-work] [--brief <index>]');
 }
 
 function argumentError(message, exitOnError) {
@@ -41,6 +41,7 @@ function parseArgs(argv, options = {}) {
     out: '',
     json: false,
     nextWork: false,
+    briefIndex: 0,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -57,6 +58,13 @@ function parseArgs(argv, options = {}) {
       opts.json = true;
     } else if (arg === '--next-work') {
       opts.nextWork = true;
+    } else if (arg === '--brief') {
+      const value = Number(requireValue(argv, arg, i, exitOnError));
+      if (!Number.isInteger(value) || value < 1) {
+        argumentError(`Invalid value for ${arg}: ${argv[i + 1] || ''}`, exitOnError);
+      }
+      opts.briefIndex = value;
+      i += 1;
     } else if (arg === '--help' || arg === '-h') {
       usage();
       if (exitOnError) process.exit(0);
@@ -800,6 +808,59 @@ function renderNextWorkView(intelligence) {
   return `${lines.join('\n').replace(/\n{3,}/g, '\n\n')}\n`;
 }
 
+function renderImplementationBriefStub(intelligence, index = 1) {
+  const items = intelligence.next_work_items || [];
+  const item = items[index - 1] || null;
+  const brief = intelligence.next_work_brief || {};
+  const lines = [
+    '# Forgeflow Implementation Brief Stub',
+    '',
+    `Generated at: ${intelligence.generated_at}`,
+    `Candidate index: ${index}`,
+    `Readiness: ${(intelligence.readiness || {}).state || 'unknown'}`,
+    '',
+    'This is an advisory stub from project intelligence. Confirm product intent, inspect current code, run focused validation, run full validation, and require review before treating work as complete.',
+    '',
+  ];
+  if (!item) {
+    lines.push('No next-work candidate exists at this index.');
+    lines.push(`Available candidates: ${items.length}`);
+    return `${lines.join('\n')}\n`;
+  }
+  lines.push('## Candidate', '');
+  lines.push(`- Title: ${item.title}`);
+  lines.push(`- Priority: ${item.priority || 'medium'}`);
+  lines.push(`- Source: ${item.source || 'project-intelligence'}`);
+  if (item.why) lines.push(`- Why: ${item.why}`);
+  lines.push('', '## Scope To Confirm', '');
+  lines.push('- Confirm the requested product outcome and exact acceptance criteria before editing.');
+  lines.push('- Keep the first implementation slice bounded to the candidate above unless current evidence requires a smaller prerequisite.');
+  lines.push('- Do not treat this generated stub as user approval for broad refactors or speculative features.');
+  lines.push('', '## Start With', '');
+  const startWith = [
+    ...(item.start_with || []),
+    ...(brief.read_first || []),
+  ].filter(Boolean).filter((value, itemIndex, list) => list.indexOf(value) === itemIndex).slice(0, 10);
+  lines.push(...(startWith.length > 0 ? startWith.map((value) => `- ${value}`) : ['- Inspect the current task surface and relevant files before editing.']));
+  lines.push('', '## Avoid First', '');
+  lines.push(...((brief.avoid_first || []).length > 0 ? brief.avoid_first.map((value) => `- ${value}`) : ['- Do not skip current code and validation evidence.']));
+  lines.push('', '## Validate With', '');
+  const validateWith = [
+    ...(item.validate_with || []),
+    ...(brief.validate_first || []),
+  ].filter(Boolean).filter((value, itemIndex, list) => list.indexOf(value) === itemIndex).slice(0, 10);
+  lines.push(...(validateWith.length > 0 ? validateWith.map((value) => `- ${value}`) : ['- Add focused validation for the selected slice, then run full validation before review.']));
+  lines.push('', '## Proof Boundary', '');
+  lines.push(`- ${item.proof_boundary || 'Advisory candidate only; verify against current code, tests, and review output.'}`);
+  for (const boundary of brief.proof_boundary || []) {
+    lines.push(`- ${boundary}`);
+  }
+  lines.push('', '## Artifacts', '');
+  lines.push(`- Project intelligence JSON: ${intelligence.artifacts ? intelligence.artifacts.json : '(missing)'}`);
+  lines.push(`- Project intelligence Markdown: ${intelligence.artifacts ? intelligence.artifacts.markdown : '(missing)'}`);
+  return `${lines.join('\n')}\n`;
+}
+
 function main() {
   const opts = parseArgs(process.argv.slice(2));
   const result = buildProjectIntelligence(opts);
@@ -807,6 +868,8 @@ function main() {
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   } else if (opts.nextWork) {
     process.stdout.write(renderNextWorkView(result));
+  } else if (opts.briefIndex) {
+    process.stdout.write(renderImplementationBriefStub(result, opts.briefIndex));
   } else {
     process.stdout.write(renderMarkdown(result));
   }
@@ -830,6 +893,7 @@ module.exports = {
   reviewPrep,
   readinessState,
   renderMarkdown,
+  renderImplementationBriefStub,
   renderNextWorkView,
   riskSignals,
   trustState,
