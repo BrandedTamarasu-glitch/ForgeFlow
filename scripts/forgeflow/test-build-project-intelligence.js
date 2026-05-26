@@ -5,6 +5,7 @@ const path = require('path');
 const {
   buildProjectIntelligence,
   collectRiskSignals,
+  nextWorkBrief,
   parseArgs,
   readinessState,
   renderMarkdown,
@@ -195,6 +196,44 @@ const syntheticPrep = reviewPrep({
   hot_files: ['src/auth/session.ts'],
   validation_patterns: ['Run auth regression tests before review.'],
 });
+const syntheticBrief = nextWorkBrief({
+  readiness: {
+    state: 'blocked',
+    clearing_commands: ['forgeflow-trends --refresh'],
+  },
+  review_prep: {
+    refresh_first: ['forgeflow-trends --refresh'],
+    read_first: ['src/auth/session.ts'],
+    validate_first: ['Run auth regression tests before review.'],
+  },
+  guidance: {
+    project_learnings_gate: 'fail',
+  },
+  top_risks: [{ source: 'import-gaps' }],
+  hot_files: ['src/auth/session.ts'],
+  agent_feedback: {
+    by_signal: { incorrect: 1 },
+  },
+});
+const cleanBrief = nextWorkBrief({
+  readiness: {
+    state: 'ready',
+    clearing_commands: [],
+  },
+  review_prep: {
+    refresh_first: [],
+    read_first: [],
+    validate_first: [],
+  },
+  guidance: {
+    project_learnings_gate: 'pass',
+  },
+  top_risks: [],
+  hot_files: [],
+  agent_feedback: {
+    by_signal: {},
+  },
+});
 const readyState = readinessState({
   freshness: { status: 'current' },
   latest_insights: { check_status: 'pass', freshness: { status: 'current' } },
@@ -269,8 +308,9 @@ const checks = [
   ['includes agent feedback summary', result.agent_feedback.status === 'present' && result.agent_feedback.records === 2 && result.agent_feedback.invalid_lines === 4 && result.agent_feedback.by_signal.incorrect === 1 && !result.agent_feedback.by_signal.undefined && result.agent_feedback.by_agent.warden_reviewer === 1 && result.agent_feedback.promotable === 1 && result.agent_feedback.latest.some((item) => item.agent === 'smith_reviewer')],
   ['includes feedback learning signals', result.agent_feedback.correction_themes.some((item) => item.theme.includes('flagged a safe query') && item.manual_promotion.includes('human confirms')) && result.agent_feedback.promotion_candidates.some((item) => item.agent === 'smith_reviewer' && item.manual_promotion.includes('--promote')) && result.agent_feedback.stale_markers.status === 'stale'],
   ['includes review prep', result.review_prep && result.review_prep.trust_summary && result.review_prep.refresh_first.length > 0 && result.review_prep.read_first.length > 0 && result.review_prep.validate_first.length > 0],
+  ['includes next work brief', result.next_work_brief && result.next_work_brief.state === result.readiness.state && !result.next_work_brief.read_first.includes('forgeflow-code-map') && result.next_work_brief.read_first.some((item) => item.includes('src/auth/session.ts')) && result.next_work_brief.avoid_first.some((item) => item.includes('static import gaps')) && !result.next_work_brief.validate_first.includes('forgeflow-code-map') && result.next_work_brief.proof_boundary.some((item) => item.includes('orientation only'))],
   ['review prep includes feedback notes', result.review_prep.review_notes.some((item) => item.includes('corrective agent-feedback') && item.includes('Advisory only')) && result.review_prep.review_notes.some((item) => item.includes('promotable')) && result.review_prep.review_notes.some((item) => item.includes('Correction theme:')) && result.review_prep.review_notes.some((item) => item.includes('Promotion candidate:')) && result.review_prep.review_notes.some((item) => item.includes('Agent-feedback staleness marker is stale') && item.includes('old records')) && result.review_prep.review_notes.some((item) => item.includes('agent-feedback line(s) were skipped')) && result.review_prep.review_notes.some((item) => item.includes('Flagged a safe query as unsafe') && item.includes('confidence: high') && item.includes('evidence: 2'))],
-  ['markdown renders sections', markdown.includes('# Forgeflow Project Intelligence') && markdown.includes('not a source of truth') && markdown.includes('## Readiness') && markdown.includes('- State:') && markdown.includes('Clearing commands:') && markdown.includes('## Top Risks') && markdown.includes('## Review Prep') && markdown.includes('### Refresh First') && markdown.includes('### Review Notes') && markdown.includes('### Read First') && markdown.includes('## Agent Feedback') && markdown.includes('advisory only') && markdown.includes('Staleness: stale') && markdown.includes('old records') && markdown.includes('### Correction Themes') && markdown.includes('### Promotion Candidates') && markdown.includes('confidence: high') && markdown.includes('evidence: 2') && markdown.includes('Invalid lines skipped: 4') && markdown.includes('Agents: smith_reviewer: 1, warden_reviewer: 1') && markdown.includes('privacy-boundary') && markdown.includes('invalid-schema') && !markdown.includes('example.internal') && markdown.includes('## Sources') && markdown.includes('Project learnings:') && markdown.includes('Agent feedback:') && markdown.includes('Code map history:') && markdown.includes('## Artifacts')],
+  ['markdown renders sections', markdown.includes('# Forgeflow Project Intelligence') && markdown.includes('not a source of truth') && markdown.includes('## Readiness') && markdown.includes('- State:') && markdown.includes('Clearing commands:') && markdown.includes('## Top Risks') && markdown.includes('## Review Prep') && markdown.includes('## Next Work Brief') && markdown.includes('### Avoid First') && markdown.includes('### Proof Boundary') && markdown.includes('orientation only') && markdown.includes('### Refresh First') && markdown.includes('### Review Notes') && markdown.includes('### Read First') && markdown.includes('## Agent Feedback') && markdown.includes('advisory only') && markdown.includes('Staleness: stale') && markdown.includes('old records') && markdown.includes('### Correction Themes') && markdown.includes('### Promotion Candidates') && markdown.includes('confidence: high') && markdown.includes('evidence: 2') && markdown.includes('Invalid lines skipped: 4') && markdown.includes('Agents: smith_reviewer: 1, warden_reviewer: 1') && markdown.includes('privacy-boundary') && markdown.includes('invalid-schema') && !markdown.includes('example.internal') && markdown.includes('## Sources') && markdown.includes('Project learnings:') && markdown.includes('Agent feedback:') && markdown.includes('Code map history:') && markdown.includes('## Artifacts')],
   ['cli json works', cliJson.schema_version === '1' && cliJson.artifacts.json.endsWith('project-intelligence-rollup.json')],
   ['custom out does not collide', custom.artifacts.json === customOut && custom.artifacts.markdown === `${customOut}.md` && fs.existsSync(custom.artifacts.json) && fs.existsSync(custom.artifacts.markdown)],
   ['refresh records one code-map snapshot', historyAfterRefresh === historyBeforeRefresh + 1],
@@ -278,6 +318,8 @@ const checks = [
   ['risk synthesis keeps current risks when learning gate fails', blockedLearningRisks[0].next_action === 'forgeflow-learnings --project --check' && blockedLearningRisks.some((item) => item.source === 'project-freshness') && !blockedLearningRisks.some((item) => item.summary.includes('Should not be trusted'))],
   ['readiness uses uncapped risks', longRiskList.length > truncatedLongRiskList.length && truncatedLongRiskList.every((item) => item.severity !== 'high') && fullRiskReadinessState.state === 'blocked' && fullRiskReadinessState.reasons.some((item) => item.includes('High risk after display cap'))],
   ['review prep dedupes and combines priorities', syntheticPrep.read_first.filter((item) => item === 'src/auth/session.ts').length === 1 && syntheticPrep.refresh_first.includes('forgeflow-trends --refresh') && syntheticPrep.refresh_first.includes('forgeflow-code-map') && !syntheticPrep.refresh_first.includes('Split scope before review.') && syntheticPrep.review_notes.includes('Split scope before review.') && syntheticPrep.review_notes.some((item) => item.includes('corrective agent-feedback')) && syntheticPrep.validate_first.includes('Run auth regression tests before review.')],
+  ['next work brief keeps lanes semantic', !syntheticBrief.read_first.includes('forgeflow-trends --refresh') && syntheticBrief.read_first.includes('src/auth/session.ts') && syntheticBrief.avoid_first.some((item) => item.includes('unblocked')) && syntheticBrief.avoid_first.some((item) => item.includes('learning quality gate')) && syntheticBrief.avoid_first.some((item) => item.includes('static import gaps')) && syntheticBrief.avoid_first.some((item) => item.includes('prior agent guidance')) && syntheticBrief.validate_first.includes('Run auth regression tests before review.') && !syntheticBrief.validate_first.includes('forgeflow-trends --refresh') && syntheticBrief.proof_boundary.some((item) => item.includes('current code'))],
+  ['next work brief has orientation fallback', cleanBrief.avoid_first.length === 1 && cleanBrief.avoid_first[0].includes('orientation only')],
   ['readiness states classify signals', readyState.state === 'ready' && needsRefreshState.state === 'needs-refresh' && needsRefreshState.clearing_commands.includes('forgeflow-trends --refresh') && needsTriageState.state === 'needs-triage' && needsTriageState.clearing_commands.includes('forgeflow-code-map') && budgetTriageState.state === 'needs-triage' && budgetTriageState.evidence.context_budget === 'warn' && blockedState.state === 'blocked' && warnLatestInsightsState.state === 'blocked' && warnLatestInsightsState.clearing_commands.includes('forgeflow-trends --refresh') && blockedState.clearing_commands.includes('forgeflow-trends --refresh')],
   ['trust current when clean', trustState({ latest_insights: { status: 'injected', check_status: 'pass', freshness: { status: 'current' } }, freshness: { status: 'current' } }, { check: { status: 'pass' } }, []) === 'current'],
   ['trust blocked on failed gate', trustState({ latest_insights: { status: 'injected', check_status: 'fail', freshness: { status: 'current' } }, freshness: { status: 'current' } }, { check: { status: 'pass' } }, []) === 'blocked'],

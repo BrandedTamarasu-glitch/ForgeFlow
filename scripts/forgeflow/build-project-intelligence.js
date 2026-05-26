@@ -446,6 +446,49 @@ function reviewPrep(trends, intelligenceDraft) {
   };
 }
 
+function nextWorkBrief(intelligenceDraft) {
+  const readiness = intelligenceDraft.readiness || {};
+  const review = intelligenceDraft.review_prep || {};
+  const readFirst = [
+    ...(review.read_first || []),
+    ...(intelligenceDraft.hot_files || []),
+  ].filter(Boolean).filter((value, index, list) => list.indexOf(value) === index).slice(0, 8);
+  const avoidFirst = [];
+  if (readiness.state && readiness.state !== 'ready') {
+    avoidFirst.push(`Do not start broad implementation until readiness is ${readiness.state === 'blocked' ? 'unblocked' : 'triaged'}; clear ${((readiness.clearing_commands || [])[0] || 'the readiness findings')} first.`);
+  }
+  if ((intelligenceDraft.guidance || {}).project_learnings_gate !== 'pass') {
+    avoidFirst.push('Do not treat project learnings as agent guidance until the learning quality gate passes.');
+  }
+  if ((intelligenceDraft.top_risks || []).some((risk) => risk.source === 'import-gaps')) {
+    avoidFirst.push('Do not treat static import gaps as runtime failures without checking the referenced files or bundler aliases.');
+  }
+  const corrective = intelligenceDraft.agent_feedback && intelligenceDraft.agent_feedback.by_signal
+    ? (intelligenceDraft.agent_feedback.by_signal.incorrect || 0) + (intelligenceDraft.agent_feedback.by_signal.unclear || 0) + (intelligenceDraft.agent_feedback.by_signal.ignored || 0)
+    : 0;
+  if (corrective > 0) {
+    avoidFirst.push('Do not reuse prior agent guidance blindly; inspect corrective feedback and verify against current code.');
+  }
+  if (avoidFirst.length === 0) {
+    avoidFirst.push('Do not skip current code and validation evidence; this brief is orientation only.');
+  }
+  const validateFirst = (review.validate_first || [])
+    .filter(Boolean)
+    .filter((value, index, list) => list.indexOf(value) === index)
+    .slice(0, 8);
+  return {
+    state: readiness.state || 'unknown',
+    read_first: readFirst,
+    avoid_first: avoidFirst.slice(0, 8),
+    validate_first: validateFirst,
+    proof_boundary: [
+      'Use this brief as orientation only to choose what to inspect first, not as proof that a change is safe.',
+      'Verify every implementation decision against current code, focused tests, full validation, and review evidence.',
+      'Treat project learnings, topology, failure digest, and agent feedback as advisory local artifacts.',
+    ],
+  };
+}
+
 function buildProjectIntelligence(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const projectDir = path.resolve(opts.projectDir || defaultProjectDir(root));
@@ -506,6 +549,7 @@ function buildProjectIntelligence(opts = {}) {
     },
   };
   intelligence.review_prep = reviewPrep(trends, intelligence);
+  intelligence.next_work_brief = nextWorkBrief(intelligence);
   fs.mkdirSync(path.dirname(jsonOut), { recursive: true });
   writeFileSafe(jsonOut, `${JSON.stringify(intelligence, null, 2)}\n`);
   writeFileSafe(markdownOut, renderMarkdown(intelligence));
@@ -554,6 +598,12 @@ function renderMarkdown(intelligence) {
   lines.push('', '### Review Notes', '', ...(intelligence.review_prep.review_notes.length > 0 ? intelligence.review_prep.review_notes.map((item) => `- ${item}`) : ['- (none)']));
   lines.push('', '### Read First', '', ...(intelligence.review_prep.read_first.length > 0 ? intelligence.review_prep.read_first.map((item) => `- ${item}`) : ['- (none)']));
   lines.push('', '### Validate First', '', ...(intelligence.review_prep.validate_first.length > 0 ? intelligence.review_prep.validate_first.map((item) => `- ${item}`) : ['- (none)']));
+  lines.push('', '## Next Work Brief', '');
+  lines.push(`- State: ${intelligence.next_work_brief.state}`);
+  lines.push('', '### Read First', '', ...(intelligence.next_work_brief.read_first.length > 0 ? intelligence.next_work_brief.read_first.map((item) => `- ${item}`) : ['- (none)']));
+  lines.push('', '### Avoid First', '', ...(intelligence.next_work_brief.avoid_first.length > 0 ? intelligence.next_work_brief.avoid_first.map((item) => `- ${item}`) : ['- (none)']));
+  lines.push('', '### Validate First', '', ...(intelligence.next_work_brief.validate_first.length > 0 ? intelligence.next_work_brief.validate_first.map((item) => `- ${item}`) : ['- (none)']));
+  lines.push('', '### Proof Boundary', '', ...intelligence.next_work_brief.proof_boundary.map((item) => `- ${item}`));
   lines.push('', '## Recommended Next Actions', '', ...(intelligence.recommended_next_actions.length > 0 ? intelligence.recommended_next_actions.map((item) => `- ${item}`) : ['- (none)']));
   lines.push('', '## Validation Patterns', '', ...(intelligence.validation_patterns.length > 0 ? intelligence.validation_patterns.map((item) => `- ${item}`) : ['- (none)']));
   lines.push('', '## Agent Feedback', '');
@@ -621,6 +671,7 @@ module.exports = {
   buildProjectIntelligence,
   collectRiskSignals,
   parseArgs,
+  nextWorkBrief,
   reviewPrep,
   readinessState,
   renderMarkdown,
