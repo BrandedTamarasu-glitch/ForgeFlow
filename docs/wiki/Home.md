@@ -70,6 +70,29 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 - [Local Data And Privacy](Local-Data-And-Privacy)
 - [Roadmap](Roadmap)
 
+## Role Paths
+
+Use these entry points when you know what job you are trying to do:
+
+- New users: [Why Forgeflow](Why-Forgeflow), [Quick Start](Quick-Start), [Package And Release Onboarding](Package-Release-Onboarding), [Demos](Demos)
+- Claude Code users: [Quick Start](Quick-Start), [Migration Guide](Migration-Guide), [Settings And Recovery](Settings-And-Recovery), [Workflow Commands](Workflow-Commands)
+- Codex users: [Codex First Run](Codex-First-Run), [Quick Start](Quick-Start), [Agent Roles](Agent-Roles), [Review Routing](Review-Routing)
+- Maintainers: [Maintainer Pilot](Maintainer-Pilot), [Branch Trial](Branch-Trial), [Field Validation](Field-Validation), [First-Run Friction](First-Run-Friction)
+- Reviewers: [Review Routing](Review-Routing), [Context Intelligence](Context-Intelligence), [Project Learnings](Project-Learnings), [Implementation Notes](Implementation-Notes)
+- Release owners: [Release Process](Release-Process), [Release Gate](Release-Gate), [Clean Checkout Install Verification](Clean-Checkout-Install-Verification), [Template Installer](Template-Installer)
+- Project leads: [Adoption Pack](Adoption-Pack), [Team Adoption Criteria](Team-Adoption-Criteria), [Pilot Adoption Comparison](Pilot-Adoption-Comparison), [Pilot Next Action Decision](Pilot-Next-Action-Decision)
+- Support owners: [Support Triage](Support-Triage), [Friction To Fix](Friction-To-Fix), [Team Privacy Boundaries](Team-Privacy-Boundaries), [Local Data And Privacy](Local-Data-And-Privacy)
+
+## Task Paths
+
+- Install or repair: [Quick Start](Quick-Start), [Settings And Recovery](Settings-And-Recovery), [Migration Guide](Migration-Guide)
+- Run a first real task: [Branch Trial](Branch-Trial), [User Paths](User-Paths), [Implementation Notes](Implementation-Notes)
+- Prepare review context: [Context Intelligence](Context-Intelligence), [Context Budget Examples](Context-Budget-Examples), [Common Stack Examples](Common-Stack-Examples)
+- Understand local learning: [Project Learnings](Project-Learnings), [Evaluation Sharing](Evaluation-Sharing), [Evaluation Summary Collection](Evaluation-Summary-Collection)
+- Compare outcomes: [Workflow Comparison](Workflow-Comparison), [Public-Safe Examples](Public-Examples), [Pilot Evidence Log](Pilot-Evidence-Log)
+- Decide whether to expand: [Pilot Public Summary](Pilot-Public-Summary), [Pilot Support Rollup](Pilot-Support-Rollup), [Adoption Pack](Adoption-Pack)
+- Plan future work: [Roadmap](Roadmap), [CI And Headless Deferrals](CI-Headless-Deferrals), [Dashboard](Dashboard)
+
 ## Core Idea
 
 Forgeflow separates software delivery into phases and assigns each phase to agents with explicit responsibilities. This keeps planning, implementation, validation, and final judgment from collapsing into one overbroad prompt.
