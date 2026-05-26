@@ -8,7 +8,7 @@ const { RUNTIME_HELPERS, isManagedSource } = require('./install-manifest');
 const MAX_OUTPUT_CHARS = 1200;
 
 function usage() {
-  console.error('Usage: render-release-readiness.js [--root <repo>] [--plan-only] [--json]');
+  console.error('Usage: render-release-readiness.js [--root <repo>] [--plan-only] [--json] [--baseline <json>]');
 }
 
 function requireValue(argv, name, index) {
@@ -22,6 +22,7 @@ function parseArgs(argv) {
     root: process.cwd(),
     planOnly: false,
     json: false,
+    baseline: '',
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -32,6 +33,9 @@ function parseArgs(argv) {
       opts.planOnly = true;
     } else if (arg === '--json') {
       opts.json = true;
+    } else if (arg === '--baseline') {
+      opts.baseline = path.resolve(requireValue(argv, arg, i));
+      i += 1;
     } else if (arg === '--help' || arg === '-h') {
       usage();
       process.exit(0);
@@ -176,6 +180,109 @@ function summarizeCategory(items) {
   };
 }
 
+function checkKey(item) {
+  return `${item.category || 'unknown'}\n${item.command || ''}`;
+}
+
+function baselineProvenance(baseline, baselinePath) {
+  return {
+    path: baselinePath || '',
+    schema_version: baseline.schema_version || '',
+    generated_at: baseline.generated_at || '',
+    root: baseline.root || '',
+    status: baseline.status || '',
+    mode: baseline.mode || '',
+    command_count: baseline.command_count || 0,
+  };
+}
+
+function readBaselineResult(file) {
+  if (!file) return { result: null, error: '' };
+  try {
+    const stat = fs.lstatSync(file);
+    if (!stat.isFile() || stat.isSymbolicLink()) {
+      return { result: null, error: `Baseline must be a regular file: ${file}` };
+    }
+    return { result: JSON.parse(fs.readFileSync(file, 'utf8')), error: '' };
+  } catch (err) {
+    return { result: null, error: err.message };
+  }
+}
+
+function compareReleaseReadiness(current, baseline, baselinePath = '', baselineError = '') {
+  if (!baseline) {
+    return {
+      status: 'no-baseline',
+      baseline: {
+        path: baselinePath || '',
+        reason: baselineError || (baselinePath ? 'baseline unavailable' : 'no baseline provided'),
+      },
+      newly_failing: [],
+      cleared_blockers: [],
+      category_movement: [],
+    };
+  }
+
+  const baselineChecks = Array.isArray(baseline.checks) ? baseline.checks : [];
+  const currentChecks = Array.isArray(current.checks) ? current.checks : [];
+  const baselineFailures = new Map(baselineChecks.filter((item) => item.status === 'fail').map((item) => [checkKey(item), item]));
+  const currentFailures = new Map(currentChecks.filter((item) => item.status === 'fail').map((item) => [checkKey(item), item]));
+  const newlyFailing = [];
+  const clearedBlockers = [];
+  for (const [key, item] of currentFailures.entries()) {
+    if (!baselineFailures.has(key)) {
+      newlyFailing.push({
+        kind: blockerKind(item),
+        category: item.category,
+        command: item.command,
+        output: item.stderr || item.stdout || '',
+      });
+    }
+  }
+  for (const [key, item] of baselineFailures.entries()) {
+    if (!currentFailures.has(key)) {
+      clearedBlockers.push({
+        kind: blockerKind(item),
+        category: item.category,
+        command: item.command,
+      });
+    }
+  }
+
+  const categoryMovement = [];
+  const categoryNames = [...new Set([
+    ...Object.keys(baseline.categories || {}),
+    ...Object.keys(current.categories || {}),
+  ])].sort();
+  for (const name of categoryNames) {
+    const before = baseline.categories && baseline.categories[name] ? baseline.categories[name] : { status: 'missing', total: 0, failed: 0, planned: 0 };
+    const after = current.categories && current.categories[name] ? current.categories[name] : { status: 'missing', total: 0, failed: 0, planned: 0 };
+    if (
+      before.status !== after.status
+      || before.failed !== after.failed
+      || before.planned !== after.planned
+      || before.total !== after.total
+    ) {
+      categoryMovement.push({
+        category: name,
+        from_status: before.status,
+        to_status: after.status,
+        failed_delta: after.failed - before.failed,
+        planned_delta: after.planned - before.planned,
+        total_delta: after.total - before.total,
+      });
+    }
+  }
+
+  return {
+    status: newlyFailing.length > 0 ? 'regressed' : (clearedBlockers.length > 0 || categoryMovement.length > 0 ? 'changed' : 'unchanged'),
+    baseline: baselineProvenance(baseline, baselinePath),
+    newly_failing: newlyFailing,
+    cleared_blockers: clearedBlockers,
+    category_movement: categoryMovement,
+  };
+}
+
 function releaseToInstallPreflight(root) {
   const rootReal = fs.realpathSync(root);
   const missingSources = [];
@@ -313,7 +420,7 @@ function buildReleaseReadiness(opts = {}) {
   }
   const failures = checks.filter((item) => item.status === 'fail');
   const planned = checks.filter((item) => item.status === 'planned');
-  return {
+  const result = {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
     root,
@@ -333,6 +440,9 @@ function buildReleaseReadiness(opts = {}) {
     checks,
     boundary: 'Release readiness is advisory and non-mutating. It never tags, pushes, publishes, or calls GitHub.',
   };
+  const baselineRead = readBaselineResult(opts.baseline || '');
+  result.comparison = compareReleaseReadiness(result, baselineRead.result, opts.baseline || '', baselineRead.error);
+  return result;
 }
 
 function renderMarkdown(result) {
@@ -350,6 +460,27 @@ function renderMarkdown(result) {
   ];
   for (const [name, summary] of Object.entries(result.categories)) {
     lines.push(`- ${name}: ${summary.status} (${summary.total} checks, ${summary.failed} failed, ${summary.planned} planned)`);
+  }
+  lines.push('', '## Baseline Comparison', '');
+  if (!result.comparison || result.comparison.status === 'no-baseline') {
+    const baseline = result.comparison ? result.comparison.baseline || {} : {};
+    lines.push(`- No baseline compared: ${baseline.reason || 'no baseline provided'}.`);
+    if (baseline.path) lines.push(`- Baseline path: ${baseline.path}`);
+  } else {
+    lines.push(`- Status: ${result.comparison.status}`);
+    lines.push(`- Baseline: ${result.comparison.baseline.generated_at || '(unknown)'} ${result.comparison.baseline.status || '(unknown status)'} from ${result.comparison.baseline.path || '(inline)'}`);
+    lines.push(`- Newly failing: ${result.comparison.newly_failing.length}`);
+    for (const item of result.comparison.newly_failing) {
+      lines.push(`  - ${item.category}: ${item.command} (${item.kind})`);
+    }
+    lines.push(`- Cleared blockers: ${result.comparison.cleared_blockers.length}`);
+    for (const item of result.comparison.cleared_blockers) {
+      lines.push(`  - ${item.category}: ${item.command} (${item.kind})`);
+    }
+    lines.push(`- Category movement: ${result.comparison.category_movement.length}`);
+    for (const item of result.comparison.category_movement) {
+      lines.push(`  - ${item.category}: ${item.from_status} -> ${item.to_status} (failed ${item.failed_delta >= 0 ? '+' : ''}${item.failed_delta}, planned ${item.planned_delta >= 0 ? '+' : ''}${item.planned_delta}, total ${item.total_delta >= 0 ? '+' : ''}${item.total_delta})`);
+    }
   }
   lines.push('', '## Release To Install Preflight', '');
   if (result.install_preflight) {
@@ -402,6 +533,7 @@ module.exports = {
   commandCategory,
   blockerKind,
   clearingAction,
+  compareReleaseReadiness,
   parseArgs,
   releaseToInstallPreflight,
   releaseToInstallPreflightCheck,

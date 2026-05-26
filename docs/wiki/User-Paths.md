@@ -67,7 +67,7 @@ If implementation notes are missing or stale, refresh or repair them before ship
 
 1. Update version metadata and release notes.
 2. Run `/forgeflow-release-check`.
-3. Run `/forgeflow-release-readiness` to execute the release-check list and the release-to-install source preflight.
+3. Run `/forgeflow-release-readiness` to execute the release-check list and the release-to-install source preflight. Use the helper directly with `scripts/forgeflow/render-release-readiness.js --baseline <prior-json>` when you need newly failing, cleared, and category-movement comparison against a prior run.
 4. Render the public evaluation summary if release notes cite evaluation evidence.
 5. Run `/forgeflow-smoke --mode source` for source-tree release guards when you want a shorter local check.
 6. Tag and publish only after release checks pass.
