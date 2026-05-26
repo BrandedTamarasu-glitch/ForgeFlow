@@ -3,6 +3,7 @@ const fs = require('fs');
 const https = require('https');
 const os = require('os');
 const path = require('path');
+const { manifestEntry, RUNTIME_HELPERS } = require('./install-manifest');
 
 const DEFAULT_REPO = 'BrandedTamarasu-glitch/ForgeFlow';
 
@@ -98,6 +99,48 @@ function missingRequiredPaths(paths) {
     .map(([name, item]) => ({ name, path: item.path }));
 }
 
+function runtimeHelperInventory(home) {
+  const expected = RUNTIME_HELPERS.map((source) => {
+    const entry = manifestEntry(source, home);
+    let exists = false;
+    let regular_file = false;
+    let issue = 'missing';
+    if (entry && fs.existsSync(entry.destination)) {
+      exists = true;
+      const stat = fs.lstatSync(entry.destination);
+      regular_file = stat.isFile();
+      issue = regular_file ? '' : 'not-regular-file';
+    }
+    return {
+      source,
+      path: entry ? entry.destination : '',
+      exists,
+      regular_file,
+      issue,
+    };
+  });
+  const missing = expected.filter((item) => !item.regular_file).map(({ source, path: helperPath, issue }) => ({
+    source,
+    path: helperPath,
+    issue,
+  }));
+  return {
+    status: missing.length > 0 ? 'repair-needed' : 'complete',
+    expected: expected.length,
+    present: expected.length - missing.length,
+    missing,
+    repair_command: missing.length > 0 ? '/update-forgeflow --repair' : '',
+  };
+}
+
+function repairAction(result) {
+  const updateCommand = result.paths?.update_command?.exists;
+  const updater = result.paths?.updater?.exists;
+  if (updateCommand) return 'Run /update-forgeflow --repair.';
+  if (updater) return `Run ${result.paths.updater.path} --repair.`;
+  return 'Run scripts/forgeflow/update-forgeflow.js --repair from a local Forgeflow checkout.';
+}
+
 async function latestMain(repo) {
   const data = await request(`https://api.github.com/repos/${repo}/commits/main`);
   const sha = data.sha || '';
@@ -155,6 +198,7 @@ async function getVersionStatus(opts = {}) {
   result.path_status = {
     missing_required: missingRequiredPaths(result.paths),
   };
+  result.runtime_helpers = runtimeHelperInventory(home);
 
   if (!opts.offline) {
     try {
@@ -181,9 +225,9 @@ async function getVersionStatus(opts = {}) {
     result.action = `Delete ${installed.path}, then run /update-forgeflow.`;
   } else if (result.upstream.status === 'ok' && result.upstream.main?.sha) {
     if (installed.sha === result.upstream.main.sha) {
-      if (result.path_status.missing_required.length > 0) {
+      if (result.path_status.missing_required.length > 0 || result.runtime_helpers.missing.length > 0) {
         result.status = 'repair-needed';
-        result.action = 'Run /update-forgeflow --repair.';
+        result.action = repairAction(result);
         result.help = 'The recorded version matches upstream, but required installed files are missing.';
       } else {
         result.status = 'up-to-date';
@@ -194,9 +238,9 @@ async function getVersionStatus(opts = {}) {
       result.action = '/update-forgeflow';
     }
   } else if (result.upstream.status === 'skipped-offline') {
-    if (result.path_status.missing_required.length > 0) {
+    if (result.path_status.missing_required.length > 0 || result.runtime_helpers.missing.length > 0) {
       result.status = 'repair-needed';
-      result.action = 'Run /update-forgeflow --repair.';
+      result.action = repairAction(result);
       result.help = 'Offline mode skipped upstream comparison, but required installed files are missing.';
     } else {
       result.status = 'installed-offline';
@@ -248,11 +292,19 @@ function renderMarkdown(result) {
   lines.push(`- /update-forgeflow command: ${result.paths.update_command.path} (${yesNo(result.paths.update_command.exists)})`);
   lines.push(`- /forgeflow-version command: ${result.paths.version_command.path} (${yesNo(result.paths.version_command.exists)})`);
   lines.push(`- Statusline hook: ${result.paths.statusline_hook.path} (${yesNo(result.paths.statusline_hook.exists)})`);
+  lines.push(`- Runtime helper inventory: ${result.runtime_helpers.present}/${result.runtime_helpers.expected}`);
   if (result.path_status?.missing_required?.length > 0) {
     lines.push('', '## Missing Required Paths', '');
     for (const item of result.path_status.missing_required) {
       lines.push(`- ${item.name}: ${item.path}`);
     }
+  }
+  if (result.runtime_helpers?.missing?.length > 0) {
+    lines.push('', '## Missing Runtime Helpers', '');
+    for (const item of result.runtime_helpers.missing) {
+      lines.push(`- ${item.source}: ${item.path}${item.issue ? ` (${item.issue})` : ''}`);
+    }
+    lines.push('', `Repair: ${result.action || result.runtime_helpers.repair_command}`);
   }
 
   lines.push('', '## Next Step', '', result.action);
@@ -280,5 +332,7 @@ module.exports = {
   missingRequiredPaths,
   readInstalledVersion,
   renderMarkdown,
+  runtimeHelperInventory,
+  repairAction,
   shortSha,
 };

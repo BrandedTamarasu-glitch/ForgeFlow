@@ -50,6 +50,7 @@ if [ "$WANTS_OFFLINE" = "true" ]; then ARGS+=(--offline); fi
 
 - `up-to-date` — installed commit matches upstream `main`.
 - `outdated` — run `/update-forgeflow`, then restart Claude Code if commands or hooks changed.
+- `repair-needed` — run `/update-forgeflow --repair`; if the slash command is unavailable, run the installed updater helper with `--repair`, or run `scripts/forgeflow/update-forgeflow.js --repair` from a local checkout. The installed version may match upstream while local runtime helpers are missing or invalid.
 - `not-installed` — run `/update-forgeflow`; if that command is unavailable, run `scripts/forgeflow/update-forgeflow.js` from a local checkout.
 - `corrupt-version` — delete `~/.claude/forgeflow-version`, then run `/update-forgeflow`.
 - `installed-unknown-upstream` — local install exists, but GitHub could not be reached for comparison.
@@ -61,5 +62,6 @@ if [ "$WANTS_OFFLINE" = "true" ]; then ARGS+=(--offline); fi
 - [ ] Reports upstream `main` SHA when online
 - [ ] Reports latest GitHub release tag when available
 - [ ] Reports installed helper and command paths
+- [ ] Reports installed runtime helper inventory and missing or invalid helper sources
 - [ ] Gives exactly one concrete next action
 </success_criteria>
