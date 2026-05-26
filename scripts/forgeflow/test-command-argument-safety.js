@@ -74,6 +74,13 @@ for (const file of walk(commandsRoot)) {
   if (/\$MODE_ARG|\$CALIBRATION_ARG|\$CI_ARG/.test(markdown)) {
     failures.push(`${rel}: route helper args must use a quoted argv array`);
   }
+  if (rel === 'commands/forgeflow-release-readiness.md') {
+    const nodeInvocations = markdown.split(/\r?\n/).filter((line) => /\bnode\s+"\$\{HELPER_DIR\}\/render-release-readiness\.js"/.test(line));
+    const unsafeNodeInvocations = nodeInvocations.filter((line) => !/env -u NODE_OPTIONS -u NODE_PATH node/.test(line));
+    if (nodeInvocations.length !== 4 || unsafeNodeInvocations.length > 0) {
+      failures.push(`${rel}: release readiness must launch node through env -u NODE_OPTIONS -u NODE_PATH`);
+    }
+  }
 }
 
 if (failures.length > 0) {

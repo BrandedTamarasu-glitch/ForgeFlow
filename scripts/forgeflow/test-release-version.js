@@ -121,6 +121,7 @@ const checks = [
   ['release check runs agent drift test', releaseCheck.includes('node scripts/forgeflow/test-check-agent-drift.js')],
   ['release check runs forgeflow report test', releaseCheck.includes('node scripts/forgeflow/test-render-forgeflow-report.js')],
   ['release check runs release notes test', releaseCheck.includes('node scripts/forgeflow/test-render-release-notes.js')],
+  ['release check runs release readiness test', releaseCheck.includes('node scripts/forgeflow/test-render-release-readiness.js')],
   ['release check runs evaluation report test', releaseCheck.includes('node scripts/forgeflow/test-render-evaluation-report.js')],
   ['release check renders public evaluation summary', releaseCheck.includes('render-evaluation-report.js --outcomes fixtures/evaluation/sample-outcomes.jsonl --public')],
   ['release check runs privacy boundary test', releaseCheck.includes('node scripts/forgeflow/test-privacy-boundary.js')],

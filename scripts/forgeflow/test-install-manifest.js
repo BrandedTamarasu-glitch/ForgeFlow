@@ -41,6 +41,7 @@ const checks = [
   ['runtime helpers include project learnings display', RUNTIME_HELPERS.includes('scripts/forgeflow/show-project-learnings.js')],
   ['runtime helpers include forgeflow report', RUNTIME_HELPERS.includes('scripts/forgeflow/render-forgeflow-report.js')],
   ['runtime helpers include guided repair', RUNTIME_HELPERS.includes('scripts/forgeflow/render-guided-repair.js')],
+  ['runtime helpers include release readiness', RUNTIME_HELPERS.includes('scripts/forgeflow/render-release-readiness.js')],
   ['runtime helpers include pilot script renderer', RUNTIME_HELPERS.includes('scripts/forgeflow/render-pilot-script.js')],
   ['runtime helpers include evaluation report', RUNTIME_HELPERS.includes('scripts/forgeflow/render-evaluation-report.js')],
   ['runtime helpers include smoke check', RUNTIME_HELPERS.includes('scripts/forgeflow/smoke-check.js')],

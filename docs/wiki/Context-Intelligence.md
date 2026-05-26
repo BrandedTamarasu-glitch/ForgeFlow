@@ -23,6 +23,7 @@ In a repo checkout, examples use `scripts/forgeflow/`. A Claude install from `/u
 | Local artifact safety | `scripts/forgeflow/file-safety.js` | Refuses symlinked memory inputs and symlinked output destinations before context, memory, or learning helpers read or write local artifacts. |
 | Health repair | `scripts/forgeflow/health-check.js` | Creates safe project-local Forgeflow state and seeds budget config when requested. |
 | Guided repair | `scripts/forgeflow/render-guided-repair.js` | Composes offline version status, health inventory, and installed runtime helper verification into a non-mutating repair plan with manual settings guidance and an explicit downstream smoke follow-up. |
+| Release readiness | `scripts/forgeflow/render-release-readiness.js` | Runs the local release-check command list, groups blockers by readiness area, and never tags, pushes, publishes, or calls GitHub. |
 | Context advisor | `scripts/forgeflow/advise-context.js` | Reports trimming recommendations and previous-run trend deltas, preferring canonical `context/latest` telemetry when the same artifact also exists in the project context root. |
 | Agent drift | `scripts/forgeflow/check-agent-drift.js` | Compares agent prompts against canonical shared intelligence sections, with mode-specific Arbiter expectations and adapted sections treated as informational. |
 | Implementation notes recorder | `scripts/forgeflow/record-implementation-notes.js` | Appends Atlas-consolidated note candidates to the local implementation notes artifact. |
