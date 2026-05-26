@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { safeReadTextFile } = require('./file-safety');
+const { RUNTIME_HELPERS, isManagedSource } = require('./install-manifest');
 
 const MAX_OUTPUT_CHARS = 1200;
 
@@ -136,6 +137,7 @@ function runCommand(root, command, runner = spawnSync) {
 
 function blockerKind(item) {
   const output = String(item.stderr || item.stdout || '');
+  if (item.command === 'release-to-install preflight') return 'release-to-install-preflight';
   if (/spawnSync\s+\S+\s+E(?:PERM|ACCES)\b/i.test(output)) return 'execution-environment';
   if (/spawnSync\s+\S+\s+ENOENT\b/i.test(output)) return 'missing-command';
   if (/release readiness refuses to run command outside the release-check allowlist/i.test(output)) return 'allowlist';
@@ -157,6 +159,9 @@ function clearingAction(item) {
   if (kind === 'release-check-source') {
     return 'Restore commands/forgeflow-release-check.md and rerun release readiness.';
   }
+  if (kind === 'release-to-install-preflight') {
+    return 'Restore the missing or invalid runtime helper source, then rerun release readiness before tagging.';
+  }
   return `Fix the failure and rerun ${item.command}`;
 }
 
@@ -171,6 +176,99 @@ function summarizeCategory(items) {
   };
 }
 
+function releaseToInstallPreflight(root) {
+  const rootReal = fs.realpathSync(root);
+  const missingSources = [];
+  const nonFileSources = [];
+  const outOfTreeSources = [];
+  const unmanagedHelpers = [];
+  for (const source of RUNTIME_HELPERS) {
+    if (!isManagedSource(source)) {
+      unmanagedHelpers.push(source);
+      continue;
+    }
+    const file = path.join(root, source);
+    if (!fs.existsSync(file)) {
+      missingSources.push(source);
+      continue;
+    }
+    let stat = null;
+    try {
+      stat = fs.lstatSync(file);
+    } catch (_err) {
+      missingSources.push(source);
+      continue;
+    }
+    if (!stat.isFile()) nonFileSources.push(source);
+    let real = '';
+    try {
+      real = fs.realpathSync(file);
+    } catch (_err) {
+      missingSources.push(source);
+      continue;
+    }
+    const relativeReal = path.relative(rootReal, real);
+    if (relativeReal.startsWith('..') || path.isAbsolute(relativeReal)) outOfTreeSources.push(source);
+  }
+  const failures = [];
+  if (unmanagedHelpers.length > 0) {
+    failures.push({
+      reason: 'runtime-helper-not-managed',
+      sources: unmanagedHelpers,
+    });
+  }
+  if (missingSources.length > 0) {
+    failures.push({
+      reason: 'runtime-helper-source-missing',
+      sources: missingSources,
+    });
+  }
+  if (nonFileSources.length > 0) {
+    failures.push({
+      reason: 'runtime-helper-source-not-file',
+      sources: nonFileSources,
+    });
+  }
+  if (outOfTreeSources.length > 0) {
+    failures.push({
+      reason: 'runtime-helper-source-out-of-tree',
+      sources: outOfTreeSources,
+    });
+  }
+  const invalidSources = new Set([
+    ...missingSources,
+    ...nonFileSources,
+    ...outOfTreeSources,
+  ]);
+  return {
+    status: failures.length > 0 ? 'fail' : 'pass',
+    checked: RUNTIME_HELPERS.length,
+    managed: RUNTIME_HELPERS.length - unmanagedHelpers.length,
+    present: RUNTIME_HELPERS.length - invalidSources.size,
+    missing: missingSources,
+    non_file: nonFileSources,
+    out_of_tree: outOfTreeSources,
+    unmanaged: unmanagedHelpers,
+    failures,
+    repair: failures.length > 0 ? 'Restore the missing or invalid runtime helper source, then rerun release readiness before tagging.' : '',
+  };
+}
+
+function releaseToInstallPreflightCheck(root) {
+  const preflight = releaseToInstallPreflight(root);
+  return {
+    preflight,
+    check: {
+      category: 'install-runtime',
+      command: 'release-to-install preflight',
+      status: preflight.status === 'pass' ? 'pass' : 'fail',
+      exit_code: preflight.status === 'pass' ? 0 : 1,
+      stdout: preflight.status === 'pass' ? `${preflight.checked} runtime helper source(s) present and managed.` : '',
+      stderr: preflight.status === 'pass' ? '' : preflight.failures.map((failure) => `${failure.reason}: ${failure.sources.slice(0, 5).join(', ')}${failure.sources.length > 5 ? `, +${failure.sources.length - 5} more` : ''}`).join('; '),
+    },
+  };
+}
+
 function buildReleaseReadiness(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   let releaseCheck = '';
@@ -182,6 +280,7 @@ function buildReleaseReadiness(opts = {}) {
   }
   const commands = releaseReadinessCommands(releaseCheck);
   const runner = opts.runner || spawnSync;
+  const installPreflight = releaseToInstallPreflightCheck(root);
   const sourceFailure = sourceError ? [{
     category: 'metadata',
     command: 'read commands/forgeflow-release-check.md',
@@ -190,7 +289,7 @@ function buildReleaseReadiness(opts = {}) {
     stdout: '',
     stderr: sourceError.message,
   }] : [];
-  const checks = sourceFailure.concat(commands.map((command) => {
+  const checks = sourceFailure.concat([installPreflight.check], commands.map((command) => {
     const category = commandCategory(command);
     if (opts.planOnly) {
       return {
@@ -221,6 +320,7 @@ function buildReleaseReadiness(opts = {}) {
     status: failures.length > 0 ? 'blocked' : (planned.length > 0 ? 'planned' : 'ready'),
     mode: opts.planOnly ? 'plan-only' : 'run',
     command_count: checks.length,
+    install_preflight: installPreflight.preflight,
     categories,
     blockers: failures.map((item) => ({
       kind: blockerKind(item),
@@ -250,6 +350,19 @@ function renderMarkdown(result) {
   ];
   for (const [name, summary] of Object.entries(result.categories)) {
     lines.push(`- ${name}: ${summary.status} (${summary.total} checks, ${summary.failed} failed, ${summary.planned} planned)`);
+  }
+  lines.push('', '## Release To Install Preflight', '');
+  if (result.install_preflight) {
+    lines.push(`- Status: ${result.install_preflight.status}`);
+    lines.push(`- Runtime helpers: ${result.install_preflight.present}/${result.install_preflight.checked} present, ${result.install_preflight.managed}/${result.install_preflight.checked} managed`);
+    if (result.install_preflight.failures.length > 0) {
+      for (const failure of result.install_preflight.failures) {
+        lines.push(`- ${failure.reason}: ${failure.sources.slice(0, 5).join(', ')}${failure.sources.length > 5 ? `, +${failure.sources.length - 5} more` : ''}`);
+      }
+      lines.push(`- Clears: ${result.install_preflight.repair}`);
+    }
+  } else {
+    lines.push('- Not available.');
   }
   lines.push('', '## Blockers', '');
   if (result.blockers.length === 0) {
@@ -290,6 +403,8 @@ module.exports = {
   blockerKind,
   clearingAction,
   parseArgs,
+  releaseToInstallPreflight,
+  releaseToInstallPreflightCheck,
   renderMarkdown,
   releaseCheckEnv,
   releaseReadinessCommands,

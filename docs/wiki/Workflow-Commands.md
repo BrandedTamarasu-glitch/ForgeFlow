@@ -34,7 +34,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-report` | Produce a script-backed status report including local metrics, false-positive thresholds, pattern freshness, context trends, project trends, import-gap status, latest-insights readiness/freshness, latest failure-digest status/freshness, and direct next-action recommendations. Add `--refresh` to update project guidance first. |
 | `/forgeflow-repair` | Show a non-mutating guided repair plan that combines offline version status, installed runtime helper checks, health failures, repair commands, manual settings guidance, and an explicit downstream smoke follow-up. |
 | `/forgeflow-release-check` | Run local pre-release checks for command coverage, install, update, health, version, and context helpers. |
-| `/forgeflow-release-readiness` | Run advisory local release readiness checks, group blockers by readiness area, and avoid tagging, pushing, publishing, or GitHub calls. |
+| `/forgeflow-release-readiness` | Run advisory local release readiness checks, verify runtime helper sources are present, managed, regular files, and inside the checkout, group blockers by readiness area, and avoid tagging, pushing, publishing, or GitHub calls. |
 | `/forgeflow-smoke` | Run downstream readiness smoke by default; add `--mode source` for source-tree release guards or `--mode full` for both groups. |
 | `/forgeflow-trends` | Show the current project's code-map trend, living project-map categories, import-gap status, artifact freshness, latest-insights readiness/freshness, latest failure-digest provenance/freshness, project-learning consumption, and context-advisor status. Add `--refresh` to refresh project learnings and latest-insights readiness first; stale reports recommend it directly. |
 | `/forgeflow-version` | Show installed commit, upstream status, latest release, helper paths, runtime helper inventory, missing helper sources, and the next update or repair action. |
@@ -44,7 +44,7 @@ Living project-map categories include baseline, missing-history, new hotspot, co
 
 Context packs include a compact living-map guidance block for reviewers and synthesis. It is prioritization guidance only, not a finding, runtime proof, or dependency severity model.
 
-Release-readiness blockers include a kind. `execution-environment` means the local runner could not spawn a documented check because local process spawning was denied. Run that listed command directly in the same trusted local environment used for release validation, or rerun release readiness where local process spawning is permitted. `missing-command` means a local executable or PATH prerequisite is missing and should be restored before rerunning readiness.
+Release-readiness blockers include a kind. `execution-environment` means the local runner could not spawn a documented check because local process spawning was denied. Run that listed command directly in the same trusted local environment used for release validation, or rerun release readiness where local process spawning is permitted. `missing-command` means a local executable or PATH prerequisite is missing and should be restored before rerunning readiness. The release-to-install preflight checks source-tree presence and ownership only; syntax, helper contract, update, health, and installed-runtime behavior are still verified by the release-check commands.
 
 ## Codex Skills
 

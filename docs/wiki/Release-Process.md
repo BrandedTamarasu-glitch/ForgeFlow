@@ -70,7 +70,7 @@ git diff --check
 ```
 
 `test-release-version.js` also guards that `/forgeflow-health`, `/forgeflow-trends`, `/forgeflow-report`, and the README all expose the same `/forgeflow-trends --refresh` stale-guidance next action.
-`test-dogfood-self-test.js` and `test-installed-runtime-dogfood.js` are listed directly for isolated failure output; `smoke-check.js --mode source --json` also runs both to verify packaged source-smoke and installed-runtime paths.
+`test-dogfood-self-test.js` and `test-installed-runtime-dogfood.js` are listed directly for isolated failure output; `smoke-check.js --mode source --json` also runs both to verify packaged source-smoke and installed-runtime paths. `render-release-readiness.js` also includes a release-to-install preflight that checks every managed runtime helper source is present, regular, and inside the checkout; syntax, helper contract, update, health, and installed-runtime behavior stay covered by the command list.
 
 Render the public-summary example before release notes claim evaluation evidence:
 

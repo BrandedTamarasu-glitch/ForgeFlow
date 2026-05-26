@@ -7,13 +7,20 @@ const {
   blockerKind,
   buildReleaseReadiness,
   clearingAction,
+  releaseToInstallPreflight,
   releaseCheckEnv,
   releaseReadinessCommands,
   renderMarkdown,
 } = require('./render-release-readiness');
+const { RUNTIME_HELPERS } = require('./install-manifest');
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-release-readiness-'));
 fs.mkdirSync(path.join(root, 'commands'), { recursive: true });
+for (const source of RUNTIME_HELPERS) {
+  const file = path.join(root, source);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, source.endsWith('.sh') ? '#!/bin/sh\n' : '#!/usr/bin/env node\n');
+}
 fs.writeFileSync(path.join(root, 'commands', 'forgeflow-release-check.md'), [
   '```bash',
   'node scripts/forgeflow/test-release-version.js',
@@ -39,6 +46,17 @@ const planned = buildReleaseReadiness({ root, planOnly: true, runner });
 const markdown = renderMarkdown(result);
 const readinessCommands = releaseReadinessCommands(fs.readFileSync(path.join(root, 'commands', 'forgeflow-release-check.md'), 'utf8'));
 const missingRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-release-readiness-missing-'));
+const missingHelperRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-release-readiness-helper-missing-'));
+fs.cpSync(root, missingHelperRoot, { recursive: true });
+fs.unlinkSync(path.join(missingHelperRoot, RUNTIME_HELPERS[0]));
+const missingHelperPreflight = releaseToInstallPreflight(missingHelperRoot);
+const symlinkHelperRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-release-readiness-helper-symlink-'));
+const externalHelperDir = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-release-readiness-external-helper-'));
+fs.cpSync(root, symlinkHelperRoot, { recursive: true });
+fs.writeFileSync(path.join(externalHelperDir, path.basename(RUNTIME_HELPERS[1])), '#!/usr/bin/env node\n');
+fs.unlinkSync(path.join(symlinkHelperRoot, RUNTIME_HELPERS[1]));
+fs.symlinkSync(path.join(externalHelperDir, path.basename(RUNTIME_HELPERS[1])), path.join(symlinkHelperRoot, RUNTIME_HELPERS[1]));
+const symlinkHelperPreflight = releaseToInstallPreflight(symlinkHelperRoot);
 const missingResult = buildReleaseReadiness({ root: missingRoot, runner });
 const spawnError = buildReleaseReadiness({
   root,
@@ -59,13 +77,16 @@ const checks = [
   ['blocked when command fails', result.status === 'blocked' && result.blockers.length === 1],
   ['blocker has exact command', result.blockers[0].command === 'node scripts/forgeflow/test-install-smoke.js'],
   ['categories are grouped', result.categories.metadata.total === 1 && result.categories['install-runtime'].failed === 1 && result.categories['project-context'].total === 1 && result.categories['source-smoke'].total === 1 && result.categories.whitespace.total === 1],
+  ['release-to-install preflight passes with helper sources', result.install_preflight.status === 'pass' && result.install_preflight.checked === RUNTIME_HELPERS.length && result.install_preflight.present === RUNTIME_HELPERS.length && result.install_preflight.managed === RUNTIME_HELPERS.length && result.checks.some((item) => item.command === 'release-to-install preflight' && item.status === 'pass')],
+  ['release-to-install preflight catches missing helper source', missingHelperPreflight.status === 'fail' && missingHelperPreflight.missing.includes(RUNTIME_HELPERS[0]) && missingHelperPreflight.present === RUNTIME_HELPERS.length - 1 && missingHelperPreflight.managed === RUNTIME_HELPERS.length && missingHelperPreflight.repair.includes('before tagging')],
+  ['release-to-install preflight rejects out-of-tree helper source', symlinkHelperPreflight.status === 'fail' && symlinkHelperPreflight.out_of_tree.includes(RUNTIME_HELPERS[1]) && symlinkHelperPreflight.present === RUNTIME_HELPERS.length - 1],
   ['readiness includes full release checklist commands', readinessCommands.some((command) => command.startsWith('node scripts/forgeflow/render-evaluation-report.js --outcomes')) && result.categories.quality.total === 2],
-  ['plan-only does not run', planned.status === 'planned' && planned.checks.every((item) => item.status === 'planned')],
+  ['plan-only does not run commands', planned.status === 'planned' && planned.checks.filter((item) => item.command !== 'release-to-install preflight').every((item) => item.status === 'planned') && planned.install_preflight.status === 'pass'],
   ['missing release check fails closed', missingResult.status === 'blocked' && missingResult.blockers[0].command === 'read commands/forgeflow-release-check.md'],
   ['spawn error fails closed even with zero status', spawnError.status === 'blocked' && spawnError.blockers.length === 7 && spawnError.blockers.every((item) => item.kind === 'execution-environment' && item.output.includes('EPERM') && item.clears.includes('trusted local environment'))],
   ['spawn missing command reports missing-command blockers', spawnMissingCommand.status === 'blocked' && spawnMissingCommand.blockers.length === 7 && spawnMissingCommand.blockers.every((item) => item.kind === 'missing-command' && item.output.includes('ENOENT') && item.clears.includes('Install or restore the missing local command'))],
-  ['classifies blocker kinds', blockerKind({ command: 'node scripts/forgeflow/test.js', stderr: 'spawnSync node EPERM' }) === 'execution-environment' && blockerKind({ command: 'node scripts/forgeflow/test.js', stderr: 'spawnSync node ENOENT' }) === 'missing-command' && blockerKind({ command: 'read commands/forgeflow-release-check.md', stderr: 'missing' }) === 'release-check-source' && clearingAction({ command: 'node scripts/forgeflow/test.js', stderr: 'spawnSync node EPERM' }).includes('trusted local environment') && clearingAction({ command: 'node scripts/forgeflow/test.js', stderr: 'spawnSync node ENOENT' }).includes('Install or restore the missing local command')],
-  ['markdown renders blockers', markdown.includes('# Forgeflow Release Readiness') && markdown.includes('install helper missing') && markdown.includes('Kind: command-failure') && markdown.includes('Release readiness is advisory')],
+  ['classifies blocker kinds', blockerKind({ command: 'node scripts/forgeflow/test.js', stderr: 'spawnSync node EPERM' }) === 'execution-environment' && blockerKind({ command: 'node scripts/forgeflow/test.js', stderr: 'spawnSync node ENOENT' }) === 'missing-command' && blockerKind({ command: 'release-to-install preflight', stderr: 'runtime-helper-source-missing' }) === 'release-to-install-preflight' && blockerKind({ command: 'read commands/forgeflow-release-check.md', stderr: 'missing' }) === 'release-check-source' && clearingAction({ command: 'node scripts/forgeflow/test.js', stderr: 'spawnSync node EPERM' }).includes('trusted local environment') && clearingAction({ command: 'node scripts/forgeflow/test.js', stderr: 'spawnSync node ENOENT' }).includes('Install or restore the missing local command') && clearingAction({ command: 'release-to-install preflight', stderr: 'runtime-helper-source-missing' }).includes('before tagging')],
+  ['markdown renders blockers', markdown.includes('# Forgeflow Release Readiness') && markdown.includes('install helper missing') && markdown.includes('Kind: command-failure') && markdown.includes('## Release To Install Preflight') && markdown.includes('present,') && markdown.includes('Release readiness is advisory')],
   ['allows release commands', allowedCommand('node scripts/forgeflow/test-release-version.js') && allowedCommand('node scripts/forgeflow/smoke-check.js --mode source --json') && allowedCommand('node scripts/forgeflow/render-evaluation-report.js --outcomes fixtures/evaluation/sample-outcomes.jsonl --public --out /tmp/forgeflow-public-evaluation-summary.md') && allowedCommand('git diff --check')],
   ['rejects unsafe commands', !allowedCommand('curl https://example.com') && !allowedCommand('node scripts/forgeflow/test-release-version.js; rm -rf /')],
   ['release checks strip node preload env', strippedEnv.NODE_OPTIONS === undefined && strippedEnv.NODE_PATH === undefined],
