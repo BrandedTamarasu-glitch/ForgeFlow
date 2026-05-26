@@ -222,7 +222,7 @@ Forgeflow includes local-only helpers that reduce agent prompt load before revie
 - **Forgeflow report:** `render-forgeflow-report.js` combines local telemetry, false-positive thresholds, pattern-log freshness, context savings, project trends, import-gap status, latest-insights readiness/freshness, latest failure-digest status/freshness, and direct next-action recommendations into one Markdown or JSON report. Use `--refresh` to update project guidance first.
 - **Release notes draft:** `render-release-notes.js` collects plugin version, matching changelog, recent commits, dirty state, and release-gate commands into a public-safe Markdown or JSON release-note draft.
 - **Smoke check:** `smoke-check.js` defaults to downstream readiness checks for health, trends refresh, report refresh, and code map. Warn/fail checks include reason, evidence, clearing guidance, and next actions in JSON and Markdown. Use `--mode source` for source-tree release guards plus packaged and installed-runtime dogfood self-tests, or `--mode full` for both groups.
-- **Pilot script:** `render-pilot-script.js` prints a maintainer trial script by default and a first-real-task new-user path with `--path new-user`. Both paths cover install/readiness checks, project guidance, one bounded work item, review, evidence capture, rollup, and a public-safe result template.
+- **Pilot script:** `render-pilot-script.js` prints a maintainer trial script by default and a first-real-task new-user path with `--path new-user`. Both paths cover install/readiness checks, project guidance, one bounded work item, review, evidence capture, rollup, and a public-safe result template. The new-user path is state-aware: it includes guided repair, release-readiness preview, project intelligence, living project-map status, and agent-feedback signal checks before the first task decision.
 - **Adoption pack:** `render-adoption-pack.js` gives net-new users a concise fit guide, first-trial path, existing pilot-evidence rollup, recommended action, owner lane, blocker, public-safe summary, small-team handoff checklist, proof boundary, and repeat/expand/fix/defer decision rubric.
 - **Pattern learnings:** `rollup-pattern-learnings.js` scans cross-project `.forgeflow/<project>/learnings.jsonl` plus `project-learning-candidates.jsonl`, clusters known/candidate patterns with source-mix labels, and records `.learnings-log.jsonl` for `/forgeflow-report`.
 
@@ -289,7 +289,7 @@ scripts/forgeflow/rollup-pilot-evidence.js --json
 
 The pilot script prints the bounded trial path and public-safe result template. The rollup stays local under `.forgeflow/<project-name>/` and summarizes pilot count, support categories, findings, review minutes, and the next recommended action.
 
-For a net-new user deciding whether Forgeflow is worth adopting, render the adoption pack and first-real-task path:
+For a net-new user deciding whether Forgeflow is worth adopting, render the adoption pack and first-real-task path. The generated path starts with guided repair and release-readiness preview, then uses project intelligence, the living project map, project learnings, and agent-feedback signals to decide whether the first task and the next task are getting better:
 
 ```bash
 scripts/forgeflow/render-adoption-pack.js --runtime codex

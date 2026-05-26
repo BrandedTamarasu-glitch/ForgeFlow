@@ -59,7 +59,7 @@ From Claude Code:
 /forgeflow-adoption --runtime claude-code
 ```
 
-For a net-new user evaluating Forgeflow on a first real task, render the new-user path instead:
+For a net-new user evaluating Forgeflow on a first real task, render the new-user path instead. This path is state-aware: it checks guided repair, release-readiness preview, project intelligence, living project-map status, project learnings, and agent-feedback signal before asking the user to decide whether Forgeflow should continue.
 
 ```bash
 scripts/forgeflow/render-pilot-script.js --runtime codex --path new-user

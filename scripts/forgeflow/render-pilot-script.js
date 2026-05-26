@@ -146,12 +146,14 @@ function buildMaintainerSteps(runtime) {
 function buildNewUserSteps(runtime) {
   return [
     {
-      name: 'First-run readiness',
+      name: 'First-run repair and readiness',
       commands: [
         ...installCommands(runtime),
+        'scripts/forgeflow/render-guided-repair.js --json',
+        'scripts/forgeflow/render-release-readiness.js --plan-only --json',
         commandFor(runtime, 'smoke'),
       ],
-      evidence: 'Forgeflow is installed, visible after restart, and the smoke check either passes or names the first command to run next.',
+      evidence: 'Forgeflow is installed, visible after restart, guided repair has no unresolved blocker or names the first manual fix, release readiness is only planned/not publishing, and smoke either passes or names the first command to run next.',
     },
     {
       name: 'Project orientation',
@@ -159,8 +161,10 @@ function buildNewUserSteps(runtime) {
         'scripts/forgeflow/show-project-trends.js --refresh --json',
         'scripts/forgeflow/show-code-map.js --json',
         'scripts/forgeflow/show-project-learnings.js --check --json',
+        'scripts/forgeflow/build-project-intelligence.js --json',
+        'scripts/forgeflow/rollup-agent-feedback.js --json',
       ],
-      evidence: 'The user can identify current guidance freshness, topology hotspots, and whether latest insights are safe to inject into agents.',
+      evidence: 'The user can identify guidance freshness, living project-map categories, topology hotspots, project-intelligence readiness, agent-feedback staleness/correction themes, and whether latest insights are safe to inject into agents.',
     },
     {
       name: 'First real work item',
@@ -176,10 +180,11 @@ function buildNewUserSteps(runtime) {
       name: 'Decide whether to keep using Forgeflow',
       commands: [
         'scripts/forgeflow/render-forgeflow-report.js --refresh --no-drift --json',
+        'scripts/forgeflow/build-project-intelligence.js --json',
         ...evidenceCommand(runtime),
         'scripts/forgeflow/rollup-pilot-evidence.js --json',
       ],
-      evidence: 'Before recording evidence, choose repeat-pilot, expand-small-team, stop-and-fix, or defer based on setup friction, review usefulness, false positives, validation confidence, and whether the next task starts with better project guidance.',
+      evidence: 'Before recording evidence, choose repeat-pilot, expand-small-team, stop-and-fix, or defer based on setup friction, review usefulness, false positives, validation confidence, project-intelligence readiness, living project-map status, agent-feedback signal, and whether the next task starts with better project guidance.',
     },
   ];
 }
@@ -211,6 +216,9 @@ function buildPilotScript(opts = {}) {
       deferred_findings: '',
       review_minutes: '',
       setup_friction: '',
+      project_intelligence_readiness: '',
+      living_project_map_status: '',
+      agent_feedback_signal: '',
       support_categories: '',
       context_budget_status: '',
       adoption_decision: 'repeat-pilot | expand-small-team | stop-and-fix | defer',

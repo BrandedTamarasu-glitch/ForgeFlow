@@ -14,7 +14,7 @@ If health reports missing managed files, run `/update-forgeflow --repair`. If th
 ## Try Forgeflow For The First Time
 
 1. Run `/forgeflow-pilot --path new-user --runtime claude-code` from Claude Code, or `scripts/forgeflow/render-pilot-script.js --path new-user --runtime codex` from a checkout.
-2. Follow the generated readiness, project-orientation, first-work-item, and decision steps.
+2. Follow the generated readiness, project-orientation, first-work-item, and decision steps. The new-user path includes guided repair, release-readiness preview, project intelligence, living project-map status, and agent-feedback signal checks.
 3. Keep the first task small enough to judge setup friction, guidance quality, review usefulness, and whether the next task starts with better project context.
 
 Use the default maintainer path when a project owner is running a broader pilot across a real branch. Use the new-user path when the goal is to help one person decide whether Forgeflow is worth adopting.

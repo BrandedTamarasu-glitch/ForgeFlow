@@ -27,6 +27,7 @@ const projectLearningsCommands = newUser.steps
 const evidenceCommands = newUser.steps
   .flatMap((step) => step.commands)
   .filter((command) => command.includes('record-pilot-evidence.js'));
+const finalDecisionStep = newUser.steps.find((step) => step.name === 'Decide whether to keep using Forgeflow') || { evidence: '' };
 
 const checks = [
   ['schema version', codex.schema_version === '1'],
@@ -41,7 +42,9 @@ const checks = [
   ['new-user path selected', newUser.path === 'new-user'],
   ['new-user has four phases', newUser.steps.length === 4],
   ['new-user includes readiness smoke', newUser.steps[0].commands.some((command) => command.includes('smoke'))],
-  ['new-user includes project guidance checks', newUser.steps.some((step) => step.commands.some((command) => command.includes('show-project-trends.js'))) && newUser.steps.some((step) => step.commands.some((command) => command.includes('show-code-map.js'))) && newUser.steps.some((step) => step.commands.some((command) => command.includes('show-project-learnings.js')))],
+  ['new-user includes repair and release readiness', newUser.steps[0].commands.some((command) => command.includes('render-guided-repair.js')) && newUser.steps[0].commands.some((command) => command.includes('render-release-readiness.js --plan-only --json'))],
+  ['new-user includes project guidance checks', newUser.steps.some((step) => step.commands.some((command) => command.includes('show-project-trends.js'))) && newUser.steps.some((step) => step.commands.some((command) => command.includes('show-code-map.js'))) && newUser.steps.some((step) => step.commands.some((command) => command.includes('show-project-learnings.js'))) && newUser.steps.some((step) => step.commands.some((command) => command.includes('build-project-intelligence.js'))) && newUser.steps.some((step) => step.commands.some((command) => command.includes('rollup-agent-feedback.js')))],
+  ['new-user evidence is state aware', newUser.steps.some((step) => step.evidence.includes('living project-map categories')) && finalDecisionStep.evidence.includes('project-intelligence readiness') && finalDecisionStep.evidence.includes('living project-map status') && finalDecisionStep.evidence.includes('agent-feedback signal') && Object.prototype.hasOwnProperty.call(newUser.public_safe_template, 'project_intelligence_readiness') && Object.prototype.hasOwnProperty.call(newUser.public_safe_template, 'living_project_map_status') && Object.prototype.hasOwnProperty.call(newUser.public_safe_template, 'agent_feedback_signal')],
   ['new-user project learnings command uses supported flags', projectLearningsCommands.length === 1 && projectLearningsCommands[0].includes('--check') && projectLearningsCommands[0].includes('--json') && !projectLearningsCommands[0].includes('--project ')],
   ['new-user evidence command remains executable example', evidenceCommands.length === 1 && evidenceCommands[0].includes('--adoption-decision repeat-pilot') && !/[<>|]/.test(evidenceCommands[0])],
   ['new-user evidence text tells user to choose decision', newUser.steps.some((step) => step.evidence.includes('choose repeat-pilot, expand-small-team, stop-and-fix, or defer'))],
