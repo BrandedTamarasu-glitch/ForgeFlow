@@ -71,6 +71,10 @@ function buildAdoptionPack(opts = {}) {
     blocked_first_review_count: rollup.blocked_first_review_count,
     repeated_issue_categories: rollup.repeat_issue_count,
     next_fix_layer: rollup.next_fix_layer,
+    decision_explanation: rollup.decision_explanation,
+    project_intelligence_readiness: rollup.project_intelligence_readiness || {},
+    living_project_map_status: rollup.living_project_map_status || {},
+    agent_feedback_signal: rollup.agent_feedback_signal || {},
     next_action: publicSafeNextAction(nextAction),
     rollup_path: path.join(pilot.project_dir, 'pilot-evidence-rollup.md'),
   };
@@ -169,6 +173,7 @@ function publicSafeSummary(rollup, pilot, nextAction) {
     confirmed_findings: hasEvidence && rollup.findings ? rollup.findings.confirmed : 0,
     rejected_findings: hasEvidence && rollup.findings ? rollup.findings.rejected : 0,
     deferred_findings: hasEvidence && rollup.findings ? rollup.findings.deferred : 0,
+    decision_explanation: hasEvidence ? rollup.decision_explanation : null,
     note: 'Share aggregate counts and decisions only; keep raw .forgeflow evidence local unless the project explicitly approves sharing.',
   };
 }
@@ -256,6 +261,18 @@ function adoptionNextAction(rollup, pilot) {
       reason: `${rollup.repeat_issue_count} support categor${rollup.repeat_issue_count === 1 ? 'y has' : 'ies have'} repeated across pilot evidence.`,
     };
   }
+  if (rollup.decision === 'fix-now') {
+    return {
+      action: 'fix-readiness-signals',
+      owner: 'forgeflow-maintainer',
+      blocker: topCategory || 'review-quality',
+      fix_layer: rollup.next_fix_layer || '',
+      command: adoptionCommand(pilot),
+      reason: rollup.decision_explanation && rollup.decision_explanation.reasons.length > 0
+        ? rollup.decision_explanation.reasons.join('; ')
+        : 'Pilot state signals need attention before expanding.',
+    };
+  }
   if ((rollup.adoption_decisions['expand-small-team'] || 0) > 0) {
     return {
       action: 'expand-small-team',
@@ -337,6 +354,14 @@ function renderMarkdown(pack) {
       `Findings: ${pack.trial_evidence.findings.confirmed} confirmed, ${pack.trial_evidence.findings.rejected} rejected, ${pack.trial_evidence.findings.deferred} deferred`,
     );
     if (pack.trial_evidence.next_fix_layer) lines.push(`Next fix layer: ${pack.trial_evidence.next_fix_layer}`);
+    if (pack.trial_evidence.decision_explanation) {
+      lines.push(
+        `Decision explanation: ${pack.trial_evidence.decision_explanation.reasons.join('; ')}`,
+        `Project intelligence: ${pack.trial_evidence.decision_explanation.project_intelligence}`,
+        `Living project map: ${pack.trial_evidence.decision_explanation.living_project_map}`,
+        `Agent feedback: ${pack.trial_evidence.decision_explanation.agent_feedback}`,
+      );
+    }
     lines.push(
       '',
       'Recommended next action:',
@@ -349,6 +374,9 @@ function renderMarkdown(pack) {
     if (pack.trial_evidence.next_action.blocker) lines.push(`- Blocker: ${publicSafeBlocker(pack.trial_evidence.next_action.blocker)}`);
     if (pack.trial_evidence.next_action.fix_layer) lines.push(`- Fix layer: ${pack.trial_evidence.next_action.fix_layer}`);
     lines.push('', 'Health results:', '', ...countLines(pack.trial_evidence.health_results), '', 'Support categories:', '', ...publicSafeCountLines(pack.trial_evidence.support_categories), '');
+    lines.push('Project intelligence readiness:', '', ...countLines(pack.trial_evidence.project_intelligence_readiness), '');
+    lines.push('Living project map status:', '', ...countLines(pack.trial_evidence.living_project_map_status), '');
+    lines.push('Agent feedback signal:', '', ...countLines(pack.trial_evidence.agent_feedback_signal), '');
   } else {
     lines.push(
       'No pilot evidence has been recorded yet. Run the first trial, record evidence, then rerender this pack to see adoption signal.',

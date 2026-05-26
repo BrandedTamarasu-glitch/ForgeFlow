@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { publicSafeBlocker } = require('./privacy-boundary');
 
 const CATEGORY_ACTIONS = {
   install: 'improve installer output, manifest coverage, or clean-checkout verification',
@@ -129,14 +130,30 @@ function sortedCounts(counts) {
 function recommendation(rollup) {
   if (rollup.pilot_count === 0) return 'run-another-pilot';
   if (rollup.blocked_first_review_count > 0 || rollup.repeat_issue_count > 0) return 'fix-now';
+  if (stateSignalsNeedFix(rollup)) return 'fix-now';
   if ((rollup.adoption_decisions['expand-small-team'] || 0) > 0) return 'expand-small-team';
   if ((rollup.adoption_decisions.defer || 0) > 0) return 'defer';
   return 'run-another-pilot';
 }
 
+function stateSignalsNeedFix(rollup) {
+  return hasCount(rollup.project_intelligence_readiness, ['blocked', 'needs-refresh', 'needs-triage'])
+    || hasCount(rollup.living_project_map_status, ['missing', 'unclear', 'not-useful'])
+    || hasCount(rollup.agent_feedback_signal, ['missing', 'unclear', 'negative', 'incorrect']);
+}
+
 function nextFixLayer(supportCategories) {
   const [top] = Object.keys(sortedCounts(supportCategories));
   return CATEGORY_ACTIONS[top] || '';
+}
+
+function publicSafeCounts(counts) {
+  const safeCounts = {};
+  for (const [name, count] of Object.entries(counts || {})) {
+    const safeName = publicSafeBlocker(name) || 'unclassified-support-category';
+    safeCounts[safeName] = (safeCounts[safeName] || 0) + count;
+  }
+  return sortedCounts(safeCounts);
 }
 
 function readEvidenceFiles(projectDir) {
@@ -159,12 +176,18 @@ function buildRollup(records, files = []) {
   let rejected = 0;
   let deferred = 0;
   let reviewMinutes = 0;
+  const projectIntelligenceReadiness = {};
+  const livingProjectMapStatus = {};
+  const agentFeedbackSignal = {};
 
   for (const record of records) {
     countInto(runtimes, record.runtime);
     countInto(projectTypes, record.project_type);
     countInto(healthResults, record.health_result);
     countInto(adoptionDecisions, record.adoption_decision);
+    countInto(projectIntelligenceReadiness, record.project_intelligence_readiness);
+    countInto(livingProjectMapStatus, record.living_project_map_status);
+    countInto(agentFeedbackSignal, record.agent_feedback_signal);
     confirmed += parseInteger(record.confirmed_findings);
     rejected += parseInteger(record.rejected_findings);
     deferred += parseInteger(record.deferred_findings);
@@ -178,6 +201,9 @@ function buildRollup(records, files = []) {
   }
 
   const repeated = Object.values(supportCategories).filter((count) => count >= 2).length;
+  const projectIntelligenceCounts = sortedCounts(projectIntelligenceReadiness);
+  const livingMapCounts = sortedCounts(livingProjectMapStatus);
+  const agentFeedbackCounts = sortedCounts(agentFeedbackSignal);
   const rollup = {
     schema_version: '1',
     pilot_count: records.length,
@@ -196,9 +222,38 @@ function buildRollup(records, files = []) {
     },
     review_minutes: reviewMinutes,
   };
+  rollup.project_intelligence_readiness = projectIntelligenceCounts;
+  rollup.living_project_map_status = livingMapCounts;
+  rollup.agent_feedback_signal = agentFeedbackCounts;
   rollup.next_fix_layer = nextFixLayer(rollup.support_categories);
   rollup.decision = recommendation(rollup);
+  rollup.decision_explanation = decisionExplanation(rollup);
   return rollup;
+}
+
+function hasCount(counts, keys) {
+  return keys.some((key) => (counts[key] || 0) > 0);
+}
+
+function decisionExplanation(rollup) {
+  const setupFriction = rollup.blocked_first_review_count > 0 || rollup.repeat_issue_count > 0;
+  const intelligenceBlocked = hasCount(rollup.project_intelligence_readiness, ['blocked', 'needs-refresh', 'needs-triage', 'unknown']);
+  const livingMapWeak = hasCount(rollup.living_project_map_status, ['missing', 'unclear', 'not-useful', 'unknown']);
+  const feedbackWeak = hasCount(rollup.agent_feedback_signal, ['missing', 'unclear', 'negative', 'incorrect', 'unknown']);
+  const reasons = [];
+  if (setupFriction) reasons.push('setup or first-review friction is still blocking repeatability');
+  if (intelligenceBlocked) reasons.push('project-intelligence readiness needs refresh or triage');
+  if (livingMapWeak) reasons.push('living project-map signal is missing or unclear');
+  if (feedbackWeak) reasons.push('agent-feedback signal is missing, unclear, or corrective');
+  if (reasons.length === 0) reasons.push('pilot evidence does not show blocking setup, intelligence, living-map, or feedback issues');
+  return {
+    decision: rollup.decision,
+    setup_friction: setupFriction ? 'attention' : 'clear',
+    project_intelligence: intelligenceBlocked ? 'attention' : 'usable',
+    living_project_map: livingMapWeak ? 'attention' : 'usable',
+    agent_feedback: feedbackWeak ? 'attention' : 'usable',
+    reasons,
+  };
 }
 
 function renderMarkdown(rollup) {
@@ -213,6 +268,15 @@ function renderMarkdown(rollup) {
     `Findings: ${rollup.findings.confirmed} confirmed, ${rollup.findings.rejected} rejected, ${rollup.findings.deferred} deferred`,
   ];
   if (rollup.next_fix_layer) lines.push(`Next fix layer: ${rollup.next_fix_layer}`);
+  if (rollup.decision_explanation) {
+    lines.push(
+      `Decision explanation: ${rollup.decision_explanation.reasons.join('; ')}`,
+      `Setup friction: ${rollup.decision_explanation.setup_friction}`,
+      `Project intelligence: ${rollup.decision_explanation.project_intelligence}`,
+      `Living project map: ${rollup.decision_explanation.living_project_map}`,
+      `Agent feedback: ${rollup.decision_explanation.agent_feedback}`,
+    );
+  }
   lines.push('', '## Health Results', '');
   const healthResults = Object.entries(rollup.health_results);
   if (healthResults.length === 0) {
@@ -235,7 +299,7 @@ function renderMarkdown(rollup) {
     for (const [name, count] of projectTypes) lines.push(`- ${name}: ${count}`);
   }
   lines.push('', '## Support Categories', '');
-  const categories = Object.entries(rollup.support_categories);
+  const categories = Object.entries(publicSafeCounts(rollup.support_categories));
   if (categories.length === 0) {
     lines.push('- none recorded');
   } else {
@@ -248,7 +312,17 @@ function renderMarkdown(rollup) {
   } else {
     for (const [name, count] of decisions) lines.push(`- ${name}: ${count}`);
   }
+  lines.push('', '## Readiness Signals', '');
+  lines.push('Project intelligence readiness:', '', ...countLines(rollup.project_intelligence_readiness));
+  lines.push('', 'Living project map status:', '', ...countLines(rollup.living_project_map_status));
+  lines.push('', 'Agent feedback signal:', '', ...countLines(rollup.agent_feedback_signal));
   return `${lines.join('\n')}\n`;
+}
+
+function countLines(counts) {
+  const entries = Object.entries(counts || {});
+  if (entries.length === 0) return ['- none recorded'];
+  return entries.map(([name, count]) => `- ${name}: ${count}`);
 }
 
 function rollupPilotEvidence(opts = {}) {
@@ -291,9 +365,12 @@ if (require.main === module) {
 
 module.exports = {
   buildRollup,
+  decisionExplanation,
   parseArgs,
   parseFlatYaml,
+  publicSafeCounts,
   rollupPilotEvidence,
+  stateSignalsNeedFix,
   renderMarkdown,
   splitCategories,
 };

@@ -34,6 +34,9 @@ review_minutes:
 setup_friction:
 support_categories:
 context_budget_status:
+project_intelligence_readiness: ready | needs-refresh | needs-triage | blocked | unknown
+living_project_map_status: useful | missing | unclear | not-useful | unknown
+agent_feedback_signal: positive | unclear | negative | missing | unknown
 public_summary_generated: yes | no
 adoption_decision: repeat-pilot | expand-small-team | stop-and-fix | defer
 next_action:
@@ -49,6 +52,7 @@ Attach or reference only local-safe artifacts:
 - support categories from [Support Triage](Support-Triage)
 - sharing level from [Team Privacy Boundaries](Team-Privacy-Boundaries)
 - adoption decision from [Team Adoption Criteria](Team-Adoption-Criteria)
+- project-intelligence readiness, living project-map status, and agent-feedback signal when available
 
 Do not paste raw `settings.json`, source snippets, full reviewer comments, secrets, customer names, private URLs, or raw `.forgeflow/` artifacts into a shareable note.
 
@@ -69,6 +73,8 @@ scripts/forgeflow/record-pilot-evidence.js \
 The recorder rejects obvious secret assignments, private key headers, long token-like values, private/internal URLs, and scp-style internal repo URLs before writing the note.
 
 After writing a note, the recorder refreshes `.forgeflow/<project-name>/pilot-evidence-rollup.md` unless `--no-rollup` is passed.
+
+The rollup explains repeat, expand, stop-and-fix, or defer decisions using setup friction, project-intelligence readiness, living project-map status, and agent-feedback signal. These are aggregate local signals only; keep raw notes private unless the project explicitly approves sharing.
 
 Record the review outcome after triage:
 
