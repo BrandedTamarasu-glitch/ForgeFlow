@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow - V4.3.14 Changelog</title>
+  <style>
+    body { background: #0d0d0d; color: #ddd8cc; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.65; margin: 0; }
+    main { max-width: 820px; margin: 0 auto; padding: 72px 32px 96px; }
+    .version { color: #7a7670; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
+    h1 { font-size: 40px; font-weight: 400; line-height: 1.15; margin: 14px 0 20px; }
+    h2 { border-top: 1px solid #303030; color: #f0a232; font-size: 18px; font-weight: 600; margin: 42px 0 18px; padding-top: 28px; }
+    p, li { color: #c9c2b6; }
+    code { background: #1c1c1c; border: 1px solid #303030; border-radius: 4px; color: #f0c070; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 1px 5px; }
+    a { color: #f0a232; text-decoration: underline; text-underline-offset: 0.16em; }
+    .nav { display: flex; justify-content: space-between; margin-top: 52px; padding-top: 24px; border-top: 1px solid #303030; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="version">Forgeflow V4.3.14 · 26 May 2026</div>
+    <h1>Release: Runtime And Learning Polish</h1>
+    <p>
+      Forgeflow 4.3.14 tightens the post-release loop: release readiness explains environment blockers, installed runtime verification checks every managed helper, project intelligence produces a next-work brief, living-map guidance reaches reviewers, and pilot evidence decisions now explain why to repeat, expand, stop and fix, or defer.
+    </p>
+
+    <h2>Release And Install Verification</h2>
+    <ul>
+      <li><code>/forgeflow-release-readiness</code> now labels blockers as command failures, allowlist issues, missing commands, missing release-check source, or execution-environment blockers.</li>
+      <li><code>/forgeflow-version</code> verifies installed runtime helpers against the managed manifest and reports missing or invalid helper slots with a repair action.</li>
+      <li>Repair guidance falls back to the installed updater helper or a local checkout when <code>/update-forgeflow</code> is unavailable.</li>
+    </ul>
+
+    <h2>Project Intelligence</h2>
+    <ul>
+      <li><code>build-project-intelligence.js</code> now writes a next-work brief with read-first, avoid-first, validate-first, and proof-boundary guidance.</li>
+      <li>The brief keeps lanes semantic: runnable refresh commands stay in readiness and review-prep, not in read or validation lanes.</li>
+      <li>Context packets now include living project-map guidance and synthesis input includes structured <code>living_map_guidance</code>.</li>
+    </ul>
+
+    <h2>Pilot Evidence</h2>
+    <ul>
+      <li>Pilot rollups aggregate project-intelligence readiness, living project-map status, and agent-feedback signal.</li>
+      <li>Adoption decisions now include an explicit explanation across setup friction and the three state-aware signal lanes.</li>
+      <li>State-aware signals are decision-relevant, and rollup Markdown sanitizes support categories before rendering public-safe summaries.</li>
+    </ul>
+
+    <h2>Validation</h2>
+    <ul>
+      <li>Each phase passed focused tests, full <code>scripts/forgeflow/test-*.js</code>, docs/release guards, and Forgeflow review.</li>
+      <li>Review findings around ENOENT coverage, runtime helper integrity, lane semantics, static-analysis boundaries, decision relevance, and support-category privacy were fixed before release.</li>
+    </ul>
+
+    <div class="nav">
+      <a href="./v4.3.13.html">&larr; V4.3.13</a>
+      <span>V4.3.14</span>
+    </div>
+  </main>
+</body>
+</html>
