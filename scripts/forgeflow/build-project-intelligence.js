@@ -972,6 +972,43 @@ function renderNextWorkView(intelligence) {
   return `${lines.join('\n').replace(/\n{3,}/g, '\n\n')}\n`;
 }
 
+function suggestedReviewLanes(item, brief) {
+  const text = [
+    item.title,
+    item.source,
+    item.why,
+    ...(item.start_with || []),
+    ...(item.validate_with || []),
+    ...(brief.read_first || []),
+    ...(brief.validate_first || []),
+  ].join(' ').toLowerCase();
+  const lanes = [];
+  if (/(auth|permission|security|secret|token|session|runtime|install|update|repair|support)/.test(text)) {
+    lanes.push('Warden: security, runtime, install, and integration boundaries.');
+  }
+  if (/(schema|database|db|migration|backend|service|helper|contract|artifact|json)/.test(text)) {
+    lanes.push('Smith: helper structure, data contracts, backend/craft quality.');
+  }
+  if (/(ui|ux|frontend|accessibility|screen|display|markdown|docs|copy)/.test(text)) {
+    lanes.push('Lumen: user-facing output, documentation clarity, accessibility.');
+  }
+  if (/(readiness|project-intelligence|review-outcomes|agent-feedback|learning|pilot|coordination|handoff|scope)/.test(text)) {
+    lanes.push('Atlas: scope, sequencing, memory, and handoff completeness.');
+  }
+  lanes.push('Compass: requirements coverage, validation evidence, and proof boundary.');
+  return lanes.filter((value, index, list) => list.indexOf(value) === index);
+}
+
+function implementationNotesSeeds(item) {
+  return [
+    `decision: Confirmed scope for "${item.title}" before editing.`,
+    'spec-gap: Record any product or acceptance-criteria gap discovered during implementation.',
+    'tradeoff: Record why the chosen slice stayed bounded and what was deferred.',
+    'validation: Record focused tests, full validation, and review result.',
+    'follow-up: Record any remaining advisory signal that was not safe to resolve in this slice.',
+  ];
+}
+
 function renderImplementationBriefStub(intelligence, index = 1) {
   const items = intelligence.next_work_items || [];
   const item = items[index - 1] || null;
@@ -991,6 +1028,8 @@ function renderImplementationBriefStub(intelligence, index = 1) {
     lines.push(`Available candidates: ${items.length}`);
     return `${lines.join('\n')}\n`;
   }
+  const lanes = suggestedReviewLanes(item, brief);
+  const noteSeeds = implementationNotesSeeds(item);
   lines.push('## Candidate', '');
   lines.push(`- Title: ${item.title}`);
   lines.push(`- Priority: ${item.priority || 'medium'}`);
@@ -1014,6 +1053,15 @@ function renderImplementationBriefStub(intelligence, index = 1) {
     ...(brief.validate_first || []),
   ].filter(Boolean).filter((value, itemIndex, list) => list.indexOf(value) === itemIndex).slice(0, 10);
   lines.push(...(validateWith.length > 0 ? validateWith.map((value) => `- ${value}`) : ['- Add focused validation for the selected slice, then run full validation before review.']));
+  lines.push('', '## Suggested Review Lanes', '');
+  lines.push(...lanes.map((value) => `- ${value}`));
+  lines.push('', '## Implementation Notes Seed', '');
+  lines.push(...noteSeeds.map((value) => `- ${value}`));
+  lines.push('', '## Handoff Checklist', '');
+  lines.push('- Re-read every edited file before review.');
+  lines.push('- Run focused validation, then full validation.');
+  lines.push('- Update local implementation notes with decisions, gaps, tradeoffs, validation, and follow-ups.');
+  lines.push('- Require review approval before treating the work as complete.');
   lines.push('', '## Proof Boundary', '');
   lines.push(`- ${item.proof_boundary || 'Advisory candidate only; verify against current code, tests, and review output.'}`);
   for (const boundary of brief.proof_boundary || []) {
