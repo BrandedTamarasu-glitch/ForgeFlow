@@ -489,6 +489,104 @@ function nextWorkBrief(intelligenceDraft) {
   };
 }
 
+function priorityForSeverity(severity) {
+  if (severity === 'high' || severity === 'fail') return 'high';
+  if (severity === 'warn' || severity === 'attention') return 'medium';
+  return 'low';
+}
+
+function addNextWorkItem(items, item) {
+  if (!item || !item.title) return;
+  const dedupeKey = [
+    item.title,
+    item.source || 'project-intelligence',
+    item.why || '',
+  ].join('\n');
+  if (items.some((existing) => existing.dedupe_key === dedupeKey)) return;
+  items.push({
+    dedupe_key: dedupeKey,
+    title: item.title,
+    priority: item.priority || 'medium',
+    source: item.source || 'project-intelligence',
+    why: item.why || '',
+    start_with: topItems(item.start_with || [], 4),
+    validate_with: topItems(item.validate_with || [], 4),
+    proof_boundary: item.proof_boundary || 'Advisory candidate only; verify against current code, tests, and review output before treating it as work complete.',
+  });
+}
+
+function nextWorkItems(intelligenceDraft) {
+  const items = [];
+  const readiness = intelligenceDraft.readiness || {};
+  const review = intelligenceDraft.review_prep || {};
+  const feedback = intelligenceDraft.agent_feedback || {};
+  const corrective = feedback.by_signal
+    ? (feedback.by_signal.incorrect || 0) + (feedback.by_signal.unclear || 0) + (feedback.by_signal.ignored || 0)
+    : 0;
+
+  if (readiness.state && readiness.state !== 'ready') {
+    addNextWorkItem(items, {
+      title: `Clear ${readiness.state} project-intelligence readiness`,
+      priority: readiness.state === 'blocked' ? 'high' : 'medium',
+      source: 'readiness',
+      why: (readiness.reasons || [])[0] || `Project intelligence readiness is ${readiness.state}.`,
+      start_with: readiness.clearing_commands || [],
+      validate_with: ['scripts/forgeflow/build-project-intelligence.js --json'],
+      proof_boundary: 'Clearing readiness only proves local guidance is current enough to plan; it does not approve implementation work.',
+    });
+  }
+
+  for (const risk of (intelligenceDraft.top_risks || []).slice(0, 3)) {
+    addNextWorkItem(items, {
+      title: `Triage ${risk.source} signal`,
+      priority: priorityForSeverity(risk.severity),
+      source: risk.source,
+      why: risk.summary,
+      start_with: [risk.next_action].filter(Boolean),
+      validate_with: review.refresh_first || [],
+      proof_boundary: 'A triaged signal is not a bug fix by itself; verify the raw artifact and current project behavior.',
+    });
+  }
+
+  if (corrective > 0) {
+    addNextWorkItem(items, {
+      title: 'Review corrective agent feedback before reusing guidance',
+      priority: 'medium',
+      source: 'agent-feedback',
+      why: `${corrective} corrective feedback signal(s) may change how agents should interpret similar work.`,
+      start_with: [feedback.file || 'agent-feedback.jsonl', ...(review.review_notes || []).filter((item) => item.includes('corrective agent-feedback')).slice(0, 1)],
+      validate_with: ['scripts/forgeflow/build-project-intelligence.js --json'],
+      proof_boundary: 'Feedback is advisory only and must be promoted manually only after current-code verification.',
+    });
+  }
+
+  if ((review.read_first || []).length > 0 || (review.validate_first || []).length > 0) {
+    addNextWorkItem(items, {
+      title: 'Plan the next implementation slice from local project guidance',
+      priority: items.length === 0 ? 'medium' : 'low',
+      source: 'review-prep',
+      why: 'Project intelligence has concrete read-first and validate-first guidance for the next bounded slice.',
+      start_with: review.read_first || [],
+      validate_with: review.validate_first || [],
+      proof_boundary: 'Use this candidate to scope inspection and validation; it is not a substitute for a product decision.',
+    });
+  }
+
+  if (items.length === 0) {
+    addNextWorkItem(items, {
+      title: 'Select a small next slice and refresh project intelligence',
+      priority: 'low',
+      source: 'project-intelligence',
+      why: 'No active readiness, risk, feedback, or hot-file signal is currently strong enough to suggest a specific local candidate.',
+      start_with: ['scripts/forgeflow/build-project-intelligence.js --json'],
+      validate_with: ['focused tests for the selected slice', 'full validation before review'],
+      proof_boundary: 'This fallback is only a planning prompt; choose scope from current product and code evidence.',
+    });
+  }
+
+  return items.slice(0, 5).map(({ dedupe_key: _dedupeKey, ...item }) => item);
+}
+
 function buildProjectIntelligence(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const projectDir = path.resolve(opts.projectDir || defaultProjectDir(root));
@@ -550,6 +648,7 @@ function buildProjectIntelligence(opts = {}) {
   };
   intelligence.review_prep = reviewPrep(trends, intelligence);
   intelligence.next_work_brief = nextWorkBrief(intelligence);
+  intelligence.next_work_items = nextWorkItems(intelligence);
   fs.mkdirSync(path.dirname(jsonOut), { recursive: true });
   writeFileSafe(jsonOut, `${JSON.stringify(intelligence, null, 2)}\n`);
   writeFileSafe(markdownOut, renderMarkdown(intelligence));
@@ -604,6 +703,19 @@ function renderMarkdown(intelligence) {
   lines.push('', '### Avoid First', '', ...(intelligence.next_work_brief.avoid_first.length > 0 ? intelligence.next_work_brief.avoid_first.map((item) => `- ${item}`) : ['- (none)']));
   lines.push('', '### Validate First', '', ...(intelligence.next_work_brief.validate_first.length > 0 ? intelligence.next_work_brief.validate_first.map((item) => `- ${item}`) : ['- (none)']));
   lines.push('', '### Proof Boundary', '', ...intelligence.next_work_brief.proof_boundary.map((item) => `- ${item}`));
+  lines.push('', '## Next Work Items', '');
+  if ((intelligence.next_work_items || []).length === 0) {
+    lines.push('- (none)');
+  } else {
+    for (const item of intelligence.next_work_items) {
+      lines.push(`- ${item.priority}: ${item.title}`);
+      if (item.why) lines.push(`  - Why: ${item.why}`);
+      lines.push(`  - Source: ${item.source}`);
+      lines.push(`  - Start with: ${item.start_with.length > 0 ? item.start_with.join('; ') : '(none)'}`);
+      lines.push(`  - Validate with: ${item.validate_with.length > 0 ? item.validate_with.join('; ') : '(none)'}`);
+      lines.push(`  - Boundary: ${item.proof_boundary}`);
+    }
+  }
   lines.push('', '## Recommended Next Actions', '', ...(intelligence.recommended_next_actions.length > 0 ? intelligence.recommended_next_actions.map((item) => `- ${item}`) : ['- (none)']));
   lines.push('', '## Validation Patterns', '', ...(intelligence.validation_patterns.length > 0 ? intelligence.validation_patterns.map((item) => `- ${item}`) : ['- (none)']));
   lines.push('', '## Agent Feedback', '');
@@ -672,6 +784,7 @@ module.exports = {
   collectRiskSignals,
   parseArgs,
   nextWorkBrief,
+  nextWorkItems,
   reviewPrep,
   readinessState,
   renderMarkdown,
