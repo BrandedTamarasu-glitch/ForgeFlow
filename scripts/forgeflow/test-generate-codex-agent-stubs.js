@@ -3,7 +3,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
-const { buildStub, selectedMarkdown } = require('./generate-codex-agent-stubs');
+const { buildStub, MISSING_SUMMARY_GUIDANCE, selectedMarkdown } = require('./generate-codex-agent-stubs');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 const map = JSON.parse(fs.readFileSync(path.join(repoRoot, 'fixtures/prompt-parity/source-map.json'), 'utf8'));
@@ -11,6 +11,10 @@ const agent = '.codex/agents/sample-reviewer.toml';
 const markdown = fs.readFileSync(path.join(repoRoot, map.agents[agent].canonical), 'utf8');
 const selected = selectedMarkdown(markdown, map.agents[agent].sections);
 const stub = buildStub(agent, map.agents[agent]);
+const fallbackStub = buildStub('.codex/agents/fallback-reviewer.toml', {
+  canonical: map.agents[agent].canonical,
+  sections: [],
+});
 
 const checks = [
   ['role selected', selected.includes('<role>')],
@@ -18,6 +22,8 @@ const checks = [
   ['manual summary included', stub.includes('Review concrete correctness and accessibility evidence.')],
   ['canonical source included', stub.includes('canonical_source = "fixtures/prompt-parity/sample-agent.md"')],
   ['instructions included', stub.includes('Canonical excerpts for manual review')],
+  ['fallback guidance is deterministic', fallbackStub.includes(MISSING_SUMMARY_GUIDANCE)],
+  ['fallback has no vague todo', !fallbackStub.includes('TODO: Add a manually curated Codex summary')],
 ];
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-agent-stub-'));

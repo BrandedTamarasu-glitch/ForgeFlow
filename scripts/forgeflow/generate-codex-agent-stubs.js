@@ -4,6 +4,10 @@ const fs = require('fs');
 const path = require('path');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
+const MISSING_SUMMARY_GUIDANCE = [
+  'Canonical summary unavailable for this generated Codex stub.',
+  'Review the canonical_source and canonical_sha256 before using it, then add manual_summary or sections in .codex/agent-canonical-map.json to make the stub specific.',
+].join(' ');
 
 function usage() {
   console.error('Usage: generate-codex-agent-stubs.js --agent <.codex/agents/name.toml> [--map <path>] [--out <path>] [--stdout]');
@@ -143,7 +147,7 @@ function buildInstructions(markdown, entry) {
     parts.push(`Canonical excerpts for manual review:\n\n${selected}`);
   }
   if (parts.length === 0) {
-    parts.push('TODO: Add a manually curated Codex summary from the canonical prompt.');
+    parts.push(MISSING_SUMMARY_GUIDANCE);
   }
   return parts.join('\n\n');
 }
@@ -214,6 +218,7 @@ if (require.main === module) {
 module.exports = {
   buildStub,
   extractSection,
+  MISSING_SUMMARY_GUIDANCE,
   parseFrontmatter,
   selectedMarkdown,
 };
