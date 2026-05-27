@@ -9,8 +9,10 @@ const {
   changelogCandidates,
   clearingAction,
   compareReleaseReadiness,
+  comparePostPublishVerification,
   parseArgs,
   postPublishVerification,
+  postPublishSnapshotPath,
   releaseToInstallPreflight,
   releaseCheckEnv,
   releaseReadinessCommands,
@@ -71,6 +73,8 @@ const markdown = renderMarkdown(result);
 const comparedMarkdown = renderMarkdown(comparedResult);
 const badBaselineMarkdown = renderMarkdown(badBaselineResult);
 const postPublishResult = buildReleaseReadiness({ root, runner, postPublish: true });
+const savedPostPublishResult = buildReleaseReadiness({ root, runner, savePostPublish: true });
+const comparedPostPublishResult = buildReleaseReadiness({ root, runner, comparePostPublishLast: true });
 const postPublishMarkdown = renderMarkdown(postPublishResult);
 const directPostPublish = postPublishVerification(root, [
   { command: 'node scripts/forgeflow/test-render-release-notes.js', status: 'pass' },
@@ -83,7 +87,7 @@ fs.mkdirSync(path.join(patchZeroRoot, 'docs', 'changelogs'), { recursive: true }
 fs.writeFileSync(path.join(patchZeroRoot, '.claude-plugin', 'plugin.json'), JSON.stringify({ name: 'Forgeflow', version: '9.8.0' }, null, 2));
 fs.writeFileSync(path.join(patchZeroRoot, 'docs', 'changelogs', 'v9.8.html'), '<h1>Release</h1>\n');
 const patchZeroPostPublish = postPublishVerification(patchZeroRoot, []);
-const parsedCompareLast = parseArgs(['--compare-last', '--save-current', '--post-publish', '--json']);
+const parsedCompareLast = parseArgs(['--compare-last', '--save-current', '--post-publish', '--save-post-publish', '--compare-post-publish-last', '--json']);
 const readinessCommands = releaseReadinessCommands(fs.readFileSync(path.join(root, 'commands', 'forgeflow-release-check.md'), 'utf8'));
 const missingRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-release-readiness-missing-'));
 const missingHelperRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-release-readiness-helper-missing-'));
@@ -114,7 +118,7 @@ delete process.env.NODE_PATH;
 
 const checks = [
   ['schema version', result.schema_version === '1'],
-  ['parse compare-last flags', parsedCompareLast.compareLast === true && parsedCompareLast.saveCurrent === true && parsedCompareLast.postPublish === true && parsedCompareLast.json === true],
+  ['parse compare-last flags', parsedCompareLast.compareLast === true && parsedCompareLast.saveCurrent === true && parsedCompareLast.postPublish === true && parsedCompareLast.savePostPublish === true && parsedCompareLast.comparePostPublishLast === true && parsedCompareLast.json === true],
   ['blocked when command fails', result.status === 'blocked' && result.blockers.length === 1],
   ['blocker has exact command', result.blockers[0].command === 'node scripts/forgeflow/test-install-smoke.js'],
   ['categories are grouped', result.categories.metadata.total === 1 && result.categories['install-runtime'].failed === 1 && result.categories['project-context'].total === 1 && result.categories['source-smoke'].total === 1 && result.categories.whitespace.total === 1],
@@ -128,6 +132,8 @@ const checks = [
   ['post-publish verification is local and advisory', directPostPublish.status === 'published-propagation-pending' && directPostPublish.version === '9.9.0' && directPostPublish.tag === 'v9.9.0' && directPostPublish.evidence.some((item) => item.name === 'local-tag' && item.status === 'warn') && directPostPublish.boundary.includes('does not create tags')],
   ['post-publish supports patch-zero changelog candidate', changelogCandidates('9.8.0').includes('docs/changelogs/v9.8.html') && patchZeroPostPublish.evidence.some((item) => item.name === 'changelog' && item.status === 'pass' && item.value === 'docs/changelogs/v9.8.html')],
   ['post-publish readiness renders verification', postPublishResult.post_publish_verification && postPublishResult.post_publish_verification.status === 'published-propagation-pending' && postPublishMarkdown.includes('## Post-Publish Verification') && postPublishMarkdown.includes('published-propagation-pending')],
+  ['post-publish snapshot saves and compares', savedPostPublishResult.post_publish_verification.snapshot.saved === true && fs.existsSync(postPublishSnapshotPath(root)) && comparedPostPublishResult.post_publish_verification.comparison.status === 'unchanged'],
+  ['post-publish comparison detects changes', comparePostPublishVerification({ evidence: [{ name: 'local-tag', status: 'pass', value: 'v1' }] }, { evidence: [{ name: 'local-tag', status: 'warn', value: 'v1' }] }).changed_evidence[0].from_status === 'warn'],
   ['release-to-install preflight catches missing helper source', missingHelperPreflight.status === 'fail' && missingHelperPreflight.missing.includes(RUNTIME_HELPERS[0]) && missingHelperPreflight.present === RUNTIME_HELPERS.length - 1 && missingHelperPreflight.managed === RUNTIME_HELPERS.length && missingHelperPreflight.repair.includes('before tagging')],
   ['release-to-install preflight rejects out-of-tree helper source', symlinkHelperPreflight.status === 'fail' && symlinkHelperPreflight.out_of_tree.includes(RUNTIME_HELPERS[1]) && symlinkHelperPreflight.present === RUNTIME_HELPERS.length - 1],
   ['readiness includes full release checklist commands', readinessCommands.some((command) => command.startsWith('node scripts/forgeflow/render-evaluation-report.js --outcomes')) && result.categories.quality.total === 2],

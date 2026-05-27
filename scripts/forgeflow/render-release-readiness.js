@@ -8,7 +8,7 @@ const { RUNTIME_HELPERS, isManagedSource } = require('./install-manifest');
 const MAX_OUTPUT_CHARS = 1200;
 
 function usage() {
-  console.error('Usage: render-release-readiness.js [--root <repo>] [--plan-only] [--json] [--baseline <json>] [--compare-last] [--save-current] [--post-publish]');
+  console.error('Usage: render-release-readiness.js [--root <repo>] [--plan-only] [--json] [--baseline <json>] [--compare-last] [--save-current] [--post-publish] [--save-post-publish] [--compare-post-publish-last]');
 }
 
 function requireValue(argv, name, index) {
@@ -26,6 +26,8 @@ function parseArgs(argv) {
     compareLast: false,
     saveCurrent: false,
     postPublish: false,
+    savePostPublish: false,
+    comparePostPublishLast: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -45,6 +47,12 @@ function parseArgs(argv) {
       opts.saveCurrent = true;
     } else if (arg === '--post-publish') {
       opts.postPublish = true;
+    } else if (arg === '--save-post-publish') {
+      opts.postPublish = true;
+      opts.savePostPublish = true;
+    } else if (arg === '--compare-post-publish-last') {
+      opts.postPublish = true;
+      opts.comparePostPublishLast = true;
     } else if (arg === '--help' || arg === '-h') {
       usage();
       process.exit(0);
@@ -61,6 +69,10 @@ function defaultProjectDir(root) {
 
 function lastSnapshotPath(root) {
   return path.join(defaultProjectDir(root), 'release-readiness', 'last.json');
+}
+
+function postPublishSnapshotPath(root) {
+  return path.join(defaultProjectDir(root), 'release-readiness', 'post-publish-last.json');
 }
 
 function readReleaseCheck(root) {
@@ -482,6 +494,46 @@ function postPublishVerification(root, checks = []) {
   };
 }
 
+function comparePostPublishVerification(current, baseline, baselinePath = '', baselineError = '') {
+  if (!baseline) {
+    return {
+      status: 'no-baseline',
+      baseline: {
+        path: baselinePath || '',
+        reason: baselineError || (baselinePath ? 'baseline unavailable' : 'no baseline provided'),
+      },
+      changed_evidence: [],
+    };
+  }
+  const beforeItems = Array.isArray(baseline.evidence) ? baseline.evidence : [];
+  const afterItems = Array.isArray(current.evidence) ? current.evidence : [];
+  const before = new Map(beforeItems.map((item) => [item.name, item]));
+  const changed = [];
+  for (const item of afterItems) {
+    const prior = before.get(item.name) || null;
+    if (!prior || prior.status !== item.status || prior.value !== item.value) {
+      changed.push({
+        name: item.name,
+        from_status: prior ? prior.status : 'missing',
+        to_status: item.status,
+        from_value: prior ? prior.value || '' : '',
+        to_value: item.value || '',
+      });
+    }
+  }
+  return {
+    status: changed.length > 0 ? 'changed' : 'unchanged',
+    baseline: {
+      path: baselinePath || '',
+      generated_at: baseline.generated_at || '',
+      status: baseline.status || '',
+      version: baseline.version || '',
+      tag: baseline.tag || '',
+    },
+    changed_evidence: changed,
+  };
+}
+
 function buildReleaseReadiness(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   let releaseCheck = '';
@@ -527,6 +579,18 @@ function buildReleaseReadiness(opts = {}) {
   const failures = checks.filter((item) => item.status === 'fail');
   const planned = checks.filter((item) => item.status === 'planned');
   const snapshotPath = lastSnapshotPath(root);
+  const postPublishSnapshot = postPublishSnapshotPath(root);
+  const wantsPostPublish = opts.postPublish || opts.savePostPublish || opts.comparePostPublishLast;
+  const postPublish = wantsPostPublish ? postPublishVerification(root, checks) : null;
+  if (postPublish) {
+    postPublish.snapshot = {
+      path: postPublishSnapshot,
+      saved: false,
+    };
+    const baselinePath = opts.comparePostPublishLast ? postPublishSnapshot : '';
+    const baselineRead = readBaselineResult(baselinePath);
+    postPublish.comparison = comparePostPublishVerification(postPublish, baselineRead.result, baselinePath, baselineRead.error);
+  }
   const result = {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
@@ -549,7 +613,7 @@ function buildReleaseReadiness(opts = {}) {
       path: snapshotPath,
       saved: false,
     },
-    post_publish_verification: opts.postPublish ? postPublishVerification(root, checks) : null,
+    post_publish_verification: postPublish,
     boundary: opts.saveCurrent
       ? 'Release readiness is advisory and release-safe. It wrote the requested local readiness snapshot, but it never tags, pushes, publishes, or calls GitHub.'
       : 'Release readiness is advisory and non-mutating unless --save-current is passed. It never tags, pushes, publishes, or calls GitHub.',
@@ -560,6 +624,10 @@ function buildReleaseReadiness(opts = {}) {
   if (opts.saveCurrent) {
     result.snapshot.saved = true;
     writeJsonSafe(snapshotPath, result);
+  }
+  if (opts.savePostPublish && result.post_publish_verification) {
+    result.post_publish_verification.snapshot.saved = true;
+    writeJsonSafe(postPublishSnapshot, result.post_publish_verification);
   }
   return result;
 }
@@ -621,7 +689,12 @@ function renderMarkdown(result) {
     lines.push(`- Version: ${result.post_publish_verification.version || '(missing)'}`);
     lines.push(`- Tag: ${result.post_publish_verification.tag || '(missing)'}`);
     lines.push(`- HEAD: ${result.post_publish_verification.head || '(unknown)'}`);
+    lines.push(`- Snapshot: ${result.post_publish_verification.snapshot && result.post_publish_verification.snapshot.saved ? `saved to ${result.post_publish_verification.snapshot.path}` : result.post_publish_verification.snapshot ? result.post_publish_verification.snapshot.path : '(none)'}`);
     lines.push(`- Boundary: ${result.post_publish_verification.boundary}`);
+    if (result.post_publish_verification.comparison) {
+      lines.push(`- Snapshot comparison: ${result.post_publish_verification.comparison.status}`);
+      if (result.post_publish_verification.comparison.baseline && result.post_publish_verification.comparison.baseline.path) lines.push(`- Compared with: ${result.post_publish_verification.comparison.baseline.path}`);
+    }
     for (const item of result.post_publish_verification.evidence) {
       lines.push(`- ${item.name}: ${item.status}${item.value ? ` (${item.value})` : ''}`);
       if (item.status !== 'pass') lines.push(`  - Clears: ${item.clears}`);
@@ -668,10 +741,12 @@ module.exports = {
   blockerKind,
   clearingAction,
   compareReleaseReadiness,
+  comparePostPublishVerification,
   postPublishVerification,
   parseArgs,
   releaseToInstallPreflight,
   releaseToInstallPreflightCheck,
+  postPublishSnapshotPath,
   renderMarkdown,
   releaseCheckEnv,
   releaseReadinessCommands,
