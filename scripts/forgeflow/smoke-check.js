@@ -101,6 +101,22 @@ function nextAction(command, reason) {
   return [{ action: command.replace(/\s+/g, '-'), command, reason, evidence: '', clears: '' }];
 }
 
+function codeMapGapSummary(gaps = {}) {
+  const productionTotal = gaps.limits ? gaps.limits.production_total || 0 : 0;
+  const testFixtureTotal = gaps.limits ? gaps.limits.test_fixture_total || 0 : 0;
+  const expectedTotal = gaps.triage ? gaps.triage.expected_total || 0 : 0;
+  const needsReviewTotal = gaps.triage ? gaps.triage.needs_review_total || 0 : 0;
+  return {
+    production_total: productionTotal,
+    test_fixture_total: testFixtureTotal,
+    expected_total: expectedTotal,
+    needs_review_total: needsReviewTotal,
+    explanation: needsReviewTotal > 0
+      ? `${needsReviewTotal} gap(s) need review. ${expectedTotal} expected gap(s) are informational.`
+      : `${expectedTotal} expected gap(s) are informational; no import gaps currently need review.`,
+  };
+}
+
 function helperRoot() {
   return path.resolve(__dirname, '..', '..');
 }
@@ -291,22 +307,24 @@ function runDownstreamSmoke({ root, projectDir, patternsDir }) {
   try {
     const codeMap = showCodeMap({ root, projectDir, recordHistory: false });
     const gaps = codeMap.summary.import_gaps || {};
-    const productionTotal = gaps.limits ? gaps.limits.production_total || 0 : 0;
-    const needsReviewTotal = gaps.triage ? gaps.triage.needs_review_total || 0 : 0;
-    const codeMapExplanation = needsReviewTotal > 0 ? {
+    const gapSummary = codeMapGapSummary(gaps);
+    const codeMapExplanation = gapSummary.needs_review_total > 0 ? {
       reason: 'Code map has import gaps that need review.',
-      evidence: `${needsReviewTotal} import gap(s) need review; ${productionTotal} production-scope gap(s) reported in total.`,
+      evidence: `${gapSummary.needs_review_total} import gap(s) need review; ${gapSummary.production_total} production-scope gap(s) reported in total; ${gapSummary.expected_total} expected gap(s) are informational.`,
       clears: 'Run forgeflow-code-map, then fix or classify the import gaps marked as needing review.',
       next_actions: nextAction('forgeflow-code-map', 'Review import gaps marked as needing review.'),
+    } : gapSummary.expected_total > 0 ? {
+      summary: gapSummary.explanation,
     } : {};
-    checks.push(check('code-map', needsReviewTotal > 0 ? 'warn' : 'pass', {
+    checks.push(check('code-map', gapSummary.needs_review_total > 0 ? 'warn' : 'pass', {
       command: 'forgeflow-code-map',
       unresolved_total: gaps.limits ? gaps.limits.unresolved_total : 0,
       skipped_dynamic_total: gaps.limits ? gaps.limits.skipped_dynamic_total : 0,
-      production_total: productionTotal,
-      test_fixture_total: gaps.limits ? gaps.limits.test_fixture_total || 0 : 0,
-      expected_total: gaps.triage ? gaps.triage.expected_total || 0 : 0,
-      needs_review_total: needsReviewTotal,
+      production_total: gapSummary.production_total,
+      test_fixture_total: gapSummary.test_fixture_total,
+      expected_total: gapSummary.expected_total,
+      needs_review_total: gapSummary.needs_review_total,
+      import_gap_explanation: gapSummary.explanation,
       triage_categories: gaps.triage ? gaps.triage.categories.slice(0, 5) : [],
       ...codeMapExplanation,
     }));
@@ -413,6 +431,7 @@ if (require.main === module) {
 
 module.exports = {
   combineStatus,
+  codeMapGapSummary,
   healthStatus,
   renderMarkdown,
   resolveNodeTestRoot,

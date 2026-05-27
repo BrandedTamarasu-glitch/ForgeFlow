@@ -6,6 +6,7 @@ const { spawnSync } = require('child_process');
 const { runHealthCheck } = require('./health-check');
 const {
   combineStatus,
+  codeMapGapSummary,
   healthStatus,
   renderMarkdown,
   resolveNodeTestRoot,
@@ -79,10 +80,11 @@ const checks = [
   ['resolves health refresh warning', healthStatus({ status: 'pass', recommendations: [{ action: 'refresh-project-trends' }] }, { refresh: { status: 'pass' }, latest_insights: { freshness: { status: 'current' } } }) === 'pass'],
   ['keeps legacy refresh action compatible', healthStatus({ status: 'pass', recommendations: [{ action: 'refresh-latest-insights' }] }, { refresh: { status: 'pass' }, latest_insights: { freshness: { status: 'current' } } }) === 'pass'],
   ['keeps unresolved health warning', healthStatus({ status: 'pass', recommendations: [{ action: 'inspect-settings' }] }, { refresh: { status: 'pass' }, latest_insights: { freshness: { status: 'current' } } }) === 'warn'],
+  ['code map gap summary separates expected from review', codeMapGapSummary({ limits: { production_total: 2, test_fixture_total: 1 }, triage: { expected_total: 2, needs_review_total: 0 } }).explanation.includes('informational') && codeMapGapSummary({ limits: { production_total: 3 }, triage: { expected_total: 1, needs_review_total: 2 } }).explanation.includes('need review')],
   ['runs without failure', result.status === 'pass' || result.status === 'warn'],
   ['default is downstream mode', result.mode === 'downstream'],
   ['includes downstream checks', ['health', 'trends-refresh', 'report-refresh', 'code-map'].every((name) => result.checks.some((item) => item.name === name))],
-  ['code-map passes expected production gaps', codeMapCheck.status === 'pass' && codeMapCheck.production_total >= 1 && codeMapCheck.expected_total >= 1 && codeMapCheck.needs_review_total === 0],
+  ['code-map passes expected production gaps', codeMapCheck.status === 'pass' && codeMapCheck.production_total >= 1 && codeMapCheck.expected_total >= 1 && codeMapCheck.needs_review_total === 0 && codeMapCheck.import_gap_explanation.includes('informational') && codeMapCheck.summary.includes('no import gaps currently need review')],
   ['default excludes source checks', !result.checks.some((item) => item.name === 'doc-links' || item.name === 'release-version')],
   ['source mode includes release checks', sourceResult.mode === 'source' && ['command-coverage', 'doc-links', 'plugin-manifest', 'release-version', 'install-manifest', 'update-forgeflow', 'dogfood-self-test', 'installed-runtime-dogfood'].every((name) => sourceResult.checks.some((item) => item.name === name))],
   ['full mode includes both check groups', fullResult.mode === 'full' && ['health', 'code-map', 'doc-links', 'release-version'].every((name) => fullResult.checks.some((item) => item.name === name))],
