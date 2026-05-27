@@ -8,21 +8,33 @@ const { sensitiveMatches } = require('./privacy-boundary');
 const DEFAULT_MAX_COMMITS = 12;
 
 function usage() {
-  console.error('Usage: render-release-notes.js [--root <repo>] [--max-commits <n>] [--json]');
+  console.error('Usage: render-release-notes.js [--root <repo>] [--max-commits <n>] [--issues <json>] [--json]');
+}
+
+function requireValue(argv, name, index) {
+  const value = argv[index + 1] || '';
+  if (!value || value.startsWith('--')) throw new Error(`Missing value for ${name}`);
+  return value;
 }
 
 function parseArgs(argv) {
   const opts = {
     root: process.cwd(),
     maxCommits: DEFAULT_MAX_COMMITS,
+    issues: '',
     json: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--root') {
-      opts.root = path.resolve(argv[++i] || '');
+      opts.root = path.resolve(requireValue(argv, arg, i));
+      i += 1;
     } else if (arg === '--max-commits') {
-      opts.maxCommits = Number.parseInt(argv[++i] || `${DEFAULT_MAX_COMMITS}`, 10);
+      opts.maxCommits = Number.parseInt(requireValue(argv, arg, i), 10);
+      i += 1;
+    } else if (arg === '--issues') {
+      opts.issues = requireValue(argv, arg, i);
+      i += 1;
     } else if (arg === '--json') {
       opts.json = true;
     } else if (arg === '--help' || arg === '-h') {
@@ -176,6 +188,54 @@ function issueReferences(commits = []) {
   return [...buckets.values()].sort((a, b) => a.number - b.number);
 }
 
+function safeIssueStatus(value) {
+  const status = String(value || '').trim();
+  return ['open', 'closed', 'fixed', 'deferred', 'unknown'].includes(status) ? status : 'unknown';
+}
+
+function issueMetadata(root, relativePath) {
+  if (!relativePath) return [];
+  const data = readJson(root, relativePath);
+  if (!data || !Array.isArray(data.issues)) {
+    throw new Error('Release issue metadata must be a JSON object with an issues array');
+  }
+  const issues = data.issues;
+  return issues
+    .map((issue) => {
+      const number = Number.parseInt(issue.number, 10);
+      if (!Number.isFinite(number) || number <= 0) return null;
+      return {
+        number,
+        reference: `#${number}`,
+        title: publicSafeText(issue.title || ''),
+        status: safeIssueStatus(issue.status),
+        evidence: publicSafeText(issue.evidence || ''),
+      };
+    })
+    .filter(Boolean);
+}
+
+function mergeIssueMetadata(references = [], metadata = []) {
+  const buckets = new Map();
+  for (const issue of references) {
+    buckets.set(issue.number, { ...issue });
+  }
+  for (const issue of metadata) {
+    const existing = buckets.get(issue.number) || {
+      number: issue.number,
+      reference: issue.reference,
+      commits: [],
+    };
+    buckets.set(issue.number, {
+      ...existing,
+      title: issue.title,
+      status: issue.status,
+      evidence: issue.evidence,
+    });
+  }
+  return [...buckets.values()].sort((a, b) => a.number - b.number);
+}
+
 function releaseCheckCommands(releaseCheck) {
   const text = String(releaseCheck || '');
   const fenced = [];
@@ -216,7 +276,7 @@ function collectReleaseNotes(opts = {}) {
   const status = git(root, ['status', '--short']);
   const head = git(root, ['rev-parse', '--short', 'HEAD']);
   const commits = recentCommits(root, opts.maxCommits);
-  const issues = issueReferences(commits);
+  const issues = mergeIssueMetadata(issueReferences(commits), issueMetadata(root, opts.issues || ''));
   const releaseCheck = readTextIfPresent(root, 'commands/forgeflow-release-check.md');
   const validationCommands = releaseCheckCommands(releaseCheck);
 
@@ -236,6 +296,7 @@ function collectReleaseNotes(opts = {}) {
       error: status.ok && head.ok ? '' : (status.error || head.error || 'git unavailable'),
     },
     commits,
+    issue_context: issues,
     referenced_issues: issues,
     validation_commands: validationCommands,
     public_safe_highlights: commits.slice(0, 6).map((commit) => commit.subject),
@@ -269,13 +330,20 @@ function renderMarkdown(notes) {
   lines.push('', '## Recent Commits', '');
   if (notes.commits.length === 0) lines.push('- No recent commits found.');
   else for (const commit of notes.commits) lines.push(`- ${commit.sha}: ${markdownText(commit.subject)}`);
-  lines.push('', '## Referenced Issues', '');
-  if (!notes.referenced_issues || notes.referenced_issues.length === 0) {
-    lines.push('- No issue references found in recent commit subjects.');
+  const issueContext = notes.issue_context || notes.referenced_issues || [];
+  lines.push('', '## Issue Context', '');
+  if (issueContext.length === 0) {
+    lines.push('- No issue references found in recent commit subjects or curated issue metadata.');
   } else {
-    for (const issue of notes.referenced_issues) {
+    for (const issue of issueContext) {
       const commits = issue.commits.map((commit) => commit.sha).join(', ');
-      lines.push(`- ${issue.reference}: referenced by ${commits}. Verify issue state before claiming closure.`);
+      const detail = [
+        issue.title ? markdownText(issue.title) : '',
+        issue.status ? `status ${markdownText(issue.status)}` : '',
+        commits ? `referenced by ${commits}` : 'curated metadata only',
+        issue.evidence ? `evidence: ${markdownText(issue.evidence)}` : '',
+      ].filter(Boolean).join('; ');
+      lines.push(`- ${issue.reference}: ${detail}. Verify issue state and source before claiming closure.`);
     }
   }
   lines.push('', '## Validation Evidence To Capture', '');
@@ -304,6 +372,9 @@ if (require.main === module) main();
 module.exports = {
   changelogCandidates,
   collectReleaseNotes,
+  issueMetadata,
+  mergeIssueMetadata,
+  parseArgs,
   issueReferences,
   issueReferencesFromText,
   publicSafeText,

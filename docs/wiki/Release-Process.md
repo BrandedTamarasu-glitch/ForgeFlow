@@ -106,7 +106,8 @@ git push origin vX.Y.Z
 ```
 
 Create the GitHub release from the tag and include the release notes summary. The release body should only claim what changed, why it changed, tests run, and known deferrals.
-If the release-note draft lists referenced issues, verify the GitHub issue state before claiming closure. A commit subject can cite `#123`, but closure requires a release-linked issue comment, a closed issue, or another explicit maintainer decision.
+If the release-note draft lists issue context, verify the GitHub issue state before claiming closure. A commit subject can cite `#123`, but closure requires a release-linked issue comment, a closed issue, or another explicit maintainer decision. Curated metadata can add context, but it is not proof that a commit referenced or fixed an issue.
+For richer issue notes without GitHub calls, pass a repo-relative local JSON file to `render-release-notes.js --issues <path>`. The file must be a JSON object with a top-level `issues` array. Only `number`, `title`, `status`, and `evidence` are used, and text is redacted through the public-safe release-note filter.
 
 ## Verify
 

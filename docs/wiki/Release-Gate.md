@@ -111,7 +111,8 @@ rollback_path_verified: yes | no
 known_deferrals:
 ```
 
-If the release-note draft includes referenced issues, verify each issue's state before publishing any "fixed" or "closed" claim. Issue references are advisory links from commit subjects, not proof of closure.
+If the release-note draft includes issue context, verify each issue's state before publishing any "fixed" or "closed" claim. Issue references from commit subjects and curated metadata are advisory context, not proof of closure.
+Curated issue metadata for release notes must come from a repo-relative local JSON object with a top-level `issues` array. Include only public-safe `number`, `title`, `status`, and `evidence` fields. The release-note helper does not call GitHub.
 
 After publishing, run `/forgeflow-release-readiness --post-publish --save-post-publish` to capture local post-publish verification. Future runs can add `--compare-post-publish-last` to compare against the saved snapshot. This check is advisory and does not tag, push, publish, call GitHub, or mutate installed files.
 
