@@ -626,6 +626,79 @@ function priorityForSeverity(severity) {
   return 'low';
 }
 
+function evidenceStrengthForItem(item) {
+  if (item.evidence_strength) return item.evidence_strength;
+  if (item.source === 'readiness') return item.priority === 'high' ? 'strong' : 'medium';
+  if (item.source === 'review-outcomes') return 'medium';
+  if (item.source === 'agent-feedback') return 'medium';
+  if (item.source === 'review-prep' || item.source === 'project-intelligence') return 'weak';
+  if (item.priority === 'high') return 'medium';
+  return 'weak';
+}
+
+function validationForRisk(risk, review) {
+  const source = risk.source || '';
+  if (source === 'context-advisor') {
+    return ['scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json', 'scripts/forgeflow/advise-context.js --root .forgeflow --record --json'];
+  }
+  if (source === 'import-gaps') {
+    return ['forgeflow-code-map', 'scripts/forgeflow/build-code-topology.js --json'];
+  }
+  if (source === 'project-learnings') {
+    return ['scripts/forgeflow/show-project-learnings.js --check --json'];
+  }
+  if (source === 'project-freshness' || source === 'latest-insights' || source === 'failure-digest') {
+    return ['forgeflow-trends --refresh'];
+  }
+  const refreshFirst = topItems((review && review.refresh_first) || [], 2);
+  return refreshFirst.length > 0 ? refreshFirst : ['scripts/forgeflow/build-project-intelligence.js --json'];
+}
+
+function actionQualityForItem(item) {
+  const source = item.source || 'project-intelligence';
+  const title = item.title || 'Review project-intelligence candidate';
+  const validateWith = topItems(item.validate_with || [], 4);
+  const proof = item.proof_boundary || 'Advisory candidate only; verify against current code, tests, and review output before treating it as work complete.';
+  const defaults = {
+    what_to_change: item.what_to_change || `Inspect the current ${source} evidence for "${title}" and choose the smallest bounded change it supports.`,
+    how_to_prove: item.how_to_prove || (validateWith.length > 0
+      ? `Run ${validateWith.join('; ')} and verify the raw artifact still supports the candidate.`
+      : 'Run focused validation for the selected slice, then full validation before review.'),
+    stop_when: item.stop_when || `Stop when the candidate is cleared, contradicted by current evidence, or needs product judgment; ${proof}`,
+    evidence_strength: evidenceStrengthForItem(item),
+  };
+  if (source === 'readiness') {
+    defaults.what_to_change = item.what_to_change || 'Clear the readiness blocker or triage item before starting broader implementation work.';
+    defaults.how_to_prove = item.how_to_prove || 'Rebuild project intelligence and confirm readiness moved to ready or the remaining state is explicitly understood.';
+    defaults.stop_when = item.stop_when || 'Stop once readiness is ready, or when a remaining blocker requires product or environment input.';
+  } else if (source === 'agent-feedback') {
+    defaults.what_to_change = item.what_to_change || 'Inspect corrective feedback and update only the guidance or workflow behavior still supported by current code.';
+    defaults.how_to_prove = item.how_to_prove || 'Rebuild project intelligence and confirm feedback remains advisory unless manually promoted with current evidence.';
+    defaults.stop_when = item.stop_when || 'Stop when unsupported feedback is not reused automatically, or when promotion needs a human confirmation.';
+  } else if (source === 'review-outcomes') {
+    defaults.what_to_change = item.what_to_change || 'Triage aggregate review-outcome signals and correct stale or rejected guidance before repeating it.';
+    defaults.how_to_prove = item.how_to_prove || 'Rebuild project intelligence and confirm future guidance points to current code, validation, and review evidence.';
+    defaults.stop_when = item.stop_when || 'Stop when stale guidance is refreshed, rejected guidance is not repeated, or a missed issue has regression coverage planned.';
+  } else if (source === 'review-prep') {
+    defaults.what_to_change = item.what_to_change || 'Use read-first and validate-first guidance to define a small implementation slice, not a broad project plan.';
+    defaults.how_to_prove = item.how_to_prove || 'Confirm the selected slice has current-code evidence, focused tests, full validation, and review coverage.';
+    defaults.stop_when = item.stop_when || 'Stop at slice selection if product intent or acceptance criteria are unclear.';
+  } else if (source === 'context-advisor') {
+    defaults.what_to_change = item.what_to_change || 'Triage the context-budget or context-size signal and narrow scope only if the current budget helper still reports pressure.';
+    defaults.how_to_prove = item.how_to_prove || 'Run the context budget and context advisor helpers and confirm the compact packet is within budget or has an explicit trim plan.';
+    defaults.stop_when = item.stop_when || 'Stop when the budget signal clears, a trim plan exists, or the selected work must be split before review.';
+  } else if (source === 'import-gaps') {
+    defaults.what_to_change = item.what_to_change || 'Inspect unresolved import guidance and separate expected static-analysis gaps from project gaps that need review.';
+    defaults.how_to_prove = item.how_to_prove || 'Refresh the code map or topology helper and confirm production-scope gaps are cleared, accepted, or still labeled for review.';
+    defaults.stop_when = item.stop_when || 'Stop when remaining gaps are either accepted static-analysis limits or require project-specific bundler knowledge.';
+  } else if (source === 'project-intelligence') {
+    defaults.what_to_change = item.what_to_change || 'Select a small product-backed slice, then refresh project intelligence before planning from it.';
+    defaults.how_to_prove = item.how_to_prove || 'Confirm refreshed intelligence produces no stronger local candidate, then validate the selected slice normally.';
+    defaults.stop_when = item.stop_when || 'Stop when the next slice requires product judgment, missing context, or external state.';
+  }
+  return defaults;
+}
+
 function addNextWorkItem(items, item) {
   if (!item || !item.title) return;
   const dedupeKey = [
@@ -642,8 +715,13 @@ function addNextWorkItem(items, item) {
     why: item.why || '',
     start_with: topItems(item.start_with || [], 4),
     validate_with: topItems(item.validate_with || [], 4),
+    evidence_strength: item.evidence_strength,
+    what_to_change: item.what_to_change,
+    how_to_prove: item.how_to_prove,
+    stop_when: item.stop_when,
     proof_boundary: item.proof_boundary || 'Advisory candidate only; verify against current code, tests, and review output before treating it as work complete.',
   });
+  Object.assign(items[items.length - 1], actionQualityForItem(items[items.length - 1]));
 }
 
 function nextWorkItems(intelligenceDraft) {
@@ -669,6 +747,7 @@ function nextWorkItems(intelligenceDraft) {
   }
 
   if (corrective > 0) {
+    const feedbackIsStale = feedback.stale_markers && feedback.stale_markers.status && feedback.stale_markers.status !== 'current';
     addNextWorkItem(items, {
       title: 'Review corrective agent feedback before reusing guidance',
       priority: 'medium',
@@ -676,6 +755,10 @@ function nextWorkItems(intelligenceDraft) {
       why: `${corrective} corrective feedback signal(s) may change how agents should interpret similar work.`,
       start_with: [feedback.file || 'agent-feedback.jsonl', ...(review.review_notes || []).filter((item) => item.includes('corrective agent-feedback')).slice(0, 1)],
       validate_with: ['scripts/forgeflow/build-project-intelligence.js --json'],
+      evidence_strength: feedbackIsStale ? 'weak' : 'medium',
+      stop_when: feedbackIsStale
+        ? 'Stop when stale feedback is not promoted or reused without fresh current-code evidence.'
+        : undefined,
       proof_boundary: 'Feedback is advisory only and must be promoted manually only after current-code verification.',
     });
   }
@@ -703,7 +786,7 @@ function nextWorkItems(intelligenceDraft) {
       source: risk.source,
       why: risk.summary,
       start_with: [risk.next_action].filter(Boolean),
-      validate_with: review.refresh_first || [],
+      validate_with: validationForRisk(risk, review),
       proof_boundary: 'A triaged signal is not a bug fix by itself; verify the raw artifact and current project behavior.',
     });
   }
@@ -866,8 +949,12 @@ function renderMarkdown(intelligence) {
       lines.push(`- ${item.priority}: ${item.title}`);
       if (item.why) lines.push(`  - Why: ${item.why}`);
       lines.push(`  - Source: ${item.source}`);
+      lines.push(`  - Evidence strength: ${item.evidence_strength || 'weak'}`);
+      lines.push(`  - What to change: ${item.what_to_change || '(unspecified)'}`);
       lines.push(`  - Start with: ${item.start_with.length > 0 ? item.start_with.join('; ') : '(none)'}`);
       lines.push(`  - Validate with: ${item.validate_with.length > 0 ? item.validate_with.join('; ') : '(none)'}`);
+      lines.push(`  - How to prove: ${item.how_to_prove || '(unspecified)'}`);
+      lines.push(`  - Stop when: ${item.stop_when || '(unspecified)'}`);
       lines.push(`  - Boundary: ${item.proof_boundary}`);
     }
   }
@@ -961,9 +1048,13 @@ function renderNextWorkView(intelligence) {
     items.forEach((item, index) => {
       lines.push(`${index + 1}. [${item.priority || 'medium'}] ${item.title}`);
       if (item.source) lines.push(`   Source: ${item.source}`);
+      lines.push(`   Evidence strength: ${item.evidence_strength || 'weak'}`);
       if (item.why) lines.push(`   Why: ${item.why}`);
+      lines.push(`   What to change: ${item.what_to_change || '(unspecified)'}`);
       lines.push(`   Start with: ${(item.start_with || []).length > 0 ? item.start_with.join('; ') : '(none)'}`);
       lines.push(`   Validate with: ${(item.validate_with || []).length > 0 ? item.validate_with.join('; ') : '(none)'}`);
+      lines.push(`   How to prove: ${item.how_to_prove || '(unspecified)'}`);
+      lines.push(`   Stop when: ${item.stop_when || '(unspecified)'}`);
       lines.push(`   Boundary: ${item.proof_boundary || 'Advisory candidate only.'}`);
       lines.push('');
     });
@@ -1035,6 +1126,10 @@ function renderImplementationBriefStub(intelligence, index = 1) {
   lines.push(`- Priority: ${item.priority || 'medium'}`);
   lines.push(`- Source: ${item.source || 'project-intelligence'}`);
   if (item.why) lines.push(`- Why: ${item.why}`);
+  lines.push(`- Evidence strength: ${item.evidence_strength || 'weak'}`);
+  lines.push(`- What to change: ${item.what_to_change || 'Inspect current evidence and choose the smallest bounded change it supports.'}`);
+  lines.push(`- How to prove: ${item.how_to_prove || 'Run focused validation, full validation, and review before treating the work as complete.'}`);
+  lines.push(`- Stop when: ${item.stop_when || 'Stop when evidence contradicts the candidate or product judgment is needed.'}`);
   lines.push('', '## Scope To Confirm', '');
   lines.push('- Confirm the requested product outcome and exact acceptance criteria before editing.');
   lines.push('- Keep the first implementation slice bounded to the candidate above unless current evidence requires a smaller prerequisite.');
