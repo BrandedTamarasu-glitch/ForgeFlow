@@ -9,7 +9,7 @@
     {
       "name": "Forgeflow",
       "description": "End-to-end AI software delivery workflow for Claude Code and Codex with agents, commands, hooks, project rules, runtime helpers, and local pattern memory.",
-      "version": "4.3.19",
+      "version": "4.3.20",
       "source": {
         "source": "github",
         "repo": "BrandedTamarasu-glitch/ForgeFlow"

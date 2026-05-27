@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow - V4.3.20 Changelog</title>
+  <style>
+    body { background: #0d0d0d; color: #ddd8cc; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.65; margin: 0; }
+    main { max-width: 820px; margin: 0 auto; padding: 72px 32px 96px; }
+    .version { color: #7a7670; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
+    h1 { font-size: 40px; font-weight: 400; line-height: 1.15; margin: 14px 0 20px; }
+    h2 { border-top: 1px solid #303030; color: #f0a232; font-size: 18px; font-weight: 600; margin: 42px 0 18px; padding-top: 28px; }
+    p, li { color: #c9c2b6; }
+    code { background: #1c1c1c; border: 1px solid #303030; border-radius: 4px; color: #f0c070; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 1px 5px; }
+    a { color: #f0a232; text-decoration: underline; text-underline-offset: 0.16em; }
+    .nav { display: flex; justify-content: space-between; margin-top: 52px; padding-top: 24px; border-top: 1px solid #303030; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="version">Forgeflow V4.3.20 · 27 May 2026</div>
+    <h1>Release: Sharper Local Intelligence And Release Confidence</h1>
+    <p>
+      Forgeflow 4.3.20 improves how local project signals turn into safe next actions. It adds clearer context-budget trimming guidance, first-run failure-digest handling, installed-runtime post-release checks, support-bundle redaction previews, and stronger project-intelligence action cards.
+    </p>
+
+    <h2>Context And Failure Guidance</h2>
+    <ul>
+      <li>Context-budget warnings now include advisory trim plans with target compact tokens, reduce-by estimates, focused-packet commands, and a stop rule for raw-required evidence.</li>
+      <li>Failure-digest reporting now distinguishes normal first-run missing state from stale or invalid digest state.</li>
+      <li>Trends and reports point users at the first digest capture path without implying that a missing first digest is already a failure.</li>
+    </ul>
+
+    <h2>Release And Support Safety</h2>
+    <ul>
+      <li>Post-publish release readiness now checks installed-runtime dogfood evidence alongside plugin version, tag, changelog, release notes, source smoke, and update smoke.</li>
+      <li>Support bundles now include a snippet-free redaction preview with sensitive-category counts before sharing.</li>
+      <li>The redaction preview flags private URLs, assignment secrets, local paths, relative paths, and repo-relative file references without printing matched values.</li>
+    </ul>
+
+    <h2>Project Intelligence Action Cards</h2>
+    <ul>
+      <li>Project-intelligence next-work candidates now include evidence strength, what-to-change, how-to-prove, stop-when, start, validation, and proof-boundary fields.</li>
+      <li>Context-advisor, import-gap, project-learning, freshness, feedback, and review-outcome candidates now use source-specific proof commands instead of unrelated refresh commands.</li>
+      <li>Stale agent feedback is downgraded to weak evidence with a stale-specific stop condition, keeping local learning signals advisory until current-code proof exists.</li>
+    </ul>
+
+    <h2>Validation</h2>
+    <ul>
+      <li><code>node scripts/forgeflow/test-advise-context.js</code></li>
+      <li><code>node scripts/forgeflow/test-failure-digest.js</code></li>
+      <li><code>node scripts/forgeflow/test-render-release-readiness.js</code></li>
+      <li><code>node scripts/forgeflow/test-render-support-bundle.js</code></li>
+      <li><code>node scripts/forgeflow/test-build-project-intelligence.js</code></li>
+      <li>Full <code>scripts/forgeflow/test-*.js</code> suite</li>
+    </ul>
+
+    <div class="nav">
+      <a href="./v4.3.19.html">&larr; V4.3.19</a>
+      <span>V4.3.20</span>
+    </div>
+  </main>
+</body>
+</html>
