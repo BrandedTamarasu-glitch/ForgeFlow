@@ -7,6 +7,7 @@ const {
   collectNextActions,
   combineStatuses,
   parseArgs,
+  redactionPreview,
   renderMarkdown,
 } = require('./render-support-bundle');
 
@@ -44,6 +45,16 @@ async function main() {
     home,
   });
   const markdown = renderMarkdown(bundle);
+  const preview = redactionPreview({
+    path: '/home/corye/private/project',
+    workspace: '/workspaces/Forgeflow',
+    mnt: '/mnt/data/support',
+    relative: '../docs/missing.md',
+    repoFile: 'README.md',
+    repoPath: 'docs/wiki/Support-Triage.md',
+    token: 'token=SHOULD_NOT_PRINT',
+    url: 'https://example.internal/support',
+  });
   const parsed = parseArgs(['--root', repoRoot, '--project-dir', projectDir, '--out', out, '--home', home, '--json']);
   const actions = collectNextActions({
     sections: {
@@ -67,6 +78,8 @@ async function main() {
     ['bundle uses plan-only readiness', bundle.sections.release_readiness.mode === 'plan-only'],
     ['bundle includes post-publish verification', bundle.sections.release_readiness.post_publish_verification && bundle.sections.release_readiness.post_publish_verification.status],
     ['bundle includes acceptance health', bundle.sections.code_map_acceptance.status === 'attention' && bundle.sections.code_map_acceptance.stale_total === 1 && bundle.sections.code_map_acceptance.lifecycle_warning_total === 1],
+    ['bundle includes redaction preview', bundle.redaction_preview.status === 'review-needed' && bundle.redaction_preview.categories.some((item) => item.category === 'local-path') && markdown.includes('## Redaction Preview') && markdown.includes('local-path')],
+    ['redaction preview omits snippets', preview.status === 'review-needed' && preview.categories.some((item) => item.category === 'assignment-secret') && preview.categories.some((item) => item.category === 'private-url') && preview.categories.some((item) => item.category === 'local-path' && item.count >= 6) && redactionPreview({ root: '/workspaces/Forgeflow', docs: '../docs/missing.md', source: 'README.md', wiki: 'docs/wiki/Support-Triage.md' }).status === 'review-needed' && !JSON.stringify(preview).includes('SHOULD_NOT_PRINT') && !JSON.stringify(preview).includes('example.internal') && !JSON.stringify(preview).includes('/workspaces')],
     ['does not load project-local docs validator', unsafeBundle.sections.docs_drift.status === 'skip' && !fs.existsSync(unsafeMarker)],
     ['skips source-only readiness outside Forgeflow checkout', unsafeBundle.sections.release_readiness.status === 'skip' && unsafeBundle.sections.release_readiness.mode === 'source-only' && unsafeBundle.sections.release_readiness.blockers.length === 0],
     ['bundle keeps privacy boundary', bundle.privacy_boundary.includes('may include local paths') && markdown.includes('do not publish')],

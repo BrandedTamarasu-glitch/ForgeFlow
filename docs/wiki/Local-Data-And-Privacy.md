@@ -74,6 +74,8 @@ scripts/forgeflow/render-evaluation-report.js --outcomes .forgeflow/<project>/re
 
 Keep raw `review-outcomes.jsonl`, context packets, memory summaries, implementation notes, and telemetry rows local unless the receiving audience is allowed to see the underlying project context. For team trials, use [Team Privacy Boundaries](Team-Privacy-Boundaries) to choose between local-maintainer, private-team, and public sharing levels. See [Evaluation Sharing](Evaluation-Sharing) and [Public-Safe Examples](Public-Examples).
 
+Support bundles include a snippet-free redaction preview that reports sensitive categories and counts without showing the matched values. Use it as a starting point, not as proof that the bundle is public-safe.
+
 Implementation notes live at `.forgeflow/<project-name>/implementation-notes.md`. They are local handoff context for decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes discovered during `/implement`. Keep them out of commits and do not paste secrets, raw settings JSON, tokens, private URLs, customer names, or large source snippets into the file.
 
 ## Sensitive Files

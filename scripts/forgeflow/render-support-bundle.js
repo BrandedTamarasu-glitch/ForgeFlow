@@ -5,6 +5,7 @@ const path = require('path');
 const { writeFileSafe } = require('./file-safety');
 const { getVersionStatus } = require('./forgeflow-version');
 const { runHealthCheck } = require('./health-check');
+const { sensitiveMatches } = require('./privacy-boundary');
 const { buildReleaseReadiness } = require('./render-release-readiness');
 const { showCodeMap } = require('./show-code-map');
 const { smokeCheck } = require('./smoke-check');
@@ -219,6 +220,44 @@ function summarizeDocs(docs) {
   };
 }
 
+function redactionPreview(value) {
+  const counts = new Map();
+  let scanned = 0;
+  function add(label) {
+    counts.set(label, (counts.get(label) || 0) + 1);
+  }
+  function scan(item) {
+    if (item === null || item === undefined) return;
+    if (Array.isArray(item)) {
+      for (const child of item) scan(child);
+      return;
+    }
+    if (typeof item === 'object') {
+      for (const child of Object.values(item)) scan(child);
+      return;
+    }
+    if (!['string', 'number', 'boolean'].includes(typeof item)) return;
+    scanned += 1;
+    const text = String(item);
+    for (const label of sensitiveMatches(text)) add(label);
+    if (/(^|[\s"'(])(?:(?:\/(?:home|Users|tmp|workspaces|workspace|mnt|var|private|opt)\/[^\s)]+)|(?:[A-Za-z]:\\[^\s)]+)|(?:\.{1,2}\/[^\s)]+)|(?:[A-Za-z0-9_.-]+\/[A-Za-z0-9_./-]+)|(?:[A-Za-z0-9_.-]+\.(?:md|js|ts|tsx|jsx|json|html|css|yml|yaml|toml|txt)))(?=$|[\s)"'])/i.test(text)) add('local-path');
+  }
+  scan(value);
+  const categories = [...counts.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([category, count]) => ({ category, count }));
+  const findingTotal = categories.reduce((sum, item) => sum + item.count, 0);
+  return {
+    status: findingTotal > 0 ? 'review-needed' : 'clear',
+    scanned_fields: scanned,
+    finding_total: findingTotal,
+    categories,
+    guidance: findingTotal > 0
+      ? 'Preview only: categories and counts are shown without snippets. Create a public-safe summary before sharing this support bundle outside the trusted project/team context.'
+      : 'No sensitive categories detected by the local preview. Still review before sharing outside the trusted project/team context.',
+  };
+}
+
 function validateDocsSafe(root) {
   const sourceRoot = path.resolve(__dirname, '..', '..');
   if (path.resolve(root) !== sourceRoot) {
@@ -251,6 +290,13 @@ function renderMarkdown(bundle) {
     `Project dir: ${bundle.project_dir}`,
     '',
     bundle.privacy_boundary,
+    '',
+    '## Redaction Preview',
+    '',
+    `- Status: ${bundle.redaction_preview.status}`,
+    `- Findings: ${bundle.redaction_preview.finding_total}`,
+    `- Categories: ${bundle.redaction_preview.categories.length > 0 ? bundle.redaction_preview.categories.map((item) => `${item.category} (${item.count})`).join(', ') : '(none)'}`,
+    `- Guidance: ${bundle.redaction_preview.guidance}`,
     '',
     '## Summary',
     '',
@@ -344,6 +390,7 @@ async function buildSupportBundle(opts = {}) {
       markdown: markdownOut,
     },
   };
+  bundle.redaction_preview = redactionPreview(bundle);
   bundle.status = combineStatuses([
     bundle.sections.version.bundle_status,
     bundle.sections.health.status,
@@ -380,5 +427,6 @@ module.exports = {
   collectNextActions,
   combineStatuses,
   parseArgs,
+  redactionPreview,
   renderMarkdown,
 };

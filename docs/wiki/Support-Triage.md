@@ -14,6 +14,7 @@ expected_result:
 actual_result:
 health_status: pass | warn | fail | not-run
 restart_after_install: yes | no | unknown
+support_bundle_redaction_preview: clear | review-needed | not-run
 private_data_removed: yes | no
 ```
 
@@ -103,6 +104,10 @@ scripts/forgeflow/advise-context.js --root .forgeflow --record --json
 ```
 
 Use [Context Budget Examples](Context-Budget-Examples) when packets are over budget or savings are low. Share aggregate context totals, not raw context packets.
+
+## Support Bundle Privacy
+
+`/forgeflow-support` includes a snippet-free redaction preview. The preview reports sensitive categories and counts, such as local paths or private URLs, without printing the matched values. Treat `review-needed` as a reminder to create a public-safe summary before sharing the bundle outside the trusted project/team context.
 
 ## Closeout
 
