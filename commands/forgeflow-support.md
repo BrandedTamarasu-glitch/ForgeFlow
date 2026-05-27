@@ -28,7 +28,7 @@ fi
 env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/render-support-bundle.js" "${ARGS[@]}"
 ```
 
-If the command reports `fail` or `blocked`, follow the listed next actions. The bundle is local support data and may include local paths; review and redact it before sharing outside the trusted project/team context.
+If the command reports `fail`, `blocked`, or `attention`, follow the listed next actions. The bundle is local support data and may include local paths; review and redact it before sharing outside the trusted project/team context.
 
 </process>
 
@@ -36,5 +36,6 @@ If the command reports `fail` or `blocked`, follow the listed next actions. The 
 - [ ] JSON and Markdown support bundle artifacts are written under `.forgeflow/<project>/support/`
 - [ ] Bundle includes version, health, smoke, release readiness, docs drift, and trends summaries
 - [ ] Output lists concrete next actions for warnings or failures
+- [ ] Output includes release readiness post-publish verification and code-map acceptance health
 - [ ] No GitHub action, tag, push, or publish step runs
 </success_criteria>

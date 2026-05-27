@@ -6,6 +6,7 @@ const { writeFileSafe } = require('./file-safety');
 const { getVersionStatus } = require('./forgeflow-version');
 const { runHealthCheck } = require('./health-check');
 const { buildReleaseReadiness } = require('./render-release-readiness');
+const { showCodeMap } = require('./show-code-map');
 const { smokeCheck } = require('./smoke-check');
 const { showProjectTrends } = require('./show-project-trends');
 
@@ -132,6 +133,12 @@ function summarizeReadiness(readiness) {
     status: readiness.status,
     mode: readiness.mode,
     command_count: readiness.command_count,
+    post_publish_verification: readiness.post_publish_verification ? {
+      status: readiness.post_publish_verification.status,
+      version: readiness.post_publish_verification.version,
+      tag: readiness.post_publish_verification.tag,
+      next_command: readiness.post_publish_verification.next_command,
+    } : null,
     blockers: (readiness.blockers || []).map((item) => ({
       kind: item.kind,
       category: item.category,
@@ -159,7 +166,31 @@ function releaseReadinessSafe(root) {
       reason: 'release readiness runs only from the Forgeflow source checkout',
     };
   }
-  return buildReleaseReadiness({ root, planOnly: true });
+  return buildReleaseReadiness({ root, planOnly: true, postPublish: true });
+}
+
+function summarizeCodeMapAcceptance(codeMap) {
+  const acceptance = codeMap && codeMap.summary && codeMap.summary.import_gaps
+    ? codeMap.summary.import_gaps.acceptance
+    : null;
+  if (!acceptance) {
+    return {
+      status: 'missing',
+      accepted_total: 0,
+      stale_total: 0,
+      invalid_total: 0,
+      lifecycle_warning_total: 0,
+      path: '',
+    };
+  }
+  return {
+    status: acceptance.status,
+    accepted_total: acceptance.accepted_total || 0,
+    stale_total: acceptance.stale_total || 0,
+    invalid_total: acceptance.invalid_total || 0,
+    lifecycle_warning_total: acceptance.lifecycle_warning_total || 0,
+    path: acceptance.path || '',
+  };
 }
 
 function summarizeTrends(trends) {
@@ -227,6 +258,8 @@ function renderMarkdown(bundle) {
     `- Health: ${bundle.sections.health.status}`,
     `- Smoke: ${bundle.sections.smoke.status}`,
     `- Release readiness: ${bundle.sections.release_readiness.status} (${bundle.sections.release_readiness.mode})`,
+    `- Post-publish verification: ${bundle.sections.release_readiness.post_publish_verification ? bundle.sections.release_readiness.post_publish_verification.status : 'not-run'}`,
+    `- Code-map acceptance: ${bundle.sections.code_map_acceptance.status}`,
     `- Docs drift: ${bundle.sections.docs_drift.status}`,
     `- Trends freshness: ${bundle.sections.trends.freshness}`,
     '',
@@ -260,6 +293,14 @@ function collectNextActions(bundle) {
   for (const blocker of bundle.sections.release_readiness.blockers || []) {
     add(blocker.command, blocker.clears || 'Release readiness blocker.');
   }
+  const postPublish = bundle.sections.release_readiness.post_publish_verification;
+  if (postPublish && postPublish.status !== 'published-and-verified') {
+    add('/forgeflow-release-readiness --post-publish', postPublish.next_command || 'Post-publish verification needs attention.');
+  }
+  const acceptance = bundle.sections.code_map_acceptance || {};
+  if (acceptance.invalid_total > 0 || acceptance.stale_total > 0 || acceptance.lifecycle_warning_total > 0) {
+    add('/forgeflow-code-map', 'Review local code-map acceptance invalid, stale, or lifecycle warning entries.');
+  }
   for (const failure of bundle.sections.docs_drift.failures || []) {
     add(failure.source, failure.fix || failure.message);
   }
@@ -278,6 +319,7 @@ async function buildSupportBundle(opts = {}) {
   const health = runHealthCheck({ root, projectDir });
   const smoke = smokeCheck({ root, projectDir, mode: 'downstream' });
   const releaseReadiness = releaseReadinessSafe(root);
+  const codeMap = showCodeMap({ root, projectDir, recordHistory: false });
   const docsDrift = validateDocsSafe(root);
   const trends = showProjectTrends({ root, projectDir, refresh: false });
   const bundle = {
@@ -292,6 +334,7 @@ async function buildSupportBundle(opts = {}) {
       health: summarizeHealth(health, projectDir),
       smoke: summarizeSmoke(smoke),
       release_readiness: summarizeReadiness(releaseReadiness),
+      code_map_acceptance: summarizeCodeMapAcceptance(codeMap),
       docs_drift: summarizeDocs(docsDrift),
       trends: summarizeTrends(trends),
     },
@@ -306,6 +349,7 @@ async function buildSupportBundle(opts = {}) {
     bundle.sections.health.status,
     bundle.sections.smoke.status,
     bundle.sections.release_readiness.status,
+    bundle.sections.code_map_acceptance.status,
     bundle.sections.docs_drift.status,
     bundle.sections.trends.freshness,
   ]);

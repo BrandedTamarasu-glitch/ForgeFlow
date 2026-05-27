@@ -19,6 +19,12 @@ async function main() {
   const home = path.join(tmp, 'home');
   fs.mkdirSync(projectDir, { recursive: true });
   fs.mkdirSync(home, { recursive: true });
+  fs.writeFileSync(path.join(projectDir, 'code-map-accept.json'), JSON.stringify({
+    schema_version: '1',
+    accepted_gaps: [
+      { source: 'src/missing.ts', specifier: './old' },
+    ],
+  }, null, 2));
 
   const bundle = await buildSupportBundle({
     root: repoRoot,
@@ -55,14 +61,16 @@ async function main() {
     ['parses args', parsed.json === true && parsed.root === repoRoot && parsed.projectDir === projectDir && parsed.out === out && parsed.home === home],
     ['writes json artifact', fs.existsSync(out) && JSON.parse(fs.readFileSync(out, 'utf8')).schema_version === '1'],
     ['writes markdown artifact', fs.existsSync(out.replace(/\.json$/, '.md'))],
-    ['bundle contract', bundle.schema_version === '1' && bundle.sections.version && bundle.sections.health && bundle.sections.smoke && bundle.sections.release_readiness && bundle.sections.docs_drift && bundle.sections.trends],
+    ['bundle contract', bundle.schema_version === '1' && bundle.sections.version && bundle.sections.health && bundle.sections.smoke && bundle.sections.release_readiness && bundle.sections.code_map_acceptance && bundle.sections.docs_drift && bundle.sections.trends],
     ['version status is mappable for bundle status', bundle.sections.version.bundle_status === 'warn' && combineStatuses(['pass', bundle.sections.version.bundle_status]) === 'warn'],
     ['project dir forwarded to health and smoke', bundle.sections.health.project_dir === projectDir && bundle.sections.smoke.project_dir === projectDir],
     ['bundle uses plan-only readiness', bundle.sections.release_readiness.mode === 'plan-only'],
+    ['bundle includes post-publish verification', bundle.sections.release_readiness.post_publish_verification && bundle.sections.release_readiness.post_publish_verification.status],
+    ['bundle includes acceptance health', bundle.sections.code_map_acceptance.status === 'attention' && bundle.sections.code_map_acceptance.stale_total === 1 && bundle.sections.code_map_acceptance.lifecycle_warning_total === 1],
     ['does not load project-local docs validator', unsafeBundle.sections.docs_drift.status === 'skip' && !fs.existsSync(unsafeMarker)],
     ['skips source-only readiness outside Forgeflow checkout', unsafeBundle.sections.release_readiness.status === 'skip' && unsafeBundle.sections.release_readiness.mode === 'source-only' && unsafeBundle.sections.release_readiness.blockers.length === 0],
     ['bundle keeps privacy boundary', bundle.privacy_boundary.includes('may include local paths') && markdown.includes('do not publish')],
-    ['markdown renders next actions', markdown.includes('# Forgeflow Support Bundle') && markdown.includes('## Next Actions') && markdown.includes('## Artifacts')],
+    ['markdown renders next actions', markdown.includes('# Forgeflow Support Bundle') && markdown.includes('Post-publish verification:') && markdown.includes('Code-map acceptance:') && markdown.includes('## Next Actions') && markdown.includes('## Artifacts')],
     ['collects deduped next actions', actions.length === 6 && actions.some((item) => item.command === '/forgeflow-trends --refresh') && actions.some((item) => item.command === 'README.md')],
   ];
 
