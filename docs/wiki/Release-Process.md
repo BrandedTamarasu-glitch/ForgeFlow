@@ -119,4 +119,4 @@ After publishing, run:
 /forgeflow-release-readiness --post-publish --save-post-publish
 ```
 
-`/forgeflow-version` should show the latest GitHub release and installed commit. `/forgeflow-health` should pass after any required manual `settings.json` hook or statusline wiring. `/forgeflow-release-readiness --post-publish --save-post-publish` should show local tag, changelog, release-note, source-smoke, and update-smoke evidence, then save a local comparison snapshot. Forgeflow does not auto-edit `settings.json` by design.
+`/forgeflow-version` should show the latest GitHub release and installed commit. `/forgeflow-health` should pass after any required manual `settings.json` hook or statusline wiring. `/forgeflow-release-readiness --post-publish --save-post-publish` should show local tag, changelog, release-note, source-smoke, update-smoke, and installed-runtime dogfood evidence, then save a local comparison snapshot. Forgeflow does not auto-edit `settings.json` by design.

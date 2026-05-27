@@ -80,6 +80,12 @@ const directPostPublish = postPublishVerification(root, [
   { command: 'node scripts/forgeflow/test-render-release-notes.js', status: 'pass' },
   { command: 'node scripts/forgeflow/smoke-check.js --mode source --json', status: 'pass' },
   { command: 'node scripts/forgeflow/test-update-forgeflow.js', status: 'pass' },
+  { command: 'node scripts/forgeflow/test-installed-runtime-dogfood.js', status: 'pass' },
+]);
+const missingInstalledRuntimePostPublish = postPublishVerification(root, [
+  { command: 'node scripts/forgeflow/test-render-release-notes.js', status: 'pass' },
+  { command: 'node scripts/forgeflow/smoke-check.js --mode source --json', status: 'pass' },
+  { command: 'node scripts/forgeflow/test-update-forgeflow.js', status: 'pass' },
 ]);
 const patchZeroRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-release-readiness-patch-zero-'));
 fs.mkdirSync(path.join(patchZeroRoot, '.claude-plugin'), { recursive: true });
@@ -130,6 +136,7 @@ const checks = [
   ['bad baseline does not abort readiness', badBaselineResult.status === result.status && badBaselineResult.comparison.status === 'no-baseline' && badBaselineResult.comparison.baseline.path === badBaselinePath && badBaselineResult.comparison.baseline.reason.length > 0],
   ['comparison helper reports unchanged', compareReleaseReadiness(result, result).status === 'unchanged'],
   ['post-publish verification is local and advisory', directPostPublish.status === 'published-propagation-pending' && directPostPublish.version === '9.9.0' && directPostPublish.tag === 'v9.9.0' && directPostPublish.evidence.some((item) => item.name === 'local-tag' && item.status === 'warn') && directPostPublish.boundary.includes('does not create tags')],
+  ['post-publish verifies installed runtime dogfood', directPostPublish.evidence.some((item) => item.name === 'installed-runtime-dogfood' && item.status === 'pass') && missingInstalledRuntimePostPublish.evidence.some((item) => item.name === 'installed-runtime-dogfood' && item.status === 'warn' && item.clears.includes('without mutating installed files'))],
   ['post-publish supports patch-zero changelog candidate', changelogCandidates('9.8.0').includes('docs/changelogs/v9.8.html') && patchZeroPostPublish.evidence.some((item) => item.name === 'changelog' && item.status === 'pass' && item.value === 'docs/changelogs/v9.8.html')],
   ['post-publish readiness renders verification', postPublishResult.post_publish_verification && postPublishResult.post_publish_verification.status === 'published-propagation-pending' && postPublishMarkdown.includes('## Post-Publish Verification') && postPublishMarkdown.includes('published-propagation-pending')],
   ['post-publish snapshot saves and compares', savedPostPublishResult.post_publish_verification.snapshot.saved === true && fs.existsSync(postPublishSnapshotPath(root)) && comparedPostPublishResult.post_publish_verification.comparison.status === 'unchanged'],

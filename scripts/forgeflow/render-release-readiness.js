@@ -442,6 +442,7 @@ function postPublishVerification(root, checks = []) {
   const releaseNotesCheck = checks.find((item) => item.command === 'node scripts/forgeflow/test-render-release-notes.js') || null;
   const sourceSmokeCheck = checks.find((item) => item.command === 'node scripts/forgeflow/smoke-check.js --mode source --json') || null;
   const updateSmokeCheck = checks.find((item) => item.command === 'node scripts/forgeflow/test-update-forgeflow.js') || null;
+  const installedRuntimeCheck = checks.find((item) => item.command === 'node scripts/forgeflow/test-installed-runtime-dogfood.js') || null;
   const checkStatus = (item) => (item && item.status === 'pass' ? 'pass' : 'warn');
   const evidence = [
     {
@@ -479,6 +480,12 @@ function postPublishVerification(root, checks = []) {
       status: checkStatus(updateSmokeCheck),
       value: updateSmokeCheck ? updateSmokeCheck.command : '',
       clears: 'Run node scripts/forgeflow/test-update-forgeflow.js.',
+    },
+    {
+      name: 'installed-runtime-dogfood',
+      status: checkStatus(installedRuntimeCheck),
+      value: installedRuntimeCheck ? installedRuntimeCheck.command : '',
+      clears: 'Run node scripts/forgeflow/test-installed-runtime-dogfood.js to verify installed runtime helper behavior without mutating installed files.',
     },
   ];
   const failures = evidence.filter((item) => item.status === 'fail');
