@@ -244,6 +244,47 @@ fs.writeFileSync(path.join(infoLatestDir, 'latest-insights-report.json'), JSON.s
   issue_count: 0,
 }, null, 2));
 const infoOnlyGaps = showProjectTrends({ root, projectDir: infoProjectDir });
+const missingDigestProjectDir = path.join(root, '.forgeflow', 'MissingDigest');
+const missingDigestContextDir = path.join(missingDigestProjectDir, 'context');
+const missingDigestLatestDir = path.join(missingDigestContextDir, 'latest');
+fs.mkdirSync(missingDigestLatestDir, { recursive: true });
+fs.writeFileSync(path.join(missingDigestContextDir, 'code-map-history.jsonl'), `${JSON.stringify({
+  schema_version: '1',
+  generated_at: '2026-05-20T00:00:00Z',
+  commit_short: '',
+  dirty: false,
+  summary: {
+    source_files: 1,
+    local_edges: 0,
+    unresolved_imports: 0,
+    skipped_dynamic_imports: 0,
+    sections: 1,
+    changed_sections: 0,
+    markdown_section_files: 0,
+  },
+  high_fan_in: [],
+  high_fan_out: [],
+})}\n`);
+fs.writeFileSync(path.join(missingDigestProjectDir, 'project-learnings.md'), [
+  '# Project Learnings',
+  '',
+  '## Sources',
+  '',
+  '- Generated at: 2026-05-20T00:00:00Z',
+  '- Code map history: 1 snapshot(s)',
+  '',
+].join('\n'));
+fs.writeFileSync(path.join(missingDigestLatestDir, 'latest-insights-report.json'), JSON.stringify({
+  schema_version: '1',
+  status: 'injected',
+  reason: 'quality-check-passing',
+  generated_at: '2026-05-20T00:00:00.000Z',
+  git: { available: false, commit_short: '', dirty: false },
+  check_status: 'pass',
+  issue_count: 0,
+}, null, 2));
+const missingDigestResult = showProjectTrends({ root, projectDir: missingDigestProjectDir });
+const missingDigestMarkdown = renderMarkdown(missingDigestResult);
 const symlinkProjectDir = path.join(root, '.forgeflow', 'SymlinkLearning');
 const symlinkContextDir = path.join(symlinkProjectDir, 'context');
 const symlinkLatestDir = path.join(symlinkContextDir, 'latest');
@@ -410,6 +451,7 @@ const checks = [
   ['recommends refresh for stale artifacts', staleGuidance.recommendations.some((item) => item.command === 'forgeflow-trends --refresh')],
   ['summarizes latest insights', result.latest_insights.status === 'injected' && result.latest_insights.check_status === 'pass' && result.latest_insights.freshness.status === 'current'],
   ['summarizes latest failure digest', result.failure_digest.status === 'compact' && result.failure_digest.mode === 'failed-test' && result.failure_digest.git.commit_short === 'bbbbbbb' && result.failure_digest.git.dirty === false && result.failure_digest.freshness.status === 'current' && result.failure_digest.triage.state === 'usable' && result.failure_digest.triage.confidence === 'high' && result.failure_digest.omitted_lines === 108 && result.failure_digest.summary.includes('FAIL test validates failure digest')],
+  ['explains first-run missing failure digest', missingDigestResult.failure_digest.first_run === true && missingDigestResult.failure_digest.triage.state === 'first-run' && missingDigestResult.failure_digest.first_run_guidance.includes('/forgeflow-failure-digest') && missingDigestResult.recommendations.some((item) => item.command === 'forgeflow-failure-digest' && item.evidence.includes('No latest failure digest artifact')) && missingDigestMarkdown.includes('First run: yes') && missingDigestMarkdown.includes('First-run guidance: Run /forgeflow-failure-digest')],
   ['detects stale failure digest freshness', staleFailureDigestFreshness.status === 'attention' && staleFailureDigestFreshness.issues.some((item) => item.code === 'failure-digest-commit-stale') && staleFailureDigestFreshness.issues.some((item) => item.code === 'failure-digest-dirty-stale')],
   ['detects stale latest insights', staleInsightsFreshness.status === 'attention' && staleInsightsFreshness.issues.some((item) => item.code === 'latest-insights-commit-stale')],
   ['detects stale code map freshness', staleFreshness.status === 'attention' && staleFreshness.issues.some((item) => item.code === 'code-map-commit-stale') && staleFreshness.issues.some((item) => item.code === 'code-map-dirty-stale')],

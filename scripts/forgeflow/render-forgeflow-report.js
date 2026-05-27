@@ -410,6 +410,8 @@ function derivePriorities(report) {
     } else if (report.project_trends.failure_digest.summary) {
       priorities.push(`Use the latest failure digest before rerunning broad validation: ${report.project_trends.failure_digest.summary}`);
     }
+  } else if (report.project_trends.failure_digest && report.project_trends.failure_digest.first_run) {
+    priorities.push('Initialize the first failure digest after the next failed validation command before relying on failure-summary guidance.');
   }
   if (report.context.recommendations && report.context.recommendations.length > 0) {
     priorities.push(...report.context.recommendations.slice(0, 2).map((item) => item.command || item.reason));
@@ -597,8 +599,10 @@ function renderMarkdown(report) {
     if (latestInsights.check_status) lines.push(`- Latest insights quality gate: ${latestInsights.check_status}`);
     if (latestInsights.freshness) lines.push(`- Latest insights freshness: ${latestInsights.freshness.status}`);
     lines.push(`- Latest failure digest: ${failureDigest.status || 'missing'}${failureDigest.mode ? ` (${failureDigest.mode})` : ''}`);
+    if (failureDigest.first_run) lines.push('- Latest failure digest first run: yes');
     if (failureDigest.generated_at) lines.push(`- Latest failure digest generated: ${failureDigest.generated_at}`);
     if (failureDigest.reason) lines.push(`- Latest failure digest reason: ${failureDigest.reason}`);
+    if (failureDigest.first_run_guidance) lines.push(`- Latest failure digest first-run guidance: ${failureDigest.first_run_guidance}`);
     if (failureDigest.present) lines.push(`- Latest failure digest raw required: ${failureDigest.raw_required ? 'yes' : 'no'}`);
     if (failureDigest.freshness) lines.push(`- Latest failure digest freshness: ${failureDigest.freshness.status}`);
     if (failureDigest.triage) {

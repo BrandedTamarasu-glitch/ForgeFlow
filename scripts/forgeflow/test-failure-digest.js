@@ -15,6 +15,7 @@ const unsafe = buildFailureDigest('diff --git a/a b/a\n+change\n', { mode: 'test
 const fenced = buildFailureDigest('diff --git a/a b/a\n```\n+boom\n', { mode: 'test', command: 'git diff' });
 const stale = classifyFailureDigest(digest, { status: 'attention', issues: [{ code: 'failure-digest-commit-stale' }] });
 const missing = classifyFailureDigest({ status: 'missing', present: false }, { status: 'not-applicable', issues: [] });
+const firstRun = classifyFailureDigest({ status: 'missing', present: false, first_run: true }, { status: 'not-applicable', issues: [] });
 const invalid = classifyFailureDigest({ status: 'invalid', present: true, reason: 'fixture invalid' }, { status: 'current', issues: [] });
 const staleRawRequired = classifyFailureDigest({
   status: 'compact',
@@ -37,6 +38,7 @@ const checks = [
   ['raw-required next action is machine safe', unsafe.triage.next_action.command === '' && unsafe.triage.next_action.action === 'inspect-raw-failure-output' && unsafe.markdown.includes('Next action: inspect-raw-failure-output')],
   ['classifies stale digest', stale.state === 'stale' && stale.next_action.command === 'forgeflow-failure-digest'],
   ['classifies missing digest rerun', missing.state === 'rerun-needed' && missing.usefulness === 'not-usable'],
+  ['classifies first-run missing digest', firstRun.state === 'first-run' && firstRun.usefulness === 'not-usable' && firstRun.next_action.command === 'forgeflow-failure-digest' && firstRun.reason.includes('normal before the first captured failure')],
   ['classifies invalid digest', invalid.state === 'invalid' && invalid.next_action.command === 'forgeflow-failure-digest'],
   ['raw-required takes precedence over stale', staleRawRequired.state === 'raw-required' && staleRawRequired.next_action.action === 'inspect-raw-failure-output' && staleRawRequired.next_action.command === ''],
   ['uses longer markdown fence', fenced.markdown.includes('````text') && fenced.markdown.includes('\n```\n')],

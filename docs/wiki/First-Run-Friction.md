@@ -33,6 +33,7 @@ For Claude Code installs, capture:
 - `/forgeflow-health` status
 - whether a restart was needed before commands or hooks were visible
 - whether `settings.json` hook or statusline wiring was confusing
+- whether the first missing failure digest was understood as normal before a failed command was captured
 
 Common fix categories:
 
@@ -77,6 +78,7 @@ Use repeated categories to drive the next change. For example:
 - repeated `settings` issues should become clearer health diagnostics or settings snippets
 - repeated `codex-discovery` issues should become stronger Codex verification docs or installer checks
 - repeated `context-budget` issues should become better defaults, examples, or advisor recommendations
+- repeated `failure-digest` first-run confusion should become clearer `/forgeflow-failure-digest` examples or trends/report wording
 
 Use [Friction To Fix](Friction-To-Fix) when a repeated category is ready to become an install, health, docs, routing, context, or template-installer change.
 

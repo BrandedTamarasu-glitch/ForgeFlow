@@ -163,7 +163,9 @@ function latestFailureDigest(projectDir) {
       },
       mode: '',
       raw_required: false,
-      reason: 'No latest failure digest artifact is present.',
+      first_run: true,
+      reason: 'No failure digest has been generated yet. This is normal before the first captured failure.',
+      first_run_guidance: 'Run /forgeflow-failure-digest after the next failed validation command, or paste failing output into it to create the first compact digest.',
       input_lines: 0,
       output_lines: 0,
       omitted_lines: 0,
@@ -385,6 +387,13 @@ function trendRecommendations({ freshness, latestInsights, refresh, importGaps, 
   if (failureDigest && failureDigest.status === 'invalid') {
     recommendations.push(refreshFailureDigest({ reason: failureDigest.reason }));
   }
+  if (failureDigest && failureDigest.first_run) {
+    recommendations.push(refreshFailureDigest({
+      reason: failureDigest.first_run_guidance || failureDigest.reason,
+      evidence: 'No latest failure digest artifact exists yet; this is expected until a failed command has been captured.',
+      clears: 'Cleared when /forgeflow-failure-digest writes the first current compact digest.',
+    }));
+  }
   if (failureDigest && failureDigest.freshness && failureDigest.freshness.status === 'attention') {
     recommendations.push(refreshFailureDigest());
   }
@@ -550,6 +559,7 @@ function renderMarkdown(result) {
     '## Latest Failure Digest',
     '',
     `- Status: ${result.failure_digest.status}`,
+    `- First run: ${result.failure_digest.first_run ? 'yes' : 'no'}`,
     `- Git: ${result.failure_digest.git && result.failure_digest.git.available ? `${result.failure_digest.git.commit_short || '(unknown)'}${result.failure_digest.git.dirty ? ' dirty' : ' clean'}` : '(unavailable)'}`,
     `- Mode: ${result.failure_digest.mode || '(none)'}`,
     `- Raw required: ${result.failure_digest.raw_required ? 'yes' : 'no'}`,
@@ -563,6 +573,7 @@ function renderMarkdown(result) {
     `- Next action: ${result.failure_digest.triage && result.failure_digest.triage.next_action ? result.failure_digest.triage.next_action.command || result.failure_digest.triage.next_action.action || '(none)' : '(none)'}`,
     `- Next action reason: ${result.failure_digest.triage && result.failure_digest.triage.next_action && result.failure_digest.triage.next_action.reason ? result.failure_digest.triage.next_action.reason : '(none)'}`,
     `- Reason: ${result.failure_digest.reason || '(none)'}`,
+    result.failure_digest.first_run_guidance ? `- First-run guidance: ${result.failure_digest.first_run_guidance}` : '- First-run guidance: (none)',
     `- Evidence refs: ${result.failure_digest.refs.length > 0 ? result.failure_digest.refs.join('; ') : '(none)'}`,
     `- First signal: ${result.failure_digest.summary || '(none)'}`,
     '',

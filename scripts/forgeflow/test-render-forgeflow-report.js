@@ -278,6 +278,35 @@ fs.symlinkSync(symlinkLearningsLogTarget, path.join(patternsDir, '.learnings-log
 const symlinkLearningsPatterns = summarizePatternLog(patternsDir, cutoff, now);
 fs.unlinkSync(path.join(patternsDir, '.learnings-log.jsonl'));
 fs.writeFileSync(path.join(patternsDir, '.learnings-log.jsonl'), originalLearningsLog);
+const missingDigestProjectDir = path.join(root, 'missing-digest-forgeflow-state');
+const missingDigestContextDir = path.join(missingDigestProjectDir, 'context');
+const missingDigestLatestDir = path.join(missingDigestContextDir, 'latest');
+fs.mkdirSync(missingDigestLatestDir, { recursive: true });
+fs.writeFileSync(path.join(missingDigestContextDir, 'code-map-history.jsonl'), '');
+fs.writeFileSync(path.join(missingDigestProjectDir, 'project-learnings.md'), '# Project Learnings\n');
+fs.writeFileSync(path.join(missingDigestLatestDir, 'latest-insights-report.json'), JSON.stringify({
+  schema_version: '1',
+  status: 'injected',
+  reason: 'quality-check-passing',
+  generated_at: '2026-05-20T00:00:00.000Z',
+  git: {
+    available: true,
+    commit_short: commitShort,
+    dirty: false,
+  },
+  check_status: 'pass',
+  issue_count: 0,
+}, null, 2));
+const missingDigestReport = buildReport({
+  root,
+  metricsRoot,
+  patternsDir,
+  projectDir: missingDigestProjectDir,
+  noDrift: true,
+  now,
+  record: false,
+});
+const missingDigestMarkdown = renderMarkdown(missingDigestReport);
 const customProjectDir = path.join(root, 'custom-forgeflow-state');
 const customContextDir = path.join(customProjectDir, 'context');
 const customLatestDir = path.join(customContextDir, 'latest');
@@ -335,6 +364,7 @@ const checks = [
   ['includes latest insights readiness', report.latest_insights.status === 'injected' && report.latest_insights.check_status === 'pass' && report.latest_insights.freshness.status === 'current'],
   ['includes latest failure digest', report.project_trends.failure_digest.status === 'compact' && report.project_trends.failure_digest.freshness.status === 'current' && report.project_trends.failure_digest.summary.includes('FAIL report fixture')],
   ['includes latest failure digest triage', report.project_trends.failure_digest.triage.state === 'usable' && report.project_trends.failure_digest.triage.confidence === 'high'],
+  ['reports first-run missing failure digest', missingDigestReport.project_trends.failure_digest.first_run === true && missingDigestReport.project_trends.failure_digest.triage.state === 'first-run' && missingDigestReport.priorities.some((item) => item.includes('Initialize the first failure digest')) && missingDigestMarkdown.includes('Latest failure digest first run: yes') && missingDigestMarkdown.includes('Latest failure digest first-run guidance: Run /forgeflow-failure-digest')],
   ['recommends refresh for stale latest insights', staleReport.recommendations.some((item) => item.command === 'forgeflow-trends --refresh') && staleMarkdown.includes('forgeflow-trends --refresh') && staleMarkdown.includes('Evidence:') && staleMarkdown.includes('Clears:')],
   ['refreshes project trends when requested', refreshedReport.project_trends.refresh && refreshedReport.project_trends.refresh.check_status === 'pass'],
   ['includes live drift when enabled', reportWithDrift.drift.status === 'missing' || reportWithDrift.drift.status === 'fail' || reportWithDrift.drift.status === 'pass'],

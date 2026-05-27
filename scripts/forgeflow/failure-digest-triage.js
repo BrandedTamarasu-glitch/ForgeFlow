@@ -5,6 +5,7 @@ const DIGEST_TRIAGE_STATES = Object.freeze({
   STALE: 'stale',
   INVALID: 'invalid',
   RAW_REQUIRED: 'raw-required',
+  FIRST_RUN: 'first-run',
   RERUN_NEEDED: 'rerun-needed',
 });
 
@@ -25,6 +26,11 @@ function actionForState(state, reason = '') {
   }
   if (state === DIGEST_TRIAGE_STATES.RERUN_NEEDED) {
     return refreshFailureDigest({ reason: reason || 'No usable failure digest is available.' });
+  }
+  if (state === DIGEST_TRIAGE_STATES.FIRST_RUN) {
+    return refreshFailureDigest({
+      reason: reason || 'No failure digest has been generated yet. Run after the next failed validation command, or paste failing output into /forgeflow-failure-digest.',
+    });
   }
   return refreshFailureDigest({ reason: reason || 'Latest failure digest needs to be refreshed.' });
 }
@@ -49,8 +55,13 @@ function classifyFailureDigest(digest = {}, freshness = null) {
   let state = DIGEST_TRIAGE_STATES.USABLE;
   let reason = 'Failure digest is current and compact enough for triage.';
   if (!digest || digest.present === false || digest.status === 'missing') {
-    state = DIGEST_TRIAGE_STATES.RERUN_NEEDED;
-    reason = 'No latest failure digest artifact is present.';
+    if (digest && digest.first_run) {
+      state = DIGEST_TRIAGE_STATES.FIRST_RUN;
+      reason = 'No failure digest has been generated yet. This is normal before the first captured failure.';
+    } else {
+      state = DIGEST_TRIAGE_STATES.RERUN_NEEDED;
+      reason = 'No latest failure digest artifact is present.';
+    }
   } else if (digest.status === 'invalid') {
     state = DIGEST_TRIAGE_STATES.INVALID;
     reason = digest.reason || 'Failure digest is invalid.';
