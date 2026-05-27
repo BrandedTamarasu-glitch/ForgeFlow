@@ -323,11 +323,27 @@ function recommend(summary, budget) {
   }
 
   for (const violation of budget.violations) {
+    const target = Number(violation.limit || 0);
+    const compact = Number(violation.estimated_compact_tokens || 0);
+    const reduceBy = Math.max(0, compact - target);
+    const trimRatio = compact > 0 ? Number((target / compact).toFixed(2)) : 1;
     const splitSuggestion = {
       strategy: 'split-before-review',
       first_slice: 'Run a narrower context pack for the highest-risk changed files only.',
       second_slice: 'Run a follow-up packet for remaining docs, tests, or lower-risk files after the first review is resolved.',
       command: 'Rebuild context with a smaller --files list or lower --lines value before spawning agents.',
+    };
+    const trimPlan = {
+      strategy: 'advisory-auto-trim',
+      target_compact_tokens: target,
+      current_compact_tokens: compact,
+      reduce_by_tokens: reduceBy,
+      target_ratio: trimRatio,
+      commands: [
+        'build-context-pack --files <focused-files.txt> --lines <changed-lines>',
+        'build-context-pack --max-memory-chars 4000 --max-diff-chars 9000',
+      ],
+      stop_rule: 'Do not trim raw-required failure evidence, security findings, or files required to prove the current task.',
     };
     recommendations.push({
       severity: budget.status === 'fail' ? 'high' : 'warn',
@@ -339,6 +355,7 @@ function recommend(summary, budget) {
       clears: 'Cleared when the generated packet is under the configured context budget.',
       command: splitSuggestion.command,
       split_suggestion: splitSuggestion,
+      trim_plan: trimPlan,
     });
   }
 
@@ -452,6 +469,11 @@ function renderMarkdown(result) {
       lines.push(`  Action: ${item.command}`);
       if (item.split_suggestion) {
         lines.push(`  Split: ${item.split_suggestion.first_slice} Then ${item.split_suggestion.second_slice}`);
+      }
+      if (item.trim_plan) {
+        lines.push(`  Trim plan: target ${item.trim_plan.target_compact_tokens} compact tokens, reduce by ${item.trim_plan.reduce_by_tokens}, target ratio ${item.trim_plan.target_ratio}`);
+        lines.push(`  Safe commands: ${item.trim_plan.commands.join(' | ')}`);
+        lines.push(`  Stop rule: ${item.trim_plan.stop_rule}`);
       }
     }
   }
