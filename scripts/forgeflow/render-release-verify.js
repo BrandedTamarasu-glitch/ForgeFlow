@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 const path = require('path');
+const { spawnSync } = require('child_process');
 const { buildReleaseReadiness } = require('./render-release-readiness');
 
 function usage() {
-  console.error('Usage: render-release-verify.js [--root <repo>] [--save] [--compare-last] [--json]');
+  console.error('Usage: render-release-verify.js [--root <repo>] [--save] [--compare-last] [--github] [--json]');
 }
 
 function requireValue(argv, name, index) {
@@ -13,7 +14,7 @@ function requireValue(argv, name, index) {
 }
 
 function parseArgs(argv) {
-  const opts = { root: process.cwd(), save: false, compareLast: false, json: false };
+  const opts = { root: process.cwd(), save: false, compareLast: false, github: false, json: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--root') {
@@ -23,6 +24,8 @@ function parseArgs(argv) {
       opts.save = true;
     } else if (arg === '--compare-last') {
       opts.compareLast = true;
+    } else if (arg === '--github') {
+      opts.github = true;
     } else if (arg === '--json') {
       opts.json = true;
     } else if (arg === '--help' || arg === '-h') {
@@ -35,6 +38,49 @@ function parseArgs(argv) {
   return opts;
 }
 
+function githubVerification(root, version, runner = spawnSync) {
+  const tag = version ? `v${version}` : '';
+  const evidence = [];
+  if (!tag) {
+    evidence.push({ name: 'github-release', status: 'warn', value: '', clears: 'Set plugin version before checking GitHub.' });
+    return { status: 'warn', evidence, boundary: 'GitHub verification is optional and network-aware. It only reads release and remote tag state.' };
+  }
+  const release = runner('gh', ['release', 'view', tag, '--json', 'tagName,name,isDraft,isPrerelease,url'], { cwd: root, encoding: 'utf8' });
+  if (release.status === 0) {
+    let parsed = {};
+    try {
+      parsed = JSON.parse(release.stdout || '{}');
+    } catch (_err) {
+      parsed = {};
+    }
+    evidence.push({
+      name: 'github-release',
+      status: parsed.tagName === tag && parsed.isDraft === false ? 'pass' : 'warn',
+      value: parsed.url || tag,
+      clears: `Publish GitHub release ${tag}.`,
+    });
+  } else {
+    evidence.push({
+      name: 'github-release',
+      status: 'warn',
+      value: tag,
+      clears: `Publish GitHub release ${tag} or rerun where gh can access the repository.`,
+    });
+  }
+  const remoteTag = runner('git', ['ls-remote', '--tags', 'origin', tag], { cwd: root, encoding: 'utf8' });
+  evidence.push({
+    name: 'remote-tag',
+    status: remoteTag.status === 0 && String(remoteTag.stdout || '').includes(`refs/tags/${tag}`) ? 'pass' : 'warn',
+    value: tag,
+    clears: `Push tag ${tag} to origin or rerun where git can access the remote.`,
+  });
+  return {
+    status: evidence.every((item) => item.status === 'pass') ? 'pass' : 'warn',
+    evidence,
+    boundary: 'GitHub verification is optional and network-aware. It only reads release and remote tag state.',
+  };
+}
+
 function buildReleaseVerify(opts = {}) {
   const readiness = buildReleaseReadiness({
     root: opts.root,
@@ -44,6 +90,7 @@ function buildReleaseVerify(opts = {}) {
     comparePostPublishLast: Boolean(opts.compareLast),
   });
   const post = readiness.post_publish_verification || {};
+  const github = opts.github ? githubVerification(path.resolve(opts.root || process.cwd()), post.version || '', opts.githubRunner || spawnSync) : null;
   return {
     schema_version: '1',
     status: post.status || 'missing',
@@ -53,6 +100,7 @@ function buildReleaseVerify(opts = {}) {
     head: post.head || '',
     summary: post.summary || { passed: [], attention: [], shareable: 'Post-publish verification is unavailable.' },
     evidence: post.evidence || [],
+    github_verification: github,
     snapshot: post.snapshot || { path: '', saved: false },
     comparison: post.comparison || null,
     next_command: post.next_command || 'forgeflow-release-readiness --post-publish',
@@ -91,6 +139,14 @@ function renderMarkdown(result) {
   if (result.comparison) {
     lines.push('', '## Snapshot Comparison', '', `- Status: ${result.comparison.status}`);
   }
+  if (result.github_verification) {
+    lines.push('', '## GitHub Verification', '', `- Status: ${result.github_verification.status}`);
+    for (const item of result.github_verification.evidence || []) {
+      lines.push(`- ${item.name}: ${item.status}${item.value ? ` (${item.value})` : ''}`);
+      if (item.status !== 'pass' && item.clears) lines.push(`  - Clears: ${item.clears}`);
+    }
+    lines.push(`- Boundary: ${result.github_verification.boundary}`);
+  }
   lines.push('', `Next: ${result.next_command}`, '');
   return lines.join('\n');
 }
@@ -112,4 +168,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { buildReleaseVerify, parseArgs, renderMarkdown };
+module.exports = { buildReleaseVerify, githubVerification, parseArgs, renderMarkdown };

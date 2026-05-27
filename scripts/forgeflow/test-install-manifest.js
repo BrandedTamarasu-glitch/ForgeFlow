@@ -31,6 +31,8 @@ const checks = [
   ['runtime helpers include adoption pack renderer', RUNTIME_HELPERS.includes('scripts/forgeflow/render-adoption-pack.js')],
   ['runtime helpers include first run guide', RUNTIME_HELPERS.includes('scripts/forgeflow/render-first-run-guide.js')],
   ['runtime helpers include first run result recorder', RUNTIME_HELPERS.includes('scripts/forgeflow/record-first-run-result.js')],
+  ['runtime helpers include first run rollup', RUNTIME_HELPERS.includes('scripts/forgeflow/rollup-first-run-results.js')],
+  ['runtime helpers include next work outcome recorder', RUNTIME_HELPERS.includes('scripts/forgeflow/record-next-work-outcome.js')],
   ['runtime helpers include implementation notes recorder', RUNTIME_HELPERS.includes('scripts/forgeflow/record-implementation-notes.js')],
   ['runtime helpers include implementation notes checker', RUNTIME_HELPERS.includes('scripts/forgeflow/check-implementation-notes.js')],
   ['runtime helpers include project learnings checker', RUNTIME_HELPERS.includes('scripts/forgeflow/check-project-learnings.js')],

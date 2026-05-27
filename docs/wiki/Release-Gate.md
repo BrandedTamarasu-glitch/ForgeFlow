@@ -36,10 +36,12 @@ node scripts/forgeflow/test-privacy-boundary.js
 node scripts/forgeflow/test-render-adoption-pack.js
 node scripts/forgeflow/test-render-first-run-guide.js
 node scripts/forgeflow/test-record-first-run-result.js
+node scripts/forgeflow/test-rollup-first-run-results.js
 node scripts/forgeflow/test-record-pilot-evidence.js
 node scripts/forgeflow/test-record-agent-feedback.js
 node scripts/forgeflow/test-rollup-agent-feedback.js
 node scripts/forgeflow/test-record-project-learning.js
+node scripts/forgeflow/test-record-next-work-outcome.js
 node scripts/forgeflow/test-user-profile.js
 node scripts/forgeflow/test-profile-review.js
 node scripts/forgeflow/test-profile-compliance.js

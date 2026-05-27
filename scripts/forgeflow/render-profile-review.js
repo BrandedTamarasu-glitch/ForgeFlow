@@ -3,7 +3,7 @@ const path = require('path');
 const { checkUserProfile } = require('./user-profile');
 
 function usage() {
-  console.error('Usage: render-profile-review.js [--project-dir <dir>] [--home <dir>] [--json]');
+  console.error('Usage: render-profile-review.js [--project-dir <dir>] [--home <dir>] [--commands-only] [--json]');
 }
 
 function requireValue(argv, name, index) {
@@ -13,7 +13,7 @@ function requireValue(argv, name, index) {
 }
 
 function parseArgs(argv) {
-  const opts = { json: false };
+  const opts = { json: false, commandsOnly: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--project-dir') {
@@ -24,6 +24,8 @@ function parseArgs(argv) {
       i += 1;
     } else if (arg === '--json') {
       opts.json = true;
+    } else if (arg === '--commands-only') {
+      opts.commandsOnly = true;
     } else if (arg === '--help' || arg === '-h') {
       usage();
       process.exit(0);
@@ -82,6 +84,9 @@ function buildProfileReview(opts = {}) {
       follow_up: 'Fix or supersede the record, then rerun forgeflow-profile-review.',
     })));
   }
+  const commandActions = Object.values(actions).flat()
+    .map((action) => action.command_template)
+    .filter(Boolean);
   return {
     schema_version: '1',
     status: check.status,
@@ -90,8 +95,25 @@ function buildProfileReview(opts = {}) {
     issues: check.issues,
     actions,
     action_count: Object.values(actions).reduce((sum, group) => sum + group.length, 0),
+    apply_commands: [...new Set(commandActions)],
     boundary: 'Profile review is advisory. Apply actions only after explicit user confirmation; never infer or write preferences automatically.',
   };
+}
+
+function renderCommands(review) {
+  const lines = [
+    '# Forgeflow Profile Review Commands',
+    '',
+    review.boundary,
+    '',
+  ];
+  if (!review.apply_commands || review.apply_commands.length === 0) {
+    lines.push('- No copy-ready profile commands recommended.');
+  } else {
+    for (const command of review.apply_commands) lines.push(`- ${command}`);
+  }
+  lines.push('');
+  return lines.join('\n');
 }
 
 function renderMarkdown(review) {
@@ -128,13 +150,19 @@ function renderMarkdown(review) {
   lines.push(...renderActions('Move Scope', review.actions.move_scope));
   lines.push(...renderActions('Ask User', review.actions.ask_user));
   lines.push(...renderActions('Clean Up', review.actions.clean_up));
+  lines.push('', '## Copy-Ready Commands', '');
+  if (!review.apply_commands || review.apply_commands.length === 0) {
+    lines.push('- None.');
+  } else {
+    for (const command of review.apply_commands) lines.push(`- ${command}`);
+  }
   return lines.join('\n');
 }
 
 function main() {
   const opts = parseArgs(process.argv.slice(2));
   const review = buildProfileReview(opts);
-  process.stdout.write(opts.json ? `${JSON.stringify(review, null, 2)}\n` : renderMarkdown(review));
+  process.stdout.write(opts.json ? `${JSON.stringify(review, null, 2)}\n` : (opts.commandsOnly ? renderCommands(review) : renderMarkdown(review)));
 }
 
 if (require.main === module) {
@@ -146,4 +174,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { buildProfileReview, parseArgs, renderMarkdown };
+module.exports = { buildProfileReview, parseArgs, renderCommands, renderMarkdown };

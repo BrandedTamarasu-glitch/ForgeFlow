@@ -26,20 +26,22 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-failure-digest` | Build a compact failure digest from test, typecheck, lint, or log output, with Git provenance for freshness checks. |
 | `/forgeflow-first-run` | Print a compact net-new user guide for install verification, project orientation, profile readiness, one bounded work item, and stop conditions. |
 | `/forgeflow-first-run-result` | Record public-safe local first-run outcome evidence under `.forgeflow/<project>/first-run-results/`. |
+| `/forgeflow-first-run-rollup` | Summarize aggregate first-run result evidence and onboarding friction without sharing raw records. |
 | `/forgeflow-noisy-command` | Get advisory-only suggestions for narrower noisy command invocations. |
 | `/forgeflow-drift` | Check whether agent prompts have drifted from canonical shared intelligence references using the script-backed drift helper. |
 | `/forgeflow-health` | Audit installation, project-local state, latest project-learning quality, latest-insights readiness/freshness, and latest failure-digest freshness; can safely repair `.forgeflow/` scaffolding and budget config. Stale latest insights recommend `/forgeflow-trends --refresh`. |
 | `/forgeflow-learnings --project --check` | Refresh and print current-project learnings, run the quality gate, smoke-test context-pack injection, and report whether latest insights are ready for agent context. Cross-project mode uses the pattern-learnings rollup helper across legacy learnings and project-learning candidates. |
 | Project intelligence rollup | `scripts/forgeflow/build-project-intelligence.js --json` writes one compact review-prep and next-work summary with trust state, Git provenance, top risks, refresh-first, read-first, avoid-first, validate-first, and proof-boundary guidance. Use `--next-work` for only the human-readable advisory next-work candidates, or `--brief <index>` for an advisory implementation-brief stub with suggested review lanes, implementation-notes seed prompts, and a handoff checklist. |
 | `/forgeflow-metrics` | Summarize telemetry, calibration, outcomes, context savings, budget health, and advisor actions. |
+| `/forgeflow-next-work-outcome` | Record local advisory feedback on whether a next-work recommendation was useful, ignored, incorrect, or blocked. |
 | `/forgeflow-pilot` | Print the repeatable maintainer pilot script by default, or add `--path new-user` for the state-aware first-real-task evaluation path with guided repair, release-readiness preview, project intelligence, living map status, agent-feedback signal, and a public-safe result template. |
 | `/forgeflow-profile` | Show, check, or record local advisory user operating preferences and project experience preferences for context-pack injection. |
-| `/forgeflow-profile-review` | Group profile conflicts, scope moves, ask-user prompts, and cleanup actions before agent-heavy work. |
+| `/forgeflow-profile-review` | Group profile conflicts, scope moves, ask-user prompts, cleanup actions, and copy-ready advisory commands before agent-heavy work. |
 | `/forgeflow-report` | Produce a script-backed status report including local metrics, false-positive thresholds, pattern freshness, context trends, project trends, import-gap status, latest-insights readiness/freshness, latest failure-digest status/freshness, and direct next-action recommendations. Add `--refresh` to update project guidance first. |
 | `/forgeflow-repair` | Show a non-mutating guided repair plan that combines offline version status, installed runtime helper checks, health failures, repair commands, manual settings guidance, and an explicit downstream smoke follow-up. |
 | `/forgeflow-release-check` | Run local pre-release checks for command coverage, install, update, health, version, and context helpers. |
 | `/forgeflow-release-readiness` | Run advisory local release readiness checks, verify runtime helper sources are present, managed, regular files, and inside the checkout, group blockers by readiness area, and avoid tagging, pushing, publishing, or GitHub calls. The helper also supports `--baseline <json>`, `--compare-last`, and `--save-current` for prior-run comparison. |
-| `/forgeflow-release-verify` | Print the compact local post-publish summary for sharing, with optional local snapshot save or comparison. |
+| `/forgeflow-release-verify` | Print the compact local post-publish summary for sharing, with optional local snapshot save/comparison and explicit `--github` read-only remote evidence. |
 | `/forgeflow-smoke` | Run downstream readiness smoke by default; add `--mode source` for source-tree release guards or `--mode full` for both groups. |
 | `/forgeflow-support` | Write a local support bundle with version, health, smoke, plan-only release readiness with post-publish verification, code-map acceptance health, docs drift, project trends, and consolidated next actions. Treat it as local support data because it may include local paths. |
 | `/forgeflow-trends` | Show the current project's code-map trend, living project-map categories, import-gap status, artifact freshness, latest-insights readiness/freshness, latest failure-digest provenance/freshness, project-learning consumption, and context-advisor status. Add `--refresh` to refresh project learnings and latest-insights readiness first; stale reports recommend it directly. |
@@ -87,6 +89,8 @@ scripts/forgeflow/check-user-profile.js --json
 scripts/forgeflow/render-profile-review.js
 scripts/forgeflow/record-user-profile.js --scope global --category communication --preference "Keep updates concise."
 scripts/forgeflow/record-first-run-result.js --project-dir .forgeflow/Forgeflow --runtime codex --health pass --smoke pass --profile pass --decision continue
+scripts/forgeflow/rollup-first-run-results.js --project-dir .forgeflow/Forgeflow
+scripts/forgeflow/record-next-work-outcome.js --project-dir .forgeflow/Forgeflow --title "Review profile guidance" --source user-profile --outcome useful
 scripts/forgeflow/rollup-project-learnings.js --json
 scripts/forgeflow/show-project-learnings.js
 scripts/forgeflow/render-guided-repair.js

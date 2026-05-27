@@ -1,7 +1,7 @@
 ---
 name: forgeflow-release-verify
 description: Print the compact local post-publish release verification summary
-argument-hint: "[--save] [--compare-last] [--json]"
+argument-hint: "[--save] [--compare-last] [--github] [--json]"
 allowed-tools:
   - Bash
 ---
@@ -13,11 +13,12 @@ Show the shareable local post-publish verification summary for the current Forge
 $ARGUMENTS:
 - `--save` - save `.forgeflow/<project>/release-readiness/post-publish-last.json`.
 - `--compare-last` - compare current local post-publish evidence with the saved snapshot.
+- `--github` - optionally read GitHub release and remote tag state with `gh` and `git`.
 - `--json` - structured output.
 </context>
 
 <process>
-Validate `$ARGUMENTS`. Accept only `--save`, `--compare-last`, and `--json`; reject every other flag or shell metacharacter.
+Validate `$ARGUMENTS`. Accept only `--save`, `--compare-last`, `--github`, and `--json`; reject every other flag or shell metacharacter.
 
 Resolve helper:
 
@@ -43,6 +44,7 @@ for arg in "${USER_ARGS[@]}"; do
   case "$arg" in
     --save) SAFE_ARGS+=(--save) ;;
     --compare-last) SAFE_ARGS+=(--compare-last) ;;
+    --github) SAFE_ARGS+=(--github) ;;
     --json) SAFE_ARGS+=(--json) ;;
     *) echo "Unsupported arguments for /forgeflow-release-verify"; exit 2 ;;
   esac

@@ -2,7 +2,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { buildProfileReview, renderMarkdown } = require('./render-profile-review');
+const { buildProfileReview, parseArgs, renderCommands, renderMarkdown } = require('./render-profile-review');
 const { recordUserProfile } = require('./user-profile');
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-profile-review-'));
@@ -14,6 +14,8 @@ recordUserProfile({ home, projectDir, scope: 'global', category: 'communication'
 recordUserProfile({ home, projectDir, scope: 'global', category: 'ui', preference: 'Use dense project screens.' });
 const review = buildProfileReview({ home, projectDir });
 const markdown = renderMarkdown(review);
+const commandMarkdown = renderCommands(review);
+const opts = parseArgs(['--commands-only', '--json']);
 
 const checks = [
   ['review warns', review.status === 'warn'],
@@ -21,6 +23,8 @@ const checks = [
   ['has move action', review.actions.move_scope.some((item) => item.action === 'move-then-supersede')],
   ['markdown renders templates', markdown.includes('Template:') && markdown.includes('Follow-up:')],
   ['markdown groups actions', markdown.includes('## Resolve Conflicts') && markdown.includes('## Move Scope') && review.action_count >= 2],
+  ['copy ready commands render', review.apply_commands.length > 0 && markdown.includes('## Copy-Ready Commands') && commandMarkdown.includes('Forgeflow Profile Review Commands')],
+  ['commands only parses', opts.commandsOnly === true && opts.json === true],
 ];
 let failed = 0;
 for (const [name, ok] of checks) {

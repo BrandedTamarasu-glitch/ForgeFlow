@@ -1,7 +1,7 @@
 ---
 name: forgeflow-profile-review
 description: Render advisory user-profile review actions before agent-heavy work
-argument-hint: "[--json]"
+argument-hint: "[--commands-only] [--json]"
 allowed-tools:
   - Bash
 ---
@@ -11,11 +11,12 @@ Show local profile conflicts, scope moves, ask-user prompts, and cleanup actions
 
 <context>
 $ARGUMENTS:
+- `--commands-only` - show only copy-ready advisory profile commands.
 - `--json` - structured output.
 </context>
 
 <process>
-Validate `$ARGUMENTS`. Accept only `--json`; reject every other flag or shell metacharacter.
+Validate `$ARGUMENTS`. Accept only `--commands-only` and `--json`; reject every other flag or shell metacharacter.
 
 Resolve helpers:
 
@@ -37,11 +38,15 @@ Build an argv array from validated arguments:
 
 ```bash
 SAFE_ARGS=(--project-dir "${FORGEFLOW_DIR}")
-case "${ARGUMENTS:-}" in
-  "") ;;
-  "--json") SAFE_ARGS+=(--json) ;;
-  *) echo "Unsupported arguments for /forgeflow-profile-review"; exit 2 ;;
-esac
+read -r -a USER_ARGS <<< "${ARGUMENTS:-}"
+for arg in "${USER_ARGS[@]}"; do
+  case "$arg" in
+    --json) SAFE_ARGS+=(--json) ;;
+    --commands-only) SAFE_ARGS+=(--commands-only) ;;
+    "") ;;
+    *) echo "Unsupported arguments for /forgeflow-profile-review"; exit 2 ;;
+  esac
+done
 "${HELPER_DIR}/render-profile-review.js" "${SAFE_ARGS[@]}"
 ```
 </process>

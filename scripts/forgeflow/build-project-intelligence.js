@@ -9,6 +9,7 @@ const { correctionThemes, promotionCandidates, staleMarkers } = require('./rollu
 const { showProjectLearnings } = require('./show-project-learnings');
 const { showProjectTrends } = require('./show-project-trends');
 const { compactUserProfile } = require('./user-profile');
+const { readNextWorkOutcomes } = require('./record-next-work-outcome');
 const VALID_FEEDBACK_SIGNALS = new Set(['useful', 'unclear', 'ignored', 'incorrect']);
 const VALID_FEEDBACK_CONFIDENCE = new Set(['low', 'medium', 'high']);
 
@@ -731,6 +732,7 @@ function nextWorkItems(intelligenceDraft) {
   const review = intelligenceDraft.review_prep || {};
   const feedback = intelligenceDraft.agent_feedback || {};
   const userProfile = intelligenceDraft.user_profile || {};
+  const nextWorkOutcomes = intelligenceDraft.next_work_confidence || {};
   const corrective = feedback.by_signal
     ? (feedback.by_signal.incorrect || 0) + (feedback.by_signal.unclear || 0) + (feedback.by_signal.ignored || 0)
     : 0;
@@ -778,6 +780,22 @@ function nextWorkItems(intelligenceDraft) {
       start_with: [intelligenceDraft.review_outcomes.file || 'review-outcomes.jsonl'],
       validate_with: ['scripts/forgeflow/build-project-intelligence.js --json', 'scripts/forgeflow/record-review-outcome.js --summary .forgeflow/<project>/review-outcomes.jsonl --json'],
       proof_boundary: 'Review-outcome learning signals are aggregate guidance only; verify each future finding against current code and tests.',
+    });
+  }
+
+  if (nextWorkOutcomes.recommendation === 'calibrate-next-work-selection') {
+    addNextWorkItem(items, {
+      title: 'Calibrate next-work recommendations from outcome history',
+      priority: 'medium',
+      source: 'next-work-confidence',
+      why: `${(nextWorkOutcomes.by_outcome && ((nextWorkOutcomes.by_outcome.ignored || 0) + (nextWorkOutcomes.by_outcome.incorrect || 0) + (nextWorkOutcomes.by_outcome.blocked || 0))) || 0} prior next-work outcome(s) were ignored, incorrect, or blocked.`,
+      start_with: [nextWorkOutcomes.file || 'next-work-outcomes.jsonl'],
+      validate_with: ['scripts/forgeflow/build-project-intelligence.js --json'],
+      evidence_strength: 'weak',
+      what_to_change: 'Adjust future candidate selection only after matching outcome history to current code and user intent.',
+      how_to_prove: 'Record follow-up next-work outcomes and compare whether useful outcomes increase.',
+      stop_when: 'Stop before treating historical next-work outcomes as proof that a current task is correct.',
+      proof_boundary: 'Next-work confidence is advisory trend evidence only; verify current scope, code, tests, and user priorities.',
     });
   }
 
@@ -867,6 +885,7 @@ function buildProjectIntelligence(opts = {}) {
   const agentFeedback = readAgentFeedback(projectDir);
   const reviewOutcomes = readReviewOutcomes(projectDir);
   const userProfile = compactUserProfile({ root, projectDir }, 2200);
+  const nextWorkConfidence = readNextWorkOutcomes(projectDir);
   const readiness = readinessState(trends, learnings, allRisks, recommendations);
   const intelligence = {
     schema_version: '1',
@@ -895,6 +914,7 @@ function buildProjectIntelligence(opts = {}) {
     validation_patterns: learningGatePass ? topItems(learnings.validation_patterns, 5) : [],
     agent_feedback: agentFeedback,
     review_outcomes: reviewOutcomes,
+    next_work_confidence: nextWorkConfidence,
     user_profile: {
       status: userProfile.result.check.status,
       injected: userProfile.injected,
@@ -1000,6 +1020,16 @@ function renderMarkdown(intelligence) {
   if (intelligence.user_profile && intelligence.user_profile.guidance) {
     lines.push('', intelligence.user_profile.guidance.replace(/^# Forgeflow User Profile[^\n]*\s*/u, '').trim());
   }
+  lines.push('', '## Next-Work Confidence', '');
+  lines.push(`- Status: ${intelligence.next_work_confidence.status}`);
+  lines.push(`- Records: ${intelligence.next_work_confidence.records}`);
+  lines.push(`- Invalid lines skipped: ${intelligence.next_work_confidence.invalid_lines || 0}`);
+  lines.push(`- Recommendation: ${intelligence.next_work_confidence.recommendation}`);
+  lines.push('- Boundary: advisory only; use outcome history to calibrate recommendations, not to auto-select work.');
+  const outcomeSummary = Object.entries(intelligence.next_work_confidence.by_outcome || {}).map(([outcome, count]) => `${outcome}: ${count}`).join(', ');
+  lines.push(`- Outcomes: ${outcomeSummary || '(none)'}`);
+  const sourceSummary = Object.entries(intelligence.next_work_confidence.by_source || {}).map(([source, count]) => `${source}: ${count}`).join(', ');
+  lines.push(`- Sources: ${sourceSummary || '(none)'}`);
   lines.push('', '## Agent Feedback', '');
   lines.push(`- Status: ${intelligence.agent_feedback.status}`);
   lines.push(`- Records: ${intelligence.agent_feedback.records}`);
