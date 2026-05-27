@@ -5,12 +5,14 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const {
   compactCodeMapHistory,
+  expiryTime,
   loadCodeMapAcceptances,
   importGapSummary,
   importGapScope,
   livingProjectMapFromTrend,
   renderProjectCodeMap,
   showCodeMap,
+  validLifecycleDate,
 } = require('./show-code-map');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
@@ -123,9 +125,9 @@ fs.mkdirSync(acceptanceProjectDir, { recursive: true });
 fs.writeFileSync(path.join(acceptanceProjectDir, 'code-map-accept.json'), JSON.stringify({
   schema_version: '1',
   accepted_gaps: [
-    { source: 'src/app.ts', specifier: './missing', category: 'local-module-missing', scope: 'production', note: 'Intentional bundler fallback.' },
-    { source: 'src/routes.ts', expression: "'@/routes/admin'", category: 'dynamic-local-or-alias', scope: 'production' },
-    { source: 'src/stale.ts', specifier: './old-missing', category: 'local-module-missing', scope: 'production' },
+    { source: 'src/app.ts', specifier: './missing', category: 'local-module-missing', scope: 'production', note: 'Intentional bundler fallback.', accepted_at: '2026-05-27' },
+    { source: 'src/routes.ts', expression: "'@/routes/admin'", category: 'dynamic-local-or-alias', scope: 'production', note: 'legacy' },
+    { source: 'src/stale.ts', specifier: './old-missing', category: 'local-module-missing', scope: 'production', expires_at: '2999-05-27' },
     { source: 'src/*.ts', specifier: './wildcard' },
   ],
 }, null, 2));
@@ -216,6 +218,9 @@ const checks = [
   ['triages expected import gaps', triagedGaps.triage.expected_total === 4 && triageCategories['asset-or-data-import'].total === 1 && triageCategories['dynamic-package'].total === 1 && triageCategories['runtime-dynamic-import'].total === 1],
   ['triages review import gaps', triagedGaps.triage.needs_review_total === 3 && triageCategories['local-module-missing'].total === 1 && triageCategories['source-suffix-resolution-gap'].total === 1 && triageCategories['dynamic-local-or-alias'].total === 1],
   ['applies local exact acceptances', acceptedGaps.triage.accepted_total === 2 && acceptedGaps.triage.needs_review_total === 1 && acceptedCategories['accepted-local'].total === 2 && acceptedGaps.acceptance.accepted_total === 2 && acceptedGaps.acceptance.stale_total === 1 && acceptedGaps.acceptance.invalid_total === 1],
+  ['reports acceptance lifecycle warnings', acceptedGaps.acceptance.lifecycle_warning_total === 1 && !acceptedGaps.acceptance.lifecycle_warnings.some((item) => item.index === 1) && acceptedGaps.acceptance.lifecycle_warnings.some((item) => item.index === 2 && item.warnings.some((warning) => warning.includes('maintainer note')) && !item.warnings.some((warning) => warning.includes('expired')))],
+  ['date-only expiry lasts through local day', expiryTime('2999-05-27') > Date.parse('2999-05-27T00:00:00.000Z')],
+  ['lifecycle date validation is strict date-only', validLifecycleDate('2026-02-28') === true && validLifecycleDate('2026-02-30') === false && validLifecycleDate('2026-02-28T00:00:00Z') === false],
   ['malformed acceptance file reports invalid', malformedAcceptances.status === 'invalid' && malformedAcceptances.invalid_entries[0].reason.includes('accepted_gaps')],
   ['accepted gaps keep local evidence visible', acceptedGaps.unresolved.some((item) => item.accepted === true && item.acceptance.note === 'Intentional bundler fallback.' && item.triage.category === 'accepted-local')],
   ['triages test fixture import gaps', triageCategories['test-fixture'].total === 1 && triageCategories['test-fixture'].expected === true],

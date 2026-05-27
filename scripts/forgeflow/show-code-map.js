@@ -327,6 +327,44 @@ function invalidAcceptance(entry) {
   return '';
 }
 
+function lifecycleWarnings(entry) {
+  const warnings = [];
+  const note = String(entry && entry.note ? entry.note : '').trim();
+  const acceptedAt = String(entry && entry.accepted_at ? entry.accepted_at : '').trim();
+  const expiresAt = String(entry && entry.expires_at ? entry.expires_at : '').trim();
+  if (!note) warnings.push('add a maintainer note so this acceptance can be reviewed later');
+  if (acceptedAt && !validLifecycleDate(acceptedAt)) warnings.push('accepted_at must use YYYY-MM-DD');
+  if (expiresAt) {
+    const expires = expiryTime(expiresAt);
+    if (!validLifecycleDate(expiresAt) || Number.isNaN(expires)) warnings.push('expires_at must use YYYY-MM-DD');
+    else if (expires < Date.now()) warnings.push('acceptance is expired');
+  }
+  return warnings;
+}
+
+function validLifecycleDate(value) {
+  const text = String(value || '').trim();
+  const dateOnly = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!dateOnly) return false;
+  const year = Number.parseInt(dateOnly[1], 10);
+  const month = Number.parseInt(dateOnly[2], 10);
+  const day = Number.parseInt(dateOnly[3], 10);
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+}
+
+function expiryTime(value) {
+  const text = String(value || '').trim();
+  const dateOnly = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (dateOnly) {
+    const year = Number.parseInt(dateOnly[1], 10);
+    const month = Number.parseInt(dateOnly[2], 10);
+    const day = Number.parseInt(dateOnly[3], 10);
+    return new Date(year, month - 1, day + 1).getTime() - 1;
+  }
+  return Date.parse(text);
+}
+
 function loadCodeMapAcceptances(projectDir) {
   const file = defaultAcceptancePath(projectDir);
   if (!fs.existsSync(file)) {
@@ -383,12 +421,16 @@ function loadCodeMapAcceptances(projectDir) {
       category: entry.category || '',
       scope: entry.scope || '',
       note: entry.note || '',
+      accepted_at: entry.accepted_at || '',
+      expires_at: entry.expires_at || '',
+      warnings: lifecycleWarnings(entry),
       matched: false,
     });
   }
+  const lifecycleWarningCount = records.reduce((total, record) => total + record.warnings.length, 0);
   return {
     path: file,
-    status: invalidEntries.length > 0 ? 'attention' : 'loaded',
+    status: invalidEntries.length > 0 || lifecycleWarningCount > 0 ? 'attention' : 'loaded',
     records,
     invalid_entries: invalidEntries,
   };
@@ -442,8 +484,19 @@ function acceptanceSummary(acceptances) {
     accepted_total: acceptedTotal,
     stale_total: stale.length,
     invalid_total: (acceptances.invalid_entries || []).length,
+    lifecycle_warning_total: (acceptances.records || []).reduce((total, record) => total + (record.warnings || []).length, 0),
     stale_entries: stale.slice(0, 8),
     invalid_entries: (acceptances.invalid_entries || []).slice(0, 8),
+    lifecycle_warnings: (acceptances.records || [])
+      .filter((record) => (record.warnings || []).length > 0)
+      .slice(0, 8)
+      .map((record) => ({
+        index: record.index,
+        source: record.source,
+        specifier: record.specifier,
+        expression: record.expression,
+        warnings: record.warnings,
+      })),
   };
 }
 
@@ -893,6 +946,7 @@ function renderProjectCodeMap(summary) {
     lines.push(`- Acceptance file: ${md(gaps.acceptance.status)} (${md(gaps.acceptance.path)})`);
     lines.push(`- Stale acceptances: ${gaps.acceptance.stale_total || 0}`);
     lines.push(`- Invalid acceptances: ${gaps.acceptance.invalid_total || 0}`);
+    lines.push(`- Lifecycle warnings: ${gaps.acceptance.lifecycle_warning_total || 0}`);
   }
   lines.push('', '### Triage', '');
   lines.push(...renderList((gaps.triage && gaps.triage.categories) || [], (item) => `- ${md(item.category)}: ${item.total} (${md(item.severity)}). ${md(item.action)}`), '');
@@ -900,6 +954,10 @@ function renderProjectCodeMap(summary) {
     lines.push('', '### Local Acceptance Attention', '');
     lines.push(...renderList(gaps.acceptance.stale_entries || [], (item) => `- stale #${item.index}: ${md(item.source)} ${md(item.specifier || item.expression || '')}`));
     lines.push(...renderList(gaps.acceptance.invalid_entries || [], (item) => `- invalid #${item.index === undefined ? '?' : item.index}: ${md(item.reason)}`), '');
+  }
+  if (gaps.acceptance && gaps.acceptance.lifecycle_warning_total > 0) {
+    lines.push('', '### Local Acceptance Lifecycle', '');
+    lines.push(...renderList(gaps.acceptance.lifecycle_warnings || [], (item) => `- #${item.index}: ${md(item.source)} ${md(item.specifier || item.expression || '')} - ${item.warnings.map(md).join('; ')}`), '');
   }
   lines.push('', '### Unresolved Imports', '');
   lines.push(...renderList(gaps.unresolved, (item) => `- ${md(item.source)}: ${md(item.specifier)} (${md(item.kind)}, ${md(item.scope)}, ${md(item.triage ? item.triage.category : 'untriaged')}) - ${md(item.reason)}. ${md(item.action)}`), '');
@@ -973,6 +1031,7 @@ module.exports = {
   DEFAULT_HISTORY_LIMIT,
   defaultAcceptancePath,
   defaultHistoryPath,
+  expiryTime,
   historyPathForTopologyOut,
   importGapScope,
   importGapSummary,
@@ -984,4 +1043,5 @@ module.exports = {
   renderProjectCodeMap,
   showCodeMap,
   topMarkdownSections,
+  validLifecycleDate,
 };
