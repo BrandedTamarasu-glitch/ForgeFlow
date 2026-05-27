@@ -26,6 +26,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/check-context-budget.js',
   'scripts/forgeflow/check-implementation-notes.js',
   'scripts/forgeflow/check-project-learnings.js',
+  'scripts/forgeflow/check-user-profile.js',
   'scripts/forgeflow/compact-command-output.js',
   'scripts/forgeflow/context-telemetry.js',
   'scripts/forgeflow/ensure-forgeflow-state.sh',
@@ -46,6 +47,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/record-project-learning.js',
   'scripts/forgeflow/record-review-outcome.js',
   'scripts/forgeflow/record-implementation-notes.js',
+  'scripts/forgeflow/record-user-profile.js',
   'scripts/forgeflow/render-adoption-pack.js',
   'scripts/forgeflow/render-forgeflow-report.js',
   'scripts/forgeflow/render-guided-repair.js',
@@ -64,6 +66,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/show-code-map.js',
   'scripts/forgeflow/show-project-learnings.js',
   'scripts/forgeflow/show-project-trends.js',
+  'scripts/forgeflow/show-user-profile.js',
   'scripts/forgeflow/smoke-check.js',
   'scripts/forgeflow/ship-ci-status.sh',
   'scripts/forgeflow/ship-open-pr.sh',
@@ -71,6 +74,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/summarize-calibration.js',
   'scripts/forgeflow/summarize-context-telemetry.js',
   'scripts/forgeflow/update-forgeflow.js',
+  'scripts/forgeflow/user-profile.js',
 ];
 
 function usage() {

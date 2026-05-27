@@ -71,6 +71,7 @@ const CANONICAL_NON_REQUIRED_MANAGED_SOURCES = [
   'commands/forgeflow-metrics.md',
   'commands/forgeflow-noisy-command.md',
   'commands/forgeflow-pilot.md',
+  'commands/forgeflow-profile.md',
   'commands/forgeflow-release-check.md',
   'commands/forgeflow-release-readiness.md',
   'commands/forgeflow-repair.md',

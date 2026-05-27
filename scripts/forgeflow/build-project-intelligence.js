@@ -8,6 +8,7 @@ const { applyOutcome, validateOutcome } = require('./record-review-outcome');
 const { correctionThemes, promotionCandidates, staleMarkers } = require('./rollup-agent-feedback');
 const { showProjectLearnings } = require('./show-project-learnings');
 const { showProjectTrends } = require('./show-project-trends');
+const { compactUserProfile } = require('./user-profile');
 const VALID_FEEDBACK_SIGNALS = new Set(['useful', 'unclear', 'ignored', 'incorrect']);
 const VALID_FEEDBACK_CONFIDENCE = new Set(['low', 'medium', 'high']);
 
@@ -845,6 +846,7 @@ function buildProjectIntelligence(opts = {}) {
   const recommendations = trends.recommendations || [];
   const agentFeedback = readAgentFeedback(projectDir);
   const reviewOutcomes = readReviewOutcomes(projectDir);
+  const userProfile = compactUserProfile({ root, projectDir }, 2200);
   const readiness = readinessState(trends, learnings, allRisks, recommendations);
   const intelligence = {
     schema_version: '1',
@@ -873,6 +875,14 @@ function buildProjectIntelligence(opts = {}) {
     validation_patterns: learningGatePass ? topItems(learnings.validation_patterns, 5) : [],
     agent_feedback: agentFeedback,
     review_outcomes: reviewOutcomes,
+    user_profile: {
+      status: userProfile.result.check.status,
+      injected: userProfile.injected,
+      issue_count: userProfile.result.check.issues.length,
+      records: userProfile.result.check.records,
+      files: userProfile.result.files,
+      guidance: userProfile.markdown,
+    },
     recommendations,
     artifacts: {
       json: jsonOut,
@@ -882,6 +892,7 @@ function buildProjectIntelligence(opts = {}) {
       code_topology: path.join(projectDir, 'context', 'code-topology.json'),
       failure_digest: trends.paths ? trends.paths.failure_digest : null,
       latest_insights_report: trends.paths ? trends.paths.latest_insights_report : null,
+      user_profile: userProfile.result.files,
     },
   };
   intelligence.review_prep = reviewPrep(trends, intelligence);
@@ -960,6 +971,13 @@ function renderMarkdown(intelligence) {
   }
   lines.push('', '## Recommended Next Actions', '', ...(intelligence.recommended_next_actions.length > 0 ? intelligence.recommended_next_actions.map((item) => `- ${item}`) : ['- (none)']));
   lines.push('', '## Validation Patterns', '', ...(intelligence.validation_patterns.length > 0 ? intelligence.validation_patterns.map((item) => `- ${item}`) : ['- (none)']));
+  lines.push('', '## User Profile Guidance', '');
+  lines.push(`- Status: ${intelligence.user_profile ? intelligence.user_profile.status : 'missing'}`);
+  lines.push(`- Injected: ${intelligence.user_profile && intelligence.user_profile.injected ? 'yes' : 'no'}`);
+  lines.push(`- Active records: ${intelligence.user_profile && intelligence.user_profile.records ? intelligence.user_profile.records.active : 0}`);
+  if (intelligence.user_profile && intelligence.user_profile.guidance) {
+    lines.push('', intelligence.user_profile.guidance.replace(/^# Forgeflow User Profile[^\n]*\s*/u, '').trim());
+  }
   lines.push('', '## Agent Feedback', '');
   lines.push(`- Status: ${intelligence.agent_feedback.status}`);
   lines.push(`- Records: ${intelligence.agent_feedback.records}`);
@@ -1015,6 +1033,10 @@ function renderMarkdown(intelligence) {
   lines.push(`- Code map history: ${intelligence.artifacts.code_map_history || '(missing)'}`);
   lines.push(`- Code topology: ${intelligence.artifacts.code_topology || '(missing)'}`);
   lines.push(`- Latest insights report: ${intelligence.artifacts.latest_insights_report || '(missing)'}`);
+  if (intelligence.artifacts.user_profile) {
+    lines.push(`- User operating profile: ${intelligence.artifacts.user_profile.global || '(missing)'}`);
+    lines.push(`- Project experience profile: ${intelligence.artifacts.user_profile.project || '(missing)'}`);
+  }
   lines.push(`- Failure digest: ${intelligence.artifacts.failure_digest || '(missing)'}`);
   lines.push(`- Agent feedback: ${intelligence.agent_feedback.file || '(missing)'}`);
   lines.push(`- Review outcomes: ${intelligence.review_outcomes.file || '(missing)'}`);

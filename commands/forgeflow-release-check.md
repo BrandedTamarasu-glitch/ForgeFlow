@@ -58,6 +58,7 @@ node scripts/forgeflow/test-record-pilot-evidence.js
 node scripts/forgeflow/test-record-agent-feedback.js
 node scripts/forgeflow/test-rollup-agent-feedback.js
 node scripts/forgeflow/test-record-project-learning.js
+node scripts/forgeflow/test-user-profile.js
 node scripts/forgeflow/test-rollup-pattern-learnings.js
 node scripts/forgeflow/test-rollup-pilot-evidence.js
 node scripts/forgeflow/test-rollup-project-learnings.js
@@ -114,6 +115,7 @@ If any command fails, stop and report the failed command plus its output. Do not
 - [ ] Pilot evidence recorder test passes
 - [ ] Agent feedback recorder test passes
 - [ ] Project learning recorder test passes
+- [ ] User profile helper test passes
 - [ ] Pattern learnings rollup test passes
 - [ ] Pilot evidence rollup test passes
 - [ ] Project learnings rollup test passes

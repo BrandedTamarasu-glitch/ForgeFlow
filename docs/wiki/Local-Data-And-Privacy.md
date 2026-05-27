@@ -27,6 +27,20 @@ This can include:
 - context telemetry
 - context advisor history
 
+User operating preferences are stored under:
+
+```text
+~/.claude/forgeflow/user-operating-profile.jsonl
+```
+
+Project experience preferences are stored under:
+
+```text
+.forgeflow/<project-name>/project-experience-profile.jsonl
+```
+
+These profile records are local advisory guidance. Keep global user operating preferences free of project names, private URLs, source snippets, customer names, raw settings, and secrets. Project experience preferences should stay project-local and should not become global defaults unless the user explicitly records them as global operating preferences.
+
 ## Telemetry
 
 Forgeflow telemetry is JSONL and is intended for local use:
@@ -72,7 +86,7 @@ For evaluation output, share aggregate summaries by default:
 scripts/forgeflow/render-evaluation-report.js --outcomes .forgeflow/<project>/review-outcomes.jsonl --context-root .forgeflow --public --out .forgeflow/<project>/evaluation-summary.md
 ```
 
-Keep raw `review-outcomes.jsonl`, context packets, memory summaries, implementation notes, and telemetry rows local unless the receiving audience is allowed to see the underlying project context. For team trials, use [Team Privacy Boundaries](Team-Privacy-Boundaries) to choose between local-maintainer, private-team, and public sharing levels. See [Evaluation Sharing](Evaluation-Sharing) and [Public-Safe Examples](Public-Examples).
+Keep raw `review-outcomes.jsonl`, user/profile records, context packets, memory summaries, implementation notes, and telemetry rows local unless the receiving audience is allowed to see the underlying project context. For team trials, use [Team Privacy Boundaries](Team-Privacy-Boundaries) to choose between local-maintainer, private-team, and public sharing levels. See [Evaluation Sharing](Evaluation-Sharing) and [Public-Safe Examples](Public-Examples).
 
 Support bundles include a snippet-free redaction preview that reports sensitive categories and counts without showing the matched values. Use it as a starting point, not as proof that the bundle is public-safe.
 

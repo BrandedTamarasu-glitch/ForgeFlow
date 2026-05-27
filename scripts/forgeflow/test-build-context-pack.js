@@ -508,6 +508,7 @@ const manifest = JSON.parse(fs.readFileSync(path.join(outDir, 'file-manifest.jso
 const synthesis = JSON.parse(fs.readFileSync(path.join(outDir, 'synthesis-input.json'), 'utf8'));
 const telemetry = JSON.parse(fs.readFileSync(path.join(outDir, 'context-telemetry.json'), 'utf8'));
 const insightsReport = JSON.parse(fs.readFileSync(path.join(outDir, 'latest-insights-report.json'), 'utf8'));
+const userProfile = fs.readFileSync(path.join(outDir, 'user-profile.md'), 'utf8');
 const artifactManifest = JSON.parse(fs.readFileSync(path.join(outDir, 'packet-artifacts.json'), 'utf8'));
 const artifactManifestMarkdown = fs.readFileSync(path.join(outDir, 'packet-artifacts.md'), 'utf8');
 const topology = JSON.parse(fs.readFileSync(path.join(outDir, 'code-topology.json'), 'utf8'));
@@ -541,6 +542,7 @@ const checks = [
   ['memory hits written', fs.existsSync(path.join(outDir, 'memory-hits.md'))],
   ['latest insights written', fs.existsSync(path.join(outDir, 'latest-insights.md'))],
   ['latest insights report written', fs.existsSync(path.join(outDir, 'latest-insights-report.json'))],
+  ['user profile written', fs.existsSync(path.join(outDir, 'user-profile.md'))],
   ['code topology written', fs.existsSync(path.join(outDir, 'code-topology.json'))],
   ['code topology review focus written', fs.existsSync(path.join(outDir, 'code-topology-review-focus.md'))],
   ['code topology telemetry written', fs.existsSync(path.join(outDir, 'code-topology-telemetry.json'))],
@@ -550,6 +552,7 @@ const checks = [
   ['telemetry linked', synthesis.context_telemetry_path.endsWith('context-telemetry.json')],
   ['latest insights linked', synthesis.latest_insights_path.endsWith('latest-insights.md')],
   ['latest insights report linked', synthesis.latest_insights_report_path.endsWith('latest-insights-report.json')],
+  ['user profile linked', synthesis.user_profile_path.endsWith('user-profile.md') && synthesis.user_profile_report && typeof synthesis.user_profile_report.injected === 'boolean'],
   ['latest failure digest linked', synthesis.latest_failure_digest_path && synthesis.latest_failure_digest_path.endsWith('failure-digest.md')],
   ['latest failure digest freshness linked', synthesis.latest_failure_digest_freshness && synthesis.latest_failure_digest_freshness.status === 'attention'],
   ['latest failure digest triage linked', synthesis.latest_failure_digest_triage && synthesis.latest_failure_digest_triage.state === 'stale' && synthesis.latest_failure_digest_triage.usefulness === 'limited'],
@@ -557,6 +560,7 @@ const checks = [
   ['packet artifact manifest written', artifactManifest.artifacts.some((item) => item.name === 'latest-failure-digest' && item.decision === 'metadata-only' && item.reason === 'digest-stale')],
   ['packet artifact manifest markdown written', artifactManifestMarkdown.includes('| latest-failure-digest | metadata-only | digest-stale | forgeflow-failure-digest |')],
   ['packet artifact manifest covers latest insights', artifactManifest.artifacts.some((item) => item.name === 'latest-insights' && item.decision === 'included' && item.status === 'injected')],
+  ['packet artifact manifest covers user profile', artifactManifest.artifacts.some((item) => item.name === 'user-profile' && ['included', 'metadata-only'].includes(item.decision) && item.status)],
   ['packet artifact manifest covers topology provenance', artifactManifest.artifacts.some((item) => item.name === 'code-topology' && item.decision === 'included' && item.provenance && item.provenance.source === 'build-context-pack')],
   ['project code map linked to current pack', synthesis.project_code_map_path === path.relative(repoRoot, path.join(outDir, 'project-code-map.md'))],
   ['project code topology linked to current pack', synthesis.project_code_topology_path === synthesis.code_topology_path],
@@ -575,6 +579,7 @@ const checks = [
   ['code topology summary has changed section count', Number.isInteger(synthesis.code_topology_summary.summary.changed_sections)],
   ['code topology summary has section ranges', synthesis.code_topology_summary.changed_file_neighbors.every((item) => (item.sections || []).every((section) => Number.isInteger(section.end_line)))],
   ['agent packet includes latest insights', wardenPacket.includes('## Latest Insights')],
+  ['agent packet includes user profile guidance', wardenPacket.includes('## User Profile Guidance') && userProfile.includes('Forgeflow User Profile')],
   ['agent packet includes artifact trust manifest', wardenPacket.includes('## Packet Artifact Trust') && wardenPacket.includes('| latest-failure-digest | metadata-only | digest-stale | forgeflow-failure-digest |')],
   ['agent packet gates stale failure digest body', wardenPacket.includes('## Latest Failure Digest') && wardenPacket.includes('Freshness: attention') && wardenPacket.includes('Triage state: stale') && wardenPacket.includes('Digest body skipped') && !wardenPacket.includes('FAIL context packet fixture')],
   ['agent packet latest insights omit stale topology', !wardenPacket.includes('legacy/stale-topology.js')],

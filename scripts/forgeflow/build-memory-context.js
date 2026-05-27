@@ -10,9 +10,11 @@ const {
   writeTelemetry,
 } = require('./context-telemetry');
 const { writeFileSafe } = require('./file-safety');
+const { compactUserProfile } = require('./user-profile');
 
 const DEFAULT_MAX_HITS = 40;
 const DEFAULT_MAX_CHARS = 8000;
+const MIN_MEMORY_CHARS_WITH_PROFILE = 1200;
 
 function usage() {
   console.error([
@@ -109,8 +111,33 @@ function keywordList(query, files) {
 }
 
 function truncate(text, maxChars) {
-  if (!Number.isFinite(maxChars) || maxChars <= 0 || text.length <= maxChars) return text;
+  if (!Number.isFinite(maxChars)) return text;
+  if (maxChars <= 0) return '';
+  if (text.length <= maxChars) return text;
   return `${text.slice(0, Math.max(0, maxChars - 80)).trimEnd()}\n\n[truncated to ${maxChars} chars]`;
+}
+
+function splitMemoryBudget(maxChars, userProfileBlock) {
+  if (!Number.isFinite(maxChars)) {
+    return { memoryChars: maxChars, profileChars: undefined };
+  }
+  if (maxChars <= 0) return { memoryChars: 0, profileChars: 0 };
+  if (maxChars <= MIN_MEMORY_CHARS_WITH_PROFILE) {
+    const profileChars = Math.min(userProfileBlock.length, Math.max(160, Math.floor(maxChars * 0.45)));
+    return {
+      memoryChars: Math.max(0, maxChars - profileChars - 2),
+      profileChars,
+    };
+  }
+  const reservedProfileChars = Math.min(
+    Math.max(0, maxChars - MIN_MEMORY_CHARS_WITH_PROFILE),
+    Math.min(userProfileBlock.length, 2200),
+  );
+  if (reservedProfileChars <= 0) return { memoryChars: maxChars, profileChars: Math.max(0, maxChars) };
+  return {
+    memoryChars: Math.max(0, maxChars - reservedProfileChars),
+    profileChars: reservedProfileChars,
+  };
 }
 
 function renderMemoryContext(root, indexPath, records, keys, maxHits, maxChars) {
@@ -163,21 +190,31 @@ function buildMemoryContext(opts = {}) {
     out: opts.indexOut || path.join(projectDir, 'index', 'memory-index.json'),
   });
   const records = Array.isArray(indexResult.index.records) ? indexResult.index.records : [];
+  const userProfile = compactUserProfile({ root, projectDir }, 2200);
+  const userProfileBlock = [
+    '## User Profile Guidance',
+    '',
+    userProfile.markdown.replace(/^# Forgeflow User Profile[^\n]*\s*/u, '').trim() || '(none)',
+  ].join('\n');
+  const maxChars = Number.isFinite(opts.maxChars) ? opts.maxChars : DEFAULT_MAX_CHARS;
+  const budget = splitMemoryBudget(maxChars, userProfileBlock);
   const rendered = renderMemoryContext(
     root,
     indexResult.out,
     records,
     keys,
     Number.isFinite(opts.maxHits) ? opts.maxHits : DEFAULT_MAX_HITS,
-    Number.isFinite(opts.maxChars) ? opts.maxChars : DEFAULT_MAX_CHARS,
+    budget.memoryChars,
   );
+  const profileMarkdown = truncate(userProfileBlock, budget.profileChars);
+  const markdown = [rendered.markdown, profileMarkdown].filter((section) => section.trim()).join('\n\n');
 
   fs.mkdirSync(path.dirname(out), { recursive: true });
-  writeFileSafe(out, `${rendered.markdown}\n`);
+  writeFileSafe(out, `${markdown}\n`);
   const rawMemoryChars = sum(indexResult.index.sources.map((source) => source.bytes || 0));
   const telemetry = contextTelemetry('memory-context', {
     baseline_chars: rawMemoryChars,
-    compact_chars: textChars(rendered.markdown),
+    compact_chars: textChars(markdown),
     detail: {
       sources: indexResult.index.sources.length,
       records: records.length,
@@ -195,8 +232,13 @@ function buildMemoryContext(opts = {}) {
     sources: indexResult.index.sources.length,
     records: records.length,
     selected_count: rendered.selected_count,
-    markdown: rendered.markdown,
+    markdown,
     telemetry,
+    user_profile: {
+      status: userProfile.result.check.status,
+      injected: userProfile.injected,
+      issue_count: userProfile.result.check.issues.length,
+    },
   };
 }
 

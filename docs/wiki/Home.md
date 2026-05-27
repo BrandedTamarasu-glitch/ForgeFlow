@@ -31,6 +31,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 - [Forgeflow 4.3.1 Patch Notes](../changelogs/v4.3.1.html)
 - [Forgeflow 4.3 Release Brief](Forgeflow-4.3-Release-Brief.md)
 - [Project Learnings](Project-Learnings)
+- [User Profile Guidance](User-Profile-Guidance)
 - [Maintainer Pilot](Maintainer-Pilot)
 - [Adoption Pack](Adoption-Pack)
 - [Team Privacy Boundaries](Team-Privacy-Boundaries)

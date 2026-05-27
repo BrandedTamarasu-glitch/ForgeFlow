@@ -17,6 +17,36 @@ const result = buildMemoryContext({
   maxHits: 8,
   maxChars: 4000,
 });
+const tightOut = path.join(tmpDir, 'memory-context-tight.md');
+const tightResult = buildMemoryContext({
+  projectDir: path.join(repoRoot, 'fixtures/memory-index'),
+  query: 'plan auth session token review',
+  out: tightOut,
+  indexOut: path.join(tmpDir, 'memory-index-tight.json'),
+  telemetryOut: path.join(tmpDir, 'memory-context-telemetry-tight.json'),
+  maxHits: 8,
+  maxChars: 350,
+});
+const tinyOut = path.join(tmpDir, 'memory-context-tiny.md');
+const tinyResult = buildMemoryContext({
+  projectDir: path.join(repoRoot, 'fixtures/memory-index'),
+  query: 'plan auth session token review',
+  out: tinyOut,
+  indexOut: path.join(tmpDir, 'memory-index-tiny.json'),
+  telemetryOut: path.join(tmpDir, 'memory-context-telemetry-tiny.json'),
+  maxHits: 8,
+  maxChars: 100,
+});
+const zeroOut = path.join(tmpDir, 'memory-context-zero.md');
+const zeroResult = buildMemoryContext({
+  projectDir: path.join(repoRoot, 'fixtures/memory-index'),
+  query: 'plan auth session token review',
+  out: zeroOut,
+  indexOut: path.join(tmpDir, 'memory-index-zero.json'),
+  telemetryOut: path.join(tmpDir, 'memory-context-telemetry-zero.json'),
+  maxHits: 8,
+  maxChars: 0,
+});
 const symlinkOutProject = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-memory-context-symlink-'));
 fs.writeFileSync(path.join(symlinkOutProject, 'project-learnings.md'), '# Project Learnings\n\n- safe session note\n');
 const outsideContext = path.join(symlinkOutProject, 'outside-context.md');
@@ -39,6 +69,8 @@ try {
 }
 
 const content = fs.readFileSync(out, 'utf8');
+const tightContent = fs.readFileSync(tightOut, 'utf8');
+const tinyContent = fs.readFileSync(tinyOut, 'utf8');
 const telemetry = JSON.parse(fs.readFileSync(telemetryOut, 'utf8'));
 const checks = [
   ['result path', result.out === out],
@@ -52,6 +84,10 @@ const checks = [
   ['implementation notes hit included', content.includes('retry validation')],
   ['project learnings hit included', content.includes('session-token-refresh')],
   ['plan heading included', content.includes('Review Context Plan')],
+  ['user profile guidance included', content.includes('## User Profile Guidance') && (content.includes('This profile is advisory') || content.includes('quality check returned'))],
+  ['tight budget preserves user profile guidance', tightResult.markdown.length <= 480 && tightContent.includes('## User Profile Guidance')],
+  ['tiny budget remains bounded', tinyResult.markdown.length <= 220 && tinyContent.includes('## User Profile Guidance') && !tinyContent.includes('Session token reviews')],
+  ['zero budget is empty', zeroResult.markdown.trim() === '' && fs.readFileSync(zeroOut, 'utf8').trim() === ''],
   ['telemetry kind', telemetry.kind === 'memory-context'],
   ['telemetry estimates tokens', Number.isInteger(telemetry.estimated_compact_tokens)],
   ['symlink context destination blocked', symlinkContextBlocked && fs.readFileSync(outsideContext, 'utf8') === 'do not overwrite\n'],

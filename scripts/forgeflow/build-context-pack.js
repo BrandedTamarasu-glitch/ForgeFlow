@@ -13,6 +13,7 @@ const {
 const { buildMemoryIndex } = require('./index-memory');
 const { showProjectLearnings } = require('./show-project-learnings');
 const { checkProjectLearnings } = require('./check-project-learnings');
+const { compactUserProfile } = require('./user-profile');
 const { classifyFailureDigest } = require('./failure-digest-triage');
 const { failureDigestFreshness, parseFailureDigest } = require('./show-project-trends');
 const {
@@ -885,11 +886,28 @@ function latestInsightsArtifact(report, root, outDir) {
   );
 }
 
-function packetArtifactManifest({ root, outDir, latestInsightsResult, latestFailure, topologyContext, projectCodeMapPath }) {
+function userProfileArtifact(userProfileResult, root, outDir) {
+  const check = userProfileResult && userProfileResult.result ? userProfileResult.result.check : null;
+  const status = check ? check.status : 'missing';
+  return artifactDecision(
+    'user-profile',
+    path.relative(root, path.join(outDir, 'user-profile.md')),
+    userProfileResult && userProfileResult.injected ? 'included' : 'metadata-only',
+    userProfileResult && userProfileResult.injected ? 'quality-check-non-failing' : `user-profile-${status}`,
+    {
+      status,
+      issue_count: check && Array.isArray(check.issues) ? check.issues.length : 0,
+      next_action: status === 'fail' ? 'forgeflow-profile --check' : '',
+    },
+  );
+}
+
+function packetArtifactManifest({ root, outDir, latestInsightsResult, latestFailure, topologyContext, projectCodeMapPath, userProfileResult }) {
   const artifacts = [
     artifactDecision('diff-summary', path.relative(root, path.join(outDir, 'diff-summary.md')), 'included', 'current-diff-scope'),
     artifactDecision('memory-hits', path.relative(root, path.join(outDir, 'memory-hits.md')), 'included', 'local-memory-filtered'),
     latestInsightsArtifact(latestInsightsResult.report, root, outDir),
+    userProfileArtifact(userProfileResult, root, outDir),
     latestFailure.artifact || artifactDecision('latest-failure-digest', path.relative(root, path.join(outDir, 'failure-digest.md')), 'skipped', 'failure-digest-unavailable'),
     artifactDecision(
       'project-code-map',
@@ -959,7 +977,7 @@ function relevantFilesForAgent(agent, manifest) {
   return selected.length > 0 ? selected : manifest.slice(0, 10);
 }
 
-function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, latestFailure, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, task) {
+function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, userProfile, latestFailure, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, task) {
   const relevant = relevantFilesForAgent(agent, manifest);
   const rules = rulePack(agent, route, manifest);
   return [
@@ -988,6 +1006,9 @@ function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestI
     '',
     '## Latest Insights',
     latestInsights.replace(/^# Forgeflow Project Learnings[^\n]*\s*/u, '').trim() || '(none)',
+    '',
+    '## User Profile Guidance',
+    userProfile.replace(/^# Forgeflow User Profile[^\n]*\s*/u, '').trim() || '(none)',
     '',
     '## Latest Failure Digest',
     latestFailure,
@@ -1050,6 +1071,8 @@ function buildContextPack(opts) {
   const topologyContext = buildTopologyContext(root, outDir, route.files);
   const latestInsightsResult = buildLatestInsightsResult(root, 5000, { codeMap: topologyContext ? topologyContext.topology : undefined });
   const latestInsights = latestInsightsResult.markdown;
+  const userProfileResult = compactUserProfile({ root, projectDir: defaultProjectDir(root) }, 3500);
+  const userProfile = userProfileResult.markdown;
   const latestFailure = latestFailureDigest(outDir, root);
   const latestFailurePath = path.join(outDir, 'failure-digest.md');
   const projectCodeMap = projectCodeMapFromTopology(root, topologyContext);
@@ -1058,13 +1081,13 @@ function buildContextPack(opts) {
   const livingMapGuidance = livingMapReviewGuidance(livingMapSummary);
   const topologySummary = compactTopology(topologyContext);
   const topology = topologyReport(topologyContext, root);
-  const artifactManifest = packetArtifactManifest({ root, outDir, latestInsightsResult, latestFailure, topologyContext, projectCodeMapPath });
+  const artifactManifest = packetArtifactManifest({ root, outDir, latestInsightsResult, latestFailure, topologyContext, projectCodeMapPath, userProfileResult });
   const artifactManifestMarkdown = renderArtifactManifest(artifactManifest);
   const agents = route.agents.included || [];
   const packets = {};
 
   for (const agent of agents) {
-    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, latestFailure.markdown, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, effectiveOpts.task);
+    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, userProfile, latestFailure.markdown, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, effectiveOpts.task);
     const file = path.join(packetDir, `${agent}.md`);
     writeFileSafe(file, content);
     packets[agent] = path.relative(root, file);
@@ -1096,6 +1119,13 @@ function buildContextPack(opts) {
     memory_hits_path: path.relative(root, path.join(outDir, 'memory-hits.md')),
     latest_insights_path: path.relative(root, path.join(outDir, 'latest-insights.md')),
     latest_insights_report_path: path.relative(root, path.join(outDir, 'latest-insights-report.json')),
+    user_profile_path: path.relative(root, path.join(outDir, 'user-profile.md')),
+    user_profile_report: {
+      status: userProfileResult.result.check.status,
+      injected: userProfileResult.injected,
+      issue_count: userProfileResult.result.check.issues.length,
+      files: userProfileResult.result.files,
+    },
     latest_failure_digest_path: fs.existsSync(latestFailurePath) ? path.relative(root, latestFailurePath) : null,
     latest_failure_digest_freshness: latestFailure.freshness,
     latest_failure_digest_triage: latestFailure.triage || null,
@@ -1125,6 +1155,7 @@ function buildContextPack(opts) {
   writeFileSafe(path.join(outDir, 'diff-summary.md'), `${diffSummary}\n`);
   writeFileSafe(path.join(outDir, 'memory-hits.md'), `${memoryHits}\n`);
   writeFileSafe(path.join(outDir, 'latest-insights.md'), `${latestInsights || '# Latest Insights\n\n(none)'}\n`);
+  writeFileSafe(path.join(outDir, 'user-profile.md'), `${userProfile || '# User Profile Guidance\n\n(none)'}\n`);
   writeFileSafe(projectCodeMapPath, `# Project Code Map\n\n${projectCodeMap}\n`);
   writeJson(path.join(outDir, 'latest-insights-report.json'), latestInsightsResult.report);
   writeJson(path.join(outDir, 'packet-artifacts.json'), artifactManifest);

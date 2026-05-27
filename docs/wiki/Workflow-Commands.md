@@ -31,6 +31,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | Project intelligence rollup | `scripts/forgeflow/build-project-intelligence.js --json` writes one compact review-prep and next-work summary with trust state, Git provenance, top risks, refresh-first, read-first, avoid-first, validate-first, and proof-boundary guidance. Use `--next-work` for only the human-readable advisory next-work candidates, or `--brief <index>` for an advisory implementation-brief stub with suggested review lanes, implementation-notes seed prompts, and a handoff checklist. |
 | `/forgeflow-metrics` | Summarize telemetry, calibration, outcomes, context savings, budget health, and advisor actions. |
 | `/forgeflow-pilot` | Print the repeatable maintainer pilot script by default, or add `--path new-user` for the state-aware first-real-task evaluation path with guided repair, release-readiness preview, project intelligence, living map status, agent-feedback signal, and a public-safe result template. |
+| `/forgeflow-profile` | Show, check, or record local advisory user operating preferences and project experience preferences for context-pack injection. |
 | `/forgeflow-report` | Produce a script-backed status report including local metrics, false-positive thresholds, pattern freshness, context trends, project trends, import-gap status, latest-insights readiness/freshness, latest failure-digest status/freshness, and direct next-action recommendations. Add `--refresh` to update project guidance first. |
 | `/forgeflow-repair` | Show a non-mutating guided repair plan that combines offline version status, installed runtime helper checks, health failures, repair commands, manual settings guidance, and an explicit downstream smoke follow-up. |
 | `/forgeflow-release-check` | Run local pre-release checks for command coverage, install, update, health, version, and context helpers. |
@@ -77,6 +78,9 @@ scripts/forgeflow/record-implementation-notes.js --json
 scripts/forgeflow/record-project-learning.js --json
 scripts/forgeflow/check-implementation-notes.js --json
 scripts/forgeflow/check-project-learnings.js --json
+scripts/forgeflow/show-user-profile.js --json
+scripts/forgeflow/check-user-profile.js --json
+scripts/forgeflow/record-user-profile.js --scope global --category communication --preference "Keep updates concise."
 scripts/forgeflow/rollup-project-learnings.js --json
 scripts/forgeflow/show-project-learnings.js
 scripts/forgeflow/render-guided-repair.js
