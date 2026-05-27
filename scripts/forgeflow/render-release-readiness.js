@@ -8,7 +8,7 @@ const { RUNTIME_HELPERS, isManagedSource } = require('./install-manifest');
 const MAX_OUTPUT_CHARS = 1200;
 
 function usage() {
-  console.error('Usage: render-release-readiness.js [--root <repo>] [--plan-only] [--json] [--baseline <json>] [--compare-last] [--save-current]');
+  console.error('Usage: render-release-readiness.js [--root <repo>] [--plan-only] [--json] [--baseline <json>] [--compare-last] [--save-current] [--post-publish]');
 }
 
 function requireValue(argv, name, index) {
@@ -25,6 +25,7 @@ function parseArgs(argv) {
     baseline: '',
     compareLast: false,
     saveCurrent: false,
+    postPublish: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -42,6 +43,8 @@ function parseArgs(argv) {
       opts.compareLast = true;
     } else if (arg === '--save-current') {
       opts.saveCurrent = true;
+    } else if (arg === '--post-publish') {
+      opts.postPublish = true;
     } else if (arg === '--help' || arg === '-h') {
       usage();
       process.exit(0);
@@ -64,6 +67,24 @@ function readReleaseCheck(root) {
   const file = path.join(root, 'commands', 'forgeflow-release-check.md');
   if (!fs.existsSync(file)) throw new Error(`Missing release-check source: ${file}`);
   return safeReadTextFile(file, root).content;
+}
+
+function readJsonIfPresent(root, relativePath) {
+  const file = path.join(root, relativePath);
+  if (!fs.existsSync(file)) return null;
+  return JSON.parse(safeReadTextFile(file, root).content);
+}
+
+function changelogCandidates(version) {
+  const exact = `docs/changelogs/v${version}.html`;
+  const patchZero = String(version || '').endsWith('.0')
+    ? `docs/changelogs/v${String(version).replace(/\.0$/, '')}.html`
+    : '';
+  return patchZero ? [exact, patchZero] : [exact];
+}
+
+function matchingChangelog(root, version) {
+  return changelogCandidates(version).find((candidate) => fs.existsSync(path.join(root, candidate))) || '';
 }
 
 function releaseReadinessCommands(releaseCheck) {
@@ -390,6 +411,77 @@ function releaseToInstallPreflightCheck(root) {
   };
 }
 
+function localTagExists(root, tag) {
+  if (!tag) return false;
+  const result = spawnSync('git', ['rev-parse', '--verify', '--quiet', `refs/tags/${tag}`], { cwd: root, encoding: 'utf8' });
+  return result.status === 0;
+}
+
+function localHeadShort(root) {
+  const result = spawnSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8' });
+  return result.status === 0 ? result.stdout.trim() : '';
+}
+
+function postPublishVerification(root, checks = []) {
+  const plugin = readJsonIfPresent(root, '.claude-plugin/plugin.json') || {};
+  const version = plugin.version || '';
+  const tag = version ? `v${version}` : '';
+  const changelog = version ? matchingChangelog(root, version) : '';
+  const releaseNotesCheck = checks.find((item) => item.command === 'node scripts/forgeflow/test-render-release-notes.js') || null;
+  const sourceSmokeCheck = checks.find((item) => item.command === 'node scripts/forgeflow/smoke-check.js --mode source --json') || null;
+  const updateSmokeCheck = checks.find((item) => item.command === 'node scripts/forgeflow/test-update-forgeflow.js') || null;
+  const checkStatus = (item) => (item && item.status === 'pass' ? 'pass' : 'warn');
+  const evidence = [
+    {
+      name: 'plugin-version',
+      status: version ? 'pass' : 'fail',
+      value: version,
+      clears: 'Set .claude-plugin/plugin.json version before publishing.',
+    },
+    {
+      name: 'local-tag',
+      status: localTagExists(root, tag) ? 'pass' : 'warn',
+      value: tag,
+      clears: `Create and push ${tag} after release checks pass.`,
+    },
+    {
+      name: 'changelog',
+      status: changelog ? 'pass' : 'fail',
+      value: changelog,
+      clears: `Add ${changelogCandidates(version)[0]} before publishing.`,
+    },
+    {
+      name: 'release-notes-draft',
+      status: checkStatus(releaseNotesCheck),
+      value: releaseNotesCheck ? releaseNotesCheck.command : '',
+      clears: 'Run node scripts/forgeflow/test-render-release-notes.js.',
+    },
+    {
+      name: 'source-smoke',
+      status: checkStatus(sourceSmokeCheck),
+      value: sourceSmokeCheck ? sourceSmokeCheck.command : '',
+      clears: 'Run node scripts/forgeflow/smoke-check.js --mode source --json.',
+    },
+    {
+      name: 'update-smoke',
+      status: checkStatus(updateSmokeCheck),
+      value: updateSmokeCheck ? updateSmokeCheck.command : '',
+      clears: 'Run node scripts/forgeflow/test-update-forgeflow.js.',
+    },
+  ];
+  const failures = evidence.filter((item) => item.status === 'fail');
+  const warnings = evidence.filter((item) => item.status === 'warn');
+  return {
+    status: failures.length > 0 ? 'repair-needed' : (warnings.length > 0 ? 'published-propagation-pending' : 'published-and-verified'),
+    version,
+    tag,
+    head: localHeadShort(root),
+    evidence,
+    next_command: failures.length > 0 || warnings.length > 0 ? 'forgeflow-release-readiness --post-publish' : '/forgeflow-version && /forgeflow-health',
+    boundary: 'Post-publish verification is local and advisory. It does not create tags, push, publish, call GitHub, or mutate installed files.',
+  };
+}
+
 function buildReleaseReadiness(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   let releaseCheck = '';
@@ -457,6 +549,7 @@ function buildReleaseReadiness(opts = {}) {
       path: snapshotPath,
       saved: false,
     },
+    post_publish_verification: opts.postPublish ? postPublishVerification(root, checks) : null,
     boundary: opts.saveCurrent
       ? 'Release readiness is advisory and release-safe. It wrote the requested local readiness snapshot, but it never tags, pushes, publishes, or calls GitHub.'
       : 'Release readiness is advisory and non-mutating unless --save-current is passed. It never tags, pushes, publishes, or calls GitHub.',
@@ -522,6 +615,19 @@ function renderMarkdown(result) {
   } else {
     lines.push('- Not available.');
   }
+  if (result.post_publish_verification) {
+    lines.push('', '## Post-Publish Verification', '');
+    lines.push(`- Status: ${result.post_publish_verification.status}`);
+    lines.push(`- Version: ${result.post_publish_verification.version || '(missing)'}`);
+    lines.push(`- Tag: ${result.post_publish_verification.tag || '(missing)'}`);
+    lines.push(`- HEAD: ${result.post_publish_verification.head || '(unknown)'}`);
+    lines.push(`- Boundary: ${result.post_publish_verification.boundary}`);
+    for (const item of result.post_publish_verification.evidence) {
+      lines.push(`- ${item.name}: ${item.status}${item.value ? ` (${item.value})` : ''}`);
+      if (item.status !== 'pass') lines.push(`  - Clears: ${item.clears}`);
+    }
+    lines.push(`- Next: ${result.post_publish_verification.next_command}`);
+  }
   lines.push('', '## Blockers', '');
   if (result.blockers.length === 0) {
     lines.push(result.status === 'planned' ? '- Not run; use without `--plan-only` to execute readiness checks.' : '- None.');
@@ -557,10 +663,12 @@ if (require.main === module) main();
 module.exports = {
   allowedCommand,
   buildReleaseReadiness,
+  changelogCandidates,
   commandCategory,
   blockerKind,
   clearingAction,
   compareReleaseReadiness,
+  postPublishVerification,
   parseArgs,
   releaseToInstallPreflight,
   releaseToInstallPreflightCheck,

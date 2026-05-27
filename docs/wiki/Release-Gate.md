@@ -113,4 +113,6 @@ known_deferrals:
 
 If the release-note draft includes referenced issues, verify each issue's state before publishing any "fixed" or "closed" claim. Issue references are advisory links from commit subjects, not proof of closure.
 
+After publishing, run `/forgeflow-release-readiness --post-publish` to capture local post-publish verification. This check is advisory and does not tag, push, publish, call GitHub, or mutate installed files.
+
 Do not tag or publish if release checks fail. Treat public-summary failures as release blockers when release notes rely on evaluation evidence. Use [Settings And Recovery](Settings-And-Recovery) to record any manual settings, restart, repair, or rollback deferrals.

@@ -6,9 +6,11 @@ const {
   allowedCommand,
   blockerKind,
   buildReleaseReadiness,
+  changelogCandidates,
   clearingAction,
   compareReleaseReadiness,
   parseArgs,
+  postPublishVerification,
   releaseToInstallPreflight,
   releaseCheckEnv,
   releaseReadinessCommands,
@@ -18,6 +20,10 @@ const { RUNTIME_HELPERS } = require('./install-manifest');
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-release-readiness-'));
 fs.mkdirSync(path.join(root, 'commands'), { recursive: true });
+fs.mkdirSync(path.join(root, '.claude-plugin'), { recursive: true });
+fs.mkdirSync(path.join(root, 'docs', 'changelogs'), { recursive: true });
+fs.writeFileSync(path.join(root, '.claude-plugin', 'plugin.json'), JSON.stringify({ name: 'Forgeflow', version: '9.9.0' }, null, 2));
+fs.writeFileSync(path.join(root, 'docs', 'changelogs', 'v9.9.0.html'), '<h1>Release</h1>\n');
 for (const source of RUNTIME_HELPERS) {
   const file = path.join(root, source);
   fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -64,7 +70,20 @@ const planned = buildReleaseReadiness({ root, planOnly: true, runner });
 const markdown = renderMarkdown(result);
 const comparedMarkdown = renderMarkdown(comparedResult);
 const badBaselineMarkdown = renderMarkdown(badBaselineResult);
-const parsedCompareLast = parseArgs(['--compare-last', '--save-current', '--json']);
+const postPublishResult = buildReleaseReadiness({ root, runner, postPublish: true });
+const postPublishMarkdown = renderMarkdown(postPublishResult);
+const directPostPublish = postPublishVerification(root, [
+  { command: 'node scripts/forgeflow/test-render-release-notes.js', status: 'pass' },
+  { command: 'node scripts/forgeflow/smoke-check.js --mode source --json', status: 'pass' },
+  { command: 'node scripts/forgeflow/test-update-forgeflow.js', status: 'pass' },
+]);
+const patchZeroRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-release-readiness-patch-zero-'));
+fs.mkdirSync(path.join(patchZeroRoot, '.claude-plugin'), { recursive: true });
+fs.mkdirSync(path.join(patchZeroRoot, 'docs', 'changelogs'), { recursive: true });
+fs.writeFileSync(path.join(patchZeroRoot, '.claude-plugin', 'plugin.json'), JSON.stringify({ name: 'Forgeflow', version: '9.8.0' }, null, 2));
+fs.writeFileSync(path.join(patchZeroRoot, 'docs', 'changelogs', 'v9.8.html'), '<h1>Release</h1>\n');
+const patchZeroPostPublish = postPublishVerification(patchZeroRoot, []);
+const parsedCompareLast = parseArgs(['--compare-last', '--save-current', '--post-publish', '--json']);
 const readinessCommands = releaseReadinessCommands(fs.readFileSync(path.join(root, 'commands', 'forgeflow-release-check.md'), 'utf8'));
 const missingRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-release-readiness-missing-'));
 const missingHelperRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-release-readiness-helper-missing-'));
@@ -95,7 +114,7 @@ delete process.env.NODE_PATH;
 
 const checks = [
   ['schema version', result.schema_version === '1'],
-  ['parse compare-last flags', parsedCompareLast.compareLast === true && parsedCompareLast.saveCurrent === true && parsedCompareLast.json === true],
+  ['parse compare-last flags', parsedCompareLast.compareLast === true && parsedCompareLast.saveCurrent === true && parsedCompareLast.postPublish === true && parsedCompareLast.json === true],
   ['blocked when command fails', result.status === 'blocked' && result.blockers.length === 1],
   ['blocker has exact command', result.blockers[0].command === 'node scripts/forgeflow/test-install-smoke.js'],
   ['categories are grouped', result.categories.metadata.total === 1 && result.categories['install-runtime'].failed === 1 && result.categories['project-context'].total === 1 && result.categories['source-smoke'].total === 1 && result.categories.whitespace.total === 1],
@@ -106,6 +125,9 @@ const checks = [
   ['compare-last reads standard snapshot', compareLastResult.comparison.baseline.path === savedResult.snapshot.path && compareLastResult.comparison.newly_failing.some((item) => item.command === 'node scripts/forgeflow/test-release-version.js') && compareLastResult.comparison.cleared_blockers.some((item) => item.command === 'node scripts/forgeflow/test-install-smoke.js')],
   ['bad baseline does not abort readiness', badBaselineResult.status === result.status && badBaselineResult.comparison.status === 'no-baseline' && badBaselineResult.comparison.baseline.path === badBaselinePath && badBaselineResult.comparison.baseline.reason.length > 0],
   ['comparison helper reports unchanged', compareReleaseReadiness(result, result).status === 'unchanged'],
+  ['post-publish verification is local and advisory', directPostPublish.status === 'published-propagation-pending' && directPostPublish.version === '9.9.0' && directPostPublish.tag === 'v9.9.0' && directPostPublish.evidence.some((item) => item.name === 'local-tag' && item.status === 'warn') && directPostPublish.boundary.includes('does not create tags')],
+  ['post-publish supports patch-zero changelog candidate', changelogCandidates('9.8.0').includes('docs/changelogs/v9.8.html') && patchZeroPostPublish.evidence.some((item) => item.name === 'changelog' && item.status === 'pass' && item.value === 'docs/changelogs/v9.8.html')],
+  ['post-publish readiness renders verification', postPublishResult.post_publish_verification && postPublishResult.post_publish_verification.status === 'published-propagation-pending' && postPublishMarkdown.includes('## Post-Publish Verification') && postPublishMarkdown.includes('published-propagation-pending')],
   ['release-to-install preflight catches missing helper source', missingHelperPreflight.status === 'fail' && missingHelperPreflight.missing.includes(RUNTIME_HELPERS[0]) && missingHelperPreflight.present === RUNTIME_HELPERS.length - 1 && missingHelperPreflight.managed === RUNTIME_HELPERS.length && missingHelperPreflight.repair.includes('before tagging')],
   ['release-to-install preflight rejects out-of-tree helper source', symlinkHelperPreflight.status === 'fail' && symlinkHelperPreflight.out_of_tree.includes(RUNTIME_HELPERS[1]) && symlinkHelperPreflight.present === RUNTIME_HELPERS.length - 1],
   ['readiness includes full release checklist commands', readinessCommands.some((command) => command.startsWith('node scripts/forgeflow/render-evaluation-report.js --outcomes')) && result.categories.quality.total === 2],

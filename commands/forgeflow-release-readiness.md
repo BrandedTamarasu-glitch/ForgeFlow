@@ -1,12 +1,12 @@
 ---
 name: forgeflow-release-readiness
 description: Run advisory local release readiness checks and show blockers without tagging, pushing, publishing, or calling GitHub.
-argument-hint: "[--plan-only] [--json] [--compare-last] [--save-current]"
+argument-hint: "[--plan-only] [--json] [--compare-last] [--save-current] [--post-publish]"
 allowed-tools:
   - Bash
 ---
 
-Run the local release readiness helper. This command is advisory and release-safe: it never tags, pushes, publishes, or calls GitHub. With `--save-current`, it writes a local readiness snapshot under `.forgeflow/<project>/release-readiness/`.
+Run the local release readiness helper. This command is advisory and release-safe: it never tags, pushes, publishes, or calls GitHub. With `--save-current`, it writes a local readiness snapshot under `.forgeflow/<project>/release-readiness/`. With `--post-publish`, it adds a local post-publish verification block for plugin version, local tag, changelog, release-note draft, source smoke, and update smoke evidence.
 
 ```bash
 HELPER_DIR="scripts/forgeflow"
@@ -24,6 +24,7 @@ PLAN_ONLY_FLAG="--plan-only"
 JSON_FLAG="--json"
 COMPARE_LAST_FLAG="--compare-last"
 SAVE_CURRENT_FLAG="--save-current"
+POST_PUBLISH_FLAG="--post-publish"
 
 if printf '%s\n' "$ARGUMENTS" | grep -Eq '(^|[[:space:]])--plan-only([[:space:]]|$)'; then
   ARGS+=("${PLAN_ONLY_FLAG}")
@@ -36,6 +37,9 @@ if printf '%s\n' "$ARGUMENTS" | grep -Eq '(^|[[:space:]])--compare-last([[:space
 fi
 if printf '%s\n' "$ARGUMENTS" | grep -Eq '(^|[[:space:]])--save-current([[:space:]]|$)'; then
   ARGS+=("${SAVE_CURRENT_FLAG}")
+fi
+if printf '%s\n' "$ARGUMENTS" | grep -Eq '(^|[[:space:]])--post-publish([[:space:]]|$)'; then
+  ARGS+=("${POST_PUBLISH_FLAG}")
 fi
 
 env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/render-release-readiness.js" "${ARGS[@]}"
