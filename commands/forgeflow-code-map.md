@@ -28,6 +28,7 @@ The command uses `scripts/forgeflow/show-code-map.js`, which writes:
 - `.forgeflow/<project>/context/code-topology-review-focus.md`
 - `.forgeflow/<project>/context/code-topology-telemetry.json`
 - `.forgeflow/<project>/context/code-map-history.jsonl`
+- `.forgeflow/<project>/code-map-accept.json` (optional local-only input for exact accepted import gaps)
 </context>
 
 ## Gotchas
@@ -38,6 +39,7 @@ The command uses `scripts/forgeflow/show-code-map.js`, which writes:
 - **Provenance is Git-based.** Branch, commit, dirty state, changed-file count, and untracked-file count are recorded when the helper runs from the repository root.
 - **Trends are local history.** Trend deltas compare against the previous compact snapshot in `.forgeflow/<project>/context/code-map-history.jsonl`; the helper retains the latest 50 snapshots by default.
 - **Import gaps are triage hints.** Unresolved imports and skipped dynamic imports are shown with likely reason/action text, but they are not proof of broken runtime behavior.
+- **Accepted gaps are local-only.** Add exact `{source, specifier}` or `{source, expression}` entries to `.forgeflow/<project>/code-map-accept.json` only for known intentional gaps. Accepted gaps stay visible, stale acceptances are reported, and acceptance is not proof of runtime correctness.
 - **Line ranges are hints.** They are computed from static section starts and the next section boundary.
 
 <process>

@@ -28,7 +28,7 @@ The command uses `scripts/forgeflow/smoke-check.js`.
 ## Gotchas
 
 - **Warnings are actionable.** Import gaps and context budget warnings do not fail the smoke by default; they should include the next command or trim guidance.
-- **Expected import gaps are informational.** Code-map smoke reports production, expected, and needs-review import-gap counts separately. Expected asset/data/runtime gaps stay visible but do not warn when `needs_review_total` is zero.
+- **Expected import gaps are informational.** Code-map smoke reports production, expected, local-accepted, and needs-review import-gap counts separately. Expected asset/data/runtime gaps and exact local acceptances stay visible but do not warn when `needs_review_total` is zero.
 - **Refresh writes local artifacts.** The smoke refreshes project learnings, latest insights, code-map history, context telemetry, and report context.
 - **Source-tree guards are explicit.** Use `--mode source` for doc links, release metadata, manifest drift, command coverage, and updater tests. Downstream mode avoids repo-only checks.
 - **Local-only.** Smoke output is meant for local confidence and pilot readiness, not a public CI claim.

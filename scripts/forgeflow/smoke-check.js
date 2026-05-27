@@ -105,15 +105,17 @@ function codeMapGapSummary(gaps = {}) {
   const productionTotal = gaps.limits ? gaps.limits.production_total || 0 : 0;
   const testFixtureTotal = gaps.limits ? gaps.limits.test_fixture_total || 0 : 0;
   const expectedTotal = gaps.triage ? gaps.triage.expected_total || 0 : 0;
+  const acceptedTotal = gaps.triage ? gaps.triage.accepted_total || 0 : 0;
   const needsReviewTotal = gaps.triage ? gaps.triage.needs_review_total || 0 : 0;
   return {
     production_total: productionTotal,
     test_fixture_total: testFixtureTotal,
     expected_total: expectedTotal,
+    accepted_total: acceptedTotal,
     needs_review_total: needsReviewTotal,
     explanation: needsReviewTotal > 0
-      ? `${needsReviewTotal} gap(s) need review. ${expectedTotal} expected gap(s) are informational.`
-      : `${expectedTotal} expected gap(s) are informational; no import gaps currently need review.`,
+      ? `${needsReviewTotal} gap(s) need review. ${expectedTotal} expected gap(s), including ${acceptedTotal} local acceptance(s), are informational.`
+      : `${expectedTotal} expected gap(s), including ${acceptedTotal} local acceptance(s), are informational; no import gaps currently need review.`,
   };
 }
 
@@ -310,7 +312,7 @@ function runDownstreamSmoke({ root, projectDir, patternsDir }) {
     const gapSummary = codeMapGapSummary(gaps);
     const codeMapExplanation = gapSummary.needs_review_total > 0 ? {
       reason: 'Code map has import gaps that need review.',
-      evidence: `${gapSummary.needs_review_total} import gap(s) need review; ${gapSummary.production_total} production-scope gap(s) reported in total; ${gapSummary.expected_total} expected gap(s) are informational.`,
+      evidence: `${gapSummary.needs_review_total} import gap(s) need review; ${gapSummary.production_total} production-scope gap(s) reported in total; ${gapSummary.expected_total} expected gap(s), including ${gapSummary.accepted_total} local acceptance(s), are informational.`,
       clears: 'Run forgeflow-code-map, then fix or classify the import gaps marked as needing review.',
       next_actions: nextAction('forgeflow-code-map', 'Review import gaps marked as needing review.'),
     } : gapSummary.expected_total > 0 ? {
@@ -323,6 +325,7 @@ function runDownstreamSmoke({ root, projectDir, patternsDir }) {
       production_total: gapSummary.production_total,
       test_fixture_total: gapSummary.test_fixture_total,
       expected_total: gapSummary.expected_total,
+      accepted_total: gapSummary.accepted_total,
       needs_review_total: gapSummary.needs_review_total,
       import_gap_explanation: gapSummary.explanation,
       triage_categories: gaps.triage ? gaps.triage.categories.slice(0, 5) : [],

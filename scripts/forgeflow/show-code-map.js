@@ -81,6 +81,10 @@ function defaultHistoryPath(root, projectDir = defaultProjectDir(root)) {
   return path.join(projectDir, 'context', 'code-map-history.jsonl');
 }
 
+function defaultAcceptancePath(projectDir) {
+  return path.join(projectDir, 'code-map-accept.json');
+}
+
 function historyPathForTopologyOut(topologyOut) {
   const dir = path.dirname(topologyOut);
   const contextDir = path.basename(dir) === 'latest' ? path.dirname(dir) : dir;
@@ -262,6 +266,7 @@ function importGapTriage(unresolved, skippedDynamic) {
   const categories = {};
   let expectedTotal = 0;
   let needsReviewTotal = 0;
+  let acceptedTotal = 0;
   for (const item of all) {
     const category = item.triage && item.triage.category ? item.triage.category : 'unknown';
     if (!categories[category]) {
@@ -288,11 +293,13 @@ function importGapTriage(unresolved, skippedDynamic) {
         scope: item.scope,
       });
     }
+    if (item.accepted) acceptedTotal += 1;
     if (item.triage && item.triage.expected) expectedTotal += 1;
     else needsReviewTotal += 1;
   }
   return {
     expected_total: expectedTotal,
+    accepted_total: acceptedTotal,
     needs_review_total: needsReviewTotal,
     categories: Object.values(categories).sort((a, b) => {
       if (a.expected !== b.expected) return a.expected ? 1 : -1;
@@ -301,7 +308,147 @@ function importGapTriage(unresolved, skippedDynamic) {
   };
 }
 
-function importGapSummary(topology, limit = 8) {
+function acceptanceKey(item, gapType) {
+  const source = String(item.source || '');
+  if (gapType === 'dynamic') return `dynamic\x00${source}\x00${String(item.expression || '')}`;
+  return `unresolved\x00${source}\x00${String(item.specifier || '')}`;
+}
+
+function invalidAcceptance(entry) {
+  const source = String(entry && entry.source ? entry.source : '');
+  const specifier = String(entry && entry.specifier ? entry.specifier : '');
+  const expression = String(entry && entry.expression ? entry.expression : '');
+  if (!source) return 'missing source';
+  if ((specifier && expression) || (!specifier && !expression)) return 'provide exactly one of specifier or expression';
+  if ([source, specifier, expression].some((value) => /[*?]/.test(value))) return 'wildcards are not accepted';
+  if (entry.gap_type && !['unresolved', 'dynamic'].includes(entry.gap_type)) return 'gap_type must be unresolved or dynamic';
+  if (specifier && entry.gap_type === 'dynamic') return 'dynamic acceptances must use expression';
+  if (expression && entry.gap_type === 'unresolved') return 'unresolved acceptances must use specifier';
+  return '';
+}
+
+function loadCodeMapAcceptances(projectDir) {
+  const file = defaultAcceptancePath(projectDir);
+  if (!fs.existsSync(file)) {
+    return {
+      path: file,
+      status: 'missing',
+      records: [],
+      invalid_entries: [],
+    };
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(safeReadTextFile(file, projectDir).content);
+  } catch (err) {
+    return {
+      path: file,
+      status: 'invalid',
+      records: [],
+      invalid_entries: [{ reason: err.message }],
+    };
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return {
+      path: file,
+      status: 'invalid',
+      records: [],
+      invalid_entries: [{ reason: 'acceptance file must be a JSON object' }],
+    };
+  }
+  if (!Array.isArray(parsed.accepted_gaps)) {
+    return {
+      path: file,
+      status: 'invalid',
+      records: [],
+      invalid_entries: [{ reason: 'accepted_gaps must be an array' }],
+    };
+  }
+  const entries = parsed.accepted_gaps;
+  const records = [];
+  const invalidEntries = [];
+  for (const [index, entry] of entries.entries()) {
+    const reason = invalidAcceptance(entry);
+    if (reason) {
+      invalidEntries.push({ index, reason });
+      continue;
+    }
+    const gapType = entry.expression ? 'dynamic' : 'unresolved';
+    records.push({
+      index,
+      gap_type: gapType,
+      source: entry.source,
+      specifier: entry.specifier || '',
+      expression: entry.expression || '',
+      category: entry.category || '',
+      scope: entry.scope || '',
+      note: entry.note || '',
+      matched: false,
+    });
+  }
+  return {
+    path: file,
+    status: invalidEntries.length > 0 ? 'attention' : 'loaded',
+    records,
+    invalid_entries: invalidEntries,
+  };
+}
+
+function applyAcceptance(item, gapType, acceptances) {
+  if (!acceptances || !Array.isArray(acceptances.records) || acceptances.records.length === 0) return item;
+  const key = acceptanceKey(item, gapType);
+  const match = acceptances.records.find((record) => {
+    if (acceptanceKey(record, record.gap_type) !== key) return false;
+    if (record.category && (!item.triage || item.triage.category !== record.category)) return false;
+    if (record.scope && item.scope !== record.scope) return false;
+    return true;
+  });
+  if (!match) return item;
+  match.matched = true;
+  const triage = {
+    category: 'accepted-local',
+    severity: 'info',
+    expected: true,
+    action: 'Accepted by local code-map-accept.json. Recheck periodically; this is not proof of runtime correctness.',
+  };
+  return {
+    ...item,
+    accepted: true,
+    acceptance: {
+      index: match.index,
+      note: match.note,
+    },
+    triage,
+    action: triage.action,
+  };
+}
+
+function acceptanceSummary(acceptances) {
+  if (!acceptances) return null;
+  const stale = (acceptances.records || [])
+    .filter((record) => !record.matched)
+    .map((record) => ({
+      index: record.index,
+      source: record.source,
+      specifier: record.specifier,
+      expression: record.expression,
+      category: record.category,
+      scope: record.scope,
+    }));
+  const acceptedTotal = (acceptances.records || []).filter((record) => record.matched).length;
+  return {
+    path: acceptances.path,
+    status: acceptances.status,
+    accepted_total: acceptedTotal,
+    stale_total: stale.length,
+    invalid_total: (acceptances.invalid_entries || []).length,
+    stale_entries: stale.slice(0, 8),
+    invalid_entries: (acceptances.invalid_entries || []).slice(0, 8),
+  };
+}
+
+function importGapSummary(topology, limit = 8, opts = {}) {
+  const acceptances = opts.acceptances || null;
   const allUnresolved = (topology.unresolved || []).map((item) => ({
     source: item.source,
     specifier: item.specifier,
@@ -310,7 +457,7 @@ function importGapSummary(topology, limit = 8) {
     reason: unresolvedImportReason(item),
   })).map((item) => {
     const triage = importGapCategory(item, 'unresolved');
-    return { ...item, triage, action: triage.action };
+    return applyAcceptance({ ...item, triage, action: triage.action }, 'unresolved', acceptances);
   });
   const allSkippedDynamic = (topology.skipped_dynamic || []).map((item) => ({
     source: item.source,
@@ -319,7 +466,7 @@ function importGapSummary(topology, limit = 8) {
     reason: dynamicImportReason(item),
   })).map((item) => {
     const triage = importGapCategory(item, 'dynamic');
-    return { ...item, triage, action: triage.action };
+    return applyAcceptance({ ...item, triage, action: triage.action }, 'dynamic', acceptances);
   });
   const counts = importGapCounts(allUnresolved, allSkippedDynamic);
   const triage = importGapTriage(allUnresolved, allSkippedDynamic);
@@ -327,6 +474,7 @@ function importGapSummary(topology, limit = 8) {
     unresolved: allUnresolved.slice(0, limit),
     skipped_dynamic: allSkippedDynamic.slice(0, limit),
     triage,
+    acceptance: acceptanceSummary(acceptances),
     limits: {
       unresolved: limit,
       skipped_dynamic: limit,
@@ -337,6 +485,7 @@ function importGapSummary(topology, limit = 8) {
 
 function projectCodeMapSummary(topology, artifacts, opts = {}) {
   const maxHotspots = safeLimit(opts.maxHotspots, 8);
+  const acceptances = loadCodeMapAcceptances(opts.projectDir || defaultProjectDir(topology.root));
   return {
     schema_version: '1',
     generated_at: topology.generated_at,
@@ -356,7 +505,7 @@ function projectCodeMapSummary(topology, artifacts, opts = {}) {
       changed_sections: item.changed_sections.slice(0, maxHotspots),
       read_next: item.read_next.slice(0, maxHotspots),
     })),
-    import_gaps: importGapSummary(topology, maxHotspots),
+    import_gaps: importGapSummary(topology, maxHotspots, { acceptances }),
     markdown_sections: topMarkdownSections(topology, maxHotspots),
     artifacts,
     limits: [
@@ -737,10 +886,21 @@ function renderProjectCodeMap(summary) {
   lines.push(`- Test/fixture-scope gaps: ${gaps.limits.test_fixture_total || 0}`);
   if (gaps.triage) {
     lines.push(`- Likely expected gaps: ${gaps.triage.expected_total || 0}`);
+    lines.push(`- Locally accepted gaps: ${gaps.triage.accepted_total || 0}`);
     lines.push(`- Needs review: ${gaps.triage.needs_review_total || 0}`);
+  }
+  if (gaps.acceptance) {
+    lines.push(`- Acceptance file: ${md(gaps.acceptance.status)} (${md(gaps.acceptance.path)})`);
+    lines.push(`- Stale acceptances: ${gaps.acceptance.stale_total || 0}`);
+    lines.push(`- Invalid acceptances: ${gaps.acceptance.invalid_total || 0}`);
   }
   lines.push('', '### Triage', '');
   lines.push(...renderList((gaps.triage && gaps.triage.categories) || [], (item) => `- ${md(item.category)}: ${item.total} (${md(item.severity)}). ${md(item.action)}`), '');
+  if (gaps.acceptance && (gaps.acceptance.stale_total > 0 || gaps.acceptance.invalid_total > 0)) {
+    lines.push('', '### Local Acceptance Attention', '');
+    lines.push(...renderList(gaps.acceptance.stale_entries || [], (item) => `- stale #${item.index}: ${md(item.source)} ${md(item.specifier || item.expression || '')}`));
+    lines.push(...renderList(gaps.acceptance.invalid_entries || [], (item) => `- invalid #${item.index === undefined ? '?' : item.index}: ${md(item.reason)}`), '');
+  }
   lines.push('', '### Unresolved Imports', '');
   lines.push(...renderList(gaps.unresolved, (item) => `- ${md(item.source)}: ${md(item.specifier)} (${md(item.kind)}, ${md(item.scope)}, ${md(item.triage ? item.triage.category : 'untriaged')}) - ${md(item.reason)}. ${md(item.action)}`), '');
   lines.push('### Skipped Dynamic Imports', '');
@@ -773,7 +933,7 @@ function showCodeMap(opts = {}) {
     review_focus: path.relative(root, result.markdown_out),
     telemetry: path.relative(root, result.telemetry_path),
   };
-  const summary = projectCodeMapSummary(result.topology, artifacts, { maxHotspots: opts.maxHotspots });
+  const summary = projectCodeMapSummary(result.topology, artifacts, { maxHotspots: opts.maxHotspots, projectDir });
   attachCodeMapHistory(root, summary, opts.history || defaultHistoryPath(root, projectDir), { record: opts.recordHistory, limit: opts.historyLimit });
   const markdown = renderProjectCodeMap(summary);
   const out = opts.out || defaultOut(root, projectDir);
@@ -811,11 +971,13 @@ module.exports = {
   compactCodeMapHistory,
   compareCodeMapTrend,
   DEFAULT_HISTORY_LIMIT,
+  defaultAcceptancePath,
   defaultHistoryPath,
   historyPathForTopologyOut,
   importGapScope,
   importGapSummary,
   importGapTriage,
+  loadCodeMapAcceptances,
   livingProjectMapFromTrend,
   projectCodeMapSummary,
   readCodeMapHistory,

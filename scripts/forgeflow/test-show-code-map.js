@@ -5,6 +5,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const {
   compactCodeMapHistory,
+  loadCodeMapAcceptances,
   importGapSummary,
   importGapScope,
   livingProjectMapFromTrend,
@@ -117,7 +118,35 @@ const triagedGaps = importGapSummary({
     { source: 'src/i18n.ts', expression: '`./langs/${lang}.json`' },
   ],
 }, 10);
+const acceptanceProjectDir = path.join(tmp, 'acceptance-project');
+fs.mkdirSync(acceptanceProjectDir, { recursive: true });
+fs.writeFileSync(path.join(acceptanceProjectDir, 'code-map-accept.json'), JSON.stringify({
+  schema_version: '1',
+  accepted_gaps: [
+    { source: 'src/app.ts', specifier: './missing', category: 'local-module-missing', scope: 'production', note: 'Intentional bundler fallback.' },
+    { source: 'src/routes.ts', expression: "'@/routes/admin'", category: 'dynamic-local-or-alias', scope: 'production' },
+    { source: 'src/stale.ts', specifier: './old-missing', category: 'local-module-missing', scope: 'production' },
+    { source: 'src/*.ts', specifier: './wildcard' },
+  ],
+}, null, 2));
+const acceptances = loadCodeMapAcceptances(acceptanceProjectDir);
+const malformedAcceptanceProjectDir = path.join(tmp, 'malformed-acceptance-project');
+fs.mkdirSync(malformedAcceptanceProjectDir, { recursive: true });
+fs.writeFileSync(path.join(malformedAcceptanceProjectDir, 'code-map-accept.json'), JSON.stringify({
+  schema_version: '1',
+}, null, 2));
+const malformedAcceptances = loadCodeMapAcceptances(malformedAcceptanceProjectDir);
+const acceptedGaps = importGapSummary({
+  unresolved: [
+    { source: 'src/app.ts', specifier: './missing', kind: 'import' },
+    { source: 'src/types.ts', specifier: '../types/audit.types', kind: 'import' },
+  ],
+  skipped_dynamic: [
+    { source: 'src/routes.ts', expression: "'@/routes/admin'" },
+  ],
+}, 10, { acceptances });
 const triageCategories = Object.fromEntries(triagedGaps.triage.categories.map((item) => [item.category, item]));
+const acceptedCategories = Object.fromEntries(acceptedGaps.triage.categories.map((item) => [item.category, item]));
 const attentionMap = livingProjectMapFromTrend({
   status: 'compared',
   source_files_delta: 1,
@@ -186,6 +215,9 @@ const checks = [
   ['summary includes import gaps', result.summary.import_gaps.unresolved.some((item) => item.specifier === './missing' && item.reason.includes('no matching local')) && result.summary.import_gaps.skipped_dynamic.some((item) => item.reason.includes('runtime'))],
   ['triages expected import gaps', triagedGaps.triage.expected_total === 4 && triageCategories['asset-or-data-import'].total === 1 && triageCategories['dynamic-package'].total === 1 && triageCategories['runtime-dynamic-import'].total === 1],
   ['triages review import gaps', triagedGaps.triage.needs_review_total === 3 && triageCategories['local-module-missing'].total === 1 && triageCategories['source-suffix-resolution-gap'].total === 1 && triageCategories['dynamic-local-or-alias'].total === 1],
+  ['applies local exact acceptances', acceptedGaps.triage.accepted_total === 2 && acceptedGaps.triage.needs_review_total === 1 && acceptedCategories['accepted-local'].total === 2 && acceptedGaps.acceptance.accepted_total === 2 && acceptedGaps.acceptance.stale_total === 1 && acceptedGaps.acceptance.invalid_total === 1],
+  ['malformed acceptance file reports invalid', malformedAcceptances.status === 'invalid' && malformedAcceptances.invalid_entries[0].reason.includes('accepted_gaps')],
+  ['accepted gaps keep local evidence visible', acceptedGaps.unresolved.some((item) => item.accepted === true && item.acceptance.note === 'Intentional bundler fallback.' && item.triage.category === 'accepted-local')],
   ['triages test fixture import gaps', triageCategories['test-fixture'].total === 1 && triageCategories['test-fixture'].expected === true],
   ['classifies fixture import gap paths', importGapScope('src/app.ts') === 'production' && importGapScope('fixtures/demo/test-app.ts') === 'test-fixture'],
   ['markdown includes provenance', markdown.includes('## Provenance') && markdown.includes('- Source: show\\-code\\-map')],
