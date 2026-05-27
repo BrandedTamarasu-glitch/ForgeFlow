@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow - V4.3.19 Changelog</title>
+  <style>
+    body { background: #0d0d0d; color: #ddd8cc; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.65; margin: 0; }
+    main { max-width: 820px; margin: 0 auto; padding: 72px 32px 96px; }
+    .version { color: #7a7670; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
+    h1 { font-size: 40px; font-weight: 400; line-height: 1.15; margin: 14px 0 20px; }
+    h2 { border-top: 1px solid #303030; color: #f0a232; font-size: 18px; font-weight: 600; margin: 42px 0 18px; padding-top: 28px; }
+    p, li { color: #c9c2b6; }
+    code { background: #1c1c1c; border: 1px solid #303030; border-radius: 4px; color: #f0c070; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 1px 5px; }
+    a { color: #f0a232; text-decoration: underline; text-underline-offset: 0.16em; }
+    .nav { display: flex; justify-content: space-between; margin-top: 52px; padding-top: 24px; border-top: 1px solid #303030; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="version">Forgeflow V4.3.19 · 27 May 2026</div>
+    <h1>Release: Safer Acceptance, Release, And Codex Stub Workflows</h1>
+    <p>
+      Forgeflow 4.3.19 tightens the operational edges around code-map acceptances, support bundles, post-publish verification, release-note issue context, and generated Codex agent stubs. The release keeps the improvements local-first and avoids new GitHub or network behavior.
+    </p>
+
+    <h2>Code Map And Support</h2>
+    <ul>
+      <li><code>/forgeflow-code-map</code> now reports lifecycle warnings for local acceptances that are missing notes, use invalid dates, are expired, or have become stale.</li>
+      <li>Local acceptances can include date-only <code>accepted_at</code> and <code>expires_at</code> metadata without changing exact-match acceptance behavior.</li>
+      <li><code>/forgeflow-support</code> now includes code-map acceptance health, post-publish verification status, and direct next actions when either surface needs attention.</li>
+    </ul>
+
+    <h2>Release Workflow</h2>
+    <ul>
+      <li><code>/forgeflow-release-readiness --post-publish --save-post-publish</code> can save a local post-publish verification snapshot.</li>
+      <li><code>/forgeflow-release-readiness --post-publish --compare-post-publish-last</code> compares current evidence against the last saved post-publish snapshot.</li>
+      <li><code>render-release-notes.js --issues &lt;path&gt;</code> can enrich release drafts with public-safe issue context from a repo-relative local <code>{ "issues": [...] }</code> JSON file.</li>
+      <li>Release-note issue output is labeled as issue context so curated metadata is not mistaken for proof that a commit fixed or referenced an issue.</li>
+    </ul>
+
+    <h2>Codex Porting</h2>
+    <ul>
+      <li><code>generate-codex-agent-stubs.js</code> no longer emits vague TODO instructions when a mapped agent has no summary or selected sections.</li>
+      <li>The fallback now points maintainers to <code>canonical_source</code>, <code>canonical_sha256</code>, and <code>.codex/agent-canonical-map.json</code> so incomplete stubs are explicit and actionable.</li>
+    </ul>
+
+    <h2>Validation</h2>
+    <ul>
+      <li><code>node scripts/forgeflow/test-show-code-map.js</code></li>
+      <li><code>node scripts/forgeflow/test-render-support-bundle.js</code></li>
+      <li><code>node scripts/forgeflow/test-render-release-readiness.js</code></li>
+      <li><code>node scripts/forgeflow/test-render-release-notes.js</code></li>
+      <li><code>node scripts/forgeflow/test-generate-codex-agent-stubs.js</code></li>
+      <li>Full <code>scripts/forgeflow/test-*.js</code> suite</li>
+    </ul>
+
+    <div class="nav">
+      <a href="./v4.3.18.html">&larr; V4.3.18</a>
+      <span>V4.3.19</span>
+    </div>
+  </main>
+</body>
+</html>
