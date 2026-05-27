@@ -292,20 +292,21 @@ function runDownstreamSmoke({ root, projectDir, patternsDir }) {
     const codeMap = showCodeMap({ root, projectDir, recordHistory: false });
     const gaps = codeMap.summary.import_gaps || {};
     const productionTotal = gaps.limits ? gaps.limits.production_total || 0 : 0;
-    const codeMapExplanation = productionTotal > 0 ? {
-      reason: 'Code map has production-scope import gaps.',
-      evidence: `${productionTotal} production-scope import gap(s) need review.`,
-      clears: 'Run forgeflow-code-map, then fix, classify, or accept the reported production-scope gaps.',
-      next_actions: nextAction('forgeflow-code-map', 'Review production-scope import gaps.'),
+    const needsReviewTotal = gaps.triage ? gaps.triage.needs_review_total || 0 : 0;
+    const codeMapExplanation = needsReviewTotal > 0 ? {
+      reason: 'Code map has import gaps that need review.',
+      evidence: `${needsReviewTotal} import gap(s) need review; ${productionTotal} production-scope gap(s) reported in total.`,
+      clears: 'Run forgeflow-code-map, then fix or classify the import gaps marked as needing review.',
+      next_actions: nextAction('forgeflow-code-map', 'Review import gaps marked as needing review.'),
     } : {};
-    checks.push(check('code-map', productionTotal > 0 ? 'warn' : 'pass', {
+    checks.push(check('code-map', needsReviewTotal > 0 ? 'warn' : 'pass', {
       command: 'forgeflow-code-map',
       unresolved_total: gaps.limits ? gaps.limits.unresolved_total : 0,
       skipped_dynamic_total: gaps.limits ? gaps.limits.skipped_dynamic_total : 0,
       production_total: productionTotal,
       test_fixture_total: gaps.limits ? gaps.limits.test_fixture_total || 0 : 0,
       expected_total: gaps.triage ? gaps.triage.expected_total || 0 : 0,
-      needs_review_total: gaps.triage ? gaps.triage.needs_review_total || 0 : 0,
+      needs_review_total: needsReviewTotal,
       triage_categories: gaps.triage ? gaps.triage.categories.slice(0, 5) : [],
       ...codeMapExplanation,
     }));

@@ -38,9 +38,10 @@ git(downstreamRoot, ['config', 'user.email', 'forgeflow@example.invalid']);
 git(downstreamRoot, ['config', 'user.name', 'Forgeflow Test']);
 write(path.join(downstreamRoot, 'README.md'), '# Downstream\n');
 write(path.join(downstreamRoot, 'src/app.ts'), 'export const value = 1;\n');
+write(path.join(downstreamRoot, 'src/config.json'), '{"enabled":true}\n');
 git(downstreamRoot, ['add', 'README.md', 'src/app.ts']);
 git(downstreamRoot, ['commit', '-m', 'init']);
-write(path.join(downstreamRoot, 'src/app.ts'), 'export const value = 2;\n');
+write(path.join(downstreamRoot, 'src/app.ts'), "import config from './config.json';\nexport const value = config.enabled ? 2 : 1;\n");
 runHealthCheck({ root: downstreamRoot, fix: true });
 process.chdir(downstreamRoot);
 
@@ -60,6 +61,7 @@ const fullResult = smokeCheck({
 });
 const markdown = renderMarkdown(result);
 const healthCheck = result.checks.find((item) => item.name === 'health');
+const codeMapCheck = result.checks.find((item) => item.name === 'code-map');
 const trendsCheck = result.checks.find((item) => item.name === 'trends-refresh');
 const reportCheck = result.checks.find((item) => item.name === 'report-refresh');
 const downstreamDocLinks = runOptionalNodeTest(tmp, 'scripts/forgeflow/test-doc-links.js', 'node scripts/forgeflow/test-doc-links.js', fakeHelperRoot);
@@ -80,6 +82,7 @@ const checks = [
   ['runs without failure', result.status === 'pass' || result.status === 'warn'],
   ['default is downstream mode', result.mode === 'downstream'],
   ['includes downstream checks', ['health', 'trends-refresh', 'report-refresh', 'code-map'].every((name) => result.checks.some((item) => item.name === name))],
+  ['code-map passes expected production gaps', codeMapCheck.status === 'pass' && codeMapCheck.production_total >= 1 && codeMapCheck.expected_total >= 1 && codeMapCheck.needs_review_total === 0],
   ['default excludes source checks', !result.checks.some((item) => item.name === 'doc-links' || item.name === 'release-version')],
   ['source mode includes release checks', sourceResult.mode === 'source' && ['command-coverage', 'doc-links', 'plugin-manifest', 'release-version', 'install-manifest', 'update-forgeflow', 'dogfood-self-test', 'installed-runtime-dogfood'].every((name) => sourceResult.checks.some((item) => item.name === name))],
   ['full mode includes both check groups', fullResult.mode === 'full' && ['health', 'code-map', 'doc-links', 'release-version'].every((name) => fullResult.checks.some((item) => item.name === name))],
