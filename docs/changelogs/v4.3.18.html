@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow - V4.3.18 Changelog</title>
+  <style>
+    body { background: #0d0d0d; color: #ddd8cc; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.65; margin: 0; }
+    main { max-width: 820px; margin: 0 auto; padding: 72px 32px 96px; }
+    .version { color: #7a7670; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
+    h1 { font-size: 40px; font-weight: 400; line-height: 1.15; margin: 14px 0 20px; }
+    h2 { border-top: 1px solid #303030; color: #f0a232; font-size: 18px; font-weight: 600; margin: 42px 0 18px; padding-top: 28px; }
+    p, li { color: #c9c2b6; }
+    code { background: #1c1c1c; border: 1px solid #303030; border-radius: 4px; color: #f0c070; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 1px 5px; }
+    a { color: #f0a232; text-decoration: underline; text-underline-offset: 0.16em; }
+    .nav { display: flex; justify-content: space-between; margin-top: 52px; padding-top: 24px; border-top: 1px solid #303030; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="version">Forgeflow V4.3.18 · 27 May 2026</div>
+    <h1>Release: Issue-Aware Releases And Local Code-Map Acceptances</h1>
+    <p>
+      Forgeflow 4.3.18 improves the release loop and downstream smoke clarity. Release-note drafts can surface referenced issues safely, smoke explains expected import gaps more clearly, code-map can read local exact-gap acceptances, and release readiness can run a local post-publish verification pass.
+    </p>
+
+    <h2>Release Loop</h2>
+    <ul>
+      <li><code>render-release-notes.js</code> now extracts local <code>#123</code> issue references from recent commit subjects and renders an advisory referenced-issues section.</li>
+      <li>Release docs now require verifying issue state before claiming an issue is fixed or closed.</li>
+      <li><code>/forgeflow-release-readiness --post-publish</code> adds local advisory verification for plugin version, local tag, changelog, release-note draft, source smoke, and update smoke evidence.</li>
+      <li>Post-publish verification supports patch-zero changelog filenames such as <code>v4.2.html</code>.</li>
+    </ul>
+
+    <h2>Code Map And Smoke</h2>
+    <ul>
+      <li><code>/forgeflow-smoke</code> now explains production, expected, local-accepted, and needs-review import-gap counts separately.</li>
+      <li><code>/forgeflow-code-map</code> can read local-only exact acceptances from <code>.forgeflow/&lt;project&gt;/code-map-accept.json</code>.</li>
+      <li>Accepted gaps stay visible as <code>accepted-local</code>, count as expected, and do not hide stale or invalid acceptance entries.</li>
+      <li>Malformed acceptance files now report invalid shape instead of being silently ignored.</li>
+    </ul>
+
+    <h2>Validation</h2>
+    <ul>
+      <li><code>node scripts/forgeflow/test-render-release-notes.js</code></li>
+      <li><code>node scripts/forgeflow/test-smoke-check.js</code></li>
+      <li><code>node scripts/forgeflow/test-show-code-map.js</code></li>
+      <li><code>node scripts/forgeflow/test-render-release-readiness.js</code></li>
+      <li>Full <code>scripts/forgeflow/test-*.js</code> suite</li>
+    </ul>
+
+    <div class="nav">
+      <a href="./v4.3.17.html">&larr; V4.3.17</a>
+      <span>V4.3.18</span>
+    </div>
+  </main>
+</body>
+</html>
