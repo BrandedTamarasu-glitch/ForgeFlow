@@ -77,7 +77,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 
 Use these entry points when you know what job you are trying to do:
 
-- New users: [Why Forgeflow](Why-Forgeflow), [Quick Start](Quick-Start), [Package And Release Onboarding](Package-Release-Onboarding), [Demos](Demos)
+- New users: [Why Forgeflow](Why-Forgeflow), [Quick Start](Quick-Start), [User Paths](User-Paths), [Package And Release Onboarding](Package-Release-Onboarding), [Demos](Demos)
 - Claude Code users: [Quick Start](Quick-Start), [Migration Guide](Migration-Guide), [Settings And Recovery](Settings-And-Recovery), [Workflow Commands](Workflow-Commands)
 - Codex users: [Codex First Run](Codex-First-Run), [Quick Start](Quick-Start), [Agent Roles](Agent-Roles), [Review Routing](Review-Routing)
 - Maintainers: [Maintainer Pilot](Maintainer-Pilot), [Branch Trial](Branch-Trial), [Field Validation](Field-Validation), [First-Run Friction](First-Run-Friction)

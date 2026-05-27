@@ -45,6 +45,24 @@ function render(result) {
       lines.push(`- ${issue.severity.toUpperCase()} ${issue.code}: ${issue.message}`);
     }
   }
+  if (result.conflicts && result.conflicts.length > 0) {
+    lines.push('', 'Potential conflicts:');
+    for (const conflict of result.conflicts) {
+      lines.push(`- ${conflict.scope} ${conflict.category}: ${conflict.message}`);
+      for (const preference of conflict.preferences) lines.push(`  - ${preference}`);
+      lines.push(`  - Next: ${conflict.command}`);
+      lines.push(`  - Follow-up: ${conflict.follow_up}`);
+    }
+  }
+  if (result.suggestions && result.suggestions.length > 0) {
+    lines.push('', 'Suggested profile updates:');
+    for (const suggestion of result.suggestions) {
+      lines.push(`- ${suggestion.type}: ${suggestion.reason}`);
+      if (suggestion.prompt) lines.push(`  - Prompt: ${suggestion.prompt}`);
+      if (suggestion.command_template) lines.push(`  - Template: ${suggestion.command_template}`);
+      if (suggestion.follow_up) lines.push(`  - Follow-up: ${suggestion.follow_up}`);
+    }
+  }
   return `${lines.join('\n')}\n`;
 }
 

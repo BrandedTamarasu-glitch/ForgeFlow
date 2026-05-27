@@ -13,9 +13,10 @@ If health reports missing managed files, run `/update-forgeflow --repair`. If th
 
 ## Try Forgeflow For The First Time
 
-1. Run `/forgeflow-pilot --path new-user --runtime claude-code` from Claude Code, or `scripts/forgeflow/render-pilot-script.js --path new-user --runtime codex` from a checkout.
-2. Follow the generated readiness, project-orientation, first-work-item, and decision steps. The new-user path includes guided repair, release-readiness preview, project intelligence, living project-map status, and agent-feedback signal checks.
-3. Keep the first task small enough to judge setup friction, guidance quality, review usefulness, and whether the next task starts with better project context.
+1. Run `/forgeflow-first-run --runtime claude-code` from Claude Code, or `scripts/forgeflow/render-first-run-guide.js --runtime codex` from a checkout.
+2. Follow the install verification, project-orientation, profile-readiness, and bounded-work-item steps.
+3. For a fuller adoption trial, run `/forgeflow-pilot --path new-user --runtime claude-code`, or `scripts/forgeflow/render-pilot-script.js --path new-user --runtime codex`.
+4. Keep the first task small enough to judge setup friction, guidance quality, review usefulness, and whether the next task starts with better project context.
 
 Use the default maintainer path when a project owner is running a broader pilot across a real branch. Use the new-user path when the goal is to help one person decide whether Forgeflow is worth adopting.
 
@@ -78,7 +79,7 @@ If implementation notes are missing or stale, refresh or repair them before ship
 |---|---|
 | Command missing after install | Restart Claude Code, then `/forgeflow-health` |
 | Managed file missing or corrupt | `/update-forgeflow --repair` |
-| First time evaluating Forgeflow | `/forgeflow-pilot --path new-user` |
+| First time evaluating Forgeflow | `/forgeflow-first-run` |
 | Latest insights stale | `/forgeflow-trends --refresh` |
 | Need readiness confidence | `/forgeflow-smoke` |
 | Failure output is too noisy | `/forgeflow-failure-digest` |

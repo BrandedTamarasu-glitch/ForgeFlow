@@ -9,6 +9,8 @@ const {
   checkUserProfile,
   compactUserProfile,
   normalizeEntry,
+  profileConflicts,
+  profileSuggestions,
   projectProfileFile,
   recordUserProfile,
   showUserProfile,
@@ -116,6 +118,18 @@ const sensitive = runRecord([
   '--preference',
   'token: SHOULD_NOT_WRITE should fail',
 ]);
+const placeholder = runRecord([
+  '--home',
+  home,
+  '--project-dir',
+  projectDir,
+  '--scope',
+  'global',
+  '--category',
+  'communication',
+  '--preference',
+  '<replace with the user preference>',
+]);
 const emptyHome = path.join(tmp, 'empty-home');
 const emptyProjectDir = path.join(tmp, 'empty-project', '.forgeflow', 'Empty');
 fs.mkdirSync(emptyProjectDir, { recursive: true });
@@ -133,6 +147,46 @@ recordUserProfile({
 });
 const misScopedCheck = checkUserProfile({ home: misScopedHome, projectDir: misScopedProjectDir });
 const misScopedCompact = compactUserProfile({ home: misScopedHome, projectDir: misScopedProjectDir });
+const conflictHome = path.join(tmp, 'conflict-home');
+const conflictProjectDir = path.join(tmp, 'conflict-project', '.forgeflow', 'Conflict');
+fs.mkdirSync(conflictProjectDir, { recursive: true });
+recordUserProfile({
+  home: conflictHome,
+  projectDir: conflictProjectDir,
+  scope: 'global',
+  category: 'communication',
+  preference: 'Use very short progress updates.',
+  confidence: 'high',
+});
+recordUserProfile({
+  home: conflictHome,
+  projectDir: conflictProjectDir,
+  scope: 'global',
+  category: 'communication',
+  preference: 'Use detailed progress updates.',
+  confidence: 'low',
+});
+const conflictCheck = checkUserProfile({ home: conflictHome, projectDir: conflictProjectDir });
+const lowConflictHome = path.join(tmp, 'low-conflict-home');
+const lowConflictProjectDir = path.join(tmp, 'low-conflict-project', '.forgeflow', 'LowConflict');
+fs.mkdirSync(lowConflictProjectDir, { recursive: true });
+recordUserProfile({
+  home: lowConflictHome,
+  projectDir: lowConflictProjectDir,
+  scope: 'project',
+  category: 'workflow',
+  preference: 'Prefer strict phase gates.',
+  confidence: 'low',
+});
+recordUserProfile({
+  home: lowConflictHome,
+  projectDir: lowConflictProjectDir,
+  scope: 'project',
+  category: 'workflow',
+  preference: 'Prefer loose phase gates.',
+  confidence: 'low',
+});
+const lowConflictCheck = checkUserProfile({ home: lowConflictHome, projectDir: lowConflictProjectDir });
 const badHome = path.join(tmp, 'bad-home');
 fs.mkdirSync(path.join(badHome, 'forgeflow'), { recursive: true });
 fs.writeFileSync(path.join(badHome, 'forgeflow', 'user-operating-profile.jsonl'), '{"scope":"global","category":"bad","preference":"Invalid"}\n');
@@ -168,21 +222,30 @@ const checks = [
   ['project category preserved', projectRecords[0].category === 'ui' && projectRecords[0].source === 'accepted-workflow'],
   ['check passes active records', check.status === 'pass' && check.records.global === 1 && check.records.project === 1 && check.records.active === 2 && check.records.usable === 2],
   ['show renders both sections', shown.markdown.includes('## User Operating Preferences') && shown.markdown.includes('User prefers autonomous safe-slice execution') && shown.markdown.includes('## Project Experience Preferences') && shown.markdown.includes('quiet, dense, and operational')],
+  ['show renders role use', shown.markdown.includes('## Role Use') && shown.markdown.includes('Atlas:') && shown.markdown.includes('Warden:')],
   ['show can write artifact', shownWithOut.markdown.includes('Forgeflow User Profile') && fs.existsSync(out)],
   ['compact profile injects when safe', compact.injected === true && compact.markdown.includes('This profile is advisory') && compact.result.check.status === 'pass'],
   ['empty profile warns', emptyCheck.status === 'warn' && emptyCheck.records.usable === 0 && emptyCheck.issues.some((item) => item.code === 'profile-empty')],
   ['empty compact blocks injection', emptyCompact.injected === false && emptyCompact.markdown.includes('returned WARN')],
   ['mis-scoped profile warns without injection', misScopedCheck.status === 'warn' && misScopedCheck.records.active === 1 && misScopedCheck.records.usable === 0 && misScopedCompact.injected === false && !misScopedCompact.markdown.includes('Should not be injected')],
+  ['profile suggestions are advisory', profileSuggestions([]).some((item) => item.type === 'ask-user' && item.command_template.includes('forgeflow-profile') && item.command_template.includes('<replace'))],
+  ['mis-scoped profile suggests move', misScopedCheck.suggestions.some((item) => item.type === 'move-to-project' && item.follow_up.includes('superseded'))],
+  ['profile conflict review warns', conflictCheck.status === 'warn' && conflictCheck.conflicts.length === 1 && conflictCheck.issues.some((item) => item.code === 'profile-potential-conflict') && profileConflicts(conflictCheck.conflicts).length === 0],
+  ['profile conflict includes next action', conflictCheck.conflicts[0].command === 'forgeflow-profile --check' && conflictCheck.conflicts[0].follow_up.includes('superseded')],
+  ['low confidence conflicts warn', lowConflictCheck.status === 'warn' && lowConflictCheck.conflicts.length === 1],
   ['invalid category fails', invalidCategory.status === 1 && invalidCategory.stderr.includes('Invalid user profile category')],
   ['invalid applies-to fails', invalidAppliesTo.status === 1 && invalidAppliesTo.stderr.includes('applies_to')],
   ['superseded replacement required', supersededWithoutReplacement.status === 1 && supersededWithoutReplacement.stderr.includes('superseded_by')],
   ['sensitive entry fails', sensitive.status === 1 && sensitive.stderr.includes('sensitive content')],
   ['sensitive entry not written', !fs.readFileSync(globalResult.file, 'utf8').includes('SHOULD_NOT_WRITE')],
+  ['placeholder entry fails', placeholder.status === 1 && placeholder.stderr.includes('placeholder')],
   ['bad profile check fails', badCheck.status === 'fail' && badCheck.issues.some((item) => item.code === 'profile-entry-invalid')],
   ['bad compact blocks injection', compactUserProfile({ home: badHome, projectDir: emptyProjectDir }).injected === false],
   ['future schema check fails', futureSchemaCheck.status === 'fail' && futureSchemaCheck.issues.some((item) => item.message.includes('schema_version'))],
   ['symlink project profile destination blocked', symlinkBlocked && fs.readFileSync(outside, 'utf8') === 'do not append\n'],
   ['normalize defaults are stable', normalizeEntry({ scope: 'global', category: 'communication', preference: 'Keep updates concise.' }).applies_to.includes('implement')],
+  ['question phrasing is allowed', normalizeEntry({ scope: 'global', category: 'validation', preference: 'Ask what validation proof the user expects before a slice is complete.' }).category === 'validation'],
+  ['replace phrase is allowed when specific', normalizeEntry({ scope: 'global', category: 'docs', preference: 'When drafting handoffs, replace with the exact ticket summary from the active task.' }).category === 'docs'],
   ['record args parse', parseRecordArgs(['--scope', 'global', '--category', 'communication', '--preference', 'Keep updates concise.', '--json']).json === true],
   ['check args parse', parseCheckArgs(['--home', home, '--project-dir', projectDir, '--json']).projectDir === projectDir],
   ['show args parse', parseShowArgs(['--home', home, '--project-dir', projectDir, '--out', out, '--json']).out === out],

@@ -44,7 +44,11 @@ node scripts/forgeflow/install-template.js --target codex --dry-run --json
 node scripts/forgeflow/install-template.js --target codex
 ```
 
-Restart Codex so the new agents and skills are discovered.
+Restart Codex so the new agents and skills are discovered, then run:
+
+```bash
+scripts/forgeflow/render-first-run-guide.js --runtime codex
+```
 
 Use the Forgeflow review skill:
 

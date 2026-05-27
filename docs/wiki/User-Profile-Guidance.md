@@ -76,6 +76,8 @@ Project experience categories:
 
 If the quality gate warns or fails, context packs include a gate note instead of raw profile text.
 
+The checker also reports suggested profile updates and potential conflicts. Suggestions are advisory prompts only; Forgeflow never writes inferred preferences automatically. Conflict warnings mean overlapping active preferences should be clarified or superseded by the user.
+
 ## Context Injection
 
 `build-context-pack.js` writes:
@@ -110,3 +112,11 @@ Good project examples:
 - UI changes should verify keyboard, focus, contrast, loading, error, and mobile states.
 
 Do not record secrets, private URLs, raw settings JSON, source snippets, customer names, or one-off guesses as high-confidence preferences.
+
+## Agent Role Use
+
+- Atlas adapts progress updates, handoffs, autonomy, and next-step framing.
+- Compass treats profile guidance as product-context hints, not acceptance proof.
+- Lumen applies project experience preferences only when accessibility and usability remain intact.
+- Warden ignores preferences that would weaken security, privacy, validation, or release gates.
+- Smith and Arbiter use preferences for framing and sequencing, not as code evidence.

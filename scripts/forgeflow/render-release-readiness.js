@@ -490,12 +490,27 @@ function postPublishVerification(root, checks = []) {
   ];
   const failures = evidence.filter((item) => item.status === 'fail');
   const warnings = evidence.filter((item) => item.status === 'warn');
+  const passed = evidence.filter((item) => item.status === 'pass').map((item) => item.name);
+  const attention = evidence.filter((item) => item.status !== 'pass').map((item) => ({
+    name: item.name,
+    status: item.status,
+    clears: item.clears,
+  }));
   return {
     status: failures.length > 0 ? 'repair-needed' : (warnings.length > 0 ? 'published-propagation-pending' : 'published-and-verified'),
     version,
     tag,
     head: localHeadShort(root),
     evidence,
+    summary: {
+      passed,
+      attention,
+      shareable: failures.length > 0
+        ? `Forgeflow ${version || '(missing version)'} post-publish verification needs repair.`
+        : warnings.length > 0
+          ? `Forgeflow ${version || '(missing version)'} post-publish verification is pending propagation.`
+          : `Forgeflow ${version || '(missing version)'} post-publish verification passed locally.`,
+    },
     next_command: failures.length > 0 || warnings.length > 0 ? 'forgeflow-release-readiness --post-publish' : '/forgeflow-version && /forgeflow-health',
     boundary: 'Post-publish verification is local and advisory. It does not create tags, push, publish, call GitHub, or mutate installed files.',
   };
@@ -697,6 +712,11 @@ function renderMarkdown(result) {
     lines.push(`- Tag: ${result.post_publish_verification.tag || '(missing)'}`);
     lines.push(`- HEAD: ${result.post_publish_verification.head || '(unknown)'}`);
     lines.push(`- Snapshot: ${result.post_publish_verification.snapshot && result.post_publish_verification.snapshot.saved ? `saved to ${result.post_publish_verification.snapshot.path}` : result.post_publish_verification.snapshot ? result.post_publish_verification.snapshot.path : '(none)'}`);
+    if (result.post_publish_verification.summary) {
+      lines.push(`- Summary: ${result.post_publish_verification.summary.shareable}`);
+      lines.push(`- Passed evidence: ${result.post_publish_verification.summary.passed.join(', ') || '(none)'}`);
+      lines.push(`- Attention evidence: ${result.post_publish_verification.summary.attention.map((item) => `${item.name}:${item.status}`).join(', ') || '(none)'}`);
+    }
     lines.push(`- Boundary: ${result.post_publish_verification.boundary}`);
     if (result.post_publish_verification.comparison) {
       lines.push(`- Snapshot comparison: ${result.post_publish_verification.comparison.status}`);

@@ -24,6 +24,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-code-map` | Generate a compact project code map with topology, sections, changed-section hints, import-gap triage, living project-map categories, Git provenance, and generated artifact paths. |
 | `/forgeflow-compact-output` | Compact allowlisted noisy command output while preserving exact output for unsafe command classes. |
 | `/forgeflow-failure-digest` | Build a compact failure digest from test, typecheck, lint, or log output, with Git provenance for freshness checks. |
+| `/forgeflow-first-run` | Print a compact net-new user guide for install verification, project orientation, profile readiness, one bounded work item, and stop conditions. |
 | `/forgeflow-noisy-command` | Get advisory-only suggestions for narrower noisy command invocations. |
 | `/forgeflow-drift` | Check whether agent prompts have drifted from canonical shared intelligence references using the script-backed drift helper. |
 | `/forgeflow-health` | Audit installation, project-local state, latest project-learning quality, latest-insights readiness/freshness, and latest failure-digest freshness; can safely repair `.forgeflow/` scaffolding and budget config. Stale latest insights recommend `/forgeflow-trends --refresh`. |
