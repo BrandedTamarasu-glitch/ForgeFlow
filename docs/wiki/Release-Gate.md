@@ -28,17 +28,21 @@ node scripts/forgeflow/test-check-agent-drift.js
 node scripts/forgeflow/test-render-forgeflow-report.js
 node scripts/forgeflow/test-render-release-notes.js
 node scripts/forgeflow/test-render-release-readiness.js
+node scripts/forgeflow/test-render-release-verify.js
 node scripts/forgeflow/test-render-support-bundle.js
 node scripts/forgeflow/test-render-evaluation-report.js
 node scripts/forgeflow/render-evaluation-report.js --outcomes fixtures/evaluation/sample-outcomes.jsonl --public --out /tmp/forgeflow-public-evaluation-summary.md
 node scripts/forgeflow/test-privacy-boundary.js
 node scripts/forgeflow/test-render-adoption-pack.js
 node scripts/forgeflow/test-render-first-run-guide.js
+node scripts/forgeflow/test-record-first-run-result.js
 node scripts/forgeflow/test-record-pilot-evidence.js
 node scripts/forgeflow/test-record-agent-feedback.js
 node scripts/forgeflow/test-rollup-agent-feedback.js
 node scripts/forgeflow/test-record-project-learning.js
 node scripts/forgeflow/test-user-profile.js
+node scripts/forgeflow/test-profile-review.js
+node scripts/forgeflow/test-profile-compliance.js
 node scripts/forgeflow/test-rollup-pattern-learnings.js
 node scripts/forgeflow/test-rollup-pilot-evidence.js
 node scripts/forgeflow/test-rollup-project-learnings.js
@@ -116,6 +120,6 @@ known_deferrals:
 If the release-note draft includes issue context, verify each issue's state before publishing any "fixed" or "closed" claim. Issue references from commit subjects and curated metadata are advisory context, not proof of closure.
 Curated issue metadata for release notes must come from a repo-relative local JSON object with a top-level `issues` array. Include only public-safe `number`, `title`, `status`, and `evidence` fields. The release-note helper does not call GitHub.
 
-After publishing, run `/forgeflow-release-readiness --post-publish --save-post-publish` to capture local post-publish verification. Future runs can add `--compare-post-publish-last` to compare against the saved snapshot. This check is advisory and does not tag, push, publish, call GitHub, or mutate installed files.
+After publishing, run `/forgeflow-release-verify --save` for the compact shareable post-publish summary, or `/forgeflow-release-readiness --post-publish --save-post-publish` for the full evidence block. Future runs can add `/forgeflow-release-verify --compare-last` or `--compare-post-publish-last` on release readiness to compare against the saved snapshot. These checks are advisory and do not tag, push, publish, call GitHub, or mutate installed files.
 
 Do not tag or publish if release checks fail. Treat public-summary failures as release blockers when release notes rely on evaluation evidence. Use [Settings And Recovery](Settings-And-Recovery) to record any manual settings, restart, repair, or rollback deferrals.

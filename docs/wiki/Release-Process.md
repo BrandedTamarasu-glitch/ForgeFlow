@@ -52,18 +52,22 @@ node scripts/forgeflow/test-check-agent-drift.js
 node scripts/forgeflow/test-render-forgeflow-report.js
 node scripts/forgeflow/test-render-release-notes.js
 node scripts/forgeflow/test-render-release-readiness.js
+node scripts/forgeflow/test-render-release-verify.js
 node scripts/forgeflow/test-render-support-bundle.js
 node scripts/forgeflow/test-render-evaluation-report.js
 node scripts/forgeflow/render-evaluation-report.js --outcomes fixtures/evaluation/sample-outcomes.jsonl --public --out /tmp/forgeflow-public-evaluation-summary.md
 node scripts/forgeflow/test-privacy-boundary.js
 node scripts/forgeflow/test-render-adoption-pack.js
 node scripts/forgeflow/test-render-first-run-guide.js
+node scripts/forgeflow/test-record-first-run-result.js
 node scripts/forgeflow/test-seed-budget-config.js
 node scripts/forgeflow/test-record-pilot-evidence.js
 node scripts/forgeflow/test-record-agent-feedback.js
 node scripts/forgeflow/test-rollup-agent-feedback.js
 node scripts/forgeflow/test-record-project-learning.js
 node scripts/forgeflow/test-user-profile.js
+node scripts/forgeflow/test-profile-review.js
+node scripts/forgeflow/test-profile-compliance.js
 node scripts/forgeflow/test-rollup-pattern-learnings.js
 node scripts/forgeflow/test-rollup-pilot-evidence.js
 node scripts/forgeflow/test-rollup-project-learnings.js
@@ -118,7 +122,7 @@ After publishing, run:
 ```text
 /forgeflow-version
 /forgeflow-health
-/forgeflow-release-readiness --post-publish --save-post-publish
+/forgeflow-release-verify --save
 ```
 
-`/forgeflow-version` should show the latest GitHub release and installed commit. `/forgeflow-health` should pass after any required manual `settings.json` hook or statusline wiring. `/forgeflow-release-readiness --post-publish --save-post-publish` should show local tag, changelog, release-note, source-smoke, update-smoke, and installed-runtime dogfood evidence, then save a local comparison snapshot. Forgeflow does not auto-edit `settings.json` by design.
+`/forgeflow-version` should show the latest GitHub release and installed commit. `/forgeflow-health` should pass after any required manual `settings.json` hook or statusline wiring. `/forgeflow-release-verify --save` should show local tag, changelog, release-note, source-smoke, update-smoke, installed-runtime dogfood evidence, and a shareable summary, then save a local comparison snapshot. Use `/forgeflow-release-readiness --post-publish --save-post-publish` when you need the full readiness evidence block. Forgeflow does not auto-edit `settings.json` by design.

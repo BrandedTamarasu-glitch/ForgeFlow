@@ -730,6 +730,7 @@ function nextWorkItems(intelligenceDraft) {
   const readiness = intelligenceDraft.readiness || {};
   const review = intelligenceDraft.review_prep || {};
   const feedback = intelligenceDraft.agent_feedback || {};
+  const userProfile = intelligenceDraft.user_profile || {};
   const corrective = feedback.by_signal
     ? (feedback.by_signal.incorrect || 0) + (feedback.by_signal.unclear || 0) + (feedback.by_signal.ignored || 0)
     : 0;
@@ -777,6 +778,25 @@ function nextWorkItems(intelligenceDraft) {
       start_with: [intelligenceDraft.review_outcomes.file || 'review-outcomes.jsonl'],
       validate_with: ['scripts/forgeflow/build-project-intelligence.js --json', 'scripts/forgeflow/record-review-outcome.js --summary .forgeflow/<project>/review-outcomes.jsonl --json'],
       proof_boundary: 'Review-outcome learning signals are aggregate guidance only; verify each future finding against current code and tests.',
+    });
+  }
+
+  const profileNeedsReview = userProfile.status && userProfile.status !== 'pass';
+  const profileSuggestions = userProfile.suggestion_count || 0;
+  const profileConflicts = userProfile.conflict_count || 0;
+  if (profileNeedsReview || profileSuggestions > 0 || profileConflicts > 0) {
+    addNextWorkItem(items, {
+      title: 'Review user profile guidance before agent-heavy work',
+      priority: profileConflicts > 0 || userProfile.status === 'fail' ? 'high' : 'medium',
+      source: 'user-profile',
+      why: `${userProfile.status || 'missing'} profile status with ${profileSuggestions} suggestion(s) and ${profileConflicts} conflict(s) can change how agents communicate, validate, or escalate.`,
+      start_with: ['scripts/forgeflow/render-profile-review.js', 'scripts/forgeflow/check-user-profile.js --json'],
+      validate_with: ['scripts/forgeflow/build-project-intelligence.js --json', 'scripts/forgeflow/check-profile-compliance.js'],
+      evidence_strength: 'medium',
+      what_to_change: 'Clarify, move, or supersede profile guidance only after explicit user confirmation.',
+      how_to_prove: 'Rerun the profile review and project intelligence; profile-related next-work should disappear or downgrade when guidance is clean.',
+      stop_when: 'Stop before recording inferred preferences or changing behavior from profile guidance that conflicts with current user instructions.',
+      proof_boundary: 'User profile guidance is advisory only and never overrides current instructions, security, accessibility, validation evidence, or product judgment.',
     });
   }
 
@@ -879,6 +899,8 @@ function buildProjectIntelligence(opts = {}) {
       status: userProfile.result.check.status,
       injected: userProfile.injected,
       issue_count: userProfile.result.check.issues.length,
+      suggestion_count: userProfile.result.check.suggestions.length,
+      conflict_count: userProfile.result.check.conflicts.length,
       records: userProfile.result.check.records,
       files: userProfile.result.files,
       guidance: userProfile.markdown,

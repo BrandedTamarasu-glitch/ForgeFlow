@@ -14,6 +14,7 @@ If health reports missing managed files, run `/update-forgeflow --repair`. If th
 ## Try Forgeflow For The First Time
 
 1. Run `/forgeflow-first-run --runtime claude-code` from Claude Code, or `scripts/forgeflow/render-first-run-guide.js --runtime codex` from a checkout.
+2. After the first pass, record the public-safe outcome with `/forgeflow-first-run-result` so setup friction and the continue/fix/defer decision become local evidence.
 2. Follow the install verification, project-orientation, profile-readiness, and bounded-work-item steps.
 3. For a fuller adoption trial, run `/forgeflow-pilot --path new-user --runtime claude-code`, or `scripts/forgeflow/render-pilot-script.js --path new-user --runtime codex`.
 4. Keep the first task small enough to judge setup friction, guidance quality, review usefulness, and whether the next task starts with better project context.
@@ -68,7 +69,7 @@ If implementation notes are missing or stale, refresh or repair them before ship
 
 1. Update version metadata and release notes.
 2. Run `/forgeflow-release-check`.
-3. Run `/forgeflow-release-readiness` to execute the release-check list and the release-to-install source preflight. Add `--save-current` to record the current local snapshot, then use `--compare-last` on a later run to see newly failing, cleared, and category-movement comparison without remembering a JSON path. Use the helper directly with `scripts/forgeflow/render-release-readiness.js --baseline <prior-json>` when you need to compare against a specific prior run.
+3. Run `/forgeflow-release-readiness` to execute the release-check list and the release-to-install source preflight. Add `--save-current` to record the current local snapshot, then use `--compare-last` on a later run to see newly failing, cleared, and category-movement comparison without remembering a JSON path. After publishing, use `/forgeflow-release-verify --save` for the compact shareable local post-publish evidence. Use the helper directly with `scripts/forgeflow/render-release-readiness.js --baseline <prior-json>` when you need to compare against a specific prior run.
 4. Render the public evaluation summary if release notes cite evaluation evidence.
 5. Run `/forgeflow-smoke --mode source` for source-tree release guards when you want a shorter local check.
 6. Tag and publish only after release checks pass.
@@ -79,11 +80,11 @@ If implementation notes are missing or stale, refresh or repair them before ship
 |---|---|
 | Command missing after install | Restart Claude Code, then `/forgeflow-health` |
 | Managed file missing or corrupt | `/update-forgeflow --repair` |
-| First time evaluating Forgeflow | `/forgeflow-first-run` |
+| First time evaluating Forgeflow | `/forgeflow-first-run`, then `/forgeflow-first-run-result` |
 | Latest insights stale | `/forgeflow-trends --refresh` |
 | Need readiness confidence | `/forgeflow-smoke` |
 | Failure output is too noisy | `/forgeflow-failure-digest` |
 | Output volume is too high | `/forgeflow-noisy-command` |
 | Review context is over budget | Split scope, then rerun review prep |
 | Need current project trends | `/forgeflow-trends --refresh` |
-| Need release confidence | `/forgeflow-release-readiness` |
+| Need release confidence | `/forgeflow-release-readiness`, then `/forgeflow-release-verify` after publishing |

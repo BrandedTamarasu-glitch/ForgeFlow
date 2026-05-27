@@ -30,6 +30,12 @@ Run the quality gate:
 /forgeflow-profile --check
 ```
 
+Review conflicts, scope moves, ask-user prompts, and cleanup actions before agent-heavy work:
+
+```text
+/forgeflow-profile-review
+```
+
 Record an explicit operating preference:
 
 ```text
