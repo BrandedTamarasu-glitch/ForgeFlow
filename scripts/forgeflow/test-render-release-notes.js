@@ -6,6 +6,7 @@ const { spawnSync } = require('child_process');
 const {
   changelogCandidates,
   collectReleaseNotes,
+  issueReferencesFromText,
   publicSafeText,
   releaseNoteSensitiveLabels,
   releaseCheckCommands,
@@ -38,7 +39,7 @@ spawnSync('git', ['config', 'user.email', 'forgeflow@example.test'], { cwd: tmp,
 spawnSync('git', ['config', 'user.name', 'Forgeflow Test'], { cwd: tmp, encoding: 'utf8' });
 fs.writeFileSync(path.join(tmp, 'feature.txt'), 'feature\n');
 spawnSync('git', ['add', '.'], { cwd: tmp, encoding: 'utf8' });
-spawnSync('git', ['commit', '-m', 'Add release_helper [draft]'], { cwd: tmp, encoding: 'utf8' });
+spawnSync('git', ['commit', '-m', 'Add release_helper [draft] (#42)'], { cwd: tmp, encoding: 'utf8' });
 fs.writeFileSync(path.join(tmp, 'space.txt'), 'space\n');
 spawnSync('git', ['add', 'space.txt'], { cwd: tmp, encoding: 'utf8' });
 spawnSync('git', ['commit', '-m', 'Add   spaced   subject'], { cwd: tmp, encoding: 'utf8' });
@@ -63,13 +64,14 @@ const checks = [
   ['reads version metadata', notes.version === '9.8.0' && notes.marketplace_version === '9.8.0'],
   ['finds changelog', notes.changelog_path === 'docs/changelogs/v9.8.html' && notes.changelog_title.includes('redacted sensitive content')],
   ['collects commits', notes.commits.length >= 3 && notes.commits.some((commit) => commit.subject.includes('Add release_helper [draft]'))],
+  ['extracts issue references', issueReferencesFromText('Fix smoke gate (#42), refs #7 and owner/repo#99').join(',') === '42,7' && notes.referenced_issues.some((issue) => issue.number === 42 && issue.commits.length === 1)],
   ['whitespace normalization is not redaction', notes.commits.some((commit) => commit.subject === 'Add spaced subject' && commit.redacted === false)],
   ['redacts sensitive commits', redacted.includes('redacted sensitive content') && notes.commits.some((commit) => commit.redacted) && !JSON.stringify(notes).includes('SHOULD_NOT_PRINT')],
   ['redacts local paths', releaseNoteSensitiveLabels('/home/corye/.ssh/config').includes('local-path') && releaseNoteSensitiveLabels('path=/home/corye/.ssh/config').includes('local-path') && releaseNoteSensitiveLabels('out=../tmp/file').includes('local-path') && releaseNoteSensitiveLabels('path=C:\\Temp\\file.txt').includes('local-path') && pathRedacted.includes('redacted sensitive content') && notes.commits.some((commit) => commit.redacted) && !JSON.stringify(notes).includes('/home/corye/.ssh/config')],
   ['git unavailable is explicit', nonRepo.git.available === true && unavailableGit.git.available === false && unavailableGit.git.dirty === null && renderMarkdown(unavailableGit).includes('Git: unavailable')],
   ['captures validation commands', notes.validation_commands.length === 5 && notes.validation_commands.includes('git diff --check')],
   ['parses fenced release commands', releaseCheckCommands('```bash\nnode a.js\ngit diff --check\n```').length === 2],
-  ['renders markdown draft', markdown.includes('# Forgeflow 9.8.0 Release Notes Draft') && markdown.includes('## Validation Evidence To Capture')],
+  ['renders markdown draft', markdown.includes('# Forgeflow 9.8.0 Release Notes Draft') && markdown.includes('## Referenced Issues') && markdown.includes('#42: referenced by') && markdown.includes('Verify issue state before claiming closure') && markdown.includes('## Validation Evidence To Capture')],
   ['escapes markdown draft text', markdown.includes('Add release\\_helper \\[draft\\]')],
   ['markdown stays public safe', !markdown.includes('SHOULD_NOT_PRINT')],
 ];

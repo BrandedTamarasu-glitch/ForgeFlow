@@ -106,6 +106,7 @@ git push origin vX.Y.Z
 ```
 
 Create the GitHub release from the tag and include the release notes summary. The release body should only claim what changed, why it changed, tests run, and known deferrals.
+If the release-note draft lists referenced issues, verify the GitHub issue state before claiming closure. A commit subject can cite `#123`, but closure requires a release-linked issue comment, a closed issue, or another explicit maintainer decision.
 
 ## Verify
 

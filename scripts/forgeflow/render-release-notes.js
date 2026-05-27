@@ -141,6 +141,41 @@ function recentCommits(root, maxCommits) {
   });
 }
 
+function issueReferencesFromText(value) {
+  const text = String(value || '');
+  const refs = [];
+  const seen = new Set();
+  const issuePattern = /(?:^|[^\w/])#([1-9][0-9]*)\b/g;
+  let match;
+  while ((match = issuePattern.exec(text)) !== null) {
+    const number = Number.parseInt(match[1], 10);
+    if (!Number.isFinite(number) || seen.has(number)) continue;
+    seen.add(number);
+    refs.push(number);
+  }
+  return refs;
+}
+
+function issueReferences(commits = []) {
+  const buckets = new Map();
+  for (const commit of commits || []) {
+    for (const number of issueReferencesFromText(commit.subject)) {
+      if (!buckets.has(number)) {
+        buckets.set(number, {
+          number,
+          reference: `#${number}`,
+          commits: [],
+        });
+      }
+      buckets.get(number).commits.push({
+        sha: commit.sha,
+        subject: commit.subject,
+      });
+    }
+  }
+  return [...buckets.values()].sort((a, b) => a.number - b.number);
+}
+
 function releaseCheckCommands(releaseCheck) {
   const text = String(releaseCheck || '');
   const fenced = [];
@@ -181,6 +216,7 @@ function collectReleaseNotes(opts = {}) {
   const status = git(root, ['status', '--short']);
   const head = git(root, ['rev-parse', '--short', 'HEAD']);
   const commits = recentCommits(root, opts.maxCommits);
+  const issues = issueReferences(commits);
   const releaseCheck = readTextIfPresent(root, 'commands/forgeflow-release-check.md');
   const validationCommands = releaseCheckCommands(releaseCheck);
 
@@ -200,6 +236,7 @@ function collectReleaseNotes(opts = {}) {
       error: status.ok && head.ok ? '' : (status.error || head.error || 'git unavailable'),
     },
     commits,
+    referenced_issues: issues,
     validation_commands: validationCommands,
     public_safe_highlights: commits.slice(0, 6).map((commit) => commit.subject),
     draft_notes: [
@@ -232,6 +269,15 @@ function renderMarkdown(notes) {
   lines.push('', '## Recent Commits', '');
   if (notes.commits.length === 0) lines.push('- No recent commits found.');
   else for (const commit of notes.commits) lines.push(`- ${commit.sha}: ${markdownText(commit.subject)}`);
+  lines.push('', '## Referenced Issues', '');
+  if (!notes.referenced_issues || notes.referenced_issues.length === 0) {
+    lines.push('- No issue references found in recent commit subjects.');
+  } else {
+    for (const issue of notes.referenced_issues) {
+      const commits = issue.commits.map((commit) => commit.sha).join(', ');
+      lines.push(`- ${issue.reference}: referenced by ${commits}. Verify issue state before claiming closure.`);
+    }
+  }
   lines.push('', '## Validation Evidence To Capture', '');
   if (notes.validation_commands.length === 0) lines.push('- Release-check command list not found.');
   else for (const command of notes.validation_commands) lines.push(`- \`${command}\``);
@@ -258,6 +304,8 @@ if (require.main === module) main();
 module.exports = {
   changelogCandidates,
   collectReleaseNotes,
+  issueReferences,
+  issueReferencesFromText,
   publicSafeText,
   releaseNoteSensitiveLabels,
   releaseCheckCommands,
