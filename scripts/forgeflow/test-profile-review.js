@@ -22,10 +22,12 @@ const checks = [
   ['has conflict action', review.actions.resolve_conflicts.some((item) => item.action === 'resolve-conflict' && item.follow_up.includes('superseded'))],
   ['has move action', review.actions.move_scope.some((item) => item.action === 'move-then-supersede' && item.accept_command && item.supersede_command && item.follow_up.includes('accept command'))],
   ['ask actions keep explicit boundary', review.actions.ask_user.every((item) => item.acceptance_boundary && item.acceptance_boundary.includes('Ask the user first'))],
+  ['confirmation prompts are explicit', review.confirmation_prompts.length >= 2 && review.confirmation_prompts.every((item) => item.question && item.boundary.includes('Ask the user first')) && review.confirmation_prompts.some((item) => item.supersede_command)],
   ['markdown renders templates', markdown.includes('Template:') && markdown.includes('Follow-up:') && markdown.includes('Supersede:')],
   ['markdown groups actions', markdown.includes('## Resolve Conflicts') && markdown.includes('## Move Scope') && review.action_count >= 2],
   ['markdown renders resolution flow', markdown.includes('## Resolution Flow') && markdown.includes('Rerun forgeflow-profile-review')],
-  ['copy ready commands render', review.apply_commands.length > 0 && markdown.includes('## Copy-Ready Commands') && commandMarkdown.includes('Forgeflow Profile Review Commands')],
+  ['markdown renders confirmation prompts', markdown.includes('## Confirmation Prompts') && markdown.includes('Reject:') && markdown.includes('Boundary: Ask the user first')],
+  ['copy ready commands render', review.apply_commands.length > 0 && markdown.includes('## Copy-Ready Commands') && commandMarkdown.includes('Forgeflow Profile Review Commands') && commandMarkdown.includes('## Confirm First')],
   ['commands only parses', opts.commandsOnly === true && opts.json === true],
 ];
 let failed = 0;

@@ -13,11 +13,25 @@ const result = buildPostReleaseInstallVerify({
 });
 const markdown = renderMarkdown(result);
 const opts = parseArgs(['--root', '.', '--install-root', installRoot, '--json']);
+const infoResult = buildPostReleaseInstallVerify({
+  root: path.resolve(__dirname, '..', '..'),
+  installRoot,
+  release: {
+    status: 'install-attention',
+    next_command: 'forgeflow-release-readiness --post-publish',
+    local_consumability: { status: 'info' },
+    version: '4.3.99',
+    tag: 'v4.3.99',
+    head: 'abc123',
+  },
+  smoke: { status: 'pass', checks: [] },
+});
 
 const checks = [
   ['schema version', result.schema_version === '1'],
   ['includes checks', result.checks.some((item) => item.name === 'release-verify') && result.checks.some((item) => item.name === 'downstream-smoke')],
   ['read-only boundary', result.boundary.includes('read-only') && result.boundary.includes('does not update')],
+  ['info install status is not repair attention', infoResult.status === 'info' && infoResult.checks.some((item) => item.name === 'install-consumability' && item.status === 'info' && item.next.includes('forgeflow-version')) && infoResult.next.includes('forgeflow-version')],
   ['renders markdown', markdown.includes('# Forgeflow Post-Release Install Verify') && markdown.includes('Install root')],
   ['parses args', opts.installRoot === installRoot && opts.json === true],
 ];

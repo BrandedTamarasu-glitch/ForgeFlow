@@ -130,6 +130,7 @@ const checks = [
   ['release check renders public evaluation summary', releaseCheck.includes('render-evaluation-report.js --outcomes fixtures/evaluation/sample-outcomes.jsonl --public')],
   ['release check runs privacy boundary test', releaseCheck.includes('node scripts/forgeflow/test-privacy-boundary.js')],
   ['release check runs adoption pack test', releaseCheck.includes('node scripts/forgeflow/test-render-adoption-pack.js')],
+  ['release check runs context retention test', releaseCheck.includes('node scripts/forgeflow/test-render-context-retention.js')],
   ['release check runs first run guide test', releaseCheck.includes('node scripts/forgeflow/test-render-first-run-guide.js')],
   ['release check runs first run result test', releaseCheck.includes('node scripts/forgeflow/test-record-first-run-result.js')],
   ['release check runs first run rollup test', releaseCheck.includes('node scripts/forgeflow/test-rollup-first-run-results.js')],

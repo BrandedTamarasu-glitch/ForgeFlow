@@ -39,14 +39,24 @@ function parseArgs(argv) {
 function buildPostReleaseInstallVerify(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const installRoot = path.resolve(opts.installRoot || path.join(os.homedir(), '.claude'));
-  const release = buildReleaseVerify({ root, installRoot, runner: opts.runner });
-  const smoke = smokeCheck({ root, mode: 'downstream' });
+  const release = opts.release || buildReleaseVerify({ root, installRoot, runner: opts.runner });
+  const smoke = opts.smoke || smokeCheck({ root, mode: 'downstream' });
+  const releaseCheckStatus = release.status === 'published-and-verified'
+    ? 'pass'
+    : (release.status === 'install-attention' && release.local_consumability.status === 'info' ? 'info' : 'attention');
+  const installStatus = release.local_consumability.status === 'pass'
+    ? 'pass'
+    : (release.local_consumability.status === 'info' ? 'info' : 'attention');
   const checks = [
-    { name: 'release-verify', status: release.status === 'published-and-verified' ? 'pass' : 'attention', next: release.next_command },
-    { name: 'install-consumability', status: release.local_consumability.status === 'pass' ? 'pass' : 'attention', next: '/update-forgeflow --repair' },
+    { name: 'release-verify', status: releaseCheckStatus, next: release.next_command },
+    { name: 'install-consumability', status: installStatus, next: installStatus === 'attention' ? '/update-forgeflow --repair' : '/forgeflow-version && /forgeflow-health' },
     { name: 'downstream-smoke', status: smoke.status === 'pass' ? 'pass' : smoke.status, next: '/forgeflow-smoke' },
   ];
-  const status = checks.some((check) => check.status === 'fail') ? 'fail' : (checks.some((check) => check.status !== 'pass') ? 'attention' : 'pass');
+  const status = checks.some((check) => check.status === 'fail')
+    ? 'fail'
+    : (checks.some((check) => ['attention', 'warn'].includes(check.status))
+      ? 'attention'
+      : (checks.some((check) => check.status === 'info') ? 'info' : 'pass'));
   return {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
@@ -65,7 +75,7 @@ function buildPostReleaseInstallVerify(opts = {}) {
       status: smoke.status,
       checks: smoke.checks.map((check) => ({ name: check.name, status: check.status, command: check.command || '' })),
     },
-    next: status === 'pass' ? '/forgeflow-version && /forgeflow-health' : '/update-forgeflow --repair, then rerun /forgeflow-post-release-install-verify',
+    next: status === 'pass' || status === 'info' ? '/forgeflow-version && /forgeflow-health' : '/update-forgeflow --repair, then rerun /forgeflow-post-release-install-verify',
     boundary: 'Post-release install verification is read-only. It does not update, repair, tag, push, publish, call GitHub, or mutate installed files.',
   };
 }

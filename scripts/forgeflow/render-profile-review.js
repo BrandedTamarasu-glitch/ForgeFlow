@@ -106,6 +106,30 @@ function buildProfileReview(opts = {}) {
   const commandActions = Object.values(actions).flat()
     .map((action) => action.command_template)
     .filter(Boolean);
+  const confirmationPrompts = [
+    ...actions.move_scope.map((action, index) => ({
+      id: `move-scope-${index + 1}`,
+      action: action.action,
+      scope: action.scope,
+      category: action.category,
+      question: action.prompt || `Should Forgeflow move this ${action.category} preference into ${action.scope} scope?`,
+      accept_command: action.accept_command || '',
+      supersede_command: action.supersede_command || '',
+      reject_guidance: 'Leave the existing profile record unchanged and do not supersede it.',
+      boundary: 'Ask the user first; apply the accept and supersede commands only after explicit confirmation.',
+    })),
+    ...actions.ask_user.map((action, index) => ({
+      id: `ask-user-${index + 1}`,
+      action: action.action,
+      scope: action.scope,
+      category: action.category,
+      question: action.prompt || `Should Forgeflow record this ${action.category} preference for ${action.scope} scope?`,
+      accept_command: action.command_template || '',
+      supersede_command: '',
+      reject_guidance: 'Do not record the preference unless the user confirms it directly.',
+      boundary: action.acceptance_boundary || 'Ask the user first; do not record inferred answers from behavior alone.',
+    })),
+  ];
   return {
     schema_version: '1',
     status: check.status,
@@ -114,6 +138,7 @@ function buildProfileReview(opts = {}) {
     issues: check.issues,
     actions,
     action_count: Object.values(actions).reduce((sum, group) => sum + group.length, 0),
+    confirmation_prompts: confirmationPrompts,
     apply_commands: [...new Set(commandActions)],
     resolution_flow: [
       'Ask the user to confirm each suggested preference or scope move.',
@@ -136,6 +161,14 @@ function renderCommands(review) {
     lines.push('- No copy-ready profile commands recommended.');
   } else {
     for (const command of review.apply_commands) lines.push(`- ${command}`);
+  }
+  if ((review.confirmation_prompts || []).length > 0) {
+    lines.push('', '## Confirm First', '');
+    for (const prompt of review.confirmation_prompts) {
+      lines.push(`- ${prompt.id}: ${prompt.question}`);
+      if (prompt.accept_command) lines.push(`  - Accept: ${prompt.accept_command}`);
+      if (prompt.supersede_command) lines.push(`  - Supersede: ${prompt.supersede_command}`);
+    }
   }
   lines.push('');
   return lines.join('\n');
@@ -180,6 +213,20 @@ function renderMarkdown(review) {
   lines.push(...renderActions('Clean Up', review.actions.clean_up));
   lines.push('', '## Resolution Flow', '');
   for (const step of review.resolution_flow || []) lines.push(`- ${step}`);
+  lines.push('', '## Confirmation Prompts', '');
+  if (!review.confirmation_prompts || review.confirmation_prompts.length === 0) {
+    lines.push('- None.');
+  } else {
+    for (const prompt of review.confirmation_prompts) {
+      lines.push(`- ${prompt.id}: ${prompt.question}`);
+      lines.push(`  - Scope: ${prompt.scope}`);
+      lines.push(`  - Category: ${prompt.category}`);
+      if (prompt.accept_command) lines.push(`  - Accept: ${prompt.accept_command}`);
+      if (prompt.supersede_command) lines.push(`  - Supersede: ${prompt.supersede_command}`);
+      lines.push(`  - Reject: ${prompt.reject_guidance}`);
+      lines.push(`  - Boundary: ${prompt.boundary}`);
+    }
+  }
   lines.push('', '## Copy-Ready Commands', '');
   if (!review.apply_commands || review.apply_commands.length === 0) {
     lines.push('- None.');

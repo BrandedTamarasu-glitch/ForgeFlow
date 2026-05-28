@@ -24,6 +24,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-code-map` | Generate a compact project code map with topology, sections, changed-section hints, import-gap triage, living project-map categories, Git provenance, and generated artifact paths. |
 | `/forgeflow-compact-output` | Compact allowlisted noisy command output while preserving exact output for unsafe command classes. |
 | `/forgeflow-context-contract` | Check generated agent packets against the context contract, required sections, size limits, and advisory-boundary wording. |
+| `/forgeflow-context-retention` | Review local context artifact freshness, history retention, and broad packet size signals without deleting, compacting, or refreshing files. |
 | `/forgeflow-failure-digest` | Build a compact failure digest from test, typecheck, lint, or log output, with Git provenance for freshness checks. |
 | `/forgeflow-first-run` | Print a compact net-new user guide for install verification, project orientation, profile readiness, one bounded work item, and stop conditions. |
 | `/forgeflow-first-run-result` | Record public-safe local first-run outcome evidence under `.forgeflow/<project>/first-run-results/`. |
@@ -41,7 +42,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-next-work-outcome` | Record local advisory feedback on whether a next-work recommendation was useful, ignored, incorrect, or blocked. |
 | `/forgeflow-pilot` | Print the repeatable maintainer pilot script by default, or add `--path new-user` for the state-aware first-real-task evaluation path with guided repair, release-readiness preview, project intelligence, living map status, agent-feedback signal, and a public-safe result template. |
 | `/forgeflow-profile` | Show, check, or record local advisory user operating preferences and project experience preferences for context-pack injection. |
-| `/forgeflow-profile-review` | Group profile conflicts, scope moves, ask-user prompts, cleanup actions, explicit accept/supersede commands, and a resolution flow before agent-heavy work. |
+| `/forgeflow-profile-review` | Group profile conflicts, scope moves, ask-user prompts, cleanup actions, confirmation prompts, explicit accept/supersede commands, and a resolution flow before agent-heavy work. |
 | `/forgeflow-report` | Produce a script-backed status report including local metrics, false-positive thresholds, pattern freshness, context trends, project trends, import-gap status, latest-insights readiness/freshness, latest failure-digest status/freshness, and direct next-action recommendations. Add `--refresh` to update project guidance first. |
 | `/forgeflow-repair` | Show a non-mutating guided repair plan that combines offline version status, installed runtime helper checks, health failures, repair commands, manual settings guidance, and an explicit downstream smoke follow-up. |
 | `/forgeflow-runtime-drift` | Compare source runtime helpers against installed runtime helpers and report missing files, content drift, mode-only drift, syntax failures, and optional `--preview-repair` actions without repairing. Missing/content/syntax drift is actionable; mode-only drift is informational. |

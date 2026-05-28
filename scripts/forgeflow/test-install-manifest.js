@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+const fs = require('fs');
+const path = require('path');
 const {
   RUNTIME_HELPERS,
   categoryFor,
@@ -8,6 +10,7 @@ const {
   shouldPreserveDestination,
 } = require('./install-manifest');
 
+const repoRoot = path.resolve(__dirname, '..', '..');
 const home = '/tmp/claude-home';
 const checks = [
   ['agent managed', isManagedSource('agents/smith-review.md')],
@@ -32,6 +35,8 @@ const checks = [
   ['runtime helpers include agent feedback recorder', RUNTIME_HELPERS.includes('scripts/forgeflow/record-agent-feedback.js')],
   ['runtime helpers include agent feedback rollup', RUNTIME_HELPERS.includes('scripts/forgeflow/rollup-agent-feedback.js')],
   ['runtime helpers include adoption pack renderer', RUNTIME_HELPERS.includes('scripts/forgeflow/render-adoption-pack.js')],
+  ['runtime helpers include context retention', RUNTIME_HELPERS.includes('scripts/forgeflow/render-context-retention.js')],
+  ['context retention helper executable in source tree', (fs.statSync(path.join(repoRoot, 'scripts/forgeflow/render-context-retention.js')).mode & 0o111) !== 0],
   ['runtime helpers include first run guide', RUNTIME_HELPERS.includes('scripts/forgeflow/render-first-run-guide.js')],
   ['runtime helpers include first run result recorder', RUNTIME_HELPERS.includes('scripts/forgeflow/record-first-run-result.js')],
   ['runtime helpers include first run rollup', RUNTIME_HELPERS.includes('scripts/forgeflow/rollup-first-run-results.js')],

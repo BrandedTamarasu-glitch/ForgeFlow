@@ -330,7 +330,9 @@ function freshnessIssues(trends) {
   for (const issue of (trends.latest_insights && trends.latest_insights.freshness && trends.latest_insights.freshness.issues) || []) {
     addIssue(issues, issue.severity || 'attention', 'latest-insights', issue.message || issue.code, 'forgeflow-trends --refresh');
   }
-  for (const issue of (trends.failure_digest && trends.failure_digest.freshness && trends.failure_digest.freshness.issues) || []) {
+  const failureDigest = trends.failure_digest || {};
+  if (failureDigest.first_run) return issues;
+  for (const issue of (failureDigest.freshness && failureDigest.freshness.issues) || []) {
     addIssue(issues, issue.severity || 'attention', 'failure-digest', issue.message || issue.code, 'forgeflow-failure-digest');
   }
   return issues;
@@ -364,7 +366,7 @@ function collectRiskSignals(trends, learnings) {
     );
   }
   const digest = trends.failure_digest || {};
-  if (digest.triage && digest.triage.state && !['usable', 'missing'].includes(digest.triage.state)) {
+  if (!digest.first_run && digest.triage && digest.triage.state && !['usable', 'missing'].includes(digest.triage.state)) {
     addIssue(
       risks,
       digest.triage.state === 'raw-required' ? 'high' : 'attention',
@@ -748,6 +750,8 @@ function confidenceForItem(item) {
 
 function addNextWorkItem(items, item) {
   if (!item || !item.title) return;
+  if (item.priority === 'info' || item.severity === 'info') return;
+  if (item.source === 'failure-digest' && item.first_run) return;
   const dedupeKey = [
     item.title,
     item.source || 'project-intelligence',
@@ -864,7 +868,16 @@ function nextWorkItems(intelligenceDraft) {
     });
   }
 
-  for (const risk of (intelligenceDraft.top_risks || []).slice(0, 3)) {
+  const rankedRisks = (intelligenceDraft.top_risks || [])
+    .filter((risk) => risk && risk.severity !== 'info' && !(risk.source === 'failure-digest' && risk.first_run))
+    .map((risk, index) => ({
+      ...risk,
+      _order: index,
+      _rank: ({ high: 0, fail: 0, attention: 1, warn: 1, medium: 1, low: 2 }[risk.severity] ?? 2),
+    }))
+    .sort((a, b) => a._rank - b._rank || a._order - b._order)
+    .slice(0, 3);
+  for (const risk of rankedRisks) {
     addNextWorkItem(items, {
       title: `Triage ${risk.source} signal`,
       priority: priorityForSeverity(risk.severity),
@@ -901,9 +914,28 @@ function nextWorkItems(intelligenceDraft) {
   }
 
   const priorityRank = { high: 0, medium: 1, low: 2 };
+  const sourceRank = {
+    security: 0,
+    schema: 0,
+    runtime: 0,
+    'import-gaps': 1,
+    'context-advisor': 1,
+    'project-learnings': 1,
+    'failure-digest': 1,
+    'user-profile': 2,
+    'review-outcomes': 2,
+    'agent-feedback': 3,
+    readiness: 4,
+    'next-work-confidence': 5,
+    'review-prep': 6,
+    'project-intelligence': 7,
+  };
   return items
     .map((item, index) => ({ ...item, order: index }))
-    .sort((a, b) => (priorityRank[a.priority] ?? 1) - (priorityRank[b.priority] ?? 1) || a.order - b.order)
+    .sort((a, b) => (priorityRank[a.priority] ?? 1) - (priorityRank[b.priority] ?? 1)
+      || (sourceRank[a.source] ?? 5) - (sourceRank[b.source] ?? 5)
+      || (b.confidence ? b.confidence.score : 0) - (a.confidence ? a.confidence.score : 0)
+      || a.order - b.order)
     .slice(0, 5)
     .map(({ dedupe_key: _dedupeKey, order: _order, ...item }) => item);
 }

@@ -65,6 +65,7 @@ const CANONICAL_NON_REQUIRED_MANAGED_SOURCES = [
   'commands/forgeflow-code-map.md',
   'commands/forgeflow-compact-output.md',
   'commands/forgeflow-context-contract.md',
+  'commands/forgeflow-context-retention.md',
   'commands/forgeflow-drift.md',
   'commands/forgeflow-failure-digest.md',
   'commands/forgeflow-first-run.md',
