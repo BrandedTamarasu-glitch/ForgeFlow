@@ -138,6 +138,7 @@ const checks = [
   ['release check runs project learning recorder test', releaseCheck.includes('node scripts/forgeflow/test-record-project-learning.js')],
   ['release check runs next work outcome test', releaseCheck.includes('node scripts/forgeflow/test-record-next-work-outcome.js')],
   ['release check runs learning status test', releaseCheck.includes('node scripts/forgeflow/test-show-learning-status.js')],
+  ['release check runs health timeline test', releaseCheck.includes('node scripts/forgeflow/test-show-project-health-timeline.js')],
   ['release check runs pattern review test', releaseCheck.includes('node scripts/forgeflow/test-render-pattern-review.js')],
   ['release check runs runtime drift test', releaseCheck.includes('node scripts/forgeflow/test-runtime-drift-snapshot.js')],
   ['release check runs profile review tests', releaseCheck.includes('node scripts/forgeflow/test-profile-review.js') && releaseCheck.includes('node scripts/forgeflow/test-profile-compliance.js')],

@@ -55,6 +55,8 @@ fs.writeFileSync(path.join(projectDir, 'review-outcomes.jsonl'), `${JSON.stringi
   },
 })}\n`);
 recordNextWorkOutcome({ projectDir, title: 'Review profile guidance', source: 'user-profile', outcome: 'blocked' });
+recordNextWorkOutcome({ projectDir, title: 'release verify planning', source: 'release', outcome: 'incorrect', confidence: 'high' });
+recordNextWorkOutcome({ projectDir, title: 'health status check', source: 'health', outcome: 'useful', confidence: 'high' });
 recordFirstRunResult({ projectDir, runtime: 'codex', health: 'fail', smoke: 'pass', profile: 'pass', decision: 'fix-first', friction: 'health' });
 
 const result = buildLearningStatus({ root, projectDir });
@@ -66,7 +68,8 @@ const checks = [
   ['overall attention or fail', ['attention', 'fail'].includes(result.status)],
   ['recommendations include corrective signals', result.recommendations.some((item) => item.action === 'triage-review-outcome-learning-signals') && result.recommendations.some((item) => item.action === 'calibrate-next-work-selection') && result.recommendations.some((item) => item.action === 'fix-first-run-friction')],
   ['groups recommendations', result.recommendation_groups.fix_first.some((item) => item.source === 'first-run-results') && result.recommendation_groups.watch.some((item) => item.source === 'agent-feedback')],
-  ['markdown renders', markdown.includes('# Forgeflow Learning Status') && markdown.includes('## Signals') && markdown.includes('## Fix First') && markdown.includes('## Watch') && markdown.includes('## Healthy') && markdown.includes('first-run-results') && markdown.includes('advisory local evidence')],
+  ['signal quality present', result.signal_quality.status === 'attention' && result.signal_quality.signals.some((item) => item.source === 'next-work-outcomes' && item.notes.includes('corrective-heavy'))],
+  ['markdown renders', markdown.includes('# Forgeflow Learning Status') && markdown.includes('## Signals') && markdown.includes('## Fix First') && markdown.includes('## Watch') && markdown.includes('## Healthy') && markdown.includes('## Signal Quality') && markdown.includes('first-run-results') && markdown.includes('advisory local evidence')],
   ['cli args parse', opts.root === root && opts.projectDir === projectDir && opts.json === true],
 ];
 

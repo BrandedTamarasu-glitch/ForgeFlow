@@ -22,16 +22,17 @@ fs.writeFileSync(manifestEntry(changedSource, installRoot).destination, 'functio
 const missingSource = RUNTIME_HELPERS.find((source) => source.endsWith('.sh'));
 fs.unlinkSync(manifestEntry(missingSource, installRoot).destination);
 
-const result = buildRuntimeDriftSnapshot({ root, installRoot });
+const result = buildRuntimeDriftSnapshot({ root, installRoot, previewRepair: true });
 const markdown = renderMarkdown(result);
-const opts = parseArgs(['--root', root, '--install-root', installRoot, '--json']);
+const opts = parseArgs(['--root', root, '--install-root', installRoot, '--preview-repair', '--json']);
 
 const checks = [
   ['detects drift', result.status === 'attention' && result.drift_count >= 2],
   ['counts missing and syntax', result.missing_installed === 1 && result.syntax_failures === 1],
   ['recommends repair', result.recommendations.some((item) => item.action === '/update-forgeflow --repair')],
-  ['renders markdown', markdown.includes('# Forgeflow Runtime Drift') && markdown.includes('read-only') && markdown.includes('Drifted Helpers')],
-  ['parse args', opts.root === root && opts.installRoot === installRoot && opts.json === true],
+  ['repair preview read-only', result.repair_preview.status === 'would-repair' && result.repair_preview.items.length >= 2 && result.repair_preview.boundary.includes('read-only')],
+  ['renders markdown', markdown.includes('# Forgeflow Runtime Drift') && markdown.includes('read-only') && markdown.includes('Drifted Helpers') && markdown.includes('## Repair Preview')],
+  ['parse args', opts.root === root && opts.installRoot === installRoot && opts.previewRepair === true && opts.json === true],
 ];
 
 let failed = 0;

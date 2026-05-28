@@ -6,7 +6,7 @@ const { spawnSync } = require('child_process');
 const { RUNTIME_HELPERS, manifestEntry } = require('./install-manifest');
 
 function usage() {
-  console.error('Usage: runtime-drift-snapshot.js [--root <dir>] [--install-root <dir>] [--json]');
+  console.error('Usage: runtime-drift-snapshot.js [--root <dir>] [--install-root <dir>] [--preview-repair] [--json]');
 }
 
 function requireValue(argv, name, index) {
@@ -16,7 +16,7 @@ function requireValue(argv, name, index) {
 }
 
 function parseArgs(argv) {
-  const opts = { root: process.cwd(), installRoot: path.join(os.homedir(), '.claude'), json: false };
+  const opts = { root: process.cwd(), installRoot: path.join(os.homedir(), '.claude'), previewRepair: false, json: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--root') {
@@ -25,6 +25,8 @@ function parseArgs(argv) {
     } else if (arg === '--install-root') {
       opts.installRoot = path.resolve(requireValue(argv, arg, i));
       i += 1;
+    } else if (arg === '--preview-repair') {
+      opts.previewRepair = true;
     } else if (arg === '--json') {
       opts.json = true;
     } else if (arg === '--help' || arg === '-h') {
@@ -35,6 +37,41 @@ function parseArgs(argv) {
     }
   }
   return opts;
+}
+
+function repairActionFor(helper) {
+  if (!helper.source_exists) return 'restore-source-before-repair';
+  if (!helper.installed_exists) return 'install-missing-helper';
+  if (helper.content === 'drift' && helper.mode === 'drift') return 'replace-content-and-mode';
+  if (helper.content === 'drift') return 'replace-content';
+  if (helper.mode === 'drift') return 'restore-mode';
+  if (helper.syntax === 'fail') return 'replace-helper-after-syntax-failure';
+  return 'none';
+}
+
+function buildRepairPreview(helpers) {
+  const items = helpers
+    .filter((helper) => helper.status === 'drift')
+    .map((helper) => ({
+      source: helper.source,
+      installed_path: helper.installed_path,
+      action: repairActionFor(helper),
+      source_mode: helper.source_mode,
+      installed_mode: helper.installed_mode,
+      reason: [
+        !helper.installed_exists ? 'missing installed helper' : '',
+        helper.content === 'drift' ? 'content differs' : '',
+        helper.mode === 'drift' ? 'mode differs' : '',
+        helper.syntax === 'fail' ? 'installed syntax check failed' : '',
+      ].filter(Boolean).join('; '),
+    }));
+  return {
+    status: items.length > 0 ? 'would-repair' : 'no-op',
+    command: '/update-forgeflow --repair',
+    item_count: items.length,
+    items,
+    boundary: 'Repair preview is read-only. It does not copy, overwrite, chmod, delete, or repair installed files.',
+  };
 }
 
 function syntaxStatus(file) {
@@ -82,7 +119,7 @@ function buildRuntimeDriftSnapshot(opts = {}) {
   const installRoot = path.resolve(opts.installRoot || path.join(os.homedir(), '.claude'));
   const helpers = RUNTIME_HELPERS.map((source) => compareHelper(root, installRoot, source));
   const drift = helpers.filter((helper) => helper.status === 'drift');
-  return {
+  const result = {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
     root,
@@ -98,6 +135,8 @@ function buildRuntimeDriftSnapshot(opts = {}) {
     recommendations: drift.length > 0 ? [{ action: '/update-forgeflow --repair', reason: 'Installed runtime helpers differ from source checkout.' }] : [],
     boundary: 'Runtime drift snapshot is read-only. It compares managed helper files and never repairs, updates, or deletes installed files.',
   };
+  if (opts.previewRepair) result.repair_preview = buildRepairPreview(helpers);
+  return result;
 }
 
 function renderMarkdown(result) {
@@ -129,6 +168,13 @@ function renderMarkdown(result) {
   lines.push('', '## Recommendations', '');
   if (result.recommendations.length === 0) lines.push('- None.');
   else for (const rec of result.recommendations) lines.push(`- ${rec.action}: ${rec.reason}`);
+  if (result.repair_preview) {
+    lines.push('', '## Repair Preview', '', `- Status: ${result.repair_preview.status}`, `- Command: ${result.repair_preview.command}`, `- Items: ${result.repair_preview.item_count}`, `- Boundary: ${result.repair_preview.boundary}`);
+    for (const item of result.repair_preview.items.slice(0, 30)) {
+      lines.push(`- ${item.source}: ${item.action}${item.reason ? ` (${item.reason})` : ''}`);
+    }
+    if (result.repair_preview.items.length > 30) lines.push(`- ... ${result.repair_preview.items.length - 30} more`);
+  }
   lines.push('');
   return lines.join('\n');
 }
@@ -149,4 +195,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { buildRuntimeDriftSnapshot, compareHelper, parseArgs, renderMarkdown };
+module.exports = { buildRepairPreview, buildRuntimeDriftSnapshot, compareHelper, parseArgs, renderMarkdown };

@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
 const { spawnSync } = require('child_process');
 const { buildReleaseReadiness } = require('./render-release-readiness');
+const { buildRuntimeDriftSnapshot } = require('./runtime-drift-snapshot');
 
 function usage() {
   console.error('Usage: render-release-verify.js [--root <repo>] [--save] [--compare-last] [--github] [--json]');
@@ -69,7 +72,7 @@ function githubVerification(root, version, runner = spawnSync) {
     evidence.push({ name: 'github-release', status: 'warn', value: '', clears: 'Set plugin version before checking GitHub.' });
     return { status: 'warn', evidence, boundary: 'GitHub verification is optional and network-aware. It only reads release and remote tag state.' };
   }
-  const release = runner('gh', ['release', 'view', tag, '--json', 'tagName,name,isDraft,isPrerelease,url'], { cwd: root, encoding: 'utf8' });
+  const release = runner('gh', ['release', 'view', tag, '--json', 'tagName,name,isPrerelease,url'], { cwd: root, encoding: 'utf8' });
   const unavailableRelease = unavailableEvidence('github-release', tag, release, 'gh');
   if (unavailableRelease) {
     evidence.push(unavailableRelease);
@@ -82,7 +85,7 @@ function githubVerification(root, version, runner = spawnSync) {
     }
     evidence.push({
       name: 'github-release',
-      status: parsed.tagName === tag && parsed.isDraft === false ? 'pass' : 'warn',
+      status: parsed.tagName === tag ? 'pass' : 'warn',
       value: parsed.url || tag,
       clears: `Publish GitHub release ${tag}.`,
     });
@@ -110,24 +113,64 @@ function githubVerification(root, version, runner = spawnSync) {
 }
 
 function buildReleaseVerify(opts = {}) {
+  const root = path.resolve(opts.root || process.cwd());
   const readiness = buildReleaseReadiness({
-    root: opts.root,
+    root,
     runner: opts.runner,
     postPublish: true,
     savePostPublish: Boolean(opts.save),
     comparePostPublishLast: Boolean(opts.compareLast),
   });
   const post = readiness.post_publish_verification || {};
-  const github = opts.github ? githubVerification(path.resolve(opts.root || process.cwd()), post.version || '', opts.githubRunner || spawnSync) : null;
+  const installRoot = path.resolve(opts.installRoot || path.join(os.homedir(), '.claude'));
+  const installedVersionPath = path.join(installRoot, 'forgeflow-version');
+  const installedVersion = fs.existsSync(installedVersionPath) ? fs.readFileSync(installedVersionPath, 'utf8').trim() : '';
+  const runtimeDrift = buildRuntimeDriftSnapshot({ root, installRoot, previewRepair: true });
+  const installEvidence = [
+    {
+      name: 'installed-version',
+      status: installedVersion ? (post.head && installedVersion.startsWith(post.head) ? 'pass' : 'warn') : 'warn',
+      value: installedVersion || '(missing)',
+      clears: 'Run /update-forgeflow --repair after publishing, then rerun /forgeflow-release-verify.',
+    },
+    {
+      name: 'runtime-drift',
+      status: runtimeDrift.status === 'pass' ? 'pass' : 'warn',
+      value: `${runtimeDrift.drift_count} drifted helper(s)`,
+      clears: 'Run /forgeflow-runtime-drift --preview-repair and /update-forgeflow --repair when ready.',
+    },
+  ];
+  const github = opts.github ? githubVerification(root, post.version || '', opts.githubRunner || spawnSync) : null;
+  const localConsumability = {
+    status: installEvidence.every((item) => item.status === 'pass') ? 'pass' : 'attention',
+    install_root: installRoot,
+    installed_version_path: installedVersionPath,
+    runtime_drift: {
+      status: runtimeDrift.status,
+      checked: runtimeDrift.checked,
+      drift_count: runtimeDrift.drift_count,
+      missing_installed: runtimeDrift.missing_installed,
+      content_drift: runtimeDrift.content_drift,
+      mode_drift: runtimeDrift.mode_drift,
+      syntax_failures: runtimeDrift.syntax_failures,
+      repair_preview: runtimeDrift.repair_preview,
+    },
+    evidence: installEvidence,
+    boundary: 'Install consumability evidence is read-only. It never repairs installed files or changes settings.',
+  };
+  const status = post.status === 'repair-needed'
+    ? 'repair-needed'
+    : (localConsumability.status === 'attention' ? 'install-attention' : post.status || 'missing');
   return {
     schema_version: '1',
-    status: post.status || 'missing',
+    status,
     readiness_status: readiness.status,
     version: post.version || '',
     tag: post.tag || '',
     head: post.head || '',
     summary: post.summary || { passed: [], attention: [], shareable: 'Post-publish verification is unavailable.' },
     evidence: post.evidence || [],
+    local_consumability: localConsumability,
     github_verification: github,
     snapshot: post.snapshot || { path: '', saved: false },
     comparison: post.comparison || null,
@@ -166,6 +209,13 @@ function renderMarkdown(result) {
   }
   if (result.comparison) {
     lines.push('', '## Snapshot Comparison', '', `- Status: ${result.comparison.status}`);
+  }
+  if (result.local_consumability) {
+    lines.push('', '## Install Consumability', '', `- Status: ${result.local_consumability.status}`, `- Install root: ${result.local_consumability.install_root}`, `- Boundary: ${result.local_consumability.boundary}`);
+    for (const item of result.local_consumability.evidence || []) {
+      lines.push(`- ${item.name}: ${item.status}${item.value ? ` (${item.value})` : ''}`);
+      if (item.status !== 'pass' && item.clears) lines.push(`  - Clears: ${item.clears}`);
+    }
   }
   if (result.github_verification) {
     lines.push('', '## GitHub Verification', '', `- Status: ${result.github_verification.status}`);

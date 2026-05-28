@@ -70,6 +70,61 @@ function groupRecommendations(sections) {
   return groups;
 }
 
+function qualityFor(section, nextWork = null) {
+  let score = 100;
+  const notes = [];
+  if (section.status === 'missing' || section.status === 'empty') {
+    score -= 35;
+    notes.push('sparse');
+  }
+  if (section.status === 'stale') {
+    score -= 30;
+    notes.push('stale');
+  }
+  if (section.issues > 0) {
+    score -= Math.min(35, section.issues * 8);
+    notes.push('issues-present');
+  }
+  if (section.records === 0) {
+    score -= 15;
+  }
+  if (section.name === 'next-work-outcomes' && nextWork && nextWork.confidence_calibration) {
+    const high = nextWork.confidence_calibration.high || null;
+    if (high && high.total >= 2 && high.useful_rate < 0.5) {
+      score -= 25;
+      notes.push('high-confidence-needs-calibration');
+    }
+    const totals = Object.values(nextWork.confidence_calibration).reduce((acc, item) => ({
+      total: acc.total + (item.total || 0),
+      corrective: acc.corrective + (item.corrective || 0),
+    }), { total: 0, corrective: 0 });
+    if (totals.total >= 3 && totals.corrective / totals.total >= 0.5) {
+      score -= 15;
+      notes.push('corrective-heavy');
+    }
+  }
+  const bounded = Math.max(0, Math.min(100, score));
+  return {
+    source: section.name,
+    status: section.status,
+    score: bounded,
+    confidence: bounded >= 80 ? 'high' : bounded >= 55 ? 'medium' : 'low',
+    use: bounded >= 80 ? 'use-directly-with-current-evidence' : bounded >= 55 ? 'use-with-caution' : 'verify-before-use',
+    notes,
+  };
+}
+
+function buildSignalQuality(sections, nextWork) {
+  const signals = sections.map((section) => qualityFor(section, nextWork));
+  const average = signals.length > 0 ? Math.round(signals.reduce((sum, item) => sum + item.score, 0) / signals.length) : 0;
+  return {
+    status: signals.some((item) => item.confidence === 'low') ? 'attention' : 'pass',
+    average_score: average,
+    signals,
+    boundary: 'Signal quality scores rank local guidance trust only. They do not approve work or replace current code, tests, review, or user instructions.',
+  };
+}
+
 function firstRunSummary(projectDir) {
   const records = readRecords(projectDir);
   const rollup = buildRollup(records);
@@ -138,6 +193,7 @@ function buildLearningStatus(opts = {}) {
     .filter((section) => section.next && !/^continue-/.test(section.next))
     .map((section) => ({ source: section.name, action: section.next }));
   const recommendationGroups = groupRecommendations(sections);
+  const signalQuality = buildSignalQuality(sections, nextWork);
   return {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
@@ -147,6 +203,7 @@ function buildLearningStatus(opts = {}) {
     sections,
     recommendations,
     recommendation_groups: recommendationGroups,
+    signal_quality: signalQuality,
     boundary: 'Learning status is advisory local evidence. It does not approve work, promote patterns, or override current code, tests, review, or user instructions.',
   };
 }
@@ -176,6 +233,11 @@ function renderMarkdown(result) {
   lines.push('', '## Healthy', '');
   if (result.recommendation_groups.healthy.length === 0) lines.push('- None.');
   else for (const item of result.recommendation_groups.healthy) lines.push(`- ${item.source}: ${item.action}`);
+  lines.push('', '## Signal Quality', '', `- Status: ${result.signal_quality.status}`, `- Average score: ${result.signal_quality.average_score}`, `- Boundary: ${result.signal_quality.boundary}`);
+  for (const item of result.signal_quality.signals) {
+    lines.push(`- ${item.source}: ${item.confidence} (${item.score}) - ${item.use}`);
+    if (item.notes.length > 0) lines.push(`  - Notes: ${item.notes.join(', ')}`);
+  }
   lines.push('');
   return lines.join('\n');
 }
@@ -196,4 +258,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { buildLearningStatus, firstRunSummary, groupRecommendations, parseArgs, renderMarkdown };
+module.exports = { buildLearningStatus, buildSignalQuality, firstRunSummary, groupRecommendations, parseArgs, qualityFor, renderMarkdown };

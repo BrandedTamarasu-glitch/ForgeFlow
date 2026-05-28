@@ -52,6 +52,7 @@ node scripts/forgeflow/test-rollup-pilot-evidence.js
 node scripts/forgeflow/test-rollup-project-learnings.js
 node scripts/forgeflow/test-show-project-learnings.js
 node scripts/forgeflow/test-show-project-trends.js
+node scripts/forgeflow/test-show-project-health-timeline.js
 node scripts/forgeflow/test-build-project-intelligence.js
 node scripts/forgeflow/test-smoke-check.js
 node scripts/forgeflow/test-dogfood-self-test.js
@@ -125,6 +126,6 @@ known_deferrals:
 If the release-note draft includes issue context, verify each issue's state before publishing any "fixed" or "closed" claim. Issue references from commit subjects and curated metadata are advisory context, not proof of closure.
 Curated issue metadata for release notes must come from a repo-relative local JSON object with a top-level `issues` array. Include only public-safe `number`, `title`, `status`, and `evidence` fields. The release-note helper does not call GitHub.
 
-After publishing, run `/forgeflow-release-verify --save` for the compact shareable post-publish summary, or `/forgeflow-release-readiness --post-publish --save-post-publish` for the full evidence block. Future runs can add `/forgeflow-release-verify --compare-last` or `--compare-post-publish-last` on release readiness to compare against the saved snapshot. These checks are advisory and do not tag, push, publish, call GitHub, or mutate installed files.
+After publishing, run `/forgeflow-release-verify --save` for the compact shareable post-publish summary plus installed-version/runtime-drift consumability evidence, or `/forgeflow-release-readiness --post-publish --save-post-publish` for the full evidence block. Future runs can add `/forgeflow-release-verify --compare-last` or `--compare-post-publish-last` on release readiness to compare against the saved snapshot. These checks are advisory and do not tag, push, publish, call GitHub, or mutate installed files.
 
 Do not tag or publish if release checks fail. Treat public-summary failures as release blockers when release notes rely on evaluation evidence. Use [Settings And Recovery](Settings-And-Recovery) to record any manual settings, restart, repair, or rollback deferrals.

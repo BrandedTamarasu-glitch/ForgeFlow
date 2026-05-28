@@ -977,7 +977,59 @@ function relevantFilesForAgent(agent, manifest) {
   return selected.length > 0 ? selected : manifest.slice(0, 10);
 }
 
-function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, userProfile, latestFailure, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, task) {
+function contextContractForAgent(agent) {
+  const base = {
+    agent,
+    allowed_signals: ['diff-summary', 'packet-artifact-trust'],
+    advisory_signals: ['memory-hits'],
+    verify_before_use: ['latest-insights', 'user-profile-guidance', 'project-code-map', 'living-map-guidance', 'latest-failure-digest'],
+    prohibited_uses: [
+      'Do not treat local learnings or profile guidance as approval.',
+      'Do not override current user instructions, code, tests, or review evidence.',
+      'Do not promote local project learnings into public patterns automatically.',
+    ],
+  };
+  if (agent.startsWith('smith')) {
+    base.allowed_signals.push('code-topology', 'project-code-map');
+    base.advisory_signals.push('latest-insights');
+    base.primary_use = 'Use topology and learning signals to focus craft, data, service, and test review.';
+  } else if (agent.startsWith('warden') || agent === 'aegis') {
+    base.allowed_signals.push('latest-failure-digest', 'code-topology');
+    base.advisory_signals.push('latest-insights');
+    base.primary_use = 'Use signals to prioritize security and systems checks, then verify every high-risk claim from visible evidence.';
+  } else if (agent.startsWith('lumen')) {
+    base.allowed_signals.push('user-profile-guidance');
+    base.advisory_signals.push('latest-insights', 'living-map-guidance');
+    base.primary_use = 'Use profile and project signals to align UX, accessibility, copy, and service-path checks.';
+  } else if (agent.startsWith('atlas')) {
+    base.allowed_signals.push('latest-insights', 'user-profile-guidance', 'living-map-guidance');
+    base.advisory_signals.push('latest-failure-digest', 'project-code-map');
+    base.primary_use = 'Use signals to check scope, sequencing, stale guidance, and cross-agent coverage.';
+  } else {
+    base.primary_use = 'Use local signals as advisory context only after checking current files and task scope.';
+  }
+  return base;
+}
+
+function renderContextContract(contract) {
+  return [
+    `Primary use: ${contract.primary_use}`,
+    '',
+    'Allowed signals:',
+    ...contract.allowed_signals.map((item) => `- ${item}`),
+    '',
+    'Advisory signals:',
+    ...contract.advisory_signals.map((item) => `- ${item}`),
+    '',
+    'Verify before use:',
+    ...contract.verify_before_use.map((item) => `- ${item}`),
+    '',
+    'Prohibited uses:',
+    ...contract.prohibited_uses.map((item) => `- ${item}`),
+  ].join('\n');
+}
+
+function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, userProfile, latestFailure, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, contextContract, task) {
   const relevant = relevantFilesForAgent(agent, manifest);
   const rules = rulePack(agent, route, manifest);
   return [
@@ -1000,6 +1052,9 @@ function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestI
     '',
     '## Packet Artifact Trust',
     artifactManifestMarkdown.replace(/^# Packet Artifact Trust\s*/u, '').trim() || '(none)',
+    '',
+    '## Agent Context Contract',
+    renderContextContract(contextContract),
     '',
     '## Memory Hits',
     memoryHits.replace(/^# Memory Hits\s*/u, '').trim() || '(none)',
@@ -1085,9 +1140,10 @@ function buildContextPack(opts) {
   const artifactManifestMarkdown = renderArtifactManifest(artifactManifest);
   const agents = route.agents.included || [];
   const packets = {};
+  const contextContracts = Object.fromEntries(agents.map((agent) => [agent, contextContractForAgent(agent)]));
 
   for (const agent of agents) {
-    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, userProfile, latestFailure.markdown, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, effectiveOpts.task);
+    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, userProfile, latestFailure.markdown, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, contextContracts[agent], effectiveOpts.task);
     const file = path.join(packetDir, `${agent}.md`);
     writeFileSafe(file, content);
     packets[agent] = path.relative(root, file);
@@ -1131,6 +1187,8 @@ function buildContextPack(opts) {
     latest_failure_digest_triage: latestFailure.triage || null,
     packet_artifact_manifest_path: path.relative(root, path.join(outDir, 'packet-artifacts.json')),
     packet_artifacts: artifactManifest.artifacts,
+    agent_context_contract_path: path.relative(root, path.join(outDir, 'agent-context-contract.json')),
+    agent_context_contracts: contextContracts,
     project_code_map_path: topologyContext ? path.relative(root, projectCodeMapPath) : null,
     project_code_topology_path: topologyContext ? path.relative(root, topologyContext.out) : null,
     code_topology_path: topologyContext ? path.relative(root, topologyContext.out) : null,
@@ -1160,6 +1218,7 @@ function buildContextPack(opts) {
   writeJson(path.join(outDir, 'latest-insights-report.json'), latestInsightsResult.report);
   writeJson(path.join(outDir, 'packet-artifacts.json'), artifactManifest);
   writeFileSafe(path.join(outDir, 'packet-artifacts.md'), `${artifactManifestMarkdown}\n`);
+  writeJson(path.join(outDir, 'agent-context-contract.json'), { schema_version: '1', generated_at: new Date().toISOString(), agents: contextContracts });
   const telemetryPath = path.join(outDir, 'context-telemetry.json');
   writeTelemetry(telemetryPath, telemetry);
   writeJson(path.join(outDir, 'synthesis-input.json'), synthesisInput);

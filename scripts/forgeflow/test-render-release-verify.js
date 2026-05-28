@@ -1,18 +1,24 @@
 #!/usr/bin/env node
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 const { buildReleaseVerify, githubVerification, parseArgs, renderMarkdown } = require('./render-release-verify');
 
 const passRunner = () => ({ status: 0, stdout: '', stderr: '' });
-const result = buildReleaseVerify({ root: process.cwd(), runner: passRunner });
-const github = githubVerification(process.cwd(), '4.3.24', (bin) => (bin === 'gh'
-  ? { status: 0, stdout: '{"tagName":"v4.3.24","name":"Forgeflow 4.3.24","isDraft":false,"isPrerelease":false,"url":"https://example.invalid/release"}', stderr: '' }
-  : { status: 0, stdout: 'abc123\trefs/tags/v4.3.24\n', stderr: '' }));
+const installRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-release-verify-install-'));
+fs.writeFileSync(path.join(installRoot, 'forgeflow-version'), '0000000\n');
+const result = buildReleaseVerify({ root: process.cwd(), runner: passRunner, installRoot });
+const github = githubVerification(process.cwd(), '4.3.25', (bin) => (bin === 'gh'
+  ? { status: 0, stdout: '{"tagName":"v4.3.25","name":"Forgeflow 4.3.25","isPrerelease":false,"url":"https://example.invalid/release"}', stderr: '' }
+  : { status: 0, stdout: 'abc123\trefs/tags/v4.3.25\n', stderr: '' }));
 const withGithub = buildReleaseVerify({
   root: process.cwd(),
   runner: passRunner,
+  installRoot,
   github: true,
   githubRunner: (bin) => (bin === 'gh'
-    ? { status: 0, stdout: '{"tagName":"v4.3.24","name":"Forgeflow 4.3.24","isDraft":false,"isPrerelease":false,"url":"https://example.invalid/release"}', stderr: '' }
-    : { status: 0, stdout: 'abc123\trefs/tags/v4.3.24\n', stderr: '' }),
+    ? { status: 0, stdout: '{"tagName":"v4.3.25","name":"Forgeflow 4.3.25","isPrerelease":false,"url":"https://example.invalid/release"}', stderr: '' }
+    : { status: 0, stdout: 'abc123\trefs/tags/v4.3.25\n', stderr: '' }),
 });
 const networkBlocked = githubVerification(process.cwd(), '4.3.24', (bin) => (bin === 'gh'
   ? { status: 1, error: new Error('spawnSync gh EPERM'), stdout: '', stderr: 'error connecting to api.github.com\ncheck your internet connection\n' }
@@ -24,6 +30,7 @@ const opts = parseArgs(['--root', '.', '--save', '--compare-last', '--github', '
 const checks = [
   ['builds release verify result', result.schema_version === '1' && result.summary && Array.isArray(result.evidence)],
   ['renders shareable summary', markdown.includes('# Forgeflow Release Verify') && markdown.includes('## Shareable Summary') && markdown.includes('local and advisory')],
+  ['install consumability included', result.status === 'install-attention' && result.local_consumability.status === 'attention' && result.local_consumability.runtime_drift.repair_preview && markdown.includes('## Install Consumability')],
   ['parses flags', opts.save === true && opts.compareLast === true && opts.github === true && opts.json === true],
   ['does not claim mutation', /does not (tag|create tags)/.test(result.boundary) && result.boundary.includes('call GitHub')],
   ['github verification optional', github.status === 'pass' && withGithub.github_verification.status === 'pass' && githubMarkdown.includes('## GitHub Verification')],

@@ -511,6 +511,7 @@ const insightsReport = JSON.parse(fs.readFileSync(path.join(outDir, 'latest-insi
 const userProfile = fs.readFileSync(path.join(outDir, 'user-profile.md'), 'utf8');
 const artifactManifest = JSON.parse(fs.readFileSync(path.join(outDir, 'packet-artifacts.json'), 'utf8'));
 const artifactManifestMarkdown = fs.readFileSync(path.join(outDir, 'packet-artifacts.md'), 'utf8');
+const agentContextContract = JSON.parse(fs.readFileSync(path.join(outDir, 'agent-context-contract.json'), 'utf8'));
 const topology = JSON.parse(fs.readFileSync(path.join(outDir, 'code-topology.json'), 'utf8'));
 const topologyGuidanceSynthesis = JSON.parse(fs.readFileSync(path.join(topologyGuidanceOutDir, 'synthesis-input.json'), 'utf8'));
 const topologyGuidancePacket = Object.values(topologyGuidanceSynthesis.agent_packets || {})
@@ -557,6 +558,9 @@ const checks = [
   ['latest failure digest freshness linked', synthesis.latest_failure_digest_freshness && synthesis.latest_failure_digest_freshness.status === 'attention'],
   ['latest failure digest triage linked', synthesis.latest_failure_digest_triage && synthesis.latest_failure_digest_triage.state === 'stale' && synthesis.latest_failure_digest_triage.usefulness === 'limited'],
   ['packet artifact manifest linked', synthesis.packet_artifact_manifest_path && synthesis.packet_artifact_manifest_path.endsWith('packet-artifacts.json')],
+  ['agent context contract linked', synthesis.agent_context_contract_path && synthesis.agent_context_contract_path.endsWith('agent-context-contract.json')],
+  ['agent context contract written', agentContextContract.agents && agentContextContract.agents.warden_reviewer && agentContextContract.agents.warden_reviewer.prohibited_uses.length > 0],
+  ['agent context contracts in synthesis', synthesis.agent_context_contracts && synthesis.agent_context_contracts.warden_reviewer && synthesis.agent_context_contracts.warden_reviewer.allowed_signals.includes('latest-failure-digest')],
   ['packet artifact manifest written', artifactManifest.artifacts.some((item) => item.name === 'latest-failure-digest' && item.decision === 'metadata-only' && item.reason === 'digest-stale')],
   ['packet artifact manifest markdown written', artifactManifestMarkdown.includes('| latest-failure-digest | metadata-only | digest-stale | forgeflow-failure-digest |')],
   ['packet artifact manifest covers latest insights', artifactManifest.artifacts.some((item) => item.name === 'latest-insights' && item.decision === 'included' && item.status === 'injected')],
@@ -581,6 +585,7 @@ const checks = [
   ['agent packet includes latest insights', wardenPacket.includes('## Latest Insights')],
   ['agent packet includes user profile guidance', wardenPacket.includes('## User Profile Guidance') && userProfile.includes('Forgeflow User Profile')],
   ['agent packet includes artifact trust manifest', wardenPacket.includes('## Packet Artifact Trust') && wardenPacket.includes('| latest-failure-digest | metadata-only | digest-stale | forgeflow-failure-digest |')],
+  ['agent packet includes context contract', wardenPacket.includes('## Agent Context Contract') && wardenPacket.includes('Do not override current user instructions')],
   ['agent packet gates stale failure digest body', wardenPacket.includes('## Latest Failure Digest') && wardenPacket.includes('Freshness: attention') && wardenPacket.includes('Triage state: stale') && wardenPacket.includes('Digest body skipped') && !wardenPacket.includes('FAIL context packet fixture')],
   ['agent packet latest insights omit stale topology', !wardenPacket.includes('legacy/stale-topology.js')],
   ['agent packet includes current project code map', wardenPacket.includes('## Project Code Map') && wardenPacket.includes('Artifact:') && wardenPacket.includes('code-topology.json')],
