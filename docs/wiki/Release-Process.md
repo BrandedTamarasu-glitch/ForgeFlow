@@ -67,6 +67,7 @@ node scripts/forgeflow/test-record-agent-feedback.js
 node scripts/forgeflow/test-rollup-agent-feedback.js
 node scripts/forgeflow/test-record-project-learning.js
 node scripts/forgeflow/test-record-next-work-outcome.js
+node scripts/forgeflow/test-show-learning-status.js
 node scripts/forgeflow/test-user-profile.js
 node scripts/forgeflow/test-profile-review.js
 node scripts/forgeflow/test-profile-compliance.js

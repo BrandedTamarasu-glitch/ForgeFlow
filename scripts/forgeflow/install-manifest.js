@@ -71,6 +71,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/runtime-helper-contract.js',
   'scripts/forgeflow/seed-budget-config.js',
   'scripts/forgeflow/show-code-map.js',
+  'scripts/forgeflow/show-learning-status.js',
   'scripts/forgeflow/show-project-learnings.js',
   'scripts/forgeflow/show-project-trends.js',
   'scripts/forgeflow/show-user-profile.js',

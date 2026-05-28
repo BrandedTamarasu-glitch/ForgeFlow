@@ -7,6 +7,7 @@ const { runHealthCheck } = require('./health-check');
 const { getVersionStatus } = require('./forgeflow-version');
 const { RUNTIME_HELPERS, manifestEntry } = require('./install-manifest');
 const { assertSafeDirectory } = require('./file-safety');
+const { buildRollup, readRecords } = require('./rollup-first-run-results');
 
 function usage() {
   console.error('Usage: render-guided-repair.js [--root <dir>] [--install-root <dir>] [--home <dir>] [--no-live-install] [--json]');
@@ -161,6 +162,18 @@ function summarizeOverallStatus(version, health, installedRuntime) {
   return summarizeStatus(version, health);
 }
 
+function firstRunRepairState(root) {
+  const projectDir = path.join(root, '.forgeflow', path.basename(root));
+  const rollup = buildRollup(readRecords(projectDir));
+  return {
+    status: rollup.records > 0 ? 'present' : 'missing',
+    project_dir: projectDir,
+    records: rollup.records,
+    invalid_records: rollup.invalid_records,
+    recommendation: rollup.recommendation,
+  };
+}
+
 async function buildGuidedRepair(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const home = path.resolve(opts.home || path.join(os.homedir(), '.claude'));
@@ -180,6 +193,7 @@ async function buildGuidedRepair(opts = {}) {
     failures: [],
     checks: [],
   } : verifyInstalledRuntime(installRoot);
+  const firstRun = firstRunRepairState(root);
   const steps = [];
 
   if (version.status === 'repair-needed') {
@@ -228,6 +242,20 @@ async function buildGuidedRepair(opts = {}) {
     }
   }
 
+  if (firstRun.records > 0 && firstRun.recommendation !== 'continue-bounded-trials') {
+    const command = firstRun.recommendation === 'fix-failing-first-run-checks'
+      ? '/forgeflow-health && /forgeflow-smoke'
+      : '/forgeflow-first-run-rollup';
+    addStep(
+      steps,
+      'warn',
+      'Resolve first-run friction',
+      command,
+      `First-run evidence recommends ${firstRun.recommendation}.`,
+      'Record a follow-up first-run result after the repair and confirm the rollup recommendation improves.',
+    );
+  }
+
   addStep(steps, 'info', 'Run downstream smoke after repairs', '/forgeflow-smoke', 'Smoke can refresh project-local readiness artifacts, so guided repair leaves it as an explicit follow-up.', 'Downstream smoke passes.');
   addStep(steps, 'info', 'Verify health after repairs', '/forgeflow-health', 'Confirm installed files, hooks, project-local state, and settings wiring after applying repair steps.', 'Health passes without failures.');
   addStep(
@@ -261,6 +289,8 @@ async function buildGuidedRepair(opts = {}) {
     health_status: health.status,
     installed_runtime_status: installedRuntime.status,
     installed_runtime: installedRuntime,
+    first_run_status: firstRun.status,
+    first_run: firstRun,
     smoke_status: 'not-run',
     steps,
     boundary: 'Guided repair is advisory and non-mutating. Run commands explicitly; settings.json changes remain manual.',
@@ -275,6 +305,7 @@ function renderMarkdown(result) {
     `Version: ${result.version_status}`,
     `Health: ${result.health_status}`,
     `Installed runtime: ${result.installed_runtime_status}`,
+    `First-run evidence: ${result.first_run_status}`,
     `Smoke: ${result.smoke_status}`,
     '',
     result.boundary,

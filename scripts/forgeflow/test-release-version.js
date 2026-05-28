@@ -137,6 +137,7 @@ const checks = [
   ['release check runs agent feedback rollup test', releaseCheck.includes('node scripts/forgeflow/test-rollup-agent-feedback.js')],
   ['release check runs project learning recorder test', releaseCheck.includes('node scripts/forgeflow/test-record-project-learning.js')],
   ['release check runs next work outcome test', releaseCheck.includes('node scripts/forgeflow/test-record-next-work-outcome.js')],
+  ['release check runs learning status test', releaseCheck.includes('node scripts/forgeflow/test-show-learning-status.js')],
   ['release check runs profile review tests', releaseCheck.includes('node scripts/forgeflow/test-profile-review.js') && releaseCheck.includes('node scripts/forgeflow/test-profile-compliance.js')],
   ['release check runs user profile test', releaseCheck.includes('node scripts/forgeflow/test-user-profile.js')],
   ['release check runs pattern learnings rollup test', releaseCheck.includes('node scripts/forgeflow/test-rollup-pattern-learnings.js')],

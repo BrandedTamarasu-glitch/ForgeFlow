@@ -309,6 +309,12 @@ function summarizeCandidates(items, minProjects, minOccurrences) {
         occurrences: records.length,
         max_severity: maxSeverity(records),
         source_mix: sourceMix(records),
+        promotion_candidate: {
+          status: projects.length >= minProjects && records.length >= minOccurrences ? 'ready-for-human-review' : 'below-threshold',
+          reason: `Seen ${records.length} time(s) across ${projects.length} project(s); thresholds are ${minOccurrences} occurrence(s) across ${minProjects} project(s).`,
+          next: 'Review samples manually, redact project-specific details, then update forgeflow-patterns only if the pattern is broadly reusable.',
+          boundary: 'Pattern promotion is manual and public-safe only; do not auto-promote local project learnings.',
+        },
         sample_learnings: records.slice(0, 5),
       };
     })
@@ -394,6 +400,10 @@ function renderMarkdown(result) {
       lines.push('');
       lines.push(`Threshold: ${item.projects.length} project(s), ${item.occurrences} occurrence(s), max severity ${item.max_severity}`);
       lines.push(`Sources: ${renderSourceMix(item.source_mix)}`);
+      if (item.promotion_candidate) {
+        lines.push(`Promotion: ${item.promotion_candidate.status} - ${item.promotion_candidate.reason}`);
+        lines.push(`Boundary: ${item.promotion_candidate.boundary}`);
+      }
       lines.push('');
       lines.push('**Citations:**');
       for (const sample of item.sample_learnings) {

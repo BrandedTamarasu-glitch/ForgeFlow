@@ -701,6 +701,51 @@ function actionQualityForItem(item) {
   return defaults;
 }
 
+function confidenceForItem(item) {
+  const reasons = [];
+  let score = 35;
+  const strength = item.evidence_strength || 'weak';
+  if (strength === 'strong') {
+    score += 25;
+    reasons.push('strong-evidence');
+  } else if (strength === 'medium') {
+    score += 15;
+    reasons.push('medium-evidence');
+  } else {
+    reasons.push('weak-evidence');
+  }
+  if ((item.start_with || []).length > 0) {
+    score += 10;
+    reasons.push('has-start-point');
+  }
+  if ((item.validate_with || []).length > 0) {
+    score += 15;
+    reasons.push('has-validation');
+  }
+  if (item.priority === 'high') {
+    score += 10;
+    reasons.push('high-priority');
+  }
+  if (/readiness|review-outcomes|agent-feedback|next-work-confidence/.test(item.source || '')) {
+    score -= 10;
+    reasons.push('historical-or-readiness-signal');
+  }
+  if (/advisory|aggregate|history|trend/i.test(item.proof_boundary || '')) {
+    score -= 5;
+    reasons.push('advisory-boundary');
+  }
+  const bounded = Math.max(5, Math.min(95, score));
+  const band = bounded >= 75 ? 'high' : bounded >= 50 ? 'medium' : 'low';
+  return {
+    confidence: {
+      score: bounded,
+      band,
+      reason_codes: reasons,
+      boundary: 'Recommendation confidence is advisory ranking only; current scope, code, validation, review, and user priorities decide the work.',
+    },
+  };
+}
+
 function addNextWorkItem(items, item) {
   if (!item || !item.title) return;
   const dedupeKey = [
@@ -724,6 +769,7 @@ function addNextWorkItem(items, item) {
     proof_boundary: item.proof_boundary || 'Advisory candidate only; verify against current code, tests, and review output before treating it as work complete.',
   });
   Object.assign(items[items.length - 1], actionQualityForItem(items[items.length - 1]));
+  Object.assign(items[items.length - 1], confidenceForItem(items[items.length - 1]));
 }
 
 function nextWorkItems(intelligenceDraft) {
@@ -1003,6 +1049,7 @@ function renderMarkdown(intelligence) {
       if (item.why) lines.push(`  - Why: ${item.why}`);
       lines.push(`  - Source: ${item.source}`);
       lines.push(`  - Evidence strength: ${item.evidence_strength || 'weak'}`);
+      if (item.confidence) lines.push(`  - Confidence: ${item.confidence.band} (${item.confidence.score}) - ${item.confidence.reason_codes.join(', ') || 'none'}`);
       lines.push(`  - What to change: ${item.what_to_change || '(unspecified)'}`);
       lines.push(`  - Start with: ${item.start_with.length > 0 ? item.start_with.join('; ') : '(none)'}`);
       lines.push(`  - Validate with: ${item.validate_with.length > 0 ? item.validate_with.join('; ') : '(none)'}`);
@@ -1123,6 +1170,7 @@ function renderNextWorkView(intelligence) {
       lines.push(`${index + 1}. [${item.priority || 'medium'}] ${item.title}`);
       if (item.source) lines.push(`   Source: ${item.source}`);
       lines.push(`   Evidence strength: ${item.evidence_strength || 'weak'}`);
+      if (item.confidence) lines.push(`   Confidence: ${item.confidence.band} (${item.confidence.score}) - ${item.confidence.reason_codes.join(', ') || 'none'}`);
       if (item.why) lines.push(`   Why: ${item.why}`);
       lines.push(`   What to change: ${item.what_to_change || '(unspecified)'}`);
       lines.push(`   Start with: ${(item.start_with || []).length > 0 ? item.start_with.join('; ') : '(none)'}`);
@@ -1201,6 +1249,7 @@ function renderImplementationBriefStub(intelligence, index = 1) {
   lines.push(`- Source: ${item.source || 'project-intelligence'}`);
   if (item.why) lines.push(`- Why: ${item.why}`);
   lines.push(`- Evidence strength: ${item.evidence_strength || 'weak'}`);
+  if (item.confidence) lines.push(`- Confidence: ${item.confidence.band} (${item.confidence.score}) - ${item.confidence.reason_codes.join(', ') || 'none'}`);
   lines.push(`- What to change: ${item.what_to_change || 'Inspect current evidence and choose the smallest bounded change it supports.'}`);
   lines.push(`- How to prove: ${item.how_to_prove || 'Run focused validation, full validation, and review before treating the work as complete.'}`);
   lines.push(`- Stop when: ${item.stop_when || 'Stop when evidence contradicts the candidate or product judgment is needed.'}`);
@@ -1268,6 +1317,8 @@ if (require.main === module) {
 module.exports = {
   buildProjectIntelligence,
   collectRiskSignals,
+  readAgentFeedback,
+  readReviewOutcomes,
   parseArgs,
   nextWorkBrief,
   nextWorkItems,

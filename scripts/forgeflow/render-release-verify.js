@@ -38,6 +38,30 @@ function parseArgs(argv) {
   return opts;
 }
 
+function commandUnavailable(result = {}) {
+  const text = `${result.error ? result.error.message || result.error : ''}\n${result.stderr || ''}\n${result.stdout || ''}`;
+  if (/EPERM|EACCES|ENOTFOUND|EAI_AGAIN|Could not resolve host|could not resolve|error connecting|check your internet connection|network is unreachable|timed? out|api\.github\.com/i.test(text)) {
+    return 'network-unavailable';
+  }
+  if (/not found|ENOENT|command not found/i.test(text)) return 'tool-unavailable';
+  return '';
+}
+
+function unavailableEvidence(name, tag, result, toolName) {
+  const reason = commandUnavailable(result);
+  if (!reason) return null;
+  const clears = reason === 'tool-unavailable'
+    ? `Install or expose ${toolName}, then rerun where ${toolName} can read ${tag}.`
+    : `Rerun with network access to verify ${tag}; this does not prove the release or tag is missing.`;
+  return {
+    name,
+    status: 'attention',
+    value: tag,
+    reason,
+    clears,
+  };
+}
+
 function githubVerification(root, version, runner = spawnSync) {
   const tag = version ? `v${version}` : '';
   const evidence = [];
@@ -46,7 +70,10 @@ function githubVerification(root, version, runner = spawnSync) {
     return { status: 'warn', evidence, boundary: 'GitHub verification is optional and network-aware. It only reads release and remote tag state.' };
   }
   const release = runner('gh', ['release', 'view', tag, '--json', 'tagName,name,isDraft,isPrerelease,url'], { cwd: root, encoding: 'utf8' });
-  if (release.status === 0) {
+  const unavailableRelease = unavailableEvidence('github-release', tag, release, 'gh');
+  if (unavailableRelease) {
+    evidence.push(unavailableRelease);
+  } else if (release.status === 0) {
     let parsed = {};
     try {
       parsed = JSON.parse(release.stdout || '{}');
@@ -68,7 +95,8 @@ function githubVerification(root, version, runner = spawnSync) {
     });
   }
   const remoteTag = runner('git', ['ls-remote', '--tags', 'origin', tag], { cwd: root, encoding: 'utf8' });
-  evidence.push({
+  const unavailableRemote = unavailableEvidence('remote-tag', tag, remoteTag, 'git');
+  evidence.push(unavailableRemote || {
     name: 'remote-tag',
     status: remoteTag.status === 0 && String(remoteTag.stdout || '').includes(`refs/tags/${tag}`) ? 'pass' : 'warn',
     value: tag,

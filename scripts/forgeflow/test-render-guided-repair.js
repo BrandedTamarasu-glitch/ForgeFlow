@@ -4,6 +4,7 @@ const os = require('os');
 const path = require('path');
 const { buildGuidedRepair, renderMarkdown } = require('./render-guided-repair');
 const { RUNTIME_HELPERS, manifestEntry } = require('./install-manifest');
+const { recordFirstRunResult } = require('./record-first-run-result');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 
@@ -31,6 +32,15 @@ function withEnv(name, value, fn) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-guided-repair-'));
   const home = path.join(root, 'home');
   fs.mkdirSync(home, { recursive: true });
+  recordFirstRunResult({
+    projectDir: path.join(root, '.forgeflow', path.basename(root)),
+    runtime: 'codex',
+    health: 'fail',
+    smoke: 'pass',
+    profile: 'pass',
+    decision: 'fix-first',
+    friction: 'health',
+  });
   const result = await buildGuidedRepair({ root, home, installRoot: home });
   const installedHome = path.join(root, 'installed-home');
   installLiveHelpers(installedHome);
@@ -63,6 +73,7 @@ function withEnv(name, value, fn) {
     ['version status included', result.version_status === 'not-installed'],
     ['health status included', ['pass', 'fail'].includes(result.health_status)],
     ['installed runtime status included', result.installed_runtime_status === 'fail' && result.installed_runtime.failures.length > 0],
+    ['first-run status included', result.first_run_status === 'present' && result.first_run.recommendation === 'fix-first-run-friction'],
     ['installed runtime checks all manifest helpers', installedResult.installed_runtime.checked === RUNTIME_HELPERS.length],
     ['installed runtime passes with copied helpers', installedResult.installed_runtime_status === 'pass'],
     ['installed runtime can be skipped', skippedResult.installed_runtime_status === 'skipped'],
@@ -77,10 +88,11 @@ function withEnv(name, value, fn) {
     ['install step present', result.steps.some((step) => step.command === '/update-forgeflow')],
     ['health fix step present', result.steps.some((step) => step.command === '/forgeflow-health --fix' || step.command === '/update-forgeflow --repair')],
     ['smoke follow-up present', result.steps.some((step) => step.command === '/forgeflow-smoke')],
+    ['first-run repair loop present', result.steps.some((step) => step.title === 'Resolve first-run friction' && step.reason.includes('fix-first-run-friction'))],
     ['health verification present', result.steps.some((step) => step.command === '/forgeflow-health')],
     ['manual settings stays manual', result.steps.some((step) => step.title === 'Manual settings check' && step.action_type === 'manual' && step.command.includes('settings.json'))],
     ['restart guidance present', result.steps.some((step) => step.title === 'Restart the client session' && step.action_type === 'manual')],
-    ['markdown renders plan', markdown.includes('# Forgeflow Guided Repair') && markdown.includes('Installed runtime: fail') && markdown.includes('Guided repair is advisory') && markdown.includes('## Repair Plan') && markdown.includes('Action: Open ~/.claude/settings.json') && markdown.includes('Action: Restart Claude Code')],
+    ['markdown renders plan', markdown.includes('# Forgeflow Guided Repair') && markdown.includes('Installed runtime: fail') && markdown.includes('First-run evidence: present') && markdown.includes('Guided repair is advisory') && markdown.includes('## Repair Plan') && markdown.includes('Action: Open ~/.claude/settings.json') && markdown.includes('Action: Restart Claude Code')],
   ];
 
   let failed = 0;

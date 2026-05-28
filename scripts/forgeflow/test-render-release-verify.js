@@ -14,6 +14,9 @@ const withGithub = buildReleaseVerify({
     ? { status: 0, stdout: '{"tagName":"v4.3.24","name":"Forgeflow 4.3.24","isDraft":false,"isPrerelease":false,"url":"https://example.invalid/release"}', stderr: '' }
     : { status: 0, stdout: 'abc123\trefs/tags/v4.3.24\n', stderr: '' }),
 });
+const networkBlocked = githubVerification(process.cwd(), '4.3.24', (bin) => (bin === 'gh'
+  ? { status: 1, error: new Error('spawnSync gh EPERM'), stdout: '', stderr: 'error connecting to api.github.com\ncheck your internet connection\n' }
+  : { status: 128, error: new Error('spawnSync git EPERM'), stdout: '', stderr: "fatal: unable to access 'https://github.com/example/repo/': Could not resolve host: github.com\n" }));
 const markdown = renderMarkdown(result);
 const githubMarkdown = renderMarkdown(withGithub);
 const opts = parseArgs(['--root', '.', '--save', '--compare-last', '--github', '--json']);
@@ -24,6 +27,7 @@ const checks = [
   ['parses flags', opts.save === true && opts.compareLast === true && opts.github === true && opts.json === true],
   ['does not claim mutation', /does not (tag|create tags)/.test(result.boundary) && result.boundary.includes('call GitHub')],
   ['github verification optional', github.status === 'pass' && withGithub.github_verification.status === 'pass' && githubMarkdown.includes('## GitHub Verification')],
+  ['github verification distinguishes network unavailable', networkBlocked.status === 'warn' && networkBlocked.evidence.every((item) => item.status === 'attention' && item.reason === 'network-unavailable' && item.clears.includes('does not prove'))],
 ];
 
 let failed = 0;
