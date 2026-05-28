@@ -1,6 +1,6 @@
 {
   "name": "Forgeflow",
-  "version": "4.3.24",
+  "version": "4.3.25",
   "description": "End-to-end AI software delivery workflow for Claude Code and Codex. Forgeflow covers discussion, research, planning, implementation, review, verification, and shipping with focused agents.",
   "author": {
     "name": "BrandedTamarasu-glitch",
