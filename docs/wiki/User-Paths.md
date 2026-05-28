@@ -15,7 +15,7 @@ If health reports missing managed files, run `/update-forgeflow --repair`. If th
 
 1. Run `/forgeflow-first-run --runtime claude-code` from Claude Code, or `scripts/forgeflow/render-first-run-guide.js --runtime codex` from a checkout.
 2. After the first pass, record the public-safe outcome with `/forgeflow-first-run-result` so setup friction and the continue/fix/defer decision become local evidence. After multiple attempts, run `/forgeflow-first-run-rollup` for aggregate friction trends.
-2. Follow the install verification, project-orientation, profile-readiness, and bounded-work-item steps.
+2. Follow the install verification, project-orientation, project-map evolution, profile-readiness, insight-injection, and bounded-work-item steps.
 3. For a fuller adoption trial, run `/forgeflow-pilot --path new-user --runtime claude-code`, or `scripts/forgeflow/render-pilot-script.js --path new-user --runtime codex`.
 4. Keep the first task small enough to judge setup friction, guidance quality, review usefulness, and whether the next task starts with better project context.
 
@@ -24,8 +24,9 @@ Use the default maintainer path when a project owner is running a broader pilot 
 ## Refresh Project Guidance
 
 1. Run `/forgeflow-trends --refresh`.
-2. Read the freshness, latest-insights, failure-digest, code-map, and advisor sections.
-3. If the report still recommends a command, run that command before spawning review agents.
+2. Run `/forgeflow-insight-injection` after context packets exist to see which insight blocks agents will receive.
+3. Read the freshness, latest-insights, failure-digest, code-map, project-map evolution, and advisor sections.
+4. If the report still recommends a command, run that command before spawning review agents.
 
 Use `/forgeflow-learnings --project --check` when you specifically need to inspect the project-learning quality gate.
 
@@ -50,9 +51,10 @@ Use `/forgeflow-noisy-command` when the problem is excessive output volume and y
 
 1. Run `/forgeflow-trends --refresh`.
 2. Run `scripts/forgeflow/build-project-intelligence.js --json` when you want one compact review-prep summary before spawning reviewers.
-3. Run `/review` for Claude Code or `$forge-review` for Codex.
-4. If the context advisor reports a budget warning, split the file scope before spawning reviewers.
-5. Fix review findings, then rerun review until the final verdict is approved.
+3. Run `/forgeflow-insight-injection` and `/forgeflow-context-contract` when you need to verify packet guidance before agent-heavy work.
+4. Run `/review` for Claude Code or `$forge-review` for Codex.
+5. If the context advisor reports a budget warning, split the file scope before spawning reviewers.
+6. Fix review findings, then rerun review until the final verdict is approved.
 
 Use `/review-auto` only when the fixes are conservative and safe to apply automatically.
 

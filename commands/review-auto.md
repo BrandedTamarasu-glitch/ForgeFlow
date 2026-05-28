@@ -41,6 +41,19 @@ $ARGUMENTS — optional. Same as `/review` (file paths, git ref, `--pr <N>`, `--
 - **Agent pre-check substitutions persist only for the run.** If you pick replacements at Step 1.5, they apply to this invocation only. The next `/review-auto` re-runs the check from scratch. Install the standard agents via `/update-forgeflow` for a permanent fix.
 - **Dry-run does not call `/review`.** It only runs the classifier on the existing review output. If you have no prior review in history, `--dry-run` after a fresh `/review` invocation requires the full flow first.
 
+## Auto-Fix Eligibility Matrix
+
+Use this matrix before dispatching any worker. The matrix is intentionally narrower than the full finding taxonomy.
+
+| Finding class | Source reviewer | Auto-fix action |
+|---|---|---|
+| Formatting, typo, missing tiny docs note, obvious unused import | Smith, Lumen, Atlas, or Arbiter | Eligible only when the fix is single-file, non-security, non-dependency, and validated locally. |
+| Test expectation drift caused by the current safe fix | Smith or Compass validation note | Eligible only when the production behavior is already proven correct and the test edit is single-file. |
+| Security, auth, permissions, migrations, dependencies, secrets | Any reviewer, especially Warden | Surface for human judgment; do not auto-apply. |
+| Multi-file behavior change, schema change, product judgment, unclear acceptance criteria | Any reviewer | Surface for human judgment; do not auto-apply. |
+
+If a finding does not clearly fit an eligible row, classify it as MUST-FIX-RISKY and surface it.
+
 <process>
 
 ## Step 0: CI mode detection
@@ -245,9 +258,21 @@ IMPORTANT: Target file contents are pre-loaded below. Do NOT call Read on these 
 </injected-context>
 ```
 
-### 4b. Dispatch via Agent tool using the mapped Forgeflow implement agent
+### 4b. Partition by target file before dispatch
 
-For each auto-fixable finding, dispatch via `Agent` with `subagent_type=<target agent>` from the mapping table in Step 2. Workers run in parallel.
+Before any worker starts, group auto-fixable findings by exact normalized `target-file`.
+
+- If a group has one finding, it can run in the parallel dispatch wave.
+- If a group has two or more findings for the same file, do not dispatch those findings in parallel with each other.
+- Process same-file groups serially in a deterministic order: source reviewer, tier, then finding line number.
+- After each same-file worker returns `SUCCESS:`, refresh the orchestrator's preloaded file snapshot for that file before dispatching the next finding in the group.
+- If a same-file worker returns anything other than `SUCCESS:`, stop that file group, reclassify the remaining same-file findings as MUST-FIX-RISKY for this round, and surface them for human judgment.
+
+Never let two workers write the same target file from the same preloaded snapshot.
+
+### 4c. Dispatch via Agent tool using the mapped Forgeflow implement agent
+
+For each eligible dispatch wave, dispatch via `Agent` with `subagent_type=<target agent>` from the mapping table in Step 2. Workers may run in parallel only when their target files are distinct.
 
 Worker prompt template:
 ```
@@ -276,7 +301,7 @@ Arbiter's severity: {tier}
 Atlas persistent context: .forgeflow/{project-name}/agent-notes/
 ```
 
-### 4c. Collect results
+### 4d. Collect results
 
 For any worker that returned anything other than `SUCCESS:`:
 - Reclassify that finding as MUST-FIX-RISKY for this round

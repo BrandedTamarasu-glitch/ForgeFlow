@@ -99,6 +99,68 @@ function compareLastTwo(events) {
   return deltas;
 }
 
+function codeMapSummary(record) {
+  const summary = record && record.summary ? record.summary : {};
+  return summary.summary || summary;
+}
+
+function metricDelta(before, after, key) {
+  const previous = Number(before[key] || 0);
+  const current = Number(after[key] || 0);
+  const delta = current - previous;
+  return {
+    metric: key,
+    previous,
+    current,
+    delta,
+    direction: delta > 0 ? 'increased' : delta < 0 ? 'decreased' : 'stable',
+  };
+}
+
+function projectMapEvolution(codeMapHistory) {
+  const records = (codeMapHistory || []).filter(Boolean);
+  if (records.length === 0) {
+    return {
+      status: 'missing',
+      snapshot_count: 0,
+      summary: 'No code-map history has been recorded yet.',
+      metrics: [],
+      next: '/forgeflow-code-map',
+      next_reason: 'Generate an initial code map snapshot.',
+    };
+  }
+  if (records.length === 1) {
+    const current = codeMapSummary(records[0]);
+    return {
+      status: 'baseline',
+      snapshot_count: 1,
+      summary: `${current.source_files || 0} source files, ${current.local_edges || 0} local edges, ${current.changed_sections || 0} changed sections.`,
+      metrics: [],
+      next: '/forgeflow-code-map',
+      next_reason: 'Run again after another work item to compare structural movement.',
+    };
+  }
+  const before = codeMapSummary(records[records.length - 2]);
+  const after = codeMapSummary(records[records.length - 1]);
+  const metrics = [
+    metricDelta(before, after, 'source_files'),
+    metricDelta(before, after, 'local_edges'),
+    metricDelta(before, after, 'unresolved_imports'),
+    metricDelta(before, after, 'changed_sections'),
+  ];
+  const moving = metrics.filter((item) => item.delta !== 0);
+  return {
+    status: moving.length > 0 ? 'changed' : 'stable',
+    snapshot_count: records.length,
+    summary: moving.length > 0
+      ? moving.map((item) => `${item.metric} ${item.direction} by ${Math.abs(item.delta)}`).join('; ')
+      : 'No structural movement across the last two code-map snapshots.',
+    metrics,
+    next: moving.length > 0 ? '/forgeflow-code-map' : '/forgeflow-trends --refresh',
+    next_reason: moving.length > 0 ? 'Inspect changed-section and hotspot detail.' : 'Refresh guidance before the next agent-heavy slice.',
+  };
+}
+
 function buildProjectHealthTimeline(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const projectDir = path.resolve(opts.projectDir || defaultProjectDir(root));
@@ -149,6 +211,7 @@ function buildProjectHealthTimeline(opts = {}) {
   ));
   const sorted = events.sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
   const deltas = compareLastTwo(sorted);
+  const evolution = projectMapEvolution(codeMapHistory);
   return {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
@@ -158,7 +221,9 @@ function buildProjectHealthTimeline(opts = {}) {
     event_count: sorted.length,
     events: sorted.slice(-20),
     deltas,
-    next: sorted.length === 0 ? '/forgeflow-trends --refresh' : '/forgeflow-trends --refresh before relying on stale timeline signals',
+    project_map_evolution: evolution,
+    next: '/forgeflow-trends --refresh',
+    next_reason: sorted.length === 0 ? 'Generate project guidance before relying on timeline signals.' : 'Refresh before relying on stale timeline signals.',
     boundary: 'Project health timeline is local and advisory. It does not refresh artifacts, approve work, or change project files.',
   };
 }
@@ -184,7 +249,19 @@ function renderMarkdown(result) {
   lines.push('', '## Deltas', '');
   if (!result.deltas || result.deltas.length === 0) lines.push('- No comparable deltas found.');
   else for (const delta of result.deltas) lines.push(`- ${delta.kind}: ${delta.status} - ${delta.summary}`);
-  lines.push('', `Next: ${result.next}`, '');
+  lines.push('', '## Project Map Evolution', '');
+  lines.push(`- Status: ${result.project_map_evolution.status}`);
+  lines.push(`- Snapshots: ${result.project_map_evolution.snapshot_count}`);
+  lines.push(`- Summary: ${result.project_map_evolution.summary}`);
+  if (result.project_map_evolution.metrics && result.project_map_evolution.metrics.length > 0) {
+    for (const metric of result.project_map_evolution.metrics) {
+      lines.push(`- ${metric.metric}: ${metric.previous} -> ${metric.current} (${metric.direction}${metric.delta === 0 ? '' : ` ${Math.abs(metric.delta)}`})`);
+    }
+  }
+  lines.push(`- Next: ${result.project_map_evolution.next}`);
+  lines.push(`- Why: ${result.project_map_evolution.next_reason}`);
+  lines.push('', `Next: ${result.next}`);
+  lines.push(`Why: ${result.next_reason}`, '');
   return lines.join('\n');
 }
 
@@ -204,4 +281,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { buildProjectHealthTimeline, parseArgs, renderMarkdown };
+module.exports = { buildProjectHealthTimeline, parseArgs, projectMapEvolution, renderMarkdown };

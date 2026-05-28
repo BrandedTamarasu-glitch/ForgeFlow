@@ -61,9 +61,18 @@ function buildFirstRunGuide(opts = {}) {
         commands: [
           `${commandPrefix}${runtime === 'claude-code' ? 'forgeflow-trends --refresh' : 'show-project-trends.js --refresh'}`,
           `${commandPrefix}${runtime === 'claude-code' ? 'forgeflow-code-map' : 'show-code-map.js'}`,
+          `${commandPrefix}${runtime === 'claude-code' ? 'forgeflow-health-timeline' : 'show-project-health-timeline.js'}`,
           `${commandPrefix}${runtime === 'claude-code' ? 'forgeflow-profile --check' : 'check-user-profile.js'}`,
         ],
-        success: 'The user can see freshness, hotspots, profile readiness, and any warnings before work starts.',
+        success: 'The user can see freshness, hotspots, project-map evolution, profile readiness, and any warnings before work starts.',
+      },
+      {
+        name: 'Inspect agent insight injection',
+        commands: [
+          `${commandPrefix}${runtime === 'claude-code' ? 'forgeflow-insight-injection' : 'render-insight-injection.js'}`,
+          `${commandPrefix}${runtime === 'claude-code' ? 'forgeflow-context-contract' : 'check-context-contract.js'}`,
+        ],
+        success: 'The user can see which insight blocks will be included, metadata-only, or skipped before agent-heavy work.',
       },
       {
         name: 'Record preferences intentionally',

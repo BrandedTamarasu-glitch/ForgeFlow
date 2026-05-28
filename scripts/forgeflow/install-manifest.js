@@ -57,6 +57,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/render-first-run-guide.js',
   'scripts/forgeflow/render-forgeflow-report.js',
   'scripts/forgeflow/render-guided-repair.js',
+  'scripts/forgeflow/render-insight-injection.js',
   'scripts/forgeflow/render-pattern-review.js',
   'scripts/forgeflow/render-post-release-install-verify.js',
   'scripts/forgeflow/render-profile-review.js',

@@ -73,6 +73,7 @@ const CANONICAL_NON_REQUIRED_MANAGED_SOURCES = [
   'commands/forgeflow-first-run-rollup.md',
   'commands/forgeflow-health.md',
   'commands/forgeflow-health-timeline.md',
+  'commands/forgeflow-insight-injection.md',
   'commands/forgeflow-learning-status.md',
   'commands/forgeflow-learnings.md',
   'commands/forgeflow-metrics.md',

@@ -6,7 +6,7 @@ allowed-tools:
   - Bash
 ---
 <objective>
-Print a compact first-run guide for a new Forgeflow user. It verifies install health, orients to project guidance, checks user profile readiness, and starts one bounded work item.
+Print a compact first-run guide for a new Forgeflow user. It verifies install health, orients to project guidance and project-map evolution, checks user profile readiness, inspects agent insight injection, and starts one bounded work item.
 </objective>
 
 <context>
@@ -42,6 +42,6 @@ Run:
 </process>
 
 <success_criteria>
-- [ ] Output includes install verification, project orientation, profile readiness, bounded work-item steps, and stop conditions.
+- [ ] Output includes install verification, project orientation, project-map evolution, insight-injection inspection, profile readiness, bounded work-item steps, and stop conditions.
 - [ ] The guide does not mutate files, install packages, push, tag, or call GitHub.
 </success_criteria>

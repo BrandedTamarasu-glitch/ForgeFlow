@@ -6,7 +6,7 @@ allowed-tools:
   - Bash
 ---
 <objective>
-Show a read-only project health timeline from local Forgeflow artifacts, including code-map history, context-advisor history, latest-insights readiness, and learning-signal quality.
+Show a read-only project health timeline from local Forgeflow artifacts, including code-map history, context-advisor history, latest-insights readiness, learning-signal quality, comparable deltas, and project-map evolution.
 </objective>
 
 <context>
@@ -42,7 +42,7 @@ done
 </process>
 
 <success_criteria>
-- [ ] Output includes project-local timeline events.
+- [ ] Output includes project-local timeline events and project-map evolution.
 - [ ] Output states the timeline is advisory and read-only.
 - [ ] Missing artifacts produce an actionable refresh next step.
 </success_criteria>

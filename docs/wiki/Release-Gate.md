@@ -38,6 +38,7 @@ node scripts/forgeflow/test-privacy-boundary.js
 node scripts/forgeflow/test-render-adoption-pack.js
 node scripts/forgeflow/test-render-context-retention.js
 node scripts/forgeflow/test-render-first-run-guide.js
+node scripts/forgeflow/test-render-insight-injection.js
 node scripts/forgeflow/test-record-first-run-result.js
 node scripts/forgeflow/test-rollup-first-run-results.js
 node scripts/forgeflow/test-record-pilot-evidence.js

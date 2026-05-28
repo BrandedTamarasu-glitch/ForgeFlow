@@ -72,6 +72,8 @@ function actionFromSuggestion(suggestion) {
 
 function buildProfileReview(opts = {}) {
   const check = checkUserProfile(opts);
+  const blockers = (check.issues || []).filter((item) => item.severity === 'fail');
+  const warnings = (check.issues || []).filter((item) => item.severity === 'warn');
   const actions = {
     resolve_conflicts: [],
     move_scope: [],
@@ -136,6 +138,14 @@ function buildProfileReview(opts = {}) {
     files: check.files,
     records: check.records,
     issues: check.issues,
+    summary: {
+      blockers: blockers.length,
+      warnings: warnings.length,
+      suggestions: (check.suggestions || []).length,
+      conflicts: (check.conflicts || []).length,
+      injection_state: check.status === 'pass' ? 'eligible' : 'blocked-until-profile-check-passes',
+      review_first: check.status !== 'pass' || (check.suggestions || []).length > 0 || (check.conflicts || []).length > 0,
+    },
     actions,
     action_count: Object.values(actions).reduce((sum, group) => sum + group.length, 0),
     confirmation_prompts: confirmationPrompts,
@@ -146,6 +156,9 @@ function buildProfileReview(opts = {}) {
       'For scope moves or conflicts, add a superseded record so old guidance no longer competes.',
       'Rerun forgeflow-profile-review and check-user-profile before injecting profile guidance into agent context.',
     ],
+    safe_next_steps: check.status === 'pass'
+      ? ['No profile cleanup is required before agent-heavy work.', 'Use /forgeflow-insight-injection to confirm packet inclusion state.']
+      : ['Resolve fail-level profile issues first.', 'Ask before recording suggested preferences or scope moves.', 'Rerun /forgeflow-profile-review and /forgeflow-profile --check before relying on profile guidance.'],
     boundary: 'Profile review is advisory. Apply actions only after explicit user confirmation; never infer or write preferences automatically.',
   };
 }
@@ -201,6 +214,8 @@ function renderMarkdown(review) {
     '',
     `Status: ${review.status}`,
     `Records: global ${review.records.global}, project ${review.records.project}, active ${review.records.active}, usable ${review.records.usable}`,
+    `Injection state: ${review.summary.injection_state}`,
+    `Issues: ${review.summary.blockers} blocker(s), ${review.summary.warnings} warning(s), ${review.summary.suggestions} suggestion(s), ${review.summary.conflicts} conflict(s)`,
     '',
     review.boundary,
     '',
@@ -213,6 +228,8 @@ function renderMarkdown(review) {
   lines.push(...renderActions('Clean Up', review.actions.clean_up));
   lines.push('', '## Resolution Flow', '');
   for (const step of review.resolution_flow || []) lines.push(`- ${step}`);
+  lines.push('', '## Safe Next Steps', '');
+  for (const step of review.safe_next_steps || []) lines.push(`- ${step}`);
   lines.push('', '## Confirmation Prompts', '');
   if (!review.confirmation_prompts || review.confirmation_prompts.length === 0) {
     lines.push('- None.');

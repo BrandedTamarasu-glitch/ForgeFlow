@@ -59,6 +59,7 @@ const checks = [
   ['runtime helpers include project learnings display', RUNTIME_HELPERS.includes('scripts/forgeflow/show-project-learnings.js')],
   ['runtime helpers include forgeflow report', RUNTIME_HELPERS.includes('scripts/forgeflow/render-forgeflow-report.js')],
   ['runtime helpers include guided repair', RUNTIME_HELPERS.includes('scripts/forgeflow/render-guided-repair.js')],
+  ['runtime helpers include insight injection', RUNTIME_HELPERS.includes('scripts/forgeflow/render-insight-injection.js')],
   ['runtime helpers include release readiness', RUNTIME_HELPERS.includes('scripts/forgeflow/render-release-readiness.js')],
   ['runtime helpers include release verify', RUNTIME_HELPERS.includes('scripts/forgeflow/render-release-verify.js')],
   ['runtime helpers include post-release install verify', RUNTIME_HELPERS.includes('scripts/forgeflow/render-post-release-install-verify.js')],

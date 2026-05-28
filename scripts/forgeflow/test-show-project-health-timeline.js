@@ -73,7 +73,8 @@ const checks = [
   ['schema version', result.schema_version === '1'],
   ['timeline has events', result.event_count >= 3 && result.events.some((event) => event.kind === 'code-map') && result.events.some((event) => event.kind === 'learning-status')],
   ['timeline has deltas', result.deltas.some((item) => item.kind === 'code-map')],
-  ['renders markdown', markdown.includes('# Forgeflow Project Health Timeline') && markdown.includes('## Deltas') && markdown.includes('advisory') && markdown.includes('code-map')],
+  ['project map evolution has metrics', result.project_map_evolution.status === 'changed' && result.project_map_evolution.next === '/forgeflow-code-map' && result.project_map_evolution.metrics.some((item) => item.metric === 'source_files' && item.delta === 1)],
+  ['renders markdown', markdown.includes('# Forgeflow Project Health Timeline') && markdown.includes('## Deltas') && markdown.includes('## Project Map Evolution') && markdown.includes('Why:') && markdown.includes('advisory') && markdown.includes('code-map')],
   ['parses args', opts.root === root && opts.projectDir === projectDir && opts.json === true],
 ];
 
