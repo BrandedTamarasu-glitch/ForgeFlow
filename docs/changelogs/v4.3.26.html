@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow - V4.3.26 Changelog</title>
+  <style>
+    body { background: #0d0d0d; color: #ddd8cc; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.65; margin: 0; }
+    main { max-width: 820px; margin: 0 auto; padding: 72px 32px 96px; }
+    .version { color: #7a7670; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
+    h1 { font-size: 40px; font-weight: 400; line-height: 1.15; margin: 14px 0 20px; }
+    h2 { border-top: 1px solid #303030; color: #f0a232; font-size: 18px; font-weight: 600; margin: 42px 0 18px; padding-top: 28px; }
+    p, li { color: #c9c2b6; }
+    code { background: #1c1c1c; border: 1px solid #303030; border-radius: 4px; color: #f0c070; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 1px 5px; }
+    a { color: #f0a232; text-decoration: underline; text-underline-offset: 0.16em; }
+    .nav { display: flex; justify-content: space-between; margin-top: 52px; padding-top: 24px; border-top: 1px solid #303030; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="version">Forgeflow V4.3.26 · 28 May 2026</div>
+    <h1>Release: Local Intelligence Refinement Batch</h1>
+    <p>
+      Forgeflow 4.3.26 turns the recent learning and runtime checks into clearer operational guidance. It adds install consumability evidence, signal-quality scoring, per-agent context contracts, runtime repair previews, and a project health timeline.
+    </p>
+
+    <h2>Release And Runtime Confidence</h2>
+    <ul>
+      <li><code>/forgeflow-release-verify</code> now includes installed-version and runtime-drift consumability evidence in the post-publish summary.</li>
+      <li><code>/forgeflow-runtime-drift --preview-repair</code> shows the exact managed helper actions that <code>/update-forgeflow --repair</code> would take, without mutating installed files.</li>
+      <li>Installed-runtime dogfood covers the new timeline and release verification behavior.</li>
+    </ul>
+
+    <h2>Learning And Agent Context</h2>
+    <ul>
+      <li><code>/forgeflow-learning-status</code> now scores local learning signals as high, medium, or low trust, with notes for sparse, stale, issue-heavy, or corrective-heavy signals.</li>
+      <li>Context packs now write <code>agent-context-contract.json</code> and include a role-specific Agent Context Contract in each generated packet.</li>
+      <li>The contract states which signals are allowed, advisory, verify-before-use, and prohibited so local learning never becomes unverified authority.</li>
+    </ul>
+
+    <h2>Project Health Timeline</h2>
+    <ul>
+      <li>New <code>/forgeflow-health-timeline</code> renders a read-only local timeline across code-map history, context-advisor history, latest-insights readiness, and learning-signal quality.</li>
+      <li>README and wiki docs now cover the timeline, signal-quality scoring, context contracts, runtime repair preview, and install consumability checks.</li>
+      <li>The new timeline stays advisory and does not refresh artifacts, approve work, call the network, or mutate project files.</li>
+    </ul>
+
+    <h2>Validation</h2>
+    <ul>
+      <li>Full <code>scripts/forgeflow/test-*.js</code> suite</li>
+      <li><code>node scripts/forgeflow/smoke-check.js --mode source --json</code></li>
+      <li><code>git diff --check</code></li>
+      <li>Focused release verify, runtime drift, learning status, health timeline, context pack, command coverage, install/update, docs, and installed-runtime dogfood tests</li>
+    </ul>
+
+    <div class="nav">
+      <a href="./v4.3.25.html">&larr; V4.3.25</a>
+      <span>V4.3.26</span>
+    </div>
+  </main>
+</body>
+</html>
