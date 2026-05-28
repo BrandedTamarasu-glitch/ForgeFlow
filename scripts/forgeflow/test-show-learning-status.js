@@ -65,7 +65,8 @@ const checks = [
   ['summarizes all sections', result.sections.length === 6 && result.sections.some((item) => item.name === 'first-run-results')],
   ['overall attention or fail', ['attention', 'fail'].includes(result.status)],
   ['recommendations include corrective signals', result.recommendations.some((item) => item.action === 'triage-review-outcome-learning-signals') && result.recommendations.some((item) => item.action === 'calibrate-next-work-selection') && result.recommendations.some((item) => item.action === 'fix-first-run-friction')],
-  ['markdown renders', markdown.includes('# Forgeflow Learning Status') && markdown.includes('## Signals') && markdown.includes('first-run-results') && markdown.includes('advisory local evidence')],
+  ['groups recommendations', result.recommendation_groups.fix_first.some((item) => item.source === 'first-run-results') && result.recommendation_groups.watch.some((item) => item.source === 'agent-feedback')],
+  ['markdown renders', markdown.includes('# Forgeflow Learning Status') && markdown.includes('## Signals') && markdown.includes('## Fix First') && markdown.includes('## Watch') && markdown.includes('## Healthy') && markdown.includes('first-run-results') && markdown.includes('advisory local evidence')],
   ['cli args parse', opts.root === root && opts.projectDir === projectDir && opts.json === true],
 ];
 

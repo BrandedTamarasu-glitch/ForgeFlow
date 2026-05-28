@@ -20,6 +20,13 @@ recordNextWorkOutcome({
   outcome: 'incorrect',
   confidence: 'medium',
 });
+recordNextWorkOutcome({
+  projectDir,
+  title: 'Review release confidence',
+  source: 'release',
+  outcome: 'blocked',
+  confidence: 'high',
+});
 const rollup = readNextWorkOutcomes(projectDir);
 let invalid = false;
 try {
@@ -30,7 +37,8 @@ try {
 
 const checks = [
   ['writes file', fs.existsSync(first.file)],
-  ['rolls up outcomes', rollup.records === 2 && rollup.by_outcome.useful === 1 && rollup.by_outcome.incorrect === 1],
+  ['rolls up outcomes', rollup.records === 3 && rollup.by_outcome.useful === 1 && rollup.by_outcome.incorrect === 1 && rollup.by_outcome.blocked === 1],
+  ['calibrates confidence bands', rollup.confidence_calibration.high.total === 2 && rollup.confidence_calibration.high.useful === 1 && rollup.confidence_calibration.high.useful_rate === 0.5],
   ['recommends calibration', rollup.recommendation === 'calibrate-next-work-selection'],
   ['rejects source-specific text', invalid],
 ];

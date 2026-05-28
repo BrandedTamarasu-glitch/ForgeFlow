@@ -54,6 +54,8 @@ const installedFirstRunResultPath = path.join(installedHelperDir, 'record-first-
 const installedFirstRunRollupPath = path.join(installedHelperDir, 'rollup-first-run-results.js');
 const installedNextWorkOutcomePath = path.join(installedHelperDir, 'record-next-work-outcome.js');
 const installedLearningStatusPath = path.join(installedHelperDir, 'show-learning-status.js');
+const installedPatternReviewPath = path.join(installedHelperDir, 'render-pattern-review.js');
+const installedRuntimeDriftPath = path.join(installedHelperDir, 'runtime-drift-snapshot.js');
 const installedReleaseVerifyPath = path.join(installedHelperDir, 'render-release-verify.js');
 
 git(projectRoot, ['init']);
@@ -72,6 +74,8 @@ const installedFirstRunResult = require(installedFirstRunResultPath);
 const installedFirstRunRollup = require(installedFirstRunRollupPath);
 const installedNextWorkOutcome = require(installedNextWorkOutcomePath);
 const installedLearningStatus = require(installedLearningStatusPath);
+const installedPatternReview = require(installedPatternReviewPath);
+const installedRuntimeDrift = require(installedRuntimeDriftPath);
 const installedReleaseVerify = require(installedReleaseVerifyPath);
 const projectDir = path.join(projectRoot, '.forgeflow', path.basename(projectRoot));
 const patternsDir = path.join(projectRoot, 'forgeflow-patterns');
@@ -98,6 +102,8 @@ installedNextWorkOutcome.recordNextWorkOutcome({
 });
 const nextWorkOutcomes = installedNextWorkOutcome.readNextWorkOutcomes(projectDir);
 const learningStatus = installedLearningStatus.buildLearningStatus({ root: projectRoot, projectDir });
+const patternReview = installedPatternReview.buildPatternReview({ root: projectRoot, patternsDir, minProjects: 1, minOccurrences: 1 });
+const runtimeDrift = installedRuntimeDrift.buildRuntimeDriftSnapshot({ root: repoRoot, installRoot: installHome });
 const profileReview = installedProfileReview.buildProfileReview({ projectDir, home: installHome });
 const releaseVerify = installedReleaseVerify.buildReleaseVerify({ root: projectRoot, runner: () => ({ status: 0, stdout: '', stderr: '' }) });
 const previousCwd = process.cwd();
@@ -116,7 +122,7 @@ try {
 
 const checks = [
   ['runtime helpers copied', runtimeEntries.length > 0 && fs.existsSync(installedSmokePath) && fs.existsSync(installedHealthPath)],
-  ['new installed helpers copied', [installedProfileReviewPath, installedFirstRunResultPath, installedFirstRunRollupPath, installedNextWorkOutcomePath, installedLearningStatusPath, installedReleaseVerifyPath].every((file) => fs.existsSync(file))],
+  ['new installed helpers copied', [installedProfileReviewPath, installedFirstRunResultPath, installedFirstRunRollupPath, installedNextWorkOutcomePath, installedLearningStatusPath, installedPatternReviewPath, installedRuntimeDriftPath, installedReleaseVerifyPath].every((file) => fs.existsSync(file))],
   ['installed tree excludes source tests', ['test-smoke-check.js', 'test-dogfood-self-test.js', 'test-installed-runtime-dogfood.js'].every((file) => !fs.existsSync(path.join(installedHelperDir, file)))],
   ['installed smoke runs from unrelated cwd', smoke && process.cwd() === previousCwd],
   ['installed downstream smoke passes', smoke && ['pass', 'warn'].includes(smoke.status)],
@@ -126,6 +132,8 @@ const checks = [
   ['installed first-run rollup runs', firstRunRollup && firstRunRollup.records === 1 && firstRunRollup.recommendation],
   ['installed next-work outcome runs', nextWorkOutcomes && nextWorkOutcomes.records === 1 && nextWorkOutcomes.by_outcome.useful === 1],
   ['installed learning status runs', learningStatus && learningStatus.schema_version === '1' && learningStatus.sections.some((item) => item.name === 'next-work-outcomes')],
+  ['installed pattern review runs', patternReview && patternReview.schema_version === '1' && Array.isArray(patternReview.candidates)],
+  ['installed runtime drift runs', runtimeDrift && runtimeDrift.schema_version === '1' && runtimeDrift.checked > 0],
   ['installed release verify runs', releaseVerify && releaseVerify.schema_version === '1' && releaseVerify.boundary.includes('advisory')],
 ];
 

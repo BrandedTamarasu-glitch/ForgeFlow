@@ -69,6 +69,7 @@ node scripts/forgeflow/test-user-profile.js
 node scripts/forgeflow/test-profile-review.js
 node scripts/forgeflow/test-profile-compliance.js
 node scripts/forgeflow/test-rollup-pattern-learnings.js
+node scripts/forgeflow/test-render-pattern-review.js
 node scripts/forgeflow/test-rollup-pilot-evidence.js
 node scripts/forgeflow/test-rollup-project-learnings.js
 node scripts/forgeflow/test-show-project-learnings.js
@@ -84,6 +85,7 @@ node scripts/forgeflow/test-check-context-budget.js
 node scripts/forgeflow/test-advise-context.js
 node scripts/forgeflow/test-build-code-topology.js
 node scripts/forgeflow/test-show-code-map.js
+node scripts/forgeflow/test-runtime-drift-snapshot.js
 node scripts/forgeflow/test-build-context-pack.js
 node scripts/forgeflow/test-implementation-notes.js
 node scripts/forgeflow/test-check-implementation-notes.js

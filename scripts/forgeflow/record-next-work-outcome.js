@@ -126,9 +126,10 @@ function recordNextWorkOutcome(opts = {}) {
 
 function readNextWorkOutcomes(projectDir) {
   const file = outcomeFile(projectDir);
-  if (!fs.existsSync(file)) return { status: 'missing', file, records: 0, invalid_lines: 0, by_outcome: {}, by_source: {}, recommendation: 'record-next-work-outcomes' };
+  if (!fs.existsSync(file)) return { status: 'missing', file, records: 0, invalid_lines: 0, by_outcome: {}, by_source: {}, confidence_calibration: {}, recommendation: 'record-next-work-outcomes' };
   const byOutcome = {};
   const bySource = {};
+  const byConfidence = {};
   let records = 0;
   let invalid = 0;
   for (const line of safeReadTextFile(file, projectDir).content.split(/\r?\n/).filter(Boolean)) {
@@ -141,11 +142,20 @@ function readNextWorkOutcomes(projectDir) {
       records += 1;
       byOutcome[record.outcome] = (byOutcome[record.outcome] || 0) + 1;
       bySource[record.source || 'unknown'] = (bySource[record.source || 'unknown'] || 0) + 1;
+      const confidence = CONFIDENCE.has(record.confidence) ? record.confidence : 'medium';
+      if (!byConfidence[confidence]) byConfidence[confidence] = { total: 0, useful: 0, corrective: 0 };
+      byConfidence[confidence].total += 1;
+      if (record.outcome === 'useful') byConfidence[confidence].useful += 1;
+      else byConfidence[confidence].corrective += 1;
     } catch (_err) {
       invalid += 1;
     }
   }
   const corrective = (byOutcome.ignored || 0) + (byOutcome.incorrect || 0) + (byOutcome.blocked || 0);
+  const confidenceCalibration = Object.fromEntries(Object.entries(byConfidence).map(([confidence, counts]) => [confidence, {
+    ...counts,
+    useful_rate: counts.total > 0 ? Number((counts.useful / counts.total).toFixed(2)) : 0,
+  }]));
   return {
     status: records > 0 ? 'present' : 'empty',
     file,
@@ -153,6 +163,7 @@ function readNextWorkOutcomes(projectDir) {
     invalid_lines: invalid,
     by_outcome: byOutcome,
     by_source: bySource,
+    confidence_calibration: confidenceCalibration,
     recommendation: corrective > 0 ? 'calibrate-next-work-selection' : 'continue-recording-next-work-outcomes',
   };
 }

@@ -72,6 +72,7 @@ node scripts/forgeflow/test-user-profile.js
 node scripts/forgeflow/test-profile-review.js
 node scripts/forgeflow/test-profile-compliance.js
 node scripts/forgeflow/test-rollup-pattern-learnings.js
+node scripts/forgeflow/test-render-pattern-review.js
 node scripts/forgeflow/test-rollup-pilot-evidence.js
 node scripts/forgeflow/test-rollup-project-learnings.js
 node scripts/forgeflow/test-show-project-learnings.js
@@ -86,6 +87,7 @@ node scripts/forgeflow/test-check-context-budget.js
 node scripts/forgeflow/test-advise-context.js
 node scripts/forgeflow/test-build-code-topology.js
 node scripts/forgeflow/test-show-code-map.js
+node scripts/forgeflow/test-runtime-drift-snapshot.js
 node scripts/forgeflow/test-build-context-pack.js
 node scripts/forgeflow/test-implementation-notes.js
 node scripts/forgeflow/test-check-implementation-notes.js
@@ -128,4 +130,4 @@ After publishing, run:
 /forgeflow-release-verify --save
 ```
 
-`/forgeflow-version` should show the latest GitHub release and installed commit. `/forgeflow-health` should pass after any required manual `settings.json` hook or statusline wiring. `/forgeflow-release-verify --save` should show local tag, changelog, release-note, source-smoke, update-smoke, installed-runtime dogfood evidence, and a shareable summary, then save a local comparison snapshot. Use `/forgeflow-release-readiness --post-publish --save-post-publish` when you need the full readiness evidence block. Forgeflow does not auto-edit `settings.json` by design.
+`/forgeflow-version` should show the latest GitHub release and installed commit. `/forgeflow-health` should pass after any required manual `settings.json` hook or statusline wiring. `/forgeflow-release-verify --save` should show local tag, changelog, release-note, source-smoke, update-smoke, installed-runtime dogfood evidence, and a shareable summary, then save a local comparison snapshot. Use `/forgeflow-release-verify --github` only when the session has network access; sandboxed runs may report `network-unavailable`, which is not evidence that the release or tag is missing. Use `/forgeflow-release-readiness --post-publish --save-post-publish` when you need the full readiness evidence block. Forgeflow does not auto-edit `settings.json` by design.

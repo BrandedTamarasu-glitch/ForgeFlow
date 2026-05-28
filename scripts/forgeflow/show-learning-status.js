@@ -56,6 +56,20 @@ function summarizeOverall(sections) {
   return 'pass';
 }
 
+function bucketFor(section) {
+  if (!section.next || /^continue-/.test(section.next)) return 'healthy';
+  if (statusRank(section.status) >= 3 || /fix|repair|health|check|calibrate/.test(section.next)) return 'fix_first';
+  return 'watch';
+}
+
+function groupRecommendations(sections) {
+  const groups = { fix_first: [], watch: [], healthy: [] };
+  for (const section of sections) {
+    groups[bucketFor(section)].push({ source: section.name, action: section.next || 'continue' });
+  }
+  return groups;
+}
+
 function firstRunSummary(projectDir) {
   const records = readRecords(projectDir);
   const rollup = buildRollup(records);
@@ -123,6 +137,7 @@ function buildLearningStatus(opts = {}) {
   const recommendations = sections
     .filter((section) => section.next && !/^continue-/.test(section.next))
     .map((section) => ({ source: section.name, action: section.next }));
+  const recommendationGroups = groupRecommendations(sections);
   return {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
@@ -131,6 +146,7 @@ function buildLearningStatus(opts = {}) {
     status: summarizeOverall(sections),
     sections,
     recommendations,
+    recommendation_groups: recommendationGroups,
     boundary: 'Learning status is advisory local evidence. It does not approve work, promote patterns, or override current code, tests, review, or user instructions.',
   };
 }
@@ -151,9 +167,15 @@ function renderMarkdown(result) {
     lines.push(`- ${section.name}: ${section.status} (${section.records} record(s), ${section.issues} issue(s))`);
     if (section.next) lines.push(`  - Next: ${section.next}`);
   }
-  lines.push('', '## Recommendations', '');
-  if (result.recommendations.length === 0) lines.push('- None.');
-  else for (const item of result.recommendations) lines.push(`- ${item.source}: ${item.action}`);
+  lines.push('', '## Fix First', '');
+  if (result.recommendation_groups.fix_first.length === 0) lines.push('- None.');
+  else for (const item of result.recommendation_groups.fix_first) lines.push(`- ${item.source}: ${item.action}`);
+  lines.push('', '## Watch', '');
+  if (result.recommendation_groups.watch.length === 0) lines.push('- None.');
+  else for (const item of result.recommendation_groups.watch) lines.push(`- ${item.source}: ${item.action}`);
+  lines.push('', '## Healthy', '');
+  if (result.recommendation_groups.healthy.length === 0) lines.push('- None.');
+  else for (const item of result.recommendation_groups.healthy) lines.push(`- ${item.source}: ${item.action}`);
   lines.push('');
   return lines.join('\n');
 }
@@ -174,4 +196,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { buildLearningStatus, firstRunSummary, parseArgs, renderMarkdown };
+module.exports = { buildLearningStatus, firstRunSummary, groupRecommendations, parseArgs, renderMarkdown };
