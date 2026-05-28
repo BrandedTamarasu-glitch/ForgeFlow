@@ -45,6 +45,14 @@ fs.writeFileSync(path.join(tmp, 'issues.json'), JSON.stringify({
 fs.writeFileSync(path.join(tmp, 'issues-array.json'), JSON.stringify([
   { number: 42, title: 'Wrong shape' },
 ], null, 2));
+fs.writeFileSync(path.join(tmp, 'release-evidence.json'), JSON.stringify({
+  schema_version: '1',
+  status: 'install-attention',
+  version: '9.8.0',
+  tag: 'v9.8.0',
+  evidence: [{ name: 'source-smoke', status: 'pass', value: 'ok' }],
+  local_consumability: { status: 'attention', runtime_drift: { drift_count: 2 } },
+}, null, 2));
 spawnSync('git', ['init'], { cwd: tmp, encoding: 'utf8' });
 spawnSync('git', ['config', 'user.email', 'forgeflow@example.test'], { cwd: tmp, encoding: 'utf8' });
 spawnSync('git', ['config', 'user.name', 'Forgeflow Test'], { cwd: tmp, encoding: 'utf8' });
@@ -61,7 +69,7 @@ fs.writeFileSync(path.join(tmp, 'path.txt'), 'path\n');
 spawnSync('git', ['add', 'path.txt'], { cwd: tmp, encoding: 'utf8' });
 spawnSync('git', ['commit', '-m', 'Touch /home/corye/.ssh/config'], { cwd: tmp, encoding: 'utf8' });
 
-const notes = collectReleaseNotes({ root: tmp, maxCommits: 5, issues: 'issues.json' });
+const notes = collectReleaseNotes({ root: tmp, maxCommits: 5, issues: 'issues.json', evidence: 'release-evidence.json' });
 const markdown = renderMarkdown(notes);
 const redacted = publicSafeText('token=SHOULD_NOT_PRINT');
 const pathRedacted = publicSafeText('Touch /home/corye/.ssh/config');
@@ -94,10 +102,12 @@ const checks = [
   ['redacts local paths', releaseNoteSensitiveLabels('/home/corye/.ssh/config').includes('local-path') && releaseNoteSensitiveLabels('path=/home/corye/.ssh/config').includes('local-path') && releaseNoteSensitiveLabels('out=../tmp/file').includes('local-path') && releaseNoteSensitiveLabels('path=C:\\Temp\\file.txt').includes('local-path') && pathRedacted.includes('redacted sensitive content') && notes.commits.some((commit) => commit.redacted) && !JSON.stringify(notes).includes('/home/corye/.ssh/config')],
   ['git unavailable is explicit', nonRepo.git.available === true && unavailableGit.git.available === false && unavailableGit.git.dirty === null && renderMarkdown(unavailableGit).includes('Git: unavailable')],
   ['captures validation commands', notes.validation_commands.length === 5 && notes.validation_commands.includes('git diff --check')],
+  ['captures release evidence', notes.release_evidence.status === 'install-attention' && notes.release_evidence.local_consumability.drift_count === 2],
+  ['captures changed files', Array.isArray(notes.changed_files)],
   ['parses fenced release commands', releaseCheckCommands('```bash\nnode a.js\ngit diff --check\n```').length === 2],
   ['requires issue metadata path value', missingIssuesArg],
   ['rejects malformed issue metadata schema', malformedIssues],
-  ['renders markdown draft', markdown.includes('# Forgeflow 9.8.0 Release Notes Draft') && markdown.includes('## Issue Context') && markdown.includes('#42: Release smoke path; status fixed; referenced by') && markdown.includes('Verify issue state and source before claiming closure') && markdown.includes('## Validation Evidence To Capture')],
+  ['renders markdown draft', markdown.includes('# Forgeflow 9.8.0 Release Notes Draft') && markdown.includes('## Changed Files') && markdown.includes('## Captured Release Evidence') && markdown.includes('Install consumability: attention') && markdown.includes('## Issue Context') && markdown.includes('#42: Release smoke path; status fixed; referenced by') && markdown.includes('Verify issue state and source before claiming closure') && markdown.includes('## Validation Evidence To Capture')],
   ['escapes markdown draft text', markdown.includes('Add release\\_helper \\[draft\\]')],
   ['markdown stays public safe', !markdown.includes('SHOULD_NOT_PRINT')],
 ];

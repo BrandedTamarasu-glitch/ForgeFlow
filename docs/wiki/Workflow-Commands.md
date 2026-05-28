@@ -23,6 +23,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/dashboard` | Start the optional local metrics dashboard on port 4003. |
 | `/forgeflow-code-map` | Generate a compact project code map with topology, sections, changed-section hints, import-gap triage, living project-map categories, Git provenance, and generated artifact paths. |
 | `/forgeflow-compact-output` | Compact allowlisted noisy command output while preserving exact output for unsafe command classes. |
+| `/forgeflow-context-contract` | Check generated agent packets against the context contract, required sections, size limits, and advisory-boundary wording. |
 | `/forgeflow-failure-digest` | Build a compact failure digest from test, typecheck, lint, or log output, with Git provenance for freshness checks. |
 | `/forgeflow-first-run` | Print a compact net-new user guide for install verification, project orientation, profile readiness, one bounded work item, and stop conditions. |
 | `/forgeflow-first-run-result` | Record public-safe local first-run outcome evidence under `.forgeflow/<project>/first-run-results/`. |
@@ -31,9 +32,10 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-drift` | Check whether agent prompts have drifted from canonical shared intelligence references using the script-backed drift helper. |
 | `/forgeflow-health` | Audit installation, project-local state, latest project-learning quality, latest-insights readiness/freshness, and latest failure-digest freshness; can safely repair `.forgeflow/` scaffolding and budget config. Stale latest insights recommend `/forgeflow-trends --refresh`. |
 | `/forgeflow-learnings --project --check` | Refresh and print current-project learnings, run the quality gate, smoke-test context-pack injection, and report whether latest insights are ready for agent context. Cross-project mode uses the pattern-learnings rollup helper across legacy learnings and project-learning candidates. |
-| `/forgeflow-health-timeline` | Show a read-only local timeline across code-map history, context-advisor history, latest-insights readiness, and learning-signal quality. |
+| `/forgeflow-health-timeline` | Show a read-only local timeline across code-map history, context-advisor history, latest-insights readiness, learning-signal quality, and comparable deltas. |
 | `/forgeflow-learning-status` | Show one compact local health view across project learnings, user profile, agent feedback, review outcomes, next-work outcomes, and first-run results, grouped into fix-first, watch, healthy lanes, and signal-quality scores. |
 | `/forgeflow-pattern-review` | Review dry-run cross-project pattern promotion candidates with sample citations, redaction checklist, and manual-promotion boundary. |
+| `/forgeflow-post-release-install-verify` | Show one read-only after-update verdict across release verification, install consumability, and downstream smoke. |
 | Project intelligence rollup | `scripts/forgeflow/build-project-intelligence.js --json` writes one compact review-prep and next-work summary with trust state, Git provenance, top risks, refresh-first, read-first, avoid-first, validate-first, and proof-boundary guidance. Use `--next-work` for only the human-readable advisory next-work candidates, or `--brief <index>` for an advisory implementation-brief stub with suggested review lanes, implementation-notes seed prompts, and a handoff checklist. |
 | `/forgeflow-metrics` | Summarize telemetry, calibration, outcomes, context savings, budget health, and advisor actions. |
 | `/forgeflow-next-work-outcome` | Record local advisory feedback on whether a next-work recommendation was useful, ignored, incorrect, or blocked. |

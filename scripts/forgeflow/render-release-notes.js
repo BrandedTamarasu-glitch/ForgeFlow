@@ -8,7 +8,7 @@ const { sensitiveMatches } = require('./privacy-boundary');
 const DEFAULT_MAX_COMMITS = 12;
 
 function usage() {
-  console.error('Usage: render-release-notes.js [--root <repo>] [--max-commits <n>] [--issues <json>] [--json]');
+  console.error('Usage: render-release-notes.js [--root <repo>] [--max-commits <n>] [--issues <json>] [--evidence <json>] [--json]');
 }
 
 function requireValue(argv, name, index) {
@@ -22,6 +22,7 @@ function parseArgs(argv) {
     root: process.cwd(),
     maxCommits: DEFAULT_MAX_COMMITS,
     issues: '',
+    evidence: '',
     json: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
@@ -34,6 +35,9 @@ function parseArgs(argv) {
       i += 1;
     } else if (arg === '--issues') {
       opts.issues = requireValue(argv, arg, i);
+      i += 1;
+    } else if (arg === '--evidence') {
+      opts.evidence = requireValue(argv, arg, i);
       i += 1;
     } else if (arg === '--json') {
       opts.json = true;
@@ -266,6 +270,25 @@ function releaseCheckCommands(releaseCheck) {
     .filter((line) => !line.startsWith('node scripts/forgeflow/render-evaluation-report.js --outcomes')))];
 }
 
+function releaseEvidence(root, relativePath) {
+  if (!relativePath) return null;
+  const evidence = readJson(root, relativePath);
+  return {
+    status: evidence.status || '',
+    version: evidence.version || '',
+    tag: evidence.tag || '',
+    evidence: Array.isArray(evidence.evidence) ? evidence.evidence.map((item) => ({
+      name: publicSafeText(item.name || ''),
+      status: publicSafeText(item.status || ''),
+      value: publicSafeText(item.value || ''),
+    })) : [],
+    local_consumability: evidence.local_consumability ? {
+      status: publicSafeText(evidence.local_consumability.status || ''),
+      drift_count: evidence.local_consumability.runtime_drift ? evidence.local_consumability.runtime_drift.drift_count || 0 : 0,
+    } : null,
+  };
+}
+
 function collectReleaseNotes(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const plugin = readJson(root, '.claude-plugin/plugin.json');
@@ -279,6 +302,8 @@ function collectReleaseNotes(opts = {}) {
   const issues = mergeIssueMetadata(issueReferences(commits), issueMetadata(root, opts.issues || ''));
   const releaseCheck = readTextIfPresent(root, 'commands/forgeflow-release-check.md');
   const validationCommands = releaseCheckCommands(releaseCheck);
+  const evidence = releaseEvidence(root, opts.evidence || '');
+  const changedFiles = gitStdout(root, ['diff', '--name-only', 'HEAD']).split(/\r?\n/).filter(Boolean).map(publicSafeText);
 
   return {
     schema_version: '1',
@@ -296,9 +321,11 @@ function collectReleaseNotes(opts = {}) {
       error: status.ok && head.ok ? '' : (status.error || head.error || 'git unavailable'),
     },
     commits,
+    changed_files: changedFiles,
     issue_context: issues,
     referenced_issues: issues,
     validation_commands: validationCommands,
+    release_evidence: evidence,
     public_safe_highlights: commits.slice(0, 6).map((commit) => commit.subject),
     draft_notes: [
       'Use this draft as release-note input, not as proof that validation passed.',
@@ -330,6 +357,19 @@ function renderMarkdown(notes) {
   lines.push('', '## Recent Commits', '');
   if (notes.commits.length === 0) lines.push('- No recent commits found.');
   else for (const commit of notes.commits) lines.push(`- ${commit.sha}: ${markdownText(commit.subject)}`);
+  lines.push('', '## Changed Files', '');
+  if (!notes.changed_files || notes.changed_files.length === 0) lines.push('- No uncommitted changed files.');
+  else for (const file of notes.changed_files.slice(0, 20)) lines.push(`- ${markdownText(file)}`);
+  if (notes.changed_files && notes.changed_files.length > 20) lines.push(`- ... ${notes.changed_files.length - 20} more`);
+  lines.push('', '## Captured Release Evidence', '');
+  if (!notes.release_evidence) {
+    lines.push('- No release evidence JSON supplied. Run release checks before claiming validation passed.');
+  } else {
+    lines.push(`- Status: ${markdownText(notes.release_evidence.status)}`);
+    lines.push(`- Version: ${markdownText(notes.release_evidence.version)}`);
+    lines.push(`- Tag: ${markdownText(notes.release_evidence.tag)}`);
+    if (notes.release_evidence.local_consumability) lines.push(`- Install consumability: ${markdownText(notes.release_evidence.local_consumability.status)} (${notes.release_evidence.local_consumability.drift_count} drifted helper(s))`);
+  }
   const issueContext = notes.issue_context || notes.referenced_issues || [];
   lines.push('', '## Issue Context', '');
   if (issueContext.length === 0) {

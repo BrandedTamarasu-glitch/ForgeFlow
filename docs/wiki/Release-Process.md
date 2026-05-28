@@ -51,6 +51,7 @@ node scripts/forgeflow/test-failure-digest.js
 node scripts/forgeflow/test-check-agent-drift.js
 node scripts/forgeflow/test-render-forgeflow-report.js
 node scripts/forgeflow/test-render-release-notes.js
+node scripts/forgeflow/test-render-post-release-install-verify.js
 node scripts/forgeflow/test-render-release-readiness.js
 node scripts/forgeflow/test-render-release-verify.js
 node scripts/forgeflow/test-render-support-bundle.js
@@ -90,6 +91,7 @@ node scripts/forgeflow/test-build-code-topology.js
 node scripts/forgeflow/test-show-code-map.js
 node scripts/forgeflow/test-runtime-drift-snapshot.js
 node scripts/forgeflow/test-build-context-pack.js
+node scripts/forgeflow/test-check-context-contract.js
 node scripts/forgeflow/test-implementation-notes.js
 node scripts/forgeflow/test-check-implementation-notes.js
 node scripts/forgeflow/test-check-project-learnings.js
@@ -119,7 +121,7 @@ git push origin vX.Y.Z
 
 Create the GitHub release from the tag and include the release notes summary. The release body should only claim what changed, why it changed, tests run, and known deferrals.
 If the release-note draft lists issue context, verify the GitHub issue state before claiming closure. A commit subject can cite `#123`, but closure requires a release-linked issue comment, a closed issue, or another explicit maintainer decision. Curated metadata can add context, but it is not proof that a commit referenced or fixed an issue.
-For richer issue notes without GitHub calls, pass a repo-relative local JSON file to `render-release-notes.js --issues <path>`. The file must be a JSON object with a top-level `issues` array. Only `number`, `title`, `status`, and `evidence` are used, and text is redacted through the public-safe release-note filter.
+For richer issue notes without GitHub calls, pass a repo-relative local JSON file to `render-release-notes.js --issues <path>`. The file must be a JSON object with a top-level `issues` array. Only `number`, `title`, `status`, and `evidence` are used, and text is redacted through the public-safe release-note filter. Pass `--evidence <path>` with saved local release-verify JSON when the draft should include substantiated status, tag, and install-consumability evidence.
 
 ## Verify
 
@@ -132,3 +134,4 @@ After publishing, run:
 ```
 
 `/forgeflow-version` should show the latest GitHub release and installed commit. `/forgeflow-health` should pass after any required manual `settings.json` hook or statusline wiring. `/forgeflow-release-verify --save` should show local tag, changelog, release-note, source-smoke, update-smoke, installed-runtime dogfood evidence, installed-version/runtime-drift consumability evidence, and a shareable summary, then save a local comparison snapshot. Use `/forgeflow-release-verify --github` only when the session has network access; sandboxed runs may report `network-unavailable`, which is not evidence that the release or tag is missing. Use `/forgeflow-release-readiness --post-publish --save-post-publish` when you need the full readiness evidence block. Forgeflow does not auto-edit `settings.json` by design.
+After updating an installed runtime, run `/forgeflow-post-release-install-verify` for the read-only loop across release verification, install consumability, and downstream smoke.

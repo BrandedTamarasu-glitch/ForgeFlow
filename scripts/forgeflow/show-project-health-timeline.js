@@ -71,6 +71,34 @@ function item(date, kind, status, summary, source, details = {}) {
   };
 }
 
+function compareLastTwo(events) {
+  const deltas = [];
+  const byKind = new Map();
+  for (const event of events) {
+    if (!byKind.has(event.kind)) byKind.set(event.kind, []);
+    byKind.get(event.kind).push(event);
+  }
+  for (const [kind, items] of byKind.entries()) {
+    if (items.length < 2) continue;
+    const before = items[items.length - 2];
+    const after = items[items.length - 1];
+    if (before.status !== after.status) {
+      deltas.push({
+        kind,
+        status: after.status === 'pass' || after.status === 'injected' ? 'improved' : 'changed',
+        summary: `${kind} moved from ${before.status} to ${after.status}`,
+      });
+    } else if (before.summary !== after.summary) {
+      deltas.push({
+        kind,
+        status: 'changed',
+        summary: `${kind} changed from "${before.summary}" to "${after.summary}"`,
+      });
+    }
+  }
+  return deltas;
+}
+
 function buildProjectHealthTimeline(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const projectDir = path.resolve(opts.projectDir || defaultProjectDir(root));
@@ -120,6 +148,7 @@ function buildProjectHealthTimeline(opts = {}) {
     { recommendations: learningStatus.recommendations.length, quality_status: learningStatus.signal_quality.status },
   ));
   const sorted = events.sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+  const deltas = compareLastTwo(sorted);
   return {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
@@ -128,6 +157,7 @@ function buildProjectHealthTimeline(opts = {}) {
     status: sorted.some((event) => ['fail', 'blocked', 'attention', 'stale', 'missing'].includes(event.status)) ? 'attention' : 'pass',
     event_count: sorted.length,
     events: sorted.slice(-20),
+    deltas,
     next: sorted.length === 0 ? '/forgeflow-trends --refresh' : '/forgeflow-trends --refresh before relying on stale timeline signals',
     boundary: 'Project health timeline is local and advisory. It does not refresh artifacts, approve work, or change project files.',
   };
@@ -151,6 +181,9 @@ function renderMarkdown(result) {
     lines.push(`- ${event.date || '(unknown date)'} ${event.kind}: ${event.status} - ${event.summary}`);
     lines.push(`  - Source: ${event.source}`);
   }
+  lines.push('', '## Deltas', '');
+  if (!result.deltas || result.deltas.length === 0) lines.push('- No comparable deltas found.');
+  else for (const delta of result.deltas) lines.push(`- ${delta.kind}: ${delta.status} - ${delta.summary}`);
   lines.push('', `Next: ${result.next}`, '');
   return lines.join('\n');
 }

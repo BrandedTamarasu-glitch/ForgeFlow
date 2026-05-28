@@ -7,18 +7,20 @@ const { buildReleaseVerify, githubVerification, parseArgs, renderMarkdown } = re
 const passRunner = () => ({ status: 0, stdout: '', stderr: '' });
 const installRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-release-verify-install-'));
 fs.writeFileSync(path.join(installRoot, 'forgeflow-version'), '0000000\n');
+const version = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', '.claude-plugin', 'plugin.json'), 'utf8')).version;
+const tag = `v${version}`;
 const result = buildReleaseVerify({ root: process.cwd(), runner: passRunner, installRoot });
-const github = githubVerification(process.cwd(), '4.3.25', (bin) => (bin === 'gh'
-  ? { status: 0, stdout: '{"tagName":"v4.3.25","name":"Forgeflow 4.3.25","isPrerelease":false,"url":"https://example.invalid/release"}', stderr: '' }
-  : { status: 0, stdout: 'abc123\trefs/tags/v4.3.25\n', stderr: '' }));
+const github = githubVerification(process.cwd(), version, (bin) => (bin === 'gh'
+  ? { status: 0, stdout: JSON.stringify({ tagName: tag, name: `Forgeflow ${version}`, isPrerelease: false, url: 'https://example.invalid/release' }), stderr: '' }
+  : { status: 0, stdout: `abc123\trefs/tags/${tag}\n`, stderr: '' }));
 const withGithub = buildReleaseVerify({
   root: process.cwd(),
   runner: passRunner,
   installRoot,
   github: true,
   githubRunner: (bin) => (bin === 'gh'
-    ? { status: 0, stdout: '{"tagName":"v4.3.25","name":"Forgeflow 4.3.25","isPrerelease":false,"url":"https://example.invalid/release"}', stderr: '' }
-    : { status: 0, stdout: 'abc123\trefs/tags/v4.3.25\n', stderr: '' }),
+    ? { status: 0, stdout: JSON.stringify({ tagName: tag, name: `Forgeflow ${version}`, isPrerelease: false, url: 'https://example.invalid/release' }), stderr: '' }
+    : { status: 0, stdout: `abc123\trefs/tags/${tag}\n`, stderr: '' }),
 });
 const networkBlocked = githubVerification(process.cwd(), '4.3.24', (bin) => (bin === 'gh'
   ? { status: 1, error: new Error('spawnSync gh EPERM'), stdout: '', stderr: 'error connecting to api.github.com\ncheck your internet connection\n' }

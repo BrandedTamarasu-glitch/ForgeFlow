@@ -69,7 +69,8 @@ const checks = [
   ['recommendations include corrective signals', result.recommendations.some((item) => item.action === 'triage-review-outcome-learning-signals') && result.recommendations.some((item) => item.action === 'calibrate-next-work-selection') && result.recommendations.some((item) => item.action === 'fix-first-run-friction')],
   ['groups recommendations', result.recommendation_groups.fix_first.some((item) => item.source === 'first-run-results') && result.recommendation_groups.watch.some((item) => item.source === 'agent-feedback')],
   ['signal quality present', result.signal_quality.status === 'attention' && result.signal_quality.signals.some((item) => item.source === 'next-work-outcomes' && item.notes.includes('corrective-heavy'))],
-  ['markdown renders', markdown.includes('# Forgeflow Learning Status') && markdown.includes('## Signals') && markdown.includes('## Fix First') && markdown.includes('## Watch') && markdown.includes('## Healthy') && markdown.includes('## Signal Quality') && markdown.includes('first-run-results') && markdown.includes('advisory local evidence')],
+  ['signal decay present', result.signal_quality.signals.every((item) => item.decay && Number.isFinite(item.decay.penalty))],
+  ['markdown renders', markdown.includes('# Forgeflow Learning Status') && markdown.includes('## Signals') && markdown.includes('## Fix First') && markdown.includes('## Watch') && markdown.includes('## Healthy') && markdown.includes('## Signal Quality') && markdown.includes('Decay:') && markdown.includes('first-run-results') && markdown.includes('advisory local evidence')],
   ['cli args parse', opts.root === root && opts.projectDir === projectDir && opts.json === true],
 ];
 

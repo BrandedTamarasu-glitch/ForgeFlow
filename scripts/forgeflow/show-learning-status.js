@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const path = require('path');
+const fs = require('fs');
 const { checkProjectLearnings } = require('./check-project-learnings');
 const { readAgentFeedback, readReviewOutcomes } = require('./build-project-intelligence');
 const { readNextWorkOutcomes } = require('./record-next-work-outcome');
@@ -114,14 +115,65 @@ function qualityFor(section, nextWork = null) {
   };
 }
 
-function buildSignalQuality(sections, nextWork) {
-  const signals = sections.map((section) => qualityFor(section, nextWork));
+function ageDays(file) {
+  if (!file || !fs.existsSync(file)) return null;
+  const mtime = fs.statSync(file).mtimeMs;
+  return Math.max(0, Math.floor((Date.now() - mtime) / 86400000));
+}
+
+function decayFor(section, projectDir) {
+  const files = {
+    'project-learnings': path.join(projectDir, 'project-learnings.md'),
+    'user-profile': path.join(projectDir, 'project-experience-profile.jsonl'),
+    'agent-feedback': path.join(projectDir, 'agent-feedback.jsonl'),
+    'review-outcomes': path.join(projectDir, 'review-outcomes.jsonl'),
+    'next-work-outcomes': path.join(projectDir, 'next-work-outcomes.jsonl'),
+  };
+  const days = ageDays(files[section.name]);
+  const reinforced = section.records >= 3;
+  let penalty = 0;
+  const notes = [];
+  if (days === null) {
+    penalty = section.records > 0 ? 0 : 20;
+    notes.push('no-timestamped-artifact');
+  } else if (days > 90 && !reinforced) {
+    penalty = 30;
+    notes.push('stale-unreinforced');
+  } else if (days > 30 && !reinforced) {
+    penalty = 15;
+    notes.push('aging-unreinforced');
+  } else if (reinforced) {
+    notes.push('reinforced');
+  }
+  return {
+    source: section.name,
+    age_days: days,
+    reinforced,
+    penalty,
+    notes,
+  };
+}
+
+function buildSignalQuality(sections, nextWork, projectDir = '') {
+  const signals = sections.map((section) => {
+    const quality = qualityFor(section, nextWork);
+    const decay = decayFor(section, projectDir);
+    const score = Math.max(0, quality.score - decay.penalty);
+    return {
+      ...quality,
+      score,
+      confidence: score >= 80 ? 'high' : score >= 55 ? 'medium' : 'low',
+      use: score >= 80 ? 'use-directly-with-current-evidence' : score >= 55 ? 'use-with-caution' : 'verify-before-use',
+      decay,
+      notes: [...quality.notes, ...decay.notes],
+    };
+  });
   const average = signals.length > 0 ? Math.round(signals.reduce((sum, item) => sum + item.score, 0) / signals.length) : 0;
   return {
     status: signals.some((item) => item.confidence === 'low') ? 'attention' : 'pass',
     average_score: average,
     signals,
-    boundary: 'Signal quality scores rank local guidance trust only. They do not approve work or replace current code, tests, review, or user instructions.',
+    boundary: 'Signal quality scores rank local guidance trust only. Age and reinforcement can lower trust, but scores do not approve work or replace current code, tests, review, or user instructions.',
   };
 }
 
@@ -193,7 +245,7 @@ function buildLearningStatus(opts = {}) {
     .filter((section) => section.next && !/^continue-/.test(section.next))
     .map((section) => ({ source: section.name, action: section.next }));
   const recommendationGroups = groupRecommendations(sections);
-  const signalQuality = buildSignalQuality(sections, nextWork);
+  const signalQuality = buildSignalQuality(sections, nextWork, projectDir);
   return {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
@@ -236,6 +288,7 @@ function renderMarkdown(result) {
   lines.push('', '## Signal Quality', '', `- Status: ${result.signal_quality.status}`, `- Average score: ${result.signal_quality.average_score}`, `- Boundary: ${result.signal_quality.boundary}`);
   for (const item of result.signal_quality.signals) {
     lines.push(`- ${item.source}: ${item.confidence} (${item.score}) - ${item.use}`);
+    lines.push(`  - Decay: ${item.decay.age_days === null ? 'unknown age' : `${item.decay.age_days} day(s)`}, ${item.decay.reinforced ? 'reinforced' : 'not reinforced'}, penalty ${item.decay.penalty}`);
     if (item.notes.length > 0) lines.push(`  - Notes: ${item.notes.join(', ')}`);
   }
   lines.push('');

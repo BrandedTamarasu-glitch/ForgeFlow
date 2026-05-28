@@ -55,7 +55,9 @@ const installedFirstRunRollupPath = path.join(installedHelperDir, 'rollup-first-
 const installedNextWorkOutcomePath = path.join(installedHelperDir, 'record-next-work-outcome.js');
 const installedLearningStatusPath = path.join(installedHelperDir, 'show-learning-status.js');
 const installedHealthTimelinePath = path.join(installedHelperDir, 'show-project-health-timeline.js');
+const installedContextContractPath = path.join(installedHelperDir, 'check-context-contract.js');
 const installedPatternReviewPath = path.join(installedHelperDir, 'render-pattern-review.js');
+const installedPostReleaseInstallPath = path.join(installedHelperDir, 'render-post-release-install-verify.js');
 const installedRuntimeDriftPath = path.join(installedHelperDir, 'runtime-drift-snapshot.js');
 const installedReleaseVerifyPath = path.join(installedHelperDir, 'render-release-verify.js');
 
@@ -76,7 +78,9 @@ const installedFirstRunRollup = require(installedFirstRunRollupPath);
 const installedNextWorkOutcome = require(installedNextWorkOutcomePath);
 const installedLearningStatus = require(installedLearningStatusPath);
 const installedHealthTimeline = require(installedHealthTimelinePath);
+const installedContextContract = require(installedContextContractPath);
 const installedPatternReview = require(installedPatternReviewPath);
+const installedPostReleaseInstall = require(installedPostReleaseInstallPath);
 const installedRuntimeDrift = require(installedRuntimeDriftPath);
 const installedReleaseVerify = require(installedReleaseVerifyPath);
 const projectDir = path.join(projectRoot, '.forgeflow', path.basename(projectRoot));
@@ -109,6 +113,13 @@ const runtimeDrift = installedRuntimeDrift.buildRuntimeDriftSnapshot({ root: rep
 const profileReview = installedProfileReview.buildProfileReview({ projectDir, home: installHome });
 const healthTimeline = installedHealthTimeline.buildProjectHealthTimeline({ root: projectRoot, projectDir });
 const releaseVerify = installedReleaseVerify.buildReleaseVerify({ root: projectRoot, installRoot: installHome, runner: () => ({ status: 0, stdout: '', stderr: '' }) });
+const postReleaseInstall = installedPostReleaseInstall.buildPostReleaseInstallVerify({ root: projectRoot, installRoot: installHome, runner: () => ({ status: 0, stdout: '', stderr: '' }) });
+const contextLatest = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-installed-contract-'));
+const contextPacketDir = path.join(contextLatest, 'agent-packets');
+fs.mkdirSync(contextPacketDir, { recursive: true });
+write(path.join(contextLatest, 'agent-context-contract.json'), JSON.stringify({ schema_version: '1', agents: { warden_reviewer: {} } }, null, 2));
+write(path.join(contextPacketDir, 'warden_reviewer.md'), '# Packet\n\n## Packet Artifact Trust\nok\n\n## Agent Context Contract\nok\n\n## Output Contract\nok\n');
+const contextContract = installedContextContract.checkContextContract({ contextDir: contextLatest });
 const previousCwd = process.cwd();
 process.chdir(callerCwd);
 let smoke = null;
@@ -125,7 +136,7 @@ try {
 
 const checks = [
   ['runtime helpers copied', runtimeEntries.length > 0 && fs.existsSync(installedSmokePath) && fs.existsSync(installedHealthPath)],
-  ['new installed helpers copied', [installedProfileReviewPath, installedFirstRunResultPath, installedFirstRunRollupPath, installedNextWorkOutcomePath, installedLearningStatusPath, installedHealthTimelinePath, installedPatternReviewPath, installedRuntimeDriftPath, installedReleaseVerifyPath].every((file) => fs.existsSync(file))],
+  ['new installed helpers copied', [installedProfileReviewPath, installedFirstRunResultPath, installedFirstRunRollupPath, installedNextWorkOutcomePath, installedLearningStatusPath, installedHealthTimelinePath, installedContextContractPath, installedPatternReviewPath, installedPostReleaseInstallPath, installedRuntimeDriftPath, installedReleaseVerifyPath].every((file) => fs.existsSync(file))],
   ['installed tree excludes source tests', ['test-smoke-check.js', 'test-dogfood-self-test.js', 'test-installed-runtime-dogfood.js'].every((file) => !fs.existsSync(path.join(installedHelperDir, file)))],
   ['installed smoke runs from unrelated cwd', smoke && process.cwd() === previousCwd],
   ['installed downstream smoke passes', smoke && ['pass', 'warn'].includes(smoke.status)],
@@ -136,7 +147,9 @@ const checks = [
   ['installed next-work outcome runs', nextWorkOutcomes && nextWorkOutcomes.records === 1 && nextWorkOutcomes.by_outcome.useful === 1],
   ['installed learning status runs', learningStatus && learningStatus.schema_version === '1' && learningStatus.sections.some((item) => item.name === 'next-work-outcomes')],
   ['installed health timeline runs', healthTimeline && healthTimeline.schema_version === '1' && healthTimeline.events.some((item) => item.kind === 'learning-status')],
+  ['installed context contract runs', contextContract && contextContract.status === 'pass'],
   ['installed pattern review runs', patternReview && patternReview.schema_version === '1' && Array.isArray(patternReview.candidates)],
+  ['installed post-release install verify runs', postReleaseInstall && postReleaseInstall.schema_version === '1' && postReleaseInstall.boundary.includes('read-only')],
   ['installed runtime drift runs', runtimeDrift && runtimeDrift.schema_version === '1' && runtimeDrift.checked > 0],
   ['installed release verify runs', releaseVerify && releaseVerify.schema_version === '1' && releaseVerify.boundary.includes('advisory')],
 ];

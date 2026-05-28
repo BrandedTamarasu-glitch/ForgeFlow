@@ -49,6 +49,7 @@ node scripts/forgeflow/test-failure-digest.js
 node scripts/forgeflow/test-check-agent-drift.js
 node scripts/forgeflow/test-render-forgeflow-report.js
 node scripts/forgeflow/test-render-release-notes.js
+node scripts/forgeflow/test-render-post-release-install-verify.js
 node scripts/forgeflow/test-render-release-readiness.js
 node scripts/forgeflow/test-render-release-verify.js
 node scripts/forgeflow/test-render-support-bundle.js
@@ -88,6 +89,7 @@ node scripts/forgeflow/test-show-code-map.js
 node scripts/forgeflow/test-runtime-drift-snapshot.js
 node scripts/forgeflow/test-show-project-health-timeline.js
 node scripts/forgeflow/test-build-context-pack.js
+node scripts/forgeflow/test-check-context-contract.js
 node scripts/forgeflow/test-implementation-notes.js
 node scripts/forgeflow/test-check-implementation-notes.js
 node scripts/forgeflow/test-check-project-learnings.js

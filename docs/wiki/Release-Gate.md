@@ -27,6 +27,7 @@ node scripts/forgeflow/test-failure-digest.js
 node scripts/forgeflow/test-check-agent-drift.js
 node scripts/forgeflow/test-render-forgeflow-report.js
 node scripts/forgeflow/test-render-release-notes.js
+node scripts/forgeflow/test-render-post-release-install-verify.js
 node scripts/forgeflow/test-render-release-readiness.js
 node scripts/forgeflow/test-render-release-verify.js
 node scripts/forgeflow/test-render-support-bundle.js
@@ -66,6 +67,7 @@ node scripts/forgeflow/test-build-code-topology.js
 node scripts/forgeflow/test-show-code-map.js
 node scripts/forgeflow/test-runtime-drift-snapshot.js
 node scripts/forgeflow/test-build-context-pack.js
+node scripts/forgeflow/test-check-context-contract.js
 node scripts/forgeflow/test-implementation-notes.js
 node scripts/forgeflow/test-check-implementation-notes.js
 node scripts/forgeflow/test-check-project-learnings.js
@@ -126,6 +128,6 @@ known_deferrals:
 If the release-note draft includes issue context, verify each issue's state before publishing any "fixed" or "closed" claim. Issue references from commit subjects and curated metadata are advisory context, not proof of closure.
 Curated issue metadata for release notes must come from a repo-relative local JSON object with a top-level `issues` array. Include only public-safe `number`, `title`, `status`, and `evidence` fields. The release-note helper does not call GitHub.
 
-After publishing, run `/forgeflow-release-verify --save` for the compact shareable post-publish summary plus installed-version/runtime-drift consumability evidence, or `/forgeflow-release-readiness --post-publish --save-post-publish` for the full evidence block. Future runs can add `/forgeflow-release-verify --compare-last` or `--compare-post-publish-last` on release readiness to compare against the saved snapshot. These checks are advisory and do not tag, push, publish, call GitHub, or mutate installed files.
+After publishing, run `/forgeflow-release-verify --save` for the compact shareable post-publish summary plus installed-version/runtime-drift consumability evidence, or `/forgeflow-release-readiness --post-publish --save-post-publish` for the full evidence block. After updating an installed runtime, run `/forgeflow-post-release-install-verify` for a read-only after-update verdict across release verify, runtime drift, and downstream smoke. Future runs can add `/forgeflow-release-verify --compare-last` or `--compare-post-publish-last` on release readiness to compare against the saved snapshot. These checks are advisory and do not tag, push, publish, call GitHub, or mutate installed files.
 
 Do not tag or publish if release checks fail. Treat public-summary failures as release blockers when release notes rely on evaluation evidence. Use [Settings And Recovery](Settings-And-Recovery) to record any manual settings, restart, repair, or rollback deferrals.
