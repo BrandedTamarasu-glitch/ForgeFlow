@@ -3,16 +3,16 @@ const { buildReleaseVerify, githubVerification, parseArgs, renderMarkdown } = re
 
 const passRunner = () => ({ status: 0, stdout: '', stderr: '' });
 const result = buildReleaseVerify({ root: process.cwd(), runner: passRunner });
-const github = githubVerification(process.cwd(), '4.3.23', (bin) => (bin === 'gh'
-  ? { status: 0, stdout: '{"tagName":"v4.3.23","name":"Forgeflow 4.3.23","isDraft":false,"isPrerelease":false,"url":"https://example.invalid/release"}', stderr: '' }
-  : { status: 0, stdout: 'abc123\trefs/tags/v4.3.23\n', stderr: '' }));
+const github = githubVerification(process.cwd(), '4.3.24', (bin) => (bin === 'gh'
+  ? { status: 0, stdout: '{"tagName":"v4.3.24","name":"Forgeflow 4.3.24","isDraft":false,"isPrerelease":false,"url":"https://example.invalid/release"}', stderr: '' }
+  : { status: 0, stdout: 'abc123\trefs/tags/v4.3.24\n', stderr: '' }));
 const withGithub = buildReleaseVerify({
   root: process.cwd(),
   runner: passRunner,
   github: true,
   githubRunner: (bin) => (bin === 'gh'
-    ? { status: 0, stdout: '{"tagName":"v4.3.23","name":"Forgeflow 4.3.23","isDraft":false,"isPrerelease":false,"url":"https://example.invalid/release"}', stderr: '' }
-    : { status: 0, stdout: 'abc123\trefs/tags/v4.3.23\n', stderr: '' }),
+    ? { status: 0, stdout: '{"tagName":"v4.3.24","name":"Forgeflow 4.3.24","isDraft":false,"isPrerelease":false,"url":"https://example.invalid/release"}', stderr: '' }
+    : { status: 0, stdout: 'abc123\trefs/tags/v4.3.24\n', stderr: '' }),
 });
 const markdown = renderMarkdown(result);
 const githubMarkdown = renderMarkdown(withGithub);
