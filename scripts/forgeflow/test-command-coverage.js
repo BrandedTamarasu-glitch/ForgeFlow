@@ -70,6 +70,14 @@ function commandReferences(markdown) {
   return [...refs].sort();
 }
 
+function executableProbeReferences(markdown) {
+  const refs = [];
+  const regex = /!\s+-x\s+"\$\{HELPER_DIR\}\/([A-Za-z0-9._-]+\.(?:js|sh))"/g;
+  let match;
+  while ((match = regex.exec(markdown)) !== null) refs.push(`scripts/forgeflow/${match[1]}`);
+  return [...new Set(refs)].sort();
+}
+
 function parseHealthInventory() {
   const health = fs.readFileSync(path.join(repoRoot, 'commands', 'forgeflow-health.md'), 'utf8');
   const commandBlock = health.match(/EXPECTED_COMMANDS=\(\n([\s\S]*?)\n\)/);
@@ -121,6 +129,12 @@ function main() {
       if (path.basename(ref).startsWith('NAME.')) continue;
       if (!fs.existsSync(path.join(repoRoot, ref))) {
         failures.push(`${rel}: references missing helper ${ref}`);
+      }
+    }
+    for (const ref of executableProbeReferences(markdown)) {
+      const file = path.join(repoRoot, ref);
+      if (fs.existsSync(file) && (fs.statSync(file).mode & 0o111) === 0) {
+        failures.push(`${rel}: probes ${ref} with -x but source file is not executable`);
       }
     }
   }

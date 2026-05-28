@@ -7,6 +7,7 @@ const {
   collectRiskSignals,
   nextWorkBrief,
   nextWorkItems,
+  nextWorkRankingPolicy,
   parseArgs,
   readinessState,
   renderMarkdown,
@@ -322,6 +323,14 @@ const fallbackItems = nextWorkItems({
   top_risks: [],
   agent_feedback: { by_signal: {} },
 });
+const firstRunFallbackItems = nextWorkItems({
+  readiness: { state: 'ready', reasons: [], clearing_commands: [] },
+  freshness: { failure_digest: 'not-applicable' },
+  review_prep: { read_first: [], validate_first: [], refresh_first: [], review_notes: [] },
+  top_risks: [],
+  agent_feedback: { by_signal: {} },
+});
+const rankingPolicy = nextWorkRankingPolicy();
 const sameSourceRiskItems = nextWorkItems({
   readiness: { state: 'ready', reasons: [], clearing_commands: [] },
   review_prep: { read_first: [], validate_first: [], refresh_first: [], review_notes: [] },
@@ -468,6 +477,8 @@ const checks = [
   ['next work brief keeps lanes semantic', !syntheticBrief.read_first.includes('forgeflow-trends --refresh') && syntheticBrief.read_first.includes('src/auth/session.ts') && syntheticBrief.avoid_first.some((item) => item.includes('unblocked')) && syntheticBrief.avoid_first.some((item) => item.includes('learning quality gate')) && syntheticBrief.avoid_first.some((item) => item.includes('static import gaps')) && syntheticBrief.avoid_first.some((item) => item.includes('prior agent guidance')) && syntheticBrief.validate_first.includes('Run auth regression tests before review.') && !syntheticBrief.validate_first.includes('forgeflow-trends --refresh') && syntheticBrief.proof_boundary.some((item) => item.includes('current code'))],
   ['next work brief has orientation fallback', cleanBrief.avoid_first.length === 1 && cleanBrief.avoid_first[0].includes('orientation only')],
   ['next work items has planning fallback', fallbackItems.length === 1 && fallbackItems[0].source === 'project-intelligence' && fallbackItems[0].priority === 'low' && fallbackItems[0].evidence_strength === 'weak' && fallbackItems[0].what_to_change.includes('Select a small product-backed slice') && fallbackItems[0].start_with.includes('scripts/forgeflow/build-project-intelligence.js --json')],
+  ['next work ranking policy is explicit', rankingPolicy.source_rank.security === 0 && rankingPolicy.source_rank.readiness > rankingPolicy.source_rank['import-gaps'] && rankingPolicy.boundary.includes('Add new signal families')],
+  ['first-run fallback orients before implementation', firstRunFallbackItems.length === 1 && firstRunFallbackItems[0].title.includes('first bounded project slice') && firstRunFallbackItems[0].start_with.includes('forgeflow-first-run') && firstRunFallbackItems[0].validate_with.includes('forgeflow-health') && firstRunFallbackItems[0].why.includes('no captured failure digest')],
   ['next work items preserves distinct same-source risks', sameSourceRiskItems.filter((item) => item.source === 'context-advisor').length === 2 && sameSourceRiskItems.some((item) => item.why.includes('Budget is tight')) && sameSourceRiskItems.some((item) => item.why.includes('Scope is broad')) && sameSourceRiskItems.every((item) => item.validate_with.includes('scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json') && item.how_to_prove.includes('context budget') && !item.validate_with.includes('forgeflow-trends --refresh') && !item.validate_with.includes('forgeflow-failure-digest')) && sameSourceRiskItems.every((item) => !Object.prototype.hasOwnProperty.call(item, 'dedupe_key'))],
   ['next work items preserve high-priority risks under cap', cappedPriorityItems.length === 5 && cappedPriorityItems.filter((item) => item.priority === 'high').length === 3 && cappedPriorityItems.some((item) => item.source === 'security') && cappedPriorityItems.some((item) => item.source === 'schema') && cappedPriorityItems.some((item) => item.source === 'runtime') && cappedPriorityItems.every((item) => !Object.prototype.hasOwnProperty.call(item, 'order'))],
   ['readiness states classify signals', readyState.state === 'ready' && needsRefreshState.state === 'needs-refresh' && needsRefreshState.clearing_commands.includes('forgeflow-trends --refresh') && needsTriageState.state === 'needs-triage' && needsTriageState.clearing_commands.includes('forgeflow-code-map') && budgetTriageState.state === 'needs-triage' && budgetTriageState.evidence.context_budget === 'warn' && blockedState.state === 'blocked' && warnLatestInsightsState.state === 'blocked' && warnLatestInsightsState.clearing_commands.includes('forgeflow-trends --refresh') && blockedState.clearing_commands.includes('forgeflow-trends --refresh')],

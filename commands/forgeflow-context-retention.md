@@ -1,7 +1,7 @@
 ---
 name: forgeflow-context-retention
 description: Review local Forgeflow context artifact freshness and retention without mutating files
-argument-hint: "[--max-history <n>] [--stale-days <n>] [--json]"
+argument-hint: "[--max-history <n>] [--stale-days <n>] [--preview-cleanup] [--json]"
 allowed-tools:
   - Bash
 ---
@@ -14,7 +14,7 @@ This command is advisory and local. It does not delete, archive, compact, refres
 </context>
 
 <process>
-Validate `$ARGUMENTS`. Only `--max-history <n>`, `--stale-days <n>`, and `--json` are supported.
+Validate `$ARGUMENTS`. Only `--max-history <n>`, `--stale-days <n>`, `--preview-cleanup`, and `--json` are supported.
 
 ```bash
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -44,8 +44,8 @@ while [ "$i" -lt "${#USER_ARGS[@]}" ]; do
       SAFE_ARGS+=("$arg" "$value")
       i=$((i + 2))
       ;;
-    --json)
-      SAFE_ARGS+=(--json)
+    --preview-cleanup|--json)
+      SAFE_ARGS+=("$arg")
       i=$((i + 1))
       ;;
     "")

@@ -114,6 +114,7 @@ const checks = [
   ['release process mentions public summary rendering', releaseProcess.includes('render-evaluation-report.js --public')],
   ['release check runs version drift test', releaseCheck.includes('node scripts/forgeflow/test-release-version.js')],
   ['release check runs command argument safety test', releaseCheck.includes('node scripts/forgeflow/test-command-argument-safety.js')],
+  ['release check runs command wrapper smoke test', releaseCheck.includes('node scripts/forgeflow/test-command-wrapper-smoke.js')],
   ['release check runs artifact contract test', releaseCheck.includes('node scripts/forgeflow/test-artifact-contracts.js')],
   ['release check runs guided repair test', releaseCheck.includes('node scripts/forgeflow/test-render-guided-repair.js')],
   ['release check runs guidance contract test', releaseCheck.includes('node scripts/forgeflow/test-guidance-contract.js')],

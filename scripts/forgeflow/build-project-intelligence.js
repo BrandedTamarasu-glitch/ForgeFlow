@@ -12,6 +12,22 @@ const { compactUserProfile } = require('./user-profile');
 const { readNextWorkOutcomes } = require('./record-next-work-outcome');
 const VALID_FEEDBACK_SIGNALS = new Set(['useful', 'unclear', 'ignored', 'incorrect']);
 const VALID_FEEDBACK_CONFIDENCE = new Set(['low', 'medium', 'high']);
+const NEXT_WORK_SOURCE_RANK = Object.freeze({
+  security: 0,
+  schema: 0,
+  runtime: 0,
+  'import-gaps': 1,
+  'context-advisor': 1,
+  'project-learnings': 1,
+  'failure-digest': 1,
+  'user-profile': 2,
+  'review-outcomes': 2,
+  'agent-feedback': 3,
+  readiness: 4,
+  'next-work-confidence': 5,
+  'review-prep': 6,
+  'project-intelligence': 7,
+});
 
 function usage() {
   console.error('Usage: build-project-intelligence.js [--root <dir>] [--project-dir <dir>] [--out <path>] [--json] [--next-work] [--brief <index>]');
@@ -630,6 +646,14 @@ function priorityForSeverity(severity) {
   return 'low';
 }
 
+function nextWorkRankingPolicy() {
+  return {
+    priority_rank: { high: 0, medium: 1, low: 2 },
+    source_rank: { ...NEXT_WORK_SOURCE_RANK },
+    boundary: 'Priority comes first, then current actionable source rank, confidence score, and original order. Add new signal families here deliberately.',
+  };
+}
+
 function evidenceStrengthForItem(item) {
   if (item.evidence_strength) return item.evidence_strength;
   if (item.source === 'readiness') return item.priority === 'high' ? 'strong' : 'medium';
@@ -902,34 +926,36 @@ function nextWorkItems(intelligenceDraft) {
   }
 
   if (items.length === 0) {
+    const firstRunGuidance = intelligenceDraft.freshness && intelligenceDraft.freshness.failure_digest === 'not-applicable';
     addNextWorkItem(items, {
-      title: 'Select a small next slice and refresh project intelligence',
+      title: firstRunGuidance ? 'Start first bounded project slice with fresh local guidance' : 'Select a small next slice and refresh project intelligence',
       priority: 'low',
       source: 'project-intelligence',
-      why: 'No active readiness, risk, feedback, or hot-file signal is currently strong enough to suggest a specific local candidate.',
-      start_with: ['scripts/forgeflow/build-project-intelligence.js --json'],
-      validate_with: ['focused tests for the selected slice', 'full validation before review'],
-      proof_boundary: 'This fallback is only a planning prompt; choose scope from current product and code evidence.',
+      why: firstRunGuidance
+        ? 'This looks like a first-run project with no captured failure digest yet; start by orienting the project instead of chasing missing digest noise.'
+        : 'No active readiness, risk, feedback, or hot-file signal is currently strong enough to suggest a specific local candidate.',
+      start_with: firstRunGuidance
+        ? ['forgeflow-first-run', 'forgeflow-code-map', 'scripts/forgeflow/build-project-intelligence.js --json']
+        : ['scripts/forgeflow/build-project-intelligence.js --json'],
+      validate_with: firstRunGuidance
+        ? ['forgeflow-health', 'forgeflow-trends --refresh', 'focused tests for the selected slice']
+        : ['focused tests for the selected slice', 'full validation before review'],
+      what_to_change: firstRunGuidance
+        ? 'Use the first-run path to verify install health, orient on the code map, then choose one small product-backed slice.'
+        : undefined,
+      how_to_prove: firstRunGuidance
+        ? 'Confirm health and trends are current, then validate the selected slice with focused tests before review.'
+        : undefined,
+      stop_when: firstRunGuidance
+        ? 'Stop if install health, project orientation, or product intent is unclear before implementation.'
+        : undefined,
+      proof_boundary: firstRunGuidance
+        ? 'First-run guidance is an orientation path only; it does not prove the selected implementation is correct.'
+        : 'This fallback is only a planning prompt; choose scope from current product and code evidence.',
     });
   }
 
-  const priorityRank = { high: 0, medium: 1, low: 2 };
-  const sourceRank = {
-    security: 0,
-    schema: 0,
-    runtime: 0,
-    'import-gaps': 1,
-    'context-advisor': 1,
-    'project-learnings': 1,
-    'failure-digest': 1,
-    'user-profile': 2,
-    'review-outcomes': 2,
-    'agent-feedback': 3,
-    readiness: 4,
-    'next-work-confidence': 5,
-    'review-prep': 6,
-    'project-intelligence': 7,
-  };
+  const { priority_rank: priorityRank, source_rank: sourceRank } = nextWorkRankingPolicy();
   return items
     .map((item, index) => ({ ...item, order: index }))
     .sort((a, b) => (priorityRank[a.priority] ?? 1) - (priorityRank[b.priority] ?? 1)
@@ -1354,6 +1380,7 @@ module.exports = {
   parseArgs,
   nextWorkBrief,
   nextWorkItems,
+  nextWorkRankingPolicy,
   reviewPrep,
   readinessState,
   renderMarkdown,

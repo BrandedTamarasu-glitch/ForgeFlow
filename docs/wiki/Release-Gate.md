@@ -8,6 +8,7 @@ From a clean release checkout:
 
 ```bash
 node scripts/forgeflow/test-command-coverage.js
+node scripts/forgeflow/test-command-wrapper-smoke.js
 node scripts/forgeflow/test-command-argument-safety.js
 node scripts/forgeflow/test-doc-links.js
 node scripts/forgeflow/test-doc-drift-report.js

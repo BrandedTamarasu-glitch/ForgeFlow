@@ -8,7 +8,7 @@ const DEFAULT_MAX_HISTORY = 50;
 const DEFAULT_STALE_DAYS = 30;
 
 function usage() {
-  console.error('Usage: render-context-retention.js [--root <repo>] [--project-dir <dir>] [--max-history <n>] [--stale-days <n>] [--json]');
+  console.error('Usage: render-context-retention.js [--root <repo>] [--project-dir <dir>] [--max-history <n>] [--stale-days <n>] [--preview-cleanup] [--json]');
 }
 
 function requireValue(argv, name, index) {
@@ -28,6 +28,7 @@ function parseArgs(argv) {
     projectDir: '',
     maxHistory: DEFAULT_MAX_HISTORY,
     staleDays: DEFAULT_STALE_DAYS,
+    previewCleanup: false,
     json: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
@@ -44,6 +45,8 @@ function parseArgs(argv) {
     } else if (arg === '--stale-days') {
       opts.staleDays = positiveInt(requireValue(argv, arg, i), DEFAULT_STALE_DAYS);
       i += 1;
+    } else if (arg === '--preview-cleanup') {
+      opts.previewCleanup = true;
     } else if (arg === '--json') {
       opts.json = true;
     } else if (arg === '--help' || arg === '-h') {
@@ -60,12 +63,16 @@ function defaultProjectDir(root) {
   return path.join(root, '.forgeflow', path.basename(root));
 }
 
-function walkFiles(dir) {
+function walkFiles(dir, opts = {}) {
   const out = [];
   if (!fs.existsSync(dir)) return out;
+  const exclude = new Set((opts.exclude || []).map((item) => path.resolve(item)));
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...walkFiles(full));
+    if (entry.isDirectory()) {
+      if (exclude.has(path.resolve(full))) continue;
+      out.push(...walkFiles(full, opts));
+    }
     else if (entry.isFile()) out.push(full);
   }
   return out;
@@ -93,8 +100,8 @@ function daysOld(ms, now = Date.now()) {
   return Number(((now - ms) / 86400000).toFixed(1));
 }
 
-function artifactBucket(name, dir, root, now, staleDays) {
-  const files = walkFiles(dir);
+function artifactBucket(name, dir, root, now, staleDays, opts = {}) {
+  const files = walkFiles(dir, opts);
   const bytes = files.reduce((sum, file) => {
     try {
       return sum + fs.statSync(file).size;
@@ -117,7 +124,9 @@ function artifactBucket(name, dir, root, now, staleDays) {
     latest_mtime: latest ? new Date(latest).toISOString().replace(/\.\d{3}Z$/, 'Z') : '',
     age_days: age,
     status,
+    note: opts.note || '',
     examples: files.slice(0, 5).map((file) => path.relative(root, file)),
+    scoped_files: files,
   };
 }
 
@@ -134,17 +143,67 @@ function historyFile(name, file, root, maxHistory) {
   };
 }
 
+function staleFilePreview(bucket, root, now, staleDays) {
+  return (bucket.scoped_files || walkFiles(bucket.path))
+    .map((file) => {
+      let stat = null;
+      try {
+        stat = fs.statSync(file);
+      } catch (_err) {
+        return null;
+      }
+      const age = daysOld(stat.mtimeMs, now);
+      if (age === null || age <= staleDays) return null;
+      return {
+        path: path.relative(root, file),
+        age_days: age,
+        bytes: stat.size,
+        manual_action: 'Archive or remove manually only if this artifact belongs to old work.',
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.age_days - a.age_days || b.bytes - a.bytes)
+    .slice(0, 10);
+}
+
+function uniqueStaleFilePreviews(items) {
+  const seen = new Set();
+  const out = [];
+  for (const item of items) {
+    if (!item || seen.has(item.path)) continue;
+    seen.add(item.path);
+    out.push(item);
+  }
+  return out;
+}
+
+function historyCleanupPreview(history) {
+  if (history.over_by <= 0) return null;
+  return {
+    history: history.name,
+    path: history.path,
+    records: history.records,
+    max_records: history.max_records,
+    trim_oldest_records: history.over_by,
+    manual_action: `If this history is too large, manually archive the oldest ${history.over_by} record(s); this helper will not edit the file.`,
+  };
+}
+
 function buildContextRetention(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const projectDir = path.resolve(opts.projectDir || defaultProjectDir(root));
   const maxHistory = positiveInt(opts.maxHistory, DEFAULT_MAX_HISTORY);
   const staleDays = positiveInt(opts.staleDays, DEFAULT_STALE_DAYS);
+  const previewCleanup = Boolean(opts.previewCleanup);
   const now = opts.now ? new Date(opts.now).getTime() : Date.now();
   const contextDir = path.join(projectDir, 'context');
   const buckets = [
     artifactBucket('latest', path.join(contextDir, 'latest'), projectDir, now, staleDays),
     artifactBucket('agent-packets', path.join(contextDir, 'agent-packets'), projectDir, now, staleDays),
-    artifactBucket('context-root', contextDir, projectDir, now, staleDays),
+    artifactBucket('context-root-other', contextDir, projectDir, now, staleDays, {
+      exclude: [path.join(contextDir, 'latest'), path.join(contextDir, 'agent-packets')],
+      note: 'Excludes latest and agent-packets so broad context size is not double-counted.',
+    }),
   ];
   const histories = [
     historyFile('code-map-history', path.join(contextDir, 'code-map-history.jsonl'), projectDir, maxHistory),
@@ -187,6 +246,19 @@ function buildContextRetention(opts = {}) {
       reason: 'Context artifacts are within the read-only retention and freshness targets.',
     });
   }
+  const cleanupPreview = previewCleanup
+    ? {
+      enabled: true,
+      stale_files: uniqueStaleFilePreviews(buckets.flatMap((bucket) => staleFilePreview(bucket, projectDir, now, staleDays))),
+      history_trims: histories.map(historyCleanupPreview).filter(Boolean),
+      boundary: 'Preview only. Forgeflow does not delete, archive, compact, refresh, or mutate these artifacts.',
+    }
+    : {
+      enabled: false,
+      stale_files: [],
+      history_trims: [],
+      boundary: 'Run with --preview-cleanup to list read-only manual cleanup candidates.',
+    };
   const status = recommendations.some((item) => item.severity === 'attention') ? 'attention' : 'pass';
   return {
     schema_version: '1',
@@ -198,11 +270,13 @@ function buildContextRetention(opts = {}) {
     policy: {
       max_history_records: maxHistory,
       stale_after_days: staleDays,
+      preview_cleanup: previewCleanup,
       read_only: true,
     },
     buckets,
     histories,
     recommendations,
+    cleanup_preview: cleanupPreview,
     boundary: 'Context retention review is read-only. It does not delete, archive, compact, refresh, or mutate local artifacts.',
   };
 }
@@ -223,6 +297,7 @@ function renderMarkdown(result) {
   for (const bucket of result.buckets) {
     lines.push(`- ${bucket.name}: ${bucket.status}, ${bucket.files} file(s), ${bucket.estimated_tokens} estimated token(s)`);
     lines.push(`  - Path: ${bucket.path}`);
+    if (bucket.note) lines.push(`  - Note: ${bucket.note}`);
     if (bucket.latest_mtime) lines.push(`  - Latest: ${bucket.latest_mtime} (${bucket.age_days} day(s) old)`);
   }
   lines.push('', '## Histories', '');
@@ -234,6 +309,19 @@ function renderMarkdown(result) {
   for (const recommendation of result.recommendations) {
     lines.push(`- ${recommendation.severity}: ${recommendation.action} (${recommendation.target})`);
     lines.push(`  - ${recommendation.reason}`);
+  }
+  lines.push('', '## Cleanup Preview', '');
+  lines.push(`- ${result.cleanup_preview.boundary}`);
+  if (result.cleanup_preview.enabled) {
+    if (result.cleanup_preview.stale_files.length === 0 && result.cleanup_preview.history_trims.length === 0) {
+      lines.push('- No manual cleanup candidates found.');
+    }
+    for (const file of result.cleanup_preview.stale_files) {
+      lines.push(`- Stale file: ${file.path} (${file.age_days} day(s), ${file.bytes} bytes)`);
+    }
+    for (const history of result.cleanup_preview.history_trims) {
+      lines.push(`- History trim: ${history.history} would archive ${history.trim_oldest_records} oldest record(s) manually.`);
+    }
   }
   lines.push('');
   return lines.join('\n');
