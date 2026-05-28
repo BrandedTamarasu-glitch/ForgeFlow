@@ -20,9 +20,11 @@ const opts = parseArgs(['--commands-only', '--json']);
 const checks = [
   ['review warns', review.status === 'warn'],
   ['has conflict action', review.actions.resolve_conflicts.some((item) => item.action === 'resolve-conflict' && item.follow_up.includes('superseded'))],
-  ['has move action', review.actions.move_scope.some((item) => item.action === 'move-then-supersede')],
-  ['markdown renders templates', markdown.includes('Template:') && markdown.includes('Follow-up:')],
+  ['has move action', review.actions.move_scope.some((item) => item.action === 'move-then-supersede' && item.accept_command && item.supersede_command && item.follow_up.includes('accept command'))],
+  ['ask actions keep explicit boundary', review.actions.ask_user.every((item) => item.acceptance_boundary && item.acceptance_boundary.includes('Ask the user first'))],
+  ['markdown renders templates', markdown.includes('Template:') && markdown.includes('Follow-up:') && markdown.includes('Supersede:')],
   ['markdown groups actions', markdown.includes('## Resolve Conflicts') && markdown.includes('## Move Scope') && review.action_count >= 2],
+  ['markdown renders resolution flow', markdown.includes('## Resolution Flow') && markdown.includes('Rerun forgeflow-profile-review')],
   ['copy ready commands render', review.apply_commands.length > 0 && markdown.includes('## Copy-Ready Commands') && commandMarkdown.includes('Forgeflow Profile Review Commands')],
   ['commands only parses', opts.commandsOnly === true && opts.json === true],
 ];

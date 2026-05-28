@@ -964,7 +964,8 @@ function renderMarkdown(topology) {
 }
 
 function compactTopology(topology) {
-  const compactSections = (sections) => (sections || []).slice(0, 5);
+  const compactSections = (sections) => (sections || []).slice(0, 3);
+  const compactNeighbors = topology.changed_file_neighbors.slice(0, 5);
   const compactNeighbor = (item) => ({
     path: item.path,
     fan_in: item.fan_in,
@@ -974,24 +975,23 @@ function compactTopology(topology) {
     read_next: (item.read_next || []).slice(0, 5),
     review_guidance: item.review_guidance ? {
       ...item.review_guidance,
-      read_next: (item.review_guidance.read_next || []).slice(0, 5),
-      route_hints: (item.review_guidance.route_hints || []).slice(0, 4),
+      read_next: (item.review_guidance.read_next || []).slice(0, 3),
+      route_hints: (item.review_guidance.route_hints || []).slice(0, 3),
     } : null,
   });
   const keep = new Set();
   for (const item of topology.high_fan_in) keep.add(item.path);
   for (const item of topology.high_fan_out) keep.add(item.path);
-  for (const item of topology.changed_file_neighbors) {
+  for (const item of compactNeighbors) {
     keep.add(item.path);
     for (const next of item.read_next) keep.add(next.path);
   }
   for (const file of topology.changed_files) keep.add(file);
 
   const nodes = topology.nodes.filter((node) => keep.has(node.path)).map((node) => ({
-    ...node,
-    imports: node.imports.filter((target) => keep.has(target)),
-    imported_by: node.imported_by.filter((source) => keep.has(source)),
-    sections: [],
+    path: node.path,
+    fan_in: node.fan_in,
+    fan_out: node.fan_out,
   }));
   const edges = topology.edges.filter((edge) => keep.has(edge.source) && keep.has(edge.target));
   const markdownSections = topology.markdown_sections
@@ -1005,12 +1005,25 @@ function compactTopology(topology) {
   return {
     ...topology,
     scope: 'changed-neighborhood',
+    compact_budget: {
+      changed_file_neighbors_shown: compactNeighbors.length,
+      changed_file_neighbors_total: topology.changed_file_neighbors.length,
+      local_edges_shown_limit: 25,
+      external_imports_shown_limit: 20,
+      unresolved_imports_shown_limit: 20,
+      skipped_dynamic_imports_shown_limit: 20,
+    },
     nodes,
-    edges,
+    edges: edges.slice(0, 25),
     markdown_sections: markdownSections,
-    changed_file_neighbors: topology.changed_file_neighbors.map(compactNeighbor),
+    changed_sections: Object.fromEntries(compactNeighbors
+      .filter((item) => item.changed_sections && item.changed_sections.length > 0)
+      .map((item) => [item.path, compactSections(item.changed_sections)])),
+    changed_lines: {},
+    changed_files: topology.changed_files.slice(0, 20),
+    changed_file_neighbors: compactNeighbors.map(compactNeighbor),
     unresolved: topology.unresolved.slice(0, 20),
-    external: topology.external.filter((item) => keep.has(item.source)),
+    external: topology.external.filter((item) => keep.has(item.source)).slice(0, 20),
     skipped_dynamic: topology.skipped_dynamic.slice(0, 20),
   };
 }

@@ -126,6 +126,9 @@ function buildReleaseVerify(opts = {}) {
   const installedVersionPath = path.join(installRoot, 'forgeflow-version');
   const installedVersion = fs.existsSync(installedVersionPath) ? fs.readFileSync(installedVersionPath, 'utf8').trim() : '';
   const runtimeDrift = buildRuntimeDriftSnapshot({ root, installRoot, previewRepair: true });
+  const runtimeDriftStatus = runtimeDrift.status === 'pass'
+    ? 'pass'
+    : (runtimeDrift.status === 'info' ? 'info' : 'warn');
   const installEvidence = [
     {
       name: 'installed-version',
@@ -135,20 +138,27 @@ function buildReleaseVerify(opts = {}) {
     },
     {
       name: 'runtime-drift',
-      status: runtimeDrift.status === 'pass' ? 'pass' : 'warn',
+      status: runtimeDriftStatus,
       value: `${runtimeDrift.drift_count} drifted helper(s)`,
-      clears: 'Run /forgeflow-runtime-drift --preview-repair and /update-forgeflow --repair when ready.',
+      clears: runtimeDriftStatus === 'info'
+        ? 'Optional: run /update-forgeflow --repair to normalize helper file modes.'
+        : 'Run /forgeflow-runtime-drift --preview-repair and /update-forgeflow --repair when ready.',
     },
   ];
+  const consumabilityStatus = installEvidence.some((item) => item.status === 'warn')
+    ? 'attention'
+    : (installEvidence.some((item) => item.status === 'info') ? 'info' : 'pass');
   const github = opts.github ? githubVerification(root, post.version || '', opts.githubRunner || spawnSync) : null;
   const localConsumability = {
-    status: installEvidence.every((item) => item.status === 'pass') ? 'pass' : 'attention',
+    status: consumabilityStatus,
     install_root: installRoot,
     installed_version_path: installedVersionPath,
     runtime_drift: {
       status: runtimeDrift.status,
       checked: runtimeDrift.checked,
       drift_count: runtimeDrift.drift_count,
+      actionable_drift: runtimeDrift.actionable_drift,
+      mode_only_drift: runtimeDrift.mode_only_drift,
       missing_installed: runtimeDrift.missing_installed,
       content_drift: runtimeDrift.content_drift,
       mode_drift: runtimeDrift.mode_drift,

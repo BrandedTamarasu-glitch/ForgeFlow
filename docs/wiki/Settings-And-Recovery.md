@@ -75,7 +75,7 @@ Use repair when managed Forgeflow files are missing or corrupted:
 /update-forgeflow --repair
 ```
 
-Repair reinstalls managed files from upstream and preserves a rollback snapshot before writing. Plain `/update-forgeflow` also runs this repair path automatically when the installed SHA is current but required managed files are missing. It does not edit `settings.json`, custom agents, or unrelated local files.
+Repair reinstalls managed files from upstream and preserves a rollback snapshot before writing. Plain `/update-forgeflow` also runs this repair path automatically when the installed SHA is current but required managed files are missing. Runtime helper discovery accepts any managed non-test helper under `scripts/forgeflow/`, so newly added helpers can be repaired in the same pass instead of requiring a second run after the manifest changes. It does not edit `settings.json`, custom agents, or unrelated local files.
 
 ## Rollback
 

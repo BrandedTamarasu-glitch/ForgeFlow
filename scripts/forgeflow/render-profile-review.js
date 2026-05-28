@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const path = require('path');
 const { checkUserProfile } = require('./user-profile');
+const { shellQuote } = require('./privacy-boundary');
 
 function usage() {
   console.error('Usage: render-profile-review.js [--project-dir <dir>] [--home <dir>] [--commands-only] [--json]');
@@ -40,7 +41,7 @@ function actionFromSuggestion(suggestion) {
   const action = suggestion.type === 'move-to-project' || suggestion.type === 'move-to-global'
     ? 'move-then-supersede'
     : 'ask-and-record';
-  return {
+  const item = {
     action,
     scope: suggestion.scope,
     category: suggestion.category,
@@ -49,6 +50,24 @@ function actionFromSuggestion(suggestion) {
     command_template: suggestion.command_template || '',
     follow_up: suggestion.follow_up || 'Record only explicit user-approved guidance.',
   };
+  if (action === 'move-then-supersede') {
+    const originalScope = suggestion.scope === 'project' ? 'global' : 'project';
+    const movedTo = `${suggestion.scope}:${suggestion.category}`;
+    item.accept_command = suggestion.command_template || '';
+    item.supersede_command = [
+      'forgeflow-profile --record',
+      `--scope ${originalScope}`,
+      `--category ${suggestion.category}`,
+      `--preference ${shellQuote(suggestion.preference || '')}`,
+      '--status superseded',
+      `--superseded-by ${shellQuote(movedTo)}`,
+    ].join(' ');
+    item.follow_up = 'Run the accept command only after user confirmation, then run the supersede command to retire the mis-scoped entry.';
+  }
+  if (action === 'ask-and-record') {
+    item.acceptance_boundary = 'Ask the user first; do not record inferred answers from behavior alone.';
+  }
+  return item;
 }
 
 function buildProfileReview(opts = {}) {
@@ -96,6 +115,12 @@ function buildProfileReview(opts = {}) {
     actions,
     action_count: Object.values(actions).reduce((sum, group) => sum + group.length, 0),
     apply_commands: [...new Set(commandActions)],
+    resolution_flow: [
+      'Ask the user to confirm each suggested preference or scope move.',
+      'Record accepted guidance with forgeflow-profile --record.',
+      'For scope moves or conflicts, add a superseded record so old guidance no longer competes.',
+      'Rerun forgeflow-profile-review and check-user-profile before injecting profile guidance into agent context.',
+    ],
     boundary: 'Profile review is advisory. Apply actions only after explicit user confirmation; never infer or write preferences automatically.',
   };
 }
@@ -131,6 +156,9 @@ function renderMarkdown(review) {
         for (const preference of action.preferences) lines.push(`  - Preference: ${preference}`);
       }
       if (action.command_template) lines.push(`  - Template: ${action.command_template}`);
+      if (action.accept_command) lines.push(`  - Accept: ${action.accept_command}`);
+      if (action.supersede_command) lines.push(`  - Supersede: ${action.supersede_command}`);
+      if (action.acceptance_boundary) lines.push(`  - Boundary: ${action.acceptance_boundary}`);
       if (action.follow_up) lines.push(`  - Follow-up: ${action.follow_up}`);
     }
     return lines;
@@ -150,6 +178,8 @@ function renderMarkdown(review) {
   lines.push(...renderActions('Move Scope', review.actions.move_scope));
   lines.push(...renderActions('Ask User', review.actions.ask_user));
   lines.push(...renderActions('Clean Up', review.actions.clean_up));
+  lines.push('', '## Resolution Flow', '');
+  for (const step of review.resolution_flow || []) lines.push(`- ${step}`);
   lines.push('', '## Copy-Ready Commands', '');
   if (!review.apply_commands || review.apply_commands.length === 0) {
     lines.push('- None.');

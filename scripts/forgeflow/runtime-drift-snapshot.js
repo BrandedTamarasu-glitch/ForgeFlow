@@ -119,20 +119,26 @@ function buildRuntimeDriftSnapshot(opts = {}) {
   const installRoot = path.resolve(opts.installRoot || path.join(os.homedir(), '.claude'));
   const helpers = RUNTIME_HELPERS.map((source) => compareHelper(root, installRoot, source));
   const drift = helpers.filter((helper) => helper.status === 'drift');
+  const actionableDrift = drift.filter((helper) => !helper.installed_exists || helper.content === 'drift' || helper.syntax === 'fail');
+  const modeOnlyDrift = drift.filter((helper) => helper.installed_exists && helper.content !== 'drift' && helper.syntax !== 'fail' && helper.mode === 'drift');
   const result = {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
     root,
     install_root: installRoot,
-    status: drift.length > 0 ? 'attention' : 'pass',
+    status: actionableDrift.length > 0 ? 'attention' : (modeOnlyDrift.length > 0 ? 'info' : 'pass'),
     checked: helpers.length,
     drift_count: drift.length,
+    actionable_drift: actionableDrift.length,
+    mode_only_drift: modeOnlyDrift.length,
     missing_installed: drift.filter((helper) => !helper.installed_exists).length,
     content_drift: drift.filter((helper) => helper.content === 'drift').length,
     mode_drift: drift.filter((helper) => helper.mode === 'drift').length,
     syntax_failures: drift.filter((helper) => helper.syntax === 'fail').length,
     helpers,
-    recommendations: drift.length > 0 ? [{ action: '/update-forgeflow --repair', reason: 'Installed runtime helpers differ from source checkout.' }] : [],
+    recommendations: actionableDrift.length > 0
+      ? [{ action: '/update-forgeflow --repair', reason: 'Installed runtime helpers are missing, content-drifted, or syntax-failing.' }]
+      : (modeOnlyDrift.length > 0 ? [{ action: '/update-forgeflow --repair', reason: 'Installed runtime helpers only differ by executable mode.' }] : []),
     boundary: 'Runtime drift snapshot is read-only. It compares managed helper files and never repairs, updates, or deletes installed files.',
   };
   if (opts.previewRepair) result.repair_preview = buildRepairPreview(helpers);
@@ -154,6 +160,7 @@ function renderMarkdown(result) {
     `- Missing installed: ${result.missing_installed}`,
     `- Content drift: ${result.content_drift}`,
     `- Mode drift: ${result.mode_drift}`,
+    `- Mode-only drift: ${result.mode_only_drift}`,
     `- Syntax failures: ${result.syntax_failures}`,
     '',
     '## Drifted Helpers',

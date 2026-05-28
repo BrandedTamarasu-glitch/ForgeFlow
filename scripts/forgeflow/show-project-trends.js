@@ -387,13 +387,6 @@ function trendRecommendations({ freshness, latestInsights, refresh, importGaps, 
   if (failureDigest && failureDigest.status === 'invalid') {
     recommendations.push(refreshFailureDigest({ reason: failureDigest.reason }));
   }
-  if (failureDigest && failureDigest.first_run) {
-    recommendations.push(refreshFailureDigest({
-      reason: failureDigest.first_run_guidance || failureDigest.reason,
-      evidence: 'No latest failure digest artifact exists yet; this is expected until a failed command has been captured.',
-      clears: 'Cleared when /forgeflow-failure-digest writes the first current compact digest.',
-    }));
-  }
   if (failureDigest && failureDigest.freshness && failureDigest.freshness.status === 'attention') {
     recommendations.push(refreshFailureDigest());
   }

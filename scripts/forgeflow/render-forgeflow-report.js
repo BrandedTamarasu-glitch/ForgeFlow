@@ -410,8 +410,6 @@ function derivePriorities(report) {
     } else if (report.project_trends.failure_digest.summary) {
       priorities.push(`Use the latest failure digest before rerunning broad validation: ${report.project_trends.failure_digest.summary}`);
     }
-  } else if (report.project_trends.failure_digest && report.project_trends.failure_digest.first_run) {
-    priorities.push('Initialize the first failure digest after the next failed validation command before relying on failure-summary guidance.');
   }
   if (report.context.recommendations && report.context.recommendations.length > 0) {
     priorities.push(...report.context.recommendations.slice(0, 2).map((item) => item.command || item.reason));

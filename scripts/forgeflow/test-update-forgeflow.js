@@ -270,6 +270,21 @@ async function run() {
     },
     fetcher: localFetcher,
   });
+  const futureHelperHome = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-update-future-helper-'));
+  fs.writeFileSync(versionPath(futureHelperHome), `${latest}\n`);
+  const futureHelper = await updateForgeflow({
+    home: futureHelperHome,
+    repo: 'local/repo',
+    current: latest,
+    latest,
+    repair: true,
+    plan: {
+      firstRun: false,
+      files: ['scripts/forgeflow/future-helper.js'],
+      deleted: [],
+    },
+    fetcher: async () => '#!/usr/bin/env node\nconsole.log("future helper");\n',
+  });
 
   const rollbackHome = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-update-rollback-'));
   fs.mkdirSync(path.join(rollbackHome, 'commands'), { recursive: true });
@@ -331,6 +346,9 @@ async function run() {
     ['repair status', repaired.status === 'repaired'],
     ['repair installs missing file', fs.existsSync(path.join(repairHome, 'forgeflow', 'scripts', 'forgeflow', 'health-check.js'))],
     ['repair writes version', fs.readFileSync(versionPath(repairHome), 'utf8').trim() === latest],
+    ['future helper repair status', futureHelper.status === 'repaired'],
+    ['future helper installed from tree discovery', fs.existsSync(path.join(futureHelperHome, 'forgeflow', 'scripts', 'forgeflow', 'future-helper.js'))],
+    ['future helper executable', (fs.statSync(path.join(futureHelperHome, 'forgeflow', 'scripts', 'forgeflow', 'future-helper.js')).mode & 0o111) !== 0],
     ['rollback update created backup', rollbackUpdate.backup.created === true],
     ['rollback update removed deleted file', rollbackUpdateRemovedOld],
     ['rollback status', rollback.status === 'rolled-back'],

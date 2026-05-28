@@ -139,6 +139,7 @@ function categoryFor(source) {
   if (/^project-rules\/[^/]+\.md$/.test(file)) return 'project-rule';
   if (/^forgeflow-patterns\/[^/]+\.md$/.test(file)) return 'pattern';
   if (STATIC_FILES.has(file)) return file.split('/')[0].slice(0, -1);
+  if (/^scripts\/forgeflow\/(?!test-)[^/]+\.(?:js|sh)$/.test(file)) return 'runtime-script';
   if (RUNTIME_HELPERS.includes(file) && SCRIPT_EXTENSIONS.has(path.extname(file))) return 'runtime-script';
   return '';
 }
