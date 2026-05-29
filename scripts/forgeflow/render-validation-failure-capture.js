@@ -57,7 +57,7 @@ function defaultProjectDir(root) {
 function modeForCommand(command) {
   const text = String(command || '');
   if (isUnsafeCommand(text)) return { mode: 'raw', raw_required: true, reason: 'Command output is correctness-critical and must remain exact.' };
-  if (/\b(jest|vitest|playwright|npm\s+test|pnpm\s+test)\b/i.test(text)) return { mode: 'test', raw_required: false, reason: 'Test output can be compacted to failures and assertion signal.' };
+  if (/\b(jest|vitest|playwright|npm\s+test|pnpm\s+test|node\s+scripts\/forgeflow\/test-[\w.-]+\.js|node\s+scripts\/forgeflow\/smoke-check\.js|for\s+test_file\s+in\s+scripts\/forgeflow\/test-\*\.js)\b/i.test(text)) return { mode: 'test', raw_required: false, reason: 'Test output can be compacted to failures and assertion signal.' };
   if (/\b(tsc|typecheck)\b/i.test(text)) return { mode: 'typecheck', raw_required: false, reason: 'Typecheck output can be compacted to errors and warnings.' };
   if (/\b(eslint|lint)\b/i.test(text)) return { mode: 'lint', raw_required: false, reason: 'Lint output can be compacted to violations.' };
   if (/\b(build|next\s+build|vite\s+build)\b/i.test(text)) return { mode: 'build', raw_required: false, reason: 'Build output can be compacted to failures, errors, and warnings.' };

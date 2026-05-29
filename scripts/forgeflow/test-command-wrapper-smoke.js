@@ -29,6 +29,7 @@ function helperWrapper(commandRel, helperName) {
 }
 
 const contextRetention = helperWrapper('commands/forgeflow-context-retention.md', 'render-context-retention.js');
+const efficiencyGaps = helperWrapper('commands/forgeflow-efficiency-gaps.md', 'render-efficiency-gap-plan.js');
 const postRelease = helperWrapper('commands/forgeflow-post-release-install-verify.md', 'render-post-release-install-verify.js');
 
 const checks = [
@@ -37,6 +38,10 @@ const checks = [
   ['context retention wrapper falls back safely', contextRetention.fallsBackToInstalledHelper],
   ['context retention wrapper invokes helper with safe args', contextRetention.invokesHelperWithSafeArgs],
   ['context retention wrapper supports preview cleanup', contextRetention.markdown.includes('--preview-cleanup') && contextRetention.markdown.includes('SAFE_ARGS+=("$arg")')],
+  ['efficiency gaps wrapper references helper', efficiencyGaps.referencesHelper],
+  ['efficiency gaps wrapper checks executable helper', efficiencyGaps.checksRepoLocalExecutable && efficiencyGaps.helperExecutable],
+  ['efficiency gaps wrapper falls back safely', efficiencyGaps.fallsBackToInstalledHelper],
+  ['efficiency gaps wrapper preserves raw arguments', efficiencyGaps.markdown.includes('SAFE_ARGS+=(--args "${ARGUMENTS}")')],
   ['post-release wrapper references helper', postRelease.referencesHelper],
   ['post-release wrapper checks executable helper', postRelease.checksRepoLocalExecutable && postRelease.helperExecutable],
   ['post-release wrapper falls back safely', postRelease.fallsBackToInstalledHelper],

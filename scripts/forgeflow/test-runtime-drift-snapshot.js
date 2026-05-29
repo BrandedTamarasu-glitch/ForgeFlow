@@ -43,10 +43,11 @@ const modeOnly = buildRuntimeDriftSnapshot({ root: modeOnlyRoot, installRoot: mo
 const checks = [
   ['detects drift', result.status === 'attention' && result.drift_count >= 2],
   ['counts missing and syntax', result.missing_installed === 1 && result.syntax_failures === 1],
+  ['groups drifted helpers', result.drift_groups.length > 0 && result.drift_groups.some((item) => item.count > 0) && result.helpers.every((helper) => helper.helper_group)],
   ['mode-only drift is informational', modeOnly.status === 'info' && modeOnly.actionable_drift === 0 && modeOnly.mode_only_drift > 0],
   ['recommends repair', result.recommendations.some((item) => item.action === '/update-forgeflow --repair')],
   ['repair preview read-only', result.repair_preview.status === 'would-repair' && result.repair_preview.items.length >= 2 && result.repair_preview.boundary.includes('read-only')],
-  ['renders markdown', markdown.includes('# Forgeflow Runtime Drift') && markdown.includes('read-only') && markdown.includes('Drifted Helpers') && markdown.includes('## Repair Preview')],
+  ['renders markdown', markdown.includes('# Forgeflow Runtime Drift') && markdown.includes('read-only') && markdown.includes('Drift groups:') && markdown.includes('Drifted Helpers') && markdown.includes('## Repair Preview')],
   ['parse args', opts.root === root && opts.installRoot === installRoot && opts.previewRepair === true && opts.json === true],
 ];
 

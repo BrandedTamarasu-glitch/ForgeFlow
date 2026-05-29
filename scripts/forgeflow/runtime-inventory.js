@@ -43,6 +43,40 @@ function managedStaticFiles() {
   return Array.from(STATIC_FILES).sort();
 }
 
+function helperGroupForSource(source) {
+  const file = path.basename(String(source || ''));
+  if (/^(install-|update-|health-|forgeflow-version|runtime-|render-update-|render-guided-repair|render-post-release-install-verify)/.test(file)) {
+    return 'install-update-health';
+  }
+  if (/^(build-|check-context|context-|compact-|capture-|failure-|advise-|seed-budget|render-context|render-stale|render-validation|show-code|show-project-trends)/.test(file)) {
+    return 'context-intelligence';
+  }
+  if (/^(record-|rollup-|show-learning|show-project-learnings|show-user-profile|user-profile|learning-|render-profile|render-outcome|render-first|render-pattern|render-efficiency|render-insight|render-first-useful)/.test(file)) {
+    return 'learning-evidence';
+  }
+  if (/^(render-release|render-ship|ship-|smoke-|render-support|render-pilot|render-adoption|render-evaluation|summarize-)/.test(file)) {
+    return 'release-shipping';
+  }
+  if (/^(agent-chat|check-agent|check-codex-agent|generate-codex|explain-review|classify-review|render-review|check-review|guidance-|next-action|output-|privacy-|command-args|index-memory|build-memory|build-scope)/.test(file)) {
+    return 'agent-workflow';
+  }
+  return 'runtime-core';
+}
+
+function groupRuntimeHelpers(helpers) {
+  const groups = {};
+  for (const helper of helpers || []) {
+    const source = typeof helper === 'string' ? helper : helper.source;
+    const group = helper.helper_group || helperGroupForSource(source);
+    if (!groups[group]) groups[group] = { group, count: 0, sources: [] };
+    groups[group].count += 1;
+    groups[group].sources.push(source);
+  }
+  return Object.values(groups)
+    .map((item) => ({ ...item, sources: item.sources.sort() }))
+    .sort((a, b) => b.count - a.count || a.group.localeCompare(b.group));
+}
+
 function parseShellArray(markdown, name) {
   const block = String(markdown || '').match(new RegExp(`${name}=\\(\\n([\\s\\S]*?)\\n\\)`));
   if (!block) return [];
@@ -83,7 +117,9 @@ module.exports = {
   commandNameFromSource,
   commandNames,
   commandSources,
+  groupRuntimeHelpers,
   healthInventory,
+  helperGroupForSource,
   installedCommandNameFromSource,
   managedRuntimeHelpers,
   managedStaticFiles,

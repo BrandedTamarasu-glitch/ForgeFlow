@@ -3,7 +3,9 @@ const path = require('path');
 const {
   commandNames,
   commandSources,
+  groupRuntimeHelpers,
   healthInventory,
+  helperGroupForSource,
   managedRuntimeHelpers,
   releaseCheckCommands,
 } = require('./runtime-inventory');
@@ -27,6 +29,8 @@ const checks = [
   ['includes nested commands', sources.includes('commands/agent-chat/on.md') && names.includes('agent-chat/on')],
   ['matches health command inventory', sameList(names, health.commands)],
   ['runtime helper list matches install manifest', sameList(helpers, RUNTIME_HELPERS.slice().sort())],
+  ['groups runtime helpers', helperGroupForSource('scripts/forgeflow/install-manifest.js') === 'install-update-health' && helperGroupForSource('scripts/forgeflow/render-efficiency-gap-plan.js') === 'learning-evidence'],
+  ['summarizes helper groups', groupRuntimeHelpers(['scripts/forgeflow/install-manifest.js', 'scripts/forgeflow/update-forgeflow.js']).find((item) => item.group === 'install-update-health').count === 2],
   ['health lists runtime helpers', health.runtime_helpers.includes('render-next-work-ranking.js')],
   ['release docs match release check', sameList(releaseCheck, releaseGate) && sameList(releaseCheck, releaseProcess)],
   ['release check includes inventory tests', releaseCheck.includes('node scripts/forgeflow/test-runtime-inventory.js')],

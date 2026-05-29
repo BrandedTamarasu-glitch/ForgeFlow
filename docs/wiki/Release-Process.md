@@ -73,6 +73,7 @@ node scripts/forgeflow/test-render-first-task-adoption-loop.js
 node scripts/forgeflow/test-render-first-useful-win.js
 node scripts/forgeflow/test-render-insight-injection.js
 node scripts/forgeflow/test-render-next-work-ranking.js
+node scripts/forgeflow/test-render-efficiency-gap-plan.js
 node scripts/forgeflow/test-render-outcome-capture-plan.js
 node scripts/forgeflow/test-record-first-run-result.js
 node scripts/forgeflow/test-rollup-first-run-results.js

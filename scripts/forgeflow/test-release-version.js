@@ -144,6 +144,7 @@ const checks = [
   ['release check runs first useful win test', releaseCheck.includes('node scripts/forgeflow/test-render-first-useful-win.js')],
   ['release check runs insight injection test', releaseCheck.includes('node scripts/forgeflow/test-render-insight-injection.js')],
   ['release check runs next work ranking test', releaseCheck.includes('node scripts/forgeflow/test-render-next-work-ranking.js')],
+  ['release check runs efficiency gap plan test', releaseCheck.includes('node scripts/forgeflow/test-render-efficiency-gap-plan.js')],
   ['release check runs outcome capture plan test', releaseCheck.includes('node scripts/forgeflow/test-render-outcome-capture-plan.js')],
   ['release check runs first run result test', releaseCheck.includes('node scripts/forgeflow/test-record-first-run-result.js')],
   ['release check runs first run rollup test', releaseCheck.includes('node scripts/forgeflow/test-rollup-first-run-results.js')],

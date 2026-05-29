@@ -62,6 +62,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/render-adoption-pack.js',
   'scripts/forgeflow/render-context-retention.js',
   'scripts/forgeflow/render-context-wave-plan.js',
+  'scripts/forgeflow/render-efficiency-gap-plan.js',
   'scripts/forgeflow/render-first-run-guide.js',
   'scripts/forgeflow/render-first-useful-win.js',
   'scripts/forgeflow/render-first-task-adoption-loop.js',

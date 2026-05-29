@@ -48,6 +48,23 @@ function readJson(file, root) {
   }
 }
 
+function jsonlStatus(file, root) {
+  if (!fs.existsSync(file)) return 'missing';
+  try {
+    const content = safeReadTextFile(file, root).content;
+    return content.split(/\r?\n/).some((line) => line.trim()) ? 'present' : 'empty';
+  } catch (_err) {
+    return 'missing';
+  }
+}
+
+function streamStatus(intelligenceStatus, projectDir, fileName) {
+  const localStatus = jsonlStatus(path.join(projectDir, fileName), projectDir);
+  if (localStatus === 'present') return 'present';
+  if (localStatus === 'empty') return 'empty';
+  return intelligenceStatus || localStatus;
+}
+
 function streamPlan(name, status, command, reason) {
   const missing = status === 'missing' || status === 'empty' || status === undefined;
   return {
@@ -66,19 +83,19 @@ function buildOutcomeCapturePlan(opts = {}) {
   const streams = [
     streamPlan(
       'next-work-outcomes',
-      intelligence.next_work_confidence && intelligence.next_work_confidence.status,
+      streamStatus(intelligence.next_work_confidence && intelligence.next_work_confidence.status, projectDir, 'next-work-outcomes.jsonl'),
       'record-next-work-outcome --title "<recommendation>" --source "<source>" --outcome useful|ignored|incorrect|blocked',
       'No next-work outcome history exists, so recommendation confidence cannot calibrate against real usefulness.'
     ),
     streamPlan(
       'review-outcomes',
-      intelligence.review_outcomes && intelligence.review_outcomes.status,
+      streamStatus(intelligence.review_outcomes && intelligence.review_outcomes.status, projectDir, 'review-outcomes.jsonl'),
       'record-review-outcome --review-id "<id>" --verdict approved|revise|blocked --findings-total <n> --findings-confirmed <n>',
       'No review outcomes exist, so reviewer precision and missed-issue signals cannot calibrate.'
     ),
     streamPlan(
       'agent-feedback',
-      intelligence.agent_feedback && intelligence.agent_feedback.status,
+      streamStatus(intelligence.agent_feedback && intelligence.agent_feedback.status, projectDir, 'agent-feedback.jsonl'),
       'record-agent-feedback --agent "<agent>" --signal useful|stale|incorrect --note "<short evidence>"',
       'No agent feedback exists, so role-specific guidance cannot distinguish useful hints from stale guidance.'
     ),

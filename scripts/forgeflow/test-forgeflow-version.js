@@ -84,6 +84,7 @@ async function main() {
     ['partial markdown lists missing paths', partialMarkdown.includes('## Missing Required Paths')],
     ['partial markdown lists missing helper sources', partialMarkdown.includes('## Missing Runtime Helpers') && partialMarkdown.includes('scripts/forgeflow/update-forgeflow.js') && partialMarkdown.includes('local Forgeflow checkout')],
     ['one missing helper independently asks repair', oneMissing.status === 'repair-needed' && oneMissing.action === 'Run /update-forgeflow --repair.' && oneMissing.runtime_helpers.missing.length === 1],
+    ['one missing helper grouped', oneMissing.runtime_helpers.missing[0].helper_group && oneMissing.runtime_helpers.missing_groups.length === 1],
     ['one missing helper records source and path', oneMissing.runtime_helpers.missing[0].source === omittedSource && oneMissing.runtime_helpers.missing[0].path.endsWith('/forgeflow/scripts/forgeflow/smoke-check.js')],
     ['one missing markdown lists exact helper', oneMissingMarkdown.includes(omittedSource) && oneMissingMarkdown.includes('/update-forgeflow --repair')],
     ['invalid helper path asks repair', invalidHelper.status === 'repair-needed' && invalidHelper.runtime_helpers.missing.some((item) => item.source === invalidSource && item.issue === 'not-regular-file')],

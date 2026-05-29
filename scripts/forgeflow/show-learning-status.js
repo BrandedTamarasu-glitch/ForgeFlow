@@ -7,6 +7,7 @@ const { readNextWorkOutcomes } = require('./record-next-work-outcome');
 const { buildRollup, readRecords } = require('./rollup-first-run-results');
 const { compactUserProfile } = require('./user-profile');
 const { readLearningSignalPolicy } = require('./learning-signal-policy');
+const { buildOutcomeCapturePlan } = require('./render-outcome-capture-plan');
 
 function usage() {
   console.error('Usage: show-learning-status.js [--root <dir>] [--project-dir <dir>] [--json]');
@@ -200,6 +201,7 @@ function buildLearningStatus(opts = {}) {
   const nextWork = readNextWorkOutcomes(projectDir);
   const firstRun = firstRunSummary(projectDir);
   const learningPolicy = readLearningSignalPolicy(projectDir);
+  const outcomeCapturePlan = buildOutcomeCapturePlan({ root, projectDir });
   const sections = [
     {
       name: 'project-learnings',
@@ -259,6 +261,13 @@ function buildLearningStatus(opts = {}) {
     recommendations,
     recommendation_groups: recommendationGroups,
     signal_quality: signalQuality,
+    outcome_capture_plan: {
+      status: outcomeCapturePlan.status,
+      missing_count: outcomeCapturePlan.missing_count,
+      streams: outcomeCapturePlan.streams,
+      boundary: outcomeCapturePlan.boundary,
+      next: outcomeCapturePlan.next,
+    },
     learning_signal_policy: {
       status: learningPolicy.status,
       file: learningPolicy.file,
@@ -299,6 +308,14 @@ function renderMarkdown(result) {
     lines.push(`- ${item.source}: ${item.confidence} (${item.score}) - ${item.use}`);
     lines.push(`  - Decay: ${item.decay.age_days === null ? 'unknown age' : `${item.decay.age_days} day(s)`}, ${item.decay.reinforced ? 'reinforced' : 'not reinforced'}, penalty ${item.decay.penalty}`);
     if (item.notes.length > 0) lines.push(`  - Notes: ${item.notes.join(', ')}`);
+  }
+  lines.push('', '## Outcome Capture', '');
+  lines.push(`- Status: ${result.outcome_capture_plan.status}`);
+  lines.push(`- Missing streams: ${result.outcome_capture_plan.missing_count}`);
+  lines.push(`- Boundary: ${result.outcome_capture_plan.boundary}`);
+  for (const stream of result.outcome_capture_plan.streams) {
+    lines.push(`- ${stream.name}: ${stream.action}`);
+    if (stream.command) lines.push(`  - Command: ${stream.command}`);
   }
   lines.push('');
   return lines.join('\n');

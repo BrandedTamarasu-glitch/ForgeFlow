@@ -4,6 +4,7 @@ const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { RUNTIME_HELPERS, manifestEntry } = require('./install-manifest');
+const { groupRuntimeHelpers, helperGroupForSource } = require('./runtime-inventory');
 
 function usage() {
   console.error('Usage: runtime-drift-snapshot.js [--root <dir>] [--install-root <dir>] [--preview-repair] [--json]');
@@ -54,6 +55,7 @@ function buildRepairPreview(helpers) {
     .filter((helper) => helper.status === 'drift')
     .map((helper) => ({
       source: helper.source,
+      helper_group: helper.helper_group,
       installed_path: helper.installed_path,
       action: repairActionFor(helper),
       source_mode: helper.source_mode,
@@ -101,6 +103,7 @@ function compareHelper(root, installRoot, source) {
   const status = !sourceExists || !installedExists || modeDrift || contentDrift || syntax === 'fail' ? 'drift' : 'match';
   return {
     source,
+    helper_group: helperGroupForSource(source),
     source_path: sourcePath,
     installed_path: installedPath,
     status,
@@ -135,6 +138,8 @@ function buildRuntimeDriftSnapshot(opts = {}) {
     content_drift: drift.filter((helper) => helper.content === 'drift').length,
     mode_drift: drift.filter((helper) => helper.mode === 'drift').length,
     syntax_failures: drift.filter((helper) => helper.syntax === 'fail').length,
+    drift_groups: groupRuntimeHelpers(drift),
+    actionable_drift_groups: groupRuntimeHelpers(actionableDrift),
     helpers,
     recommendations: actionableDrift.length > 0
       ? [{ action: '/update-forgeflow --repair', reason: 'Installed runtime helpers are missing, content-drifted, or syntax-failing.' }]
@@ -162,6 +167,7 @@ function renderMarkdown(result) {
     `- Mode drift: ${result.mode_drift}`,
     `- Mode-only drift: ${result.mode_only_drift}`,
     `- Syntax failures: ${result.syntax_failures}`,
+    `- Drift groups: ${result.drift_groups.map((item) => `${item.group} (${item.count})`).join(', ') || 'none'}`,
     '',
     '## Drifted Helpers',
     '',
@@ -169,7 +175,7 @@ function renderMarkdown(result) {
   const drifted = result.helpers.filter((helper) => helper.status === 'drift');
   if (drifted.length === 0) lines.push('- None.');
   else for (const helper of drifted.slice(0, 30)) {
-    lines.push(`- ${helper.source}: content ${helper.content}, mode ${helper.mode}, syntax ${helper.syntax}`);
+    lines.push(`- ${helper.source}: ${helper.helper_group}; content ${helper.content}, mode ${helper.mode}, syntax ${helper.syntax}`);
   }
   if (drifted.length > 30) lines.push(`- ... ${drifted.length - 30} more`);
   lines.push('', '## Recommendations', '');
@@ -178,7 +184,7 @@ function renderMarkdown(result) {
   if (result.repair_preview) {
     lines.push('', '## Repair Preview', '', `- Status: ${result.repair_preview.status}`, `- Command: ${result.repair_preview.command}`, `- Items: ${result.repair_preview.item_count}`, `- Boundary: ${result.repair_preview.boundary}`);
     for (const item of result.repair_preview.items.slice(0, 30)) {
-      lines.push(`- ${item.source}: ${item.action}${item.reason ? ` (${item.reason})` : ''}`);
+      lines.push(`- ${item.source}: ${item.helper_group}; ${item.action}${item.reason ? ` (${item.reason})` : ''}`);
     }
     if (result.repair_preview.items.length > 30) lines.push(`- ... ${result.repair_preview.items.length - 30} more`);
   }

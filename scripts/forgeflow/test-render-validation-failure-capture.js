@@ -4,6 +4,9 @@ const { buildValidationFailureCapture, modeForCommand, parseArgs, renderMarkdown
 
 const root = path.resolve(__dirname, '..', '..');
 const test = buildValidationFailureCapture({ root, command: 'pnpm test' });
+const forgeflowTest = modeForCommand('node scripts/forgeflow/test-render-validation-plan.js');
+const forgeflowFullSuite = modeForCommand('for test_file in scripts/forgeflow/test-*.js; do node "$test_file" || exit 1; done');
+const sourceSmoke = modeForCommand('node scripts/forgeflow/smoke-check.js --mode source --json');
 const typecheck = modeForCommand('npm run typecheck');
 const lint = modeForCommand('eslint src');
 const build = modeForCommand('npm run build');
@@ -14,6 +17,9 @@ const opts = parseArgs(['--root', root, '--args', '--command "npm run build" --j
 
 const checks = [
   ['maps test', test.status === 'capture-ready' && test.mode === 'test' && test.capture_command.includes('--mode test')],
+  ['maps forgeflow helper tests', forgeflowTest.mode === 'test'],
+  ['maps forgeflow full suite loop', forgeflowFullSuite.mode === 'test'],
+  ['maps source smoke', sourceSmoke.mode === 'test'],
   ['maps typecheck', typecheck.mode === 'typecheck'],
   ['maps lint', lint.mode === 'lint'],
   ['maps build', build.mode === 'build'],

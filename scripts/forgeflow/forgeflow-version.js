@@ -5,6 +5,7 @@ const os = require('os');
 const path = require('path');
 const { manifestEntry, RUNTIME_HELPERS } = require('./install-manifest');
 const { writeJsonSafe } = require('./file-safety');
+const { groupRuntimeHelpers, helperGroupForSource } = require('./runtime-inventory');
 
 const DEFAULT_REPO = 'BrandedTamarasu-glitch/ForgeFlow';
 
@@ -121,6 +122,7 @@ function runtimeHelperInventory(home) {
     }
     return {
       source,
+      helper_group: helperGroupForSource(source),
       path: entry ? entry.destination : '',
       exists,
       regular_file,
@@ -129,6 +131,7 @@ function runtimeHelperInventory(home) {
   });
   const missing = expected.filter((item) => !item.regular_file).map(({ source, path: helperPath, issue }) => ({
     source,
+    helper_group: helperGroupForSource(source),
     path: helperPath,
     issue,
   }));
@@ -137,6 +140,7 @@ function runtimeHelperInventory(home) {
     expected: expected.length,
     present: expected.length - missing.length,
     missing,
+    missing_groups: groupRuntimeHelpers(missing),
     repair_command: missing.length > 0 ? '/update-forgeflow --repair' : '',
   };
 }
@@ -325,9 +329,14 @@ function renderMarkdown(result) {
   }
   if (result.runtime_helpers?.missing?.length > 0) {
     lines.push('', '## Missing Runtime Helpers', '');
-    for (const item of result.runtime_helpers.missing) {
-      lines.push(`- ${item.source}: ${item.path}${item.issue ? ` (${item.issue})` : ''}`);
+    for (const group of result.runtime_helpers.missing_groups || []) {
+      lines.push(`- ${group.group}: ${group.count}`);
     }
+    lines.push('');
+    for (const item of result.runtime_helpers.missing.slice(0, 30)) {
+      lines.push(`- ${item.source}: ${item.helper_group}; ${item.path}${item.issue ? ` (${item.issue})` : ''}`);
+    }
+    if (result.runtime_helpers.missing.length > 30) lines.push(`- ... ${result.runtime_helpers.missing.length - 30} more`);
     lines.push('', `Repair: ${result.action || result.runtime_helpers.repair_command}`);
   }
 

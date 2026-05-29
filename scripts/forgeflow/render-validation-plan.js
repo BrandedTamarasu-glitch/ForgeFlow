@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { buildValidationFailureCapture } = require('./render-validation-failure-capture');
 
 function usage() {
   console.error('Usage: render-validation-plan.js [--root <repo>] [--json]');
@@ -62,17 +63,34 @@ function buildValidationPlan(opts = {}) {
     if (/^scripts\/forgeflow\/update-forgeflow\.js$/.test(file)) commands.add('node scripts/forgeflow/test-update-forgeflow.js');
   }
   commands.add('git diff --check');
+  const commandList = [...commands];
   const fullRequired = files.some((file) => /^\.claude-plugin\//.test(file) || /^scripts\/forgeflow\/(install-manifest|update-forgeflow|health-check|smoke-check|build-context-pack)\.js$/.test(file));
+  const fullSuiteCommand = fullRequired ? 'for test_file in scripts/forgeflow/test-*.js; do node "$test_file" || exit 1; done' : '';
+  const sourceSmokeRequired = fullRequired || files.some((file) => /^commands\/|^docs\/|^README\.md/.test(file));
+  const sourceSmokeCommand = 'node scripts/forgeflow/smoke-check.js --mode source --json';
+  const failureCommands = [...commandList, fullSuiteCommand, sourceSmokeRequired ? sourceSmokeCommand : '']
+    .filter(Boolean)
+    .map((command) => {
+      const plan = buildValidationFailureCapture({ root, command });
+      return {
+        command,
+        mode: plan.mode,
+        raw_required: plan.raw_required,
+        next: plan.next,
+        reason: plan.reason,
+      };
+    });
   return {
     schema_version: '1',
     status: files.length ? 'planned' : 'no-changes',
     root,
     files,
-    commands: [...commands],
+    commands: commandList,
     full_suite_required: fullRequired,
-    full_suite_command: fullRequired ? 'for test_file in scripts/forgeflow/test-*.js; do node "$test_file" || exit 1; done' : '',
-    source_smoke_required: fullRequired || files.some((file) => /^commands\/|^docs\/|^README\.md/.test(file)),
-    source_smoke_command: 'node scripts/forgeflow/smoke-check.js --mode source --json',
+    full_suite_command: fullSuiteCommand,
+    source_smoke_required: sourceSmokeRequired,
+    source_smoke_command: sourceSmokeCommand,
+    failure_capture_commands: failureCommands,
     boundary: 'Validation plan is read-only. It recommends commands from changed files but does not run tests, commit, or push.',
   };
 }
@@ -92,6 +110,11 @@ function renderMarkdown(result) {
   ];
   if (result.full_suite_required) lines.push('', `Full suite: ${result.full_suite_command}`);
   if (result.source_smoke_required) lines.push(`Source smoke: ${result.source_smoke_command}`);
+  lines.push('', '## If A Command Fails', '');
+  for (const item of result.failure_capture_commands.slice(0, 12)) {
+    lines.push(`- ${item.command}: ${item.raw_required ? 'keep raw' : item.next}`);
+  }
+  if (result.failure_capture_commands.length > 12) lines.push(`- ... ${result.failure_capture_commands.length - 12} more`);
   lines.push('');
   return lines.join('\n');
 }
