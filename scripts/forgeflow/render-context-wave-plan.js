@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { estimateTokens } = require('./context-telemetry');
 const { assertSafeDirectory, isPathInside, safeReadTextFile, writeFileSafe } = require('./file-safety');
+const { shellQuote } = require('./privacy-boundary');
 
 function usage() {
   console.error('Usage: render-context-wave-plan.js [--root <repo>] [--context-dir <dir>] [--target-tokens <n>] [--write-wave-files] [--wave-dir <dir>] [--json]');
@@ -65,6 +66,59 @@ function riskRank(kind) {
   }[kind] ?? 7;
 }
 
+function isProofFile(filePath) {
+  return /(^|\/)(test|tests|spec|__tests__|fixtures)(\/|$)|(\.|-)(test|spec)\.[cm]?[jt]sx?$|(^|\/)(docs|README|CHANGELOG|commands)\b/i.test(filePath);
+}
+
+function pathRiskReasons(filePath) {
+  const reasons = [];
+  if (/(auth|session|permission|tenant|secret|token|security)/i.test(filePath)) reasons.push('security-sensitive-path');
+  if (/(schema|migration|database|storage|state)/i.test(filePath)) reasons.push('data-or-state-path');
+  if (/(install|update|health|release|smoke|runtime|manifest)/i.test(filePath)) reasons.push('runtime-or-release-path');
+  if (isProofFile(filePath)) reasons.push('proof-or-validation-file');
+  return reasons;
+}
+
+function topologyIndex(topology) {
+  const index = new Map();
+  function note(filePath, score, reason) {
+    if (!filePath) return;
+    const current = index.get(filePath) || { score: 0, reasons: [] };
+    current.score += score;
+    current.reasons.push(reason);
+    index.set(filePath, current);
+  }
+  for (const item of topology.high_fan_in || []) note(item.path, 25, `high-fan-in:${item.fan_in || 0}`);
+  for (const item of topology.high_fan_out || []) note(item.path, 18, `high-fan-out:${item.fan_out || 0}`);
+  for (const item of topology.changed_file_neighbors || []) {
+    note(item.path, 30, 'changed-neighborhood');
+    for (const next of item.read_next || []) note(next.path, 12, `neighbor:${next.direction || 'related'}`);
+  }
+  return index;
+}
+
+function enrichFile(item, topologyScores) {
+  const filePath = String(item.path || '');
+  const topology = topologyScores.get(filePath) || { score: 0, reasons: [] };
+  const reasons = [
+    ...pathRiskReasons(filePath),
+    ...topology.reasons,
+    item.kind ? `kind:${item.kind}` : 'kind:unknown',
+  ];
+  const score = Math.max(0, 100 - (riskRank(item.kind) * 10))
+    + topology.score
+    + (reasons.includes('security-sensitive-path') ? 35 : 0)
+    + (reasons.includes('data-or-state-path') ? 25 : 0)
+    + (reasons.includes('runtime-or-release-path') ? 20 : 0)
+    + (reasons.includes('proof-or-validation-file') ? 10 : 0);
+  return {
+    ...item,
+    priority_score: score,
+    priority_reasons: [...new Set(reasons)],
+    proof_required: isProofFile(filePath),
+  };
+}
+
 function waveName(index) {
   return ['risk-core', 'product-surface', 'tests-and-docs', 'remaining'][index] || `wave-${index + 1}`;
 }
@@ -80,8 +134,8 @@ function safeWaveDir(root, contextDir, waveDir) {
 
 function waveCommand(root, name, file) {
   const placeholder = `<${name}-files.txt>`;
-  if (!file) return `build-context-pack --files ${placeholder} --max-memory-chars 4000 --max-diff-chars 9000`;
-  return `build-context-pack --files ${path.relative(root, file)} --max-memory-chars 4000 --max-diff-chars 9000`;
+  if (!file) return `build-context-pack --files ${shellQuote(placeholder)} --max-memory-chars 4000 --max-diff-chars 9000`;
+  return `build-context-pack --files ${shellQuote(path.relative(root, file))} --max-memory-chars 4000 --max-diff-chars 9000`;
 }
 
 function writeWaveFile(file, files) {
@@ -94,9 +148,13 @@ function buildContextWavePlan(opts = {}) {
   const manifest = readJson(path.join(contextDir, 'file-manifest.json'), contextDir) || { files: [] };
   const telemetry = readJson(path.join(contextDir, 'context-telemetry.json'), contextDir) || {};
   const synthesis = readJson(path.join(contextDir, 'synthesis-input.json'), contextDir) || {};
+  const topology = readJson(path.join(contextDir, 'code-topology.json'), contextDir) || {};
   const targetTokens = Math.max(1000, Number(opts.targetTokens || 16000));
   const currentTokens = Number(telemetry.estimated_compact_tokens || 0);
-  const files = (manifest.files || []).slice().sort((a, b) => riskRank(a.kind) - riskRank(b.kind) || String(a.path).localeCompare(String(b.path)));
+  const topologyScores = topologyIndex(topology);
+  const files = (manifest.files || [])
+    .map((item) => enrichFile(item, topologyScores))
+    .sort((a, b) => b.priority_score - a.priority_score || riskRank(a.kind) - riskRank(b.kind) || String(a.path).localeCompare(String(b.path)));
   const estimatedPerFile = files.length > 0 ? Math.max(100, Math.ceil((currentTokens || targetTokens) / Math.max(files.length, 1))) : 0;
   const maxFilesPerWave = estimatedPerFile > 0 ? Math.max(1, Math.floor(targetTokens / estimatedPerFile)) : files.length || 1;
   const waves = [];
@@ -108,19 +166,27 @@ function buildContextWavePlan(opts = {}) {
     const waveFile = waveDir ? path.join(waveDir, `${name}-files.txt`) : '';
     if (waveFile) writeWaveFile(waveFile, fileList);
     const compactTokens = estimateTokens(slice.reduce((sum, item) => sum + Number(item.size_bytes || 0), 0));
-    waves.push({
-      name,
-      files: fileList,
-      kinds: [...new Set(slice.map((item) => item.kind || 'unknown'))],
-      estimated_file_tokens: compactTokens,
-      wave_file: waveFile ? path.relative(root, waveFile) : '',
-      command: waveCommand(root, name, waveFile),
-    });
+	    waves.push({
+	      name,
+	      files: fileList,
+	      kinds: [...new Set(slice.map((item) => item.kind || 'unknown'))],
+	      priority_score: slice.reduce((sum, item) => sum + Number(item.priority_score || 0), 0),
+	      priority_reasons: [...new Set(slice.flatMap((item) => item.priority_reasons || []))].slice(0, 8),
+	      proof_files: slice.filter((item) => item.proof_required).map((item) => item.path),
+	      estimated_file_tokens: compactTokens,
+	      wave_file: waveFile ? path.relative(root, waveFile) : '',
+	      command: waveCommand(root, name, waveFile),
+	    });
   }
   const overBy = Math.max(0, currentTokens - targetTokens);
+  const incompleteReasons = [];
+  if (files.length === 0) incompleteReasons.push('file manifest has no files');
+  if (!synthesis.agent_packets) incompleteReasons.push('synthesis input is missing agent packets');
+  else if (Object.keys(synthesis.agent_packets).length === 0) incompleteReasons.push('synthesis input has no agent packets');
+  const incomplete = incompleteReasons.length > 0;
   return {
     schema_version: '1',
-    status: currentTokens > targetTokens ? 'split-recommended' : 'within-budget',
+    status: incomplete ? 'incomplete' : (currentTokens > targetTokens ? 'split-recommended' : 'within-budget'),
     root,
     context_dir: contextDir,
     current_compact_tokens: currentTokens,
@@ -130,11 +196,15 @@ function buildContextWavePlan(opts = {}) {
     wave_dir: waveDir ? path.relative(root, waveDir) : '',
     agent_count: synthesis.agent_packets ? Object.keys(synthesis.agent_packets).length : 0,
     file_count: files.length,
+    proof_file_count: files.filter((item) => item.proof_required).length,
+    incomplete_reasons: incompleteReasons,
     waves,
-    next: waves.length > 1 ? waves[0].command : 'Use the current context pack as-is.',
-    next_reason: waves.length > 1
+    next: incomplete ? 'Rebuild the context pack before planning review waves.' : (waves.length > 1 ? waves[0].command : 'Use the current context pack as-is.'),
+    next_reason: incomplete
+      ? `The latest context pack is incomplete: ${incompleteReasons.join('; ')}.`
+      : (waves.length > 1
       ? 'The latest context pack is over budget or broad enough to benefit from staged review waves.'
-      : 'The latest context pack is within the target budget or has too few files to split.',
+      : 'The latest context pack is within the target budget or has too few files to split.'),
     boundary: waveDir
       ? 'Context wave plan wrote explicit wave file lists only. It did not rebuild packets, spawn agents, commit, or push.'
       : 'Context wave plan is read-only. It does not rebuild packets, spawn agents, edit files, commit, or push.',
@@ -149,16 +219,22 @@ function renderMarkdown(result) {
     `Current compact tokens: ${result.current_compact_tokens}`,
     `Target compact tokens: ${result.target_compact_tokens}`,
     `Over by: ${result.over_by_tokens}`,
+    result.incomplete_reasons && result.incomplete_reasons.length > 0
+      ? `Incomplete because: ${result.incomplete_reasons.join('; ')}`
+      : '',
     '',
     result.boundary,
     '',
     '## Waves',
     '',
-  ];
+  ].filter((line) => line !== '');
   if (result.wave_files_written) lines.push(`Wave files: ${result.wave_dir}`, '');
   if (result.waves.length === 0) lines.push('- None.');
   for (const wave of result.waves) {
     lines.push(`- ${wave.name}: ${wave.files.length} file(s), kinds ${wave.kinds.join(', ') || '(none)'}`);
+    lines.push(`  - Priority: ${wave.priority_score || 0}`);
+    if (wave.priority_reasons && wave.priority_reasons.length > 0) lines.push(`  - Reasons: ${wave.priority_reasons.join(', ')}`);
+    if (wave.proof_files && wave.proof_files.length > 0) lines.push(`  - Proof files: ${wave.proof_files.join(', ')}`);
     if (wave.wave_file) lines.push(`  - File list: ${wave.wave_file}`);
     lines.push(`  - Command: ${wave.command}`);
   }

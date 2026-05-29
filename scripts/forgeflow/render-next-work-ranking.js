@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { safeReadTextFile } = require('./file-safety');
+const { shellQuote } = require('./privacy-boundary');
 
 function usage() {
   console.error('Usage: render-next-work-ranking.js [--root <repo>] [--project-dir <dir>] [--target-tokens <n>] [--json]');
@@ -63,16 +64,19 @@ function band(score) {
 
 function pushCandidate(candidates, candidate) {
   const score = Math.max(0, Math.min(100, Math.round(candidate.score || 0)));
+  const title = candidate.title || '';
+  const source = candidate.source || 'local-artifacts';
   candidates.push({
-    title: candidate.title,
+    title,
     score,
     confidence: band(score),
     evidence_strength: candidate.evidence_strength || 'weak',
-    source: candidate.source || 'local-artifacts',
+    source,
     why: candidate.why || '',
     start_with: candidate.start_with || [],
     validate_with: candidate.validate_with || [],
     demote_when: candidate.demote_when || [],
+    outcome_prompt: candidate.outcome_prompt || `record-next-work-outcome --title ${shellQuote(title)} --source ${shellQuote(source)} --outcome ${shellQuote('<useful|ignored|incorrect|blocked>')}`,
     proof_boundary: candidate.proof_boundary || 'Advisory ranking only; verify against current code, tests, and review evidence before acting.',
   });
 }
@@ -226,6 +230,7 @@ function renderMarkdown(result) {
     if (item.start_with.length) lines.push(`  - Start: ${item.start_with.join('; ')}`);
     if (item.validate_with.length) lines.push(`  - Validate: ${item.validate_with.join('; ')}`);
     if (item.demote_when.length) lines.push(`  - Demote when: ${item.demote_when.join('; ')}`);
+    if (item.outcome_prompt) lines.push(`  - Capture after action: ${item.outcome_prompt}`);
   }
   lines.push('', `Next: ${result.next}`, '');
   return lines.join('\n');

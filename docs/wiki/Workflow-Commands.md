@@ -28,7 +28,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-context-retention` | Review local context artifact freshness, history retention, and broad packet size signals without deleting, compacting, or refreshing files. Add `--preview-cleanup` for read-only manual cleanup candidates. |
 | `/forgeflow-context-wave-plan` | Plan smaller review waves when the latest context pack is over budget; use `--write-wave-files` to generate focused file-list inputs. |
 | `/forgeflow-capture-output` | Compact provided command output safely and optionally save a failure digest without executing the command. |
-| `/forgeflow-efficiency-gaps` | Plan the five largest current efficiency gaps across outcome calibration, user profile readiness, runtime inventory, failure-digest use, and telemetry sparsity without writing records or changing behavior. |
+| `/forgeflow-efficiency-gaps` | Plan the five largest current efficiency gaps across live context budget state, outcome calibration, user profile readiness, runtime inventory, failure-digest use, and telemetry sparsity without writing records or changing behavior. |
 | `/forgeflow-failure-digest` | Build a compact failure digest from test, typecheck, lint, or log output, with Git provenance for freshness checks. |
 | `/forgeflow-first-run` | Print a compact net-new user guide for install verification, project orientation, profile readiness, one bounded work item, and stop conditions. |
 | `/forgeflow-first-run-result` | Record public-safe local first-run outcome evidence under `.forgeflow/<project>/first-run-results/`. |
@@ -49,7 +49,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | Project intelligence rollup | `scripts/forgeflow/build-project-intelligence.js --json` writes one compact review-prep and next-work summary with trust state, Git provenance, top risks, refresh-first, read-first, avoid-first, validate-first, and proof-boundary guidance. Use `--next-work` for only the human-readable advisory next-work candidates, or `--brief <index>` for an advisory implementation-brief stub with suggested review lanes, implementation-notes seed prompts, and a handoff checklist. First-run fallback guidance starts with install health and project orientation when no stronger signal exists. |
 | `/forgeflow-metrics` | Summarize telemetry, calibration, outcomes, context savings, budget health, and advisor actions. |
 | `/forgeflow-next-action-audit` | Spot-check representative helper next actions for command-only copy-pastable values and direct explanatory text into `next_reason`. |
-| `/forgeflow-next-work-ranking` | Rank next-work candidates from current local evidence, confidence, demotion, and validation signals without refreshing artifacts or auto-selecting work. |
+| `/forgeflow-next-work-ranking` | Rank next-work candidates from current local evidence, confidence, demotion, and validation signals, including copy-ready outcome prompts, without refreshing artifacts or auto-selecting work. |
 | `/forgeflow-next-work-outcome` | Record local advisory feedback on whether a next-work recommendation was useful, ignored, incorrect, or blocked. |
 | `/forgeflow-outcome-capture-plan` | Show missing local outcome evidence streams and concrete recorder prompts without writing records. |
 | `/forgeflow-output-contract` | Spot-check representative helper output for status, next, reason, and advisory boundary fields. |
@@ -125,6 +125,7 @@ scripts/forgeflow/next-action-contract.js --project-dir .forgeflow/Forgeflow
 scripts/forgeflow/classify-review-auto.js --findings .forgeflow/Forgeflow/review-findings.json --json
 scripts/forgeflow/check-review-evidence-schema.js --findings .forgeflow/Forgeflow/review-findings.json --json
 scripts/forgeflow/command-args.js --allow "--json,--findings:path" --args "--json --findings .forgeflow/Forgeflow/review-findings.json" --json
+scripts/forgeflow/render-command-index.js --root . --json
 scripts/forgeflow/record-next-work-outcome.js --project-dir .forgeflow/Forgeflow --title "Review profile guidance" --source user-profile --outcome useful
 scripts/forgeflow/show-project-health-timeline.js --project-dir .forgeflow/Forgeflow
 scripts/forgeflow/rollup-project-learnings.js --json

@@ -42,6 +42,7 @@ const checks = [
   ['ranks candidates', result.status === 'ranked' && result.candidates.length >= 4],
   ['prioritizes over-budget context', result.candidates[0].title.includes('Split over-budget context')],
   ['includes demotion conditions', result.candidates.every((item) => item.demote_when.length > 0)],
+  ['includes shell-safe outcome capture prompts', result.candidates.every((item) => item.outcome_prompt.includes('record-next-work-outcome') && item.outcome_prompt.includes("--outcome '<useful|ignored|incorrect|blocked>'")) && markdown.includes('Capture after action:') && !markdown.includes('--outcome useful|ignored')],
   ['renders boundary', markdown.includes('read-only advisory guidance')],
   ['parses args', opts.root === root && opts.projectDir === projectDir && opts.targetTokens === 12000 && opts.json === true],
 ];

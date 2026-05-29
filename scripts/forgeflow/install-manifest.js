@@ -60,6 +60,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/record-implementation-notes.js',
   'scripts/forgeflow/record-user-profile.js',
   'scripts/forgeflow/render-adoption-pack.js',
+  'scripts/forgeflow/render-command-index.js',
   'scripts/forgeflow/render-context-retention.js',
   'scripts/forgeflow/render-context-wave-plan.js',
   'scripts/forgeflow/render-efficiency-gap-plan.js',

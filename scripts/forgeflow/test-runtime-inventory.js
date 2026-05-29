@@ -6,7 +6,9 @@ const {
   groupRuntimeHelpers,
   healthInventory,
   helperGroupForSource,
+  inventorySummary,
   managedRuntimeHelpers,
+  runtimeHelperEntries,
   releaseCheckCommands,
 } = require('./runtime-inventory');
 const { RUNTIME_HELPERS } = require('./install-manifest');
@@ -16,6 +18,8 @@ const sources = commandSources(root);
 const names = commandNames(root);
 const health = healthInventory(root);
 const helpers = managedRuntimeHelpers();
+const helperEntries = runtimeHelperEntries();
+const summary = inventorySummary(root);
 const releaseCheck = releaseCheckCommands(root);
 const releaseGate = releaseCheckCommands(root, path.join('docs', 'wiki', 'Release-Gate.md'));
 const releaseProcess = releaseCheckCommands(root, path.join('docs', 'wiki', 'Release-Process.md'));
@@ -29,6 +33,8 @@ const checks = [
   ['includes nested commands', sources.includes('commands/agent-chat/on.md') && names.includes('agent-chat/on')],
   ['matches health command inventory', sameList(names, health.commands)],
   ['runtime helper list matches install manifest', sameList(helpers, RUNTIME_HELPERS.slice().sort())],
+  ['runtime helper entries expose groups', helperEntries.length === helpers.length && helperEntries.every((item) => item.source && item.helper_group && item.installed_name)],
+  ['inventory summary exposes registry counts', summary.command_count === sources.length && summary.runtime_helper_count === helpers.length && summary.helper_groups.length > 0],
   ['groups runtime helpers', helperGroupForSource('scripts/forgeflow/install-manifest.js') === 'install-update-health' && helperGroupForSource('scripts/forgeflow/render-efficiency-gap-plan.js') === 'learning-evidence'],
   ['summarizes helper groups', groupRuntimeHelpers(['scripts/forgeflow/install-manifest.js', 'scripts/forgeflow/update-forgeflow.js']).find((item) => item.group === 'install-update-health').count === 2],
   ['health lists runtime helpers', health.runtime_helpers.includes('render-next-work-ranking.js')],

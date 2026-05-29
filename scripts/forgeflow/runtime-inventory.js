@@ -77,6 +77,31 @@ function groupRuntimeHelpers(helpers) {
     .sort((a, b) => b.count - a.count || a.group.localeCompare(b.group));
 }
 
+function runtimeHelperEntries() {
+  return managedRuntimeHelpers().map((source) => ({
+    source,
+    helper_group: helperGroupForSource(source),
+    installed_name: path.basename(source),
+  }));
+}
+
+function inventorySummary(root) {
+  const commands = commandSources(root);
+  const runtimeHelpers = runtimeHelperEntries();
+  const staticFiles = managedStaticFiles();
+  return {
+    schema_version: '1',
+    root,
+    command_count: commands.length,
+    runtime_helper_count: runtimeHelpers.length,
+    static_file_count: staticFiles.length,
+    commands,
+    runtime_helpers: runtimeHelpers,
+    helper_groups: groupRuntimeHelpers(runtimeHelpers),
+    static_files: staticFiles,
+  };
+}
+
 function parseShellArray(markdown, name) {
   const block = String(markdown || '').match(new RegExp(`${name}=\\(\\n([\\s\\S]*?)\\n\\)`));
   if (!block) return [];
@@ -121,6 +146,7 @@ module.exports = {
   healthInventory,
   helperGroupForSource,
   installedCommandNameFromSource,
+  inventorySummary,
   managedRuntimeHelpers,
   managedStaticFiles,
   parseInlineShellArray,
@@ -128,5 +154,6 @@ module.exports = {
   releaseCheckCommands,
   releaseCheckCommandsFromText,
   repoRelative,
+  runtimeHelperEntries,
   walk,
 };

@@ -137,6 +137,7 @@ const checks = [
   ['release check runs adoption pack test', releaseCheck.includes('node scripts/forgeflow/test-render-adoption-pack.js')],
   ['release check runs context retention test', releaseCheck.includes('node scripts/forgeflow/test-render-context-retention.js')],
   ['release check runs context wave plan test', releaseCheck.includes('node scripts/forgeflow/test-render-context-wave-plan.js')],
+  ['release check runs command index test', releaseCheck.includes('node scripts/forgeflow/test-render-command-index.js')],
   ['release check runs review wave prep test', releaseCheck.includes('node scripts/forgeflow/test-render-review-wave-prep.js')],
   ['release check runs first run guide test', releaseCheck.includes('node scripts/forgeflow/test-render-first-run-guide.js')],
   ['release check runs first task report test', releaseCheck.includes('node scripts/forgeflow/test-render-first-task-report.js')],

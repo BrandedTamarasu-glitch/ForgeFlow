@@ -43,23 +43,29 @@ function buildReviewWavePrep(opts = {}) {
   const wavePlan = buildContextWavePlan(opts);
   const firstWave = wavePlan.waves[0] || null;
   const splitRecommended = wavePlan.status === 'split-recommended' && wavePlan.waves.length > 1;
+  const incomplete = wavePlan.status === 'incomplete';
   return {
     schema_version: '1',
-    status: splitRecommended ? 'split-before-review' : 'current-packet-ok',
+    status: incomplete ? 'context-incomplete' : (splitRecommended ? 'split-before-review' : 'current-packet-ok'),
     root: wavePlan.root,
     context_dir: wavePlan.context_dir,
     current_compact_tokens: wavePlan.current_compact_tokens,
     target_compact_tokens: wavePlan.target_compact_tokens,
     over_by_tokens: wavePlan.over_by_tokens,
     wave_files_written: wavePlan.wave_files_written,
+    incomplete_reasons: wavePlan.incomplete_reasons || [],
     first_wave: firstWave,
     waves: wavePlan.waves,
-    next: splitRecommended && firstWave
+    next: incomplete
+      ? 'Rebuild the context pack before review.'
+      : (splitRecommended && firstWave
       ? firstWave.command
-      : 'Use the current context pack for review.',
-    next_reason: splitRecommended
+      : 'Use the current context pack for review.'),
+    next_reason: incomplete
+      ? `The latest context pack is incomplete: ${(wavePlan.incomplete_reasons || []).join('; ')}.`
+      : (splitRecommended
       ? 'Context is over budget; start review with the first generated or planned wave.'
-      : 'Context is within budget or too small to split.',
+      : 'Context is within budget or too small to split.'),
     boundary: 'Review wave prep is advisory. It does not rebuild packets, spawn reviewers, edit source files, commit, or push.',
   };
 }

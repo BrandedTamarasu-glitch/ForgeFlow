@@ -22,7 +22,7 @@ spawnSync('git', ['commit', '-m', 'init'], { cwd: root, encoding: 'utf8' });
 const commitShort = spawnSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8' }).stdout.trim();
 
 fs.writeFileSync(path.join(contextDir, 'project-intelligence-rollup.json'), JSON.stringify({
-  readiness: { state: 'ready' },
+  readiness: { state: 'ready', evidence: { context_budget: 'pass' } },
   freshness: { failure_digest: 'not-applicable' },
   artifacts: { failure_digest: null },
   hot_files: [
@@ -36,8 +36,14 @@ fs.writeFileSync(path.join(contextDir, 'project-intelligence-rollup.json'), JSON
   next_work_items: [],
 }, null, 2));
 fs.writeFileSync(path.join(contextDir, 'context-telemetry.json'), JSON.stringify({
-  estimated_compact_tokens: 2000,
-  estimated_saved_tokens: 8000,
+  schema_version: '1',
+  kind: 'context-pack',
+  baseline_chars: 120000,
+  compact_chars: 72000,
+  saved_chars: 48000,
+  estimated_baseline_tokens: 30000,
+  estimated_compact_tokens: 18000,
+  estimated_saved_tokens: 12000,
 }) + '\n');
 fs.writeFileSync(path.join(contextDir, 'code-map-history.jsonl'), [
   JSON.stringify({
@@ -103,8 +109,9 @@ const checks = [
   ['includes outcome gap', hasGap('outcome-calibration') && result.gaps.find((item) => item.id === 'outcome-calibration').evidence.missing_streams === 3],
   ['includes profile guardrail', hasGap('user-profile') && markdown.includes('Do not infer preferences')],
   ['includes runtime inventory hotspot', hasGap('runtime-inventory') && markdown.includes('runtime-inventory.js')],
-  ['includes failure capture preview', hasGap('failure-digest') && result.gaps.find((item) => item.id === 'failure-digest').evidence.capture_preview.mode === 'test'],
+  ['keeps top five when budget is more urgent than failure digest', result.candidate_count > result.gap_count && !hasGap('failure-digest')],
   ['includes telemetry thin signal', hasGap('forgeflow-telemetry') && result.gaps.find((item) => item.id === 'forgeflow-telemetry').evidence.verdict_reviewers === 0],
+  ['uses advisor budget over stale readiness', result.context_advisor.budget_status === 'warn' && result.gaps[0].id === 'context-budget' && result.gaps[0].evidence.over_by_tokens === 2000],
   ['renders evidence and validation', markdown.includes('Evidence:') && markdown.includes('- Validate:')],
   ['renders read-only boundary', markdown.includes('does not record outcomes') && markdown.includes('automates local gap discovery') && markdown.includes('execute failed commands')],
   ['parses args', opts.root === root && opts.projectDir === projectDir && opts.metricsRoot === metricsRoot && opts.patternsDir === patternsDir && opts.failedCommand === 'npm test' && opts.json === true],

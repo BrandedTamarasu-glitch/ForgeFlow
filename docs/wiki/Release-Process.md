@@ -64,6 +64,7 @@ node scripts/forgeflow/test-render-evaluation-report.js
 node scripts/forgeflow/render-evaluation-report.js --outcomes fixtures/evaluation/sample-outcomes.jsonl --public --out /tmp/forgeflow-public-evaluation-summary.md
 node scripts/forgeflow/test-privacy-boundary.js
 node scripts/forgeflow/test-render-adoption-pack.js
+node scripts/forgeflow/test-render-command-index.js
 node scripts/forgeflow/test-render-context-retention.js
 node scripts/forgeflow/test-render-context-wave-plan.js
 node scripts/forgeflow/test-render-review-wave-prep.js

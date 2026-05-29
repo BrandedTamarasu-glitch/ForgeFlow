@@ -9,6 +9,7 @@ const { buildOutcomeCapturePlan } = require('./render-outcome-capture-plan');
 const { buildValidationFailureCapture } = require('./render-validation-failure-capture');
 const { collectMetrics, cutoffForPeriod, summarizePatternLog } = require('./render-forgeflow-report');
 const { tokenize } = require('./command-args');
+const { adviseContext } = require('./advise-context');
 
 function usage() {
   console.error([
@@ -137,8 +138,69 @@ function evidenceLines(evidence = {}) {
   if (Number.isFinite(evidence.verdict_reviewers)) lines.push(`verdict reviewers ${evidence.verdict_reviewers}`);
   if (Number.isFinite(evidence.pattern_candidates)) lines.push(`pattern candidates ${evidence.pattern_candidates}`);
   if (evidence.context_budget) lines.push(`context budget ${evidence.context_budget}`);
+  if (Number.isFinite(evidence.budget_violations)) lines.push(`budget violations ${evidence.budget_violations}`);
+  if (Number.isFinite(evidence.context_pack_tokens)) lines.push(`context-pack compact tokens ${evidence.context_pack_tokens}`);
+  if (Number.isFinite(evidence.over_by_tokens)) lines.push(`over budget by ${evidence.over_by_tokens}`);
   if (evidence.readiness_state) lines.push(`readiness ${evidence.readiness_state}`);
   return lines.length > 0 ? lines : ['current local evidence'];
+}
+
+function buildContextAdvisor(root) {
+  const forgeflowRoot = path.join(root, '.forgeflow');
+  const configPath = path.join(root, '.forgeflow-budget.json');
+  const opts = { root: forgeflowRoot, record: false };
+  if (fs.existsSync(configPath)) opts.config = configPath;
+  try {
+    return adviseContext(opts);
+  } catch (err) {
+    return {
+      budget: { status: 'unknown', violations: [] },
+      summary: { totals: {} },
+      recommendations: [],
+      error: err.message,
+    };
+  }
+}
+
+function contextBudgetGap(contextCandidate, contextAdvisor) {
+  const budget = contextAdvisor.budget || {};
+  const violations = budget.violations || [];
+  const firstViolation = violations[0] || {};
+  const advisorRecommendation = (contextAdvisor.recommendations || [])
+    .find((item) => item.action === 'trim-budget-violation') || {};
+  const hasViolation = budget.status && budget.status !== 'pass' && violations.length > 0;
+  if (!hasViolation && !contextCandidate) return null;
+  const status = hasViolation ? budget.status : 'attention';
+  const score = hasViolation ? 88 : contextCandidate.score;
+  const why = hasViolation
+    ? `${firstViolation.kind || 'context'} is ${firstViolation.over_by || 0} estimated compact tokens over budget.`
+    : contextCandidate.why;
+  return gap(
+    score,
+    'context-budget',
+    'Context budget needs review-wave automation',
+    status,
+    why,
+    [
+      'Run /forgeflow-context-wave-plan before broad review.',
+      'Use /forgeflow-review-wave-prep to select the first bounded review packet.',
+      'Rerun check-context-budget after narrowing scope.',
+    ],
+    'Do not trim proof files, raw-required failure output, or exact evidence just to satisfy a budget.',
+    {
+      context_budget: status,
+      budget_violations: violations.length,
+      context_pack_tokens: firstViolation.estimated_compact_tokens || 0,
+      over_by_tokens: firstViolation.over_by || 0,
+      recommendation: advisorRecommendation.command || '',
+      trim_plan: advisorRecommendation.trim_plan || null,
+    },
+    [
+      'node scripts/forgeflow/test-render-context-wave-plan.js',
+      'node scripts/forgeflow/test-render-review-wave-prep.js',
+      'node scripts/forgeflow/test-check-context-budget.js',
+    ]
+  );
 }
 
 function buildEfficiencyGapPlan(opts = {}) {
@@ -152,6 +214,7 @@ function buildEfficiencyGapPlan(opts = {}) {
   const outcomePlan = buildOutcomeCapturePlan({ root, projectDir });
   const metrics = collectMetrics(metricsRoot, cutoffForPeriod('month'));
   const patterns = summarizePatternLog(patternsDir, cutoffForPeriod('month'));
+  const contextAdvisor = buildContextAdvisor(root);
   const failureCapture = opts.failedCommand
     ? buildValidationFailureCapture({ root, projectDir, command: opts.failedCommand })
     : null;
@@ -166,9 +229,13 @@ function buildEfficiencyGapPlan(opts = {}) {
   const hotFiles = intelligence.hot_files || [];
 
   const readinessEvidence = intelligence.readiness && intelligence.readiness.evidence || {};
-  const contextCandidate = readinessEvidence.context_budget === 'pass' ? null : findCandidate(ranking, 'context-telemetry');
+  const advisorBudget = contextAdvisor.budget || {};
+  const contextCandidate = advisorBudget.status && advisorBudget.status !== 'pass'
+    ? findCandidate(ranking, 'context-telemetry')
+    : (readinessEvidence.context_budget === 'pass' ? null : findCandidate(ranking, 'context-telemetry'));
   const readinessState = intelligence.readiness && intelligence.readiness.state;
   const importGapStatus = readinessEvidence.import_gaps;
+  const budgetGap = contextBudgetGap(contextCandidate, contextAdvisor);
   const allCandidates = [
     gap(
       outcomeCandidate ? outcomeCandidate.score : 80,
@@ -280,25 +347,7 @@ function buildEfficiencyGapPlan(opts = {}) {
         'node scripts/forgeflow/test-summarize-context-telemetry.js',
       ]
     ),
-    contextCandidate ? gap(
-      contextCandidate.score,
-      'context-budget',
-      'Context budget needs review-wave automation',
-      'attention',
-      contextCandidate.why,
-      [
-        'Run /forgeflow-context-wave-plan before broad review.',
-        'Use /forgeflow-review-wave-prep to select the first bounded review packet.',
-        'Rerun check-context-budget after narrowing scope.',
-      ],
-      'Do not trim proof files, raw-required failure output, or exact evidence just to satisfy a budget.',
-      { context_budget: 'attention' },
-      [
-        'node scripts/forgeflow/test-render-context-wave-plan.js',
-        'node scripts/forgeflow/test-render-review-wave-prep.js',
-        'node scripts/forgeflow/test-check-context-budget.js',
-      ]
-    ) : null,
+    budgetGap,
     readinessState && readinessState !== 'ready' ? gap(
       72,
       'project-readiness',
@@ -347,8 +396,16 @@ function buildEfficiencyGapPlan(opts = {}) {
     project_dir: projectDir,
     metrics_root: metricsRoot,
     patterns_dir: patternsDir,
-    readiness: intelligence.readiness || null,
-    gap_count: gaps.length,
+	    readiness: intelligence.readiness || null,
+	    context_advisor: {
+	      budget_status: contextAdvisor.budget && contextAdvisor.budget.status || 'unknown',
+	      budget_violations: contextAdvisor.budget && contextAdvisor.budget.violations ? contextAdvisor.budget.violations.length : 0,
+	      estimated_compact_tokens: contextAdvisor.summary && contextAdvisor.summary.totals
+	        ? contextAdvisor.summary.totals.estimated_compact_tokens || 0
+	        : 0,
+	      recommendation_actions: (contextAdvisor.recommendations || []).map((item) => item.action),
+	    },
+	    gap_count: gaps.length,
     candidate_count: allCandidates.length,
     gaps,
     next: gaps[0] ? gaps[0].title : 'No efficiency gaps identified.',
