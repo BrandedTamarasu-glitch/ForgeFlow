@@ -26,6 +26,8 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-compact-output` | Compact allowlisted noisy command output while preserving exact output for unsafe command classes. |
 | `/forgeflow-context-contract` | Check generated agent packets against the context contract, required sections, size limits, and advisory-boundary wording. |
 | `/forgeflow-context-retention` | Review local context artifact freshness, history retention, and broad packet size signals without deleting, compacting, or refreshing files. Add `--preview-cleanup` for read-only manual cleanup candidates. |
+| `/forgeflow-context-wave-plan` | Plan smaller review waves when the latest context pack is over budget. |
+| `/forgeflow-capture-output` | Compact provided command output safely and optionally save a failure digest without executing the command. |
 | `/forgeflow-failure-digest` | Build a compact failure digest from test, typecheck, lint, or log output, with Git provenance for freshness checks. |
 | `/forgeflow-first-run` | Print a compact net-new user guide for install verification, project orientation, profile readiness, one bounded work item, and stop conditions. |
 | `/forgeflow-first-run-result` | Record public-safe local first-run outcome evidence under `.forgeflow/<project>/first-run-results/`. |
@@ -63,8 +65,10 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-release-verify` | Print the compact local post-publish summary for sharing, with installed-version/runtime-drift consumability evidence, optional local snapshot save/comparison, and explicit `--github` read-only remote evidence. |
 | `/forgeflow-smoke` | Run downstream readiness smoke by default; add `--mode source` for source-tree release guards or `--mode full` for both groups. |
 | `/forgeflow-support` | Write a local support bundle with version, health, smoke, plan-only release readiness with post-publish verification, code-map acceptance health, docs drift, project trends, and consolidated next actions. Treat it as local support data because it may include local paths. |
+| `/forgeflow-stale-artifact-plan` | Show minimal refresh commands for stale local guidance artifacts without refreshing or deleting them. |
 | `/forgeflow-trends` | Show the current project's code-map trend, living project-map categories, import-gap status, artifact freshness, latest-insights readiness/freshness, latest failure-digest provenance/freshness, project-learning consumption, and context-advisor status. Add `--refresh` to refresh project learnings and latest-insights readiness first; stale reports recommend it directly. |
 | `/forgeflow-update-verify` | Verify installed version state and runtime drift after update or repair, then print ready, restart, or repair guidance. |
+| `/forgeflow-validation-plan` | Plan focused validation commands from changed files and state when full suite or source smoke is required. |
 | `/forgeflow-version` | Show installed commit, upstream status, latest release, helper paths, runtime helper inventory, missing helper sources, and the next update or repair action. Add `--snapshot` to write a local support artifact. |
 | `/ship` | Prepare presentation, PR, CI checks, and release handoff after a passing review-history gate; potential secrets are hard blockers. |
 

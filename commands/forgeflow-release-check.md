@@ -33,6 +33,7 @@ node scripts/forgeflow/test-command-coverage.js
 node scripts/forgeflow/test-command-wrapper-smoke.js
 node scripts/forgeflow/test-command-argument-safety.js
 node scripts/forgeflow/test-command-args.js
+node scripts/forgeflow/test-capture-command-output.js
 node scripts/forgeflow/test-doc-links.js
 node scripts/forgeflow/test-doc-drift-report.js
 node scripts/forgeflow/test-artifact-contracts.js
@@ -61,6 +62,7 @@ node scripts/forgeflow/render-evaluation-report.js --outcomes fixtures/evaluatio
 node scripts/forgeflow/test-privacy-boundary.js
 node scripts/forgeflow/test-render-adoption-pack.js
 node scripts/forgeflow/test-render-context-retention.js
+node scripts/forgeflow/test-render-context-wave-plan.js
 node scripts/forgeflow/test-render-first-run-guide.js
 node scripts/forgeflow/test-render-first-task-report.js
 node scripts/forgeflow/test-render-first-task-adoption-loop.js
@@ -102,6 +104,8 @@ node scripts/forgeflow/test-build-code-topology.js
 node scripts/forgeflow/test-show-code-map.js
 node scripts/forgeflow/test-runtime-drift-snapshot.js
 node scripts/forgeflow/test-render-update-verify.js
+node scripts/forgeflow/test-render-validation-plan.js
+node scripts/forgeflow/test-render-stale-artifact-plan.js
 node scripts/forgeflow/test-show-project-health-timeline.js
 node scripts/forgeflow/test-build-context-pack.js
 node scripts/forgeflow/test-check-context-contract.js

@@ -334,9 +334,7 @@ function buildMemoryHitsFromIndex(root, indexPath, files, route, task, maxChars)
     }
   }
 
-  const selected = hits
-    .sort((a, b) => b.score - a.score || a.source.localeCompare(b.source) || a.line - b.line)
-    .slice(0, 80);
+  const selected = selectMemoryHits(hits);
   const rendered = [
     '# Memory Hits',
     '',
@@ -351,6 +349,38 @@ function buildMemoryHitsFromIndex(root, indexPath, files, route, task, maxChars)
     rendered.push('(no local memory hits)');
   }
   return truncate(rendered.join('\n'), maxChars);
+}
+
+function memorySourceWeight(source = '') {
+  if (source.endsWith('project-learnings.md')) return 5;
+  if (source.endsWith('implementation-notes.md')) return 4;
+  if (source.endsWith('current-brief.md') || source.endsWith('current-plan.md')) return 3;
+  if (source.endsWith('review-history.md')) return 2;
+  return 1;
+}
+
+function selectMemoryHits(hits, maxHits = 48, perSource = 10) {
+  const seenText = new Set();
+  const sourceCounts = new Map();
+  const selected = [];
+  const ranked = hits
+    .map((hit) => ({
+      ...hit,
+      weighted_score: Number(hit.score || 0) * 10 + memorySourceWeight(hit.source),
+      normalized_text: String(hit.text || '').replace(/\s+/g, ' ').trim().toLowerCase(),
+    }))
+    .sort((a, b) => b.weighted_score - a.weighted_score || memorySourceWeight(b.source) - memorySourceWeight(a.source) || a.source.localeCompare(b.source) || a.line - b.line);
+  for (const hit of ranked) {
+    if (!hit.normalized_text || seenText.has(hit.normalized_text)) continue;
+    const source = hit.source || '(unknown)';
+    const count = sourceCounts.get(source) || 0;
+    if (count >= perSource && hit.score <= 0) continue;
+    seenText.add(hit.normalized_text);
+    sourceCounts.set(source, count + 1);
+    selected.push(hit);
+    if (selected.length >= maxHits) break;
+  }
+  return selected;
 }
 
 function buildMemoryHits(root, files, route, task, maxChars, indexPath = null) {
@@ -385,9 +415,7 @@ function buildMemoryHits(root, files, route, task, maxChars, indexPath = null) {
     }
   }
 
-  const selected = hits
-    .sort((a, b) => b.score - a.score || a.source.localeCompare(b.source) || a.line - b.line)
-    .slice(0, 80);
+  const selected = selectMemoryHits(hits);
   const rendered = ['# Memory Hits', '', `Keywords: ${keys.join(', ') || '(none)'}`, ''];
   for (const hit of selected) {
     rendered.push(`- ${hit.source}:${hit.line} ${hit.text}`);
@@ -1299,6 +1327,7 @@ module.exports = {
   buildLatestInsightsResult,
   jsonSummary,
   buildMemoryHits,
+  selectMemoryHits,
   compactProjectCodeMap,
   currentGitState,
   projectCodeMapFromTopology,
