@@ -1,16 +1,16 @@
 ---
 name: forgeflow-context-wave-plan
 description: Plan smaller review waves when the latest context pack is over budget
-argument-hint: "[--json]"
+argument-hint: "[--write-wave-files] [--json]"
 allowed-tools:
   - Bash
 ---
 <objective>
-Show a read-only wave plan for splitting an over-budget context pack into smaller review packets.
+Show a wave plan for splitting an over-budget context pack into smaller review packets. Default mode is read-only; `--write-wave-files` writes only explicit file-list inputs for follow-up packet builds.
 </objective>
 
 <process>
-Validate `$ARGUMENTS`. Accept only `--json`.
+Validate `$ARGUMENTS`. Accept only `--write-wave-files` and `--json`.
 
 ```bash
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -26,6 +26,7 @@ SAFE_ARGS=(--root "${ROOT}")
 read -r -a USER_ARGS <<< "${ARGUMENTS:-}"
 for arg in "${USER_ARGS[@]}"; do
   case "$arg" in
+    --write-wave-files) SAFE_ARGS+=(--write-wave-files) ;;
     --json) SAFE_ARGS+=(--json) ;;
     "") ;;
     *) echo "Unsupported arguments for /forgeflow-context-wave-plan"; exit 2 ;;
@@ -38,4 +39,5 @@ env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/render-context-wave-plan.js
 <success_criteria>
 - [ ] Output explains whether splitting is recommended.
 - [ ] Output gives focused wave commands without spawning agents or rebuilding packets.
+- [ ] Wave files are written only when `--write-wave-files` is explicit.
 </success_criteria>

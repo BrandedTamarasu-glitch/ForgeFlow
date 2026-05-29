@@ -57,7 +57,7 @@ Use `/forgeflow-noisy-command` when the problem is excessive output volume and y
 2. Run `scripts/forgeflow/build-project-intelligence.js --json` when you want one compact review-prep summary before spawning reviewers.
 3. Run `/forgeflow-insight-injection` and `/forgeflow-context-contract` when you need to verify packet guidance before agent-heavy work.
 4. Run `/review` for Claude Code or `$forge-review` for Codex.
-5. If the context advisor reports a budget warning, run `/forgeflow-context-wave-plan` and split the file scope before spawning reviewers.
+5. If the context advisor reports a budget warning, run `/forgeflow-review-wave-prep --write-wave-files` to get the first focused review-wave command before spawning reviewers.
 6. Fix review findings, then rerun review until the final verdict is approved.
 
 Use `/review-auto` only when the fixes are conservative and safe to apply automatically.
@@ -99,8 +99,9 @@ If implementation notes are missing or stale, refresh or repair them before ship
 | Need readiness confidence | `/forgeflow-smoke` |
 | Failure output is too noisy | `/forgeflow-failure-digest` |
 | Need to capture noisy output first | `/forgeflow-capture-output --mode <mode> --command <cmd>` |
+| Validation command failed | `/forgeflow-validation-failure-capture --command "<cmd>"`, then feed the failed output to `/forgeflow-capture-output` |
 | Output volume is too high | `/forgeflow-noisy-command` |
-| Review context is over budget | `/forgeflow-context-wave-plan`, then split scope |
+| Review context is over budget | `/forgeflow-review-wave-prep --write-wave-files`, then rebuild the first focused packet |
 | Need focused validation commands | `/forgeflow-validation-plan` |
 | Unsure whether review findings are well structured | `/forgeflow-review-evidence-schema --findings <json>` |
 | Unsure whether review findings are auto-fix safe | `/forgeflow-review-auto-classify --findings <json>` |

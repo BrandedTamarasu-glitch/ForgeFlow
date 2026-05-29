@@ -2,23 +2,9 @@
 const fs = require('fs');
 const path = require('path');
 const { isManagedSource } = require('./install-manifest');
+const { commandSources, healthInventory } = require('./runtime-inventory');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
-const commandsRoot = path.join(repoRoot, 'commands');
-
-function walk(dir) {
-  const out = [];
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...walk(full));
-    else if (entry.isFile()) out.push(full);
-  }
-  return out;
-}
-
-function relativeCommand(file) {
-  return path.relative(repoRoot, file).replace(/\\/g, '/');
-}
 
 function expectedName(rel) {
   return rel.replace(/^commands\//, '').replace(/\.md$/, '').replace(/\//g, ':');
@@ -78,22 +64,8 @@ function executableProbeReferences(markdown) {
   return [...new Set(refs)].sort();
 }
 
-function parseHealthInventory() {
-  const health = fs.readFileSync(path.join(repoRoot, 'commands', 'forgeflow-health.md'), 'utf8');
-  const commandBlock = health.match(/EXPECTED_COMMANDS=\(\n([\s\S]*?)\n\)/);
-  const subdirBlock = health.match(/EXPECTED_SUBDIR_COMMANDS=\(([^)]*)\)/);
-  if (!commandBlock || !subdirBlock) throw new Error('forgeflow-health.md: expected command inventory blocks not found');
-
-  const flat = commandBlock[1].split(/\s+/).map((item) => item.trim()).filter(Boolean);
-  const subdir = subdirBlock[1].split(/\s+/).map((item) => item.trim()).filter(Boolean);
-  return [...flat, ...subdir].sort();
-}
-
 function main() {
-  const commandFiles = walk(commandsRoot)
-    .filter((file) => file.endsWith('.md'))
-    .map(relativeCommand)
-    .sort();
+  const commandFiles = commandSources(repoRoot);
   const commandNames = [];
   const failures = [];
 
@@ -139,7 +111,7 @@ function main() {
     }
   }
 
-  const inventory = parseHealthInventory();
+  const inventory = healthInventory(repoRoot).commands;
   const normalizedNames = commandNames.sort();
   const missingFromHealth = normalizedNames.filter((name) => !inventory.includes(name));
   const extraInHealth = inventory.filter((name) => !normalizedNames.includes(name));

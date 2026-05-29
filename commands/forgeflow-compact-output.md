@@ -1,7 +1,7 @@
 ---
 name: forgeflow-compact-output
 description: Compact allowlisted noisy command output without touching correctness-critical output.
-argument-hint: "--mode <test|typecheck|lint|logs|grep|json|status|tree> --command <cmd> [--file <path>] [--json]"
+argument-hint: "--mode <test|typecheck|lint|build|logs|grep|json|status|tree> --command <cmd> [--file <path>] [--json]"
 allowed-tools:
   - Read
   - Bash

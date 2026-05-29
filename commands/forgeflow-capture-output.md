@@ -1,7 +1,7 @@
 ---
 name: forgeflow-capture-output
 description: Compact provided command output safely and optionally save a failure digest
-argument-hint: "--mode <mode> --command <cmd> [--file <path>] [--out <path>] [--json]"
+argument-hint: "--mode <test|typecheck|lint|build|logs|grep|json|status|tree> --command <cmd> [--file <path>] [--out <path>] [--json]"
 allowed-tools:
   - Bash
 ---

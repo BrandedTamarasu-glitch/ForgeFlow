@@ -5,7 +5,7 @@ const { buildFailureDigest } = require('./build-failure-digest');
 const { compactCommandOutput } = require('./compact-command-output');
 const { safeReadTextFile, writeFileSafe } = require('./file-safety');
 
-const DIGEST_MODES = new Set(['test', 'typecheck', 'lint', 'logs']);
+const DIGEST_MODES = new Set(['test', 'typecheck', 'lint', 'build', 'logs']);
 
 function usage() {
   console.error('Usage: capture-command-output.js --mode <mode> --command <cmd> [--file <path>] [--out <path>] [--json]');

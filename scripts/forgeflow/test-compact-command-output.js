@@ -24,6 +24,7 @@ const checks = [
   ['requires command before compaction', compactCommandOutput(noisyTest, { mode: 'test' }).status === 'raw' && compactCommandOutput(noisyTest, { mode: 'test' }).reason.includes('command is required')],
   ['compacts test failures only', compactCommandOutput(noisyTest, { mode: 'test', command: 'vitest' }).output.includes('FAIL src/c.test.ts') && !compactCommandOutput(noisyTest, { mode: 'test', command: 'vitest' }).output.includes('PASS src/a.test.ts')],
   ['keeps type errors', compactCommandOutput('src/a.ts:1:2 - error TS2322: bad\nDone\n', { mode: 'typecheck', command: 'tsc --noEmit' }).output.includes('TS2322')],
+  ['keeps build errors', compactCommandOutput('✓ built chunk\nError: Cannot find module x\nBuild failed\n', { mode: 'build', command: 'npm run build' }).output.includes('Cannot find module')],
   ['dedupes logs', compactCommandOutput('INFO ok\nERROR bad\nERROR bad\nWARN hmm\n', { mode: 'logs', command: 'tail app.log' }).output.includes('ERROR bad (x2)')],
   ['fails loud on malformed json', compactCommandOutput('{bad', { mode: 'json', command: 'cat report.json' }).status === 'raw' && compactCommandOutput('{bad', { mode: 'json', command: 'cat report.json' }).reason.includes('failed loudly')],
   ['never returns empty for nonempty input', compactCommandOutput('all quiet\n', { mode: 'test', command: 'vitest' }).status === 'raw' && compactCommandOutput('all quiet\n', { mode: 'test', command: 'vitest' }).output.includes('all quiet')],

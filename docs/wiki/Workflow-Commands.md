@@ -26,7 +26,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-compact-output` | Compact allowlisted noisy command output while preserving exact output for unsafe command classes. |
 | `/forgeflow-context-contract` | Check generated agent packets against the context contract, required sections, size limits, and advisory-boundary wording. |
 | `/forgeflow-context-retention` | Review local context artifact freshness, history retention, and broad packet size signals without deleting, compacting, or refreshing files. Add `--preview-cleanup` for read-only manual cleanup candidates. |
-| `/forgeflow-context-wave-plan` | Plan smaller review waves when the latest context pack is over budget. |
+| `/forgeflow-context-wave-plan` | Plan smaller review waves when the latest context pack is over budget; use `--write-wave-files` to generate focused file-list inputs. |
 | `/forgeflow-capture-output` | Compact provided command output safely and optionally save a failure digest without executing the command. |
 | `/forgeflow-failure-digest` | Build a compact failure digest from test, typecheck, lint, or log output, with Git provenance for freshness checks. |
 | `/forgeflow-first-run` | Print a compact net-new user guide for install verification, project orientation, profile readiness, one bounded work item, and stop conditions. |
@@ -48,10 +48,13 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | Project intelligence rollup | `scripts/forgeflow/build-project-intelligence.js --json` writes one compact review-prep and next-work summary with trust state, Git provenance, top risks, refresh-first, read-first, avoid-first, validate-first, and proof-boundary guidance. Use `--next-work` for only the human-readable advisory next-work candidates, or `--brief <index>` for an advisory implementation-brief stub with suggested review lanes, implementation-notes seed prompts, and a handoff checklist. First-run fallback guidance starts with install health and project orientation when no stronger signal exists. |
 | `/forgeflow-metrics` | Summarize telemetry, calibration, outcomes, context savings, budget health, and advisor actions. |
 | `/forgeflow-next-action-audit` | Spot-check representative helper next actions for command-only copy-pastable values and direct explanatory text into `next_reason`. |
+| `/forgeflow-next-work-ranking` | Rank next-work candidates from current local evidence, confidence, demotion, and validation signals without refreshing artifacts or auto-selecting work. |
 | `/forgeflow-next-work-outcome` | Record local advisory feedback on whether a next-work recommendation was useful, ignored, incorrect, or blocked. |
+| `/forgeflow-outcome-capture-plan` | Show missing local outcome evidence streams and concrete recorder prompts without writing records. |
 | `/forgeflow-output-contract` | Spot-check representative helper output for status, next, reason, and advisory boundary fields. |
 | `/forgeflow-pilot` | Print the repeatable maintainer pilot script by default, or add `--path new-user` for the state-aware first-real-task evaluation path with guided repair, release-readiness preview, project intelligence, living map status, agent-feedback signal, and a public-safe result template. |
 | `/forgeflow-profile` | Show, check, or record local advisory user operating preferences and project experience preferences for context-pack injection. |
+| `/forgeflow-profile-bootstrap` | Preview explicit operating and project experience preference records, show prompt templates with `--prompts`, then write only with `--write`. |
 | `/forgeflow-profile-review` | Group profile conflicts, scope moves, ask-user prompts, cleanup actions, injection eligibility, safe next steps, confirmation prompts, explicit accept/reject/supersede/defer options, and a resolution flow before agent-heavy work. |
 | `/forgeflow-report` | Produce a script-backed status report including local metrics, false-positive thresholds, pattern freshness, context trends, project trends, import-gap status, latest-insights readiness/freshness, latest failure-digest status/freshness, and direct next-action recommendations. Add `--refresh` to update project guidance first. |
 | `/forgeflow-review-auto-classify` | Preview `/review-auto` safe, risky, and blocker buckets from captured findings JSON without editing files. |
@@ -69,6 +72,8 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-trends` | Show the current project's code-map trend, living project-map categories, import-gap status, artifact freshness, latest-insights readiness/freshness, latest failure-digest provenance/freshness, project-learning consumption, and context-advisor status. Add `--refresh` to refresh project learnings and latest-insights readiness first; stale reports recommend it directly. |
 | `/forgeflow-update-verify` | Verify installed version state and runtime drift after update or repair, then print ready, restart, or repair guidance. |
 | `/forgeflow-validation-plan` | Plan focused validation commands from changed files and state when full suite or source smoke is required. |
+| `/forgeflow-validation-failure-capture` | Map a failed validation command to the safest output-capture mode and failure-digest path without executing it. |
+| `/forgeflow-review-wave-prep` | Show the first focused review-wave command when context is over budget. |
 | `/forgeflow-version` | Show installed commit, upstream status, latest release, helper paths, runtime helper inventory, missing helper sources, and the next update or repair action. Add `--snapshot` to write a local support artifact. |
 | `/ship` | Prepare presentation, PR, CI checks, and release handoff after a passing review-history gate; potential secrets are hard blockers. |
 

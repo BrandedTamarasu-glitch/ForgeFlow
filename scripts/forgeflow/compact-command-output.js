@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { safeReadTextFile } = require('./file-safety');
 
-const SAFE_MODES = new Set(['test', 'typecheck', 'lint', 'logs', 'grep', 'json', 'status', 'tree']);
+const SAFE_MODES = new Set(['test', 'typecheck', 'lint', 'build', 'logs', 'grep', 'json', 'status', 'tree']);
 const UNSAFE_COMMAND_PATTERNS = [
   /\bgit\s+diff\b/,
   /\bgit\s+apply\b/,
@@ -19,7 +19,7 @@ const DEFAULT_MAX_LINES = 80;
 const DEFAULT_MAX_LINE_CHARS = 220;
 
 function usage() {
-  console.error('Usage: compact-command-output.js --mode <test|typecheck|lint|logs|grep|json|status|tree> [--command <cmd>] [--file <path>] [--max-lines N] [--max-line-chars N] [--json]');
+  console.error('Usage: compact-command-output.js --mode <test|typecheck|lint|build|logs|grep|json|status|tree> [--command <cmd>] [--file <path>] [--max-lines N] [--max-line-chars N] [--json]');
 }
 
 function requireValue(argv, name, index) {
@@ -147,6 +147,11 @@ function compactLint(lines) {
   return lines.filter((line) => /\b(error|warning)\b|^\s*\d+:\d+\s+|✖|problems?\b/i.test(line));
 }
 
+function compactBuild(lines) {
+  const signal = /\b(error|warning|failed|failure|exception|traceback|cannot|unable|missing|invalid)\b|ERR!|ELIFECYCLE|TS\d{4}|:\d+:\d+/i;
+  return lines.filter((line) => signal.test(line));
+}
+
 function compactLogs(lines) {
   return dedupeLines(lines.filter((line) => /\b(ERROR|WARN|WARNING|FATAL|SEVERE|Exception|Traceback)\b/i.test(line)));
 }
@@ -205,6 +210,7 @@ function compactCommandOutput(input, options = {}) {
     if (opts.mode === 'test') compacted = compactTest(lines);
     else if (opts.mode === 'typecheck') compacted = compactTypecheck(lines);
     else if (opts.mode === 'lint') compacted = compactLint(lines);
+    else if (opts.mode === 'build') compacted = compactBuild(lines);
     else if (opts.mode === 'logs') compacted = compactLogs(lines);
     else if (opts.mode === 'grep') compacted = compactGrep(lines);
     else if (opts.mode === 'status') compacted = compactStatus(lines);

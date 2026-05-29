@@ -8,8 +8,11 @@ const checks = [
   ['passes quiet command', adviseCommand('git status --short').status === 'pass'],
   ['flags exact file lists', adviseCommand('git diff --name-only').recommendations.some((item) => item.action === 'keep-exact-file-list-raw')],
   ['flags porcelain status', adviseCommand('git status --porcelain').recommendations.some((item) => item.action === 'keep-porcelain-status-raw')],
-  ['flags broad tests', adviseCommand('pnpm test').recommendations.some((item) => item.action === 'capture-failure-tail')],
+  ['flags broad tests', adviseCommand('pnpm test').recommendations.some((item) => item.action === 'capture-test-output')],
   ['passes narrow vitest', adviseCommand('vitest run src/foo.test.ts').status === 'pass'],
+  ['flags typecheck output', adviseCommand('pnpm typecheck').recommendations.some((item) => item.action === 'capture-typecheck-output')],
+  ['flags lint output', adviseCommand('pnpm lint').recommendations.some((item) => item.action === 'capture-lint-output')],
+  ['flags build output', adviseCommand('npm run build').recommendations.some((item) => item.action === 'capture-build-output')],
 ];
 
 let failed = 0;

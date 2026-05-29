@@ -12,6 +12,7 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 
 - [Hosted Docs Entry](../index.html)
 - [Why Forgeflow](Why-Forgeflow)
+- [Forgeflow 4.3.36 Patch Notes](../changelogs/v4.3.36.html)
 - [Forgeflow 4.3.35 Patch Notes](../changelogs/v4.3.35.html)
 - [Forgeflow 4.3.30 Patch Notes](../changelogs/v4.3.30.html)
 - [Forgeflow 4.3.29 Patch Notes](../changelogs/v4.3.29.html)

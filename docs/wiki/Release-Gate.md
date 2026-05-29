@@ -20,6 +20,7 @@ node scripts/forgeflow/test-release-version.js
 node scripts/forgeflow/test-install-template.js
 node scripts/forgeflow/test-install-manifest.js
 node scripts/forgeflow/test-runtime-helper-contract.js
+node scripts/forgeflow/test-runtime-inventory.js
 node scripts/forgeflow/test-install-smoke.js
 node scripts/forgeflow/test-update-forgeflow.js
 node scripts/forgeflow/test-health-check.js
@@ -41,11 +42,14 @@ node scripts/forgeflow/test-privacy-boundary.js
 node scripts/forgeflow/test-render-adoption-pack.js
 node scripts/forgeflow/test-render-context-retention.js
 node scripts/forgeflow/test-render-context-wave-plan.js
+node scripts/forgeflow/test-render-review-wave-prep.js
 node scripts/forgeflow/test-render-first-run-guide.js
 node scripts/forgeflow/test-render-first-task-report.js
 node scripts/forgeflow/test-render-first-task-adoption-loop.js
 node scripts/forgeflow/test-render-first-useful-win.js
 node scripts/forgeflow/test-render-insight-injection.js
+node scripts/forgeflow/test-render-next-work-ranking.js
+node scripts/forgeflow/test-render-outcome-capture-plan.js
 node scripts/forgeflow/test-record-first-run-result.js
 node scripts/forgeflow/test-rollup-first-run-results.js
 node scripts/forgeflow/test-record-pilot-evidence.js
@@ -55,6 +59,7 @@ node scripts/forgeflow/test-record-project-learning.js
 node scripts/forgeflow/test-record-next-work-outcome.js
 node scripts/forgeflow/test-show-learning-status.js
 node scripts/forgeflow/test-user-profile.js
+node scripts/forgeflow/test-render-profile-bootstrap.js
 node scripts/forgeflow/test-profile-review.js
 node scripts/forgeflow/test-profile-compliance.js
 node scripts/forgeflow/test-next-action-contract.js
@@ -84,6 +89,7 @@ node scripts/forgeflow/test-show-code-map.js
 node scripts/forgeflow/test-runtime-drift-snapshot.js
 node scripts/forgeflow/test-render-update-verify.js
 node scripts/forgeflow/test-render-validation-plan.js
+node scripts/forgeflow/test-render-validation-failure-capture.js
 node scripts/forgeflow/test-render-stale-artifact-plan.js
 node scripts/forgeflow/test-build-context-pack.js
 node scripts/forgeflow/test-check-context-contract.js

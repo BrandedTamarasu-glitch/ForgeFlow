@@ -8,8 +8,10 @@ const RULES = [
   { pattern: /\bfind\b(?=.*(?:^|\s)\.(?:\s|$))(?![^|]*-maxdepth)/, severity: 'attention', action: 'bound-find-depth', suggestion: 'Use find with -maxdepth and exclude generated directories.' },
   { pattern: /\btree\b(?![^|]*-L\s+\d+)/, severity: 'attention', action: 'bound-tree-depth', suggestion: 'Use tree -L <depth> and exclude node_modules/.git/dist/build.' },
   { pattern: /(^|\s)(ls|du)\b.*(^|\s)-R(\s|$)/, severity: 'attention', action: 'avoid-recursive-dump', suggestion: 'Use targeted paths or depth-limited listing instead of recursive dumps.' },
-  { pattern: /\b(jest|vitest|playwright|npm\s+test|pnpm\s+test)\b(?![^|]*(tail|run\s+\S+|[^\s]+\.(test|spec)\.[cm]?[jt]sx?))/, severity: 'info', action: 'capture-failure-tail', suggestion: 'For long test runs, capture failures and keep a short tail of raw output.' },
-  { pattern: /\b(tsc|next\s+build)\b(?![^|]*(pretty\s+false|grep|tail))/, severity: 'info', action: 'filter-build-errors', suggestion: 'Prefer no-color or pretty=false output and keep errors/warnings only.' },
+  { pattern: /\b(jest|vitest|playwright|npm\s+test|pnpm\s+test)\b(?![^|]*(tail|run\s+\S+|[^\s]+\.(test|spec)\.[cm]?[jt]sx?))/, severity: 'info', action: 'capture-test-output', suggestion: 'If this fails, pass the output through /forgeflow-capture-output --mode test --command "<command>" to keep failure signal compact.' },
+  { pattern: /\b(tsc|npm\s+run\s+typecheck|pnpm\s+typecheck)\b(?![^|]*(pretty\s+false|grep|tail))/, severity: 'info', action: 'capture-typecheck-output', suggestion: 'If this is noisy, use /forgeflow-capture-output --mode typecheck --command "<command>" so TS errors stay grouped and raw-safe.' },
+  { pattern: /\b(eslint|npm\s+run\s+lint|pnpm\s+lint)\b(?![^|]*(format|grep|tail))/, severity: 'info', action: 'capture-lint-output', suggestion: 'If this is noisy, use /forgeflow-capture-output --mode lint --command "<command>" to keep violations and drop passing noise.' },
+  { pattern: /\b(next\s+build|vite\s+build|npm\s+run\s+build|pnpm\s+build)\b(?![^|]*(grep|tail))/, severity: 'info', action: 'capture-build-output', suggestion: 'If this fails, use /forgeflow-capture-output --mode build --command "<command>" to preserve build errors and warnings without progress noise.' },
 ];
 
 function usage() {

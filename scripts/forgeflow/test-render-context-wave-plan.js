@@ -23,13 +23,26 @@ fs.writeFileSync(path.join(contextDir, 'context-telemetry.json'), JSON.stringify
 fs.writeFileSync(path.join(contextDir, 'synthesis-input.json'), JSON.stringify({ agent_packets: { smith: 'smith.md' } }, null, 2));
 const result = buildContextWavePlan({ root, targetTokens: 8000 });
 const markdown = renderMarkdown(result);
-const opts = parseArgs(['--root', root, '--context-dir', contextDir, '--target-tokens', '8000', '--json']);
+const opts = parseArgs(['--root', root, '--context-dir', contextDir, '--target-tokens', '8000', '--write-wave-files', '--json']);
+const readOnlyNoFile = result.wave_files_written === false && !fs.existsSync(path.join(contextDir, 'waves'));
+const written = buildContextWavePlan({ root, contextDir, targetTokens: 8000, writeWaveFiles: true });
+const writtenMarkdown = renderMarkdown(written);
+let unsafeWriteBlocked = false;
+try {
+  buildContextWavePlan({ root, contextDir, targetTokens: 8000, writeWaveFiles: true, waveDir: path.join(os.tmpdir(), 'outside-forgeflow-waves') });
+} catch (err) {
+  unsafeWriteBlocked = /outside repo root/.test(err.message);
+}
 
 const checks = [
   ['splits over budget', result.status === 'split-recommended' && result.waves.length > 1],
   ['prioritizes security first', result.waves[0].files[0] === 'src/auth.ts'],
   ['renders commands', markdown.includes('build-context-pack --files')],
-  ['parses args', opts.root === root && opts.contextDir === contextDir && opts.targetTokens === 8000 && opts.json === true],
+  ['read-only by default', readOnlyNoFile],
+  ['writes requested wave files', written.wave_files_written === true && fs.existsSync(path.join(contextDir, 'waves', 'risk-core-files.txt'))],
+  ['written command references file', written.waves[0].command.includes('risk-core-files.txt') && writtenMarkdown.includes('File list:')],
+  ['blocks unsafe write dir', unsafeWriteBlocked],
+  ['parses args', opts.root === root && opts.contextDir === contextDir && opts.targetTokens === 8000 && opts.writeWaveFiles === true && opts.json === true],
 ];
 
 let failed = 0;
