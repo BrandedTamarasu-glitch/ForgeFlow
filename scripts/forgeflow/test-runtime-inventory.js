@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
 const {
   commandNames,
   commandSources,
@@ -8,6 +10,7 @@ const {
   helperGroupForSource,
   inventorySummary,
   managedRuntimeHelpers,
+  parityStatus,
   runtimeHelperEntries,
   releaseCheckCommands,
 } = require('./runtime-inventory');
@@ -20,9 +23,24 @@ const health = healthInventory(root);
 const helpers = managedRuntimeHelpers();
 const helperEntries = runtimeHelperEntries();
 const summary = inventorySummary(root);
+const parity = parityStatus(root);
 const releaseCheck = releaseCheckCommands(root);
 const releaseGate = releaseCheckCommands(root, path.join('docs', 'wiki', 'Release-Gate.md'));
 const releaseProcess = releaseCheckCommands(root, path.join('docs', 'wiki', 'Release-Process.md'));
+const driftRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-runtime-inventory-drift-'));
+fs.mkdirSync(path.join(driftRoot, 'commands'), { recursive: true });
+fs.mkdirSync(path.join(driftRoot, 'docs', 'wiki'), { recursive: true });
+fs.writeFileSync(path.join(driftRoot, 'commands', 'forgeflow-health.md'), [
+  'EXPECTED_COMMANDS=(',
+  '  forgeflow-health forgeflow-release-check',
+  ')',
+  'EXPECTED_RUNTIME_HELPERS=(',
+  ')',
+].join('\n'));
+fs.writeFileSync(path.join(driftRoot, 'commands', 'forgeflow-release-check.md'), '# Release check\n');
+fs.writeFileSync(path.join(driftRoot, 'docs', 'wiki', 'Release-Gate.md'), '# Release gate\n');
+fs.writeFileSync(path.join(driftRoot, 'docs', 'wiki', 'Release-Process.md'), '# Release process\n');
+const driftParity = parityStatus(driftRoot);
 
 function sameList(left, right) {
   return left.length === right.length && left.every((item, index) => item === right[index]);
@@ -35,7 +53,10 @@ const checks = [
   ['runtime helper list matches install manifest', sameList(helpers, RUNTIME_HELPERS.slice().sort())],
   ['runtime helper entries expose groups', helperEntries.length === helpers.length && helperEntries.every((item) => item.source && item.helper_group && item.installed_name)],
   ['inventory summary exposes registry counts', summary.command_count === sources.length && summary.runtime_helper_count === helpers.length && summary.helper_groups.length > 0],
-  ['groups runtime helpers', helperGroupForSource('scripts/forgeflow/install-manifest.js') === 'install-update-health' && helperGroupForSource('scripts/forgeflow/render-efficiency-gap-plan.js') === 'learning-evidence'],
+  ['inventory summary exposes canonical registry', summary.command_names.length === names.length && summary.managed_registry.runtime_helpers === helpers.length && summary.managed_registry.install_manifest_sources > helpers.length],
+  ['parity status compares health and release surfaces', parity.status === 'pass' && parity.command_count === names.length && parity.checks.health_commands_match === true && parity.checks.health_runtime_helpers_match === true && parity.checks.release_check_present === true && parity.checks.release_gate_matches === true && parity.checks.release_process_matches === true && parity.release_checks.includes('node scripts/forgeflow/test-runtime-inventory.js')],
+  ['parity status catches helper and release drift', driftParity.status === 'attention' && driftParity.checks.health_runtime_helpers_match === false && driftParity.checks.release_check_present === false],
+  ['groups runtime helpers', helperGroupForSource('scripts/forgeflow/install-manifest.js') === 'install-update-health' && helperGroupForSource('scripts/forgeflow/render-efficiency-gap-plan.js') === 'learning-evidence' && helperGroupForSource('scripts/forgeflow/command-wrapper-contract.js') === 'command-wrapper'],
   ['summarizes helper groups', groupRuntimeHelpers(['scripts/forgeflow/install-manifest.js', 'scripts/forgeflow/update-forgeflow.js']).find((item) => item.group === 'install-update-health').count === 2],
   ['health lists runtime helpers', health.runtime_helpers.includes('render-next-work-ranking.js')],
   ['release docs match release check', sameList(releaseCheck, releaseGate) && sameList(releaseCheck, releaseProcess)],

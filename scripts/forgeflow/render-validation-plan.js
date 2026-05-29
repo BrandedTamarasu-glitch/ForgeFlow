@@ -78,6 +78,7 @@ function buildValidationPlan(opts = {}) {
         raw_required: plan.raw_required,
         next: plan.next,
         reason: plan.reason,
+        recorder_prompt: plan.recorder_prompt,
       };
     });
   return {
@@ -113,6 +114,7 @@ function renderMarkdown(result) {
   lines.push('', '## If A Command Fails', '');
   for (const item of result.failure_capture_commands.slice(0, 12)) {
     lines.push(`- ${item.command}: ${item.raw_required ? 'keep raw' : item.next}`);
+    if (item.recorder_prompt) lines.push(`  - ${item.recorder_prompt}`);
   }
   if (result.failure_capture_commands.length > 12) lines.push(`- ... ${result.failure_capture_commands.length - 12} more`);
   lines.push('');

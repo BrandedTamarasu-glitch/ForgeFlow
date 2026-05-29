@@ -40,7 +40,9 @@ const emptyOverride = buildOutcomeCapturePlan({ root: emptyOverrideRoot, project
 const checks = [
   ['reports missing streams', result.status === 'capture-needed' && result.missing_count === 2],
   ['keeps existing streams watch-only', result.streams.find((item) => item.name === 'agent-feedback').action === 'watch'],
+  ['adds after-action prompts', result.next_after_action.includes('recommended next item') && result.streams.every((item) => item.after_action_prompt)],
   ['renders recorder prompts', markdown.includes('record-next-work-outcome') && markdown.includes('record-review-outcome')],
+  ['renders after-action prompt', markdown.includes('Next after action:') && markdown.includes('After action:')],
   ['renders boundary', markdown.includes('does not record')],
   ['falls back to local jsonl evidence', fallback.streams.find((item) => item.name === 'agent-feedback').action === 'watch' && fallback.missing_count === 2],
   ['empty local jsonl overrides stale present metadata', emptyOverride.streams.find((item) => item.name === 'next-work-outcomes').action === 'capture-next'],

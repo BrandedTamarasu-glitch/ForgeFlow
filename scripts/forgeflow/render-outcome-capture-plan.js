@@ -65,6 +65,14 @@ function streamStatus(intelligenceStatus, projectDir, fileName) {
   return intelligenceStatus || localStatus;
 }
 
+function afterActionPrompt(name) {
+  return {
+    'next-work-outcomes': 'After acting on a recommended next item, record whether it was useful, ignored, incorrect, or blocked.',
+    'review-outcomes': 'After Arbiter resolves a review, record the verdict and how many findings were confirmed.',
+    'agent-feedback': 'After a reviewer hint clearly helps or misleads, record a short useful, stale, or incorrect signal.',
+  }[name] || 'Record only observed outcomes after real work.';
+}
+
 function streamPlan(name, status, command, reason) {
   const missing = status === 'missing' || status === 'empty' || status === undefined;
   return {
@@ -72,8 +80,13 @@ function streamPlan(name, status, command, reason) {
     status: status || 'missing',
     action: missing ? 'capture-next' : 'watch',
     command: missing ? command : '',
+    after_action_prompt: afterActionPrompt(name),
     reason: missing ? reason : 'Outcome evidence exists; keep recording only when new evidence is available.',
   };
+}
+
+function inlineCode(value) {
+  return `\`${String(value || '').replace(/`/g, '\\`')}\``;
 }
 
 function buildOutcomeCapturePlan(opts = {}) {
@@ -108,6 +121,9 @@ function buildOutcomeCapturePlan(opts = {}) {
     project_dir: projectDir,
     missing_count: missingCount,
     streams,
+    next_after_action: missingCount > 0
+      ? streams.find((item) => item.action === 'capture-next').after_action_prompt
+      : 'Keep recording only when a new review, recommendation, or agent hint produces observable evidence.',
     next: missingCount > 0 ? streams.find((item) => item.action === 'capture-next').command : 'No immediate outcome capture needed.',
     boundary: 'Outcome capture plan is read-only. It prints recorder prompts but does not record, infer, edit files, commit, or push.',
   };
@@ -127,10 +143,11 @@ function renderMarkdown(result) {
   ];
   for (const stream of result.streams) {
     lines.push(`- ${stream.name}: ${stream.status} (${stream.action})`);
+    lines.push(`  - After action: ${stream.after_action_prompt}`);
     lines.push(`  - Reason: ${stream.reason}`);
-    if (stream.command) lines.push(`  - Command: ${stream.command}`);
+    if (stream.command) lines.push(`  - Command: ${inlineCode(stream.command)}`);
   }
-  lines.push('', `Next: ${result.next}`, '');
+  lines.push('', `Next after action: ${result.next_after_action}`, `Next: ${result.next.startsWith('record-') ? inlineCode(result.next) : result.next}`, '');
   return lines.join('\n');
 }
 

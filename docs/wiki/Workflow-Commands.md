@@ -27,6 +27,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-context-contract` | Check generated agent packets against the context contract, required sections, size limits, and advisory-boundary wording. |
 | `/forgeflow-context-retention` | Review local context artifact freshness, history retention, and broad packet size signals without deleting, compacting, or refreshing files. Add `--preview-cleanup` for read-only manual cleanup candidates. |
 | `/forgeflow-context-wave-plan` | Plan smaller review waves when the latest context pack is over budget; use `--write-wave-files` to generate focused file-list inputs. |
+| `/forgeflow-context-wave-build` | Build the first focused context packet from the latest over-budget wave plan without spawning reviewers. |
 | `/forgeflow-capture-output` | Compact provided command output safely and optionally save a failure digest without executing the command. |
 | `/forgeflow-efficiency-gaps` | Plan the five largest current efficiency gaps across live context budget state, outcome calibration, user profile readiness, runtime inventory, failure-digest use, and telemetry sparsity without writing records or changing behavior. |
 | `/forgeflow-failure-digest` | Build a compact failure digest from test, typecheck, lint, or log output, with Git provenance for freshness checks. |

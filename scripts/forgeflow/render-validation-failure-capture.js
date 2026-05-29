@@ -75,9 +75,13 @@ function buildValidationFailureCapture(opts = {}) {
   const command = String(opts.command || '').trim();
   const mode = modeForCommand(command);
   const digestPath = path.join(projectDir, 'context', 'latest', 'failure-digest.md');
+  const digestRel = path.relative(root, digestPath);
   const captureCommand = mode.raw_required
     ? ''
-    : `forgeflow-capture-output --mode ${mode.mode} --command ${shellQuote(command)} --out ${path.relative(root, digestPath)}`;
+    : `forgeflow-capture-output --mode ${mode.mode} --command ${shellQuote(command)} --out ${shellQuote(digestRel)}`;
+  const recorderPrompt = mode.raw_required
+    ? 'Do not compact this output. Keep the exact failed output with the work item or review evidence.'
+    : 'Paste the already-produced failed output into the capture command input. Do not rerun the command just to create a digest.';
   return {
     schema_version: '1',
     status: mode.raw_required ? 'raw-required' : 'capture-ready',
@@ -87,8 +91,14 @@ function buildValidationFailureCapture(opts = {}) {
     mode: mode.mode,
     raw_required: mode.raw_required,
     reason: mode.reason,
-    digest_path: path.relative(root, digestPath),
+    digest_path: digestRel,
     capture_command: captureCommand,
+    recorder_prompt: recorderPrompt,
+    first_run_action: {
+      status: mode.raw_required ? 'raw-required' : 'ready',
+      command: captureCommand,
+      prompt: recorderPrompt,
+    },
     next: mode.raw_required ? 'Keep the failed output raw and inspect it directly.' : captureCommand,
     boundary: 'Validation failure capture is a plan only. It does not execute the failed command, read output, write a digest, edit files, commit, or push.',
   };
@@ -106,6 +116,8 @@ function renderMarkdown(result) {
     result.boundary,
     '',
     `Reason: ${result.reason}`,
+    '',
+    `Capture note: ${result.recorder_prompt}`,
     '',
     `Next: ${result.next}`,
     '',

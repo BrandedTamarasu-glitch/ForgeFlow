@@ -60,6 +60,9 @@ function helperGroupForSource(source) {
   if (/^(agent-chat|check-agent|check-codex-agent|generate-codex|explain-review|classify-review|render-review|check-review|guidance-|next-action|output-|privacy-|command-args|index-memory|build-memory|build-scope)/.test(file)) {
     return 'agent-workflow';
   }
+  if (/^command-wrapper-contract/.test(file)) {
+    return 'command-wrapper';
+  }
   return 'runtime-core';
 }
 
@@ -89,6 +92,7 @@ function inventorySummary(root) {
   const commands = commandSources(root);
   const runtimeHelpers = runtimeHelperEntries();
   const staticFiles = managedStaticFiles();
+  const commandNamesList = commandNames(root);
   return {
     schema_version: '1',
     root,
@@ -96,9 +100,57 @@ function inventorySummary(root) {
     runtime_helper_count: runtimeHelpers.length,
     static_file_count: staticFiles.length,
     commands,
+    command_names: commandNamesList,
     runtime_helpers: runtimeHelpers,
     helper_groups: groupRuntimeHelpers(runtimeHelpers),
     static_files: staticFiles,
+    managed_registry: {
+      commands: commands.length,
+      command_names: commandNamesList.length,
+      runtime_helpers: runtimeHelpers.length,
+      static_files: staticFiles.length,
+      install_manifest_sources: runtimeHelpers.length + staticFiles.length,
+    },
+  };
+}
+
+function parityStatus(root) {
+  const summary = inventorySummary(root);
+  const health = healthInventory(root);
+  const releaseCheck = releaseCheckCommands(root);
+  const releaseGate = releaseCheckCommands(root, path.join('docs', 'wiki', 'Release-Gate.md'));
+  const releaseProcess = releaseCheckCommands(root, path.join('docs', 'wiki', 'Release-Process.md'));
+  const helperNames = summary.runtime_helpers.map((helper) => helper.installed_name).sort();
+  const healthHelperNames = health.runtime_helpers.map((helper) => path.basename(helper)).sort();
+  const healthCommandsMatch = summary.command_names.length === health.commands.length
+    && summary.command_names.every((name, index) => name === health.commands[index]);
+  const healthRuntimeHelpersMatch = helperNames.length === healthHelperNames.length
+    && helperNames.every((name, index) => name === healthHelperNames[index]);
+  const releaseGateMatches = releaseCheck.length === releaseGate.length
+    && releaseCheck.every((command, index) => command === releaseGate[index]);
+  const releaseProcessMatches = releaseCheck.length === releaseProcess.length
+    && releaseCheck.every((command, index) => command === releaseProcess[index]);
+  return {
+    schema_version: '1',
+    status: healthCommandsMatch && healthRuntimeHelpersMatch && releaseCheck.length > 0 && releaseGateMatches && releaseProcessMatches
+      ? 'pass'
+      : 'attention',
+    command_count: summary.command_count,
+    runtime_helper_count: summary.runtime_helper_count,
+    health_command_count: health.commands.length,
+    health_runtime_helper_count: health.runtime_helpers.length,
+    release_check_count: releaseCheck.length,
+    release_gate_check_count: releaseGate.length,
+    release_process_check_count: releaseProcess.length,
+    checks: {
+      health_commands_match: healthCommandsMatch,
+      health_runtime_helpers_match: healthRuntimeHelpersMatch,
+      release_check_present: releaseCheck.length > 0,
+      release_gate_matches: releaseGateMatches,
+      release_process_matches: releaseProcessMatches,
+    },
+    release_checks: releaseCheck,
+    boundary: 'Runtime inventory parity is read-only. It compares canonical command/helper discovery with health and release surfaces but does not edit docs or install files.',
   };
 }
 
@@ -151,6 +203,7 @@ module.exports = {
   managedStaticFiles,
   parseInlineShellArray,
   parseShellArray,
+  parityStatus,
   releaseCheckCommands,
   releaseCheckCommandsFromText,
   repoRelative,

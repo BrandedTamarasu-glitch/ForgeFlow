@@ -89,9 +89,17 @@ function buildFirstRunGuide(opts = {}) {
           : ['$discuss', '$plan', '$implement', '$forge-review'],
         success: 'The work item finishes with tests, review outcome, implementation notes, and a clear next action.',
       },
+      {
+        name: 'Capture the first failed validation if one happens',
+        commands: runtime === 'claude-code'
+          ? ['/forgeflow-validation-failure-capture --command "<failed validation command>"']
+          : ['scripts/forgeflow/render-validation-failure-capture.js --command "<failed validation command>"'],
+        success: 'The helper returns one capture-ready failure-digest action, or says exact raw output is required for correctness-critical commands.',
+      },
     ],
     stop_conditions: [
       'Health or smoke reports a fail without a safe clearing action.',
+      'A failed command produces raw-required output such as a diff, patch, hash, or exact file list that should not be compacted.',
       'Profile guidance conflicts with security, accessibility, validation evidence, or current instructions.',
       'The first work item is too broad to validate in one safe slice.',
     ],

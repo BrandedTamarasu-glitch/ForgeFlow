@@ -26,14 +26,15 @@ try {
 
 const checks = [
   ['codex schema', codex.schema_version === '1' && codex.runtime === 'codex'],
-  ['codex steps', codex.steps.length === 5 && codex.steps[0].commands.includes('scripts/forgeflow/health-check.js --json') && codex.steps[0].commands.includes('scripts/forgeflow/smoke-check.js --json')],
+  ['codex steps', codex.steps.length === 6 && codex.steps[0].commands.includes('scripts/forgeflow/health-check.js --json') && codex.steps[0].commands.includes('scripts/forgeflow/smoke-check.js --json')],
   ['codex includes profile check', codex.steps.some((step) => step.commands.some((command) => command.includes('check-user-profile.js')))],
   ['codex includes health timeline', codex.steps.some((step) => step.commands.some((command) => command.includes('show-project-health-timeline.js')))],
   ['codex includes insight injection', codex.steps.some((step) => step.name === 'Inspect agent insight injection' && step.commands.some((command) => command.includes('render-insight-injection.js')))],
   ['codex includes record example', codex.steps.some((step) => step.commands.some((command) => command.includes('record-user-profile.js --scope global')))],
   ['record example is valid preference', normalizeEntry({ scope: 'global', category: 'communication', preference: preferenceMatch && preferenceMatch[1] }).preference.includes('validation status')],
   ['claude slash commands', claude.steps[0].commands.includes('/forgeflow-health') && claude.steps.some((step) => step.commands.includes('/forgeflow-profile --check'))],
-  ['stop conditions protect safety', codex.stop_conditions.some((item) => item.includes('security')) && codex.stop_conditions.some((item) => item.includes('too broad'))],
+  ['includes failure capture step', codex.steps.some((step) => step.commands.some((command) => command.includes('render-validation-failure-capture.js')))],
+  ['stop conditions protect safety', codex.stop_conditions.some((item) => item.includes('security')) && codex.stop_conditions.some((item) => item.includes('too broad')) && codex.stop_conditions.some((item) => item.includes('raw-required'))],
   ['markdown renders guide', markdown.includes('# Forgeflow First-Run Guide') && markdown.includes('## Stop Conditions')],
   ['args parse', parsed.runtime === 'claude-code' && parsed.projectName === 'Demo' && parsed.json === true],
   ['invalid runtime rejected', invalidRuntime],

@@ -67,6 +67,7 @@ const CANONICAL_NON_REQUIRED_MANAGED_SOURCES = [
   'commands/forgeflow-compact-output.md',
   'commands/forgeflow-context-contract.md',
   'commands/forgeflow-context-retention.md',
+  'commands/forgeflow-context-wave-build.md',
   'commands/forgeflow-context-wave-plan.md',
   'commands/forgeflow-capture-output.md',
   'commands/forgeflow-drift.md',
@@ -342,6 +343,7 @@ async function run() {
     ['fresh home has no missing required files', missingRequiredManagedFiles(freshHome).length === 0],
     ['fresh home installs commands', fs.existsSync(path.join(freshHome, 'commands', 'review.md'))],
     ['fresh home installs runtime helper', fs.existsSync(path.join(freshHome, 'forgeflow', 'scripts', 'forgeflow', 'update-forgeflow.js'))],
+    ['fresh home installs command wrapper contract helper', fs.existsSync(path.join(freshHome, 'forgeflow', 'scripts', 'forgeflow', 'command-wrapper-contract.js'))],
     ['fresh home keeps runtime helpers executable', requiredSources.every((source) => {
       const entry = manifestEntry(source, freshHome);
       return Boolean(entry && (!entry.executable || ((fs.statSync(entry.destination).mode & 0o111) !== 0)));

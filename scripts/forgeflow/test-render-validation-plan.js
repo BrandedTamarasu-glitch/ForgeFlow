@@ -17,7 +17,7 @@ const checks = [
   ['includes direct script test', result.commands.includes('node scripts/forgeflow/test-build-context-pack.js')],
   ['includes command coverage', result.commands.includes('node scripts/forgeflow/test-command-coverage.js')],
   ['requires full suite for core helper', result.full_suite_required === true],
-  ['includes failure capture plans', result.failure_capture_commands.some((item) => item.command === 'node scripts/forgeflow/test-build-context-pack.js' && item.next.includes('forgeflow-capture-output'))],
+  ['includes failure capture plans', result.failure_capture_commands.some((item) => item.command === 'node scripts/forgeflow/test-build-context-pack.js' && item.next.includes('forgeflow-capture-output') && item.recorder_prompt.includes('Do not rerun'))],
   ['docs only avoids full suite', docsOnly.full_suite_required === false && docsOnly.commands.includes('node scripts/forgeflow/test-doc-links.js')],
   ['renders markdown', markdown.includes('# Forgeflow Validation Plan') && markdown.includes('## If A Command Fails')],
   ['parses args', opts.root === process.cwd() && opts.json === true],

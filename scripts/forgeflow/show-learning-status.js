@@ -266,6 +266,7 @@ function buildLearningStatus(opts = {}) {
       missing_count: outcomeCapturePlan.missing_count,
       streams: outcomeCapturePlan.streams,
       boundary: outcomeCapturePlan.boundary,
+      next_after_action: outcomeCapturePlan.next_after_action,
       next: outcomeCapturePlan.next,
     },
     learning_signal_policy: {
@@ -275,6 +276,10 @@ function buildLearningStatus(opts = {}) {
     },
     boundary: 'Learning status is advisory local evidence. It does not approve work, promote patterns, or override current code, tests, review, or user instructions.',
   };
+}
+
+function inlineCode(value) {
+  return `\`${String(value || '').replace(/`/g, '\\`')}\``;
 }
 
 function renderMarkdown(result) {
@@ -312,10 +317,12 @@ function renderMarkdown(result) {
   lines.push('', '## Outcome Capture', '');
   lines.push(`- Status: ${result.outcome_capture_plan.status}`);
   lines.push(`- Missing streams: ${result.outcome_capture_plan.missing_count}`);
+  lines.push(`- Next after action: ${result.outcome_capture_plan.next_after_action}`);
   lines.push(`- Boundary: ${result.outcome_capture_plan.boundary}`);
   for (const stream of result.outcome_capture_plan.streams) {
     lines.push(`- ${stream.name}: ${stream.action}`);
-    if (stream.command) lines.push(`  - Command: ${stream.command}`);
+    if (stream.after_action_prompt) lines.push(`  - After action: ${stream.after_action_prompt}`);
+    if (stream.command) lines.push(`  - Command: ${inlineCode(stream.command)}`);
   }
   lines.push('');
   return lines.join('\n');

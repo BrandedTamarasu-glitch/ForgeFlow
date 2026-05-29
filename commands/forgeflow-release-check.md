@@ -31,6 +31,7 @@ Run these commands from `$REPO_ROOT`:
 cd "$REPO_ROOT"
 node scripts/forgeflow/test-command-coverage.js
 node scripts/forgeflow/test-command-wrapper-smoke.js
+node scripts/forgeflow/test-command-wrapper-contract.js
 node scripts/forgeflow/test-command-argument-safety.js
 node scripts/forgeflow/test-command-args.js
 node scripts/forgeflow/test-capture-command-output.js
@@ -65,6 +66,7 @@ node scripts/forgeflow/test-render-adoption-pack.js
 node scripts/forgeflow/test-render-command-index.js
 node scripts/forgeflow/test-render-context-retention.js
 node scripts/forgeflow/test-render-context-wave-plan.js
+node scripts/forgeflow/test-build-context-wave.js
 node scripts/forgeflow/test-render-review-wave-prep.js
 node scripts/forgeflow/test-render-first-run-guide.js
 node scripts/forgeflow/test-render-first-task-report.js
