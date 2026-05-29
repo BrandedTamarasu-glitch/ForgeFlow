@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow - V4.3.33 Changelog</title>
+  <style>
+    body { background: #0d0d0d; color: #ddd8cc; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.65; margin: 0; }
+    main { max-width: 820px; margin: 0 auto; padding: 72px 32px 96px; }
+    .version { color: #7a7670; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
+    h1 { font-size: 40px; font-weight: 400; line-height: 1.15; margin: 14px 0 20px; }
+    h2 { border-top: 1px solid #303030; color: #f0a232; font-size: 18px; font-weight: 600; margin: 42px 0 18px; padding-top: 28px; }
+    p, li { color: #c9c2b6; }
+    code { background: #1c1c1c; border: 1px solid #303030; border-radius: 4px; color: #f0c070; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 1px 5px; }
+    a { color: #f0a232; text-decoration: underline; text-underline-offset: 0.16em; }
+    .nav { display: flex; justify-content: space-between; margin-top: 52px; padding-top: 24px; border-top: 1px solid #303030; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="version">Forgeflow V4.3.33 · 29 May 2026</div>
+    <h1>Release: Update Confidence And First-Task Evidence</h1>
+    <p>
+      Forgeflow 4.3.33 adds five refinement features that make update health, review-auto evidence, learning-signal trust, first-task outcomes, and helper output contracts easier to verify.
+    </p>
+
+    <h2>Install And Output Confidence</h2>
+    <ul>
+      <li>New <code>/forgeflow-update-verify</code> checks installed version state and runtime drift after update or repair, then reports ready, restart, or repair guidance.</li>
+      <li>New <code>/forgeflow-output-contract</code> spot-checks representative helper output for status, next command, reason, and advisory boundary fields.</li>
+      <li>Update verification now passes an explicit source root, avoids false repair reports from unrelated directories, and keeps restart guidance in <code>next_reason</code>.</li>
+    </ul>
+
+    <h2>Review And Learning Evidence</h2>
+    <ul>
+      <li>New <code>/forgeflow-review-auto-evidence --findings &lt;json&gt;</code> writes a local classification artifact for safe, risky, and blocker buckets.</li>
+      <li>Review-auto evidence writes are confined to the project Forgeflow directory.</li>
+      <li>New <code>/forgeflow-learning-policy</code> shows or seeds configurable learning-signal decay rules consumed by <code>/forgeflow-learning-status</code>.</li>
+    </ul>
+
+    <h2>First Real Task</h2>
+    <ul>
+      <li>New <code>/forgeflow-first-task-report</code> summarizes first real work-item success signals, blockers, evidence counts, and next adoption action.</li>
+      <li>The report keeps raw project records out of the rendered output while still showing useful aggregate signals.</li>
+      <li>README, workflow docs, user paths, context-intelligence docs, health inventory, install manifest, update tests, and release gates cover the new surfaces.</li>
+    </ul>
+
+    <h2>Validation</h2>
+    <ul>
+      <li>Full <code>scripts/forgeflow/test-*.js</code> suite</li>
+      <li><code>node scripts/forgeflow/smoke-check.js --mode source --json</code></li>
+      <li><code>git diff --check</code></li>
+      <li>Install, update, command coverage, runtime-helper, release-version, docs, and wrapper-safety guards</li>
+      <li>Forgeflow final synthesis review approved after Smith, Warden, Compass, and Arbiter revisions were addressed</li>
+    </ul>
+
+    <div class="nav">
+      <a href="./v4.3.32.html">&larr; V4.3.32</a>
+      <span>V4.3.33</span>
+    </div>
+  </main>
+</body>
+</html>

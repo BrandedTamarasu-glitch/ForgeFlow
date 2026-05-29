@@ -6,6 +6,7 @@ const { readAgentFeedback, readReviewOutcomes } = require('./build-project-intel
 const { readNextWorkOutcomes } = require('./record-next-work-outcome');
 const { buildRollup, readRecords } = require('./rollup-first-run-results');
 const { compactUserProfile } = require('./user-profile');
+const { readLearningSignalPolicy } = require('./learning-signal-policy');
 
 function usage() {
   console.error('Usage: show-learning-status.js [--root <dir>] [--project-dir <dir>] [--json]');
@@ -121,7 +122,7 @@ function ageDays(file) {
   return Math.max(0, Math.floor((Date.now() - mtime) / 86400000));
 }
 
-function decayFor(section, projectDir) {
+function decayFor(section, projectDir, policy) {
   const files = {
     'project-learnings': path.join(projectDir, 'project-learnings.md'),
     'user-profile': path.join(projectDir, 'project-experience-profile.jsonl'),
@@ -130,17 +131,17 @@ function decayFor(section, projectDir) {
     'next-work-outcomes': path.join(projectDir, 'next-work-outcomes.jsonl'),
   };
   const days = ageDays(files[section.name]);
-  const reinforced = section.records >= 3;
+  const reinforced = section.records >= policy.reinforcement_records;
   let penalty = 0;
   const notes = [];
   if (days === null) {
-    penalty = section.records > 0 ? 0 : 20;
+    penalty = section.records > 0 ? 0 : policy.missing_penalty;
     notes.push('no-timestamped-artifact');
-  } else if (days > 90 && !reinforced) {
-    penalty = 30;
+  } else if (days > policy.stale_unreinforced_days && !reinforced) {
+    penalty = policy.stale_penalty;
     notes.push('stale-unreinforced');
-  } else if (days > 30 && !reinforced) {
-    penalty = 15;
+  } else if (days > policy.aging_unreinforced_days && !reinforced) {
+    penalty = policy.aging_penalty;
     notes.push('aging-unreinforced');
   } else if (reinforced) {
     notes.push('reinforced');
@@ -154,10 +155,10 @@ function decayFor(section, projectDir) {
   };
 }
 
-function buildSignalQuality(sections, nextWork, projectDir = '') {
+function buildSignalQuality(sections, nextWork, projectDir = '', policy = readLearningSignalPolicy(projectDir).policy) {
   const signals = sections.map((section) => {
     const quality = qualityFor(section, nextWork);
-    const decay = decayFor(section, projectDir);
+    const decay = decayFor(section, projectDir, policy);
     const score = Math.max(0, quality.score - decay.penalty);
     return {
       ...quality,
@@ -173,6 +174,7 @@ function buildSignalQuality(sections, nextWork, projectDir = '') {
     status: signals.some((item) => item.confidence === 'low') ? 'attention' : 'pass',
     average_score: average,
     signals,
+    policy,
     boundary: 'Signal quality scores rank local guidance trust only. Age and reinforcement can lower trust, but scores do not approve work or replace current code, tests, review, or user instructions.',
   };
 }
@@ -197,6 +199,7 @@ function buildLearningStatus(opts = {}) {
   const reviewOutcomes = readReviewOutcomes(projectDir);
   const nextWork = readNextWorkOutcomes(projectDir);
   const firstRun = firstRunSummary(projectDir);
+  const learningPolicy = readLearningSignalPolicy(projectDir);
   const sections = [
     {
       name: 'project-learnings',
@@ -245,7 +248,7 @@ function buildLearningStatus(opts = {}) {
     .filter((section) => section.next && !/^continue-/.test(section.next))
     .map((section) => ({ source: section.name, action: section.next }));
   const recommendationGroups = groupRecommendations(sections);
-  const signalQuality = buildSignalQuality(sections, nextWork, projectDir);
+  const signalQuality = buildSignalQuality(sections, nextWork, projectDir, learningPolicy.policy);
   return {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
@@ -256,6 +259,11 @@ function buildLearningStatus(opts = {}) {
     recommendations,
     recommendation_groups: recommendationGroups,
     signal_quality: signalQuality,
+    learning_signal_policy: {
+      status: learningPolicy.status,
+      file: learningPolicy.file,
+      error: learningPolicy.error || '',
+    },
     boundary: 'Learning status is advisory local evidence. It does not approve work, promote patterns, or override current code, tests, review, or user instructions.',
   };
 }
@@ -286,6 +294,7 @@ function renderMarkdown(result) {
   if (result.recommendation_groups.healthy.length === 0) lines.push('- None.');
   else for (const item of result.recommendation_groups.healthy) lines.push(`- ${item.source}: ${item.action}`);
   lines.push('', '## Signal Quality', '', `- Status: ${result.signal_quality.status}`, `- Average score: ${result.signal_quality.average_score}`, `- Boundary: ${result.signal_quality.boundary}`);
+  lines.push(`- Policy: ${result.learning_signal_policy.status} (${result.learning_signal_policy.file})`);
   for (const item of result.signal_quality.signals) {
     lines.push(`- ${item.source}: ${item.confidence} (${item.score}) - ${item.use}`);
     lines.push(`  - Decay: ${item.decay.age_days === null ? 'unknown age' : `${item.decay.age_days} day(s)`}, ${item.decay.reinforced ? 'reinforced' : 'not reinforced'}, penalty ${item.decay.penalty}`);

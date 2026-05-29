@@ -38,6 +38,7 @@ node scripts/forgeflow/test-privacy-boundary.js
 node scripts/forgeflow/test-render-adoption-pack.js
 node scripts/forgeflow/test-render-context-retention.js
 node scripts/forgeflow/test-render-first-run-guide.js
+node scripts/forgeflow/test-render-first-task-report.js
 node scripts/forgeflow/test-render-first-useful-win.js
 node scripts/forgeflow/test-render-insight-injection.js
 node scripts/forgeflow/test-record-first-run-result.js
@@ -52,7 +53,10 @@ node scripts/forgeflow/test-user-profile.js
 node scripts/forgeflow/test-profile-review.js
 node scripts/forgeflow/test-profile-compliance.js
 node scripts/forgeflow/test-next-action-contract.js
+node scripts/forgeflow/test-output-contract.js
 node scripts/forgeflow/test-classify-review-auto.js
+node scripts/forgeflow/test-render-review-auto-evidence.js
+node scripts/forgeflow/test-learning-signal-policy.js
 node scripts/forgeflow/test-rollup-pattern-learnings.js
 node scripts/forgeflow/test-render-pattern-review.js
 node scripts/forgeflow/test-rollup-pilot-evidence.js
@@ -72,6 +76,7 @@ node scripts/forgeflow/test-advise-context.js
 node scripts/forgeflow/test-build-code-topology.js
 node scripts/forgeflow/test-show-code-map.js
 node scripts/forgeflow/test-runtime-drift-snapshot.js
+node scripts/forgeflow/test-render-update-verify.js
 node scripts/forgeflow/test-build-context-pack.js
 node scripts/forgeflow/test-check-context-contract.js
 node scripts/forgeflow/test-implementation-notes.js

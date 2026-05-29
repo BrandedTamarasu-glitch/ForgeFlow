@@ -107,6 +107,8 @@ function buildNextActionContract(opts = {}) {
     status: issues.length > 0 ? 'fail' : 'pass',
     checked_count: checked.length,
     issues,
+    next: issues.length > 0 ? 'fix-next-action-contract' : '/forgeflow-output-contract',
+    next_reason: issues.length > 0 ? 'Move prose out of next fields before relying on helper output.' : 'Run the broader representative output contract audit.',
     boundary: 'Next-action audit is read-only. It checks helper output shape only and does not run next commands.',
   };
 }
@@ -128,7 +130,7 @@ function renderMarkdown(result) {
     lines.push(`- ${issue.source}: ${issue.value}`);
     lines.push(`  - ${issue.message}`);
   }
-  lines.push('');
+  lines.push('', `Next: ${result.next}`, `Why: ${result.next_reason}`, '');
   return lines.join('\n');
 }
 
