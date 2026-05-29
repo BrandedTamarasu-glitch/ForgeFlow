@@ -10,6 +10,7 @@ From a clean release checkout:
 node scripts/forgeflow/test-command-coverage.js
 node scripts/forgeflow/test-command-wrapper-smoke.js
 node scripts/forgeflow/test-command-argument-safety.js
+node scripts/forgeflow/test-command-args.js
 node scripts/forgeflow/test-doc-links.js
 node scripts/forgeflow/test-doc-drift-report.js
 node scripts/forgeflow/test-artifact-contracts.js
@@ -30,6 +31,7 @@ node scripts/forgeflow/test-render-forgeflow-report.js
 node scripts/forgeflow/test-render-release-notes.js
 node scripts/forgeflow/test-render-post-release-install-verify.js
 node scripts/forgeflow/test-render-release-readiness.js
+node scripts/forgeflow/test-render-release-follow-through.js
 node scripts/forgeflow/test-render-release-verify.js
 node scripts/forgeflow/test-render-support-bundle.js
 node scripts/forgeflow/test-render-evaluation-report.js
@@ -39,6 +41,7 @@ node scripts/forgeflow/test-render-adoption-pack.js
 node scripts/forgeflow/test-render-context-retention.js
 node scripts/forgeflow/test-render-first-run-guide.js
 node scripts/forgeflow/test-render-first-task-report.js
+node scripts/forgeflow/test-render-first-task-adoption-loop.js
 node scripts/forgeflow/test-render-first-useful-win.js
 node scripts/forgeflow/test-render-insight-injection.js
 node scripts/forgeflow/test-record-first-run-result.js
@@ -55,6 +58,7 @@ node scripts/forgeflow/test-profile-compliance.js
 node scripts/forgeflow/test-next-action-contract.js
 node scripts/forgeflow/test-output-contract.js
 node scripts/forgeflow/test-classify-review-auto.js
+node scripts/forgeflow/test-check-review-evidence-schema.js
 node scripts/forgeflow/test-render-review-auto-evidence.js
 node scripts/forgeflow/test-learning-signal-policy.js
 node scripts/forgeflow/test-rollup-pattern-learnings.js

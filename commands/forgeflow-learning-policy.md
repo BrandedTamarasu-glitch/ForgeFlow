@@ -1,16 +1,16 @@
 ---
 name: forgeflow-learning-policy
 description: Show or seed the local learning signal decay policy
-argument-hint: "[--seed] [--json]"
+argument-hint: "[--seed] [--compare <json>] [--json]"
 allowed-tools:
   - Bash
 ---
 <objective>
-Show or seed the local policy that controls advisory learning-signal age, reinforcement, and decay penalties.
+Show, seed, or compare the local policy that controls advisory learning-signal age, reinforcement, and decay penalties.
 </objective>
 
 <process>
-Validate `$ARGUMENTS`. Accept only `--seed` and `--json`.
+Validate `$ARGUMENTS`. Accept only `--seed`, `--compare <json>`, and `--json`.
 
 ```bash
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -27,13 +27,23 @@ fi
 SAFE_ARGS=(--project-dir "${FORGEFLOW_DIR}")
 read -r -a USER_ARGS <<< "${ARGUMENTS:-}"
 for arg in "${USER_ARGS[@]}"; do
+  if [ "${EXPECT_COMPARE_VALUE:-0}" = "1" ]; then
+    SAFE_ARGS+=(--compare "${arg}")
+    EXPECT_COMPARE_VALUE=0
+    continue
+  fi
   case "$arg" in
     --seed) SAFE_ARGS+=(--seed) ;;
+    --compare) EXPECT_COMPARE_VALUE=1 ;;
     --json) SAFE_ARGS+=(--json) ;;
     "") ;;
     *) echo "Unsupported arguments for /forgeflow-learning-policy"; exit 2 ;;
   esac
 done
+if [ "${EXPECT_COMPARE_VALUE:-0}" = "1" ]; then
+  echo "Missing value for --compare"
+  exit 2
+fi
 "${HELPER_DIR}/learning-signal-policy.js" "${SAFE_ARGS[@]}"
 ```
 </process>
@@ -41,5 +51,6 @@ done
 <success_criteria>
 - [ ] Output explains the advisory boundary.
 - [ ] `--seed` writes only `.forgeflow/<project>/learning-signal-policy.json`.
+- [ ] `--compare` is read-only and previews policy deltas.
 - [ ] Learning status consumes the policy when present.
 </success_criteria>

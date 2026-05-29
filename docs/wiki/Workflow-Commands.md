@@ -22,6 +22,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/audit` | Run a deeper systems/security/craft audit. |
 | `/dashboard` | Start the optional local metrics dashboard on port 4003. |
 | `/forgeflow-code-map` | Generate a compact project code map with topology, sections, changed-section hints, import-gap triage, living project-map categories, Git provenance, and generated artifact paths. |
+| `/forgeflow-command-args` | Validate a small command-argument string against an explicit allowlist without executing the command. |
 | `/forgeflow-compact-output` | Compact allowlisted noisy command output while preserving exact output for unsafe command classes. |
 | `/forgeflow-context-contract` | Check generated agent packets against the context contract, required sections, size limits, and advisory-boundary wording. |
 | `/forgeflow-context-retention` | Review local context artifact freshness, history retention, and broad packet size signals without deleting, compacting, or refreshing files. Add `--preview-cleanup` for read-only manual cleanup candidates. |
@@ -29,6 +30,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-first-run` | Print a compact net-new user guide for install verification, project orientation, profile readiness, one bounded work item, and stop conditions. |
 | `/forgeflow-first-run-result` | Record public-safe local first-run outcome evidence under `.forgeflow/<project>/first-run-results/`. |
 | `/forgeflow-first-run-rollup` | Summarize aggregate first-run result evidence and onboarding friction without sharing raw records. |
+| `/forgeflow-first-task-adoption-loop` | Decide whether the first real task should repeat, fix, defer, or expand based on first-task and useful-win evidence. |
 | `/forgeflow-first-task-report` | Summarize first real work-item success signals, blockers, evidence, and next adoption action. |
 | `/forgeflow-first-useful-win` | Summarize early public-safe wins from first-run results, pilot evidence, agent feedback, and learning status. |
 | `/forgeflow-noisy-command` | Get advisory-only suggestions for narrower noisy command invocations. |
@@ -37,7 +39,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-learnings --project --check` | Refresh and print current-project learnings, run the quality gate, smoke-test context-pack injection, and report whether latest insights are ready for agent context. Cross-project mode uses the pattern-learnings rollup helper across legacy learnings and project-learning candidates. |
 | `/forgeflow-health-timeline` | Show a read-only local timeline across code-map history, context-advisor history, latest-insights readiness, learning-signal quality, comparable deltas, and project-map evolution. |
 | `/forgeflow-insight-injection` | Show which local insight blocks were included, downgraded to metadata-only, or skipped in the latest agent context packets, with optional baseline diff, per-agent signal contracts, and clearing commands. |
-| `/forgeflow-learning-policy` | Show or seed the local learning-signal decay policy consumed by `/forgeflow-learning-status`. |
+| `/forgeflow-learning-policy` | Show, seed, or compare the local learning-signal decay policy consumed by `/forgeflow-learning-status`. |
 | `/forgeflow-learning-status` | Show one compact local health view across project learnings, user profile, agent feedback, review outcomes, next-work outcomes, and first-run results, grouped into fix-first, watch, healthy lanes, and signal-quality scores. |
 | `/forgeflow-pattern-review` | Review dry-run cross-project pattern promotion candidates with sample citations, redaction checklist, and manual-promotion boundary. |
 | `/forgeflow-post-release-install-verify` | Show one read-only after-update verdict across release verification, install consumability, and downstream smoke. |
@@ -52,10 +54,12 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-report` | Produce a script-backed status report including local metrics, false-positive thresholds, pattern freshness, context trends, project trends, import-gap status, latest-insights readiness/freshness, latest failure-digest status/freshness, and direct next-action recommendations. Add `--refresh` to update project guidance first. |
 | `/forgeflow-review-auto-classify` | Preview `/review-auto` safe, risky, and blocker buckets from captured findings JSON without editing files. |
 | `/forgeflow-review-auto-evidence` | Write a local review-auto classification evidence artifact from captured findings JSON. |
+| `/forgeflow-review-evidence-schema` | Validate captured review findings JSON shape and obvious safety hazards before auto-classification. |
 | `/forgeflow-repair` | Show a non-mutating guided repair plan that combines offline version status, installed runtime helper checks, health failures, repair commands, manual settings guidance, and an explicit downstream smoke follow-up. |
 | `/forgeflow-runtime-drift` | Compare source runtime helpers against installed runtime helpers and report missing files, content drift, mode-only drift, syntax failures, and optional `--preview-repair` actions without repairing. Missing/content/syntax drift is actionable; mode-only drift is informational. |
 | `/forgeflow-release-check` | Run local pre-release checks for command coverage, install, update, health, version, and context helpers. |
 | `/forgeflow-release-readiness` | Run advisory local release readiness checks, verify runtime helper sources are present, managed, regular files, and inside the checkout, group blockers by readiness area, and avoid tagging, pushing, publishing, or GitHub calls. The helper also supports `--baseline <json>`, `--compare-last`, and `--save-current` for prior-run comparison. |
+| `/forgeflow-release-follow-through` | Check post-publish release verify, update verify, and runtime-consumability follow-through without mutating release or install state. |
 | `/forgeflow-release-verify` | Print the compact local post-publish summary for sharing, with installed-version/runtime-drift consumability evidence, optional local snapshot save/comparison, and explicit `--github` read-only remote evidence. |
 | `/forgeflow-smoke` | Run downstream readiness smoke by default; add `--mode source` for source-tree release guards or `--mode full` for both groups. |
 | `/forgeflow-support` | Write a local support bundle with version, health, smoke, plan-only release readiness with post-publish verification, code-map acceptance health, docs drift, project trends, and consolidated next actions. Treat it as local support data because it may include local paths. |
@@ -109,6 +113,8 @@ scripts/forgeflow/rollup-first-run-results.js --project-dir .forgeflow/Forgeflow
 scripts/forgeflow/render-first-useful-win.js --project-dir .forgeflow/Forgeflow
 scripts/forgeflow/next-action-contract.js --project-dir .forgeflow/Forgeflow
 scripts/forgeflow/classify-review-auto.js --findings .forgeflow/Forgeflow/review-findings.json --json
+scripts/forgeflow/check-review-evidence-schema.js --findings .forgeflow/Forgeflow/review-findings.json --json
+scripts/forgeflow/command-args.js --allow "--json,--findings:path" --args "--json --findings .forgeflow/Forgeflow/review-findings.json" --json
 scripts/forgeflow/record-next-work-outcome.js --project-dir .forgeflow/Forgeflow --title "Review profile guidance" --source user-profile --outcome useful
 scripts/forgeflow/show-project-health-timeline.js --project-dir .forgeflow/Forgeflow
 scripts/forgeflow/rollup-project-learnings.js --json

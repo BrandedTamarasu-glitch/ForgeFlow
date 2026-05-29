@@ -19,8 +19,9 @@ If health reports missing managed files, run `/update-forgeflow --repair`. If th
 3. Follow the install verification, project-orientation, project-map evolution, profile-readiness, insight-injection, and bounded-work-item steps.
 4. Run `/forgeflow-first-useful-win` after a few evidence records when you need a compact "what helped already" summary.
 5. Run `/forgeflow-first-task-report` after the first real work item has a next-work or review outcome.
-6. For a fuller adoption trial, run `/forgeflow-pilot --path new-user --runtime claude-code`, or `scripts/forgeflow/render-pilot-script.js --path new-user --runtime codex`.
-7. Keep the first task small enough to judge setup friction, guidance quality, review usefulness, and whether the next task starts with better project context.
+6. Run `/forgeflow-first-task-adoption-loop` when you need a direct repeat, fix, defer, or expand decision from the early evidence.
+7. For a fuller adoption trial, run `/forgeflow-pilot --path new-user --runtime claude-code`, or `scripts/forgeflow/render-pilot-script.js --path new-user --runtime codex`.
+8. Keep the first task small enough to judge setup friction, guidance quality, review usefulness, and whether the next task starts with better project context.
 
 Use the default maintainer path when a project owner is running a broader pilot across a real branch. Use the new-user path when the goal is to help one person decide whether Forgeflow is worth adopting.
 
@@ -60,6 +61,7 @@ Use `/forgeflow-noisy-command` when the problem is excessive output volume and y
 6. Fix review findings, then rerun review until the final verdict is approved.
 
 Use `/review-auto` only when the fixes are conservative and safe to apply automatically.
+Use `/forgeflow-review-evidence-schema --findings <json>` before classification when findings came from manual notes or an external reviewer.
 Use `/forgeflow-review-auto-classify --findings <json>` first when you have captured findings and want a read-only safe/risky/blocker preview.
 Use `/forgeflow-review-auto-evidence --findings <json>` when you want a saved local classification artifact before applying fixes.
 
@@ -76,7 +78,7 @@ If implementation notes are missing or stale, refresh or repair them before ship
 
 1. Update version metadata and release notes.
 2. Run `/forgeflow-release-check`.
-3. Run `/forgeflow-release-readiness` to execute the release-check list and the release-to-install source preflight. Add `--save-current` to record the current local snapshot, then use `--compare-last` on a later run to see newly failing, cleared, and category-movement comparison without remembering a JSON path. After publishing, use `/forgeflow-release-verify --save` for the compact shareable local post-publish evidence; add `--github` only when you want read-only GitHub release/tag evidence. Use the helper directly with `scripts/forgeflow/render-release-readiness.js --baseline <prior-json>` when you need to compare against a specific prior run.
+3. Run `/forgeflow-release-readiness` to execute the release-check list and the release-to-install source preflight. Add `--save-current` to record the current local snapshot, then use `--compare-last` on a later run to see newly failing, cleared, and category-movement comparison without remembering a JSON path. After publishing, use `/forgeflow-release-verify --save` for the compact shareable local post-publish evidence; add `--github` only when you want read-only GitHub release/tag evidence. Run `/forgeflow-release-follow-through` after update verification to confirm post-publish verify, update verify, and runtime consumability are all accounted for. Use the helper directly with `scripts/forgeflow/render-release-readiness.js --baseline <prior-json>` when you need to compare against a specific prior run.
 4. Render the public evaluation summary if release notes cite evaluation evidence.
 5. Run `/forgeflow-smoke --mode source` for source-tree release guards when you want a shorter local check.
 6. Tag and publish only after release checks pass.
@@ -91,12 +93,14 @@ If implementation notes are missing or stale, refresh or repair them before ship
 | First time evaluating Forgeflow | `/forgeflow-first-run`, then `/forgeflow-first-run-result`; after several attempts, `/forgeflow-first-run-rollup` |
 | Need early adoption evidence | `/forgeflow-first-useful-win` |
 | First real task finished | `/forgeflow-first-task-report` |
+| Need an adoption decision | `/forgeflow-first-task-adoption-loop` |
 | Latest insights stale | `/forgeflow-trends --refresh` |
 | Need readiness confidence | `/forgeflow-smoke` |
 | Failure output is too noisy | `/forgeflow-failure-digest` |
 | Output volume is too high | `/forgeflow-noisy-command` |
 | Review context is over budget | Split scope, then rerun review prep |
+| Unsure whether review findings are well structured | `/forgeflow-review-evidence-schema --findings <json>` |
 | Unsure whether review findings are auto-fix safe | `/forgeflow-review-auto-classify --findings <json>` |
 | Need saved review-auto classification evidence | `/forgeflow-review-auto-evidence --findings <json>` |
 | Need current project trends | `/forgeflow-trends --refresh` |
-| Need release confidence | `/forgeflow-release-readiness`, then `/forgeflow-release-verify` after publishing |
+| Need release confidence | `/forgeflow-release-readiness`, then `/forgeflow-release-verify` after publishing, then `/forgeflow-release-follow-through` |

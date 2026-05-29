@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { classifyReviewAuto } = require('./classify-review-auto');
+const { checkReviewEvidenceSchema } = require('./check-review-evidence-schema');
 const { safeReadTextFile, writeFileSafe } = require('./file-safety');
 
 function usage() {
@@ -69,6 +70,7 @@ function buildReviewAutoEvidence(opts = {}) {
   const projectDir = path.resolve(opts.projectDir || defaultProjectDir());
   const findingsFile = path.resolve(opts.findings);
   const findings = readFindings(findingsFile);
+  const schema = checkReviewEvidenceSchema(findings);
   const classification = classifyReviewAuto(findings);
   const result = {
     schema_version: '1',
@@ -76,6 +78,10 @@ function buildReviewAutoEvidence(opts = {}) {
     project_dir: projectDir,
     findings_file: findingsFile,
     status: classification.status,
+    evidence_schema: {
+      status: schema.status,
+      issue_count: schema.issue_count,
+    },
     counts: classification.counts,
     safe_items: classification.items.filter((item) => item.bucket === 'safe'),
     risky_items: classification.items.filter((item) => item.bucket === 'risky'),
@@ -106,6 +112,7 @@ function renderMarkdown(result) {
     '# Forgeflow Review-Auto Evidence',
     '',
     `Status: ${result.status}`,
+    `Evidence schema: ${result.evidence_schema.status} (${result.evidence_schema.issue_count} issue(s))`,
     `Safe: ${result.counts.safe}`,
     `Risky: ${result.counts.risky}`,
     `Blocker: ${result.counts.blocker}`,

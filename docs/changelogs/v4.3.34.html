@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow - V4.3.34 Changelog</title>
+  <style>
+    body { background: #0d0d0d; color: #ddd8cc; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.65; margin: 0; }
+    main { max-width: 820px; margin: 0 auto; padding: 72px 32px 96px; }
+    .version { color: #7a7670; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
+    h1 { font-size: 40px; font-weight: 400; line-height: 1.15; margin: 14px 0 20px; }
+    h2 { border-top: 1px solid #303030; color: #f0a232; font-size: 18px; font-weight: 600; margin: 42px 0 18px; padding-top: 28px; }
+    p, li { color: #c9c2b6; }
+    code { background: #1c1c1c; border: 1px solid #303030; border-radius: 4px; color: #f0c070; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 1px 5px; }
+    a { color: #f0a232; text-decoration: underline; text-underline-offset: 0.16em; }
+    .nav { display: flex; justify-content: space-between; margin-top: 52px; padding-top: 24px; border-top: 1px solid #303030; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="version">Forgeflow V4.3.34 · 29 May 2026</div>
+    <h1>Release: Follow-Through And Evidence Refinement</h1>
+    <p>
+      Forgeflow 4.3.34 adds five local-first refinements that make release follow-through, command argument validation, review-auto inputs, learning policy changes, and first-task adoption decisions easier to trust.
+    </p>
+
+    <h2>Release Follow-Through</h2>
+    <ul>
+      <li>New <code>/forgeflow-release-follow-through</code> checks post-publish release verification, update verification, and runtime consumability in one read-only report.</li>
+      <li>The helper maps update verification states into pass, info, or attention so ready installs do not look unresolved.</li>
+      <li>The command does not tag, push, publish, call GitHub, repair installs, or edit settings.</li>
+    </ul>
+
+    <h2>Safer Command And Review Inputs</h2>
+    <ul>
+      <li>New <code>/forgeflow-command-args</code> validates boolean, value, and path flags against an explicit allowlist without executing commands.</li>
+      <li>New <code>/forgeflow-review-evidence-schema --findings &lt;json&gt;</code> checks captured findings for missing title, file, source, tier, path hazards, and obvious secret material before review-auto classification.</li>
+      <li><code>/forgeflow-review-auto-evidence</code> now includes review evidence schema status and issue counts in its local artifact.</li>
+    </ul>
+
+    <h2>Learning And Adoption</h2>
+    <ul>
+      <li><code>/forgeflow-learning-policy --compare &lt;json&gt;</code> previews policy deltas and advisory impact labels without writing policy state.</li>
+      <li>New <code>/forgeflow-first-task-adoption-loop</code> turns first-task and first-useful-win evidence into a repeat, fix, defer, or expand decision.</li>
+      <li>The adoption loop reports aggregate counts only, keeping raw local outcome records private.</li>
+    </ul>
+
+    <h2>Validation</h2>
+    <ul>
+      <li>Full <code>scripts/forgeflow/test-*.js</code> suite</li>
+      <li><code>node scripts/forgeflow/smoke-check.js --mode source --json</code></li>
+      <li><code>git diff --check</code></li>
+      <li>Install, update, command coverage, runtime-helper, release-version, docs, and wrapper-safety guards</li>
+    </ul>
+
+    <div class="nav">
+      <a href="./v4.3.33.html">&larr; V4.3.33</a>
+      <span>V4.3.34</span>
+    </div>
+  </main>
+</body>
+</html>
