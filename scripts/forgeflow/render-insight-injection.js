@@ -4,7 +4,7 @@ const path = require('path');
 const { safeReadTextFile } = require('./file-safety');
 
 function usage() {
-  console.error('Usage: render-insight-injection.js [--root <dir>] [--project-dir <dir>] [--json]');
+  console.error('Usage: render-insight-injection.js [--root <dir>] [--project-dir <dir>] [--baseline <packet-artifacts.json>] [--json]');
 }
 
 function requireValue(argv, name, index) {
@@ -22,6 +22,9 @@ function parseArgs(argv) {
       i += 1;
     } else if (arg === '--project-dir') {
       opts.projectDir = path.resolve(requireValue(argv, arg, i));
+      i += 1;
+    } else if (arg === '--baseline') {
+      opts.baseline = path.resolve(requireValue(argv, arg, i));
       i += 1;
     } else if (arg === '--json') {
       opts.json = true;
@@ -46,6 +49,10 @@ function readJson(file, root) {
   } catch (_err) {
     return null;
   }
+}
+
+function defaultBaselinePath(projectDir) {
+  return path.join(projectDir, 'context', 'previous', 'packet-artifacts.json');
 }
 
 function artifactStatus(artifact) {
@@ -112,7 +119,9 @@ function buildInsightInjection(opts = {}) {
   const contractPath = path.join(contextDir, 'agent-context-contract.json');
   const synthesisPath = path.join(contextDir, 'synthesis-input.json');
   const latestReportPath = path.join(contextDir, 'latest-insights-report.json');
+  const baselinePath = opts.baseline || defaultBaselinePath(projectDir);
   const artifacts = readJson(artifactsPath, projectDir);
+  const baselineArtifacts = readJson(baselinePath, projectDir);
   const contract = readJson(contractPath, projectDir);
   const synthesis = readJson(synthesisPath, projectDir);
   const latestReport = readJson(latestReportPath, projectDir);
@@ -125,6 +134,16 @@ function buildInsightInjection(opts = {}) {
     issue_count: Number(artifact.issue_count || 0),
     next_action: artifact.next_action || '',
   }));
+  const baselineRows = new Map(((baselineArtifacts && baselineArtifacts.artifacts) || []).map((artifact) => [artifact.name, artifactStatus(artifact)]));
+  const artifactDiff = artifactRows.map((artifact) => {
+    const previous = baselineRows.get(artifact.name) || 'missing';
+    return {
+      name: artifact.name,
+      previous,
+      current: artifact.decision,
+      changed: previous !== artifact.decision,
+    };
+  });
   const contractRows = Object.entries((contract && contract.agents) || {}).map(([agent, value]) => ({
     agent,
     allowed_signals: value.allowed_signals || [],
@@ -168,13 +187,15 @@ function buildInsightInjection(opts = {}) {
       boundary: 'Stale or missing digests are context hints, not proof of current failure.',
     },
   ];
-  const nextCommand = status === 'missing'
+  const nextCommand = status === 'missing' || missingCore.length > 0
     ? 'build-context-pack.js --json'
     : blockedArtifacts[0] && blockedArtifacts[0].next_action
       ? blockedArtifacts[0].next_action
       : 'forgeflow-context-contract';
   const next_reason = status === 'missing'
     ? 'Generate context packets before inspecting injection decisions.'
+    : missingCore.length > 0
+      ? `Regenerate context packets because core artifact decisions are missing: ${missingCore.join(', ')}.`
     : blockedArtifacts[0] && blockedArtifacts[0].next_action
       ? `Clear ${blockedArtifacts[0].name} before relying on injected guidance.`
       : 'Audit packet contracts before agent-heavy work.';
@@ -187,6 +208,8 @@ function buildInsightInjection(opts = {}) {
     status,
     packet_count: synthesis && synthesis.agent_packets ? Object.keys(synthesis.agent_packets).length : 0,
     artifacts: artifactRows,
+    artifact_diff: artifactDiff,
+    missing_core: missingCore,
     agents: contractRows,
     agent_injections: agentInjections,
     controls,
@@ -198,6 +221,7 @@ function buildInsightInjection(opts = {}) {
     } : null,
     next: nextCommand,
     next_reason,
+    baseline: baselineArtifacts ? baselinePath : '',
     boundary: 'Insight injection is local and advisory. It explains packet context decisions but does not approve findings, mutate preferences, or override current instructions.',
   };
 }
@@ -221,6 +245,12 @@ function renderMarkdown(result) {
     if (artifact.status) lines.push(`  - Status: ${artifact.status}`);
     if (artifact.issue_count) lines.push(`  - Issues: ${artifact.issue_count}`);
     if (artifact.next_action) lines.push(`  - Next: ${artifact.next_action}`);
+  }
+  lines.push('', '## Artifact Diff', '');
+  if (!result.baseline) lines.push('- No baseline packet artifact manifest found.');
+  else if (!result.artifact_diff.some((item) => item.changed)) lines.push('- No artifact decision changes from baseline.');
+  else for (const item of result.artifact_diff.filter((entry) => entry.changed)) {
+    lines.push(`- ${item.name}: ${item.previous} -> ${item.current}`);
   }
   lines.push('', '## Agent Signal Use', '');
   if (!result.agents.length) lines.push('- No agent context contract found.');

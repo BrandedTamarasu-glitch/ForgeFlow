@@ -60,6 +60,7 @@ node scripts/forgeflow/test-privacy-boundary.js
 node scripts/forgeflow/test-render-adoption-pack.js
 node scripts/forgeflow/test-render-context-retention.js
 node scripts/forgeflow/test-render-first-run-guide.js
+node scripts/forgeflow/test-render-first-useful-win.js
 node scripts/forgeflow/test-render-insight-injection.js
 node scripts/forgeflow/test-record-first-run-result.js
 node scripts/forgeflow/test-rollup-first-run-results.js
@@ -72,6 +73,8 @@ node scripts/forgeflow/test-show-learning-status.js
 node scripts/forgeflow/test-user-profile.js
 node scripts/forgeflow/test-profile-review.js
 node scripts/forgeflow/test-profile-compliance.js
+node scripts/forgeflow/test-next-action-contract.js
+node scripts/forgeflow/test-classify-review-auto.js
 node scripts/forgeflow/test-rollup-pattern-learnings.js
 node scripts/forgeflow/test-render-pattern-review.js
 node scripts/forgeflow/test-rollup-pilot-evidence.js

@@ -132,6 +132,17 @@ function buildProfileReview(opts = {}) {
       boundary: action.acceptance_boundary || 'Ask the user first; do not record inferred answers from behavior alone.',
     })),
   ];
+  const resolutionOptions = confirmationPrompts.map((prompt) => ({
+    id: prompt.id,
+    question: prompt.question,
+    options: [
+      { decision: 'accept', command: prompt.accept_command || '', effect: 'Record the confirmed guidance.' },
+      { decision: 'reject', command: '', effect: prompt.reject_guidance },
+      { decision: 'supersede', command: prompt.supersede_command || '', effect: prompt.supersede_command ? 'Retire the replaced profile entry after accepting the moved guidance.' : 'Use only when an existing profile entry must be retired.' },
+      { decision: 'defer', command: '', effect: 'Leave profile state unchanged and revisit before agent-heavy work.' },
+    ],
+    boundary: 'Only apply accept or supersede commands after explicit user confirmation.',
+  }));
   return {
     schema_version: '1',
     status: check.status,
@@ -149,6 +160,7 @@ function buildProfileReview(opts = {}) {
     actions,
     action_count: Object.values(actions).reduce((sum, group) => sum + group.length, 0),
     confirmation_prompts: confirmationPrompts,
+    resolution_options: resolutionOptions,
     apply_commands: [...new Set(commandActions)],
     resolution_flow: [
       'Ask the user to confirm each suggested preference or scope move.',
@@ -241,6 +253,19 @@ function renderMarkdown(review) {
       if (prompt.accept_command) lines.push(`  - Accept: ${prompt.accept_command}`);
       if (prompt.supersede_command) lines.push(`  - Supersede: ${prompt.supersede_command}`);
       lines.push(`  - Reject: ${prompt.reject_guidance}`);
+      lines.push(`  - Boundary: ${prompt.boundary}`);
+    }
+  }
+  lines.push('', '## Resolution Options', '');
+  if (!review.resolution_options || review.resolution_options.length === 0) {
+    lines.push('- None.');
+  } else {
+    for (const prompt of review.resolution_options) {
+      lines.push(`- ${prompt.id}: ${prompt.question}`);
+      for (const option of prompt.options) {
+        lines.push(`  - ${option.decision}: ${option.effect}`);
+        if (option.command) lines.push(`    - Command: ${option.command}`);
+      }
       lines.push(`  - Boundary: ${prompt.boundary}`);
     }
   }

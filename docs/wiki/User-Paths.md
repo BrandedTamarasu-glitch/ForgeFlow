@@ -15,9 +15,10 @@ If health reports missing managed files, run `/update-forgeflow --repair`. If th
 
 1. Run `/forgeflow-first-run --runtime claude-code` from Claude Code, or `scripts/forgeflow/render-first-run-guide.js --runtime codex` from a checkout.
 2. After the first pass, record the public-safe outcome with `/forgeflow-first-run-result` so setup friction and the continue/fix/defer decision become local evidence. After multiple attempts, run `/forgeflow-first-run-rollup` for aggregate friction trends.
-2. Follow the install verification, project-orientation, project-map evolution, profile-readiness, insight-injection, and bounded-work-item steps.
-3. For a fuller adoption trial, run `/forgeflow-pilot --path new-user --runtime claude-code`, or `scripts/forgeflow/render-pilot-script.js --path new-user --runtime codex`.
-4. Keep the first task small enough to judge setup friction, guidance quality, review usefulness, and whether the next task starts with better project context.
+3. Follow the install verification, project-orientation, project-map evolution, profile-readiness, insight-injection, and bounded-work-item steps.
+4. Run `/forgeflow-first-useful-win` after a few evidence records when you need a compact "what helped already" summary.
+5. For a fuller adoption trial, run `/forgeflow-pilot --path new-user --runtime claude-code`, or `scripts/forgeflow/render-pilot-script.js --path new-user --runtime codex`.
+6. Keep the first task small enough to judge setup friction, guidance quality, review usefulness, and whether the next task starts with better project context.
 
 Use the default maintainer path when a project owner is running a broader pilot across a real branch. Use the new-user path when the goal is to help one person decide whether Forgeflow is worth adopting.
 
@@ -57,6 +58,7 @@ Use `/forgeflow-noisy-command` when the problem is excessive output volume and y
 6. Fix review findings, then rerun review until the final verdict is approved.
 
 Use `/review-auto` only when the fixes are conservative and safe to apply automatically.
+Use `/forgeflow-review-auto-classify --findings <json>` first when you have captured findings and want a read-only safe/risky/blocker preview.
 
 ## Ship A Change
 
@@ -83,10 +85,12 @@ If implementation notes are missing or stale, refresh or repair them before ship
 | Command missing after install | Restart Claude Code, then `/forgeflow-health` |
 | Managed file missing or corrupt | `/update-forgeflow --repair` |
 | First time evaluating Forgeflow | `/forgeflow-first-run`, then `/forgeflow-first-run-result`; after several attempts, `/forgeflow-first-run-rollup` |
+| Need early adoption evidence | `/forgeflow-first-useful-win` |
 | Latest insights stale | `/forgeflow-trends --refresh` |
 | Need readiness confidence | `/forgeflow-smoke` |
 | Failure output is too noisy | `/forgeflow-failure-digest` |
 | Output volume is too high | `/forgeflow-noisy-command` |
 | Review context is over budget | Split scope, then rerun review prep |
+| Unsure whether review findings are auto-fix safe | `/forgeflow-review-auto-classify --findings <json>` |
 | Need current project trends | `/forgeflow-trends --refresh` |
 | Need release confidence | `/forgeflow-release-readiness`, then `/forgeflow-release-verify` after publishing |

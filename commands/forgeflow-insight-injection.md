@@ -1,21 +1,22 @@
 ---
 name: forgeflow-insight-injection
 description: Show which local insight blocks are injected into agent context packets and why
-argument-hint: "[--json]"
+argument-hint: "[--baseline <packet-artifacts.json>] [--json]"
 allowed-tools:
   - Bash
 ---
 <objective>
-Explain the latest local context packet insight decisions: which project learnings, profile guidance, code topology, and failure-digest signals were included, downgraded to metadata-only, or skipped for each agent.
+Explain the latest local context packet insight decisions: which project learnings, profile guidance, code topology, and failure-digest signals were included, downgraded to metadata-only, or skipped for each agent. When a baseline packet-artifacts file is available, show which artifact decisions changed.
 </objective>
 
 <context>
 `$ARGUMENTS`:
+- `--baseline <packet-artifacts.json>` - compare latest packet artifact decisions against a prior manifest.
 - `--json` - structured output.
 </context>
 
 <process>
-Validate `$ARGUMENTS`. Accept only `--json`; reject every other flag or shell metacharacter.
+Validate `$ARGUMENTS`. Accept only `--baseline <path>` and `--json`; reject every other flag or shell metacharacter.
 
 ```bash
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -31,12 +32,22 @@ if [ ! -x "${HELPER_DIR}/render-insight-injection.js" ]; then
 fi
 SAFE_ARGS=(--root "${ROOT}" --project-dir "${FORGEFLOW_DIR}")
 read -r -a USER_ARGS <<< "${ARGUMENTS:-}"
-for arg in "${USER_ARGS[@]}"; do
+i=0
+while [ "$i" -lt "${#USER_ARGS[@]}" ]; do
+  arg="${USER_ARGS[$i]}"
   case "$arg" in
     --json) SAFE_ARGS+=(--json) ;;
+    --baseline)
+      next_index=$((i + 1))
+      value="${USER_ARGS[$next_index]:-}"
+      if [ -z "$value" ] || [[ "$value" == --* ]]; then echo "Missing value for --baseline"; exit 2; fi
+      SAFE_ARGS+=(--baseline "$value")
+      i=$next_index
+      ;;
     "") ;;
     *) echo "Unsupported arguments for /forgeflow-insight-injection"; exit 2 ;;
   esac
+  i=$((i + 1))
 done
 "${HELPER_DIR}/render-insight-injection.js" "${SAFE_ARGS[@]}"
 ```
@@ -44,6 +55,6 @@ done
 
 <success_criteria>
 - [ ] Output is read-only and local-only.
-- [ ] Output shows artifact decisions, per-agent signal use, quality gates, and the next command to clear blocked guidance.
+- [ ] Output shows artifact decisions, optional baseline decision diff, per-agent signal use, quality gates, and the next command to clear blocked guidance.
 - [ ] Output says injected insights are advisory and do not approve findings or override current instructions.
 </success_criteria>

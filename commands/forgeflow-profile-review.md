@@ -6,7 +6,7 @@ allowed-tools:
   - Bash
 ---
 <objective>
-Show local profile conflicts, scope moves, ask-user prompts, and cleanup actions. This command is advisory and never records or edits preferences.
+Show local profile conflicts, scope moves, ask-user prompts, cleanup actions, and explicit accept/reject/supersede/defer resolution options. This command is advisory and never records or edits preferences.
 </objective>
 
 <context>
@@ -52,6 +52,6 @@ done
 </process>
 
 <success_criteria>
-- [ ] Output groups conflicts, scope moves, ask-user prompts, and cleanup items.
+- [ ] Output groups conflicts, scope moves, ask-user prompts, cleanup items, and resolution options.
 - [ ] Output says profile guidance is advisory and requires explicit confirmation before recording changes.
 </success_criteria>

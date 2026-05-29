@@ -31,8 +31,8 @@ const checks = [
   ['schema version', result.schema_version === '1'],
   ['includes checks', result.checks.some((item) => item.name === 'release-verify') && result.checks.some((item) => item.name === 'downstream-smoke')],
   ['read-only boundary', result.boundary.includes('read-only') && result.boundary.includes('does not update')],
-  ['info install status is not repair attention', infoResult.status === 'info' && infoResult.checks.some((item) => item.name === 'install-consumability' && item.status === 'info' && item.next.includes('forgeflow-version')) && infoResult.next.includes('forgeflow-version')],
-  ['renders markdown', markdown.includes('# Forgeflow Post-Release Install Verify') && markdown.includes('Install root')],
+  ['info install status is not repair attention', infoResult.status === 'info' && infoResult.checks.some((item) => item.name === 'install-consumability' && item.status === 'info' && item.next.includes('forgeflow-version')) && infoResult.next.includes('forgeflow-version') && infoResult.next_reason],
+  ['renders markdown', markdown.includes('# Forgeflow Post-Release Install Verify') && markdown.includes('Install root') && markdown.includes('Why:')],
   ['parses args', opts.installRoot === installRoot && opts.json === true],
 ];
 

@@ -75,7 +75,8 @@ function buildPostReleaseInstallVerify(opts = {}) {
       status: smoke.status,
       checks: smoke.checks.map((check) => ({ name: check.name, status: check.status, command: check.command || '' })),
     },
-    next: status === 'pass' || status === 'info' ? '/forgeflow-version && /forgeflow-health' : '/update-forgeflow --repair, then rerun /forgeflow-post-release-install-verify',
+    next: status === 'pass' || status === 'info' ? '/forgeflow-version && /forgeflow-health' : '/update-forgeflow --repair',
+    next_reason: status === 'pass' || status === 'info' ? 'Verify the installed version and health after update.' : 'Repair managed files, then rerun /forgeflow-post-release-install-verify.',
     boundary: 'Post-release install verification is read-only. It does not update, repair, tag, push, publish, call GitHub, or mutate installed files.',
   };
 }
@@ -95,7 +96,8 @@ function renderMarkdown(result) {
     '',
   ];
   for (const check of result.checks) lines.push(`- ${check.name}: ${check.status} (next: ${check.next})`);
-  lines.push('', `Next: ${result.next}`, '');
+  lines.push('', `Next: ${result.next}`);
+  lines.push(`Why: ${result.next_reason}`, '');
   return lines.join('\n');
 }
 

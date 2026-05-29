@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow - V4.3.32 Changelog</title>
+  <style>
+    body { background: #0d0d0d; color: #ddd8cc; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.65; margin: 0; }
+    main { max-width: 820px; margin: 0 auto; padding: 72px 32px 96px; }
+    .version { color: #7a7670; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
+    h1 { font-size: 40px; font-weight: 400; line-height: 1.15; margin: 14px 0 20px; }
+    h2 { border-top: 1px solid #303030; color: #f0a232; font-size: 18px; font-weight: 600; margin: 42px 0 18px; padding-top: 28px; }
+    p, li { color: #c9c2b6; }
+    code { background: #1c1c1c; border: 1px solid #303030; border-radius: 4px; color: #f0c070; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 1px 5px; }
+    a { color: #f0a232; text-decoration: underline; text-underline-offset: 0.16em; }
+    .nav { display: flex; justify-content: space-between; margin-top: 52px; padding-top: 24px; border-top: 1px solid #303030; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="version">Forgeflow V4.3.32 · 29 May 2026</div>
+    <h1>Release: Guided Adoption And Review Safety</h1>
+    <p>
+      Forgeflow 4.3.32 turns recent learning and adoption work into clearer user-facing checks. It adds early-value reporting, safer review-auto previews, a next-action contract audit, profile resolution options, and insight-injection diffs.
+    </p>
+
+    <h2>Adoption And Learning</h2>
+    <ul>
+      <li>New <code>/forgeflow-first-useful-win</code> summarizes public-safe early wins from first-run results, pilot evidence, agent feedback, and learning status.</li>
+      <li>Profile review now renders explicit accept, reject, supersede, and defer choices so user preference updates stay confirmed and reversible.</li>
+      <li>README, workflow docs, user paths, and context-intelligence docs now describe the updated adoption and profile-resolution flow.</li>
+    </ul>
+
+    <h2>Context And Next Actions</h2>
+    <ul>
+      <li><code>/forgeflow-insight-injection</code> can compare latest packet artifact decisions with a baseline manifest.</li>
+      <li>Missing core packet artifacts now point users back to <code>build-context-pack.js --json</code> instead of a generic contract audit.</li>
+      <li>New <code>/forgeflow-next-action-audit</code> spot-checks representative helper next actions so copy-pastable commands stay separate from explanatory reasons.</li>
+    </ul>
+
+    <h2>Review-Auto Preview</h2>
+    <ul>
+      <li>New <code>/forgeflow-review-auto-classify --findings &lt;json&gt;</code> previews safe, risky, and blocker buckets without editing files or dispatching workers.</li>
+      <li>The classifier follows the published <code>/review-auto</code> policy: Warden and dependency findings are surfaced as risky, while migrations and secrets remain blockers.</li>
+      <li>Command wrappers, health inventory, install manifest, update tests, and release gates now cover the new helpers.</li>
+    </ul>
+
+    <h2>Validation</h2>
+    <ul>
+      <li>Full <code>scripts/forgeflow/test-*.js</code> suite</li>
+      <li><code>node scripts/forgeflow/smoke-check.js --mode source --json</code></li>
+      <li><code>git diff --check</code></li>
+      <li>Focused first-useful-win, insight-injection, profile-review, next-action-contract, review-auto-classifier, install, update, docs, and runtime-helper tests</li>
+      <li>Forgeflow review revisions from Smith, Compass, and Atlas were addressed before release</li>
+    </ul>
+
+    <div class="nav">
+      <a href="./v4.3.31.html">&larr; V4.3.31</a>
+      <span>V4.3.32</span>
+    </div>
+  </main>
+</body>
+</html>
