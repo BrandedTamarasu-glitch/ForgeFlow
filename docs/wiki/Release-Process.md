@@ -78,6 +78,9 @@ node scripts/forgeflow/test-render-insight-injection.js
 node scripts/forgeflow/test-render-next-work-ranking.js
 node scripts/forgeflow/test-render-efficiency-gap-plan.js
 node scripts/forgeflow/test-render-outcome-capture-plan.js
+node scripts/forgeflow/test-render-workflow-ending-capture.js
+node scripts/forgeflow/test-render-command-wrapper-batch.js
+node scripts/forgeflow/test-render-telemetry-quality.js
 node scripts/forgeflow/test-record-first-run-result.js
 node scripts/forgeflow/test-rollup-first-run-results.js
 node scripts/forgeflow/test-seed-budget-config.js

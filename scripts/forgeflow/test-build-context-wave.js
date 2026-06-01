@@ -47,11 +47,12 @@ const checks = [
   ['builds first wave', built.status === 'built' && built.built_wave.name === 'risk-core'],
   ['writes wave file', fs.existsSync(path.join(over.contextDir, 'waves', 'risk-core-files.txt'))],
   ['writes focused packet', fs.existsSync(path.join(builtOut, 'synthesis-input.json')) && fs.existsSync(path.join(builtOut, 'file-manifest.json'))],
+  ['reports post-build budget', built.post_build_budget.status === built.built_wave.budget_status && Number.isFinite(built.post_build_budget.violation_count)],
   ['does not build under-budget pack', currentOk.status === 'current-packet-ok' && !currentOk.built_wave],
   ['does not write under-budget wave files', !fs.existsSync(path.join(under.contextDir, 'waves'))],
   ['handles missing wave', missing.status === 'wave-not-found' && missing.next.includes('risk-core')],
   ['does not write missing requested wave files', !fs.existsSync(path.join(missingContext.contextDir, 'waves'))],
-  ['renders summary', markdown.includes('Context pack:') && markdown.includes('does not spawn reviewers')],
+  ['renders summary', markdown.includes('Context pack:') && markdown.includes('Budget violations:') && markdown.includes('does not spawn reviewers')],
   ['parses args', opts.root === over.root && opts.contextDir === over.contextDir && opts.targetTokens === 8000 && opts.wave === 'risk-core' && opts.json === true],
 ];
 

@@ -122,6 +122,23 @@ function buildProfileBootstrap(opts = {}) {
     }
   }
   const check = checkUserProfile({ ...opts, projectDir: files.projectDir, home: files.home });
+  const nextProfileAction = opts.write
+    ? {
+      status: 'check-profile',
+      command: 'forgeflow-profile --check',
+      reason: 'Written profile records should pass the profile quality gate before agents rely on them.',
+    }
+    : (entries.length > 0
+      ? {
+        status: 'review-preview',
+        command: 'forgeflow-profile-bootstrap <same explicit flags> --write',
+        reason: 'Previewed preferences should only be written after the user confirms each record is explicit and correct.',
+      }
+      : {
+        status: 'prompt-needed',
+        command: 'forgeflow-profile-bootstrap --prompts',
+        reason: 'No explicit preferences were provided, so Forgeflow should ask targeted bootstrap questions before writing anything.',
+      });
   return {
     schema_version: '1',
     status: opts.write ? 'written' : 'preview',
@@ -137,6 +154,7 @@ function buildProfileBootstrap(opts = {}) {
     written: written.map((item) => ({ file: item.file, scope: item.entry.scope, category: item.entry.category })),
     check_status: check.status,
     check_issue_count: check.issues.length,
+    next_profile_action: nextProfileAction,
     next: opts.write
       ? 'Run forgeflow-profile --check before relying on profile guidance in agent context.'
       : (entries.length > 0 ? 'Review the preview, then rerun with --write only if every preference is explicit and correct.' : 'Answer any useful prompts, then rerun with explicit preference flags.'),
@@ -169,6 +187,12 @@ function renderMarkdown(result) {
   if (result.prompts.length > 0) {
     lines.push('', '## Prompts', '');
     for (const item of result.prompts) lines.push(`- ${item.flag}: ${item.prompt}`);
+  }
+  if (result.next_profile_action) {
+    lines.push('', '## Next Profile Action', '');
+    lines.push(`- Status: ${result.next_profile_action.status}`);
+    lines.push(`- Command: ${result.next_profile_action.command}`);
+    lines.push(`- Reason: ${result.next_profile_action.reason}`);
   }
   lines.push('', `Next: ${result.next}`, '');
   return lines.join('\n');

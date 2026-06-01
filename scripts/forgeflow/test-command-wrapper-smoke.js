@@ -31,6 +31,9 @@ function helperWrapper(commandRel, helperName) {
 const contextRetention = helperWrapper('commands/forgeflow-context-retention.md', 'render-context-retention.js');
 const efficiencyGaps = helperWrapper('commands/forgeflow-efficiency-gaps.md', 'render-efficiency-gap-plan.js');
 const postRelease = helperWrapper('commands/forgeflow-post-release-install-verify.md', 'render-post-release-install-verify.js');
+const wrapperBatch = helperWrapper('commands/forgeflow-command-wrapper-batch.md', 'render-command-wrapper-batch.js');
+const telemetryQuality = helperWrapper('commands/forgeflow-telemetry-quality.md', 'render-telemetry-quality.js');
+const workflowEnding = helperWrapper('commands/forgeflow-workflow-ending-capture.md', 'render-workflow-ending-capture.js');
 
 const checks = [
   ['context retention wrapper references helper', contextRetention.referencesHelper],
@@ -47,6 +50,9 @@ const checks = [
   ['post-release wrapper falls back safely', postRelease.fallsBackToInstalledHelper],
   ['post-release wrapper invokes helper with safe args', postRelease.invokesHelperWithSafeArgs],
   ['post-release wrapper only accepts json', postRelease.markdown.includes('Only `--json` is supported') && postRelease.markdown.includes('--json) SAFE_ARGS+=(--json)')],
+  ['command wrapper batch rejects unsupported args', wrapperBatch.referencesHelper && wrapperBatch.markdown.includes('Unsupported arguments for /forgeflow-command-wrapper-batch') && wrapperBatch.markdown.includes('SAFE_ARGS+=(--limit "$value")')],
+  ['telemetry quality rejects unsupported args', telemetryQuality.referencesHelper && telemetryQuality.markdown.includes('Unsupported arguments for /forgeflow-telemetry-quality')],
+  ['workflow ending rejects unsupported args', workflowEnding.referencesHelper && workflowEnding.markdown.includes('Unsupported arguments for /forgeflow-workflow-ending-capture') && workflowEnding.markdown.includes('review|next-work|agent-feedback|auto)')],
 ];
 
 let failed = 0;

@@ -23,11 +23,12 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/dashboard` | Start the optional local metrics dashboard on port 4003. |
 | `/forgeflow-code-map` | Generate a compact project code map with topology, sections, changed-section hints, import-gap triage, living project-map categories, Git provenance, and generated artifact paths. |
 | `/forgeflow-command-args` | Validate a small command-argument string against an explicit allowlist without executing the command. |
+| `/forgeflow-command-wrapper-batch` | Rank the next small batch of command-wrapper contract cleanup candidates without editing command files. |
 | `/forgeflow-compact-output` | Compact allowlisted noisy command output while preserving exact output for unsafe command classes. |
 | `/forgeflow-context-contract` | Check generated agent packets against the context contract, required sections, size limits, and advisory-boundary wording. |
 | `/forgeflow-context-retention` | Review local context artifact freshness, history retention, and broad packet size signals without deleting, compacting, or refreshing files. Add `--preview-cleanup` for read-only manual cleanup candidates. |
 | `/forgeflow-context-wave-plan` | Plan smaller review waves when the latest context pack is over budget; use `--write-wave-files` to generate focused file-list inputs. |
-| `/forgeflow-context-wave-build` | Build the first focused context packet from the latest over-budget wave plan without spawning reviewers. |
+| `/forgeflow-context-wave-build` | Build the first focused context packet from the latest over-budget wave plan, then report post-build budget status without spawning reviewers. |
 | `/forgeflow-capture-output` | Compact provided command output safely and optionally save a failure digest without executing the command. |
 | `/forgeflow-efficiency-gaps` | Plan the five largest current efficiency gaps across live context budget state, outcome calibration, user profile readiness, runtime inventory, failure-digest use, and telemetry sparsity without writing records or changing behavior. |
 | `/forgeflow-failure-digest` | Build a compact failure digest from test, typecheck, lint, or log output, with Git provenance for freshness checks. |
@@ -71,12 +72,14 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-smoke` | Run downstream readiness smoke by default; add `--mode source` for source-tree release guards or `--mode full` for both groups. |
 | `/forgeflow-support` | Write a local support bundle with version, health, smoke, plan-only release readiness with post-publish verification, code-map acceptance health, docs drift, project trends, and consolidated next actions. Treat it as local support data because it may include local paths. |
 | `/forgeflow-stale-artifact-plan` | Show minimal refresh commands for stale local guidance artifacts without refreshing or deleting them. |
+| `/forgeflow-telemetry-quality` | Summarize whether local telemetry and outcome evidence are strong enough for calibration, without exporting or backfilling records. |
 | `/forgeflow-trends` | Show the current project's code-map trend, living project-map categories, import-gap status, artifact freshness, latest-insights readiness/freshness, latest failure-digest provenance/freshness, project-learning consumption, and context-advisor status. Add `--refresh` to refresh project learnings and latest-insights readiness first; stale reports recommend it directly. |
 | `/forgeflow-update-verify` | Verify installed version state and runtime drift after update or repair, then print ready, restart, or repair guidance. |
 | `/forgeflow-validation-plan` | Plan focused validation commands from changed files, state when full suite or source smoke is required, and show compact failure-capture commands for failed checks. |
 | `/forgeflow-validation-failure-capture` | Map a failed validation command to the safest output-capture mode and failure-digest path without executing it. |
 | `/forgeflow-review-wave-prep` | Show the first focused review-wave command when context is over budget. |
 | `/forgeflow-version` | Show installed commit, upstream status, latest release, helper paths, grouped runtime helper inventory, missing helper sources, and the next update or repair action. Add `--snapshot` to write a local support artifact. |
+| `/forgeflow-workflow-ending-capture` | Recommend the one outcome recorder command to consider after review, next-work, or agent-feedback workflow endings. |
 | `/ship` | Prepare presentation, PR, CI checks, and release handoff after a passing review-history gate; potential secrets are hard blockers. |
 
 Living project-map categories include baseline, missing-history, new hotspot, cooling hotspot, import-gap growth/reduction per metric, changed-section churn, graph-growth score, and stable structure. They are static JS/TS import and section signals only.
@@ -126,6 +129,7 @@ scripts/forgeflow/next-action-contract.js --project-dir .forgeflow/Forgeflow
 scripts/forgeflow/classify-review-auto.js --findings .forgeflow/Forgeflow/review-findings.json --json
 scripts/forgeflow/check-review-evidence-schema.js --findings .forgeflow/Forgeflow/review-findings.json --json
 scripts/forgeflow/command-args.js --allow "--json,--findings:path" --args "--json --findings .forgeflow/Forgeflow/review-findings.json" --json
+scripts/forgeflow/render-command-wrapper-batch.js --root . --json
 scripts/forgeflow/render-command-index.js --root . --json
 scripts/forgeflow/record-next-work-outcome.js --project-dir .forgeflow/Forgeflow --title "Review profile guidance" --source user-profile --outcome useful
 scripts/forgeflow/show-project-health-timeline.js --project-dir .forgeflow/Forgeflow
@@ -133,6 +137,8 @@ scripts/forgeflow/rollup-project-learnings.js --json
 scripts/forgeflow/show-project-learnings.js
 scripts/forgeflow/render-guided-repair.js
 scripts/forgeflow/render-efficiency-gap-plan.js --root . --json
+scripts/forgeflow/render-workflow-ending-capture.js --root . --event review --json
+scripts/forgeflow/render-telemetry-quality.js --root . --json
 scripts/forgeflow/render-release-readiness.js
 scripts/forgeflow/render-release-verify.js
 scripts/forgeflow/smoke-check.js --json

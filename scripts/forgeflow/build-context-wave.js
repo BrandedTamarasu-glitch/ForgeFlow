@@ -151,6 +151,20 @@ function buildContextWave(opts = {}) {
     task: `Review context wave: ${wave.name}`,
   });
   const packSummary = jsonSummary(pack);
+  const budgetViolations = Array.isArray(pack.budget.violations) ? pack.budget.violations : [];
+  const postBuildBudget = {
+    status: pack.budget.status,
+    violation_count: budgetViolations.length,
+    violations: budgetViolations.map((item) => ({
+      kind: item.kind,
+      estimated_compact_tokens: item.estimated_compact_tokens,
+      limit: item.limit,
+      over_by: item.over_by,
+    })),
+    next: budgetViolations.length > 0
+      ? 'Build the next narrower review wave or lower context limits before spawning reviewers.'
+      : 'Use the focused context packet for review.',
+  };
   return {
     schema_version: '1',
     status: 'built',
@@ -166,10 +180,16 @@ function buildContextWave(opts = {}) {
       agents: packSummary.agents,
       estimated_compact_tokens: pack.telemetry.estimated_compact_tokens,
       budget_status: pack.budget.status,
+      budget_violations: budgetViolations.length,
     },
+    post_build_budget: postBuildBudget,
     wave_plan: plan,
-    next: `Use ${path.relative(root, outDir)} as the focused context pack for the first review wave.`,
-    next_reason: 'The broad context pack was split and the selected wave packet was rebuilt from an explicit file list.',
+    next: postBuildBudget.status === 'pass'
+      ? `Use ${path.relative(root, outDir)} as the focused context pack for the first review wave.`
+      : postBuildBudget.next,
+    next_reason: postBuildBudget.status === 'pass'
+      ? 'The broad context pack was split and the selected wave packet was rebuilt from an explicit file list.'
+      : 'The selected wave packet was rebuilt, but its context budget still needs attention.',
     boundary: 'Context wave build writes wave file lists and one focused context pack only. It does not spawn reviewers, edit source files, commit, or push.',
   };
 }
@@ -191,6 +211,7 @@ function renderMarkdown(result) {
     lines.push(`- Context pack: ${result.built_wave.out_dir}`);
     lines.push(`- Agents: ${result.built_wave.agents.join(', ') || '(none)'}`);
     lines.push(`- Budget: ${result.built_wave.budget_status}`);
+    if (result.post_build_budget) lines.push(`- Budget violations: ${result.post_build_budget.violation_count}`);
     lines.push('');
   }
   if (result.wave_plan && result.wave_plan.incomplete_reasons && result.wave_plan.incomplete_reasons.length > 0) {

@@ -2,6 +2,8 @@
 const fs = require('fs');
 const path = require('path');
 const { safeReadTextFile } = require('./file-safety');
+const { readAgentFeedback, readReviewOutcomes } = require('./build-project-intelligence');
+const { readNextWorkOutcomes } = require('./record-next-work-outcome');
 
 function usage() {
   console.error('Usage: render-outcome-capture-plan.js [--root <repo>] [--project-dir <dir>] [--json]');
@@ -48,21 +50,12 @@ function readJson(file, root) {
   }
 }
 
-function jsonlStatus(file, root) {
-  if (!fs.existsSync(file)) return 'missing';
-  try {
-    const content = safeReadTextFile(file, root).content;
-    return content.split(/\r?\n/).some((line) => line.trim()) ? 'present' : 'empty';
-  } catch (_err) {
-    return 'missing';
-  }
-}
-
-function streamStatus(intelligenceStatus, projectDir, fileName) {
-  const localStatus = jsonlStatus(path.join(projectDir, fileName), projectDir);
-  if (localStatus === 'present') return 'present';
-  if (localStatus === 'empty') return 'empty';
-  return intelligenceStatus || localStatus;
+function evidenceStatus(readerStatus, intelligenceStatus) {
+  if (!readerStatus || readerStatus.status === 'missing') return 'missing';
+  if ((readerStatus.invalid_lines || 0) > 0 || readerStatus.status === 'invalid') return 'invalid';
+  if ((readerStatus.records || 0) > 0 || readerStatus.status === 'present') return 'present';
+  if (readerStatus.status === 'empty') return 'empty';
+  return intelligenceStatus || readerStatus.status || 'missing';
 }
 
 function afterActionPrompt(name) {
@@ -74,7 +67,7 @@ function afterActionPrompt(name) {
 }
 
 function streamPlan(name, status, command, reason) {
-  const missing = status === 'missing' || status === 'empty' || status === undefined;
+  const missing = status === 'missing' || status === 'empty' || status === 'invalid' || status === undefined;
   return {
     name,
     status: status || 'missing',
@@ -93,22 +86,25 @@ function buildOutcomeCapturePlan(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const projectDir = path.resolve(opts.projectDir || defaultProjectDir(root));
   const intelligence = readJson(path.join(projectDir, 'context', 'project-intelligence-rollup.json'), projectDir) || {};
+  const nextWork = readNextWorkOutcomes(projectDir);
+  const reviewOutcomes = readReviewOutcomes(projectDir);
+  const agentFeedback = readAgentFeedback(projectDir);
   const streams = [
     streamPlan(
       'next-work-outcomes',
-      streamStatus(intelligence.next_work_confidence && intelligence.next_work_confidence.status, projectDir, 'next-work-outcomes.jsonl'),
+      evidenceStatus(nextWork, intelligence.next_work_confidence && intelligence.next_work_confidence.status),
       'record-next-work-outcome --title "<recommendation>" --source "<source>" --outcome useful|ignored|incorrect|blocked',
       'No next-work outcome history exists, so recommendation confidence cannot calibrate against real usefulness.'
     ),
     streamPlan(
       'review-outcomes',
-      streamStatus(intelligence.review_outcomes && intelligence.review_outcomes.status, projectDir, 'review-outcomes.jsonl'),
+      evidenceStatus(reviewOutcomes, intelligence.review_outcomes && intelligence.review_outcomes.status),
       'record-review-outcome --review-id "<id>" --verdict approved|revise|blocked --findings-total <n> --findings-confirmed <n>',
       'No review outcomes exist, so reviewer precision and missed-issue signals cannot calibrate.'
     ),
     streamPlan(
       'agent-feedback',
-      streamStatus(intelligence.agent_feedback && intelligence.agent_feedback.status, projectDir, 'agent-feedback.jsonl'),
+      evidenceStatus(agentFeedback, intelligence.agent_feedback && intelligence.agent_feedback.status),
       'record-agent-feedback --agent "<agent>" --signal useful|stale|incorrect --note "<short evidence>"',
       'No agent feedback exists, so role-specific guidance cannot distinguish useful hints from stale guidance.'
     ),
@@ -167,4 +163,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { buildOutcomeCapturePlan, parseArgs, renderMarkdown };
+module.exports = { buildOutcomeCapturePlan, evidenceStatus, parseArgs, renderMarkdown };

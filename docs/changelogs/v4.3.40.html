@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow - V4.3.40 Changelog</title>
+  <style>
+    body { background: #0d0d0d; color: #ddd8cc; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.65; margin: 0; }
+    main { max-width: 820px; margin: 0 auto; padding: 72px 32px 96px; }
+    .version { color: #7a7670; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
+    h1 { font-size: 40px; font-weight: 400; line-height: 1.15; margin: 14px 0 20px; }
+    h2 { border-top: 1px solid #303030; color: #f0a232; font-size: 18px; font-weight: 600; margin: 42px 0 18px; padding-top: 28px; }
+    p, li { color: #c9c2b6; }
+    code { background: #1c1c1c; border: 1px solid #303030; border-radius: 4px; color: #f0c070; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 1px 5px; }
+    a { color: #f0a232; text-decoration: underline; text-underline-offset: 0.16em; }
+    .nav { display: flex; justify-content: space-between; margin-top: 52px; padding-top: 24px; border-top: 1px solid #303030; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="version">Forgeflow V4.3.40 · 1 June 2026</div>
+    <h1>Release: Learning Quality And Workflow Capture</h1>
+    <p>
+      Forgeflow 4.3.40 tightens the learning path with workflow-ending capture prompts, telemetry-quality checks, command-wrapper cleanup planning, and safer evidence handling for local outcome records.
+    </p>
+
+    <h2>Workflow Capture</h2>
+    <ul>
+      <li>New <code>/forgeflow-workflow-ending-capture</code> recommends the one recorder command to consider after review, next-work, or agent-feedback workflow endings.</li>
+      <li><code>/forgeflow-outcome-capture-plan</code> now trusts local JSONL evidence over stale project-intelligence metadata, so missing, empty, or invalid local evidence prompts capture.</li>
+      <li>Workflow-ending capture inherits the same invalid-evidence behavior and does not suppress recorder prompts for malformed local outcome files.</li>
+    </ul>
+
+    <h2>Telemetry Quality</h2>
+    <ul>
+      <li>New <code>/forgeflow-telemetry-quality</code> summarizes local metrics, review outcomes, agent feedback, and next-work outcomes.</li>
+      <li>Malformed outcome or metrics lines now downgrade readiness to <code>attention</code> instead of reporting calibration-ready evidence.</li>
+      <li>The helper stays local and advisory: it does not backfill, infer, export, edit files, commit, or push.</li>
+    </ul>
+
+    <h2>Wrapper And Profile Readiness</h2>
+    <ul>
+      <li>New <code>/forgeflow-command-wrapper-batch</code> ranks the next small command-wrapper cleanup batch without editing command files.</li>
+      <li>New command wrappers fail closed on unsupported or malformed arguments instead of silently using defaults.</li>
+      <li><code>/forgeflow-profile-bootstrap</code> now returns a machine-readable next profile action for prompt-needed, preview, and written states.</li>
+    </ul>
+
+    <h2>Context Budget Follow-Through</h2>
+    <ul>
+      <li><code>/forgeflow-context-wave-build</code> now reports post-build budget status and violation counts after creating a focused packet.</li>
+      <li>Install, update, health, release, README, and wiki surfaces include the new helpers and regression coverage.</li>
+    </ul>
+
+    <h2>Validation</h2>
+    <ul>
+      <li>Full <code>scripts/forgeflow/test-*.js</code> suite</li>
+      <li><code>node scripts/forgeflow/smoke-check.js --mode source --json</code></li>
+      <li><code>node scripts/forgeflow/test-doc-links.js</code></li>
+      <li><code>git diff --check</code></li>
+      <li>Forgeflow review approvals from Smith, Warden, Lumen, and Atlas after fixes</li>
+    </ul>
+
+    <div class="nav">
+      <a href="./v4.3.39.html">&larr; V4.3.39</a>
+      <span>V4.3.40</span>
+    </div>
+  </main>
+</body>
+</html>
