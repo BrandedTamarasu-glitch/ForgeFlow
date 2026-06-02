@@ -92,6 +92,7 @@ function buildValidationPlan(opts = {}) {
     source_smoke_required: sourceSmokeRequired,
     source_smoke_command: sourceSmokeCommand,
     failure_capture_commands: failureCommands,
+    first_failure_action: failureCommands[0] || null,
     boundary: 'Validation plan is read-only. It recommends commands from changed files but does not run tests, commit, or push.',
   };
 }
@@ -111,6 +112,10 @@ function renderMarkdown(result) {
   ];
   if (result.full_suite_required) lines.push('', `Full suite: ${result.full_suite_command}`);
   if (result.source_smoke_required) lines.push(`Source smoke: ${result.source_smoke_command}`);
+  if (result.first_failure_action) {
+    lines.push('', 'First failure action:', `- ${result.first_failure_action.command}: ${result.first_failure_action.raw_required ? 'keep raw output' : result.first_failure_action.next}`);
+    if (result.first_failure_action.recorder_prompt) lines.push(`  - ${result.first_failure_action.recorder_prompt}`);
+  }
   lines.push('', '## If A Command Fails', '');
   for (const item of result.failure_capture_commands.slice(0, 12)) {
     lines.push(`- ${item.command}: ${item.raw_required ? 'keep raw' : item.next}`);

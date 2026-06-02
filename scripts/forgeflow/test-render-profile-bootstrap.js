@@ -42,6 +42,8 @@ const opts = parseArgs(['--root', root, '--home', home, '--project-dir', project
 const globalFile = path.join(home, 'forgeflow', 'user-operating-profile.jsonl');
 const checks = [
   ['previews entries', preview.status === 'preview' && preview.entry_count === 2],
+  ['reports setup readiness', preview.setup_plan.status === 'needs-required-operating-preferences' && preview.setup_plan.covered_flags.includes('--communication') && preview.setup_plan.covered_flags.includes('--ui')],
+  ['reports next missing prompt', preview.setup_plan.next_prompt.flag === '--autonomy'],
   ['returns preview next action', preview.next_profile_action.status === 'review-preview' && preview.next_profile_action.command.includes('--write')],
   ['returns prompt next action', prompts.next_profile_action.status === 'prompt-needed' && prompts.next_profile_action.command.includes('--prompts')],
   ['renders prompt templates', prompts.prompts.length >= 5 && renderMarkdown(prompts).includes('--communication')],
@@ -49,7 +51,7 @@ const checks = [
   ['writes explicit entries only with flag', written.status === 'written' && fs.existsSync(globalFile)],
   ['returns written next action', written.next_profile_action.status === 'check-profile' && written.next_profile_action.command === 'forgeflow-profile --check'],
   ['blocks empty write', emptyWriteBlocked],
-  ['renders boundary and next action', markdown.includes('does not infer preferences') && markdown.includes('Next Profile Action')],
+  ['renders boundary and next action', markdown.includes('does not infer preferences') && markdown.includes('Next Profile Action') && markdown.includes('Setup Readiness')],
   ['parses quoted raw args', opts.write === true && opts.prompts === true && opts.json === true && opts.preferences.length === 1 && opts.preferences[0].preference === 'Keep updates short.'],
 ];
 

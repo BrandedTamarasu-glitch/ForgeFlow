@@ -60,7 +60,7 @@ function helperGroupForSource(source) {
   if (/^(agent-chat|check-agent|check-codex-agent|generate-codex|explain-review|classify-review|render-review|check-review|guidance-|next-action|output-|privacy-|command-args|index-memory|build-memory|build-scope)/.test(file)) {
     return 'agent-workflow';
   }
-  if (/^command-wrapper-contract/.test(file)) {
+  if (/^(command-wrapper-contract|render-command-wrapper-batch)/.test(file)) {
     return 'command-wrapper';
   }
   return 'runtime-core';

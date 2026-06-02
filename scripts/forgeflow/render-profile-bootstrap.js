@@ -30,6 +30,8 @@ const PROMPTS = [
   { flag: '--product-copy', prompt: 'What tone should project-facing copy use or avoid?' },
   { flag: '--accessibility', prompt: 'What accessibility expectations should agents preserve for this project?' },
 ];
+const REQUIRED_OPERATING_FLAGS = ['--communication', '--autonomy', '--risk', '--validation'];
+const RECOMMENDED_PROJECT_FLAGS = ['--ui', '--product-copy', '--accessibility'];
 
 function usage() {
   console.error([
@@ -109,6 +111,33 @@ function buildEntry(item) {
   });
 }
 
+function buildSetupPlan(entries) {
+  const coveredFlags = new Set(entries.map((entry) => {
+    const match = Object.entries(FLAG_TO_ENTRY).find(([_flag, defaults]) => defaults.scope === entry.scope && defaults.category === entry.category);
+    return match ? match[0] : '';
+  }).filter(Boolean));
+  const missingRequired = REQUIRED_OPERATING_FLAGS.filter((flag) => !coveredFlags.has(flag));
+  const missingRecommended = RECOMMENDED_PROJECT_FLAGS.filter((flag) => !coveredFlags.has(flag));
+  const nextFlag = missingRequired[0] || missingRecommended[0] || '';
+  const nextPrompt = PROMPTS.find((item) => item.flag === nextFlag) || null;
+  return {
+    status: missingRequired.length === 0 ? 'ready-for-check' : 'needs-required-operating-preferences',
+    required_operating_flags: REQUIRED_OPERATING_FLAGS,
+    recommended_project_flags: RECOMMENDED_PROJECT_FLAGS,
+    covered_flags: [...coveredFlags].sort(),
+    missing_required_flags: missingRequired,
+    missing_recommended_flags: missingRecommended,
+    completion: {
+      required: REQUIRED_OPERATING_FLAGS.length - missingRequired.length,
+      required_total: REQUIRED_OPERATING_FLAGS.length,
+      recommended: RECOMMENDED_PROJECT_FLAGS.length - missingRecommended.length,
+      recommended_total: RECOMMENDED_PROJECT_FLAGS.length,
+    },
+    next_prompt: nextPrompt ? { flag: nextPrompt.flag, prompt: nextPrompt.prompt } : null,
+    boundary: 'Setup readiness only reflects explicit preview or written arguments; it does not infer preferences from behavior or history.',
+  };
+}
+
 function buildProfileBootstrap(opts = {}) {
   const files = profileFiles(opts);
   const entries = (opts.preferences || []).map(buildEntry);
@@ -122,6 +151,7 @@ function buildProfileBootstrap(opts = {}) {
     }
   }
   const check = checkUserProfile({ ...opts, projectDir: files.projectDir, home: files.home });
+  const setupPlan = buildSetupPlan(entries);
   const nextProfileAction = opts.write
     ? {
       status: 'check-profile',
@@ -154,6 +184,7 @@ function buildProfileBootstrap(opts = {}) {
     written: written.map((item) => ({ file: item.file, scope: item.entry.scope, category: item.entry.category })),
     check_status: check.status,
     check_issue_count: check.issues.length,
+    setup_plan: setupPlan,
     next_profile_action: nextProfileAction,
     next: opts.write
       ? 'Run forgeflow-profile --check before relying on profile guidance in agent context.'
@@ -194,6 +225,15 @@ function renderMarkdown(result) {
     lines.push(`- Command: ${result.next_profile_action.command}`);
     lines.push(`- Reason: ${result.next_profile_action.reason}`);
   }
+  if (result.setup_plan) {
+    lines.push('', '## Setup Readiness', '');
+    lines.push(`- Status: ${result.setup_plan.status}`);
+    lines.push(`- Required: ${result.setup_plan.completion.required}/${result.setup_plan.completion.required_total}`);
+    lines.push(`- Recommended: ${result.setup_plan.completion.recommended}/${result.setup_plan.completion.recommended_total}`);
+    if (result.setup_plan.next_prompt) {
+      lines.push(`- Next prompt: ${result.setup_plan.next_prompt.flag} - ${result.setup_plan.next_prompt.prompt}`);
+    }
+  }
   lines.push('', `Next: ${result.next}`, '');
   return lines.join('\n');
 }
@@ -214,4 +254,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { buildProfileBootstrap, parseArgs, renderMarkdown };
+module.exports = { buildProfileBootstrap, buildSetupPlan, parseArgs, renderMarkdown };

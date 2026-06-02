@@ -12,18 +12,6 @@ allowed-tools:
   - Agent
   - AskUserQuestion
 ---
-```bash
-FORGEFLOW_REPO_ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null || true)"
-FORGEFLOW_INIT_SESSION="${FORGEFLOW_REPO_ROOT}/services/chat-bridge/init-session.sh"
-if [ -f "$FORGEFLOW_INIT_SESSION" ]; then
-  source "$FORGEFLOW_INIT_SESSION" "consult" "$*"
-else
-  CHAT_AVAILABLE=false
-  CHAT_SEND=""
-  ROOM_NAME="consult"
-  export CHAT_AVAILABLE CHAT_SEND ROOM_NAME
-fi
-```
 <objective>
 Run the Forgeflow team in consultation mode before implementation begins. Each agent analyzes the task from their specialty, then Arbiter synthesizes an Implementation Brief that guides parallel implementation. If Compass's plan exists from a prior `/plan` run, it serves as the input for consultation.
 
@@ -71,16 +59,20 @@ SCOPE_MANIFEST_PATH="${FORGEFLOW_DIR}/context/consult-scope-manifest.json"
 NOTES_PATH="${FORGEFLOW_DIR}/implementation-notes.md"
 PROJECT_LEARNINGS_PATH="${FORGEFLOW_DIR}/project-learnings.md"
 HELPER_DIR="scripts/forgeflow"
+SAFE_ARGS=("${ARGUMENTS:-}")
+FORGEFLOW_NODE=(env -u NODE_OPTIONS -u NODE_PATH node)
 if [ ! -x "${HELPER_DIR}/build-memory-context.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/build-memory-context.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
 
 if [ -x "${HELPER_DIR}/build-memory-context.js" ]; then
-  "${HELPER_DIR}/build-memory-context.js" --query "${ARGUMENTS:-consult implementation brief architecture security frontend coordination}" --out "$MEMORY_CONTEXT_PATH" --json
+  "${FORGEFLOW_NODE[@]}" "${HELPER_DIR}/build-memory-context.js" --query "${SAFE_ARGS[0]:-consult implementation brief architecture security frontend coordination}" --out "$MEMORY_CONTEXT_PATH" --json
+else
+  echo "Forgeflow memory helper unavailable; continue without compact memory. Run /update-forgeflow --repair if managed helpers are missing."
 fi
 
 if [ -x "${HELPER_DIR}/build-scope-manifest.js" ]; then
-  "${HELPER_DIR}/build-scope-manifest.js" --query "${ARGUMENTS:-consult implementation brief architecture security frontend coordination}" --out "$SCOPE_MANIFEST_PATH" --json
+  "${FORGEFLOW_NODE[@]}" "${HELPER_DIR}/build-scope-manifest.js" --query "${SAFE_ARGS[0]:-consult implementation brief architecture security frontend coordination}" --out "$SCOPE_MANIFEST_PATH" --json
 fi
 ```
 

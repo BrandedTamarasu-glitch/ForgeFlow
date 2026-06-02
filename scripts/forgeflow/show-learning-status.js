@@ -8,6 +8,7 @@ const { buildRollup, readRecords } = require('./rollup-first-run-results');
 const { compactUserProfile } = require('./user-profile');
 const { readLearningSignalPolicy } = require('./learning-signal-policy');
 const { buildOutcomeCapturePlan } = require('./render-outcome-capture-plan');
+const { buildWorkflowEndingCapture } = require('./render-workflow-ending-capture');
 
 function usage() {
   console.error('Usage: show-learning-status.js [--root <dir>] [--project-dir <dir>] [--json]');
@@ -202,6 +203,7 @@ function buildLearningStatus(opts = {}) {
   const firstRun = firstRunSummary(projectDir);
   const learningPolicy = readLearningSignalPolicy(projectDir);
   const outcomeCapturePlan = buildOutcomeCapturePlan({ root, projectDir });
+  const workflowEndingCapture = ['review', 'next-work', 'agent-feedback'].map((event) => buildWorkflowEndingCapture({ root, projectDir, event }));
   const sections = [
     {
       name: 'project-learnings',
@@ -269,6 +271,14 @@ function buildLearningStatus(opts = {}) {
       next_after_action: outcomeCapturePlan.next_after_action,
       next: outcomeCapturePlan.next,
     },
+    workflow_ending_capture: workflowEndingCapture.map((item) => ({
+      event: item.event,
+      status: item.status,
+      stream: item.stream,
+      command: item.command,
+      next: item.next,
+      after_action_prompt: item.after_action_prompt,
+    })),
     learning_signal_policy: {
       status: learningPolicy.status,
       file: learningPolicy.file,
@@ -323,6 +333,12 @@ function renderMarkdown(result) {
     lines.push(`- ${stream.name}: ${stream.action}`);
     if (stream.after_action_prompt) lines.push(`  - After action: ${stream.after_action_prompt}`);
     if (stream.command) lines.push(`  - Command: ${inlineCode(stream.command)}`);
+  }
+  lines.push('', '## Workflow Ending Capture', '');
+  for (const item of result.workflow_ending_capture) {
+    lines.push(`- ${item.event}: ${item.status} (${item.stream || 'none'})`);
+    if (item.after_action_prompt) lines.push(`  - After action: ${item.after_action_prompt}`);
+    if (item.command) lines.push(`  - Command: ${inlineCode(item.command)}`);
   }
   lines.push('');
   return lines.join('\n');

@@ -12,18 +12,6 @@ allowed-tools:
   - Agent
   - AskUserQuestion
 ---
-```bash
-FORGEFLOW_REPO_ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null || true)"
-FORGEFLOW_INIT_SESSION="${FORGEFLOW_REPO_ROOT}/services/chat-bridge/init-session.sh"
-if [ -f "$FORGEFLOW_INIT_SESSION" ]; then
-  source "$FORGEFLOW_INIT_SESSION" "implement" "$*"
-else
-  CHAT_AVAILABLE=false
-  CHAT_SEND=""
-  ROOM_NAME="implement"
-  export CHAT_AVAILABLE CHAT_SEND ROOM_NAME
-fi
-```
 <objective>
 Execute parallel implementation using the Forgeflow team. Each agent writes code in their domain following the Implementation Brief produced by `/consult`. Compass designs validation tests in parallel. Atlas coordinates. Arbiter oversees integration.
 
@@ -86,11 +74,13 @@ EOF
 fi
 
 if [ -x "${HELPER_DIR}/build-memory-context.js" ]; then
-  "${HELPER_DIR}/build-memory-context.js" --query "${ARGUMENTS:-implementation brief validation scope interfaces}" --out "$MEMORY_CONTEXT_PATH" --json
+  "${FORGEFLOW_NODE[@]}" "${HELPER_DIR}/build-memory-context.js" --query "${SAFE_ARGS[0]:-implementation brief validation scope interfaces}" --out "$MEMORY_CONTEXT_PATH" --json
+else
+  echo "Forgeflow memory helper unavailable; continue without compact memory. Run /update-forgeflow --repair if managed helpers are missing."
 fi
 
 if [ -x "${HELPER_DIR}/build-scope-manifest.js" ]; then
-  "${HELPER_DIR}/build-scope-manifest.js" --query "${ARGUMENTS:-implementation brief validation scope interfaces}" --out "$SCOPE_MANIFEST_PATH" --json
+  "${FORGEFLOW_NODE[@]}" "${HELPER_DIR}/build-scope-manifest.js" --query "${SAFE_ARGS[0]:-implementation brief validation scope interfaces}" --out "$SCOPE_MANIFEST_PATH" --json
 fi
 ```
 

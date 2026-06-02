@@ -12,18 +12,6 @@ allowed-tools:
   - Agent
   - AskUserQuestion
 ---
-```bash
-FORGEFLOW_REPO_ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null || true)"
-FORGEFLOW_INIT_SESSION="${FORGEFLOW_REPO_ROOT}/services/chat-bridge/init-session.sh"
-if [ -f "$FORGEFLOW_INIT_SESSION" ]; then
-  source "$FORGEFLOW_INIT_SESSION" "review" "$*"
-else
-  CHAT_AVAILABLE=false
-  CHAT_SEND=""
-  ROOM_NAME="review"
-  export CHAT_AVAILABLE CHAT_SEND ROOM_NAME
-fi
-```
 <objective>
 Run the Forgeflow review team on changed files. Works in any project.
 
@@ -178,10 +166,15 @@ if [ "$CI_MODE" = "true" ]; then
   ROUTE_ARGS+=(--ci)
 fi
 
-ROUTING_JSON=$("${HELPER_DIR}/explain-review-route.js" --json --root "$PROJECT_ROOT" --files "$REVIEW_FILES_UNIQUE" --lines "$LINES_CHANGED" --tracked-lines "$TRACKED_LINES_CHANGED" --untracked-lines "$UNTRACKED_LINES_CHANGED" "${ROUTE_ARGS[@]}")
-ROUTING_MODE=$(printf '%s' "$ROUTING_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log(JSON.parse(s).mode))')
-ROUTING_VERIFIER=$(printf '%s' "$ROUTING_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log(JSON.parse(s).verifier||"not-required"))')
-ROUTING_TELEMETRY_HINTS=$(printf '%s' "$ROUTING_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log((JSON.parse(s).telemetry_hints||[]).map(h=>`${h.type}:${h.class}`).join(", ")))')
+FORGEFLOW_NODE=(env -u NODE_OPTIONS -u NODE_PATH node)
+if [ -x "${HELPER_DIR}/explain-review-route.js" ]; then
+  ROUTING_JSON=$("${FORGEFLOW_NODE[@]}" "${HELPER_DIR}/explain-review-route.js" --json --root "$PROJECT_ROOT" --files "$REVIEW_FILES_UNIQUE" --lines "$LINES_CHANGED" --tracked-lines "$TRACKED_LINES_CHANGED" --untracked-lines "$UNTRACKED_LINES_CHANGED" "${ROUTE_ARGS[@]}")
+  ROUTING_MODE=$(printf '%s' "$ROUTING_JSON" | "${FORGEFLOW_NODE[@]}" -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log(JSON.parse(s).mode))')
+  ROUTING_VERIFIER=$(printf '%s' "$ROUTING_JSON" | "${FORGEFLOW_NODE[@]}" -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log(JSON.parse(s).verifier||"not-required"))')
+  ROUTING_TELEMETRY_HINTS=$(printf '%s' "$ROUTING_JSON" | "${FORGEFLOW_NODE[@]}" -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log((JSON.parse(s).telemetry_hints||[]).map(h=>`${h.type}:${h.class}`).join(", ")))')
+else
+  echo "Forgeflow route helper unavailable; continue with inline routing. Run /update-forgeflow --repair if managed helpers are missing."
+fi
 ```
 
 When the helper succeeds, skip Step 0.5b and use its JSON in prompts, Arbiter synthesis, final output, and CI metadata. `telemetry_hints` are explanatory; they must not suppress Lumen on UI/accessibility files.

@@ -14,18 +14,6 @@ allowed-tools:
   - WebSearch
   - WebFetch
 ---
-```bash
-FORGEFLOW_REPO_ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null || true)"
-FORGEFLOW_INIT_SESSION="${FORGEFLOW_REPO_ROOT}/services/chat-bridge/init-session.sh"
-if [ -f "$FORGEFLOW_INIT_SESSION" ]; then
-  source "$FORGEFLOW_INIT_SESSION" "research" "$*"
-else
-  CHAT_AVAILABLE=false
-  CHAT_SEND=""
-  ROOM_NAME="research"
-  export CHAT_AVAILABLE CHAT_SEND ROOM_NAME
-fi
-```
 <objective>
 Run Compass and Atlas in research mode to investigate open questions from the discussion phase, evaluate technology options, analyze codebase patterns, and identify risks.
 
@@ -55,11 +43,15 @@ PROJECT_NAME=$(basename "$(pwd)")
 FORGEFLOW_DIR=".forgeflow/${PROJECT_NAME}"
 MEMORY_CONTEXT_PATH="${FORGEFLOW_DIR}/context/research-memory.md"
 HELPER_DIR="scripts/forgeflow"
+SAFE_ARGS=("${ARGUMENTS:-}")
+FORGEFLOW_NODE=(env -u NODE_OPTIONS -u NODE_PATH node)
 if [ ! -x "${HELPER_DIR}/build-memory-context.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/build-memory-context.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
 if [ -x "${HELPER_DIR}/build-memory-context.js" ]; then
-  "${HELPER_DIR}/build-memory-context.js" --query "${ARGUMENTS:-research}" --out "$MEMORY_CONTEXT_PATH" --json
+  "${FORGEFLOW_NODE[@]}" "${HELPER_DIR}/build-memory-context.js" --query "${SAFE_ARGS[0]:-research}" --out "$MEMORY_CONTEXT_PATH" --json
+else
+  echo "Forgeflow memory helper unavailable; continue without compact memory. Run /update-forgeflow --repair if managed helpers are missing."
 fi
 ```
 

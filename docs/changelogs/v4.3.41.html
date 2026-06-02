@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow - V4.3.41 Changelog</title>
+  <style>
+    body { background: #0d0d0d; color: #ddd8cc; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.65; margin: 0; }
+    main { max-width: 820px; margin: 0 auto; padding: 72px 32px 96px; }
+    .version { color: #7a7670; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
+    h1 { font-size: 40px; font-weight: 400; line-height: 1.15; margin: 14px 0 20px; }
+    h2 { border-top: 1px solid #303030; color: #f0a232; font-size: 18px; font-weight: 600; margin: 42px 0 18px; padding-top: 28px; }
+    p, li { color: #c9c2b6; }
+    code { background: #1c1c1c; border: 1px solid #303030; border-radius: 4px; color: #f0c070; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 1px 5px; }
+    a { color: #f0a232; text-decoration: underline; text-underline-offset: 0.16em; }
+    .nav { display: flex; justify-content: space-between; margin-top: 52px; padding-top: 24px; border-top: 1px solid #303030; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="version">Forgeflow V4.3.41 · 2 June 2026</div>
+    <h1>Release: Safer Workflow Helpers And Clearer Learning Prompts</h1>
+    <p>
+      Forgeflow 4.3.41 tightens the lifecycle command wrappers and makes profile, learning, runtime inventory, and validation guidance easier to act on without making optional helpers mandatory.
+    </p>
+
+    <h2>Lifecycle Command Safety</h2>
+    <ul>
+      <li><code>/consult</code>, <code>/implement</code>, <code>/plan</code>, <code>/research</code>, and <code>/review</code> now use scrubbed Node helper calls in the touched executable snippets.</li>
+      <li>Optional memory helpers warn and continue when unavailable instead of blocking otherwise-valid workflows.</li>
+      <li><code>/review</code> keeps its inline routing fallback when the shared route helper is missing.</li>
+    </ul>
+
+    <h2>Profile And Learning Guidance</h2>
+    <ul>
+      <li><code>/forgeflow-profile-bootstrap</code> now reports setup readiness and the next missing profile prompt for operating preferences and project style inputs.</li>
+      <li><code>/forgeflow-learnings</code> status output now includes workflow-ending capture prompts for review, next-work, and agent-feedback evidence.</li>
+      <li>All capture guidance remains explicit and user-driven; Forgeflow does not infer or auto-record preferences or outcomes.</li>
+    </ul>
+
+    <h2>Runtime And Validation Refinements</h2>
+    <ul>
+      <li>Runtime inventory now groups command-wrapper contract and batch helpers under the shared <code>command-wrapper</code> surface.</li>
+      <li>Validation plans now expose a single <code>first_failure_action</code> before the full failed-command list.</li>
+      <li>README and wiki docs describe the new setup readiness, workflow-ending capture, runtime grouping, and validation-plan behavior.</li>
+    </ul>
+
+    <h2>Validation</h2>
+    <ul>
+      <li>Full <code>scripts/forgeflow/test-*.js</code> suite</li>
+      <li><code>node scripts/forgeflow/smoke-check.js --mode source --json</code></li>
+      <li><code>node scripts/forgeflow/test-release-version.js</code></li>
+      <li><code>git diff --check</code></li>
+      <li>Forgeflow full-mode review approved after Smith and Warden findings were fixed</li>
+    </ul>
+
+    <div class="nav">
+      <a href="./v4.3.40.html">&larr; V4.3.40</a>
+      <span>V4.3.41</span>
+    </div>
+  </main>
+</body>
+</html>

@@ -70,8 +70,9 @@ const checks = [
   ['groups recommendations', result.recommendation_groups.fix_first.some((item) => item.source === 'first-run-results') && result.recommendation_groups.watch.some((item) => item.source === 'agent-feedback')],
   ['signal quality present', result.signal_quality.status === 'attention' && result.signal_quality.signals.some((item) => item.source === 'next-work-outcomes' && item.notes.includes('corrective-heavy'))],
   ['outcome capture plan present', result.outcome_capture_plan.status === 'has-outcomes' && result.outcome_capture_plan.streams.every((item) => item.action === 'watch') && result.outcome_capture_plan.next_after_action.includes('Keep recording')],
+  ['workflow ending capture present', result.workflow_ending_capture.length === 3 && result.workflow_ending_capture.every((item) => item.status === 'watch')],
   ['signal decay present', result.signal_quality.signals.every((item) => item.decay && Number.isFinite(item.decay.penalty))],
-  ['markdown renders', markdown.includes('# Forgeflow Learning Status') && markdown.includes('## Signals') && markdown.includes('## Fix First') && markdown.includes('## Watch') && markdown.includes('## Healthy') && markdown.includes('## Signal Quality') && markdown.includes('## Outcome Capture') && markdown.includes('Next after action:') && markdown.includes('Decay:') && markdown.includes('first-run-results') && markdown.includes('advisory local evidence')],
+  ['markdown renders', markdown.includes('# Forgeflow Learning Status') && markdown.includes('## Signals') && markdown.includes('## Fix First') && markdown.includes('## Watch') && markdown.includes('## Healthy') && markdown.includes('## Signal Quality') && markdown.includes('## Outcome Capture') && markdown.includes('## Workflow Ending Capture') && markdown.includes('Next after action:') && markdown.includes('Decay:') && markdown.includes('first-run-results') && markdown.includes('advisory local evidence')],
   ['cli args parse', opts.root === root && opts.projectDir === projectDir && opts.json === true],
 ];
 
