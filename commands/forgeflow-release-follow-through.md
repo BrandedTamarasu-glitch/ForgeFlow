@@ -6,7 +6,7 @@ allowed-tools:
   - Bash
 ---
 <objective>
-Summarize the local post-release checklist after a Forgeflow release: post-publish verify, update verify, and runtime consumability.
+Summarize the local post-release checklist after a Forgeflow release: post-publish verify, update verify, runtime consumability, install readiness, and the release-consumption verdict.
 </objective>
 
 <process>
@@ -37,6 +37,6 @@ env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/render-release-follow-throu
 </process>
 
 <success_criteria>
-- [ ] Output includes the release follow-through checklist and next action.
+- [ ] Output includes the release follow-through checklist, install readiness, release-consumption verdict, and next action.
 - [ ] The command is local and read-only.
 </success_criteria>

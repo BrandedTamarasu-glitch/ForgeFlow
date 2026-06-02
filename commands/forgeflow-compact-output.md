@@ -25,7 +25,7 @@ Resolve helper:
 
 ```bash
 HELPER_DIR="scripts/forgeflow"
-if [ ! -x "${HELPER_DIR}/compact-command-output.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/compact-command-output.js" ]; then
+if [ ! -f "${HELPER_DIR}/compact-command-output.js" ] && [ -f "$HOME/.claude/forgeflow/scripts/forgeflow/compact-command-output.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
 ```
@@ -43,7 +43,7 @@ ARGS=()
 # Append only validated values for --mode, --command, --file, and --json.
 if [ -n "$VALIDATED_MODE" ]; then ARGS+=(--mode "$VALIDATED_MODE"); fi
 if [ -n "$VALIDATED_COMMAND" ]; then ARGS+=(--command "$VALIDATED_COMMAND"); fi
-"${HELPER_DIR}/compact-command-output.js" "${ARGS[@]}"
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/compact-command-output.js" "${ARGS[@]}"
 ```
 
 </process>

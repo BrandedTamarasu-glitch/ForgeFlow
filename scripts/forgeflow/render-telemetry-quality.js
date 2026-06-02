@@ -74,6 +74,62 @@ function countMetrics(root) {
   return { files, events, invalid_lines };
 }
 
+function sourceQuality(source, count, invalidLines, missing) {
+  let score = 100;
+  const notes = [];
+  if (missing) {
+    score -= 55;
+    notes.push('missing');
+  }
+  if (invalidLines > 0) {
+    score -= 50;
+    notes.push('invalid-lines');
+  }
+  if (count > 0 && count < 2) {
+    score -= 10;
+    notes.push('sparse');
+  }
+  const bounded = Math.max(0, Math.min(100, score));
+  return {
+    source,
+    records: count,
+    invalid_lines: invalidLines,
+    score: bounded,
+    confidence: bounded >= 80 ? 'high' : bounded >= 55 ? 'medium' : 'low',
+    notes,
+  };
+}
+
+function buildTrustSummary(counts, invalid, missing) {
+  const missingSet = new Set(missing);
+  const sources = [
+    sourceQuality('review-outcomes', counts.review_outcomes, invalid.review_outcomes, missingSet.has('review-outcomes')),
+    sourceQuality('agent-feedback', counts.agent_feedback, invalid.agent_feedback, missingSet.has('agent-feedback')),
+    sourceQuality('next-work-outcomes', counts.next_work_outcomes, invalid.next_work_outcomes, missingSet.has('next-work-outcomes')),
+    sourceQuality('metrics-events', counts.metrics_events, invalid.metrics_events, missingSet.has('metrics-events')),
+  ];
+  const trusted = sources.filter((item) => item.confidence === 'high').map((item) => item.source);
+  const weakest = sources
+    .filter((item) => item.confidence === 'low')
+    .sort((a, b) => a.score - b.score)
+    .map((item) => item.source);
+  const average = sources.length > 0
+    ? Math.round(sources.reduce((sum, item) => sum + item.score, 0) / sources.length)
+    : 0;
+  return {
+    status: weakest.length > 0 ? 'attention' : 'pass',
+    confidence: average >= 80 ? 'high' : average >= 55 ? 'medium' : 'low',
+    average_score: average,
+    trusted_sources: trusted,
+    weakest_sources: weakest,
+    sources,
+    next_quality_action: weakest.length > 0
+      ? `Refresh or record evidence for ${weakest[0]}.`
+      : 'No low-confidence telemetry sources need immediate refresh.',
+    boundary: 'Telemetry trust scores rank local calibration evidence only. They do not approve work or replace current code, tests, review, or user instructions.',
+  };
+}
+
 function buildTelemetryQuality(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const projectDir = path.resolve(opts.projectDir || defaultProjectDir(root));
@@ -96,6 +152,14 @@ function buildTelemetryQuality(opts = {}) {
   const invalidTotal = Object.values(invalid).reduce((sum, value) => sum + value, 0);
   const evidenceScore = Math.max(0, 100 - (missing.length * 20) - (invalidTotal > 0 ? 20 : 0));
   const status = invalidTotal > 0 ? 'attention' : (missing.length > 0 ? 'thin' : 'ready');
+  const counts = {
+    metrics_files: metrics.files,
+    metrics_events: metrics.events,
+    review_outcomes: reviewOutcomes.records || 0,
+    agent_feedback: agentFeedback.records || 0,
+    next_work_outcomes: nextWork.records || 0,
+  };
+  const trustSummary = buildTrustSummary(counts, invalid, missing);
   return {
     schema_version: '1',
     status,
@@ -106,13 +170,11 @@ function buildTelemetryQuality(opts = {}) {
     missing,
     invalid,
     invalid_total: invalidTotal,
-    counts: {
-      metrics_files: metrics.files,
-      metrics_events: metrics.events,
-      review_outcomes: reviewOutcomes.records || 0,
-      agent_feedback: agentFeedback.records || 0,
-      next_work_outcomes: nextWork.records || 0,
-    },
+    counts,
+    trust_summary: trustSummary,
+    trusted_sources: trustSummary.trusted_sources,
+    weakest_sources: trustSummary.weakest_sources,
+    next_quality_action: trustSummary.next_quality_action,
     next: missing.length > 0
       ? 'Record real review outcomes, agent feedback, next-work outcomes, or run Forgeflow workflows until telemetry exists.'
       : (invalidTotal > 0 ? 'Fix or remove malformed local telemetry and outcome lines before relying on calibration.' : 'Use telemetry quality as review-routing and next-work calibration evidence.'),
@@ -138,6 +200,18 @@ function renderMarkdown(result) {
   lines.push('', '## Missing', '');
   if (result.missing.length === 0) lines.push('- None.');
   else for (const item of result.missing) lines.push(`- ${item}`);
+  lines.push(
+    '',
+    '## Trust Summary',
+    '',
+    `- Status: ${result.trust_summary.status}`,
+    `- Confidence: ${result.trust_summary.confidence}`,
+    `- Average score: ${result.trust_summary.average_score}`,
+    `- Trusted sources: ${result.trusted_sources.length ? result.trusted_sources.join(', ') : 'none'}`,
+    `- Weakest sources: ${result.weakest_sources.length ? result.weakest_sources.join(', ') : 'none'}`,
+    `- Next quality action: ${result.next_quality_action}`,
+    `- Boundary: ${result.trust_summary.boundary}`,
+  );
   lines.push('', `Next: ${result.next}`, '');
   return lines.join('\n');
 }
@@ -158,4 +232,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { buildTelemetryQuality, parseArgs, renderMarkdown };
+module.exports = { buildTelemetryQuality, buildTrustSummary, parseArgs, renderMarkdown };

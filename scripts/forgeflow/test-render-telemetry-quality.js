@@ -56,12 +56,13 @@ const markdown = renderMarkdown(ready);
 const opts = parseArgs(['--root', root, '--project-dir', projectDir, '--metrics-root', metricsRoot, '--json']);
 
 const checks = [
-  ['reports thin evidence', thin.status === 'thin' && thin.missing.includes('review-outcomes') && thin.evidence_score < 100],
-  ['reports ready evidence', ready.status === 'ready' && ready.missing.length === 0 && ready.evidence_score === 100],
+  ['reports thin evidence', thin.status === 'thin' && thin.missing.includes('review-outcomes') && thin.evidence_score < 100 && thin.weakest_sources.includes('review-outcomes')],
+  ['reports ready evidence', ready.status === 'ready' && ready.missing.length === 0 && ready.evidence_score === 100 && ready.trust_summary.confidence === 'high'],
+  ['reports all trusted sources', ready.trusted_sources.length === 4 && ready.trusted_sources.includes('metrics-events')],
   ['counts streams', ready.counts.review_outcomes === 1 && ready.counts.agent_feedback === 1 && ready.counts.next_work_outcomes === 1 && ready.counts.metrics_events === 1],
-  ['downgrades invalid lines', attention.status === 'attention' && attention.invalid_total === 2 && attention.evidence_score < 100],
+  ['downgrades invalid lines', attention.status === 'attention' && attention.invalid_total === 2 && attention.evidence_score < 100 && attention.next_quality_action.includes(attention.weakest_sources[0])],
   ['downgrades invalid reader status', invalidStatus.status === 'attention' && invalidStatus.invalid.review_outcomes === 1],
-  ['renders boundary and counts', markdown.includes('Telemetry quality is advisory') && markdown.includes('metrics_events') && markdown.includes('Invalid Lines')],
+  ['renders boundary and counts', markdown.includes('Telemetry quality is advisory') && markdown.includes('metrics_events') && markdown.includes('Invalid Lines') && markdown.includes('## Trust Summary') && markdown.includes('Next quality action')],
   ['parses args', opts.root === root && opts.projectDir === projectDir && opts.metricsRoot === metricsRoot && opts.json === true],
 ];
 

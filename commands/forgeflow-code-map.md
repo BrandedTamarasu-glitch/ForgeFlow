@@ -48,7 +48,7 @@ The command uses `scripts/forgeflow/show-code-map.js`, which writes:
 
 ```bash
 HELPER_DIR="scripts/forgeflow"
-if [ ! -x "${HELPER_DIR}/show-code-map.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/show-code-map.js" ]; then
+if [ ! -f "${HELPER_DIR}/show-code-map.js" ] && [ -f "$HOME/.claude/forgeflow/scripts/forgeflow/show-code-map.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
 ```
@@ -72,7 +72,7 @@ ARGS=()
 # Append only validated values for the supported flags.
 if [ -n "$VALIDATED_MAX_HOTSPOTS" ]; then ARGS+=(--max-hotspots "$VALIDATED_MAX_HOTSPOTS"); fi
 if [ "$WANTS_JSON" = "true" ]; then ARGS+=(--json); fi
-"${HELPER_DIR}/show-code-map.js" "${ARGS[@]}"
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/show-code-map.js" "${ARGS[@]}"
 ```
 
 Print the helper output directly.

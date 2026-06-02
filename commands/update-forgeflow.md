@@ -25,19 +25,25 @@ When the installed or repo-local runtime helper exists, prefer the script-backed
 
 ```bash
 HELPER_DIR="scripts/forgeflow"
-if [ ! -x "${HELPER_DIR}/update-forgeflow.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/update-forgeflow.js" ]; then
+if [ ! -f "${HELPER_DIR}/update-forgeflow.js" ] && [ -f "$HOME/.claude/forgeflow/scripts/forgeflow/update-forgeflow.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
-if [ -x "${HELPER_DIR}/update-forgeflow.js" ]; then
+if [ -f "${HELPER_DIR}/update-forgeflow.js" ]; then
   ARGS=()
   # Append only validated --repair, --rollback, --json, and --dry-run flags.
   if [ "$WANTS_REPAIR" = "true" ]; then ARGS+=(--repair); fi
   if [ "$WANTS_ROLLBACK" = "true" ]; then ARGS+=(--rollback); fi
   if [ "$WANTS_JSON" = "true" ]; then ARGS+=(--json); fi
   if [ "$WANTS_DRY_RUN" = "true" ]; then ARGS+=(--dry-run); fi
-  "${HELPER_DIR}/update-forgeflow.js" "${ARGS[@]}"
+  env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/update-forgeflow.js" "${ARGS[@]}"
   exit $?
 fi
+```
+
+If `${HELPER_DIR}/update-forgeflow.js` is missing, stop with:
+
+```text
+Update helper is not installed. Run /update-forgeflow --repair from an installed Forgeflow runtime, or reinstall Forgeflow from the source repo.
 ```
 
 The remaining steps are the command contract and fallback procedure for environments where the helper is not available yet.

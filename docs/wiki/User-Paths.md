@@ -17,7 +17,7 @@ If health reports missing managed files, run `/update-forgeflow --repair`. If th
 1. Run `/forgeflow-first-run --runtime claude-code` from Claude Code, or `scripts/forgeflow/render-first-run-guide.js --runtime codex` from a checkout.
 2. After the first pass, record the public-safe outcome with `/forgeflow-first-run-result` so setup friction and the continue/fix/defer decision become local evidence. After multiple attempts, run `/forgeflow-first-run-rollup` for aggregate friction trends.
 3. Follow the install verification, project-orientation, project-map evolution, profile-readiness, insight-injection, and bounded-work-item steps.
-4. Run `/forgeflow-first-useful-win` after a few evidence records when you need a compact "what helped already" summary and the first-use path for install health, profile bootstrap, first task reporting, learning capture, and shareable summary.
+4. Run `/forgeflow-first-useful-win` after a few evidence records when you need a compact "what helped already" summary and the first-use path for install health, profile bootstrap, first task reporting, learning capture, and shareable summary. Add `--runtime codex` for source-helper commands instead of Claude Code slash commands.
 5. Run `/forgeflow-first-task-report` after the first real work item has a next-work or review outcome.
 6. Run `/forgeflow-first-task-adoption-loop` when you need a direct repeat, fix, defer, or expand decision from the early evidence.
 7. For a fuller adoption trial, run `/forgeflow-pilot --path new-user --runtime claude-code`, or `scripts/forgeflow/render-pilot-script.js --path new-user --runtime codex`.
@@ -101,10 +101,10 @@ If implementation notes are missing or stale, refresh or repair them before ship
 | Need to capture noisy output first | `/forgeflow-capture-output --mode <mode> --command <cmd>` |
 | Validation command failed | `/forgeflow-validation-failure-capture --command "<cmd>"`, then feed the failed output to `/forgeflow-capture-output` |
 | Output volume is too high | `/forgeflow-noisy-command` |
-| Review context is over budget | `/forgeflow-review-wave-prep --write-wave-files`, then rebuild the first focused packet; `scripts/forgeflow/advise-context.js --root .forgeflow --record` shows the advisory auto-trim rollup and proof-preserving stop rule |
+| Review context is over budget | `/forgeflow-context-advisor --record`, then `/forgeflow-review-wave-prep --write-wave-files` and rebuild the first focused packet when needed |
 | Need focused validation commands | `/forgeflow-validation-plan` |
 | Unsure whether review findings are well structured | `/forgeflow-review-evidence-schema --findings <json>` |
 | Unsure whether review findings are auto-fix safe | `/forgeflow-review-auto-classify --findings <json>` |
 | Need saved review-auto classification evidence | `/forgeflow-review-auto-evidence --findings <json>` |
 | Need current project trends | `/forgeflow-trends --refresh` |
-| Need release confidence | `/forgeflow-release-readiness`, then `/forgeflow-release-verify` after publishing, then `/forgeflow-release-follow-through` |
+| Need release confidence | `/forgeflow-release-readiness`, then `/forgeflow-release-verify` after publishing, then `/forgeflow-release-follow-through` for the release-consumption verdict |

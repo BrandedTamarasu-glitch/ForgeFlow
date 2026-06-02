@@ -118,10 +118,16 @@ if [ ! -f "${HELPER_DIR}/check-implementation-notes.js" ] && [ -f "$HOME/.claude
 fi
 ```
 
+If `${HELPER_DIR}/check-implementation-notes.js` is missing, stop with:
+
+```text
+Implementation notes helper is not installed. Run /update-forgeflow --repair, then retry /ship.
+```
+
 If `${HELPER_DIR}/check-implementation-notes.js` is available, run:
 
 ```bash
-node "${HELPER_DIR}/check-implementation-notes.js" --project-dir "${FORGEFLOW_DIR}" --json
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/check-implementation-notes.js" --project-dir "${FORGEFLOW_DIR}" --json
 ```
 
 Treat `warn` as a visible ship note, not a blocker. Treat `fail` as a hard stop because it means sensitive content or another release-blocking notes problem was detected. Include the checker status in the PR body and ship artifacts when using `ship-prepare.sh`.
@@ -130,7 +136,7 @@ Treat `warn` as a visible ship note, not a blocker. Treat `fail` as a hard stop 
 If `${HELPER_DIR}/show-project-learnings.js` is available, run it before preparing the PR body:
 
 ```bash
-node "${HELPER_DIR}/show-project-learnings.js" --project-dir "${FORGEFLOW_DIR}" --json
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/show-project-learnings.js" --project-dir "${FORGEFLOW_DIR}" --json
 ```
 
 Treat the refreshed project learnings as local guidance only. Include the artifact path in the ship handoff, but do not claim any learning as current evidence unless it is verified against the current code, tests, and review artifacts.

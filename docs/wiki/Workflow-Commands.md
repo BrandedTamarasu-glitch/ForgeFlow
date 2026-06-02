@@ -25,6 +25,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-command-args` | Validate a small command-argument string against an explicit allowlist without executing the command. |
 | `/forgeflow-command-wrapper-batch` | Rank the next small batch of command-wrapper contract cleanup candidates without editing command files. |
 | `/forgeflow-compact-output` | Compact allowlisted noisy command output while preserving exact output for unsafe command classes. |
+| `/forgeflow-context-advisor` | Show context budget, savings, topology coverage, trend deltas, and proof-preserving trim recommendations. |
 | `/forgeflow-context-contract` | Check generated agent packets against the context contract, required sections, size limits, and advisory-boundary wording. |
 | `/forgeflow-context-retention` | Review local context artifact freshness, history retention, and broad packet size signals without deleting, compacting, or refreshing files. Add `--preview-cleanup` for read-only manual cleanup candidates. |
 | `/forgeflow-context-wave-plan` | Plan smaller review waves when the latest context pack is over budget; use `--write-wave-files` to generate focused file-list inputs. |
@@ -72,7 +73,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-smoke` | Run downstream readiness smoke by default; add `--mode source` for source-tree release guards or `--mode full` for both groups. |
 | `/forgeflow-support` | Write a local support bundle with version, health, smoke, plan-only release readiness with post-publish verification, code-map acceptance health, docs drift, project trends, and consolidated next actions. Treat it as local support data because it may include local paths. |
 | `/forgeflow-stale-artifact-plan` | Show minimal refresh commands for stale local guidance artifacts without refreshing or deleting them. |
-| `/forgeflow-telemetry-quality` | Summarize whether local telemetry and outcome evidence are strong enough for calibration, without exporting or backfilling records. |
+| `/forgeflow-telemetry-quality` | Summarize whether local telemetry and outcome evidence are strong enough for calibration, including trusted sources, weakest sources, confidence, and one next quality action. |
 | `/forgeflow-trends` | Show the current project's code-map trend, living project-map categories, import-gap status, artifact freshness, latest-insights readiness/freshness, latest failure-digest provenance/freshness, project-learning consumption, and context-advisor status. Add `--refresh` to refresh project learnings and latest-insights readiness first; stale reports recommend it directly. |
 | `/forgeflow-update-verify` | Verify installed version state and runtime drift after update or repair, then print ready, restart, or repair guidance. |
 | `/forgeflow-validation-plan` | Plan focused validation commands from changed files, state when full suite or source smoke is required, and show compact failure-capture commands for failed checks. |
