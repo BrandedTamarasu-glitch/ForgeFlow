@@ -172,10 +172,15 @@ function buildSignalQuality(sections, nextWork, projectDir = '', policy = readLe
     };
   });
   const average = signals.length > 0 ? Math.round(signals.reduce((sum, item) => sum + item.score, 0) / signals.length) : 0;
+  const sorted = signals.slice().sort((a, b) => b.score - a.score || a.source.localeCompare(b.source));
+  const weakest = sorted.slice().reverse().filter((item) => item.confidence === 'low').slice(0, 3);
   return {
     status: signals.some((item) => item.confidence === 'low') ? 'attention' : 'pass',
     average_score: average,
     signals,
+    trusted_sources: sorted.filter((item) => item.confidence === 'high').slice(0, 3).map((item) => item.source),
+    weakest_sources: weakest.map((item) => item.source),
+    next_quality_action: weakest.length > 0 ? `Refresh or record evidence for ${weakest[0].source}.` : 'No low-confidence learning signals need immediate refresh.',
     policy,
     boundary: 'Signal quality scores rank local guidance trust only. Age and reinforcement can lower trust, but scores do not approve work or replace current code, tests, review, or user instructions.',
   };
@@ -319,6 +324,9 @@ function renderMarkdown(result) {
   else for (const item of result.recommendation_groups.healthy) lines.push(`- ${item.source}: ${item.action}`);
   lines.push('', '## Signal Quality', '', `- Status: ${result.signal_quality.status}`, `- Average score: ${result.signal_quality.average_score}`, `- Boundary: ${result.signal_quality.boundary}`);
   lines.push(`- Policy: ${result.learning_signal_policy.status} (${result.learning_signal_policy.file})`);
+  lines.push(`- Trusted sources: ${result.signal_quality.trusted_sources.length ? result.signal_quality.trusted_sources.join(', ') : 'none'}`);
+  lines.push(`- Weakest sources: ${result.signal_quality.weakest_sources.length ? result.signal_quality.weakest_sources.join(', ') : 'none'}`);
+  lines.push(`- Next quality action: ${result.signal_quality.next_quality_action}`);
   for (const item of result.signal_quality.signals) {
     lines.push(`- ${item.source}: ${item.confidence} (${item.score}) - ${item.use}`);
     lines.push(`  - Decay: ${item.decay.age_days === null ? 'unknown age' : `${item.decay.age_days} day(s)`}, ${item.decay.reinforced ? 'reinforced' : 'not reinforced'}, penalty ${item.decay.penalty}`);

@@ -26,7 +26,10 @@ const checks = [
   ['passes complete wrapper', pass.status === 'pass' && pass.issues.length === 0],
   ['flags incomplete wrapper', fail.status === 'attention' && fail.issues.includes('missing-installed-fallback') && fail.issues.includes('missing-safe-args')],
   ['repo wrappers produce baseline', ['pass', 'baseline'].includes(result.status) && result.wrapper_count > 10 && result.issue_count >= 0],
+  ['groups issue counts', result.by_issue && Object.values(result.by_issue).reduce((sum, count) => sum + count, 0) === result.issue_count],
+  ['next batch is ranked', Array.isArray(result.next_batch) && result.next_batch.length <= 5 && result.next_batch.every((item) => item.source && item.next)],
   ['renders markdown', markdown.includes('# Forgeflow Command Wrapper Contract') && markdown.includes('read-only')],
+  ['renders next batch actions', result.next_batch.length === 0 || markdown.includes('  - Next: Update ')],
   ['parses args', opts.root === process.cwd() && opts.json === true],
 ];
 

@@ -150,12 +150,17 @@ When context telemetry artifacts exist:
 
 ```bash
 HELPER_DIR="scripts/forgeflow"
-if [ ! -x "${HELPER_DIR}/summarize-context-telemetry.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/summarize-context-telemetry.js" ]; then
+if [ ! -f "${HELPER_DIR}/summarize-context-telemetry.js" ] && [ -f "$HOME/.claude/forgeflow/scripts/forgeflow/summarize-context-telemetry.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
-${HELPER_DIR}/summarize-context-telemetry.js --root .forgeflow --json
-${HELPER_DIR}/check-context-budget.js --root .forgeflow --max-compact-tokens 16000 --warn-only --json
-${HELPER_DIR}/advise-context.js --root .forgeflow --record --json
+FORGEFLOW_NODE=(env -u NODE_OPTIONS -u NODE_PATH node)
+if [ -f "${HELPER_DIR}/summarize-context-telemetry.js" ]; then
+  "${FORGEFLOW_NODE[@]}" "${HELPER_DIR}/summarize-context-telemetry.js" --root .forgeflow --json
+  "${FORGEFLOW_NODE[@]}" "${HELPER_DIR}/check-context-budget.js" --root .forgeflow --max-compact-tokens 16000 --warn-only --json
+  "${FORGEFLOW_NODE[@]}" "${HELPER_DIR}/advise-context.js" --root .forgeflow --record --json
+else
+  echo "Forgeflow metrics helpers are missing. Run /update-forgeflow --repair after this metrics pass."
+fi
 ```
 
 Budget defaults can be overridden with repo-local `.forgeflow-budget.json`:

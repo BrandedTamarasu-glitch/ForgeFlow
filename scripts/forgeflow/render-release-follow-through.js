@@ -46,6 +46,20 @@ function consumerUpdateStatus(status) {
   return 'attention';
 }
 
+function readinessSummary(checklist) {
+  const blockers = checklist.filter((item) => item.status !== 'pass' && item.status !== 'info');
+  const informational = checklist.filter((item) => item.status === 'info');
+  return {
+    status: blockers.length === 0 ? 'ready-to-install' : 'needs-follow-through',
+    blockers: blockers.map((item) => item.name),
+    informational: informational.map((item) => item.name),
+    install_ready: blockers.length === 0,
+    summary: blockers.length === 0
+      ? 'Release follow-through is clear enough for consumer install/update validation.'
+      : `Clear ${blockers[0].name} before treating the release as install-ready.`,
+  };
+}
+
 function buildReleaseFollowThrough(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const installRoot = opts.installRoot || opts.home;
@@ -69,6 +83,7 @@ function buildReleaseFollowThrough(opts = {}) {
     },
   ];
   const attention = checklist.filter((item) => item.status !== 'pass' && item.status !== 'info');
+  const readiness = readinessSummary(checklist);
   return {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
@@ -77,6 +92,7 @@ function buildReleaseFollowThrough(opts = {}) {
     version: releaseVerify.version || updateVerify.version || '',
     tag: releaseVerify.tag || '',
     checklist,
+    readiness,
     release_verify_status: releaseVerify.status,
     update_verify_status: updateVerify.status,
     next: attention.length ? attention[0].next : '/forgeflow-smoke --source',
@@ -104,6 +120,20 @@ function renderMarkdown(result) {
     lines.push(`- ${item.name}: ${item.status}`);
     if (item.status !== 'pass') lines.push(`  - Next: ${item.next}`);
   }
+  lines.push(
+    '',
+    '## Install Readiness',
+    '',
+    `- Status: ${result.readiness.status}`,
+    `- Install ready: ${result.readiness.install_ready ? 'yes' : 'no'}`,
+    `- Summary: ${result.readiness.summary}`,
+  );
+  if (result.readiness.blockers.length > 0) {
+    lines.push(`- Blockers: ${result.readiness.blockers.join(', ')}`);
+  }
+  if (result.readiness.informational.length > 0) {
+    lines.push(`- Informational follow-ups: ${result.readiness.informational.join(', ')}`);
+  }
   lines.push('', `Next: ${result.next}`, `Why: ${result.next_reason}`, '');
   return lines.join('\n');
 }
@@ -124,4 +154,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { buildReleaseFollowThrough, consumerUpdateStatus, parseArgs, renderMarkdown };
+module.exports = { buildReleaseFollowThrough, consumerUpdateStatus, parseArgs, readinessSummary, renderMarkdown };

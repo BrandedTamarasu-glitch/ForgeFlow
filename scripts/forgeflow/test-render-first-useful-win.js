@@ -35,8 +35,9 @@ const opts = parseArgs(['--root', root, '--project-dir', projectDir, '--json']);
 const checks = [
   ['has useful signal', result.status === 'has-signal' && result.wins.length > 0],
   ['evidence summarized', result.evidence.first_run_records === 1 && result.evidence.useful_feedback === 1],
+  ['first use path present', result.first_use_path.steps.length === 5 && result.first_use_path.steps[0].command === 'forgeflow-health' && result.first_use_path.stop_rule.includes('Stop and fix')],
   ['next is command-only', result.next === 'forgeflow-report --refresh' && result.next_reason.includes('Refresh')],
-  ['renders markdown', markdown.includes('# Forgeflow First Useful Win') && markdown.includes('## Wins')],
+  ['renders markdown', markdown.includes('# Forgeflow First Useful Win') && markdown.includes('## Wins') && markdown.includes('## First-Use Path')],
   ['parses args', opts.root === root && opts.projectDir === projectDir && opts.json === true],
 ];
 

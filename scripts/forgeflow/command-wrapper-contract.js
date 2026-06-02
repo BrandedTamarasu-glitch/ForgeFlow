@@ -73,6 +73,18 @@ function buildCommandWrapperContract(opts = {}) {
     })
     .filter(Boolean);
   const issues = wrappers.flatMap((wrapper) => wrapper.issues.map((issue) => ({ source: wrapper.source, issue })));
+  const byIssue = {};
+  for (const issue of issues) byIssue[issue.issue] = (byIssue[issue.issue] || 0) + 1;
+  const nextBatch = wrappers
+    .filter((wrapper) => wrapper.issues.length > 0)
+    .sort((a, b) => b.issues.length - a.issues.length || a.source.localeCompare(b.source))
+    .slice(0, 5)
+    .map((wrapper) => ({
+      source: wrapper.source,
+      issue_count: wrapper.issues.length,
+      issues: wrapper.issues,
+      next: `Update ${wrapper.source} helper wrapper to add ${wrapper.issues[0]}.`,
+    }));
   return {
     schema_version: '1',
     status: issues.length > 0 ? 'baseline' : 'pass',
@@ -81,6 +93,8 @@ function buildCommandWrapperContract(opts = {}) {
     issue_count: issues.length,
     wrappers,
     issues,
+    by_issue: byIssue,
+    next_batch: nextBatch,
     boundary: 'Command wrapper contract is read-only. It inventories helper fallback, repair guidance, safe argument forwarding, and Node environment scrubbing but does not edit command files or fail existing baseline drift.',
   };
 }
@@ -101,6 +115,12 @@ function renderMarkdown(result) {
   } else {
     lines.push('## Issues', '');
     for (const issue of result.issues) lines.push(`- ${issue.source}: ${issue.issue}`);
+    lines.push('');
+    lines.push('## Next Batch', '');
+    for (const item of result.next_batch) {
+      lines.push(`- ${item.source}: ${item.issues.join(', ')}`);
+      lines.push(`  - Next: ${item.next}`);
+    }
     lines.push('');
   }
   return lines.join('\n');

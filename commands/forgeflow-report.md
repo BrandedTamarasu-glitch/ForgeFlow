@@ -58,9 +58,10 @@ Resolve `HELPER_DIR` to `scripts/forgeflow` when present, otherwise `$HOME/.clau
 
 ```bash
 HELPER_DIR="scripts/forgeflow"
-if [ ! -x "${HELPER_DIR}/render-forgeflow-report.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/render-forgeflow-report.js" ]; then
+if [ ! -f "${HELPER_DIR}/render-forgeflow-report.js" ] && [ -f "$HOME/.claude/forgeflow/scripts/forgeflow/render-forgeflow-report.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
+FORGEFLOW_NODE=(env -u NODE_OPTIONS -u NODE_PATH node)
 ```
 
 When `${HELPER_DIR}/render-forgeflow-report.js` exists, run it and print its output directly:
@@ -70,10 +71,10 @@ ARGS=()
 # Append only validated values for --period, --refresh, --no-drift, and --json.
 if [ -n "$VALIDATED_PERIOD" ]; then ARGS+=(--period "$VALIDATED_PERIOD"); fi
 if [ "$WANTS_REFRESH" = "true" ]; then ARGS+=(--refresh); fi
-"${HELPER_DIR}/render-forgeflow-report.js" "${ARGS[@]}"
+"${FORGEFLOW_NODE[@]}" "${HELPER_DIR}/render-forgeflow-report.js" "${ARGS[@]}"
 ```
 
-This helper owns parsing, aggregation, Markdown/JSON rendering, project-trends integration, and `.report-log.jsonl` self-logging. If the helper is missing, continue with the manual fallback below and tell the user to run `/update-forgeflow` after the report.
+This helper owns parsing, aggregation, Markdown/JSON rendering, project-trends integration, and `.report-log.jsonl` self-logging. If the helper is missing, continue with the manual fallback below and tell the user: Run /update-forgeflow --repair after the report.
 
 ## Step 1: Resolve period
 
@@ -149,9 +150,10 @@ Parse; extract agents with any MISSING or DRIFTED sections. Report by drift_scor
 Resolve `HELPER_DIR` to `scripts/forgeflow` when present, otherwise `$HOME/.claude/forgeflow/scripts/forgeflow`. When `${HELPER_DIR}/summarize-context-telemetry.js` exists, run:
 
 ```bash
-${HELPER_DIR}/summarize-context-telemetry.js --root .forgeflow --json
-${HELPER_DIR}/check-context-budget.js --root .forgeflow --max-compact-tokens 16000 --warn-only --json
-${HELPER_DIR}/advise-context.js --root .forgeflow --record --json
+FORGEFLOW_NODE=(env -u NODE_OPTIONS -u NODE_PATH node)
+"${FORGEFLOW_NODE[@]}" "${HELPER_DIR}/summarize-context-telemetry.js" --root .forgeflow --json
+"${FORGEFLOW_NODE[@]}" "${HELPER_DIR}/check-context-budget.js" --root .forgeflow --max-compact-tokens 16000 --warn-only --json
+"${FORGEFLOW_NODE[@]}" "${HELPER_DIR}/advise-context.js" --root .forgeflow --record --json
 ```
 
 Include estimated saved tokens, percent saved by telemetry kind, any context budget warnings, advisor recommendations for low savings, over-budget packets, or missing telemetry, and previous-run trend deltas. The budget checker reads `.forgeflow-budget.json` from the repo root when present. The advisor appends compact history to `.forgeflow/context-advisor-history.jsonl`.

@@ -472,8 +472,11 @@ HELPER_DIR="scripts/forgeflow"
 if [ ! -f "${HELPER_DIR}/show-project-learnings.js" ] && [ -f "$HOME/.claude/forgeflow/scripts/forgeflow/show-project-learnings.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
+FORGEFLOW_NODE=(env -u NODE_OPTIONS -u NODE_PATH node)
 if [ -f "${HELPER_DIR}/show-project-learnings.js" ]; then
-  node "${HELPER_DIR}/show-project-learnings.js" --project-dir ".forgeflow/${PROJECT_NAME}" --check --json
+  "${FORGEFLOW_NODE[@]}" "${HELPER_DIR}/show-project-learnings.js" --project-dir ".forgeflow/${PROJECT_NAME}" --check --json
+else
+  echo "Forgeflow project-learning helper is missing. Run /update-forgeflow --repair before relying on learned guidance."
 fi
 ```
 

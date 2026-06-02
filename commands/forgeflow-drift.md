@@ -56,9 +56,10 @@ Resolve `HELPER_DIR` to `scripts/forgeflow` when present, otherwise `$HOME/.clau
 
 ```bash
 HELPER_DIR="scripts/forgeflow"
-if [ ! -x "${HELPER_DIR}/check-agent-drift.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/check-agent-drift.js" ]; then
+if [ ! -f "${HELPER_DIR}/check-agent-drift.js" ] && [ -f "$HOME/.claude/forgeflow/scripts/forgeflow/check-agent-drift.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
+FORGEFLOW_NODE=(env -u NODE_OPTIONS -u NODE_PATH node)
 ```
 
 When `${HELPER_DIR}/check-agent-drift.js` exists, run it and print its output directly:
@@ -68,10 +69,10 @@ ARGS=()
 # Append only validated values for --agent, --canonical, --threshold, and --json.
 if [ -n "$VALIDATED_THRESHOLD" ]; then ARGS+=(--threshold "$VALIDATED_THRESHOLD"); fi
 if [ "$WANTS_JSON" = "true" ]; then ARGS+=(--json); fi
-"${HELPER_DIR}/check-agent-drift.js" "${ARGS[@]}"
+"${FORGEFLOW_NODE[@]}" "${HELPER_DIR}/check-agent-drift.js" "${ARGS[@]}"
 ```
 
-The helper owns section parsing, scoring, JSON/Markdown rendering, filtering, threshold handling, and actionable exit codes. If it is missing, continue with the manual fallback below and tell the user to run `/update-forgeflow` after the report.
+The helper owns section parsing, scoring, JSON/Markdown rendering, filtering, threshold handling, and actionable exit codes. If it is missing, continue with the manual fallback below and tell the user: Run /update-forgeflow --repair after the report.
 
 ## Step 1: Verify canonical files exist
 

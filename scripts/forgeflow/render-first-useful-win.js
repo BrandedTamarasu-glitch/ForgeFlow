@@ -56,6 +56,17 @@ function buildFirstUsefulWin(opts = {}) {
   const pilot = safeCall(() => rollupPilotEvidence({ projectDir }), { pilot_count: 0, recommended_decision: 'repeat-pilot' });
   const feedback = safeCall(() => rollupAgentFeedback({ projectDir }), { records: 0, by_signal: {}, corrective: 0, promotable: 0 });
   const learning = safeCall(() => buildLearningStatus({ root, projectDir }), { status: 'missing', recommendations: [] });
+  const firstPath = {
+    status: 'ready',
+    steps: [
+      { name: 'install-health', command: 'forgeflow-health' },
+      { name: 'profile-bootstrap', command: 'forgeflow-profile-bootstrap --prompts' },
+      { name: 'first-task', command: 'forgeflow-first-task-report' },
+      { name: 'learning-capture', command: 'forgeflow-workflow-ending-capture --event next-work' },
+      { name: 'shareable-summary', command: 'forgeflow-first-useful-win' },
+    ],
+    stop_rule: 'Stop and fix if install, privacy, routing, context, or review quality blocks the first useful task.',
+  };
   const wins = [];
   if ((firstRun.records || 0) > 0) wins.push(`First-run evidence recorded ${firstRun.records} setup attempt(s).`);
   if ((pilot.pilot_count || 0) > 0) wins.push(`Pilot evidence recorded ${pilot.pilot_count} trial(s) with decision ${pilot.recommended_decision || pilot.recommendation || 'unknown'}.`);
@@ -76,6 +87,7 @@ function buildFirstUsefulWin(opts = {}) {
       corrective_feedback: feedback.corrective || 0,
       learning_status: learning.status,
     },
+    first_use_path: firstPath,
     next: wins.length > 0 ? 'forgeflow-report --refresh' : 'forgeflow-first-run-result',
     next_reason: wins.length > 0 ? 'Refresh the consolidated report before sharing outcomes.' : 'Record at least one public-safe first-run result before judging useful wins.',
     boundary: 'First useful win report is local and advisory. It summarizes aggregate signals without exposing raw project records.',
@@ -101,6 +113,11 @@ function renderMarkdown(result) {
     `- Useful feedback: ${result.evidence.useful_feedback}`,
     `- Corrective feedback: ${result.evidence.corrective_feedback}`,
     `- Learning status: ${result.evidence.learning_status}`,
+    '',
+    '## First-Use Path',
+    '',
+    ...result.first_use_path.steps.map((step) => `- ${step.name}: ${step.command}`),
+    `- Stop rule: ${result.first_use_path.stop_rule}`,
     '',
     `Next: ${result.next}`,
     `Why: ${result.next_reason}`,

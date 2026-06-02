@@ -175,8 +175,10 @@ Prefer the installed `/forgeflow-version` helper when present because it reports
 
 ```bash
 HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
-if [ -x "${HELPER_DIR}/forgeflow-version.js" ]; then
-  "${HELPER_DIR}/forgeflow-version.js" --json
+if [ -f "${HELPER_DIR}/forgeflow-version.js" ]; then
+  env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/forgeflow-version.js" --json
+else
+  echo "Forgeflow version helper is missing. Run /update-forgeflow --repair after this health check."
 fi
 ```
 

@@ -387,6 +387,32 @@ function recommend(summary, budget) {
   return uniqueRecommendations(recommendations);
 }
 
+function buildAutoTrimAdvisor(summary, budget, recommendations) {
+  const trimRecommendations = recommendations.filter((item) => item.action === 'trim-budget-violation' && item.trim_plan);
+  if (trimRecommendations.length === 0) {
+    return {
+      status: budget.violations.length === 0 ? 'not-needed' : 'missing-trim-plan',
+      actions: [],
+      boundary: 'Auto-trim advisor is advisory only. It does not edit context packets, remove proof files, or spawn agents.',
+    };
+  }
+  const targetValues = trimRecommendations
+    .map((item) => Number(item.trim_plan.target_compact_tokens))
+    .filter((value) => Number.isFinite(value) && value >= 0);
+  return {
+    status: 'recommended',
+    target_compact_tokens: targetValues.length > 0 ? Math.min(...targetValues) : 0,
+    current_compact_tokens: summary.totals.estimated_compact_tokens,
+    actions: trimRecommendations.map((item) => ({
+      kind: item.kind,
+      reduce_by_tokens: item.trim_plan.reduce_by_tokens,
+      first_command: item.trim_plan.commands[0],
+      stop_rule: item.trim_plan.stop_rule,
+    })),
+    boundary: 'Auto-trim advisor is advisory only. It does not edit context packets, remove proof files, or spawn agents.',
+  };
+}
+
 function adviseContext(opts = {}) {
   const root = opts.root || defaultRoot();
   const walkedFiles = opts.files || walk(root);
@@ -396,6 +422,7 @@ function adviseContext(opts = {}) {
   const budget = checkBudget(files, config);
   const codeTopology = topologyCoverage(files);
   const codeMapTrend = codeMapTrends(opts.codeMapHistoryFiles || walkCodeMapHistory(root));
+  const recommendations = recommend(summary, budget);
   const result = {
     schema_version: '1',
     root,
@@ -404,7 +431,8 @@ function adviseContext(opts = {}) {
     budget,
     code_topology: codeTopology,
     code_map_trends: codeMapTrend,
-    recommendations: recommend(summary, budget),
+    recommendations,
+    auto_trim_advisor: buildAutoTrimAdvisor(summary, budget, recommendations),
   };
   if (codeMapTrend.unresolved_imports_delta > 0) {
     result.recommendations.push({
@@ -484,6 +512,17 @@ function renderMarkdown(result) {
     lines.push(`- Saved token delta: ${result.history.trend.saved_token_delta}`);
     lines.push(`- Percent saved delta: ${result.history.trend.percent_saved_delta}`);
     lines.push(`- Budget violation delta: ${result.history.trend.budget_violation_delta}`);
+  }
+
+  if (result.auto_trim_advisor.status === 'recommended') {
+    lines.push('', '## Auto-Trim Advisor', '');
+    lines.push(`- Status: ${result.auto_trim_advisor.status}`);
+    lines.push(`- Boundary: ${result.auto_trim_advisor.boundary}`);
+    for (const action of result.auto_trim_advisor.actions) {
+      lines.push(`- ${action.kind}: reduce by ${action.reduce_by_tokens} compact token(s)`);
+      lines.push(`  - First command: ${action.first_command}`);
+      lines.push(`  - Stop rule: ${action.stop_rule}`);
+    }
   }
 
   if (result.code_topology.status !== 'missing') {

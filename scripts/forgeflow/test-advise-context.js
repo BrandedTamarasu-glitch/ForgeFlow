@@ -112,6 +112,7 @@ const smallLowSavings = adviseContext({
   warnOnly: true,
   warnOnlySet: true,
 });
+const cleanMarkdown = renderMarkdown(smallLowSavings);
 
 const duplicateRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-advisor-duplicate-'));
 const duplicateContextDir = path.join(duplicateRoot, 'Forgeflow', 'context');
@@ -198,6 +199,15 @@ const duplicateBudget = adviseContext({
   root: duplicateBudgetRoot,
   config,
   maxCompactTokens: 1000,
+  maxCompactTokensSet: true,
+  kindLimits: {},
+  warnOnly: true,
+  warnOnlySet: true,
+});
+const zeroBudget = adviseContext({
+  root: duplicateBudgetRoot,
+  config,
+  maxCompactTokens: 0,
   maxCompactTokensSet: true,
   kindLimits: {},
   warnOnly: true,
@@ -315,6 +325,11 @@ const checks = [
   ['budget recommendation explains gate', result.recommendations.some((item) => item.action === 'trim-budget-violation' && item.evidence && item.clears)],
   ['budget recommendation includes split suggestion', result.recommendations.some((item) => item.action === 'trim-budget-violation' && item.split_suggestion && item.split_suggestion.strategy === 'split-before-review')],
   ['budget recommendation includes trim plan', result.recommendations.some((item) => item.action === 'trim-budget-violation' && item.trim_plan && item.trim_plan.strategy === 'advisory-auto-trim' && item.trim_plan.reduce_by_tokens === 500 && item.trim_plan.commands.some((command) => command.includes('--files')) && item.trim_plan.stop_rule.includes('raw-required failure evidence'))],
+  ['auto trim advisor present', result.auto_trim_advisor.status === 'recommended' && result.auto_trim_advisor.actions.some((item) => item.reduce_by_tokens === 500 && item.first_command.includes('build-context-pack'))],
+  ['auto trim advisor stays advisory', result.auto_trim_advisor.boundary.includes('does not edit context packets')],
+  ['auto trim advisor renders', markdown.includes('## Auto-Trim Advisor') && markdown.includes('First command: build-context-pack')],
+  ['auto trim advisor hidden when clean', !cleanMarkdown.includes('## Auto-Trim Advisor')],
+  ['auto trim zero target stable', zeroBudget.auto_trim_advisor.target_compact_tokens === 0],
   ['budget markdown includes split suggestion', markdown.includes('Split: Run a narrower context pack')],
   ['budget markdown includes trim plan', markdown.includes('Trim plan: target 2000 compact tokens, reduce by 500') && markdown.includes('Stop rule: Do not trim raw-required failure evidence')],
   ['compaction recommendation', result.recommendations.some((item) => item.action === 'improve-compaction')],
