@@ -17,10 +17,10 @@ ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 PROJECT_NAME="$(basename "${ROOT}")"
 CONTEXT_DIR="${ROOT}/.forgeflow/${PROJECT_NAME}/context/latest"
 HELPER_DIR="${ROOT}/scripts/forgeflow"
-if [ ! -x "${HELPER_DIR}/check-context-contract.js" ]; then
+if [ ! -f "${HELPER_DIR}/check-context-contract.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
-if [ ! -x "${HELPER_DIR}/check-context-contract.js" ]; then
+if [ ! -f "${HELPER_DIR}/check-context-contract.js" ]; then
   echo "Context contract helper is not installed. Run /update-forgeflow --repair, then retry /forgeflow-context-contract."
   exit 1
 fi
@@ -33,7 +33,7 @@ for arg in "${USER_ARGS[@]}"; do
     *) echo "Unsupported arguments for /forgeflow-context-contract"; exit 2 ;;
   esac
 done
-"${HELPER_DIR}/check-context-contract.js" "${SAFE_ARGS[@]}"
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/check-context-contract.js" "${SAFE_ARGS[@]}"
 ```
 </process>
 

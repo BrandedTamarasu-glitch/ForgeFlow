@@ -24,10 +24,10 @@ ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 PROJECT_NAME="$(basename "${ROOT}")"
 FORGEFLOW_DIR="${ROOT}/.forgeflow/${PROJECT_NAME}"
 HELPER_DIR="${ROOT}/scripts/forgeflow"
-if [ ! -x "${HELPER_DIR}/rollup-first-run-results.js" ]; then
+if [ ! -f "${HELPER_DIR}/rollup-first-run-results.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
-if [ ! -x "${HELPER_DIR}/rollup-first-run-results.js" ]; then
+if [ ! -f "${HELPER_DIR}/rollup-first-run-results.js" ]; then
   echo "First-run rollup helper is not installed. Run /update-forgeflow --repair, then retry /forgeflow-first-run-rollup."
   exit 1
 fi
@@ -37,7 +37,7 @@ case "${ARGUMENTS:-}" in
   "--json") SAFE_ARGS+=(--json) ;;
   *) echo "Unsupported arguments for /forgeflow-first-run-rollup"; exit 2 ;;
 esac
-"${HELPER_DIR}/rollup-first-run-results.js" "${SAFE_ARGS[@]}"
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/rollup-first-run-results.js" "${SAFE_ARGS[@]}"
 ```
 </process>
 

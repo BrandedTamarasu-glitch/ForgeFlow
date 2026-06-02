@@ -18,7 +18,7 @@ Resolve helper:
 
 ```bash
 HELPER_DIR="scripts/forgeflow"
-if [ ! -x "${HELPER_DIR}/build-failure-digest.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/build-failure-digest.js" ]; then
+if [ ! -f "${HELPER_DIR}/build-failure-digest.js" ] && [ -f "$HOME/.claude/forgeflow/scripts/forgeflow/build-failure-digest.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
 ```
@@ -36,7 +36,7 @@ ARGS=()
 # Append only validated values for --mode, --command, --file, --out, and --json.
 if [ -n "$VALIDATED_MODE" ]; then ARGS+=(--mode "$VALIDATED_MODE"); fi
 if [ -n "$VALIDATED_COMMAND" ]; then ARGS+=(--command "$VALIDATED_COMMAND"); fi
-"${HELPER_DIR}/build-failure-digest.js" "${ARGS[@]}"
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/build-failure-digest.js" "${ARGS[@]}"
 ```
 
 </process>

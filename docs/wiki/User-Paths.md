@@ -14,14 +14,15 @@ If health reports missing managed files, run `/update-forgeflow --repair`. If th
 
 ## Try Forgeflow For The First Time
 
-1. Run `/forgeflow-first-run --runtime claude-code` from Claude Code, or `scripts/forgeflow/render-first-run-guide.js --runtime codex` from a checkout.
-2. After the first pass, record the public-safe outcome with `/forgeflow-first-run-result` so setup friction and the continue/fix/defer decision become local evidence. After multiple attempts, run `/forgeflow-first-run-rollup` for aggregate friction trends.
-3. Follow the install verification, project-orientation, project-map evolution, profile-readiness, insight-injection, and bounded-work-item steps.
-4. Run `/forgeflow-first-useful-win` after a few evidence records when you need a compact "what helped already" summary and the first-use path for install health, profile bootstrap, first task reporting, learning capture, and shareable summary. Add `--runtime codex` for source-helper commands instead of Claude Code slash commands.
-5. Run `/forgeflow-first-task-report` after the first real work item has a next-work or review outcome.
-6. Run `/forgeflow-first-task-adoption-loop` when you need a direct repeat, fix, defer, or expand decision from the early evidence.
-7. For a fuller adoption trial, run `/forgeflow-pilot --path new-user --runtime claude-code`, or `scripts/forgeflow/render-pilot-script.js --path new-user --runtime codex`.
-8. Keep the first task small enough to judge setup friction, guidance quality, review usefulness, and whether the next task starts with better project context.
+1. Run `/forgeflow-first-run-simulator --runtime claude-code` from Claude Code, or `scripts/forgeflow/render-first-run-simulator.js --runtime codex --json` from a checkout, when you want a read-only first-run preflight.
+2. Run `/forgeflow-first-run --runtime claude-code` from Claude Code, or `scripts/forgeflow/render-first-run-guide.js --runtime codex` from a checkout.
+3. After the first pass, record the public-safe outcome with `/forgeflow-first-run-result` so setup friction and the continue/fix/defer decision become local evidence. After multiple attempts, run `/forgeflow-first-run-rollup` for aggregate friction trends.
+4. Follow the install verification, project-orientation, project-map evolution, profile-readiness, insight-injection, and bounded-work-item steps.
+5. Run `/forgeflow-first-useful-win` after a few evidence records when you need a compact "what helped already" summary and the first-use path for install health, profile bootstrap, first task reporting, learning capture, and shareable summary. Add `--runtime codex` for source-helper commands instead of Claude Code slash commands.
+6. Run `/forgeflow-first-task-report` after the first real work item has a next-work or review outcome.
+7. Run `/forgeflow-first-task-adoption-loop` when you need a direct repeat, fix, defer, or expand decision from the early evidence.
+8. For a fuller adoption trial, run `/forgeflow-pilot --path new-user --runtime claude-code`, or `scripts/forgeflow/render-pilot-script.js --path new-user --runtime codex`.
+9. Keep the first task small enough to judge setup friction, guidance quality, review usefulness, and whether the next task starts with better project context.
 
 Use the default maintainer path when a project owner is running a broader pilot across a real branch. Use the new-user path when the goal is to help one person decide whether Forgeflow is worth adopting.
 
@@ -33,6 +34,7 @@ Use the default maintainer path when a project owner is running a broader pilot 
 4. If the report still recommends a command, run that command before spawning review agents.
 
 Use `/forgeflow-learnings --project --check` when you specifically need to inspect the project-learning quality gate.
+Use `/forgeflow-learning-action` when you want Forgeflow to turn the weakest learning or telemetry source into one concrete capture/check command.
 
 ## Verify Local Readiness
 
@@ -90,11 +92,12 @@ If implementation notes are missing or stale, refresh or repair them before ship
 | Command missing after install | Restart Claude Code, then `/forgeflow-health` |
 | Managed file missing or corrupt | `/update-forgeflow --repair` |
 | Need post-update confidence | `/forgeflow-update-verify`, then `/forgeflow-health` |
-| First time evaluating Forgeflow | `/forgeflow-first-run`, then `/forgeflow-first-run-result`; after several attempts, `/forgeflow-first-run-rollup` |
+| First time evaluating Forgeflow | `/forgeflow-first-run-simulator`, then `/forgeflow-first-run` and `/forgeflow-first-run-result`; after several attempts, `/forgeflow-first-run-rollup` |
 | Need early adoption evidence | `/forgeflow-first-useful-win` |
 | First real task finished | `/forgeflow-first-task-report` |
 | Need an adoption decision | `/forgeflow-first-task-adoption-loop` |
 | Latest insights stale | `/forgeflow-trends --refresh` |
+| Weak learning or telemetry source | `/forgeflow-learning-action` |
 | Guidance artifacts stale | `/forgeflow-stale-artifact-plan` |
 | Need readiness confidence | `/forgeflow-smoke` |
 | Failure output is too noisy | `/forgeflow-failure-digest` |

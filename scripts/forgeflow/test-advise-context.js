@@ -114,6 +114,29 @@ const smallLowSavings = adviseContext({
 });
 const cleanMarkdown = renderMarkdown(smallLowSavings);
 
+const lowSavingsRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-advisor-low-savings-'));
+const lowSavingsContextDir = path.join(lowSavingsRoot, 'Forgeflow', 'context');
+fs.mkdirSync(lowSavingsContextDir, { recursive: true });
+fs.writeFileSync(path.join(lowSavingsContextDir, 'context-telemetry.json'), `${JSON.stringify({
+  schema_version: '1',
+  kind: 'context-pack',
+  baseline_chars: 12000,
+  compact_chars: 10000,
+  saved_chars: 2000,
+  estimated_baseline_tokens: 3000,
+  estimated_compact_tokens: 2500,
+  estimated_saved_tokens: 500,
+})}\n`);
+const lowSavingsAction = adviseContext({
+  root: lowSavingsRoot,
+  config,
+  maxCompactTokens: 4000,
+  maxCompactTokensSet: true,
+  kindLimits: {},
+  warnOnly: true,
+  warnOnlySet: true,
+});
+
 const duplicateRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-advisor-duplicate-'));
 const duplicateContextDir = path.join(duplicateRoot, 'Forgeflow', 'context');
 const duplicateLatestDir = path.join(duplicateContextDir, 'latest');
@@ -328,6 +351,9 @@ const checks = [
   ['auto trim advisor present', result.auto_trim_advisor.status === 'recommended' && result.auto_trim_advisor.actions.some((item) => item.reduce_by_tokens === 500 && item.first_command.includes('build-context-pack'))],
   ['auto trim advisor stays advisory', result.auto_trim_advisor.boundary.includes('does not edit context packets')],
   ['auto trim advisor renders', markdown.includes('## Auto-Trim Advisor') && markdown.includes('First command: build-context-pack')],
+  ['next actions present', result.review_wave_suggested === true && result.next_actions.some((item) => item.action === 'split-review-context' && item.command === '/forgeflow-review-wave-prep --write-wave-files')],
+  ['next actions render', markdown.includes('## Next Actions') && markdown.includes('split-review-context: /forgeflow-review-wave-prep --write-wave-files') && markdown.includes('Review wave suggested: yes')],
+  ['clean next actions stable', smallLowSavings.review_wave_suggested === false && cleanMarkdown.includes('Review wave suggested: no')],
   ['auto trim advisor hidden when clean', !cleanMarkdown.includes('## Auto-Trim Advisor')],
   ['auto trim zero target stable', zeroBudget.auto_trim_advisor.target_compact_tokens === 0],
   ['budget markdown includes split suggestion', markdown.includes('Split: Run a narrower context pack')],
@@ -338,6 +364,8 @@ const checks = [
   ['dedupe can be disabled', notDeduped.summary.files === 2 && notDeduped.code_topology.files === 2],
   ['duplicate budget recommendations merged', duplicateBudget.recommendations.filter((item) => item.action === 'trim-budget-violation').length === 1 && duplicateBudget.recommendations[0].reason.includes('Also:') && duplicateBudget.recommendations[0].evidence && duplicateBudget.recommendations[0].clears],
   ['empty recommendation', empty.recommendations.some((item) => item.action === 'generate-context-telemetry')],
+  ['empty next action uses real context helper', empty.next_actions.some((item) => item.action === 'generate-context-telemetry' && item.command === 'scripts/forgeflow/build-context-pack.js --root . --json')],
+  ['low savings next action uses real context helper', lowSavingsAction.next_actions.some((item) => item.action === 'narrow-context-packet' && item.command.includes('scripts/forgeflow/build-context-pack.js --root . --files'))],
   ['history first recorded', firstRecorded.history.recorded === true],
   ['history compared', secondRecorded.history.trend.status === 'compared'],
   ['history compact delta', secondRecorded.history.trend.compact_token_delta === -500],

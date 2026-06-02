@@ -32,10 +32,10 @@ ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 PROJECT_NAME="$(basename "${ROOT}")"
 FORGEFLOW_DIR="${ROOT}/.forgeflow/${PROJECT_NAME}"
 HELPER_DIR="${ROOT}/scripts/forgeflow"
-if [ ! -x "${HELPER_DIR}/record-first-run-result.js" ]; then
+if [ ! -f "${HELPER_DIR}/record-first-run-result.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
-if [ ! -x "${HELPER_DIR}/record-first-run-result.js" ]; then
+if [ ! -f "${HELPER_DIR}/record-first-run-result.js" ]; then
   echo "First-run result helper is not installed. Run /update-forgeflow --repair, then retry /forgeflow-first-run-result."
   exit 1
 fi
@@ -46,7 +46,7 @@ Run the helper with validated arguments:
 ```bash
 SAFE_ARGS=(--project-dir "${FORGEFLOW_DIR}")
 # Append only validated flags and values to SAFE_ARGS.
-"${HELPER_DIR}/record-first-run-result.js" "${SAFE_ARGS[@]}"
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/record-first-run-result.js" "${SAFE_ARGS[@]}"
 ```
 </process>
 

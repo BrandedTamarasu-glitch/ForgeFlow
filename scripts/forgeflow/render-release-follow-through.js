@@ -2,9 +2,10 @@
 const path = require('path');
 const { buildReleaseVerify } = require('./render-release-verify');
 const { buildUpdateVerify } = require('./render-update-verify');
+const { writeJsonSafe } = require('./file-safety');
 
 function usage() {
-  console.error('Usage: render-release-follow-through.js [--root <repo>] [--json]');
+  console.error('Usage: render-release-follow-through.js [--root <repo>] [--save] [--json]');
 }
 
 function requireValue(argv, name, index) {
@@ -14,7 +15,7 @@ function requireValue(argv, name, index) {
 }
 
 function parseArgs(argv) {
-  const opts = { root: process.cwd(), json: false };
+  const opts = { root: process.cwd(), save: false, json: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--root') {
@@ -22,6 +23,8 @@ function parseArgs(argv) {
       i += 1;
     } else if (arg === '--json') {
       opts.json = true;
+    } else if (arg === '--save') {
+      opts.save = true;
     } else if (arg === '--help' || arg === '-h') {
       usage();
       process.exit(0);
@@ -30,6 +33,18 @@ function parseArgs(argv) {
     }
   }
   return opts;
+}
+
+function defaultProjectDir(root) {
+  return path.join(root, '.forgeflow', path.basename(root));
+}
+
+function snapshotPathFor(root, projectDir) {
+  return path.join(projectDir || defaultProjectDir(root), 'release-follow-through', 'latest.json');
+}
+
+function saveSnapshot(result, snapshotPath) {
+  writeJsonSafe(snapshotPath, result);
 }
 
 function safeCall(fn, fallback) {
@@ -107,6 +122,7 @@ function releaseConsumptionVerdict(checklist, readiness) {
 
 function buildReleaseFollowThrough(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
+  const snapshotPath = snapshotPathFor(root, opts.projectDir);
   const installRoot = opts.installRoot || opts.home;
   const releaseVerify = safeCall(() => buildReleaseVerify({ root, runner: opts.runner, installRoot }), { status: 'missing', evidence: [] });
   const updateVerify = safeCall(() => buildUpdateVerify({ root, home: installRoot }), { status: 'missing', evidence: [] });
@@ -130,7 +146,7 @@ function buildReleaseFollowThrough(opts = {}) {
   const attention = checklist.filter((item) => item.status !== 'pass' && item.status !== 'info');
   const readiness = readinessSummary(checklist);
   const releaseConsumption = releaseConsumptionVerdict(checklist, readiness);
-  return {
+  const result = {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
     root,
@@ -146,8 +162,17 @@ function buildReleaseFollowThrough(opts = {}) {
     next_reason: attention.length
       ? `Clear ${attention[0].name} before treating the release as fully consumed.`
       : releaseConsumption.summary,
+    snapshot: {
+      path: snapshotPath,
+      saved: false,
+    },
     boundary: 'Release follow-through is local and read-only. It does not tag, push, publish, call GitHub, repair installs, or change settings.',
   };
+  if (opts.save) {
+    result.snapshot.saved = true;
+    saveSnapshot(result, snapshotPath);
+  }
+  return result;
 }
 
 function renderMarkdown(result) {
@@ -197,6 +222,9 @@ function renderMarkdown(result) {
     lines.push(`- Informational follow-ups: ${result.release_consumption.informational.join(', ')}`);
   }
   lines.push('', `Next: ${result.next}`, `Why: ${result.next_reason}`, '');
+  if (result.snapshot) {
+    lines.push(`Snapshot: ${result.snapshot.saved ? result.snapshot.path : '(not saved)'}`, '');
+  }
   return lines.join('\n');
 }
 
@@ -216,4 +244,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { buildReleaseFollowThrough, consumerUpdateStatus, parseArgs, readinessSummary, releaseConsumptionVerdict, releaseVerifyChecklistStatus, renderMarkdown };
+module.exports = { buildReleaseFollowThrough, consumerUpdateStatus, parseArgs, readinessSummary, releaseConsumptionVerdict, releaseVerifyChecklistStatus, renderMarkdown, snapshotPathFor };

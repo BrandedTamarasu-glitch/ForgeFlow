@@ -413,6 +413,72 @@ function buildAutoTrimAdvisor(summary, budget, recommendations) {
   };
 }
 
+function buildNextActions(recommendations, autoTrimAdvisor) {
+  const actions = [];
+  const addAction = (action) => {
+    if (!action || !action.action || !action.command) return;
+    const key = `${action.action}:${action.command}`;
+    if (actions.some((item) => `${item.action}:${item.command}` === key)) return;
+    actions.push(action);
+  };
+
+  for (const item of recommendations) {
+    if (item.action === 'trim-budget-violation') {
+      addAction({
+        action: 'split-review-context',
+        command: '/forgeflow-review-wave-prep --write-wave-files',
+        reason: item.reason,
+        clears: item.clears,
+        boundary: item.trim_plan ? item.trim_plan.stop_rule : 'Do not trim proof required for the current task.',
+      });
+    } else if (item.action === 'generate-context-telemetry') {
+      addAction({
+        action: 'generate-context-telemetry',
+        command: 'scripts/forgeflow/build-context-pack.js --root . --json',
+        reason: item.reason,
+        clears: item.clears,
+        boundary: 'Generates local context telemetry for the active project.',
+      });
+    } else if (item.action === 'improve-compaction') {
+      addAction({
+        action: 'narrow-context-packet',
+        command: 'scripts/forgeflow/build-context-pack.js --root . --files <focused-files.txt> --json',
+        reason: item.reason,
+        clears: item.clears,
+        boundary: 'Keep failure evidence, security findings, and files required to prove the task.',
+      });
+    } else if (item.action === 'review-code-map-unresolved-growth') {
+      addAction({
+        action: 'review-code-map-gaps',
+        command: '/forgeflow-code-map',
+        reason: item.reason,
+        clears: item.clears,
+        boundary: 'Static import gaps are triage hints until verified against project resolution rules.',
+      });
+    } else if (item.action === 'review-code-map-new-hotspots') {
+      addAction({
+        action: 'review-code-map-hotspots',
+        command: '/forgeflow-code-map',
+        reason: item.reason,
+        clears: item.clears,
+        boundary: 'Use hotspots to prioritize reads; do not treat them as defects by themselves.',
+      });
+    }
+  }
+
+  if (autoTrimAdvisor.status === 'recommended' && !actions.some((item) => item.action === 'split-review-context')) {
+    addAction({
+      action: 'split-review-context',
+      command: '/forgeflow-review-wave-prep --write-wave-files',
+      reason: 'Auto-trim advisor recommends splitting or narrowing review context.',
+      clears: 'Cleared when the generated packet is under the configured context budget.',
+      boundary: autoTrimAdvisor.boundary,
+    });
+  }
+
+  return actions.slice(0, 3);
+}
+
 function adviseContext(opts = {}) {
   const root = opts.root || defaultRoot();
   const walkedFiles = opts.files || walk(root);
@@ -423,6 +489,7 @@ function adviseContext(opts = {}) {
   const codeTopology = topologyCoverage(files);
   const codeMapTrend = codeMapTrends(opts.codeMapHistoryFiles || walkCodeMapHistory(root));
   const recommendations = recommend(summary, budget);
+  const autoTrimAdvisor = buildAutoTrimAdvisor(summary, budget, recommendations);
   const result = {
     schema_version: '1',
     root,
@@ -432,7 +499,9 @@ function adviseContext(opts = {}) {
     code_topology: codeTopology,
     code_map_trends: codeMapTrend,
     recommendations,
-    auto_trim_advisor: buildAutoTrimAdvisor(summary, budget, recommendations),
+    auto_trim_advisor: autoTrimAdvisor,
+    next_actions: [],
+    review_wave_suggested: false,
   };
   if (codeMapTrend.unresolved_imports_delta > 0) {
     result.recommendations.push({
@@ -469,6 +538,8 @@ function adviseContext(opts = {}) {
     result.history.recorded = true;
   }
   result.recommendations = uniqueRecommendations(result.recommendations);
+  result.next_actions = buildNextActions(result.recommendations, result.auto_trim_advisor);
+  result.review_wave_suggested = result.next_actions.some((item) => item.action === 'split-review-context');
   return result;
 }
 
@@ -513,6 +584,19 @@ function renderMarkdown(result) {
     lines.push(`- Percent saved delta: ${result.history.trend.percent_saved_delta}`);
     lines.push(`- Budget violation delta: ${result.history.trend.budget_violation_delta}`);
   }
+
+  lines.push('', '## Next Actions', '');
+  if (!result.next_actions || result.next_actions.length === 0) {
+    lines.push('- None.');
+  } else {
+    for (const action of result.next_actions) {
+      lines.push(`- ${action.action}: ${action.command}`);
+      lines.push(`  Reason: ${action.reason}`);
+      lines.push(`  Clears: ${action.clears}`);
+      lines.push(`  Boundary: ${action.boundary}`);
+    }
+  }
+  lines.push(`- Review wave suggested: ${result.review_wave_suggested ? 'yes' : 'no'}`);
 
   if (result.auto_trim_advisor.status === 'recommended') {
     lines.push('', '## Auto-Trim Advisor', '');
@@ -575,6 +659,7 @@ module.exports = {
   selectTelemetryFiles,
   walkCodeMapHistory,
   recommend,
+  buildNextActions,
   renderMarkdown,
   topologyCoverage,
 };

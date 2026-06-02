@@ -1,7 +1,7 @@
 ---
 name: forgeflow-release-follow-through
 description: Check post-release follow-through after publishing and update verification
-argument-hint: "[--json]"
+argument-hint: "[--save] [--json]"
 allowed-tools:
   - Bash
 ---
@@ -10,7 +10,8 @@ Summarize the local post-release checklist after a Forgeflow release: post-publi
 </objective>
 
 <process>
-Validate `$ARGUMENTS`. Accept only `--json`.
+Validate `$ARGUMENTS`. Accept only `--save` and `--json`.
+Without `--save`, this command is read-only. With `--save`, it writes the latest local follow-through snapshot under `.forgeflow/<project>/release-follow-through/`.
 
 ```bash
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -26,6 +27,7 @@ SAFE_ARGS=()
 read -r -a USER_ARGS <<< "${ARGUMENTS:-}"
 for arg in "${USER_ARGS[@]}"; do
   case "$arg" in
+    --save) SAFE_ARGS+=(--save) ;;
     --json) SAFE_ARGS+=(--json) ;;
     "") ;;
     *) echo "Unsupported arguments for /forgeflow-release-follow-through"; exit 2 ;;
@@ -38,5 +40,5 @@ env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/render-release-follow-throu
 
 <success_criteria>
 - [ ] Output includes the release follow-through checklist, install readiness, release-consumption verdict, and next action.
-- [ ] The command is local and read-only.
+- [ ] The command is local and read-only unless `--save` is explicitly supplied.
 </success_criteria>
