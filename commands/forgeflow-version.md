@@ -45,7 +45,7 @@ ARGS=()
 if [ "$WANTS_JSON" = "true" ]; then ARGS+=(--json); fi
 if [ "$WANTS_OFFLINE" = "true" ]; then ARGS+=(--offline); fi
 if [ "$WANTS_SNAPSHOT" = "true" ]; then ARGS+=(--snapshot); fi
-"${HELPER_DIR}/forgeflow-version.js" "${ARGS[@]}"
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/forgeflow-version.js" "${ARGS[@]}"
 ```
 
 ## Step 3: Interpret

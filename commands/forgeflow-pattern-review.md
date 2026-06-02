@@ -46,7 +46,7 @@ for ((i=0; i<${#USER_ARGS[@]}; i++)); do
     *) echo "Unsupported arguments for /forgeflow-pattern-review"; exit 2 ;;
   esac
 done
-"${HELPER_DIR}/render-pattern-review.js" "${SAFE_ARGS[@]}"
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/render-pattern-review.js" "${SAFE_ARGS[@]}"
 ```
 </process>
 

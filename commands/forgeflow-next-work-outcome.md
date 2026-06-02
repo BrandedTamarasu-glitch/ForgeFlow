@@ -38,7 +38,7 @@ if [ ! -x "${HELPER_DIR}/record-next-work-outcome.js" ]; then
 fi
 SAFE_ARGS=(--project-dir "${FORGEFLOW_DIR}")
 # Append only validated flags and values to SAFE_ARGS.
-"${HELPER_DIR}/record-next-work-outcome.js" "${SAFE_ARGS[@]}"
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/record-next-work-outcome.js" "${SAFE_ARGS[@]}"
 ```
 </process>
 

@@ -61,7 +61,7 @@ ARGS=()
 # ARGS+=(--json)
 if [ -n "$VALIDATED_MODE" ]; then ARGS+=(--mode "$VALIDATED_MODE"); fi
 if [ "$WANTS_JSON" = "true" ]; then ARGS+=(--json); fi
-node "${HELPER_DIR}/smoke-check.js" "${ARGS[@]}"
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/smoke-check.js" "${ARGS[@]}"
 ```
 
 Print the helper output directly.

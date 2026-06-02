@@ -45,6 +45,7 @@ HELPER_DIR="scripts/forgeflow"
 if [ ! -x "${HELPER_DIR}/build-memory-context.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/build-memory-context.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
+FORGEFLOW_NODE=(env -u NODE_OPTIONS -u NODE_PATH node)
 
 mkdir -p "$FORGEFLOW_DIR"
 if [ ! -f "$NOTES_PATH" ]; then

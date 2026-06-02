@@ -51,7 +51,7 @@ case "$RAW_ARGS" in
     ;;
   *) echo "Unsupported arguments for /forgeflow-review-auto-classify"; exit 2 ;;
 esac
-"${HELPER_DIR}/classify-review-auto.js" "${SAFE_ARGS[@]}"
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/classify-review-auto.js" "${SAFE_ARGS[@]}"
 ```
 </process>
 

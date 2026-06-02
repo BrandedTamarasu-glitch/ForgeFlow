@@ -20,8 +20,8 @@ if [ ! -x "${HELPER_DIR}/render-guided-repair.js" ]; then
 fi
 
 if printf '%s\n' "$ARGUMENTS" | grep -Eq '(^|[[:space:]])--json([[:space:]]|$)'; then
-  node "${HELPER_DIR}/render-guided-repair.js" --json
+  env -u NODE_OPTIONS -u NODE_PATH env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/render-guided-repair.js" --json
 else
-  node "${HELPER_DIR}/render-guided-repair.js"
+  env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/render-guided-repair.js"
 fi
 ```

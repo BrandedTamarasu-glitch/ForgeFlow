@@ -60,6 +60,7 @@ node scripts/forgeflow/test-render-post-release-install-verify.js
 node scripts/forgeflow/test-render-release-readiness.js
 node scripts/forgeflow/test-render-release-follow-through.js
 node scripts/forgeflow/test-render-release-consumption-rollup.js
+node scripts/forgeflow/test-render-release-consumption-loop.js
 node scripts/forgeflow/test-render-release-verify.js
 node scripts/forgeflow/test-render-support-bundle.js
 node scripts/forgeflow/test-render-evaluation-report.js
@@ -80,7 +81,9 @@ node scripts/forgeflow/test-render-next-work-ranking.js
 node scripts/forgeflow/test-render-efficiency-gap-plan.js
 node scripts/forgeflow/test-render-outcome-capture-plan.js
 node scripts/forgeflow/test-render-workflow-ending-capture.js
+node scripts/forgeflow/test-render-learning-capture-nudge.js
 node scripts/forgeflow/test-render-command-wrapper-batch.js
+node scripts/forgeflow/test-render-wrapper-drift-plan.js
 node scripts/forgeflow/test-render-telemetry-quality.js
 node scripts/forgeflow/test-record-first-run-result.js
 node scripts/forgeflow/test-rollup-first-run-results.js
@@ -106,6 +109,7 @@ node scripts/forgeflow/test-render-pattern-review.js
 node scripts/forgeflow/test-rollup-pilot-evidence.js
 node scripts/forgeflow/test-rollup-project-learnings.js
 node scripts/forgeflow/test-show-project-learnings.js
+node scripts/forgeflow/test-render-project-decision-brief.js
 node scripts/forgeflow/test-show-project-trends.js
 node scripts/forgeflow/test-show-project-health-timeline.js
 node scripts/forgeflow/test-build-project-intelligence.js

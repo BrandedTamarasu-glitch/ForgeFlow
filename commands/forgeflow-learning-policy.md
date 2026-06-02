@@ -44,7 +44,7 @@ if [ "${EXPECT_COMPARE_VALUE:-0}" = "1" ]; then
   echo "Missing value for --compare"
   exit 2
 fi
-"${HELPER_DIR}/learning-signal-policy.js" "${SAFE_ARGS[@]}"
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/learning-signal-policy.js" "${SAFE_ARGS[@]}"
 ```
 </process>
 

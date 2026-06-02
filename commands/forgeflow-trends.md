@@ -63,7 +63,7 @@ ARGS=()
 # Append --refresh and --json only when requested.
 if [ "$WANTS_REFRESH" = "true" ]; then ARGS+=(--refresh); fi
 if [ "$WANTS_JSON" = "true" ]; then ARGS+=(--json); fi
-"${HELPER_DIR}/show-project-trends.js" "${ARGS[@]}"
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/show-project-trends.js" "${ARGS[@]}"
 ```
 
 Print the helper output directly.

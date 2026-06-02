@@ -32,7 +32,7 @@ for arg in "${USER_ARGS[@]}"; do
     *) echo "Unsupported arguments for /forgeflow-runtime-drift"; exit 2 ;;
   esac
 done
-"${HELPER_DIR}/runtime-drift-snapshot.js" "${SAFE_ARGS[@]}"
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/runtime-drift-snapshot.js" "${SAFE_ARGS[@]}"
 ```
 </process>
 

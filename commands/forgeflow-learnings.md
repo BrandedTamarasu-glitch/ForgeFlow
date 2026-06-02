@@ -87,7 +87,7 @@ Project learnings helper is not installed. Run /update-forgeflow, then retry /fo
 Refresh the local artifact and render the user-facing insight view:
 
 ```bash
-"${HELPER_DIR}/show-project-learnings.js" --project-dir "${FORGEFLOW_DIR}"
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/show-project-learnings.js" --project-dir "${FORGEFLOW_DIR}"
 ```
 
 For the current checkout, `show-project-learnings.js` refreshes `.forgeflow/${PROJECT_NAME}/context/code-topology.json` before rolling up insights. Hot fan-in/fan-out files, changed-section files, and code-map trend deltas can appear in Hot Files And Modules, Risk Areas, and Recommended Approach For Next Work.
@@ -95,7 +95,7 @@ For the current checkout, `show-project-learnings.js` refreshes `.forgeflow/${PR
 If `--check` is present, pass `--check` to the helper. The helper refreshes project learnings, runs the quality gate, builds a context-pack smoke for the current checkout, and reports whether latest insights will be injected into future agent packets:
 
 ```bash
-"${HELPER_DIR}/show-project-learnings.js" --project-dir "${FORGEFLOW_DIR}" --check
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/show-project-learnings.js" --project-dir "${FORGEFLOW_DIR}" --check
 ```
 
 If `--json` is present, pass `--json` and print the helper JSON directly. For `--json --check`, the helper returns `check`, `context_smoke`, and `latest_insights_ready` in the same object. If the check status is `warn` or `fail`, call out that review context packs will block latest-insights injection until the reported issues are fixed or the rollup is refreshed.
@@ -126,7 +126,7 @@ ARGS=()
 # Append only validated cross-project flags.
 if [ -n "$VALIDATED_PERIOD" ]; then ARGS+=(--period "$VALIDATED_PERIOD"); fi
 if [ "$WANTS_DRY_RUN" = "true" ]; then ARGS+=(--dry-run); fi
-"${HELPER_DIR}/rollup-pattern-learnings.js" "${ARGS[@]}"
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/rollup-pattern-learnings.js" "${ARGS[@]}"
 ```
 
 The helper owns scanning `.forgeflow/<project>/learnings.jsonl` and `project-learning-candidates.jsonl`, period filtering, known-pattern matching, source-mix reporting, candidate clustering, JSON/Markdown output, and `.learnings-log.jsonl` self-logging. If the helper is missing, continue with the manual fallback below and tell the user to run `/update-forgeflow`.

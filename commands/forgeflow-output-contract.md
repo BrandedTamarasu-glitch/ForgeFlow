@@ -33,7 +33,7 @@ for arg in "${USER_ARGS[@]}"; do
     *) echo "Unsupported arguments for /forgeflow-output-contract"; exit 2 ;;
   esac
 done
-"${HELPER_DIR}/output-contract.js" "${SAFE_ARGS[@]}"
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/output-contract.js" "${SAFE_ARGS[@]}"
 ```
 </process>
 

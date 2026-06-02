@@ -18,6 +18,10 @@ HELPER_DIR="scripts/forgeflow"
 if [ ! -x "${HELPER_DIR}/render-support-bundle.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/render-support-bundle.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
+if [ ! -x "${HELPER_DIR}/render-support-bundle.js" ]; then
+  echo "Support bundle helper is not installed. Run /update-forgeflow --repair, then retry /forgeflow-support."
+  exit 1
+fi
 
 ARGS=()
 JSON_FLAG="--json"

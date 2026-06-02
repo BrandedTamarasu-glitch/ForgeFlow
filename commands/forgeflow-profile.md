@@ -52,19 +52,19 @@ User profile helper is not installed. Run /update-forgeflow, then retry /forgefl
 For `--record`, pass only validated arguments to `record-user-profile.js`:
 
 ```bash
-"${HELPER_DIR}/record-user-profile.js" --project-dir "${FORGEFLOW_DIR}" <validated args>
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/record-user-profile.js" --project-dir "${FORGEFLOW_DIR}" <validated args>
 ```
 
 For `--check`, run:
 
 ```bash
-"${HELPER_DIR}/check-user-profile.js" --project-dir "${FORGEFLOW_DIR}"
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/check-user-profile.js" --project-dir "${FORGEFLOW_DIR}"
 ```
 
 Otherwise show the compact profile:
 
 ```bash
-"${HELPER_DIR}/show-user-profile.js" --project-dir "${FORGEFLOW_DIR}"
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/show-user-profile.js" --project-dir "${FORGEFLOW_DIR}"
 ```
 
 ## Boundaries

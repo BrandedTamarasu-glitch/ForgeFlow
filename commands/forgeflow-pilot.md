@@ -55,7 +55,7 @@ ARGS=()
 # ARGS+=(--json)
 if [ -n "$VALIDATED_RUNTIME" ]; then ARGS+=(--runtime "$VALIDATED_RUNTIME"); fi
 if [ -n "$VALIDATED_PATH" ]; then ARGS+=(--path "$VALIDATED_PATH"); fi
-node "${HELPER_DIR}/render-pilot-script.js" "${ARGS[@]}"
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/render-pilot-script.js" "${ARGS[@]}"
 ```
 
 Print the helper output directly.

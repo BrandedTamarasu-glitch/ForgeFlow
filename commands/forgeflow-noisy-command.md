@@ -35,7 +35,7 @@ ARGS=()
 # ARGS+=(--command "npm test")
 # ARGS+=(--json)
 if [ -n "$VALIDATED_COMMAND" ]; then ARGS+=(--command "$VALIDATED_COMMAND"); fi
-"${HELPER_DIR}/advise-noisy-command.js" "${ARGS[@]}"
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/advise-noisy-command.js" "${ARGS[@]}"
 ```
 
 </process>
