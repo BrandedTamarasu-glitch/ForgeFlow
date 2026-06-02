@@ -21,10 +21,10 @@ ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 PROJECT_NAME="$(basename "${ROOT}")"
 FORGEFLOW_DIR="${ROOT}/.forgeflow/${PROJECT_NAME}"
 HELPER_DIR="${ROOT}/scripts/forgeflow"
-if [ ! -x "${HELPER_DIR}/show-project-health-timeline.js" ]; then
+if [ ! -f "${HELPER_DIR}/show-project-health-timeline.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
-if [ ! -x "${HELPER_DIR}/show-project-health-timeline.js" ]; then
+if [ ! -f "${HELPER_DIR}/show-project-health-timeline.js" ]; then
   echo "Project health timeline helper is not installed. Run /update-forgeflow --repair, then retry /forgeflow-health-timeline."
   exit 1
 fi
@@ -37,7 +37,8 @@ for arg in "${USER_ARGS[@]}"; do
     *) echo "Unsupported arguments for /forgeflow-health-timeline"; exit 2 ;;
   esac
 done
-"${HELPER_DIR}/show-project-health-timeline.js" "${SAFE_ARGS[@]}"
+cd "${ROOT}"
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/show-project-health-timeline.js" "${SAFE_ARGS[@]}"
 ```
 </process>
 

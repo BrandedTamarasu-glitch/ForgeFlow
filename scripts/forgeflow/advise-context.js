@@ -479,6 +479,47 @@ function buildNextActions(recommendations, autoTrimAdvisor) {
   return actions.slice(0, 3);
 }
 
+function buildReviewWaveAutomation(nextActions, autoTrimAdvisor) {
+  const suggested = nextActions.some((item) => item.action === 'split-review-context') || autoTrimAdvisor.status === 'recommended';
+  if (!suggested) {
+    return {
+      status: 'not-needed',
+      commands: [],
+      next: '',
+      boundary: 'Review-wave automation is advisory. It does not write files, rebuild packets, trim proof, or spawn reviewers unless a listed command is run explicitly.',
+    };
+  }
+  const commands = [
+    {
+      step: 'preview-wave-plan',
+      command: '/forgeflow-context-wave-plan',
+      mutates: false,
+      reason: 'Preview staged review waves from the latest context telemetry.',
+    },
+    {
+      step: 'write-wave-files',
+      command: '/forgeflow-context-wave-plan --write-wave-files',
+      mutates: true,
+      reason: 'Write explicit focused file-list inputs for the first review wave.',
+    },
+    {
+      step: 'build-first-wave',
+      command: '/forgeflow-context-wave-build',
+      mutates: true,
+      reason: 'Build the first focused context packet from the explicit wave file list.',
+    },
+  ];
+  return {
+    status: 'recommended',
+    commands,
+    next: commands[0].command,
+    write_command: commands[1].command,
+    build_command: commands[2].command,
+    stop_rule: 'Do not trim raw-required failure evidence, security findings, or files required to prove the current task.',
+    boundary: 'Review-wave automation is advisory. It does not write files, rebuild packets, trim proof, or spawn reviewers unless a listed command is run explicitly.',
+  };
+}
+
 function adviseContext(opts = {}) {
   const root = opts.root || defaultRoot();
   const walkedFiles = opts.files || walk(root);
@@ -502,6 +543,7 @@ function adviseContext(opts = {}) {
     auto_trim_advisor: autoTrimAdvisor,
     next_actions: [],
     review_wave_suggested: false,
+    review_wave_automation: null,
   };
   if (codeMapTrend.unresolved_imports_delta > 0) {
     result.recommendations.push({
@@ -540,6 +582,7 @@ function adviseContext(opts = {}) {
   result.recommendations = uniqueRecommendations(result.recommendations);
   result.next_actions = buildNextActions(result.recommendations, result.auto_trim_advisor);
   result.review_wave_suggested = result.next_actions.some((item) => item.action === 'split-review-context');
+  result.review_wave_automation = buildReviewWaveAutomation(result.next_actions, result.auto_trim_advisor);
   return result;
 }
 
@@ -597,6 +640,17 @@ function renderMarkdown(result) {
     }
   }
   lines.push(`- Review wave suggested: ${result.review_wave_suggested ? 'yes' : 'no'}`);
+  if (result.review_wave_automation && result.review_wave_automation.status === 'recommended') {
+    lines.push('', '## Review Wave Automation', '');
+    lines.push(`- Status: ${result.review_wave_automation.status}`);
+    lines.push(`- Boundary: ${result.review_wave_automation.boundary}`);
+    lines.push(`- Stop rule: ${result.review_wave_automation.stop_rule}`);
+    for (const command of result.review_wave_automation.commands) {
+      lines.push(`- ${command.step}: ${command.command}`);
+      lines.push(`  - Mutates: ${command.mutates ? 'yes' : 'no'}`);
+      lines.push(`  - Reason: ${command.reason}`);
+    }
+  }
 
   if (result.auto_trim_advisor.status === 'recommended') {
     lines.push('', '## Auto-Trim Advisor', '');
@@ -660,6 +714,7 @@ module.exports = {
   walkCodeMapHistory,
   recommend,
   buildNextActions,
+  buildReviewWaveAutomation,
   renderMarkdown,
   topologyCoverage,
 };

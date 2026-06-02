@@ -23,10 +23,10 @@ ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 PROJECT_NAME="$(basename "${ROOT}")"
 FORGEFLOW_DIR="${ROOT}/.forgeflow/${PROJECT_NAME}"
 HELPER_DIR="${ROOT}/scripts/forgeflow"
-if [ ! -x "${HELPER_DIR}/render-insight-injection.js" ]; then
+if [ ! -f "${HELPER_DIR}/render-insight-injection.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
-if [ ! -x "${HELPER_DIR}/render-insight-injection.js" ]; then
+if [ ! -f "${HELPER_DIR}/render-insight-injection.js" ]; then
   echo "Insight injection helper is not installed. Run /update-forgeflow --repair, then retry /forgeflow-insight-injection."
   exit 1
 fi
@@ -49,7 +49,8 @@ while [ "$i" -lt "${#USER_ARGS[@]}" ]; do
   esac
   i=$((i + 1))
 done
-"${HELPER_DIR}/render-insight-injection.js" "${SAFE_ARGS[@]}"
+cd "${ROOT}"
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/render-insight-injection.js" "${SAFE_ARGS[@]}"
 ```
 </process>
 

@@ -90,6 +90,7 @@ const checks = [
   ['runtime helpers include workflow ending capture', RUNTIME_HELPERS.includes('scripts/forgeflow/render-workflow-ending-capture.js')],
   ['runtime helpers include release readiness', RUNTIME_HELPERS.includes('scripts/forgeflow/render-release-readiness.js')],
   ['runtime helpers include release follow through', RUNTIME_HELPERS.includes('scripts/forgeflow/render-release-follow-through.js')],
+  ['runtime helpers include release consumption rollup', RUNTIME_HELPERS.includes('scripts/forgeflow/render-release-consumption-rollup.js')],
   ['runtime helpers include release verify', RUNTIME_HELPERS.includes('scripts/forgeflow/render-release-verify.js')],
   ['runtime helpers include post-release install verify', RUNTIME_HELPERS.includes('scripts/forgeflow/render-post-release-install-verify.js')],
   ['runtime helpers include pilot script renderer', RUNTIME_HELPERS.includes('scripts/forgeflow/render-pilot-script.js')],

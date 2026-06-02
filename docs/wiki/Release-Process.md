@@ -59,6 +59,7 @@ node scripts/forgeflow/test-render-release-notes.js
 node scripts/forgeflow/test-render-post-release-install-verify.js
 node scripts/forgeflow/test-render-release-readiness.js
 node scripts/forgeflow/test-render-release-follow-through.js
+node scripts/forgeflow/test-render-release-consumption-rollup.js
 node scripts/forgeflow/test-render-release-verify.js
 node scripts/forgeflow/test-render-support-bundle.js
 node scripts/forgeflow/test-render-evaluation-report.js

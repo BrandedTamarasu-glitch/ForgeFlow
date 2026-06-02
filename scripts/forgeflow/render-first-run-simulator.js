@@ -78,6 +78,45 @@ function overallStatus(checks) {
   return 'ready';
 }
 
+function buildTrialPlan(runtime, firstUsePath) {
+  return {
+    status: 'ready',
+    runtime,
+    steps: firstUsePath.steps.map((step, index) => ({
+      order: index + 1,
+      name: step.name,
+      command: step.command,
+    })),
+    record_after: {
+      command_template: '/forgeflow-first-run-result --runtime <claude-code|codex> --health <pass|warn|fail> --smoke <pass|warn|fail> --decision <continue|fix-first|stop-and-fix|defer>',
+      prompt: 'After the trial, replace placeholders with real observed statuses. Do not infer or guess pass/warn/fail values.',
+    },
+    summarize_after: runtime === 'codex'
+      ? 'node scripts/forgeflow/render-first-useful-win.js --runtime codex'
+      : '/forgeflow-first-useful-win',
+  };
+}
+
+function buildFollowUp(checks, runtime, firstUsePath) {
+  const attention = checks.find((item) => item.status !== 'pass' && item.status !== 'info');
+  if (attention) {
+    return {
+      status: 'blocked',
+      next: attention.next,
+      reason: attention.summary,
+      record_result: false,
+      trial_plan: buildTrialPlan(runtime, firstUsePath),
+    };
+  }
+  return {
+    status: 'ready-to-trial',
+    next: firstUsePath.steps[0].command,
+    reason: 'Run the first-use path, then record the actual first-run outcome.',
+    record_result: true,
+    trial_plan: buildTrialPlan(runtime, firstUsePath),
+  };
+}
+
 function buildFirstRunSimulator(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const projectDir = path.resolve(opts.projectDir || defaultProjectDir(root));
@@ -108,6 +147,7 @@ function buildFirstRunSimulator(opts = {}) {
     },
   ];
   const attention = checks.find((item) => item.status !== 'pass' && item.status !== 'info');
+  const followUp = buildFollowUp(checks, runtime, firstUsePath);
   return {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
@@ -123,6 +163,8 @@ function buildFirstRunSimulator(opts = {}) {
       checks: Array.isArray(smoke.checks) ? smoke.checks.length : 0,
     },
     first_use_path: firstUsePath,
+    follow_up: followUp,
+    trial_plan: followUp.trial_plan,
     next: attention ? attention.next : firstUsePath.steps[0].command,
     next_reason: attention ? attention.summary : 'First-run simulator is ready; start the runtime-specific first-use path.',
     boundary: 'First-run simulator is local and read-only. It checks source readiness and first-use guidance without installing, updating, repairing, committing, pushing, or exporting evidence.',
@@ -151,6 +193,11 @@ function renderMarkdown(result) {
   for (const step of result.first_use_path.steps) {
     lines.push(`- ${step.name}: ${step.command}`);
   }
+  lines.push('', '## Follow-Up', '');
+  lines.push(`- Status: ${result.follow_up.status}`);
+  lines.push(`- Record result: ${result.follow_up.record_result ? 'yes' : 'no'}`);
+  lines.push(`- Record template: ${result.follow_up.trial_plan.record_after.command_template}`);
+  lines.push(`- Prompt: ${result.follow_up.trial_plan.record_after.prompt}`);
   lines.push(`- Stop rule: ${result.first_use_path.stop_rule}`, '', `Next: ${result.next}`, `Why: ${result.next_reason}`, '');
   return lines.join('\n');
 }
@@ -171,4 +218,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { buildFirstRunSimulator, parseArgs, pluginVersion, renderMarkdown, semverLike };
+module.exports = { buildFirstRunSimulator, buildFollowUp, buildTrialPlan, parseArgs, pluginVersion, renderMarkdown, semverLike };

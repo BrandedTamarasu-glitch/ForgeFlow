@@ -87,6 +87,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/render-release-notes.js',
   'scripts/forgeflow/render-release-readiness.js',
   'scripts/forgeflow/render-release-follow-through.js',
+  'scripts/forgeflow/render-release-consumption-rollup.js',
   'scripts/forgeflow/render-release-verify.js',
   'scripts/forgeflow/render-support-bundle.js',
   'scripts/forgeflow/render-stale-artifact-plan.js',

@@ -38,6 +38,7 @@ const telemetryQuality = helperWrapper('commands/forgeflow-telemetry-quality.md'
 const workflowEnding = helperWrapper('commands/forgeflow-workflow-ending-capture.md', 'render-workflow-ending-capture.js');
 const learningAction = helperWrapper('commands/forgeflow-learning-action.md', 'render-learning-action-router.js');
 const firstRunSimulator = helperWrapper('commands/forgeflow-first-run-simulator.md', 'render-first-run-simulator.js');
+const firstRun = helperWrapper('commands/forgeflow-first-run.md', 'render-first-run-guide.js');
 
 const checks = [
   ['context retention wrapper references helper', contextRetention.referencesHelper],
@@ -63,6 +64,10 @@ const checks = [
   ['first-run simulator wrapper checks regular helper file', firstRunSimulator.referencesHelper && firstRunSimulator.checksRepoLocalFile && firstRunSimulator.fallsBackToInstalledHelper],
   ['first-run simulator wrapper scrubs node env and safe args', firstRunSimulator.scrubsNodeEnvironment && firstRunSimulator.invokesHelperWithSafeArgs && firstRunSimulator.markdown.includes('Unsupported arguments for /forgeflow-first-run-simulator')],
   ['first-run simulator wrapper validates runtime', firstRunSimulator.markdown.includes('claude-code|codex) SAFE_ARGS+=(--runtime "$runtime")') && firstRunSimulator.markdown.includes('--skip-smoke) SAFE_ARGS+=(--skip-smoke)')],
+  ['first-run wrapper checks regular helper file', firstRun.referencesHelper && firstRun.checksRepoLocalFile && firstRun.fallsBackToInstalledHelper],
+  ['first-run wrapper scrubs node env and safe args', firstRun.scrubsNodeEnvironment && firstRun.invokesHelperWithSafeArgs],
+  ['first-run wrapper preserves quoted project names before tokenizing', firstRun.markdown.includes('PROJECT_NAME_SEGMENT="${BASH_REMATCH[0]}"') && firstRun.markdown.includes('PROJECT_NAME_ARG="${BASH_REMATCH[2]}"') && firstRun.markdown.includes('RAW_ARGS="${RAW_ARGS/$PROJECT_NAME_SEGMENT/ }"')],
+  ['first-run wrapper rejects leftover project-name token', firstRun.markdown.includes('--project-name) echo "Invalid --project-name for /forgeflow-first-run"; exit 2 ;;')],
 ];
 
 let failed = 0;

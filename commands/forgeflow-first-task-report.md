@@ -17,10 +17,10 @@ ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 PROJECT_NAME="$(basename "${ROOT}")"
 FORGEFLOW_DIR="${ROOT}/.forgeflow/${PROJECT_NAME}"
 HELPER_DIR="${ROOT}/scripts/forgeflow"
-if [ ! -x "${HELPER_DIR}/render-first-task-report.js" ]; then
+if [ ! -f "${HELPER_DIR}/render-first-task-report.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
-if [ ! -x "${HELPER_DIR}/render-first-task-report.js" ]; then
+if [ ! -f "${HELPER_DIR}/render-first-task-report.js" ]; then
   echo "First task report helper is not installed. Run /update-forgeflow --repair, then retry /forgeflow-first-task-report."
   exit 1
 fi
@@ -33,7 +33,8 @@ for arg in "${USER_ARGS[@]}"; do
     *) echo "Unsupported arguments for /forgeflow-first-task-report"; exit 2 ;;
   esac
 done
-"${HELPER_DIR}/render-first-task-report.js" "${SAFE_ARGS[@]}"
+cd "${ROOT}"
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/render-first-task-report.js" "${SAFE_ARGS[@]}"
 ```
 </process>
 

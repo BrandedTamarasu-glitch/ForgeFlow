@@ -53,6 +53,54 @@ function commandForSource(source) {
   return commands[normalized] || '/forgeflow-learning-status';
 }
 
+function captureGuidanceForSource(source) {
+  const normalized = String(source || '').replace(/_/g, '-');
+  const guidance = {
+    'review-outcomes': {
+      type: 'event-capture',
+      prompt: 'After the review finishes, run the workflow-ending capture command and record the actual verdict outcome it prints.',
+      template: '/forgeflow-workflow-ending-capture --event review',
+      requires_observed_values: false,
+    },
+    'next-work-outcomes': {
+      type: 'event-capture',
+      prompt: 'After acting on a next-work recommendation, run the workflow-ending capture command and record whether the recommendation was useful, ignored, incorrect, or blocked.',
+      template: '/forgeflow-workflow-ending-capture --event next-work',
+      requires_observed_values: false,
+    },
+    'agent-feedback': {
+      type: 'event-capture',
+      prompt: 'After an agent output is useful, unclear, ignored, or incorrect, run the workflow-ending capture command and record the actual signal.',
+      template: '/forgeflow-workflow-ending-capture --event agent-feedback',
+      requires_observed_values: false,
+    },
+    'first-run-results': {
+      type: 'first-run-evidence',
+      prompt: 'Run the rollup first. If it reports missing evidence, record the real observed statuses with the result command template.',
+      template: '/forgeflow-first-run-result --runtime <claude-code|codex> --health <pass|warn|fail> --smoke <pass|warn|fail> --decision <continue|fix-first|stop-and-fix|defer>',
+      requires_observed_values: true,
+    },
+    'user-profile': {
+      type: 'profile-bootstrap',
+      prompt: 'Use the profile bootstrap prompts to record explicit user preferences only when the user confirms them.',
+      template: '/forgeflow-profile-bootstrap --prompts',
+      requires_observed_values: true,
+    },
+    'project-learnings': {
+      type: 'quality-check',
+      prompt: 'Refresh and check project learnings before injecting them into agent context.',
+      template: '/forgeflow-learnings --project --check',
+      requires_observed_values: false,
+    },
+  };
+  return guidance[normalized] || {
+    type: 'check',
+    prompt: 'Run the recommended command, then refresh learning status before relying on calibration.',
+    template: commandForSource(source),
+    requires_observed_values: false,
+  };
+}
+
 function reasonForSource(source, origin) {
   return `${source} is one of the weakest ${origin} sources, so capture or refresh that stream before relying on calibration.`;
 }
@@ -63,6 +111,7 @@ function actionForSource(source, origin) {
     origin,
     command: commandForSource(source),
     reason: reasonForSource(source, origin),
+    capture_guidance: captureGuidanceForSource(source),
     clears: 'Cleared when the learning and telemetry quality reports no longer classify this source as weak.',
     boundary: 'Learning actions are local and advisory. They do not approve work, edit source files, commit, push, or export local evidence.',
   };
@@ -86,6 +135,7 @@ function buildLearningActionRouter(opts = {}) {
     reason: 'Learning and telemetry sources have no weak streams to prioritize.',
     clears: 'No action needed while learning signals remain healthy.',
     boundary: 'Learning actions are local and advisory. They do not approve work, edit source files, commit, push, or export local evidence.',
+    capture_guidance: captureGuidanceForSource('learning-status'),
   };
   return {
     schema_version: '1',
@@ -128,6 +178,8 @@ function renderMarkdown(result) {
     for (const item of result.actions) {
       lines.push(`- ${item.source}: ${item.command}`);
       lines.push(`  - Reason: ${item.reason}`);
+      lines.push(`  - Capture: ${item.capture_guidance.prompt}`);
+      lines.push(`  - Template: ${item.capture_guidance.template}`);
     }
   }
   lines.push('', `Next: ${result.next}`, '');
@@ -150,4 +202,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { buildLearningActionRouter, commandForSource, parseArgs, renderMarkdown };
+module.exports = { buildLearningActionRouter, captureGuidanceForSource, commandForSource, parseArgs, renderMarkdown };
