@@ -2,7 +2,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { buildWorkflowEndingCapture, parseArgs, renderMarkdown } = require('./render-workflow-ending-capture');
+const { buildWorkflowEndingCapture, nudgeEventFor, parseArgs, renderMarkdown } = require('./render-workflow-ending-capture');
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-workflow-ending-capture-'));
 const root = path.join(tmp, 'repo');
@@ -42,10 +42,13 @@ try {
 
 const checks = [
   ['recommends review capture', review.status === 'capture-recommended' && review.stream === 'review-outcomes' && review.command.includes('record-review-outcome')],
+  ['adds recorder learning nudge', review.learning_nudge.command.includes('record-review-outcome') && review.learning_nudge.stop_rule.includes('observed workflow outcomes')],
+  ['watch nudge does not recurse', watch.learning_nudge.command === ''],
+  ['maps auto nudge event', nudgeEventFor('auto', 'next-work-outcomes') === 'next-work'],
   ['auto chooses a missing stream', auto.status === 'capture-recommended' && auto.command.startsWith('record-')],
   ['watches present stream', watch.status === 'watch' && watch.command === ''],
   ['invalid stream still recommends capture', invalid.status === 'capture-recommended' && invalid.stream === 'review-outcomes'],
-  ['renders boundary and command', markdown.includes('Workflow-ending capture is advisory') && markdown.includes('record-review-outcome')],
+  ['renders boundary and command', markdown.includes('Workflow-ending capture is advisory') && markdown.includes('## Learning Nudge') && markdown.includes('record-review-outcome')],
   ['parses args', opts.root === root && opts.projectDir === projectDir && opts.event === 'agent-feedback' && opts.json === true],
   ['rejects invalid events', invalidBlocked],
 ];

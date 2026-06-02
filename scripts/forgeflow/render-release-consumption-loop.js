@@ -47,6 +47,22 @@ function updateStatusToStep(updateVerify) {
   return { name: 'repair-update', status: 'attention', command: '/update-forgeflow --repair' };
 }
 
+function completionFor(steps) {
+  const incomplete = steps.filter((step) => step.status !== 'pass');
+  if (incomplete.length === 0) {
+    return {
+      status: 'complete',
+      badge: 'release-consumption-complete',
+      summary: 'Update verification, downstream smoke, and release consumption all passed.',
+    };
+  }
+  return {
+    status: 'attention',
+    badge: 'release-consumption-attention',
+    summary: `Clear ${incomplete[0].name} before treating release consumption as complete.`,
+  };
+}
+
 function buildReleaseConsumptionLoop(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const projectDir = path.resolve(opts.projectDir || defaultProjectDir(root));
@@ -77,6 +93,7 @@ function buildReleaseConsumptionLoop(opts = {}) {
     consumptionStep,
   ];
   const attention = steps.find((step) => step.status === 'attention' || step.status === 'pending');
+  const completion = completionFor(steps);
   return {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
@@ -87,6 +104,8 @@ function buildReleaseConsumptionLoop(opts = {}) {
     consumption_status: consumption.status,
     smoke_status: consumption.downstream_smoke ? consumption.downstream_smoke.status : 'missing',
     steps,
+    completion,
+    completion_badge: completion.badge,
     next_command: attention ? attention.command : '/forgeflow-release-consumption',
     next_reason: attention
       ? `Clear ${attention.name} before treating release consumption as complete.`
@@ -110,6 +129,7 @@ function renderMarkdown(result) {
     '',
   ];
   for (const step of result.steps) lines.push(`- ${step.name}: ${step.status} - ${step.command}`);
+  lines.push('', '## Completion', '', `Badge: ${result.completion.badge}`, `Summary: ${result.completion.summary}`);
   lines.push('', `Next: ${result.next_command}`, `Why: ${result.next_reason}`, '');
   return lines.join('\n');
 }
@@ -130,4 +150,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { buildReleaseConsumptionLoop, parseArgs, renderMarkdown, updateStatusToStep };
+module.exports = { buildReleaseConsumptionLoop, completionFor, parseArgs, renderMarkdown, updateStatusToStep };

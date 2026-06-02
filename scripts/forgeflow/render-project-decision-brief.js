@@ -82,6 +82,63 @@ function topologySummary(topology) {
   };
 }
 
+function healthTimelineChanges(healthTimeline, limit = 3) {
+  if (!healthTimeline || !Array.isArray(healthTimeline.events)) return [];
+  return healthTimeline.events
+    .slice(-limit)
+    .reverse()
+    .map((event) => {
+      const status = event.status || event.health_status || event.result || 'observed';
+      const label = event.command || event.source || event.name || event.type || 'health event';
+      return `${status}: ${label}`;
+    });
+}
+
+function topologyChanges(topology, limit = 3) {
+  if (!topology) return [];
+  const sectionEntries = topology.changed_sections && !Array.isArray(topology.changed_sections)
+    ? Object.entries(topology.changed_sections)
+      .flatMap(([file, sections]) => (Array.isArray(sections) ? sections : []).map((section) => ({
+        file,
+        name: section.name,
+        line: section.line,
+      })))
+    : [];
+  const changed = []
+    .concat(sectionEntries)
+    .concat(Array.isArray(topology.changed_sections) ? topology.changed_sections : [])
+    .concat(Array.isArray(topology.changed_files) ? topology.changed_files : [])
+    .concat(Array.isArray(topology.changed_work) ? topology.changed_work : []);
+  return changed.slice(0, limit).map((item) => (
+    typeof item === 'string' ? item : item.file || item.path || item.section || item.name || ''
+  )).filter(Boolean);
+}
+
+function projectGuidance({ decisions, riskAreas, validationPatterns, topologyInfo, healthTimeline, topology }) {
+  const recentChanges = healthTimelineChanges(healthTimeline);
+  if (recentChanges.length === 0) {
+    const topologyRecent = topologyChanges(topology);
+    for (const item of topologyRecent) recentChanges.push(`changed: ${item}`);
+  }
+  return {
+    read_first: decisions.length > 0
+      ? decisions.slice(0, 3)
+      : ['Read project learnings and latest insights before choosing the next change.'],
+    avoid_first: riskAreas.length > 0
+      ? riskAreas.slice(0, 3)
+      : ['Avoid broad refactors until current project risks are refreshed.'],
+    validate_first: validationPatterns.length > 0
+      ? validationPatterns.slice(0, 3)
+      : ['Define the focused validation command before implementation starts.'],
+    care_files: topologyInfo.hot_files.length > 0
+      ? topologyInfo.hot_files.slice(0, 3)
+      : ['Run /forgeflow-code-map before touching shared modules.'],
+    recent_changes: recentChanges.length > 0
+      ? recentChanges
+      : ['No recent health or topology changes found in local artifacts.'],
+  };
+}
+
 function buildProjectDecisionBrief(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const projectDir = path.resolve(opts.projectDir || defaultProjectDir(root));
@@ -100,6 +157,7 @@ function buildProjectDecisionBrief(opts = {}) {
   if (!latestInsights) warnings.push('latest-insights-missing');
   if (!topology) warnings.push('code-topology-missing');
   if (!healthTimeline) warnings.push('health-timeline-missing');
+  const guidance = projectGuidance({ decisions, riskAreas, validationPatterns, topologyInfo, healthTimeline, topology });
   const recommendations = [
     riskAreas[0] ? `Avoid repeating risk area: ${riskAreas[0]}` : 'Refresh project learnings before major planning.',
     validationPatterns[0] ? `Reuse validation pattern: ${validationPatterns[0]}` : 'Define validation before implementation starts.',
@@ -119,6 +177,11 @@ function buildProjectDecisionBrief(opts = {}) {
     decisions,
     risk_areas: riskAreas,
     validation_patterns: validationPatterns,
+    decision_brief: guidance,
+    recent_changes: guidance.recent_changes,
+    avoid_first: guidance.avoid_first,
+    validate_first: guidance.validate_first,
+    care_files: guidance.care_files,
     recommendations,
     next_command: warnings.length > 0 ? '/forgeflow-trends --refresh' : '/plan',
     next_reason: warnings.length > 0
@@ -143,8 +206,16 @@ function renderMarkdown(result) {
     '',
   ];
   for (const item of result.decisions.length ? result.decisions : ['No stable decisions found.']) lines.push(`- ${item}`);
+  lines.push('', '## Recent Changes', '');
+  for (const item of result.recent_changes) lines.push(`- ${item}`);
   lines.push('', '## Risks', '');
   for (const item of result.risk_areas.length ? result.risk_areas : ['No risk areas found.']) lines.push(`- ${item}`);
+  lines.push('', '## Avoid First', '');
+  for (const item of result.avoid_first) lines.push(`- ${item}`);
+  lines.push('', '## Validate First', '');
+  for (const item of result.validate_first) lines.push(`- ${item}`);
+  lines.push('', '## Care Files', '');
+  for (const item of result.care_files) lines.push(`- ${item}`);
   lines.push('', '## Recommended Next Approach', '');
   for (const item of result.recommendations) lines.push(`- ${item}`);
   if (result.warnings.length > 0) {
@@ -171,4 +242,13 @@ if (require.main === module) {
   }
 }
 
-module.exports = { buildProjectDecisionBrief, firstMarkdownBullets, parseArgs, renderMarkdown, topologySummary };
+module.exports = {
+  buildProjectDecisionBrief,
+  firstMarkdownBullets,
+  healthTimelineChanges,
+  parseArgs,
+  projectGuidance,
+  renderMarkdown,
+  topologyChanges,
+  topologySummary,
+};

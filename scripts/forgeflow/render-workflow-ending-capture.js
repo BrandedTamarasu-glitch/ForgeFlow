@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const path = require('path');
 const { buildOutcomeCapturePlan } = require('./render-outcome-capture-plan');
+const { buildLearningCaptureNudge } = require('./render-learning-capture-nudge');
 
 function usage() {
   console.error('Usage: render-workflow-ending-capture.js [--root <repo>] [--project-dir <dir>] [--event review|next-work|agent-feedback|auto] [--json]');
@@ -44,6 +45,13 @@ const EVENT_TO_STREAM = {
   'agent-feedback': 'agent-feedback',
 };
 
+function nudgeEventFor(event, stream) {
+  if (event && event !== 'auto') return event;
+  if (stream === 'next-work-outcomes') return 'next-work';
+  if (stream === 'agent-feedback') return 'agent-feedback';
+  return 'review';
+}
+
 function buildWorkflowEndingCapture(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const plan = buildOutcomeCapturePlan({ root, projectDir: opts.projectDir });
@@ -53,6 +61,8 @@ function buildWorkflowEndingCapture(opts = {}) {
     ? plan.streams.find((item) => item.name === preferred)
     : plan.streams.find((item) => item.action === 'capture-next') || plan.streams[0];
   const captureNeeded = stream && stream.action === 'capture-next';
+  const learningNudge = buildLearningCaptureNudge({ event: nudgeEventFor(event, stream ? stream.name : '') });
+  const nudgeCommand = captureNeeded ? stream.command : '';
   return {
     schema_version: '1',
     status: captureNeeded ? 'capture-recommended' : 'watch',
@@ -62,6 +72,12 @@ function buildWorkflowEndingCapture(opts = {}) {
     stream: stream ? stream.name : '',
     after_action_prompt: stream ? stream.after_action_prompt : '',
     command: captureNeeded ? stream.command : '',
+    learning_nudge: {
+      event: learningNudge.event,
+      command: nudgeCommand,
+      prompt: stream && stream.after_action_prompt ? stream.after_action_prompt : learningNudge.prompt,
+      stop_rule: learningNudge.stop_rule,
+    },
     outcome_capture_status: plan.status,
     missing_count: plan.missing_count,
     next: captureNeeded ? stream.command : 'No workflow-ending capture is required right now.',
@@ -85,6 +101,7 @@ function renderMarkdown(result) {
     '',
   ];
   if (result.after_action_prompt) lines.push(`After action: ${result.after_action_prompt}`, '');
+  lines.push('## Learning Nudge', '', `Command: ${result.learning_nudge.command ? inlineCode(result.learning_nudge.command) : '(none)'}`, `Prompt: ${result.learning_nudge.prompt}`, `Stop rule: ${result.learning_nudge.stop_rule}`, '');
   lines.push(`Next: ${result.command ? inlineCode(result.next) : result.next}`, '');
   return lines.join('\n');
 }
@@ -105,4 +122,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { buildWorkflowEndingCapture, parseArgs, renderMarkdown };
+module.exports = { buildWorkflowEndingCapture, nudgeEventFor, parseArgs, renderMarkdown };
