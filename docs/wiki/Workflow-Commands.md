@@ -87,6 +87,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-review-wave-prep` | Show the first focused review-wave command when context is over budget. |
 | `/forgeflow-version` | Show installed commit, upstream status, latest release, helper paths, grouped runtime helper inventory, missing helper sources, and the next update or repair action. Add `--snapshot` to write a local support artifact. |
 | `/forgeflow-workflow-ending-capture` | Recommend the one outcome recorder command to consider after review, next-work, or agent-feedback workflow endings, including the matching learning-capture nudge and observed-evidence stop rule. |
+| `/forgeflow-workflow-readiness` | Show the next safe workflow-readiness action across review waves, calibration, profile, telemetry, and runtime inventory while keeping high-risk `/review` safe-args work paused. |
 | `/forgeflow-wrapper-drift-plan` | Group command-wrapper drift into safe mechanical, manual, and high-risk buckets with validation commands. |
 | `/ship` | Prepare presentation, PR, CI checks, and release handoff after a passing review-history gate; potential secrets are hard blockers. |
 

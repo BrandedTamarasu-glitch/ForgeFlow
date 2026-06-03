@@ -98,6 +98,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/render-update-verify.js',
   'scripts/forgeflow/render-validation-plan.js',
   'scripts/forgeflow/render-workflow-ending-capture.js',
+  'scripts/forgeflow/render-workflow-readiness.js',
   'scripts/forgeflow/render-wrapper-drift-plan.js',
   'scripts/forgeflow/render-validation-failure-capture.js',
   'scripts/forgeflow/render-pilot-script.js',

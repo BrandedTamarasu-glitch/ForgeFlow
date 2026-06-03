@@ -90,6 +90,7 @@ const checks = [
   ['runtime helpers include next work ranking', RUNTIME_HELPERS.includes('scripts/forgeflow/render-next-work-ranking.js')],
   ['runtime helpers include outcome capture plan', RUNTIME_HELPERS.includes('scripts/forgeflow/render-outcome-capture-plan.js')],
   ['runtime helpers include workflow ending capture', RUNTIME_HELPERS.includes('scripts/forgeflow/render-workflow-ending-capture.js')],
+  ['runtime helpers include workflow readiness', RUNTIME_HELPERS.includes('scripts/forgeflow/render-workflow-readiness.js')],
   ['runtime helpers include release readiness', RUNTIME_HELPERS.includes('scripts/forgeflow/render-release-readiness.js')],
   ['runtime helpers include release follow through', RUNTIME_HELPERS.includes('scripts/forgeflow/render-release-follow-through.js')],
   ['runtime helpers include release consumption rollup', RUNTIME_HELPERS.includes('scripts/forgeflow/render-release-consumption-rollup.js')],

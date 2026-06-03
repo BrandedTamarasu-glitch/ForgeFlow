@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow - V4.3.48 Changelog</title>
+  <style>
+    body { background: #0d0d0d; color: #ddd8cc; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.65; margin: 0; }
+    main { max-width: 820px; margin: 0 auto; padding: 72px 32px 96px; }
+    .version { color: #7a7670; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
+    h1 { font-size: 40px; font-weight: 400; line-height: 1.15; margin: 14px 0 20px; }
+    h2 { border-top: 1px solid #303030; color: #f0a232; font-size: 18px; font-weight: 600; margin: 42px 0 18px; padding-top: 28px; }
+    p, li { color: #c9c2b6; }
+    code { background: #1c1c1c; border: 1px solid #303030; border-radius: 4px; color: #f0c070; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 1px 5px; }
+    a { color: #f0a232; text-decoration: underline; text-underline-offset: 0.16em; }
+    .nav { display: flex; justify-content: space-between; margin-top: 52px; padding-top: 24px; border-top: 1px solid #303030; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="version">Forgeflow V4.3.48 · 3 June 2026</div>
+    <h1>Release: Workflow Readiness Queue</h1>
+    <p>
+      Forgeflow 4.3.48 adds a read-only workflow-readiness queue that turns the next five refinement areas into one actionable status surface while keeping high-risk review command work paused.
+    </p>
+
+    <h2>Workflow Readiness</h2>
+    <ul>
+      <li>Added <code>/forgeflow-workflow-readiness</code> to show the next safe action across review waves, outcome calibration, profile setup, telemetry quality, and runtime inventory parity.</li>
+      <li>The helper reports five phase records with status, next command, reason, validation commands, advisory boundary, and local evidence.</li>
+      <li>High-risk <code>commands/review.md</code> safe-args work is listed separately as paused instead of being routed automatically.</li>
+    </ul>
+
+    <h2>Safety And Runtime Wiring</h2>
+    <ul>
+      <li>The new command accepts only <code>--json</code> and does not write wave files, record outcomes, infer preferences, change routing, repair installs, commit, push, or call GitHub.</li>
+      <li>Incomplete context now routes to <code>/forgeflow-context-advisor --record</code> instead of <code>/review</code>.</li>
+      <li>Partial helper output shapes degrade safely, including missing outcome streams and missing telemetry trust summaries.</li>
+      <li>Managed runtime, health inventory, update, command coverage, README, and wiki docs are updated for the new helper.</li>
+    </ul>
+
+    <h2>Validation</h2>
+    <ul>
+      <li><code>node scripts/forgeflow/test-render-workflow-readiness.js</code></li>
+      <li><code>node scripts/forgeflow/test-install-manifest.js</code></li>
+      <li><code>node scripts/forgeflow/test-update-forgeflow.js</code></li>
+      <li><code>node scripts/forgeflow/test-command-coverage.js</code></li>
+      <li><code>node scripts/forgeflow/test-runtime-inventory.js</code></li>
+      <li><code>node scripts/forgeflow/test-doc-links.js</code></li>
+      <li>Full <code>scripts/forgeflow/test-*.js</code> suite</li>
+      <li><code>node scripts/forgeflow/smoke-check.js --mode source --json</code></li>
+      <li><code>git diff --check</code></li>
+      <li>Forgeflow review approved by Warden, Smith, and Compass after incomplete-context routing and partial-shape findings were fixed.</li>
+    </ul>
+
+    <div class="nav">
+      <a href="./v4.3.47.html">&larr; V4.3.47</a>
+      <span>V4.3.48</span>
+    </div>
+  </main>
+</body>
+</html>

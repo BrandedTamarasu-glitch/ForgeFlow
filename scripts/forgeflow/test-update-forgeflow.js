@@ -128,6 +128,7 @@ const CANONICAL_NON_REQUIRED_MANAGED_SOURCES = [
   'commands/forgeflow-validation-failure-capture.md',
   'commands/forgeflow-version.md',
   'commands/forgeflow-workflow-ending-capture.md',
+  'commands/forgeflow-workflow-readiness.md',
   'commands/forgeflow-wrapper-drift-plan.md',
   'commands/handoff.md',
   'commands/implement.md',
