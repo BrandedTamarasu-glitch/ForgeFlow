@@ -9,6 +9,7 @@ const {
   healthInventory,
   helperGroupForSource,
   inventorySummary,
+  coordinationPressure,
   managedRuntimeHelpers,
   parityStatus,
   runtimeHelperEntries,
@@ -23,6 +24,7 @@ const health = healthInventory(root);
 const helpers = managedRuntimeHelpers();
 const helperEntries = runtimeHelperEntries();
 const summary = inventorySummary(root);
+const pressure = coordinationPressure(helperEntries);
 const parity = parityStatus(root);
 const releaseCheck = releaseCheckCommands(root);
 const releaseGate = releaseCheckCommands(root, path.join('docs', 'wiki', 'Release-Gate.md'));
@@ -54,7 +56,10 @@ const checks = [
   ['runtime helper entries expose groups', helperEntries.length === helpers.length && helperEntries.every((item) => item.source && item.helper_group && item.installed_name)],
   ['inventory summary exposes registry counts', summary.command_count === sources.length && summary.runtime_helper_count === helpers.length && summary.helper_groups.length > 0],
   ['inventory summary exposes canonical registry', summary.command_names.length === names.length && summary.managed_registry.runtime_helpers === helpers.length && summary.managed_registry.install_manifest_sources > helpers.length],
+  ['inventory summary exposes coordination pressure', summary.coordination_pressure.status === 'watch' && summary.coordination_pressure.hot_files.some((item) => item.path === 'scripts/forgeflow/install-manifest.js')],
+  ['coordination pressure is advisory', pressure.boundary.includes('does not install') && pressure.next_safe_slice.includes('read-only inventory summaries')],
   ['parity status compares health and release surfaces', parity.status === 'pass' && parity.command_count === names.length && parity.checks.health_commands_match === true && parity.checks.health_runtime_helpers_match === true && parity.checks.release_check_present === true && parity.checks.release_gate_matches === true && parity.checks.release_process_matches === true && parity.release_checks.includes('node scripts/forgeflow/test-runtime-inventory.js')],
+  ['parity status carries coordination pressure', parity.coordination_pressure.shared_registry === 'scripts/forgeflow/runtime-inventory.js'],
   ['parity status catches helper and release drift', driftParity.status === 'attention' && driftParity.checks.health_runtime_helpers_match === false && driftParity.checks.release_check_present === false],
   ['groups runtime helpers', helperGroupForSource('scripts/forgeflow/install-manifest.js') === 'install-update-health' && helperGroupForSource('scripts/forgeflow/render-efficiency-gap-plan.js') === 'learning-evidence' && helperGroupForSource('scripts/forgeflow/command-wrapper-contract.js') === 'command-wrapper' && helperGroupForSource('scripts/forgeflow/render-command-wrapper-batch.js') === 'command-wrapper'],
   ['summarizes helper groups', groupRuntimeHelpers(['scripts/forgeflow/install-manifest.js', 'scripts/forgeflow/update-forgeflow.js']).find((item) => item.group === 'install-update-health').count === 2],

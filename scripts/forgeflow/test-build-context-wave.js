@@ -48,11 +48,14 @@ const checks = [
   ['writes wave file', fs.existsSync(path.join(over.contextDir, 'waves', 'risk-core-files.txt'))],
   ['writes focused packet', fs.existsSync(path.join(builtOut, 'synthesis-input.json')) && fs.existsSync(path.join(builtOut, 'file-manifest.json'))],
   ['reports post-build budget', built.post_build_budget.status === built.built_wave.budget_status && Number.isFinite(built.post_build_budget.violation_count)],
+  ['reports automation handoff', built.automation_handoff.status === 'focused-packet-ready' && built.automation_handoff.review_packet.wave === 'risk-core' && built.automation_handoff.verification_command.includes('check-context-budget.js')],
   ['does not build under-budget pack', currentOk.status === 'current-packet-ok' && !currentOk.built_wave],
+  ['under-budget handoff is read-only', currentOk.automation_handoff.status === 'current-packet-ready' && currentOk.automation_handoff.write_boundary === 'none'],
   ['does not write under-budget wave files', !fs.existsSync(path.join(under.contextDir, 'waves'))],
   ['handles missing wave', missing.status === 'wave-not-found' && missing.next.includes('risk-core')],
+  ['missing wave handoff lists choices', missing.automation_handoff.status === 'choose-available-wave' && missing.automation_handoff.next_command.includes('risk-core')],
   ['does not write missing requested wave files', !fs.existsSync(path.join(missingContext.contextDir, 'waves'))],
-  ['renders summary', markdown.includes('Context pack:') && markdown.includes('Budget violations:') && markdown.includes('does not spawn reviewers')],
+  ['renders summary', markdown.includes('Context pack:') && markdown.includes('Budget violations:') && markdown.includes('Automation Handoff') && markdown.includes('Next command:') && markdown.includes('Review packet:') && markdown.includes('does not spawn reviewers')],
   ['parses args', opts.root === over.root && opts.contextDir === over.contextDir && opts.targetTokens === 8000 && opts.wave === 'risk-core' && opts.json === true],
 ];
 

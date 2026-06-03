@@ -96,6 +96,13 @@ function buildContextWave(opts = {}) {
       requested_wave: opts.wave || '',
       built_wave: null,
       wave_plan: readOnlyPlan,
+      automation_handoff: {
+        status: 'blocked-context-incomplete',
+        write_boundary: 'none',
+        next_command: 'node scripts/forgeflow/build-context-pack.js --json',
+        verification_command: 'node scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json',
+        stop_rule: 'Do not write wave files or spawn reviewers until the latest context pack has files, telemetry, and synthesis input.',
+      },
       next: 'Rebuild the latest context pack before building a review wave.',
       next_reason: readOnlyPlan.next_reason,
       boundary: 'Context wave build stopped before rebuilding packets because the latest context pack is incomplete.',
@@ -110,6 +117,13 @@ function buildContextWave(opts = {}) {
       requested_wave: opts.wave || '',
       built_wave: null,
       wave_plan: readOnlyPlan,
+      automation_handoff: {
+        status: 'current-packet-ready',
+        write_boundary: 'none',
+        next_command: 'Use the current context pack for review.',
+        verification_command: 'node scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json',
+        stop_rule: 'Do not split or rebuild packets unless a fresh budget check says the current packet is over target.',
+      },
       next: 'Use the current context pack for review.',
       next_reason: readOnlyPlan.next_reason,
       boundary: 'Context wave build did not rebuild packets because the current pack does not need a split.',
@@ -125,6 +139,13 @@ function buildContextWave(opts = {}) {
       requested_wave: opts.wave || '',
       built_wave: null,
       wave_plan: readOnlyPlan,
+      automation_handoff: {
+        status: 'choose-available-wave',
+        write_boundary: 'none',
+        next_command: `Choose one of: ${readOnlyPlan.waves.map((item) => item.name).join(', ')}`,
+        verification_command: 'node scripts/forgeflow/render-context-wave-plan.js --json',
+        stop_rule: 'Do not write wave files until the requested wave name matches the current plan.',
+      },
       next: `Choose one of: ${readOnlyPlan.waves.map((item) => item.name).join(', ')}`,
       next_reason: `Requested wave was not found: ${opts.wave || '(none)'}.`,
       boundary: 'Context wave build did not rebuild packets because the requested wave was not available.',
@@ -165,6 +186,23 @@ function buildContextWave(opts = {}) {
       ? 'Build the next narrower review wave or lower context limits before spawning reviewers.'
       : 'Use the focused context packet for review.',
   };
+  const automationHandoff = {
+    status: postBuildBudget.status === 'pass' ? 'focused-packet-ready' : 'focused-packet-over-budget',
+    write_boundary: 'writes local wave file lists and one focused context pack under .forgeflow only',
+    next_command: postBuildBudget.status === 'pass'
+      ? `Use ${path.relative(root, outDir)} as the focused context pack for the first review wave.`
+      : postBuildBudget.next,
+    verification_command: 'node scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json',
+    review_packet: {
+      wave: wave.name,
+      file_list: wave.wave_file,
+      context_pack: path.relative(root, outDir),
+      agents: packSummary.agents,
+    },
+    stop_rule: postBuildBudget.status === 'pass'
+      ? 'Use the focused packet for this wave; do not broaden back to the over-budget packet before review.'
+      : 'Do not spawn reviewers until the focused packet is under budget or the task is split again.',
+  };
   return {
     schema_version: '1',
     status: 'built',
@@ -183,6 +221,7 @@ function buildContextWave(opts = {}) {
       budget_violations: budgetViolations.length,
     },
     post_build_budget: postBuildBudget,
+    automation_handoff: automationHandoff,
     wave_plan: plan,
     next: postBuildBudget.status === 'pass'
       ? `Use ${path.relative(root, outDir)} as the focused context pack for the first review wave.`
@@ -212,6 +251,19 @@ function renderMarkdown(result) {
     lines.push(`- Agents: ${result.built_wave.agents.join(', ') || '(none)'}`);
     lines.push(`- Budget: ${result.built_wave.budget_status}`);
     if (result.post_build_budget) lines.push(`- Budget violations: ${result.post_build_budget.violation_count}`);
+    lines.push('');
+  }
+  if (result.automation_handoff) {
+    lines.push('## Automation Handoff', '');
+    lines.push(`- Status: ${result.automation_handoff.status}`);
+    lines.push(`- Write boundary: ${result.automation_handoff.write_boundary}`);
+    lines.push(`- Next command: ${result.automation_handoff.next_command}`);
+    lines.push(`- Verification: ${result.automation_handoff.verification_command}`);
+    if (result.automation_handoff.review_packet) {
+      lines.push(`- Review packet: ${result.automation_handoff.review_packet.context_pack}`);
+      lines.push(`- File list: ${result.automation_handoff.review_packet.file_list}`);
+    }
+    lines.push(`- Stop rule: ${result.automation_handoff.stop_rule}`);
     lines.push('');
   }
   if (result.wave_plan && result.wave_plan.incomplete_reasons && result.wave_plan.incomplete_reasons.length > 0) {

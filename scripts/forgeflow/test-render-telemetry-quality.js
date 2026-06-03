@@ -45,6 +45,52 @@ recordNextWorkOutcome({
 });
 fs.writeFileSync(path.join(metricsRoot, 'project-a', 'forgeflow-metrics.jsonl'), `${JSON.stringify({ event: 'review' })}\n`);
 const ready = buildTelemetryQuality({ root, projectDir, metricsRoot });
+fs.appendFileSync(path.join(projectDir, 'review-outcomes.jsonl'), `${JSON.stringify({
+  schema_version: '1',
+  change_id: 'telemetry-quality-2',
+  recorded_at: '2026-05-20T00:00:00Z',
+  review: { mode: 'full-mode', workflow: 'forgeflow', agents_used: ['smith_reviewer'], verifier_decisions: [] },
+  outcome: {
+    findings_total: 2,
+    findings_confirmed: 2,
+    findings_rejected: 0,
+    review_minutes: 4,
+    auto_fix_success: true,
+    post_merge_regression: false,
+  },
+})}\n`);
+recordAgentFeedback({
+  projectDir,
+  agent: 'smith_reviewer',
+  signal: 'useful',
+  summary: 'Helped confirm context wave handoff.',
+  confidence: 'high',
+  evidenceCount: 1,
+});
+const routingReady = buildTelemetryQuality({ root, projectDir, metricsRoot });
+const mediumRoot = path.join(tmp, 'medium-repo');
+const mediumProjectDir = path.join(mediumRoot, '.forgeflow', 'Demo');
+const mediumMetricsRoot = path.join(tmp, 'medium-metrics');
+fs.mkdirSync(mediumProjectDir, { recursive: true });
+fs.mkdirSync(path.join(mediumMetricsRoot, 'project-a'), { recursive: true });
+fs.writeFileSync(path.join(mediumProjectDir, 'review-outcomes.jsonl'), fs.readFileSync(path.join(projectDir, 'review-outcomes.jsonl'), 'utf8'));
+recordAgentFeedback({
+  projectDir: mediumProjectDir,
+  agent: 'warden_reviewer',
+  signal: 'useful',
+  summary: 'Helped confirm release evidence.',
+  confidence: 'medium',
+  evidenceCount: 1,
+});
+recordNextWorkOutcome({
+  projectDir: mediumProjectDir,
+  title: 'Review profile guidance',
+  source: 'user-profile',
+  outcome: 'useful',
+  confidence: 'medium',
+});
+fs.writeFileSync(path.join(mediumMetricsRoot, 'project-a', 'forgeflow-metrics.jsonl'), `${JSON.stringify({ event: 'review' })}\n`);
+const mediumEvidence = buildTelemetryQuality({ root: mediumRoot, projectDir: mediumProjectDir, metricsRoot: mediumMetricsRoot });
 fs.appendFileSync(path.join(projectDir, 'review-outcomes.jsonl'), '{bad json}\n');
 fs.appendFileSync(path.join(metricsRoot, 'project-a', 'forgeflow-metrics.jsonl'), '{bad json}\n');
 const attention = buildTelemetryQuality({ root, projectDir, metricsRoot });
@@ -57,12 +103,16 @@ const opts = parseArgs(['--root', root, '--project-dir', projectDir, '--metrics-
 
 const checks = [
   ['reports thin evidence', thin.status === 'thin' && thin.missing.includes('review-outcomes') && thin.evidence_score < 100 && thin.weakest_sources.includes('review-outcomes')],
+  ['adds evidence ladder for thin evidence', thin.evidence_ladder.status === 'too-thin-for-routing-changes' && thin.evidence_ladder.do_not_do.includes('backfill missing telemetry')],
   ['reports ready evidence', ready.status === 'ready' && ready.missing.length === 0 && ready.evidence_score === 100 && ready.trust_summary.confidence === 'high'],
+  ['single-record evidence stays too thin for routing', ready.evidence_ladder.status === 'too-thin-for-routing-changes' && ready.evidence_ladder.routing_ready === false],
+  ['multi-record evidence ladder is usable', routingReady.evidence_ladder.status === 'usable-for-calibration' && routingReady.evidence_ladder.routing_ready === true],
+  ['medium evidence does not allow routing changes', mediumEvidence.status === 'ready' && mediumEvidence.evidence_ladder.status === 'too-thin-for-routing-changes' && mediumEvidence.evidence_ladder.routing_ready === false],
   ['reports all trusted sources', ready.trusted_sources.length === 4 && ready.trusted_sources.includes('metrics-events')],
   ['counts streams', ready.counts.review_outcomes === 1 && ready.counts.agent_feedback === 1 && ready.counts.next_work_outcomes === 1 && ready.counts.metrics_events === 1],
   ['downgrades invalid lines', attention.status === 'attention' && attention.invalid_total === 2 && attention.evidence_score < 100 && attention.next_quality_action.includes(attention.weakest_sources[0])],
   ['downgrades invalid reader status', invalidStatus.status === 'attention' && invalidStatus.invalid.review_outcomes === 1],
-  ['renders boundary and counts', markdown.includes('Telemetry quality is advisory') && markdown.includes('metrics_events') && markdown.includes('Invalid Lines') && markdown.includes('## Trust Summary') && markdown.includes('Next quality action')],
+  ['renders boundary and counts', markdown.includes('Telemetry quality is advisory') && markdown.includes('metrics_events') && markdown.includes('Invalid Lines') && markdown.includes('## Trust Summary') && markdown.includes('## Evidence Ladder') && markdown.includes('Next quality action')],
   ['parses args', opts.root === root && opts.projectDir === projectDir && opts.metricsRoot === metricsRoot && opts.json === true],
 ];
 

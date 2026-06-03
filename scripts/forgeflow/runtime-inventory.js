@@ -103,6 +103,7 @@ function inventorySummary(root) {
     command_names: commandNamesList,
     runtime_helpers: runtimeHelpers,
     helper_groups: groupRuntimeHelpers(runtimeHelpers),
+    coordination_pressure: coordinationPressure(runtimeHelpers),
     static_files: staticFiles,
     managed_registry: {
       commands: commands.length,
@@ -111,6 +112,33 @@ function inventorySummary(root) {
       static_files: staticFiles.length,
       install_manifest_sources: runtimeHelpers.length + staticFiles.length,
     },
+  };
+}
+
+function coordinationPressure(runtimeHelpers) {
+  const groups = groupRuntimeHelpers(runtimeHelpers);
+  const hotFiles = [
+    {
+      path: 'scripts/forgeflow/install-manifest.js',
+      reason: 'managed source registry for install, update, release, and runtime helper tests',
+    },
+    {
+      path: 'commands/forgeflow-health.md',
+      reason: 'installed command/helper inventory surface for user health checks',
+    },
+    {
+      path: 'commands/forgeflow-release-check.md',
+      reason: 'release gate command list mirrored by release docs',
+    },
+  ];
+  return {
+    status: 'watch',
+    shared_registry: 'scripts/forgeflow/runtime-inventory.js',
+    helper_group_count: groups.length,
+    largest_helper_group: groups[0] ? { group: groups[0].group, count: groups[0].count } : null,
+    hot_files: hotFiles,
+    next_safe_slice: 'Prefer adding read-only inventory summaries before editing install/update behavior.',
+    boundary: 'Runtime inventory pressure is advisory. It does not install, repair, update, edit manifests, or change release gates.',
   };
 }
 
@@ -150,6 +178,7 @@ function parityStatus(root) {
       release_process_matches: releaseProcessMatches,
     },
     release_checks: releaseCheck,
+    coordination_pressure: summary.coordination_pressure,
     boundary: 'Runtime inventory parity is read-only. It compares canonical command/helper discovery with health and release surfaces but does not edit docs or install files.',
   };
 }
@@ -194,6 +223,7 @@ module.exports = {
   commandNameFromSource,
   commandNames,
   commandSources,
+  coordinationPressure,
   groupRuntimeHelpers,
   healthInventory,
   helperGroupForSource,

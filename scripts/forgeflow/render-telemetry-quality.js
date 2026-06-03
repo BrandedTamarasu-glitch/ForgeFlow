@@ -130,6 +130,39 @@ function buildTrustSummary(counts, invalid, missing) {
   };
 }
 
+function buildEvidenceLadder(trustSummary) {
+  const lowSources = new Set(trustSummary.weakest_sources || []);
+  const reviewSource = (trustSummary.sources || []).find((source) => source.source === 'review-outcomes');
+  const highOutcomeSources = (trustSummary.sources || []).filter((source) => (
+    ['review-outcomes', 'agent-feedback', 'next-work-outcomes'].includes(source.source)
+      && source.confidence === 'high'
+      && source.records >= 2
+  ));
+  const routingReady = reviewSource && reviewSource.confidence === 'high' && reviewSource.records >= 2 && highOutcomeSources.length >= 2;
+  const sourceSteps = (trustSummary.sources || []).map((source) => ({
+    source: source.source,
+    status: lowSources.has(source.source) ? 'needs-real-evidence' : 'usable',
+    records: source.records,
+    confidence: source.confidence,
+    next_action: lowSources.has(source.source)
+      ? `Record observed ${source.source} evidence after the next real workflow event.`
+      : 'Keep watching this source for drift.',
+  }));
+  return {
+    status: routingReady ? 'usable-for-calibration' : 'too-thin-for-routing-changes',
+    minimum_for_routing_changes: 'At least two review outcomes and two records from one additional high-confidence outcome source should exist before changing prompts or routing.',
+    routing_ready: Boolean(routingReady),
+    source_steps: sourceSteps,
+    do_not_do: [
+      'backfill missing telemetry',
+      'infer outcomes from chat tone',
+      'export local records',
+      'change review routing from sparse evidence',
+    ],
+    stop_rule: 'Treat thin telemetry as a prompt to capture future observed outcomes, not as evidence to change workflow behavior.',
+  };
+}
+
 function buildTelemetryQuality(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const projectDir = path.resolve(opts.projectDir || defaultProjectDir(root));
@@ -160,6 +193,7 @@ function buildTelemetryQuality(opts = {}) {
     next_work_outcomes: nextWork.records || 0,
   };
   const trustSummary = buildTrustSummary(counts, invalid, missing);
+  const evidenceLadder = buildEvidenceLadder(trustSummary);
   return {
     schema_version: '1',
     status,
@@ -172,6 +206,7 @@ function buildTelemetryQuality(opts = {}) {
     invalid_total: invalidTotal,
     counts,
     trust_summary: trustSummary,
+    evidence_ladder: evidenceLadder,
     trusted_sources: trustSummary.trusted_sources,
     weakest_sources: trustSummary.weakest_sources,
     next_quality_action: trustSummary.next_quality_action,
@@ -212,6 +247,12 @@ function renderMarkdown(result) {
     `- Next quality action: ${result.next_quality_action}`,
     `- Boundary: ${result.trust_summary.boundary}`,
   );
+  if (result.evidence_ladder) {
+    lines.push('', '## Evidence Ladder', '');
+    lines.push(`- Status: ${result.evidence_ladder.status}`);
+    lines.push(`- Minimum for routing changes: ${result.evidence_ladder.minimum_for_routing_changes}`);
+    lines.push(`- Stop rule: ${result.evidence_ladder.stop_rule}`);
+  }
   lines.push('', `Next: ${result.next}`, '');
   return lines.join('\n');
 }
@@ -232,4 +273,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { buildTelemetryQuality, buildTrustSummary, parseArgs, renderMarkdown };
+module.exports = { buildEvidenceLadder, buildTelemetryQuality, buildTrustSummary, parseArgs, renderMarkdown };

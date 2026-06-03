@@ -197,6 +197,7 @@ function runtimePhase(runtime) {
       checks: runtime.checks,
       command_count: runtime.command_count,
       runtime_helper_count: runtime.runtime_helper_count,
+      coordination_pressure: runtime.coordination_pressure || null,
     }
   );
 }

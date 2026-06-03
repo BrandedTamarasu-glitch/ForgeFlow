@@ -32,6 +32,7 @@ const PROMPTS = [
 ];
 const REQUIRED_OPERATING_FLAGS = ['--communication', '--autonomy', '--risk', '--validation'];
 const RECOMMENDED_PROJECT_FLAGS = ['--ui', '--product-copy', '--accessibility'];
+const OPTIONAL_WORKFLOW_FLAGS = ['--release', '--workflow'];
 
 function usage() {
   console.error([
@@ -138,6 +139,12 @@ function buildSetupPlan(entries) {
   const missingRecommended = RECOMMENDED_PROJECT_FLAGS.filter((flag) => !coveredFlags.has(flag));
   const nextFlag = missingRequired[0] || missingRecommended[0] || '';
   const nextPrompt = PROMPTS.find((item) => item.flag === nextFlag) || null;
+  const promptGroups = {
+    required_operating: REQUIRED_OPERATING_FLAGS.map((flag) => PROMPTS.find((item) => item.flag === flag)).filter(Boolean),
+    optional_workflow: OPTIONAL_WORKFLOW_FLAGS.map((flag) => PROMPTS.find((item) => item.flag === flag)).filter(Boolean),
+    optional_project_style: RECOMMENDED_PROJECT_FLAGS.map((flag) => PROMPTS.find((item) => item.flag === flag)).filter(Boolean),
+    boundary: 'Required operating prompts affect cross-project agent behavior. Optional project-style prompts should stay project-scoped and can be skipped.',
+  };
   const guidedSteps = [
     {
       name: 'answer-required-operating-preferences',
@@ -172,6 +179,7 @@ function buildSetupPlan(entries) {
     status: missingRequired.length === 0 ? 'ready-for-check' : 'needs-required-operating-preferences',
     required_operating_flags: REQUIRED_OPERATING_FLAGS,
     recommended_project_flags: RECOMMENDED_PROJECT_FLAGS,
+    optional_workflow_flags: OPTIONAL_WORKFLOW_FLAGS,
     covered_flags: [...coveredFlags].sort(),
     missing_required_flags: missingRequired,
     missing_recommended_flags: missingRecommended,
@@ -187,6 +195,7 @@ function buildSetupPlan(entries) {
       steps: guidedSteps,
       boundary: 'The guided path is advisory. It never infers or writes preferences without explicit command flags and confirmation.',
     },
+    prompt_groups: promptGroups,
     boundary: 'Setup readiness only reflects explicit preview or written arguments; it does not infer preferences from behavior or history.',
   };
 }
@@ -292,6 +301,13 @@ function renderMarkdown(result) {
       for (const step of result.setup_plan.guided_path.steps) {
         lines.push(`- ${step.name}: ${step.status} - ${step.command}`);
       }
+    }
+    if (result.setup_plan.prompt_groups) {
+      lines.push('', '## Prompt Groups', '');
+      lines.push(`- Required operating: ${result.setup_plan.prompt_groups.required_operating.map((item) => item.flag).join(', ')}`);
+      lines.push(`- Optional workflow: ${result.setup_plan.prompt_groups.optional_workflow.map((item) => item.flag).join(', ')}`);
+      lines.push(`- Optional project style: ${result.setup_plan.prompt_groups.optional_project_style.map((item) => item.flag).join(', ')}`);
+      lines.push(`- Boundary: ${result.setup_plan.prompt_groups.boundary}`);
     }
   }
   lines.push('', `Next: ${result.next}`, '');

@@ -63,6 +63,23 @@ function buildWorkflowEndingCapture(opts = {}) {
   const captureNeeded = stream && stream.action === 'capture-next';
   const learningNudge = buildLearningCaptureNudge({ event: nudgeEventFor(event, stream ? stream.name : '') });
   const nudgeCommand = captureNeeded ? stream.command : '';
+  const streamRunbook = stream && stream.capture_runbook ? stream.capture_runbook : null;
+  const evidenceContract = stream ? {
+    stream: stream.name,
+    event: nudgeEventFor(event, stream.name),
+    required_values: stream.name === 'review-outcomes'
+      ? ['review id', 'verdict', 'findings total', 'findings confirmed']
+      : (stream.name === 'next-work-outcomes'
+        ? ['recommendation title', 'source', 'observed outcome']
+        : ['agent name', 'useful/stale/incorrect signal', 'short evidence note']),
+    requires_observed_values: true,
+    do_not_record: streamRunbook ? streamRunbook.do_not_record : [
+      'guessed outcomes',
+      'inferred usefulness',
+      'private or secret evidence',
+    ],
+    stop_rule: streamRunbook ? streamRunbook.stop_rule : 'Skip capture until a real workflow result has observable evidence.',
+  } : null;
   return {
     schema_version: '1',
     status: captureNeeded ? 'capture-recommended' : 'watch',
@@ -78,6 +95,7 @@ function buildWorkflowEndingCapture(opts = {}) {
       prompt: stream && stream.after_action_prompt ? stream.after_action_prompt : learningNudge.prompt,
       stop_rule: learningNudge.stop_rule,
     },
+    evidence_contract: evidenceContract,
     outcome_capture_status: plan.status,
     missing_count: plan.missing_count,
     next: captureNeeded ? stream.command : 'No workflow-ending capture is required right now.',
@@ -101,6 +119,13 @@ function renderMarkdown(result) {
     '',
   ];
   if (result.after_action_prompt) lines.push(`After action: ${result.after_action_prompt}`, '');
+  if (result.evidence_contract) {
+    lines.push('## Evidence Contract', '');
+    lines.push(`- Required values: ${result.evidence_contract.required_values.join(', ')}`);
+    lines.push(`- Requires observed values: ${result.evidence_contract.requires_observed_values ? 'yes' : 'no'}`);
+    lines.push(`- Stop rule: ${result.evidence_contract.stop_rule}`);
+    lines.push('');
+  }
   lines.push('## Learning Nudge', '', `Command: ${result.learning_nudge.command ? inlineCode(result.learning_nudge.command) : '(none)'}`, `Prompt: ${result.learning_nudge.prompt}`, `Stop rule: ${result.learning_nudge.stop_rule}`, '');
   lines.push(`Next: ${result.command ? inlineCode(result.next) : result.next}`, '');
   return lines.join('\n');
