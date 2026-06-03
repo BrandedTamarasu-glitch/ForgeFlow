@@ -17,6 +17,11 @@ const actionable = buildWorkflowReadiness({
     target_compact_tokens: 16000,
     over_by_tokens: 10000,
     first_wave: { name: 'risk-core' },
+    follow_through: {
+      status: 'wave-files-needed',
+      next_command: '/forgeflow-review-wave-prep --write-wave-files',
+      review_ready: false,
+    },
   },
   outcome: {
     missing_count: 3,
@@ -80,6 +85,36 @@ const ready = buildWorkflowReadiness({
   wrapper: { groups: { high_risk: [] } },
 });
 
+const readyToBuildWave = buildWorkflowReadiness({
+  root,
+  projectDir: '.forgeflow/Demo',
+  reviewWave: {
+    status: 'split-before-review',
+    next_reason: 'Context is over budget.',
+    current_compact_tokens: 26000,
+    target_compact_tokens: 16000,
+    over_by_tokens: 10000,
+    first_wave: { name: 'risk-core', wave_file: 'waves/risk-core-files.txt' },
+    follow_through: {
+      status: 'ready-to-build-first-wave',
+      next_command: 'node scripts/forgeflow/build-context-pack.js --files waves/risk-core-files.txt --json',
+      review_ready: true,
+    },
+  },
+  outcome: { missing_count: 0, streams: [] },
+  profile: { setup_plan: { status: 'ready-for-check', missing_required_flags: [], missing_recommended_flags: [] } },
+  telemetry: {
+    status: 'ready',
+    evidence_score: 100,
+    weakest_sources: [],
+    missing: [],
+    next_quality_action: 'No low-confidence telemetry sources need immediate refresh.',
+    trust_summary: { status: 'pass' },
+  },
+  runtime: { status: 'pass', checks: {}, command_count: 1, runtime_helper_count: 1 },
+  wrapper: { groups: { high_risk: [] } },
+});
+
 const contextIncomplete = buildWorkflowReadiness({
   root,
   projectDir: '.forgeflow/Demo',
@@ -90,6 +125,11 @@ const contextIncomplete = buildWorkflowReadiness({
     target_compact_tokens: 16000,
     over_by_tokens: 0,
     first_wave: null,
+    follow_through: {
+      status: 'rebuild-context-pack',
+      next_command: 'node scripts/forgeflow/build-context-pack.js --json',
+      review_ready: false,
+    },
   },
   outcome: { missing_count: 0, streams: [] },
   profile: { setup_plan: { status: 'ready-for-check', missing_required_flags: [], missing_recommended_flags: [] } },
@@ -134,11 +174,13 @@ try {
 const checks = [
   ['actionable status', actionable.status === 'actionable' && actionable.attention_count === 4],
   ['next action is first attention phase', actionable.next === '/forgeflow-review-wave-prep --write-wave-files'],
+  ['adds automation runbook', actionable.automation_runbook.status === 'actionable' && actionable.automation_runbook.next_step.id === 'context-budget-review-waves' && actionable.automation_runbook.stop_rules.some((item) => item.includes('commands/review.md'))],
   ['includes paused high-risk review item', actionable.paused_high_risk[0].source === 'commands/review.md'],
   ['ready status', ready.status === 'ready' && ready.next === '/forgeflow-workflow-readiness'],
-  ['incomplete context avoids review command', contextIncomplete.next === '/forgeflow-context-advisor --record' && !contextIncomplete.phases[0].next.includes('/review')],
+  ['ready-to-build wave carries follow-through command', readyToBuildWave.next.includes('build-context-pack.js --files waves/risk-core-files.txt') && readyToBuildWave.phases[0].evidence.follow_through_status === 'ready-to-build-first-wave' && readyToBuildWave.phases[0].evidence.review_ready === true],
+  ['incomplete context avoids review command', contextIncomplete.next === 'node scripts/forgeflow/build-context-pack.js --json' && !contextIncomplete.phases[0].next.includes('/review')],
   ['partial helper shapes degrade safely', partialShapes.status === 'actionable' && partialShapes.phases[1].evidence.streams.length === 0 && partialShapes.phases[3].reason.includes('Refresh telemetry quality')],
-  ['renders phase and validation output', markdown.includes('# Forgeflow Workflow Readiness') && markdown.includes('Paused High-Risk Items') && markdown.includes('test-render-context-wave-plan.js')],
+  ['renders phase and validation output', markdown.includes('# Forgeflow Workflow Readiness') && markdown.includes('Paused High-Risk Items') && markdown.includes('Automation Runbook') && markdown.includes('Automation Stop Rules') && markdown.includes('Stop rule:') && markdown.includes('test-render-context-wave-plan.js')],
   ['boundary blocks mutation', actionable.boundary.includes('does not write wave files') && actionable.boundary.includes('record outcomes') && actionable.boundary.includes('change review routing')],
   ['parses args', opts.root === path.resolve('.') && opts.projectDir === path.resolve('.forgeflow/Demo') && opts.metricsRoot === path.resolve('.metrics') && opts.json === true],
   ['rejects unsupported write flag', invalidBlocked],

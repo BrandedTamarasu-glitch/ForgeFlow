@@ -75,6 +75,18 @@ function streamPlan(name, status, command, reason) {
     command: missing ? command : '',
     after_action_prompt: afterActionPrompt(name),
     reason: missing ? reason : 'Outcome evidence exists; keep recording only when new evidence is available.',
+    capture_runbook: {
+      when: afterActionPrompt(name),
+      requires_observed_values: true,
+      write_command: missing ? command : '',
+      do_not_record: [
+        'guessed outcomes',
+        'inferred usefulness from conversation tone',
+        'private or secret evidence',
+        'records created only to satisfy calibration',
+      ],
+      stop_rule: 'Skip capture until a real workflow result has observable evidence.',
+    },
   };
 }
 
@@ -121,6 +133,13 @@ function buildOutcomeCapturePlan(opts = {}) {
       ? streams.find((item) => item.action === 'capture-next').after_action_prompt
       : 'Keep recording only when a new review, recommendation, or agent hint produces observable evidence.',
     next: missingCount > 0 ? streams.find((item) => item.action === 'capture-next').command : 'No immediate outcome capture needed.',
+    capture_runbook: {
+      status: missingCount > 0 ? 'needs-observed-outcome' : 'watch-for-next-event',
+      next_stream: missingCount > 0 ? streams.find((item) => item.action === 'capture-next').name : '',
+      next_command: missingCount > 0 ? streams.find((item) => item.action === 'capture-next').command : '',
+      requires_observed_values: true,
+      boundary: 'Use recorder commands only after an actual recommendation, review, or agent hint produces a result the user or workflow observed.',
+    },
     boundary: 'Outcome capture plan is read-only. It prints recorder prompts but does not record, infer, edit files, commit, or push.',
   };
 }
@@ -142,7 +161,13 @@ function renderMarkdown(result) {
     lines.push(`  - After action: ${stream.after_action_prompt}`);
     lines.push(`  - Reason: ${stream.reason}`);
     if (stream.command) lines.push(`  - Command: ${inlineCode(stream.command)}`);
+    lines.push(`  - Stop rule: ${stream.capture_runbook.stop_rule}`);
   }
+  lines.push('', '## Capture Runbook', '');
+  lines.push(`- Status: ${result.capture_runbook.status}`);
+  if (result.capture_runbook.next_stream) lines.push(`- Next stream: ${result.capture_runbook.next_stream}`);
+  lines.push(`- Requires observed values: ${result.capture_runbook.requires_observed_values ? 'yes' : 'no'}`);
+  lines.push(`- Boundary: ${result.capture_runbook.boundary}`);
   lines.push('', `Next after action: ${result.next_after_action}`, `Next: ${result.next.startsWith('record-') ? inlineCode(result.next) : result.next}`, '');
   return lines.join('\n');
 }

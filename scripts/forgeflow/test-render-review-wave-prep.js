@@ -41,10 +41,11 @@ const opts = parseArgs(['--root', over.root, '--context-dir', over.contextDir, '
 
 const checks = [
   ['splits before review', split.status === 'split-before-review' && split.next.includes('risk-core-files.txt')],
+  ['split follow-through is ready after writing waves', split.follow_through.status === 'ready-to-build-first-wave' && split.follow_through.review_ready === true && split.follow_through.next_command.includes('risk-core-files.txt')],
   ['writes wave file', fs.existsSync(path.join(over.contextDir, 'waves', 'risk-core-files.txt'))],
-  ['under budget ok', ok.status === 'current-packet-ok' && ok.next.includes('current context pack')],
-  ['incomplete blocks review', incomplete.status === 'context-incomplete' && incomplete.next.includes('Rebuild') && incomplete.next_reason.includes('file manifest has no files')],
-  ['renders boundary', markdown.includes('does not rebuild packets')],
+  ['under budget ok', ok.status === 'current-packet-ok' && ok.next.includes('current context pack') && ok.follow_through.review_ready === true],
+  ['incomplete blocks review', incomplete.status === 'context-incomplete' && incomplete.next.includes('Rebuild') && incomplete.next_reason.includes('file manifest has no files') && incomplete.follow_through.review_ready === false && incomplete.follow_through.next_command === 'node scripts/forgeflow/build-context-pack.js --json'],
+  ['renders boundary', markdown.includes('does not rebuild packets') && markdown.includes('## Follow Through')],
   ['parses args', opts.writeWaveFiles === true && opts.json === true && opts.targetTokens === 8000],
 ];
 

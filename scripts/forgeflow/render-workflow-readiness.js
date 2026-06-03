@@ -65,13 +65,16 @@ function phase(id, title, status, next, reason, validation, boundary, evidence =
 
 function contextPhase(reviewWave) {
   const attention = reviewWave.status === 'split-before-review' || reviewWave.status === 'context-incomplete';
+  const followThrough = reviewWave.follow_through || {};
+  const next = followThrough.next_command
+    || (reviewWave.status === 'split-before-review'
+      ? '/forgeflow-review-wave-prep --write-wave-files'
+      : (reviewWave.status === 'context-incomplete' ? 'node scripts/forgeflow/build-context-pack.js --json' : '/forgeflow-review-wave-prep'));
   return phase(
     'context-budget-review-waves',
     'Context-budget review waves',
     phaseStatus(attention),
-    reviewWave.status === 'split-before-review'
-      ? '/forgeflow-review-wave-prep --write-wave-files'
-      : (reviewWave.status === 'context-incomplete' ? '/forgeflow-context-advisor --record' : '/forgeflow-review-wave-prep'),
+    next,
     reviewWave.next_reason,
     [
       'node scripts/forgeflow/test-render-context-wave-plan.js',
@@ -85,6 +88,8 @@ function contextPhase(reviewWave) {
       target_compact_tokens: reviewWave.target_compact_tokens,
       over_by_tokens: reviewWave.over_by_tokens,
       first_wave: reviewWave.first_wave ? reviewWave.first_wave.name : '',
+      follow_through_status: followThrough.status || '',
+      review_ready: followThrough.review_ready === true,
     }
   );
 }
@@ -207,6 +212,37 @@ function pausedHighRisk(wrapper) {
   }));
 }
 
+function runbookStep(item, index) {
+  return {
+    order: index + 1,
+    id: item.id,
+    title: item.title,
+    status: item.status,
+    command: item.next,
+    requires_user_input: item.id === 'user-profile-explicitness',
+    writes_when_run: item.id === 'context-budget-review-waves' && item.next.includes('--write-wave-files'),
+    observed_evidence_required: item.id === 'outcome-calibration' || item.id === 'thin-telemetry',
+    stop_rule: item.boundary,
+  };
+}
+
+function buildAutomationRunbook(phases, paused) {
+  const steps = phases.map(runbookStep);
+  const firstAction = steps.find((item) => item.status === 'attention') || null;
+  return {
+    status: firstAction ? 'actionable' : 'ready',
+    next_step: firstAction,
+    steps,
+    paused_high_risk_count: paused.length,
+    stop_rules: [
+      'Pause before recording outcomes unless the workflow has real observed evidence.',
+      'Pause before writing profile records unless the user explicitly confirms the preference text.',
+      'Pause before changing commands/review.md safe argument handling; that slice needs separate design and review.',
+    ],
+    boundary: 'The runbook sequences existing commands. It does not execute them, write files, record evidence, infer preferences, or route reviewers.',
+  };
+}
+
 function buildWorkflowReadiness(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const projectDir = path.resolve(opts.projectDir || defaultProjectDir(root));
@@ -226,6 +262,7 @@ function buildWorkflowReadiness(opts = {}) {
   const attention = phases.filter((item) => item.status === 'attention');
   const paused = pausedHighRisk(wrapper);
   const firstAction = attention[0] || null;
+  const automationRunbook = buildAutomationRunbook(phases, paused);
   return {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
@@ -236,6 +273,7 @@ function buildWorkflowReadiness(opts = {}) {
     attention_count: attention.length,
     phases,
     paused_high_risk: paused,
+    automation_runbook: automationRunbook,
     next: firstAction ? firstAction.next : '/forgeflow-workflow-readiness',
     next_reason: firstAction
       ? firstAction.reason
@@ -273,6 +311,25 @@ function renderMarkdown(result) {
     lines.push(`  - Action: ${item.action}`);
     lines.push(`  - Boundary: ${item.boundary}`);
   }
+  if (result.automation_runbook) {
+    lines.push('', '## Automation Runbook', '');
+    lines.push(`- Status: ${result.automation_runbook.status}`);
+    if (result.automation_runbook.next_step) {
+      lines.push(`- Next step: ${result.automation_runbook.next_step.id} - ${inlineCode(result.automation_runbook.next_step.command)}`);
+    }
+    for (const step of result.automation_runbook.steps) {
+      lines.push(`- ${step.order}. ${step.id}: ${step.status}`);
+      lines.push(`  - Command: ${inlineCode(step.command)}`);
+      if (step.requires_user_input) lines.push('  - Requires user input: yes');
+      if (step.observed_evidence_required) lines.push('  - Observed evidence required: yes');
+      if (step.writes_when_run) lines.push('  - Writes when run: yes');
+      lines.push(`  - Stop rule: ${step.stop_rule}`);
+    }
+    if (result.automation_runbook.stop_rules.length > 0) {
+      lines.push('', '## Automation Stop Rules', '');
+      for (const rule of result.automation_runbook.stop_rules) lines.push(`- ${rule}`);
+    }
+  }
   lines.push('', '## Validation', '');
   const validation = [...new Set(result.phases.flatMap((item) => item.validation || []))];
   for (const command of validation) lines.push(`- ${inlineCode(command)}`);
@@ -298,6 +355,7 @@ if (require.main === module) {
 
 module.exports = {
   buildWorkflowReadiness,
+  buildAutomationRunbook,
   contextPhase,
   outcomePhase,
   parseArgs,

@@ -57,11 +57,11 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-next-action-audit` | Spot-check representative helper next actions for command-only copy-pastable values and direct explanatory text into `next_reason`. |
 | `/forgeflow-next-work-ranking` | Rank next-work candidates from current local evidence, confidence, demotion, and validation signals, including copy-ready outcome prompts, without refreshing artifacts or auto-selecting work. |
 | `/forgeflow-next-work-outcome` | Record local advisory feedback on whether a next-work recommendation was useful, ignored, incorrect, or blocked. |
-| `/forgeflow-outcome-capture-plan` | Show missing local outcome evidence streams and concrete recorder prompts without writing records. |
+| `/forgeflow-outcome-capture-plan` | Show missing local outcome evidence streams, concrete recorder prompts, and per-stream observed-evidence runbooks without writing records. |
 | `/forgeflow-output-contract` | Spot-check representative helper output for status, next, reason, and advisory boundary fields. |
 | `/forgeflow-pilot` | Print the repeatable maintainer pilot script by default, or add `--path new-user` for the state-aware first-real-task evaluation path with guided repair, release-readiness preview, project intelligence, living map status, agent-feedback signal, and a public-safe result template. |
 | `/forgeflow-profile` | Show, check, or record local advisory user operating preferences and project experience preferences for context-pack injection. |
-| `/forgeflow-profile-bootstrap` | Preview explicit operating and project experience preference records, show prompt templates with `--prompts`, then write only with `--write`. |
+| `/forgeflow-profile-bootstrap` | Preview explicit operating and project experience preference records, show prompt templates and a guided setup path, then write only with `--write`. |
 | `/forgeflow-profile-review` | Group profile conflicts, scope moves, ask-user prompts, cleanup actions, injection eligibility, safe next steps, confirmation prompts, explicit accept/reject/supersede/defer options, and a resolution flow before agent-heavy work. |
 | `/forgeflow-project-brief` | Summarize existing local project intelligence into a concise read-only decision brief with recent changes, avoid-first, validate-first, and high-care file guidance for the next work item. |
 | `/forgeflow-report` | Produce a script-backed status report including local metrics, false-positive thresholds, pattern freshness, context trends, project trends, import-gap status, latest-insights readiness/freshness, latest failure-digest status/freshness, and direct next-action recommendations. Add `--refresh` to update project guidance first. |
@@ -74,7 +74,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-release-readiness` | Run advisory local release readiness checks, verify runtime helper sources are present, managed, regular files, and inside the checkout, group blockers by readiness area, and avoid tagging, pushing, publishing, or GitHub calls. The helper also supports `--baseline <json>`, `--compare-last`, and `--save-current` for prior-run comparison. |
 | `/forgeflow-release-follow-through` | Check post-publish release verify, update verify, and runtime-consumability follow-through without mutating release or install state. Add `--save` to persist the latest local follow-through snapshot. |
 | `/forgeflow-release-consumption` | Roll up release follow-through into a compact consumed-or-attention summary. Add `--with-smoke` to explicitly run downstream smoke, or `--save` to persist a local release-consumption snapshot. |
-| `/forgeflow-release-consumption-loop` | Show the ordered post-release update, downstream smoke, and release-consumption loop with a complete or attention badge without running update, repair, smoke, or snapshot writes. |
+| `/forgeflow-release-consumption-loop` | Show the ordered post-release update, downstream smoke, release-consumption loop, and read-only dogfood report with a complete or attention badge without running update, repair, smoke, or snapshot writes. |
 | `/forgeflow-release-verify` | Print the compact local post-publish summary for sharing, with installed-version/runtime-drift consumability evidence, optional local snapshot save/comparison, and explicit `--github` read-only remote evidence. |
 | `/forgeflow-smoke` | Run downstream readiness smoke by default; add `--mode source` for source-tree release guards or `--mode full` for both groups. |
 | `/forgeflow-support` | Write a local support bundle with version, health, smoke, plan-only release readiness with post-publish verification, code-map acceptance health, docs drift, project trends, and consolidated next actions. Treat it as local support data because it may include local paths. |
@@ -84,10 +84,10 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-update-verify` | Verify installed version state and runtime drift after update or repair, then print ready, restart, or repair guidance that separates source/install drift from other runtime drift needing repair. |
 | `/forgeflow-validation-plan` | Plan focused validation commands from changed files, state when full suite or source smoke is required, and show compact failure-capture commands for failed checks. |
 | `/forgeflow-validation-failure-capture` | Map a failed validation command to the safest output-capture mode and failure-digest path without executing it. |
-| `/forgeflow-review-wave-prep` | Show the first focused review-wave command when context is over budget. |
+| `/forgeflow-review-wave-prep` | Show the first focused review-wave command plus follow-through readiness when context is over budget. |
 | `/forgeflow-version` | Show installed commit, upstream status, latest release, helper paths, grouped runtime helper inventory, missing helper sources, and the next update or repair action. Add `--snapshot` to write a local support artifact. |
 | `/forgeflow-workflow-ending-capture` | Recommend the one outcome recorder command to consider after review, next-work, or agent-feedback workflow endings, including the matching learning-capture nudge and observed-evidence stop rule. |
-| `/forgeflow-workflow-readiness` | Show the next safe workflow-readiness action across review waves, calibration, profile, telemetry, and runtime inventory while keeping high-risk `/review` safe-args work paused. |
+| `/forgeflow-workflow-readiness` | Show the next safe workflow-readiness action and automation runbook across review waves, calibration, profile, telemetry, and runtime inventory while keeping high-risk `/review` safe-args work paused. |
 | `/forgeflow-wrapper-drift-plan` | Group command-wrapper drift into safe mechanical, manual, and high-risk buckets with validation commands. |
 | `/ship` | Prepare presentation, PR, CI checks, and release handoff after a passing review-history gate; potential secrets are hard blockers. |
 

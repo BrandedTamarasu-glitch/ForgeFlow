@@ -111,15 +111,63 @@ function buildEntry(item) {
   });
 }
 
+function shellQuote(value) {
+  return `'${String(value || '').replace(/'/g, `'\\''`)}'`;
+}
+
+function flagForEntry(entry) {
+  const match = Object.entries(FLAG_TO_ENTRY).find(([_flag, defaults]) => defaults.scope === entry.scope && defaults.category === entry.category);
+  return match ? match[0] : '';
+}
+
+function writeCommandForEntries(entries) {
+  const parts = ['forgeflow-profile-bootstrap'];
+  for (const entry of entries) {
+    const flag = flagForEntry(entry);
+    if (flag) parts.push(flag, shellQuote(entry.preference));
+  }
+  parts.push('--write');
+  return parts.join(' ');
+}
+
 function buildSetupPlan(entries) {
   const coveredFlags = new Set(entries.map((entry) => {
-    const match = Object.entries(FLAG_TO_ENTRY).find(([_flag, defaults]) => defaults.scope === entry.scope && defaults.category === entry.category);
-    return match ? match[0] : '';
+    return flagForEntry(entry);
   }).filter(Boolean));
   const missingRequired = REQUIRED_OPERATING_FLAGS.filter((flag) => !coveredFlags.has(flag));
   const missingRecommended = RECOMMENDED_PROJECT_FLAGS.filter((flag) => !coveredFlags.has(flag));
   const nextFlag = missingRequired[0] || missingRecommended[0] || '';
   const nextPrompt = PROMPTS.find((item) => item.flag === nextFlag) || null;
+  const guidedSteps = [
+    {
+      name: 'answer-required-operating-preferences',
+      status: missingRequired.length === 0 ? 'pass' : 'attention',
+      flags: missingRequired.length > 0 ? missingRequired : REQUIRED_OPERATING_FLAGS,
+      command: 'forgeflow-profile-bootstrap --prompts',
+      stop_rule: 'Do not write profile records until the user has provided explicit preference text.',
+    },
+    {
+      name: 'preview-project-style-preferences',
+      status: missingRecommended.length === 0 ? 'pass' : 'optional',
+      flags: missingRecommended.length > 0 ? missingRecommended : RECOMMENDED_PROJECT_FLAGS,
+      command: 'forgeflow-profile-bootstrap --ui "<text>" --product-copy "<text>" --accessibility "<text>"',
+      stop_rule: 'Project style guidance is optional and must stay project-scoped.',
+    },
+    {
+      name: 'write-after-confirmation',
+      status: entries.length > 0 ? 'ready-after-confirmation' : 'blocked-until-explicit-input',
+      flags: [...new Set(entries.map(flagForEntry).filter(Boolean))],
+      command: entries.length > 0 ? writeCommandForEntries(entries) : 'forgeflow-profile-bootstrap --prompts',
+      stop_rule: 'Write only after the user confirms every previewed preference is explicit and correct.',
+    },
+    {
+      name: 'check-before-injection',
+      status: 'pending-after-write',
+      flags: [],
+      command: 'forgeflow-profile --check',
+      stop_rule: 'Do not inject profile guidance into agent packets unless the profile quality gate passes.',
+    },
+  ];
   return {
     status: missingRequired.length === 0 ? 'ready-for-check' : 'needs-required-operating-preferences',
     required_operating_flags: REQUIRED_OPERATING_FLAGS,
@@ -134,6 +182,11 @@ function buildSetupPlan(entries) {
       recommended_total: RECOMMENDED_PROJECT_FLAGS.length,
     },
     next_prompt: nextPrompt ? { flag: nextPrompt.flag, prompt: nextPrompt.prompt } : null,
+    guided_path: {
+      status: missingRequired.length === 0 ? 'ready-for-profile-check' : 'collect-required-preferences',
+      steps: guidedSteps,
+      boundary: 'The guided path is advisory. It never infers or writes preferences without explicit command flags and confirmation.',
+    },
     boundary: 'Setup readiness only reflects explicit preview or written arguments; it does not infer preferences from behavior or history.',
   };
 }
@@ -161,7 +214,7 @@ function buildProfileBootstrap(opts = {}) {
     : (entries.length > 0
       ? {
         status: 'review-preview',
-        command: 'forgeflow-profile-bootstrap <same explicit flags> --write',
+        command: writeCommandForEntries(entries),
         reason: 'Previewed preferences should only be written after the user confirms each record is explicit and correct.',
       }
       : {
@@ -233,6 +286,13 @@ function renderMarkdown(result) {
     if (result.setup_plan.next_prompt) {
       lines.push(`- Next prompt: ${result.setup_plan.next_prompt.flag} - ${result.setup_plan.next_prompt.prompt}`);
     }
+    if (result.setup_plan.guided_path) {
+      lines.push('', '## Guided Path', '');
+      lines.push(`- Status: ${result.setup_plan.guided_path.status}`);
+      for (const step of result.setup_plan.guided_path.steps) {
+        lines.push(`- ${step.name}: ${step.status} - ${step.command}`);
+      }
+    }
   }
   lines.push('', `Next: ${result.next}`, '');
   return lines.join('\n');
@@ -254,4 +314,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { buildProfileBootstrap, buildSetupPlan, parseArgs, renderMarkdown };
+module.exports = { buildProfileBootstrap, buildSetupPlan, parseArgs, renderMarkdown, shellQuote, writeCommandForEntries };

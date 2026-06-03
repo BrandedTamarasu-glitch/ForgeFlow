@@ -44,6 +44,31 @@ function buildReviewWavePrep(opts = {}) {
   const firstWave = wavePlan.waves[0] || null;
   const splitRecommended = wavePlan.status === 'split-recommended' && wavePlan.waves.length > 1;
   const incomplete = wavePlan.status === 'incomplete';
+  const followThrough = incomplete
+    ? {
+      status: 'rebuild-context-pack',
+      next_command: 'node scripts/forgeflow/build-context-pack.js --json',
+      review_ready: false,
+      stop_rule: 'Do not spawn reviewers until the context pack has files, telemetry, and synthesis input.',
+      reason: `The latest context pack is incomplete: ${(wavePlan.incomplete_reasons || []).join('; ')}.`,
+    }
+    : (splitRecommended && firstWave
+      ? {
+        status: firstWave.wave_file ? 'ready-to-build-first-wave' : 'wave-files-needed',
+        next_command: firstWave.wave_file ? firstWave.command : '/forgeflow-review-wave-prep --write-wave-files',
+        review_ready: Boolean(firstWave.wave_file),
+        stop_rule: 'Use the first bounded wave before broad review; do not trim raw-required proof files.',
+        reason: firstWave.wave_file
+          ? `First review wave ${firstWave.name} has a file list and can be built.`
+          : `First review wave ${firstWave.name} is planned, but wave files have not been written yet.`,
+      }
+      : {
+        status: 'current-packet-ok',
+        next_command: '/review',
+        review_ready: true,
+        stop_rule: 'Use the current context pack unless a later budget check moves it over target.',
+        reason: 'Context is within budget or too small to split.',
+      });
   return {
     schema_version: '1',
     status: incomplete ? 'context-incomplete' : (splitRecommended ? 'split-before-review' : 'current-packet-ok'),
@@ -66,6 +91,7 @@ function buildReviewWavePrep(opts = {}) {
       : (splitRecommended
       ? 'Context is over budget; start review with the first generated or planned wave.'
       : 'Context is within budget or too small to split.'),
+    follow_through: followThrough,
     boundary: 'Review wave prep is advisory. It does not rebuild packets, spawn reviewers, edit source files, commit, or push.',
   };
 }
@@ -92,6 +118,14 @@ function renderMarkdown(result) {
     lines.push(`  - Command: ${result.first_wave.command}`);
   }
   lines.push('', `Next: ${result.next}`, `Why: ${result.next_reason}`, '');
+  if (result.follow_through) {
+    lines.push('## Follow Through', '');
+    lines.push(`- Status: ${result.follow_through.status}`);
+    lines.push(`- Next command: ${result.follow_through.next_command}`);
+    lines.push(`- Review ready: ${result.follow_through.review_ready ? 'yes' : 'no'}`);
+    lines.push(`- Stop rule: ${result.follow_through.stop_rule}`);
+    lines.push('');
+  }
   return lines.join('\n');
 }
 

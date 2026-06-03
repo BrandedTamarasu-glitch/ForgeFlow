@@ -63,6 +63,26 @@ function completionFor(steps) {
   };
 }
 
+function buildDogfoodReport(updateVerify, consumption, steps, completion) {
+  const evidence = {
+    update_status: updateVerify.status,
+    consumption_status: consumption.status,
+    smoke_status: consumption.downstream_smoke ? consumption.downstream_smoke.status : 'missing',
+    completed_steps: steps.filter((step) => step.status === 'pass').map((step) => step.name),
+    attention_steps: steps.filter((step) => step.status !== 'pass').map((step) => step.name),
+  };
+  return {
+    status: completion.status === 'complete' ? 'ready-to-share' : 'needs-follow-through',
+    badge: completion.badge,
+    evidence,
+    next_command: evidence.attention_steps.length > 0
+      ? steps.find((step) => step.status !== 'pass').command
+      : '/forgeflow-release-consumption',
+    compare_hint: 'Run this loop after /update-forgeflow in a consuming project to compare source release readiness with installed runtime behavior.',
+    boundary: 'Dogfood reporting is read-only and reflects existing update, smoke, and consumption evidence. It does not run update, repair, smoke, release, or GitHub commands.',
+  };
+}
+
 function buildReleaseConsumptionLoop(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const projectDir = path.resolve(opts.projectDir || defaultProjectDir(root));
@@ -94,6 +114,7 @@ function buildReleaseConsumptionLoop(opts = {}) {
   ];
   const attention = steps.find((step) => step.status === 'attention' || step.status === 'pending');
   const completion = completionFor(steps);
+  const dogfoodReport = buildDogfoodReport(updateVerify, consumption, steps, completion);
   return {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
@@ -105,6 +126,7 @@ function buildReleaseConsumptionLoop(opts = {}) {
     smoke_status: consumption.downstream_smoke ? consumption.downstream_smoke.status : 'missing',
     steps,
     completion,
+    dogfood_report: dogfoodReport,
     completion_badge: completion.badge,
     next_command: attention ? attention.command : '/forgeflow-release-consumption',
     next_reason: attention
@@ -130,6 +152,13 @@ function renderMarkdown(result) {
   ];
   for (const step of result.steps) lines.push(`- ${step.name}: ${step.status} - ${step.command}`);
   lines.push('', '## Completion', '', `Badge: ${result.completion.badge}`, `Summary: ${result.completion.summary}`);
+  if (result.dogfood_report) {
+    lines.push('', '## Dogfood Report', '');
+    lines.push(`Status: ${result.dogfood_report.status}`);
+    lines.push(`Badge: ${result.dogfood_report.badge}`);
+    lines.push(`Next: ${result.dogfood_report.next_command}`);
+    lines.push(result.dogfood_report.compare_hint);
+  }
   lines.push('', `Next: ${result.next_command}`, `Why: ${result.next_reason}`, '');
   return lines.join('\n');
 }
@@ -150,4 +179,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { buildReleaseConsumptionLoop, completionFor, parseArgs, renderMarkdown, updateStatusToStep };
+module.exports = { buildDogfoodReport, buildReleaseConsumptionLoop, completionFor, parseArgs, renderMarkdown, updateStatusToStep };
