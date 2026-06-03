@@ -1,7 +1,7 @@
 ---
 name: forgeflow-capture-output
 description: Compact provided command output safely and optionally save a failure digest
-argument-hint: "--mode <test|typecheck|lint|build|logs|grep|json|status|tree> --command <cmd> [--file <path>] [--out <path>] [--json]"
+argument-hint: "[--mode <test|typecheck|lint|build|logs|grep|json|status|tree>] [--preset <auto|test|typecheck|lint|build|logs|grep|json|status|tree>] --command <cmd> [--file <path>] [--out <path>] [--json]"
 allowed-tools:
   - Bash
 ---
@@ -10,7 +10,7 @@ Capture already-produced command output before it enters agent context. Unsafe e
 </objective>
 
 <process>
-Validate `$ARGUMENTS`. Accept only `--mode`, `--command`, `--file`, `--out`, and `--json`.
+Validate `$ARGUMENTS`. Accept only `--mode`, `--preset`, `--command`, `--file`, `--out`, and `--json`.
 
 ```bash
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -28,10 +28,18 @@ idx=0
 while [ "${idx}" -lt "${#USER_ARGS[@]}" ]; do
   arg="${USER_ARGS[$idx]}"
   case "$arg" in
-    --mode|--command|--file|--out)
+    --mode|--preset|--command|--file|--out)
       idx=$((idx + 1))
       value="${USER_ARGS[$idx]:-}"
       if [ -z "${value}" ]; then echo "Missing value for ${arg}"; exit 2; fi
+      case "$arg" in
+        --mode)
+          case "$value" in test|typecheck|lint|build|logs|grep|json|status|tree) ;; *) echo "Invalid --mode value"; exit 2 ;; esac
+          ;;
+        --preset)
+          case "$value" in auto|test|typecheck|lint|build|logs|grep|json|status|tree) ;; *) echo "Invalid --preset value"; exit 2 ;; esac
+          ;;
+      esac
       SAFE_ARGS+=("${arg}" "${value}")
       ;;
     --json) SAFE_ARGS+=(--json) ;;

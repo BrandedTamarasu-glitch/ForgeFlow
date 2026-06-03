@@ -11,6 +11,7 @@ const input = [
 ].join('\n');
 
 const digest = buildFailureDigest(input, { mode: 'test', command: 'vitest' });
+const autoPreset = buildFailureDigest(input, { preset: 'auto', command: 'npm test' });
 const unsafe = buildFailureDigest('diff --git a/a b/a\n+change\n', { mode: 'test', command: 'git diff' });
 const fenced = buildFailureDigest('diff --git a/a b/a\n```\n+boom\n', { mode: 'test', command: 'git diff' });
 const stale = classifyFailureDigest(digest, { status: 'attention', issues: [{ code: 'failure-digest-commit-stale' }] });
@@ -31,6 +32,7 @@ const checks = [
   ['renders markdown', digest.markdown.includes('# Forgeflow Failure Digest') && digest.markdown.includes('src/bad.test.ts:12:4')],
   ['renders triage metadata', digest.markdown.includes('Triage state: usable') && digest.markdown.includes('Usefulness: usable') && digest.markdown.includes('Confidence: high')],
   ['json includes triage', digest.triage.state === 'usable' && digest.triage.next_action.action === 'none'],
+  ['json includes preset metadata', autoPreset.preset === 'test' && autoPreset.preset_reason.includes('test command')],
   ['json status uses artifact contract', digest.status === 'compact' && digest.markdown.includes('Status: compact')],
   ['records git provenance', digest.git && typeof digest.git.available === 'boolean' && digest.markdown.includes('Git available:') && digest.markdown.includes('Git commit:') && digest.markdown.includes('Git dirty:')],
   ['compacts failures', digest.compact.status === 'compacted' && !digest.compact.output.includes('PASS src/ok.test.ts')],

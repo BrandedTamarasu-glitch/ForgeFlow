@@ -117,6 +117,11 @@ function inventorySummary(root) {
 
 function coordinationPressure(runtimeHelpers) {
   const groups = groupRuntimeHelpers(runtimeHelpers);
+  const largest = groups[0] ? { group: groups[0].group, count: groups[0].count } : null;
+  const pressureReasons = [];
+  if (largest && largest.count >= 25) pressureReasons.push(`large-helper-group:${largest.group}:${largest.count}`);
+  if (groups.length >= 6) pressureReasons.push(`many-helper-groups:${groups.length}`);
+  pressureReasons.push('health-release-docs-share-helper-inventory');
   const hotFiles = [
     {
       path: 'scripts/forgeflow/install-manifest.js',
@@ -132,12 +137,18 @@ function coordinationPressure(runtimeHelpers) {
     },
   ];
   return {
-    status: 'watch',
+    status: pressureReasons.length > 1 ? 'attention' : 'watch',
     shared_registry: 'scripts/forgeflow/runtime-inventory.js',
     helper_group_count: groups.length,
-    largest_helper_group: groups[0] ? { group: groups[0].group, count: groups[0].count } : null,
+    largest_helper_group: largest,
+    pressure_reasons: pressureReasons,
     hot_files: hotFiles,
-    next_safe_slice: 'Prefer adding read-only inventory summaries before editing install/update behavior.',
+    next_safe_slice: 'Move the next duplicated health, release, or docs inventory check onto runtime-inventory.js before editing install/update behavior.',
+    canonical_checks: [
+      'node scripts/forgeflow/test-runtime-inventory.js',
+      'node scripts/forgeflow/test-command-coverage.js',
+      'node scripts/forgeflow/test-install-manifest.js',
+    ],
     boundary: 'Runtime inventory pressure is advisory. It does not install, repair, update, edit manifests, or change release gates.',
   };
 }

@@ -7,7 +7,7 @@ const { classifyFailureDigest } = require('./failure-digest-triage');
 const { currentGitState, repoRoot } = require('./latest-insights-state');
 
 function usage() {
-  console.error('Usage: build-failure-digest.js --mode <test|typecheck|lint|logs> [--command <cmd>] [--file <path>] [--out <path>] [--json]');
+  console.error('Usage: build-failure-digest.js [--mode <test|typecheck|lint|build|logs>] [--preset <auto|test|typecheck|lint|build|logs>] [--command <cmd>] [--file <path>] [--out <path>] [--json]');
 }
 
 function requireValue(argv, name, index) {
@@ -21,11 +21,14 @@ function requireValue(argv, name, index) {
 }
 
 function parseArgs(argv) {
-  const opts = { mode: '', command: '', file: '', out: '', json: false };
+  const opts = { mode: '', preset: '', command: '', file: '', out: '', json: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--mode') {
       opts.mode = requireValue(argv, arg, i);
+      i += 1;
+    } else if (arg === '--preset') {
+      opts.preset = requireValue(argv, arg, i);
       i += 1;
     } else if (arg === '--command') {
       opts.command = requireValue(argv, arg, i);
@@ -140,7 +143,8 @@ function buildFailureDigest(input, opts = {}) {
   const root = opts.root || repoRoot();
   const git = currentGitState(root);
   const result = compactCommandOutput(input, {
-    mode: opts.mode || 'test',
+    mode: opts.mode || (opts.preset ? '' : 'test'),
+    preset: opts.preset,
     command: opts.command || '',
     maxLines: opts.maxLines || 80,
     maxLineChars: opts.maxLineChars || 220,
@@ -163,6 +167,8 @@ function buildFailureDigest(input, opts = {}) {
     git,
     status,
     mode: result.mode,
+    preset: result.preset || result.mode,
+    preset_reason: result.preset_reason || '',
     raw_required: result.raw_required,
     reason: result.reason,
     triage,
@@ -179,7 +185,7 @@ function readInput(opts) {
 
 function main() {
   const opts = parseArgs(process.argv.slice(2));
-  if (!opts.mode) {
+  if (!opts.mode && !opts.preset) {
     usage();
     process.exit(2);
   }

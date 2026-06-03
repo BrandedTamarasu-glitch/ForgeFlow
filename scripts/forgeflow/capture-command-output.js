@@ -8,7 +8,7 @@ const { safeReadTextFile, writeFileSafe } = require('./file-safety');
 const DIGEST_MODES = new Set(['test', 'typecheck', 'lint', 'build', 'logs']);
 
 function usage() {
-  console.error('Usage: capture-command-output.js --mode <mode> --command <cmd> [--file <path>] [--out <path>] [--json]');
+  console.error('Usage: capture-command-output.js [--mode <mode>] [--preset <auto|test|typecheck|lint|build|logs|grep|json|status|tree>] --command <cmd> [--file <path>] [--out <path>] [--json]');
 }
 
 function requireValue(argv, name, index) {
@@ -18,11 +18,14 @@ function requireValue(argv, name, index) {
 }
 
 function parseArgs(argv) {
-  const opts = { mode: '', command: '', file: '', out: '', json: false };
+  const opts = { mode: '', preset: '', command: '', file: '', out: '', json: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--mode') {
       opts.mode = requireValue(argv, arg, i);
+      i += 1;
+    } else if (arg === '--preset') {
+      opts.preset = requireValue(argv, arg, i);
       i += 1;
     } else if (arg === '--command') {
       opts.command = requireValue(argv, arg, i);
@@ -42,7 +45,7 @@ function parseArgs(argv) {
       throw new Error(`Unknown argument: ${arg}`);
     }
   }
-  if (!opts.mode) throw new Error('Missing --mode');
+  if (!opts.mode && !opts.preset) throw new Error('Missing --mode or --preset');
   if (!opts.command) throw new Error('Missing --command');
   return opts;
 }
@@ -55,19 +58,23 @@ function readInput(opts) {
 function captureCommandOutput(input, opts = {}) {
   const compact = compactCommandOutput(input, {
     mode: opts.mode,
+    preset: opts.preset,
     command: opts.command,
     maxLines: opts.maxLines || 80,
     maxLineChars: opts.maxLineChars || 220,
   });
-  const digest = DIGEST_MODES.has(opts.mode)
-    ? buildFailureDigest(input, { mode: opts.mode, command: opts.command, root: opts.root || process.cwd() })
+  const digestMode = compact.mode || opts.mode;
+  const digest = DIGEST_MODES.has(digestMode)
+    ? buildFailureDigest(input, { mode: digestMode, preset: opts.preset, command: opts.command, root: opts.root || process.cwd() })
     : null;
   const out = opts.out ? path.resolve(opts.out) : '';
   if (out && digest) writeFileSafe(out, digest.markdown);
   return {
     schema_version: '1',
     status: compact.raw_required ? 'raw-preserved' : 'captured',
-    mode: opts.mode,
+    mode: compact.mode || opts.mode,
+    preset: compact.preset || opts.mode,
+    preset_reason: compact.preset_reason || '',
     command: opts.command,
     raw_required: compact.raw_required,
     compact_status: compact.status,
@@ -88,6 +95,7 @@ function renderMarkdown(result) {
     '',
     `Status: ${result.status}`,
     `Mode: ${result.mode}`,
+    `Preset: ${result.preset || '(none)'}`,
     `Raw required: ${result.raw_required ? 'yes' : 'no'}`,
     `Input lines: ${result.input_lines}`,
     `Output lines: ${result.output_lines}`,

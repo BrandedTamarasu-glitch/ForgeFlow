@@ -4,9 +4,11 @@ const path = require('path');
 const { safeReadTextFile } = require('./file-safety');
 
 const SAFE_MODES = new Set(['test', 'typecheck', 'lint', 'build', 'logs', 'grep', 'json', 'status', 'tree']);
+const PRESET_MODES = new Set([...SAFE_MODES, 'auto']);
 const UNSAFE_COMMAND_PATTERNS = [
   /\bgit\s+diff\b/,
   /\bgit\s+apply\b/,
+  /\bfind\b/,
   /\bpatch\b/,
   /\bapply_patch\b/,
   /\b--name-only\b/,
@@ -19,7 +21,7 @@ const DEFAULT_MAX_LINES = 80;
 const DEFAULT_MAX_LINE_CHARS = 220;
 
 function usage() {
-  console.error('Usage: compact-command-output.js --mode <test|typecheck|lint|build|logs|grep|json|status|tree> [--command <cmd>] [--file <path>] [--max-lines N] [--max-line-chars N] [--json]');
+  console.error('Usage: compact-command-output.js [--mode <test|typecheck|lint|build|logs|grep|json|status|tree>] [--preset <auto|test|typecheck|lint|build|logs|grep|json|status|tree>] [--command <cmd>] [--file <path>] [--max-lines N] [--max-line-chars N] [--json]');
 }
 
 function requireValue(argv, name, index) {
@@ -35,6 +37,7 @@ function requireValue(argv, name, index) {
 function parseArgs(argv) {
   const opts = {
     mode: '',
+    preset: '',
     command: '',
     file: '',
     json: false,
@@ -45,6 +48,9 @@ function parseArgs(argv) {
     const arg = argv[i];
     if (arg === '--mode') {
       opts.mode = requireValue(argv, arg, i);
+      i += 1;
+    } else if (arg === '--preset') {
+      opts.preset = requireValue(argv, arg, i);
       i += 1;
     } else if (arg === '--command') {
       opts.command = requireValue(argv, arg, i);
@@ -77,9 +83,46 @@ function isUnsafeCommand(command) {
   return UNSAFE_COMMAND_PATTERNS.some((pattern) => pattern.test(text));
 }
 
+function detectCommandPreset(command) {
+  const text = String(command || '').trim();
+  if (!text) return { mode: '', preset: '', reason: 'command missing' };
+  if (isUnsafeCommand(text)) return { mode: '', preset: 'raw-required', reason: 'command output is correctness-critical' };
+  if (/\b(vitest|jest|mocha|ava|pytest|go\s+test|cargo\s+test|rspec|phpunit|test)\b/i.test(text)) {
+    return { mode: 'test', preset: 'test', reason: 'test command pattern' };
+  }
+  if (/\b(tsc|mypy|pyright|typecheck|type-check|flow)\b/i.test(text)) {
+    return { mode: 'typecheck', preset: 'typecheck', reason: 'typecheck command pattern' };
+  }
+  if (/\b(eslint|biome|ruff|flake8|rubocop|shellcheck|lint)\b/i.test(text)) {
+    return { mode: 'lint', preset: 'lint', reason: 'lint command pattern' };
+  }
+  if (/\b(build|vite\s+build|webpack|rollup|next\s+build|cargo\s+build|go\s+build|make)\b/i.test(text)) {
+    return { mode: 'build', preset: 'build', reason: 'build command pattern' };
+  }
+  if (/\b(tail|journalctl|kubectl\s+logs|docker\s+logs|log)\b/i.test(text)) {
+    return { mode: 'logs', preset: 'logs', reason: 'log command pattern' };
+  }
+  if (/\b(rg|grep)\b/i.test(text)) return { mode: 'grep', preset: 'grep', reason: 'search command pattern' };
+  if (/\b(status)\b/i.test(text)) return { mode: 'status', preset: 'status', reason: 'status command pattern' };
+  if (/\btree\b/i.test(text)) return { mode: 'tree', preset: 'tree', reason: 'tree/listing command pattern' };
+  if (/\b(json|jq)\b/i.test(text)) return { mode: 'json', preset: 'json', reason: 'json command pattern' };
+  return { mode: '', preset: 'none', reason: 'no safe preset matched' };
+}
+
 function normalizeOptions(opts = {}) {
+  const requestedPreset = opts.preset || '';
+  let detected;
+  if (opts.mode) {
+    detected = { mode: opts.mode, preset: requestedPreset || opts.mode, reason: 'explicit mode' };
+  } else if (PRESET_MODES.has(requestedPreset) && requestedPreset !== 'auto') {
+    detected = { mode: requestedPreset, preset: requestedPreset, reason: 'explicit preset' };
+  } else {
+    detected = detectCommandPreset(opts.command || '');
+  }
   return {
-    mode: opts.mode || '',
+    mode: detected.mode || opts.mode || '',
+    preset: detected.preset || requestedPreset || '',
+    preset_reason: detected.reason || '',
     command: opts.command || '',
     maxLines: Number.isFinite(opts.maxLines) && opts.maxLines > 0 ? opts.maxLines : DEFAULT_MAX_LINES,
     maxLineChars: Number.isFinite(opts.maxLineChars) && opts.maxLineChars > 0 ? opts.maxLineChars : DEFAULT_MAX_LINE_CHARS,
@@ -188,6 +231,8 @@ function rawResult(input, opts, reason) {
     schema_version: '1',
     status: 'raw',
     mode: opts.mode,
+    preset: opts.preset || '',
+    preset_reason: opts.preset_reason || '',
     command: opts.command,
     reason,
     raw_required: true,
@@ -226,6 +271,8 @@ function compactCommandOutput(input, options = {}) {
       schema_version: '1',
       status: 'compacted',
       mode: opts.mode,
+      preset: opts.preset || opts.mode,
+      preset_reason: opts.preset_reason || '',
       command: opts.command,
       reason: 'allowlisted human-narrative output compacted',
       raw_required: false,
@@ -267,6 +314,7 @@ if (require.main === module) {
 
 module.exports = {
   compactCommandOutput,
+  detectCommandPreset,
   isUnsafeCommand,
   SAFE_MODES,
 };

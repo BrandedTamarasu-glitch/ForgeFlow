@@ -142,6 +142,28 @@ function writeWaveFile(file, files) {
   writeFileSafe(file, `${files.join('\n')}${files.length > 0 ? '\n' : ''}`);
 }
 
+function budgetStatus(tokens, targetTokens) {
+  const estimated = Math.max(0, Number(tokens || 0));
+  const target = Math.max(1, Number(targetTokens || 1));
+  return {
+    status: estimated > target ? 'over-target' : 'within-target',
+    estimated_compact_tokens: estimated,
+    target_compact_tokens: target,
+    over_by_tokens: Math.max(0, estimated - target),
+  };
+}
+
+function proofContract(slice) {
+  const proofFiles = slice.filter((item) => item.proof_required).map((item) => item.path);
+  return {
+    status: proofFiles.length > 0 ? 'proof-present' : 'proof-needed',
+    proof_files: proofFiles,
+    required_before_review: proofFiles.length > 0
+      ? 'Keep these files in the focused packet and cite them when validating behavior.'
+      : 'Add or cite focused validation evidence before treating this wave as review-complete.',
+  };
+}
+
 function buildContextWavePlan(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const contextDir = path.resolve(opts.contextDir || defaultContextDir(root));
@@ -166,17 +188,22 @@ function buildContextWavePlan(opts = {}) {
     const waveFile = waveDir ? path.join(waveDir, `${name}-files.txt`) : '';
     if (waveFile) writeWaveFile(waveFile, fileList);
     const compactTokens = estimateTokens(slice.reduce((sum, item) => sum + Number(item.size_bytes || 0), 0));
-	    waves.push({
-	      name,
-	      files: fileList,
-	      kinds: [...new Set(slice.map((item) => item.kind || 'unknown'))],
-	      priority_score: slice.reduce((sum, item) => sum + Number(item.priority_score || 0), 0),
-	      priority_reasons: [...new Set(slice.flatMap((item) => item.priority_reasons || []))].slice(0, 8),
-	      proof_files: slice.filter((item) => item.proof_required).map((item) => item.path),
-	      estimated_file_tokens: compactTokens,
-	      wave_file: waveFile ? path.relative(root, waveFile) : '',
-	      command: waveCommand(root, name, waveFile),
-	    });
+    const budget = budgetStatus(compactTokens, targetTokens);
+    const proof = proofContract(slice);
+    waves.push({
+      name,
+      files: fileList,
+      kinds: [...new Set(slice.map((item) => item.kind || 'unknown'))],
+      priority_score: slice.reduce((sum, item) => sum + Number(item.priority_score || 0), 0),
+      priority_reasons: [...new Set(slice.flatMap((item) => item.priority_reasons || []))].slice(0, 8),
+      proof_files: proof.proof_files,
+      proof_contract: proof,
+      estimated_file_tokens: compactTokens,
+      budget_status: budget,
+      wave_file: waveFile ? path.relative(root, waveFile) : '',
+      command: waveCommand(root, name, waveFile),
+      verification_command: 'node scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json',
+    });
   }
   const overBy = Math.max(0, currentTokens - targetTokens);
   const incompleteReasons = [];
@@ -234,9 +261,12 @@ function renderMarkdown(result) {
     lines.push(`- ${wave.name}: ${wave.files.length} file(s), kinds ${wave.kinds.join(', ') || '(none)'}`);
     lines.push(`  - Priority: ${wave.priority_score || 0}`);
     if (wave.priority_reasons && wave.priority_reasons.length > 0) lines.push(`  - Reasons: ${wave.priority_reasons.join(', ')}`);
+    if (wave.budget_status) lines.push(`  - Budget: ${wave.budget_status.status}, estimated ${wave.budget_status.estimated_compact_tokens}/${wave.budget_status.target_compact_tokens} compact tokens`);
     if (wave.proof_files && wave.proof_files.length > 0) lines.push(`  - Proof files: ${wave.proof_files.join(', ')}`);
+    if (wave.proof_contract) lines.push(`  - Proof contract: ${wave.proof_contract.required_before_review}`);
     if (wave.wave_file) lines.push(`  - File list: ${wave.wave_file}`);
     lines.push(`  - Command: ${wave.command}`);
+    if (wave.verification_command) lines.push(`  - Verify: ${wave.verification_command}`);
   }
   lines.push('', `Next: ${result.next}`, `Why: ${result.next_reason}`, '');
   return lines.join('\n');

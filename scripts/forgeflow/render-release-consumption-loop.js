@@ -71,10 +71,33 @@ function buildDogfoodReport(updateVerify, consumption, steps, completion) {
     completed_steps: steps.filter((step) => step.status === 'pass').map((step) => step.name),
     attention_steps: steps.filter((step) => step.status !== 'pass').map((step) => step.name),
   };
+  const downstreamTrial = [
+    {
+      name: 'context-wave-pressure',
+      command: '/forgeflow-review-wave-prep --write-wave-files',
+      evidence: 'Record whether the first wave reduced packet size and kept proof files visible.',
+    },
+    {
+      name: 'command-output-pressure',
+      command: '/forgeflow-validation-failure-capture --command "<failed validation command>"',
+      evidence: 'When validation fails, record whether the compact digest preserved the useful failure lines and raw-required boundary.',
+    },
+    {
+      name: 'runtime-registry-pressure',
+      command: '/forgeflow-workflow-readiness',
+      evidence: 'Check whether runtime inventory pressure points at a concrete safe slice instead of broad install/update edits.',
+    },
+    {
+      name: 'learning-capture',
+      command: '/forgeflow-workflow-ending-capture --event next-work',
+      evidence: 'After the downstream task ends, capture observed outcome values before relying on calibration.',
+    },
+  ];
   return {
     status: completion.status === 'complete' ? 'ready-to-share' : 'needs-follow-through',
     badge: completion.badge,
     evidence,
+    downstream_trial: downstreamTrial,
     next_command: evidence.attention_steps.length > 0
       ? steps.find((step) => step.status !== 'pass').command
       : '/forgeflow-release-consumption',
@@ -158,6 +181,13 @@ function renderMarkdown(result) {
     lines.push(`Badge: ${result.dogfood_report.badge}`);
     lines.push(`Next: ${result.dogfood_report.next_command}`);
     lines.push(result.dogfood_report.compare_hint);
+    if (result.dogfood_report.downstream_trial && result.dogfood_report.downstream_trial.length > 0) {
+      lines.push('', '### Downstream Efficiency Trial', '');
+      for (const item of result.dogfood_report.downstream_trial) {
+        lines.push(`- ${item.name}: ${item.command}`);
+        lines.push(`  - Evidence: ${item.evidence}`);
+      }
+    }
   }
   lines.push('', `Next: ${result.next_command}`, `Why: ${result.next_reason}`, '');
   return lines.join('\n');

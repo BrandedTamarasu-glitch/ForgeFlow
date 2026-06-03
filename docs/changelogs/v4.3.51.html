@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow - V4.3.51 Changelog</title>
+  <style>
+    body { background: #0d0d0d; color: #ddd8cc; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.65; margin: 0; }
+    main { max-width: 820px; margin: 0 auto; padding: 72px 32px 96px; }
+    .version { color: #7a7670; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
+    h1 { font-size: 40px; font-weight: 400; line-height: 1.15; margin: 14px 0 20px; }
+    h2 { border-top: 1px solid #303030; color: #f0a232; font-size: 18px; font-weight: 600; margin: 42px 0 18px; padding-top: 28px; }
+    p, li { color: #c9c2b6; }
+    code { background: #1c1c1c; border: 1px solid #303030; border-radius: 4px; color: #f0c070; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 1px 5px; }
+    a { color: #f0a232; text-decoration: underline; text-underline-offset: 0.16em; }
+    .nav { display: flex; justify-content: space-between; margin-top: 52px; padding-top: 24px; border-top: 1px solid #303030; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="version">Forgeflow V4.3.51 · 3 June 2026</div>
+    <h1>Release: Efficiency Guardrails</h1>
+    <p>
+      Forgeflow 4.3.51 tightens the safe automation path for context waves, command-output reduction, runtime inventory, and downstream dogfood loops.
+    </p>
+
+    <h2>Context Wave Proof</h2>
+    <ul>
+      <li><code>/forgeflow-context-wave-plan</code> now reports per-wave budget status, proof contracts, and a copy-ready verification command.</li>
+      <li>The verification handoff uses the same runnable <code>node scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json</code> form used by focused wave builds.</li>
+      <li>Wave planning still writes files only when <code>--write-wave-files</code> is explicit and does not spawn reviewers or trim proof files.</li>
+    </ul>
+
+    <h2>Safe Output Presets</h2>
+    <ul>
+      <li><code>compact-command-output.js</code> now supports <code>--preset auto</code> for common test, typecheck, lint, build, log, search, status, tree, and JSON commands.</li>
+      <li>Exact-output commands such as diffs, SHAs, patches, file-list flags, and <code>find</code> remain raw-required.</li>
+      <li><code>/forgeflow-capture-output</code> and <code>/forgeflow-failure-digest</code> now accept preset arguments and report preset metadata.</li>
+    </ul>
+
+    <h2>Runtime And Dogfood Guidance</h2>
+    <ul>
+      <li><code>runtime-inventory.js</code> now exposes canonical consolidation checks with coordination-pressure guidance.</li>
+      <li><code>/forgeflow-release-consumption-loop</code> now includes a downstream efficiency trial checklist for context-wave pressure, output pressure, runtime registry pressure, and learning capture.</li>
+      <li>README, command docs, and wiki pages were updated for the new preset, proof, registry, and dogfood surfaces.</li>
+    </ul>
+
+    <h2>Validation</h2>
+    <ul>
+      <li>Full <code>scripts/forgeflow/test-*.js</code> suite</li>
+      <li><code>node scripts/forgeflow/smoke-check.js --mode source --json</code></li>
+      <li><code>node scripts/forgeflow/render-release-readiness.js --json</code></li>
+      <li>Forgeflow review approved by Smith, Warden, Lumen, and Atlas after the verification-command, raw-required <code>find</code>, CLI preset, and explicit-preset findings were fixed.</li>
+    </ul>
+
+    <div class="nav">
+      <a href="./v4.3.50.html">&larr; V4.3.50</a>
+      <span>V4.3.51</span>
+    </div>
+  </main>
+</body>
+</html>

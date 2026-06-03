@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const { compactCommandOutput, isUnsafeCommand } = require('./compact-command-output');
+const { compactCommandOutput, detectCommandPreset, isUnsafeCommand } = require('./compact-command-output');
 const { spawnSync } = require('child_process');
 const path = require('path');
 
@@ -21,6 +21,11 @@ function subprocessBlocked(cli) {
 const checks = [
   ['detects unsafe diff command', isUnsafeCommand('git diff -- src/app.ts')],
   ['passes unsafe output through', compactCommandOutput('diff --git a/a b/a\n+change\n', { mode: 'test', command: 'git diff' }).status === 'raw'],
+  ['detects test preset', detectCommandPreset('npm test -- --runInBand').mode === 'test'],
+  ['auto preset compacts test output', compactCommandOutput(noisyTest, { preset: 'auto', command: 'npm test' }).mode === 'test' && compactCommandOutput(noisyTest, { preset: 'auto', command: 'npm test' }).preset === 'test'],
+  ['explicit preset is not overwritten', compactCommandOutput(noisyTest, { preset: 'test', command: 'npm run custom-check' }).mode === 'test' && compactCommandOutput(noisyTest, { preset: 'test', command: 'npm run custom-check' }).preset_reason === 'explicit preset'],
+  ['auto preset preserves unsafe command', compactCommandOutput('a.ts\n', { preset: 'auto', command: 'git diff --name-only' }).raw_required === true],
+  ['auto preset preserves exact find output', compactCommandOutput('./a.ts\n./node_modules/x.js\n', { preset: 'auto', command: 'find . -type f' }).raw_required === true],
   ['requires command before compaction', compactCommandOutput(noisyTest, { mode: 'test' }).status === 'raw' && compactCommandOutput(noisyTest, { mode: 'test' }).reason.includes('command is required')],
   ['compacts test failures only', compactCommandOutput(noisyTest, { mode: 'test', command: 'vitest' }).output.includes('FAIL src/c.test.ts') && !compactCommandOutput(noisyTest, { mode: 'test', command: 'vitest' }).output.includes('PASS src/a.test.ts')],
   ['keeps type errors', compactCommandOutput('src/a.ts:1:2 - error TS2322: bad\nDone\n', { mode: 'typecheck', command: 'tsc --noEmit' }).output.includes('TS2322')],
