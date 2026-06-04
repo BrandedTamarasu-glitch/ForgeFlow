@@ -51,8 +51,17 @@ function helperGroupForSource(source) {
   if (/^(build-|check-context|context-|compact-|capture-|failure-|advise-|seed-budget|render-context|render-stale|render-validation|show-code|show-project-trends)/.test(file)) {
     return 'context-intelligence';
   }
-  if (/^(record-|rollup-|show-learning|show-project-learnings|show-user-profile|user-profile|learning-|render-profile|render-outcome|render-first|render-pattern|render-efficiency|render-insight|render-first-useful)/.test(file)) {
+  if (/^(record-)/.test(file)) {
+    return 'learning-recorders';
+  }
+  if (/^(rollup-|learning-|render-outcome|render-pattern|show-learning|show-project-learnings)/.test(file)) {
     return 'learning-evidence';
+  }
+  if (/^(render-profile|show-user-profile|user-profile)/.test(file)) {
+    return 'user-profile';
+  }
+  if (/^(render-first|render-efficiency|render-insight|render-first-useful)/.test(file)) {
+    return 'adoption-guidance';
   }
   if (/^(render-release|render-ship|ship-|smoke-|render-support|render-pilot|render-adoption|render-evaluation|summarize-)/.test(file)) {
     return 'release-shipping';
@@ -136,8 +145,9 @@ function coordinationPressure(runtimeHelpers) {
       reason: 'release gate command list mirrored by release docs',
     },
   ];
+  const hasLargeGroup = pressureReasons.some((reason) => reason.startsWith('large-helper-group:'));
   return {
-    status: pressureReasons.length > 1 ? 'attention' : 'watch',
+    status: hasLargeGroup ? 'attention' : 'watch',
     shared_registry: 'scripts/forgeflow/runtime-inventory.js',
     helper_group_count: groups.length,
     largest_helper_group: largest,

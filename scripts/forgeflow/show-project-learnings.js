@@ -144,7 +144,7 @@ function contextPackSmoke(root, projectDir) {
   }
   const out = path.join(projectDir, 'context', 'latest');
   const helper = path.join(__dirname, 'build-context-pack.js');
-  const result = spawnSync(process.execPath, [helper, '--out', out, '--json'], {
+  const result = spawnSync(process.execPath, [helper, '--out', out, '--mode', 'thin', '--lines', '80', '--json'], {
     cwd: root,
     encoding: 'utf8',
   });

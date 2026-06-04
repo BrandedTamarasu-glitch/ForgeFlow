@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const { execFileSync } = require('child_process');
 const { buildFailureDigest, extractFailureRefs } = require('./build-failure-digest');
 const { classifyFailureDigest } = require('./failure-digest-triage');
 
@@ -26,6 +30,22 @@ const staleRawRequired = classifyFailureDigest({
   input_lines: 10,
   output_lines: 10,
 }, { status: 'attention', issues: [{ code: 'failure-digest-commit-stale' }] });
+const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-failure-digest-cli-'));
+const cliInput = path.join(tmpRoot, 'failure.txt');
+const cliOut = path.join(tmpRoot, 'digest.md');
+fs.writeFileSync(cliInput, input);
+const cliJson = JSON.parse(execFileSync(process.execPath, [
+  path.join(__dirname, 'build-failure-digest.js'),
+  '--mode',
+  'test',
+  '--command',
+  'vitest',
+  '--file',
+  cliInput,
+  '--out',
+  cliOut,
+  '--json',
+], { cwd: tmpRoot, encoding: 'utf8' }));
 
 const checks = [
   ['extracts refs', extractFailureRefs(input).some((item) => item.file === 'src/bad.test.ts' && item.line === 12)],
@@ -44,6 +64,7 @@ const checks = [
   ['classifies invalid digest', invalid.state === 'invalid' && invalid.next_action.command === 'forgeflow-failure-digest'],
   ['raw-required takes precedence over stale', staleRawRequired.state === 'raw-required' && staleRawRequired.next_action.action === 'inspect-raw-failure-output' && staleRawRequired.next_action.command === ''],
   ['uses longer markdown fence', fenced.markdown.includes('````text') && fenced.markdown.includes('\n```\n')],
+  ['cli supports file out json', cliJson.out === cliOut && fs.existsSync(cliOut) && fs.readFileSync(cliOut, 'utf8').includes('src/bad.test.ts:12:4')],
 ];
 
 let failed = 0;
