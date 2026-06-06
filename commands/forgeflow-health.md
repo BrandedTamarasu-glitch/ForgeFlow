@@ -57,7 +57,7 @@ EXPECTED_PROJECT_RULES=(commit-hygiene dev-environment)
 EXPECTED_HOOKS=(forgeflow-gate forgeflow-context-monitor forgeflow-statusline forgeflow-telemetry)
 EXPECTED_TEMPLATES=(ship-presentation.html)
 EXPECTED_RUNTIME_HELPERS=(
-  advise-context.js advise-noisy-command.js agent-chat-off.sh agent-chat-on.sh build-code-topology.js build-context-pack.js build-context-wave.js build-failure-digest.js build-memory-context.js build-project-intelligence.js
+  advise-context.js advise-noisy-command.js agent-chat-off.sh agent-chat-on.sh build-code-topology.js build-context-pack.js build-context-wave.js build-failure-digest.js build-memory-context.js build-project-intelligence.js build-project-operating-model.js
   build-scope-manifest.js capture-command-output.js check-agent-drift.js check-codex-agent-drift.js check-context-contract.js check-context-budget.js check-implementation-notes.js check-profile-compliance.js check-project-learnings.js check-review-evidence-schema.js check-user-profile.js classify-review-auto.js command-args.js command-wrapper-contract.js context-telemetry.js learning-signal-policy.js
   compact-command-output.js
   ensure-forgeflow-state.sh explain-review-route.js failure-digest-triage.js file-safety.js forgeflow-version.js generate-codex-agent-stubs.js guidance-contract.js health-check.js

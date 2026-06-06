@@ -21,6 +21,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/build-context-wave.js',
   'scripts/forgeflow/build-memory-context.js',
   'scripts/forgeflow/build-project-intelligence.js',
+  'scripts/forgeflow/build-project-operating-model.js',
   'scripts/forgeflow/build-scope-manifest.js',
   'scripts/forgeflow/capture-command-output.js',
   'scripts/forgeflow/check-agent-drift.js',

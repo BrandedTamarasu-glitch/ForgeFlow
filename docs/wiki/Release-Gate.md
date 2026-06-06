@@ -88,6 +88,7 @@ node scripts/forgeflow/test-render-project-decision-brief.js
 node scripts/forgeflow/test-show-project-trends.js
 node scripts/forgeflow/test-show-project-health-timeline.js
 node scripts/forgeflow/test-build-project-intelligence.js
+node scripts/forgeflow/test-build-project-operating-model.js
 node scripts/forgeflow/test-smoke-check.js
 node scripts/forgeflow/test-dogfood-self-test.js
 node scripts/forgeflow/test-installed-runtime-dogfood.js
