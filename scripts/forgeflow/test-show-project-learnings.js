@@ -2,6 +2,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { spawnSync } = require('child_process');
 const { parseArgs, shouldRefreshProjectCodeMap, showProjectLearnings } = require('./show-project-learnings');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
@@ -24,8 +25,35 @@ fs.writeFileSync(path.join(projectDir, 'project-learning-candidates.jsonl'), [
   '',
 ].join('\n'));
 
+function git(root, args) {
+  const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' });
+  if (result.status !== 0) throw new Error(result.stderr || result.stdout);
+}
+
+const smokeRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-show-project-learnings-smoke-'));
+const smokeProjectDir = path.join(smokeRoot, '.forgeflow', path.basename(smokeRoot));
+fs.mkdirSync(smokeProjectDir, { recursive: true });
+git(smokeRoot, ['init']);
+git(smokeRoot, ['config', 'user.email', 'forgeflow@example.invalid']);
+git(smokeRoot, ['config', 'user.name', 'Forgeflow Test']);
+fs.writeFileSync(path.join(smokeRoot, 'README.md'), '# Smoke\n');
+fs.writeFileSync(path.join(smokeRoot, 'app.js'), 'module.exports = 1;\n');
+git(smokeRoot, ['add', 'README.md', 'app.js']);
+git(smokeRoot, ['commit', '-m', 'init']);
+fs.writeFileSync(path.join(smokeRoot, 'app.js'), 'module.exports = 2;\n');
+fs.writeFileSync(path.join(smokeProjectDir, 'project-learning-candidates.jsonl'), [
+  JSON.stringify({
+    schema_version: '1',
+    category: 'validation-pattern',
+    learning: 'Default project-learning smoke should use a budget-safe context packet',
+    source: 'Compass',
+  }),
+  '',
+].join('\n'));
+
 const result = showProjectLearnings({ projectDir });
 const defaultProjectDir = path.join(repoRoot, '.forgeflow', path.basename(repoRoot));
+const checkedDefaultSmoke = showProjectLearnings({ root: smokeRoot, check: true });
 const refreshedExternal = showProjectLearnings({ projectDir, refreshCodeMap: true });
 const checkedExternal = showProjectLearnings({ projectDir, check: true });
 const externalTopologyPath = path.join(projectDir, 'context', 'code-topology.json');
@@ -67,6 +95,7 @@ const checks = [
   ['renders guidance warning', result.markdown.includes('Use these as guidance only')],
   ['explicit refresh writes external code map', refreshedExternal.sources.code_map === true && fs.existsSync(externalTopologyPath)],
   ['check runs quality gate', checkedExternal.check.status === 'pass' && checkedExternal.context_smoke.status === 'skipped' && checkedExternal.latest_insights_ready === false],
+  ['default context smoke stays budget-safe', checkedDefaultSmoke.check.status === 'pass' && checkedDefaultSmoke.context_smoke.status === 'pass' && checkedDefaultSmoke.context_smoke.agents.length <= 2 && checkedDefaultSmoke.context_smoke.packet_count <= 2],
   ['refreshes code map for default project dir', shouldRefreshProjectCodeMap(repoRoot, defaultProjectDir) === true],
   ['does not refresh code map for explicit external project dir', shouldRefreshProjectCodeMap(repoRoot, projectDir) === false],
   ['allows explicit refresh override', shouldRefreshProjectCodeMap(repoRoot, projectDir, { refreshCodeMap: true }) === true],

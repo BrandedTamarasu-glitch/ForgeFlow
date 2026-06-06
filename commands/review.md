@@ -84,6 +84,23 @@ Continue to Step 0.5.
 
 Set `CI_MODE=true` if `$ARGUMENTS` contains `--ci` OR the environment variable `CLAUDE_CODE_HEADLESS=1` is set. Otherwise `CI_MODE=false`.
 
+Before any shell block consumes arguments, normalize the raw command arguments into `SAFE_ARGUMENTS` and use that variable for shell-level checks. `/review` intentionally supports file paths, git refs/ranges, and a small set of flags, so this is a safety boundary rather than a flag-only parser:
+
+```bash
+RAW_ARGUMENTS="${ARGUMENTS:-}"
+case "$RAW_ARGUMENTS" in
+  *[\;\&\|\`\$\<\>]*|*$'\n'*|*$'\r'*)
+    echo "Unsupported /review arguments: shell metacharacters and control characters are not allowed."
+    exit 2
+    ;;
+esac
+SAFE_ARGUMENTS="$RAW_ARGUMENTS"
+SAFE_ARGS=()
+if [ -n "$SAFE_ARGUMENTS" ]; then
+  SAFE_ARGS=(--task "$SAFE_ARGUMENTS")
+fi
+```
+
 When `CI_MODE=true`:
 - Suppress all markdown narrative output from Steps 7-8. Steps still execute; their outputs are collected into memory for the final JSON emission in Step 7.5 (added below).
 - The classifier (Step 0.5) caps routing at `thin-mode` unless `deep-mode` triggers fire, unless the user passed an explicit `--mode` flag.
@@ -110,7 +127,7 @@ REVIEW_FILES_UNIQUE="${REVIEW_TMP_DIR}/files.unique"
 # Use the same file set that Step 1 will resolve — and use the same CI/interactive
 # diff source. In CI the working tree is clean (checkout produces no diff vs HEAD),
 # so we must diff against the PR base branch; interactively we diff the working tree.
-if [ -n "${GITHUB_BASE_REF:-}" ] || echo "$ARGUMENTS" | grep -q -- '--pr '; then
+if [ -n "${GITHUB_BASE_REF:-}" ] || printf '%s\n' "$SAFE_ARGUMENTS" | grep -q -- '--pr '; then
   BASE_REF="${GITHUB_BASE_REF:-main}"
   git fetch origin "${BASE_REF}" 2>/dev/null || true
   git diff --name-only "origin/${BASE_REF}..HEAD" 2>/dev/null > "$REVIEW_FILES"
@@ -142,8 +159,8 @@ fi
 DEFAULT_CALIBRATION=".forgeflow/${PROJECT_NAME}/calibration-summary.json"
 ROUTE_ARGS=()
 
-if echo "$ARGUMENTS" | grep -q -- '--calibration '; then
-  CALIBRATION_PATH=$(echo "$ARGUMENTS" | sed -n 's/.*--calibration \([^ ]*\).*/\1/p' | head -1)
+if printf '%s\n' "$SAFE_ARGUMENTS" | grep -q -- '--calibration '; then
+  CALIBRATION_PATH=$(printf '%s\n' "$SAFE_ARGUMENTS" | sed -n 's/.*--calibration \([^ ]*\).*/\1/p' | head -1)
 elif [ -f "$DEFAULT_CALIBRATION" ]; then
   CALIBRATION_PATH="$DEFAULT_CALIBRATION"
 else
@@ -154,8 +171,8 @@ if [ -n "$CALIBRATION_PATH" ] && [ -f "$CALIBRATION_PATH" ]; then
   ROUTE_ARGS+=(--calibration "$CALIBRATION_PATH")
 fi
 
-if echo "$ARGUMENTS" | grep -q -- '--mode '; then
-  MODE_OVERRIDE=$(echo "$ARGUMENTS" | sed -n 's/.*--mode \([^ ]*\).*/\1/p' | head -1)
+if printf '%s\n' "$SAFE_ARGUMENTS" | grep -q -- '--mode '; then
+  MODE_OVERRIDE=$(printf '%s\n' "$SAFE_ARGUMENTS" | sed -n 's/.*--mode \([^ ]*\).*/\1/p' | head -1)
   case "$MODE_OVERRIDE" in
     skip|thin|full|deep) ROUTE_ARGS+=(--mode "$MODE_OVERRIDE") ;;
     *) echo "Invalid review mode: $MODE_OVERRIDE"; exit 2 ;;
@@ -300,7 +317,7 @@ Otherwise, if `$ARGUMENTS` contains `--incremental` AND the argument also contai
 ### 1.5a. Enumerate commits
 
 ```bash
-RANGE=$(echo "$ARGUMENTS" | grep -oE '[A-Za-z0-9_/^~.@{}-]+\.\.[A-Za-z0-9_/^~.@{}-]+|HEAD~[0-9]+\.\.HEAD' | head -1)
+RANGE=$(printf '%s\n' "$SAFE_ARGUMENTS" | grep -oE '[A-Za-z0-9_/^~.@{}-]+\.\.[A-Za-z0-9_/^~.@{}-]+|HEAD~[0-9]+\.\.HEAD' | head -1)
 COMMITS=$(git rev-list --reverse "$RANGE")
 COMMIT_COUNT=$(echo "$COMMITS" | grep -c .)
 ```
@@ -407,10 +424,10 @@ Skip this step only when `$ARGUMENTS` contains `--no-context-pack`.
 CONTEXT_PACK_DIR="${FORGEFLOW_DIR}/context/latest"
 CONTEXT_PACK_ARG=""
 
-if ! echo "$ARGUMENTS" | grep -q -- '--no-context-pack' && [ -x "${HELPER_DIR}/build-context-pack.js" ]; then
+if ! printf '%s\n' "$SAFE_ARGUMENTS" | grep -q -- '--no-context-pack' && [ -x "${HELPER_DIR}/build-context-pack.js" ]; then
   TASK_ARGS=()
-  if [ -n "${ARGUMENTS:-}" ]; then
-    TASK_ARGS=(--task "$ARGUMENTS")
+  if [ -n "${SAFE_ARGUMENTS:-}" ]; then
+    TASK_ARGS=(--task "$SAFE_ARGUMENTS")
   fi
   "${HELPER_DIR}/build-context-pack.js" \
     --root "$PROJECT_ROOT" \

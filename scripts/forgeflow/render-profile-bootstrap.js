@@ -5,6 +5,7 @@ const {
   normalizeEntry,
   profileFiles,
   recordUserProfile,
+  showUserProfile,
 } = require('./user-profile');
 const { tokenize } = require('./command-args');
 
@@ -213,7 +214,8 @@ function buildProfileBootstrap(opts = {}) {
     }
   }
   const check = checkUserProfile({ ...opts, projectDir: files.projectDir, home: files.home });
-  const setupPlan = buildSetupPlan(entries);
+  const existingRecords = showUserProfile({ ...opts, projectDir: files.projectDir, home: files.home }).records || [];
+  const setupPlan = buildSetupPlan([...entries, ...existingRecords]);
   const nextProfileAction = opts.write
     ? {
       status: 'check-profile',
@@ -226,11 +228,17 @@ function buildProfileBootstrap(opts = {}) {
         command: writeCommandForEntries(entries),
         reason: 'Previewed preferences should only be written after the user confirms each record is explicit and correct.',
       }
+      : (setupPlan.status === 'ready-for-check' && check.status === 'pass'
+        ? {
+          status: 'review-profile',
+          command: 'forgeflow-profile-review',
+          reason: 'Required operating preferences already exist and the profile quality gate passes.',
+        }
       : {
         status: 'prompt-needed',
         command: 'forgeflow-profile-bootstrap --prompts',
         reason: 'No explicit preferences were provided, so Forgeflow should ask targeted bootstrap questions before writing anything.',
-      });
+        }));
   return {
     schema_version: '1',
     status: opts.write ? 'written' : 'preview',
@@ -250,7 +258,11 @@ function buildProfileBootstrap(opts = {}) {
     next_profile_action: nextProfileAction,
     next: opts.write
       ? 'Run forgeflow-profile --check before relying on profile guidance in agent context.'
-      : (entries.length > 0 ? 'Review the preview, then rerun with --write only if every preference is explicit and correct.' : 'Answer any useful prompts, then rerun with explicit preference flags.'),
+      : (entries.length > 0
+        ? 'Review the preview, then rerun with --write only if every preference is explicit and correct.'
+        : (setupPlan.status === 'ready-for-check' && check.status === 'pass'
+          ? 'Run forgeflow-profile-review to inspect active profile guidance before relying on it.'
+          : 'Answer any useful prompts, then rerun with explicit preference flags.')),
     boundary: 'Profile bootstrap uses only explicit command arguments. It does not infer preferences from behavior, current conversation, code, or project history.',
   };
 }

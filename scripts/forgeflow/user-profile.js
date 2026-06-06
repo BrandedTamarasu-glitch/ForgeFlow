@@ -278,6 +278,9 @@ function profileSuggestions(records) {
   if (!hasGlobal('autonomy')) {
     addPrompt('autonomy', 'Ask when Forgeflow should continue autonomously and when it should pause.', ['plan', 'implement', 'review', 'next-step']);
   }
+  if (!hasGlobal('risk')) {
+    addPrompt('risk', 'Ask what risks should trigger an explicit pause.', ['plan', 'implement', 'review', 'ship']);
+  }
   if (!hasGlobal('validation')) {
     addPrompt('validation', 'Ask what validation proof the user expects before a slice is considered complete.', ['implement', 'review', 'ship']);
   }
