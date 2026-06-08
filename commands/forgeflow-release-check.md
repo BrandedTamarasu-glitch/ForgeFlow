@@ -97,6 +97,8 @@ node scripts/forgeflow/test-profile-review.js
 node scripts/forgeflow/test-profile-compliance.js
 node scripts/forgeflow/test-next-action-contract.js
 node scripts/forgeflow/test-output-contract.js
+node scripts/forgeflow/test-apply-review-autofix-proposal.js
+node scripts/forgeflow/test-build-review-autofix-proposal.js
 node scripts/forgeflow/test-classify-review-auto.js
 node scripts/forgeflow/test-check-review-evidence-schema.js
 node scripts/forgeflow/test-render-review-auto-evidence.js
@@ -169,6 +171,7 @@ If any command fails, stop and report the failed command plus its output. Do not
 - [ ] Agent feedback recorder test passes
 - [ ] Project learning recorder test passes
 - [ ] User profile helper test passes
+- [ ] Review-auto deterministic proposal builder and apply tests pass
 - [ ] Pattern learnings rollup test passes
 - [ ] Pilot evidence rollup test passes
 - [ ] Project learnings rollup test passes

@@ -117,14 +117,14 @@ function copySandbox(root) {
   return sandbox;
 }
 
-function applyOperation(root, operation) {
+function applyOperation(root, operation, label = 'sandbox target') {
   const op = String(operation.op || operation.type || '').trim();
   const rel = normalizeRelPath(operation.file || operation.path || operation.target_file);
   const file = path.join(root, rel);
   if (!fs.existsSync(file) && op !== 'write') {
     throw new Error(`Proposal target does not exist in sandbox: ${rel}`);
   }
-  if (fs.existsSync(file)) assertRegularInside(file, root, 'sandbox target');
+  if (fs.existsSync(file)) assertRegularInside(file, root, label);
 
   if (op === 'replace') {
     const search = String(operation.search ?? '');
@@ -263,6 +263,9 @@ function runReviewAutofixSandbox(opts = {}) {
       files: item.files,
       policy: item.policy,
     },
+    executor: proposal.executor || '',
+    operations: proposal.operations,
+    validations_requested: Array.isArray(proposal.validations) ? proposal.validations : [],
     changed_files: changed,
     validation,
     artifacts: {
@@ -296,7 +299,14 @@ if (require.main === module) {
 }
 
 module.exports = {
+  applyOperation,
+  assertRegularInside,
+  defaultProjectDir,
+  normalizeRelPath,
   parseArgs,
+  readProposal,
   renderMarkdown,
+  runValidation,
   runReviewAutofixSandbox,
+  timestamp,
 };

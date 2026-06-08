@@ -100,6 +100,8 @@ node scripts/forgeflow/test-profile-review.js
 node scripts/forgeflow/test-profile-compliance.js
 node scripts/forgeflow/test-next-action-contract.js
 node scripts/forgeflow/test-output-contract.js
+node scripts/forgeflow/test-apply-review-autofix-proposal.js
+node scripts/forgeflow/test-build-review-autofix-proposal.js
 node scripts/forgeflow/test-classify-review-auto.js
 node scripts/forgeflow/test-check-review-evidence-schema.js
 node scripts/forgeflow/test-render-review-auto-evidence.js

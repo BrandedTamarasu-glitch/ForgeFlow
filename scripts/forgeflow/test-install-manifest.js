@@ -19,6 +19,8 @@ const checks = [
   ['template destination', destinationFor('templates/forgeflow-budget.json', home) === '/tmp/claude-home/templates/forgeflow-budget.json'],
   ['script category', categoryFor('scripts/forgeflow/health-check.js') === 'runtime-script'],
   ['script destination', destinationFor('scripts/forgeflow/health-check.js', home) === '/tmp/claude-home/forgeflow/scripts/forgeflow/health-check.js'],
+  ['runtime helpers include review-auto proposal apply', RUNTIME_HELPERS.includes('scripts/forgeflow/apply-review-autofix-proposal.js')],
+  ['runtime helpers include review-auto proposal builder', RUNTIME_HELPERS.includes('scripts/forgeflow/build-review-autofix-proposal.js')],
   ['future script category', categoryFor('scripts/forgeflow/future-helper.js') === 'runtime-script'],
   ['future script destination', destinationFor('scripts/forgeflow/future-helper.js', home) === '/tmp/claude-home/forgeflow/scripts/forgeflow/future-helper.js'],
   ['shell script executable', manifestEntry('scripts/forgeflow/ensure-forgeflow-state.sh', home).executable === true],
