@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow - V4.3.55 Changelog</title>
+  <style>
+    body { background: #0d0d0d; color: #ddd8cc; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.65; margin: 0; }
+    main { max-width: 820px; margin: 0 auto; padding: 72px 32px 96px; }
+    .version { color: #7a7670; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
+    h1 { font-size: 40px; font-weight: 400; line-height: 1.15; margin: 14px 0 20px; }
+    h2 { border-top: 1px solid #303030; color: #f0a232; font-size: 18px; font-weight: 600; margin: 42px 0 18px; padding-top: 28px; }
+    p, li { color: #c9c2b6; }
+    code { background: #1c1c1c; border: 1px solid #303030; border-radius: 4px; color: #f0c070; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 1px 5px; }
+    a { color: #f0a232; text-decoration: underline; text-underline-offset: 0.16em; }
+    .nav { display: flex; justify-content: space-between; margin-top: 52px; padding-top: 24px; border-top: 1px solid #303030; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="version">Forgeflow V4.3.55 · 8 June 2026</div>
+    <h1>Release: Operating Model Context Integration</h1>
+    <p>
+      Forgeflow 4.3.55 makes the project operating model usable during everyday workflows. The model now has a slash command surface and context packs inject compact advisory guidance into agent packets without rebuilding project intelligence recursively.
+    </p>
+
+    <h2>Project Model Command</h2>
+    <ul>
+      <li><code>/forgeflow-project-model</code> builds and displays the local advisory project operating model.</li>
+      <li>The command supports <code>--json</code>, <code>--refresh</code>, and <code>--out &lt;path&gt;</code> with safe argument forwarding.</li>
+      <li>Health and update command inventory now includes the project-model command.</li>
+    </ul>
+
+    <h2>Context Pack Injection</h2>
+    <ul>
+      <li>Context packs write <code>project-operating-model.md</code> beside latest packet artifacts.</li>
+      <li>Agent packets include read-first, avoid-first, validate-first, high-care file, proof-boundary, and review-policy hints.</li>
+      <li>Synthesis metadata and agent context contracts mark the model as verify-before-use guidance.</li>
+    </ul>
+
+    <h2>Safety Boundary</h2>
+    <ul>
+      <li>Context packs consume existing operating-model artifacts instead of rebuilding project intelligence during packet generation.</li>
+      <li>Missing model artifacts degrade to metadata-only skipped guidance instead of triggering recursive work.</li>
+      <li>Review-auto behavior remains unchanged while this prepares future sandbox policy work.</li>
+    </ul>
+
+    <h2>Validation</h2>
+    <ul>
+      <li>Full <code>scripts/forgeflow/test-*.js</code> suite</li>
+      <li><code>node scripts/forgeflow/test-build-context-pack.js</code></li>
+      <li><code>node scripts/forgeflow/test-build-project-operating-model.js</code></li>
+      <li><code>node scripts/forgeflow/test-update-forgeflow.js</code></li>
+      <li><code>node scripts/forgeflow/smoke-check.js --mode source --json</code></li>
+      <li><code>node scripts/forgeflow/render-release-readiness.js --json</code></li>
+      <li><code>git diff --check</code></li>
+    </ul>
+
+    <div class="nav">
+      <a href="./v4.3.54.html">&larr; V4.3.54</a>
+      <span>V4.3.55</span>
+    </div>
+  </main>
+</body>
+</html>
