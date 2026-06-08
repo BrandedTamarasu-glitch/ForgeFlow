@@ -82,6 +82,7 @@ function buildReviewAutoEvidence(opts = {}) {
       status: schema.status,
       issue_count: schema.issue_count,
     },
+    policy: classification.policy,
     counts: classification.counts,
     safe_items: classification.items.filter((item) => item.bucket === 'safe'),
     risky_items: classification.items.filter((item) => item.bucket === 'risky'),
@@ -102,7 +103,11 @@ function renderBucket(title, items) {
   if (items.length === 0) lines.push('- None.');
   else for (const item of items) {
     lines.push(`- ${item.id}: ${item.file || '(no file)'}`);
+    lines.push(`  - Class: ${item.class}`);
+    lines.push(`  - Proposal allowed: ${item.proposal_allowed ? 'yes' : 'no'}`);
+    lines.push(`  - Sandbox required: ${item.policy.sandbox_required ? 'yes' : 'no'}`);
     lines.push(`  - Reason: ${item.reason}`);
+    lines.push(`  - Rules: ${item.policy.matched_rules.join(', ')}`);
   }
   return lines;
 }
@@ -113,6 +118,7 @@ function renderMarkdown(result) {
     '',
     `Status: ${result.status}`,
     `Evidence schema: ${result.evidence_schema.status} (${result.evidence_schema.issue_count} issue(s))`,
+    `Policy: ${result.policy.version}`,
     `Safe: ${result.counts.safe}`,
     `Risky: ${result.counts.risky}`,
     `Blocker: ${result.counts.blocker}`,

@@ -9,8 +9,8 @@ const projectDir = path.join(root, '.forgeflow', path.basename(root));
 fs.mkdirSync(projectDir, { recursive: true });
 const findings = path.join(root, 'findings.json');
 fs.writeFileSync(findings, JSON.stringify([
-  { id: 'safe-1', source: 'smith', tier: 'NIT', title: 'Unused import.', file: 'src/demo.ts' },
-  { id: 'risk-1', source: 'warden', tier: 'MUST-FIX-SAFE', title: 'Auth adjacent.', file: 'src/auth.ts' },
+  { id: 'safe-1', source: 'smith', tier: 'NIT', class: 'unused-import', title: 'Unused import.', file: 'src/demo.ts' },
+  { id: 'risk-1', source: 'smith', tier: 'MUST-FIX-SAFE', class: 'needs-judgment', title: 'Behavior needs judgment.', file: 'src/demo.ts' },
 ], null, 2));
 const out = path.join(projectDir, 'evidence.md');
 const result = buildReviewAutoEvidence({ projectDir, findings, out });
@@ -26,10 +26,11 @@ const opts = parseArgs(['--project-dir', projectDir, '--findings', findings, '--
 
 const checks = [
   ['counts buckets', result.counts.safe === 1 && result.counts.risky === 1],
+  ['includes policy contract', result.policy.version === 'phase-4-read-only' && result.safe_items[0].proposal_allowed === true && result.risky_items[0].proposal_allowed === false],
   ['writes evidence', fs.existsSync(out) && fs.readFileSync(out, 'utf8').includes('# Forgeflow Review-Auto Evidence')],
   ['default evidence stays in project dir', defaultResult.out === path.join(projectDir, 'review-auto-evidence.md') && fs.existsSync(defaultResult.out)],
   ['blocks out outside project dir', outsideBlocked],
-  ['renders next reason', markdown.includes('Next:') && markdown.includes('Why:')],
+  ['renders next reason and policy', markdown.includes('Next:') && markdown.includes('Why:') && markdown.includes('Policy: phase-4-read-only') && markdown.includes('Proposal allowed: yes') && markdown.includes('Sandbox required: yes')],
   ['parses args', opts.projectDir === projectDir && opts.findings === findings && opts.out === out && opts.json === true],
 ];
 

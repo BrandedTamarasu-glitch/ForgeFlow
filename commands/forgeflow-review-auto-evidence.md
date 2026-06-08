@@ -58,4 +58,5 @@ env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/render-review-auto-evidence
 - [ ] Output is read-only with respect to source files.
 - [ ] Evidence artifact stays under `.forgeflow/<project>/`.
 - [ ] Safe, risky, and blocker buckets include reasons.
+- [ ] Evidence includes policy version, finding class, proposal eligibility, sandbox-required status, and matched rules.
 </success_criteria>

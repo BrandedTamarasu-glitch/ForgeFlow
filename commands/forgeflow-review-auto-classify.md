@@ -59,4 +59,6 @@ env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/classify-review-auto.js" "$
 - [ ] Output is read-only and does not apply fixes.
 - [ ] Warden/security/dependency/migration/secret findings are not auto-applicable.
 - [ ] Safe findings are clearly separated from risky and blocker findings.
+- [ ] Safe means future sandbox proposal eligibility only, not permission to edit source files.
+- [ ] Unknown classes remain risky until explicitly added to the deterministic allowlist.
 </success_criteria>

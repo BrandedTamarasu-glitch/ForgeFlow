@@ -40,12 +40,19 @@ function readFindings(file) {
 }
 
 function normalizeFinding(finding = {}, index = 0) {
+  const file = String(finding.file || finding.path || finding.target_file || '').replace(/\\/g, '/');
+  const files = Array.isArray(finding.files)
+    ? finding.files.map((item) => String(item || '').replace(/\\/g, '/')).filter(Boolean)
+    : [];
+  const targetFiles = files.length > 0 ? files : (file ? [file] : []);
   return {
     id: String(finding.id || `finding-${index + 1}`),
     source: String(finding.source || finding.reviewer || ''),
     tier: String(finding.tier || finding.severity || ''),
     title: String(finding.title || finding.summary || finding.message || ''),
-    file: String(finding.file || finding.path || finding.target_file || '').replace(/\\/g, '/'),
+    class: String(finding.class || finding.category || finding.kind || finding.safety_class || ''),
+    file: targetFiles[0] || '',
+    files: targetFiles,
     line: Number(finding.line || 0),
   };
 }
@@ -58,8 +65,11 @@ function checkReviewEvidenceSchema(findings = []) {
     if (!normalized.file) issues.push('missing-file');
     if (!normalized.source) issues.push('missing-source');
     if (!normalized.tier) issues.push('missing-tier');
-    if (normalized.file && path.isAbsolute(normalized.file)) issues.push('absolute-file-path');
-    if (normalized.file.includes('..')) issues.push('parent-path-segment');
+    for (const file of normalized.files) {
+      if (path.isAbsolute(file)) issues.push('absolute-file-path');
+      if (file.includes('..')) issues.push('parent-path-segment');
+    }
+    if (normalized.files.length > 1) issues.push('multi-file-finding');
     if (/(secret|token|password|private[_-]?key)["']?\s*[:=]/i.test(JSON.stringify(finding))) issues.push('possible-secret-material');
     return { ...normalized, status: issues.length ? 'attention' : 'pass', issues };
   });
