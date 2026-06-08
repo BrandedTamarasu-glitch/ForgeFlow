@@ -341,6 +341,73 @@ function readJson(file, root = path.dirname(file)) {
   }
 }
 
+function operatingModelHistoryOutFor(projectDir) {
+  return path.join(projectDir, 'context', 'operating-model-history.jsonl');
+}
+
+function readOperatingModelHistory(file, root = path.dirname(file)) {
+  if (!file || !fs.existsSync(file)) return { status: 'missing', records: [], invalid_lines: 0 };
+  let text = '';
+  try {
+    text = safeReadTextFile(file, root).content;
+  } catch (_err) {
+    return { status: 'invalid', records: [], invalid_lines: 1 };
+  }
+  let invalidLines = 0;
+  const records = [];
+  for (const line of text.split(/\r?\n/).map((item) => item.trim()).filter(Boolean)) {
+    try {
+      const record = JSON.parse(line);
+      if (record && record.schema_version === '1') records.push(record);
+      else invalidLines += 1;
+    } catch (_err) {
+      invalidLines += 1;
+    }
+  }
+  return { status: invalidLines > 0 ? 'invalid' : (records.length > 0 ? 'present' : 'missing'), records, invalid_lines: invalidLines };
+}
+
+function diffValues(current = [], previous = []) {
+  const oldSet = new Set(previous || []);
+  const newSet = new Set(current || []);
+  return {
+    added: (current || []).filter((item) => !oldSet.has(item)),
+    removed: (previous || []).filter((item) => !newSet.has(item)),
+  };
+}
+
+function compareOperatingModelTrend(latest, previousRecords = []) {
+  if (!latest) return { status: 'missing' };
+  if (!previousRecords || previousRecords.length === 0) return { status: 'first-run' };
+  const previous = previousRecords[previousRecords.length - 1];
+  const domains = diffValues(latest.domains, previous.domains);
+  const highCareFiles = diffValues(latest.high_care_files, previous.high_care_files);
+  const riskZones = diffValues(latest.risk_zones, previous.risk_zones);
+  const validationPatterns = diffValues(latest.validation_patterns, previous.validation_patterns);
+  const driftCount = [
+    domains,
+    highCareFiles,
+    riskZones,
+    validationPatterns,
+  ].reduce((sum, item) => sum + item.added.length + item.removed.length, 0);
+  const highCareDrift = highCareFiles.added.length + highCareFiles.removed.length;
+  const riskDrift = riskZones.added.length + riskZones.removed.length;
+  return {
+    status: driftCount > 0 ? 'drift' : 'stable',
+    severity: highCareDrift > 0 || riskDrift > 0 ? 'attention' : (driftCount > 0 ? 'info' : 'clear'),
+    drift_count: driftCount,
+    latest_generated_at: latest.generated_at || '',
+    previous_generated_at: previous.generated_at || '',
+    latest_commit: latest.commit_short || '',
+    previous_commit: previous.commit_short || '',
+    domains,
+    high_care_files: highCareFiles,
+    risk_zones: riskZones,
+    validation_patterns: validationPatterns,
+    boundary: 'Operating-model drift is advisory. It flags guidance changes for review and does not block work by itself.',
+  };
+}
+
 function latestImportGaps(contextDir, limit = 5) {
   const topology = readJson(path.join(contextDir, 'code-topology.json'), contextDir)
     || readJson(path.join(contextDir, 'latest', 'code-topology.json'), contextDir);
@@ -370,7 +437,7 @@ function latestImportGaps(contextDir, limit = 5) {
   };
 }
 
-function trendRecommendations({ freshness, latestInsights, refresh, importGaps, failureDigest }) {
+function trendRecommendations({ freshness, latestInsights, refresh, importGaps, failureDigest, operatingModel }) {
   const recommendations = [];
   const hasProjectFreshnessIssue = freshness && freshness.issues && freshness.issues.length > 0;
   const insightsFreshness = latestInsights && latestInsights.freshness ? latestInsights.freshness : null;
@@ -389,6 +456,15 @@ function trendRecommendations({ freshness, latestInsights, refresh, importGaps, 
   }
   if (failureDigest && failureDigest.freshness && failureDigest.freshness.status === 'attention') {
     recommendations.push(refreshFailureDigest());
+  }
+  if (operatingModel && ['missing', 'invalid'].includes(operatingModel.status)) {
+    recommendations.push(refreshProjectTrends({
+      action: 'refresh-operating-model',
+      command: 'forgeflow-project-model --refresh',
+      reason: operatingModel.status === 'invalid' ? 'Project operating-model history is invalid.' : 'Project operating-model history is missing.',
+      evidence: operatingModel.status === 'invalid' ? 'Operating-model history could not be read as valid JSONL guidance.' : 'No operating-model history snapshot is available for drift comparison.',
+      clears: 'Cleared when /forgeflow-project-model records at least one operating-model history snapshot.',
+    }));
   }
   return uniqueRecommendations(recommendations);
 }
@@ -411,9 +487,22 @@ function showProjectTrends(opts = {}) {
   const refresh = opts.refresh ? refreshProjectGuidance(projectDir, root) : null;
   const contextDir = path.join(projectDir, 'context');
   const historyPath = path.join(contextDir, 'code-map-history.jsonl');
+  const operatingModelHistoryPath = operatingModelHistoryOutFor(projectDir);
   const learningsPath = path.join(projectDir, 'project-learnings.md');
   const history = readCodeMapHistory(historyPath);
+  const operatingModelHistoryResult = readOperatingModelHistory(operatingModelHistoryPath, projectDir);
+  const operatingModelHistory = operatingModelHistoryResult.records;
   const trend = latestCodeMapTrend(history);
+  const operatingModelLatest = operatingModelHistory.length > 0 ? operatingModelHistory[operatingModelHistory.length - 1] : null;
+  const operatingModelTrend = operatingModelHistoryResult.status === 'invalid'
+    ? {
+      status: 'invalid',
+      severity: 'attention',
+      drift_count: 0,
+      invalid_lines: operatingModelHistoryResult.invalid_lines,
+      boundary: 'Operating-model drift is advisory. Invalid history should be refreshed before relying on drift guidance.',
+    }
+    : compareOperatingModelTrend(operatingModelLatest, operatingModelHistory.slice(0, -1));
   const latest = history.length > 0 ? history[history.length - 1] : null;
   const projectLearnings = parseProjectLearnings(readFile(learningsPath, projectDir));
   const advisor = adviseContext({
@@ -442,6 +531,7 @@ function showProjectTrends(opts = {}) {
     refresh,
     paths: {
       code_map_history: fs.existsSync(historyPath) ? path.relative(root, historyPath) : null,
+      operating_model_history: fs.existsSync(operatingModelHistoryPath) ? path.relative(root, operatingModelHistoryPath) : null,
       project_learnings: fs.existsSync(learningsPath) ? path.relative(root, learningsPath) : null,
       latest_insights_report: fs.existsSync(latestInsights.path) ? path.relative(root, latestInsights.path) : null,
       failure_digest: fs.existsSync(failureDigest.path) ? path.relative(root, failureDigest.path) : null,
@@ -456,6 +546,16 @@ function showProjectTrends(opts = {}) {
       living_project_map: livingProjectMapFromTrend(trend),
       new_high_fan_in: topList(trend.new_high_fan_in),
       new_high_fan_out: topList(trend.new_high_fan_out),
+    },
+    operating_model: {
+      history_snapshots: operatingModelHistory.length,
+      history_status: operatingModelHistoryResult.status,
+      invalid_lines: operatingModelHistoryResult.invalid_lines,
+      latest_generated_at: operatingModelLatest ? operatingModelLatest.generated_at || '' : '',
+      latest_commit: operatingModelLatest ? operatingModelLatest.commit_short || '' : '',
+      latest_dirty: operatingModelLatest ? Boolean(operatingModelLatest.dirty) : false,
+      summary: operatingModelLatest ? operatingModelLatest.summary || null : null,
+      trend: operatingModelTrend,
     },
     import_gaps: importGaps,
     project_learnings: projectLearnings,
@@ -481,7 +581,14 @@ function showProjectTrends(opts = {}) {
       percent_saved: advisor.summary.percent_saved,
     },
   };
-  result.recommendations = trendRecommendations({ freshness, latestInsights, refresh, importGaps, failureDigest });
+  result.recommendations = trendRecommendations({
+    freshness,
+    latestInsights,
+    refresh,
+    importGaps,
+    failureDigest,
+    operatingModel: operatingModelTrend,
+  });
   return result;
 }
 
@@ -509,6 +616,25 @@ function renderMarkdown(result) {
     `- Changed sections delta: ${trend.changed_sections_delta ?? 0}`,
     `- New high fan-in: ${result.code_map.new_high_fan_in.length > 0 ? result.code_map.new_high_fan_in.join(', ') : '(none)'}`,
     `- New high fan-out: ${result.code_map.new_high_fan_out.length > 0 ? result.code_map.new_high_fan_out.join(', ') : '(none)'}`,
+    '',
+    '## Operating Model Drift',
+    '',
+    `- Status: ${result.operating_model.trend.status || 'missing'}`,
+    `- Severity: ${result.operating_model.trend.severity || 'unknown'}`,
+    `- History status: ${result.operating_model.history_status || 'unknown'}`,
+    `- History snapshots: ${result.operating_model.history_snapshots}`,
+    `- Invalid history lines: ${result.operating_model.invalid_lines || 0}`,
+    `- Latest snapshot: ${result.operating_model.latest_generated_at || '(none)'}`,
+    `- Drift count: ${result.operating_model.trend.drift_count ?? 0}`,
+    `- Domains added: ${result.operating_model.trend.domains && result.operating_model.trend.domains.added.length > 0 ? result.operating_model.trend.domains.added.join(', ') : '(none)'}`,
+    `- Domains removed: ${result.operating_model.trend.domains && result.operating_model.trend.domains.removed.length > 0 ? result.operating_model.trend.domains.removed.join(', ') : '(none)'}`,
+    `- High-care added: ${result.operating_model.trend.high_care_files && result.operating_model.trend.high_care_files.added.length > 0 ? result.operating_model.trend.high_care_files.added.join(', ') : '(none)'}`,
+    `- High-care removed: ${result.operating_model.trend.high_care_files && result.operating_model.trend.high_care_files.removed.length > 0 ? result.operating_model.trend.high_care_files.removed.join(', ') : '(none)'}`,
+    `- Risk zones added: ${result.operating_model.trend.risk_zones && result.operating_model.trend.risk_zones.added.length > 0 ? result.operating_model.trend.risk_zones.added.join('; ') : '(none)'}`,
+    `- Risk zones removed: ${result.operating_model.trend.risk_zones && result.operating_model.trend.risk_zones.removed.length > 0 ? result.operating_model.trend.risk_zones.removed.join('; ') : '(none)'}`,
+    `- Validation added: ${result.operating_model.trend.validation_patterns && result.operating_model.trend.validation_patterns.added.length > 0 ? result.operating_model.trend.validation_patterns.added.join('; ') : '(none)'}`,
+    `- Validation removed: ${result.operating_model.trend.validation_patterns && result.operating_model.trend.validation_patterns.removed.length > 0 ? result.operating_model.trend.validation_patterns.removed.join('; ') : '(none)'}`,
+    `- Boundary: ${result.operating_model.trend.boundary || 'Operating-model drift is advisory only.'}`,
     '',
     '## Living Project Map',
     '',
@@ -615,8 +741,10 @@ module.exports = {
   latestFailureDigest,
   parseArgs,
   parseFailureDigest,
+  compareOperatingModelTrend,
   failureDigestFreshness,
   projectFreshness,
   renderMarkdown,
+  readOperatingModelHistory,
   showProjectTrends,
 };

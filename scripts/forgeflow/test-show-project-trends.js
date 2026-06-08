@@ -57,6 +57,45 @@ fs.writeFileSync(path.join(contextDir, 'code-map-history.jsonl'), [
   }),
   '',
 ].join('\n'));
+fs.writeFileSync(path.join(contextDir, 'operating-model-history.jsonl'), [
+  JSON.stringify({
+    schema_version: '1',
+    generated_at: '2026-05-19T00:00:00Z',
+    commit_short: 'aaaaaaa',
+    dirty: false,
+    status: 'ready',
+    confidence_band: 'medium',
+    summary: {
+      domains: 1,
+      high_care_files: 1,
+      risk_zones: 1,
+      validation_patterns: 1,
+    },
+    domains: ['scripts/forgeflow'],
+    high_care_files: ['scripts/forgeflow/file-safety.js'],
+    risk_zones: ['Release helper reported stale state.'],
+    validation_patterns: ['node scripts/forgeflow/test-release-version.js'],
+  }),
+  JSON.stringify({
+    schema_version: '1',
+    generated_at: '2026-05-20T00:00:00Z',
+    commit_short: 'bbbbbbb',
+    dirty: true,
+    status: 'ready',
+    confidence_band: 'high',
+    summary: {
+      domains: 2,
+      high_care_files: 2,
+      risk_zones: 2,
+      validation_patterns: 2,
+    },
+    domains: ['scripts/forgeflow', 'commands'],
+    high_care_files: ['scripts/forgeflow/file-safety.js', 'scripts/forgeflow/show-project-trends.js'],
+    risk_zones: ['Release helper reported stale state.', 'Context packet exceeded budget.'],
+    validation_patterns: ['node scripts/forgeflow/test-release-version.js', 'node scripts/forgeflow/test-show-project-trends.js'],
+  }),
+  '',
+].join('\n'));
 fs.writeFileSync(path.join(contextDir, 'code-topology-telemetry.json'), JSON.stringify({
   schema_version: '1',
   kind: 'code-topology',
@@ -399,6 +438,60 @@ fs.writeFileSync(outsideHistory, `${JSON.stringify({
 })}\n`);
 fs.symlinkSync(outsideHistory, path.join(symlinkHistoryContextDir, 'code-map-history.jsonl'));
 const symlinkHistoryResult = showProjectTrends({ root, projectDir: symlinkHistoryProjectDir });
+const symlinkOperatingModelProjectDir = path.join(root, '.forgeflow', 'SymlinkOperatingModelHistory');
+const symlinkOperatingModelContextDir = path.join(symlinkOperatingModelProjectDir, 'context');
+const symlinkOperatingModelLatestDir = path.join(symlinkOperatingModelContextDir, 'latest');
+fs.mkdirSync(symlinkOperatingModelLatestDir, { recursive: true });
+fs.writeFileSync(path.join(symlinkOperatingModelContextDir, 'code-map-history.jsonl'), '');
+fs.writeFileSync(path.join(symlinkOperatingModelProjectDir, 'project-learnings.md'), '# Project Learnings\n');
+fs.writeFileSync(path.join(symlinkOperatingModelLatestDir, 'latest-insights-report.json'), JSON.stringify({
+  schema_version: '1',
+  status: 'injected',
+  reason: 'quality-check-passing',
+  generated_at: '2026-05-20T00:00:00.000Z',
+  git: { available: false, commit_short: '', dirty: true },
+  check_status: 'pass',
+  issue_count: 0,
+}, null, 2));
+const outsideOperatingModelHistory = path.join(root, 'outside-operating-model-history.jsonl');
+fs.writeFileSync(outsideOperatingModelHistory, `${JSON.stringify({
+  schema_version: '1',
+  generated_at: '2026-05-20T00:00:00Z',
+  domains: ['src/leaked-operating-domain'],
+  high_care_files: ['src/leaked-operating-model.ts'],
+  risk_zones: [],
+  validation_patterns: [],
+})}\n`);
+fs.symlinkSync(outsideOperatingModelHistory, path.join(symlinkOperatingModelContextDir, 'operating-model-history.jsonl'));
+const symlinkOperatingModelResult = showProjectTrends({ root, projectDir: symlinkOperatingModelProjectDir });
+const invalidOperatingModelProjectDir = path.join(root, '.forgeflow', 'InvalidOperatingModelHistory');
+const invalidOperatingModelContextDir = path.join(invalidOperatingModelProjectDir, 'context');
+const invalidOperatingModelLatestDir = path.join(invalidOperatingModelContextDir, 'latest');
+fs.mkdirSync(invalidOperatingModelLatestDir, { recursive: true });
+fs.writeFileSync(path.join(invalidOperatingModelContextDir, 'code-map-history.jsonl'), '');
+fs.writeFileSync(path.join(invalidOperatingModelProjectDir, 'project-learnings.md'), '# Project Learnings\n');
+fs.writeFileSync(path.join(invalidOperatingModelLatestDir, 'latest-insights-report.json'), JSON.stringify({
+  schema_version: '1',
+  status: 'injected',
+  reason: 'quality-check-passing',
+  generated_at: '2026-05-20T00:00:00.000Z',
+  git: { available: false, commit_short: '', dirty: true },
+  check_status: 'pass',
+  issue_count: 0,
+}, null, 2));
+fs.writeFileSync(path.join(invalidOperatingModelContextDir, 'operating-model-history.jsonl'), [
+  JSON.stringify({
+    schema_version: '1',
+    generated_at: '2026-05-20T00:00:00Z',
+    domains: ['scripts/forgeflow'],
+    high_care_files: [],
+    risk_zones: [],
+    validation_patterns: [],
+  }),
+  'not-json',
+  '',
+].join('\n'));
+const invalidOperatingModelResult = showProjectTrends({ root, projectDir: invalidOperatingModelProjectDir });
 const symlinkProjectTargetDir = path.join(root, 'outside-symlink-project-target');
 const symlinkRootProjectDir = path.join(root, '.forgeflow', 'SymlinkProjectRoot');
 fs.mkdirSync(symlinkProjectTargetDir, { recursive: true });
@@ -435,6 +528,7 @@ const refreshCliJson = showProjectTrends(parseArgs([
 const checks = [
   ['summarizes history count', result.code_map.history_snapshots === 2],
   ['compares code map trend', result.code_map.trend.status === 'compared' && result.code_map.trend.unresolved_imports_delta === 1],
+  ['compares operating model drift', result.operating_model.history_status === 'present' && result.operating_model.history_snapshots === 2 && result.operating_model.trend.status === 'drift' && result.operating_model.trend.severity === 'attention' && result.operating_model.trend.domains.added.includes('commands') && result.operating_model.trend.high_care_files.added.includes('scripts/forgeflow/show-project-trends.js') && result.operating_model.trend.risk_zones.added.includes('Context packet exceeded budget.') && result.operating_model.trend.validation_patterns.added.includes('node scripts/forgeflow/test-show-project-trends.js')],
   ['summarizes living project map', result.code_map.living_project_map.status === 'attention' && result.code_map.living_project_map.categories.some((item) => item.category === 'new-hotspot' && item.paths.includes('src/core.ts')) && result.code_map.living_project_map.categories.some((item) => item.category === 'import-gap-growth') && result.code_map.living_project_map.categories.some((item) => item.category === 'changed-section-churn')],
   ['reports new hotspots', result.code_map.new_high_fan_in.includes('src/core.ts') && result.code_map.new_high_fan_out.includes('src/app.ts')],
   ['summarizes import gaps', result.import_gaps.status === 'attention' && result.import_gaps.unresolved_total === 1 && result.import_gaps.skipped_dynamic_total === 1 && result.recommendations.some((item) => item.command === 'forgeflow-code-map')],
@@ -444,6 +538,8 @@ const checks = [
   ['symlink topology not read', symlinkTopologyResult.import_gaps.status === 'missing' && !JSON.stringify(symlinkTopologyResult).includes('src/leak.ts')],
   ['hardlink topology not read', hardlinkTopologyResult.import_gaps.status === 'missing' && !JSON.stringify(hardlinkTopologyResult).includes('src/hardlink-leak.ts')],
   ['symlink history not read', symlinkHistoryResult.code_map.history_snapshots === 0 && !JSON.stringify(symlinkHistoryResult).includes('src/leaked-history.ts')],
+  ['symlink operating model history not read', symlinkOperatingModelResult.operating_model.history_snapshots === 0 && symlinkOperatingModelResult.operating_model.history_status === 'invalid' && symlinkOperatingModelResult.operating_model.trend.status === 'invalid' && !JSON.stringify(symlinkOperatingModelResult).includes('src/leaked-operating-model.ts')],
+  ['invalid operating model history surfaces invalid', invalidOperatingModelResult.operating_model.history_status === 'invalid' && invalidOperatingModelResult.operating_model.invalid_lines === 1 && invalidOperatingModelResult.operating_model.trend.status === 'invalid' && invalidOperatingModelResult.operating_model.trend.boundary.includes('Invalid history') && invalidOperatingModelResult.recommendations.some((item) => item.command === 'forgeflow-project-model --refresh' && item.reason.includes('invalid'))],
   ['symlink project root blocked', symlinkProjectBlocked],
   ['custom project dir uses caller root for insights freshness', customProjectResult.latest_insights.freshness.current_commit !== '' && customProjectResult.latest_insights.freshness.issues.some((item) => item.code === 'latest-insights-commit-stale')],
   ['detects learning consumption', result.project_learnings.consumed_code_map_trend === true && parsedLearnings.consumed_code_map_trend === true && parsedLearnings.consumed_code_map_history_snapshots === 2 && parsedLearnings.generated_at === ''],
@@ -460,8 +556,8 @@ const checks = [
   ['detects missing freshness inputs', missingFreshness.status === 'missing' && missingFreshness.issues.some((item) => item.code === 'code-map-missing') && missingFreshness.issues.some((item) => item.code === 'project-learnings-missing')],
   ['summarizes advisor', result.advisor.budget_status === 'warn' && result.advisor.code_map_trends_status === 'attention' && result.advisor.recommendations.some((item) => item.action === 'trim-budget-violation' && item.evidence && item.clears && item.split_suggestion && item.split_suggestion.strategy === 'split-before-review')],
   ['advisor split stays with parent recommendation', budgetIndex >= 0 && splitIndex > budgetIndex && (nextAdvisorIndex === -1 || splitIndex < nextAdvisorIndex)],
-  ['renders markdown', markdown.includes('# Forgeflow Project Trends') && markdown.includes('## Recommendations') && markdown.includes('Evidence:') && markdown.includes('Clears:') && markdown.includes('Unresolved imports delta: 1') && markdown.includes('## Living Project Map') && markdown.includes('new-hotspot') && markdown.includes('graph-growth: score') && markdown.includes('Deltas: source files') && markdown.includes('Static JS/TS import and section trend only') && markdown.includes('## Import Gaps') && markdown.includes('Needs review: 1') && markdown.includes('forgeflow-code-map') && markdown.includes('## Latest Insights') && markdown.includes('## Latest Failure Digest') && markdown.includes('Git: bbbbbbb clean') && markdown.includes('Freshness: current') && markdown.includes('Triage state: usable') && markdown.includes('FAIL test validates failure digest') && markdown.includes('Rebuild context with a smaller --files list') && markdown.includes('Cleared when the generated packet is under the configured context budget') && markdown.includes('Split: Run a narrower context pack')],
-  ['cli json works', cliJson.code_map.trend.status === 'compared' && cliJson.code_map.living_project_map.status === 'attention' && cliJson.project_learnings.consumed_code_map_trend === true && Boolean(cliJson.freshness) && cliJson.latest_insights.status === 'injected' && cliJson.failure_digest.status === 'compact' && cliJson.failure_digest.freshness.status === 'attention' && cliJson.failure_digest.triage.state === 'stale' && cliJson.recommendations.some((item) => item.command === 'forgeflow-failure-digest') && cliJson.import_gaps.status === 'attention'],
+  ['renders markdown', markdown.includes('# Forgeflow Project Trends') && markdown.includes('## Recommendations') && markdown.includes('Evidence:') && markdown.includes('Clears:') && markdown.includes('Unresolved imports delta: 1') && markdown.includes('## Operating Model Drift') && markdown.includes('High-care added: scripts/forgeflow/show-project-trends.js') && markdown.includes('Operating-model drift is advisory') && markdown.includes('## Living Project Map') && markdown.includes('new-hotspot') && markdown.includes('graph-growth: score') && markdown.includes('Deltas: source files') && markdown.includes('Static JS/TS import and section trend only') && markdown.includes('## Import Gaps') && markdown.includes('Needs review: 1') && markdown.includes('forgeflow-code-map') && markdown.includes('## Latest Insights') && markdown.includes('## Latest Failure Digest') && markdown.includes('Git: bbbbbbb clean') && markdown.includes('Freshness: current') && markdown.includes('Triage state: usable') && markdown.includes('FAIL test validates failure digest') && markdown.includes('Rebuild context with a smaller --files list') && markdown.includes('Cleared when the generated packet is under the configured context budget') && markdown.includes('Split: Run a narrower context pack')],
+  ['cli json works', cliJson.code_map.trend.status === 'compared' && cliJson.operating_model.trend.status === 'drift' && cliJson.code_map.living_project_map.status === 'attention' && cliJson.project_learnings.consumed_code_map_trend === true && Boolean(cliJson.freshness) && cliJson.latest_insights.status === 'injected' && cliJson.failure_digest.status === 'compact' && cliJson.failure_digest.freshness.status === 'attention' && cliJson.failure_digest.triage.state === 'stale' && cliJson.recommendations.some((item) => item.command === 'forgeflow-failure-digest') && cliJson.import_gaps.status === 'attention'],
   ['refresh cli works', refreshCliJson.refresh && refreshCliJson.refresh.check_status === 'pass'],
   ['missing option value exits usage', missingValue.status === 2 && missingValue.stderr.includes('Missing value for --project-dir')],
 ];

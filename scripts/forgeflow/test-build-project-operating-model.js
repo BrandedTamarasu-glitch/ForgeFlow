@@ -4,10 +4,13 @@ const os = require('os');
 const path = require('path');
 const {
   buildProjectOperatingModel,
+  compareOperatingModelTrend,
   compactProjectOperatingModel,
   countDomains,
   domainName,
+  historyOutFor,
   parseArgs,
+  readOperatingModelHistory,
   renderMarkdown,
 } = require('./build-project-operating-model');
 
@@ -81,6 +84,29 @@ const missingTopology = buildProjectOperatingModel({
   },
   topology: null,
 });
+const driftOut = path.join(contextDir, 'project-operating-model-drift.json');
+const driftModel = buildProjectOperatingModel({
+  root,
+  projectDir,
+  out: driftOut,
+  intelligence: {
+    ...intelligence,
+    top_risks: [
+      { source: 'project-learnings', severity: 'attention', summary: 'Auto-fix failed once.', next_action: 'review-auto evidence', confidence: { band: 'medium' } },
+      { source: 'review-outcomes', severity: 'attention', summary: 'Context packets exceeded budget.', next_action: 'trim scope', confidence: { band: 'medium' } },
+    ],
+    hot_files: ['scripts/forgeflow/file-safety.js', 'scripts/forgeflow/show-project-trends.js'],
+    validation_patterns: ['node scripts/forgeflow/test-show-project-trends.js'],
+  },
+  topology: {
+    high_fan_in: [{ path: 'scripts/forgeflow/show-project-trends.js', fan_in: 9 }],
+    high_fan_out: [],
+    local_edges: [
+      { source: 'scripts/forgeflow/show-project-trends.js', target: 'scripts/forgeflow/file-safety.js' },
+      { source: 'docs/wiki/Home.md', target: 'README.md' },
+    ],
+  },
+});
 const cliOpts = parseArgs(['--root', root, '--project-dir', projectDir, '--out', out, '--json', '--refresh'], { exitOnError: false });
 const domains = countDomains([
   'apps/backoffice/src/app.ts',
@@ -88,6 +114,11 @@ const domains = countDomains([
   'packages/database/src/schema.ts',
   'scripts/forgeflow/file-safety.js',
 ]);
+const history = readOperatingModelHistory(historyOutFor(projectDir), projectDir);
+const firstRunTrend = compareOperatingModelTrend(history[0], []);
+const driftTrend = compareOperatingModelTrend(history[history.length - 1], history.slice(0, -1));
+fs.writeFileSync(historyOutFor(projectDir), `${fs.readFileSync(historyOutFor(projectDir), 'utf8')}not-json\n`);
+const malformedHistory = readOperatingModelHistory(historyOutFor(projectDir), projectDir);
 
 const checks = [
   ['writes json artifact', fs.existsSync(out)],
@@ -106,6 +137,12 @@ const checks = [
   ['includes guidance', model.agent_guidance.read_first.includes('scripts/forgeflow/file-safety.js') && model.agent_guidance.avoid_first.includes('Do not mutate installed runtime files.') && model.agent_guidance.proof_boundary.includes('Advisory context only.')],
   ['includes sandbox policy hint', model.review_policy_hints.sandbox_prerequisite.includes('isolated sandbox') && model.review_policy_hints.auto_fix_boundary.includes('security')],
   ['includes source provenance', model.provenance.sources.includes('project-intelligence') && model.provenance.sources.includes('code-topology')],
+  ['records history artifact', history.length >= 3 && history[0].schema_version === '1' && history[0].domains.includes('commands')],
+  ['history path recorded', model.artifacts.operating_model_history === historyOutFor(projectDir)],
+  ['first run trend advisory', firstRunTrend.status === 'first-run'],
+  ['detects operating model drift', driftTrend.status === 'drift' && driftTrend.severity === 'attention' && driftTrend.high_care_files.added.includes('scripts/forgeflow/show-project-trends.js') && driftTrend.risk_zones.added.includes('Context packets exceeded budget.') && driftTrend.validation_patterns.added.includes('node scripts/forgeflow/test-show-project-trends.js') && driftTrend.boundary.includes('advisory')],
+  ['stable drift comparison', compareOperatingModelTrend(history[0], [history[0]]).status === 'stable'],
+  ['malformed history skipped', malformedHistory.length === history.length],
   ['markdown renders advisory sections', markdown.includes('# Forgeflow Project Operating Model') && markdown.includes('advisory only') && markdown.includes('## Domains') && markdown.includes('## High-Care Files') && markdown.includes('## Review Policy Hints') && markdown.includes('Sandbox prerequisite:')],
   ['compact model renders packet guidance', compact.includes('High-care files:') && compact.includes('Read first:') && compact.includes('Avoid first:') && compact.includes('Validate first:') && compact.includes('Proof boundary:') && compact.includes('advisory only')],
   ['cli opts parse', cliOpts.root === root && cliOpts.projectDir === projectDir && cliOpts.out === out && cliOpts.json === true && cliOpts.refresh === true],

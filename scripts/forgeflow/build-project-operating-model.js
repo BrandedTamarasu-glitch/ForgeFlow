@@ -2,7 +2,12 @@
 const fs = require('fs');
 const path = require('path');
 const { buildProjectIntelligence } = require('./build-project-intelligence');
-const { assertSafeDirectory, safeReadTextFile, writeFileSafe } = require('./file-safety');
+const {
+  appendFileSafe,
+  assertSafeDirectory,
+  safeReadTextFile,
+  writeFileSafe,
+} = require('./file-safety');
 
 function usage() {
   console.error('Usage: build-project-operating-model.js [--root <dir>] [--project-dir <dir>] [--out <path>] [--json] [--refresh]');
@@ -70,6 +75,10 @@ function defaultJsonOut(projectDir) {
 
 function markdownOutFor(jsonOut) {
   return /\.json$/i.test(jsonOut) ? jsonOut.replace(/\.json$/i, '.md') : `${jsonOut}.md`;
+}
+
+function historyOutFor(projectDir) {
+  return path.join(projectDir, 'context', 'operating-model-history.jsonl');
 }
 
 function readJson(file, root) {
@@ -274,6 +283,7 @@ function buildProjectOperatingModel(opts = {}) {
     artifacts: {
       json: jsonOut,
       markdown: markdownOut,
+      operating_model_history: historyOutFor(projectDir),
       project_intelligence: (intelligence.artifacts || {}).json || '',
       code_topology: topologyPath,
       project_learnings: (intelligence.artifacts || {}).project_learnings || '',
@@ -293,7 +303,110 @@ function buildProjectOperatingModel(opts = {}) {
   };
   writeFileSafe(jsonOut, `${JSON.stringify(model, null, 2)}\n`);
   writeFileSafe(markdownOut, renderMarkdown(model));
+  if (opts.recordHistory !== false) appendOperatingModelHistory(model);
   return model;
+}
+
+function normalizeSet(items, selector = (item) => item) {
+  const values = [];
+  const seen = new Set();
+  for (const item of items || []) {
+    const value = trimText(selector(item));
+    if (!value || seen.has(value)) continue;
+    seen.add(value);
+    values.push(value);
+  }
+  return values.sort((a, b) => a.localeCompare(b));
+}
+
+function operatingModelSnapshot(model) {
+  const git = ((model.provenance || {}).git) || {};
+  return {
+    schema_version: '1',
+    generated_at: model.generated_at || new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
+    commit_short: git.commit_short || '',
+    dirty: Boolean(git.dirty),
+    status: model.status || 'unknown',
+    confidence_band: model.confidence ? model.confidence.band || 'unknown' : 'unknown',
+    summary: {
+      domains: (model.domains || []).length,
+      high_care_files: (model.high_care_files || []).length,
+      risk_zones: (model.risk_zones || []).length,
+      validation_patterns: (model.validation_model || []).length,
+    },
+    domains: normalizeSet(model.domains, (item) => item.name),
+    high_care_files: normalizeSet(model.high_care_files, (item) => item.path),
+    risk_zones: normalizeSet(model.risk_zones, (item) => item.summary),
+    validation_patterns: normalizeSet(model.validation_model, (item) => item.command_or_pattern),
+  };
+}
+
+function appendOperatingModelHistory(model) {
+  const file = model && model.artifacts ? model.artifacts.operating_model_history : '';
+  if (!file) return;
+  appendFileSafe(file, `${JSON.stringify(operatingModelSnapshot(model))}\n`);
+}
+
+function readOperatingModelHistory(file, root = path.dirname(file)) {
+  if (!file || !fs.existsSync(file)) return [];
+  let text = '';
+  try {
+    text = safeReadTextFile(file, root).content;
+  } catch (_err) {
+    return [];
+  }
+  return text.split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      try {
+        return JSON.parse(line);
+      } catch (_err) {
+        return null;
+      }
+    })
+    .filter((item) => item && item.schema_version === '1');
+}
+
+function diffValues(current = [], previous = []) {
+  const oldSet = new Set(previous || []);
+  const newSet = new Set(current || []);
+  return {
+    added: (current || []).filter((item) => !oldSet.has(item)),
+    removed: (previous || []).filter((item) => !newSet.has(item)),
+  };
+}
+
+function compareOperatingModelTrend(latest, previousRecords = []) {
+  if (!latest) return { status: 'missing' };
+  if (!previousRecords || previousRecords.length === 0) return { status: 'first-run' };
+  const previous = previousRecords[previousRecords.length - 1];
+  const domains = diffValues(latest.domains, previous.domains);
+  const highCareFiles = diffValues(latest.high_care_files, previous.high_care_files);
+  const riskZones = diffValues(latest.risk_zones, previous.risk_zones);
+  const validationPatterns = diffValues(latest.validation_patterns, previous.validation_patterns);
+  const driftCount = [
+    domains,
+    highCareFiles,
+    riskZones,
+    validationPatterns,
+  ].reduce((sum, item) => sum + item.added.length + item.removed.length, 0);
+  const highCareDrift = highCareFiles.added.length + highCareFiles.removed.length;
+  const riskDrift = riskZones.added.length + riskZones.removed.length;
+  return {
+    status: driftCount > 0 ? 'drift' : 'stable',
+    severity: highCareDrift > 0 || riskDrift > 0 ? 'attention' : (driftCount > 0 ? 'info' : 'clear'),
+    drift_count: driftCount,
+    latest_generated_at: latest.generated_at || '',
+    previous_generated_at: previous.generated_at || '',
+    latest_commit: latest.commit_short || '',
+    previous_commit: previous.commit_short || '',
+    domains,
+    high_care_files: highCareFiles,
+    risk_zones: riskZones,
+    validation_patterns: validationPatterns,
+    boundary: 'Operating-model drift is advisory. It flags guidance changes for review and does not block work by itself.',
+  };
 }
 
 function renderList(lines, items, fallback, formatter = (item) => `- ${item}`) {
@@ -423,11 +536,15 @@ if (require.main === module) {
 
 module.exports = {
   buildProjectOperatingModel,
+  compareOperatingModelTrend,
   compactProjectOperatingModel,
   countDomains,
   defaultJsonOut,
   defaultProjectDir,
   domainName,
+  historyOutFor,
   parseArgs,
+  readOperatingModelHistory,
   renderMarkdown,
+  operatingModelSnapshot,
 };

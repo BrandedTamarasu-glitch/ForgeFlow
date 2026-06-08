@@ -2,6 +2,7 @@
 const path = require('path');
 const fs = require('fs');
 const { checkProjectLearnings } = require('./check-project-learnings');
+const { safeReadTextFile } = require('./file-safety');
 const { readAgentFeedback, readReviewOutcomes } = require('./build-project-intelligence');
 const { readNextWorkOutcomes } = require('./record-next-work-outcome');
 const { buildRollup, readRecords } = require('./rollup-first-run-results');
@@ -131,6 +132,7 @@ function decayFor(section, projectDir, policy) {
     'agent-feedback': path.join(projectDir, 'agent-feedback.jsonl'),
     'review-outcomes': path.join(projectDir, 'review-outcomes.jsonl'),
     'next-work-outcomes': path.join(projectDir, 'next-work-outcomes.jsonl'),
+    'project-operating-model': path.join(projectDir, 'context', 'operating-model-history.jsonl'),
   };
   const days = ageDays(files[section.name]);
   const reinforced = section.records >= policy.reinforcement_records;
@@ -197,6 +199,55 @@ function firstRunSummary(projectDir) {
   };
 }
 
+function readOperatingModelSignal(projectDir) {
+  const modelPath = path.join(projectDir, 'context', 'project-operating-model.json');
+  const historyPath = path.join(projectDir, 'context', 'operating-model-history.jsonl');
+  let model = null;
+  let invalid = 0;
+  if (fs.existsSync(modelPath)) {
+    try {
+      model = JSON.parse(safeReadTextFile(modelPath, projectDir).content);
+    } catch (_err) {
+      invalid += 1;
+    }
+  }
+  let records = 0;
+  if (fs.existsSync(historyPath)) {
+    try {
+      records = safeReadTextFile(historyPath, projectDir).content
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .reduce((count, line) => {
+          try {
+            const record = JSON.parse(line);
+            return record && record.schema_version === '1' ? count + 1 : count;
+          } catch (_err) {
+            invalid += 1;
+            return count;
+          }
+        }, 0);
+    } catch (_err) {
+      invalid += 1;
+    }
+  }
+  if (!model) {
+    return {
+      status: invalid > 0 ? 'invalid' : 'missing',
+      records,
+      issues: invalid || 1,
+      next: 'forgeflow-project-model --refresh',
+    };
+  }
+  const hasHistory = records > 0;
+  return {
+    status: invalid > 0 || !hasHistory ? 'attention' : 'present',
+    records,
+    issues: invalid + (hasHistory ? 0 : 1),
+    next: invalid > 0 || !hasHistory ? 'forgeflow-project-model --refresh' : 'continue-using-operating-model',
+  };
+}
+
 function buildLearningStatus(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const projectDir = path.resolve(opts.projectDir || defaultProjectDir(root));
@@ -206,6 +257,7 @@ function buildLearningStatus(opts = {}) {
   const reviewOutcomes = readReviewOutcomes(projectDir);
   const nextWork = readNextWorkOutcomes(projectDir);
   const firstRun = firstRunSummary(projectDir);
+  const operatingModel = readOperatingModelSignal(projectDir);
   const learningPolicy = readLearningSignalPolicy(projectDir);
   const outcomeCapturePlan = buildOutcomeCapturePlan({ root, projectDir });
   const workflowEndingCapture = ['review', 'next-work', 'agent-feedback'].map((event) => buildWorkflowEndingCapture({ root, projectDir, event }));
@@ -251,6 +303,13 @@ function buildLearningStatus(opts = {}) {
       records: firstRun.records,
       issues: firstRun.invalid_records,
       next: firstRun.recommendation,
+    },
+    {
+      name: 'project-operating-model',
+      status: operatingModel.status,
+      records: operatingModel.records,
+      issues: operatingModel.issues,
+      next: operatingModel.next,
     },
   ];
   const recommendations = sections
@@ -368,4 +427,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { buildLearningStatus, buildSignalQuality, firstRunSummary, groupRecommendations, parseArgs, qualityFor, renderMarkdown };
+module.exports = { buildLearningStatus, buildSignalQuality, firstRunSummary, groupRecommendations, parseArgs, qualityFor, readOperatingModelSignal, renderMarkdown };
