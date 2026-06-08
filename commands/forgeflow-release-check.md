@@ -103,6 +103,7 @@ node scripts/forgeflow/test-classify-review-auto.js
 node scripts/forgeflow/test-check-review-evidence-schema.js
 node scripts/forgeflow/test-render-review-auto-evidence.js
 node scripts/forgeflow/test-run-review-autofix-sandbox.js
+node scripts/forgeflow/test-show-review-autofix-status.js
 node scripts/forgeflow/test-learning-signal-policy.js
 node scripts/forgeflow/test-rollup-pattern-learnings.js
 node scripts/forgeflow/test-render-pattern-review.js

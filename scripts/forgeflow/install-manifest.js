@@ -122,6 +122,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/show-learning-status.js',
   'scripts/forgeflow/show-project-learnings.js',
   'scripts/forgeflow/show-project-trends.js',
+  'scripts/forgeflow/show-review-autofix-status.js',
   'scripts/forgeflow/show-user-profile.js',
   'scripts/forgeflow/smoke-check.js',
   'scripts/forgeflow/ship-ci-status.sh',

@@ -117,6 +117,7 @@ const CANONICAL_NON_REQUIRED_MANAGED_SOURCES = [
   'commands/forgeflow-review-auto-evidence.md',
   'commands/forgeflow-review-autofix-apply.md',
   'commands/forgeflow-review-autofix-sandbox.md',
+  'commands/forgeflow-review-autofix-status.md',
   'commands/forgeflow-review-evidence-schema.md',
   'commands/forgeflow-review-wave-prep.md',
   'commands/forgeflow-runtime-drift.md',

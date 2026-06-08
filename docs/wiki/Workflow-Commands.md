@@ -70,6 +70,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-review-auto-evidence` | Write a local review-auto classification evidence artifact from captured findings JSON, including policy version, class, proposal eligibility, sandbox-required flag, and matched rules. |
 | `/forgeflow-review-autofix-apply` | Apply one selected, validated sandbox proposal after tracked-worktree, source-match, and validation checks; failed validation rolls back the changed file and records local evidence. |
 | `/forgeflow-review-autofix-sandbox` | Run an explicit deterministic review-auto proposal in an isolated temp sandbox, run declared focused validation there, and write local proposal artifacts without mutating the source checkout. |
+| `/forgeflow-review-autofix-status` | Show proposal input, sandbox proposal, apply artifact, apply history, failure/rollback, and next safe action status without mutating the checkout. |
 | `/forgeflow-review-evidence-schema` | Validate captured review findings JSON shape and obvious safety hazards before auto-classification. |
 | `/forgeflow-repair` | Show a non-mutating guided repair plan that combines offline version status, installed runtime helper checks, health failures, repair commands, manual settings guidance, and an explicit downstream smoke follow-up. |
 | `/forgeflow-runtime-drift` | Compare source runtime helpers against installed runtime helpers and report grouped missing files, content drift, mode-only drift, syntax failures, and optional `--preview-repair` actions without repairing. Missing/content/syntax drift is actionable; mode-only drift is informational. |
@@ -143,6 +144,7 @@ scripts/forgeflow/classify-review-auto.js --findings .forgeflow/Forgeflow/review
 scripts/forgeflow/build-review-autofix-proposal.js --executor docs-reference --finding .forgeflow/Forgeflow/review-finding.json --file README.md --search "old text" --replace "new text" --json
 scripts/forgeflow/run-review-autofix-sandbox.js --proposal .forgeflow/Forgeflow/review-auto/proposal-input.json --json
 scripts/forgeflow/apply-review-autofix-proposal.js --proposal .forgeflow/Forgeflow/review-auto/proposals/<id>/proposal.json --json
+scripts/forgeflow/show-review-autofix-status.js --json
 scripts/forgeflow/check-review-evidence-schema.js --findings .forgeflow/Forgeflow/review-findings.json --json
 scripts/forgeflow/command-args.js --allow "--json,--findings:path" --args "--json --findings .forgeflow/Forgeflow/review-findings.json" --json
 scripts/forgeflow/render-command-wrapper-batch.js --root . --json
