@@ -38,6 +38,7 @@ const checks = [
   ['runtime helpers include agent feedback recorder', RUNTIME_HELPERS.includes('scripts/forgeflow/record-agent-feedback.js')],
   ['runtime helpers include agent feedback rollup', RUNTIME_HELPERS.includes('scripts/forgeflow/rollup-agent-feedback.js')],
   ['runtime helpers include adoption pack renderer', RUNTIME_HELPERS.includes('scripts/forgeflow/render-adoption-pack.js')],
+  ['runtime helpers include architecture docs renderer', RUNTIME_HELPERS.includes('scripts/forgeflow/render-architecture-docs.js')],
   ['runtime helpers include command index renderer', RUNTIME_HELPERS.includes('scripts/forgeflow/render-command-index.js')],
   ['runtime helpers include context retention', RUNTIME_HELPERS.includes('scripts/forgeflow/render-context-retention.js')],
   ['runtime helpers include context wave plan', RUNTIME_HELPERS.includes('scripts/forgeflow/render-context-wave-plan.js')],
