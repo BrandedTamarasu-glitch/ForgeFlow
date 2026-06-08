@@ -78,6 +78,7 @@ const checks = [
   ['runtime helpers include pilot evidence rollup', RUNTIME_HELPERS.includes('scripts/forgeflow/rollup-pilot-evidence.js')],
   ['runtime helpers include pattern learnings rollup', RUNTIME_HELPERS.includes('scripts/forgeflow/rollup-pattern-learnings.js')],
   ['runtime helpers include project learnings rollup', RUNTIME_HELPERS.includes('scripts/forgeflow/rollup-project-learnings.js')],
+  ['runtime helpers include review-auto sandbox runner', RUNTIME_HELPERS.includes('scripts/forgeflow/run-review-autofix-sandbox.js')],
   ['runtime helpers include runtime contract', RUNTIME_HELPERS.includes('scripts/forgeflow/runtime-helper-contract.js')],
   ['runtime helpers include runtime inventory', RUNTIME_HELPERS.includes('scripts/forgeflow/runtime-inventory.js')],
   ['runtime helpers include project learnings display', RUNTIME_HELPERS.includes('scripts/forgeflow/show-project-learnings.js')],

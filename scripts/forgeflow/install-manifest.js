@@ -110,6 +110,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/rollup-pattern-learnings.js',
   'scripts/forgeflow/rollup-pilot-evidence.js',
   'scripts/forgeflow/rollup-project-learnings.js',
+  'scripts/forgeflow/run-review-autofix-sandbox.js',
   'scripts/forgeflow/runtime-drift-snapshot.js',
   'scripts/forgeflow/runtime-helper-contract.js',
   'scripts/forgeflow/runtime-inventory.js',

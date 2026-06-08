@@ -100,6 +100,7 @@ node scripts/forgeflow/test-output-contract.js
 node scripts/forgeflow/test-classify-review-auto.js
 node scripts/forgeflow/test-check-review-evidence-schema.js
 node scripts/forgeflow/test-render-review-auto-evidence.js
+node scripts/forgeflow/test-run-review-autofix-sandbox.js
 node scripts/forgeflow/test-learning-signal-policy.js
 node scripts/forgeflow/test-rollup-pattern-learnings.js
 node scripts/forgeflow/test-render-pattern-review.js
@@ -185,5 +186,6 @@ If any command fails, stop and report the failed command plus its output. Do not
 - [ ] Context pack test passes
 - [ ] Implementation notes wiring and quality-check tests pass
 - [ ] Project learnings quality-check test passes
+- [ ] Review-auto sandbox proposal runner test passes
 - [ ] `git diff --check` passes
 </success_criteria>
