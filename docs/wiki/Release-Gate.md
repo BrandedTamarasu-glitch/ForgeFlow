@@ -44,6 +44,7 @@ node scripts/forgeflow/render-evaluation-report.js --outcomes fixtures/evaluatio
 node scripts/forgeflow/test-privacy-boundary.js
 node scripts/forgeflow/test-render-adoption-pack.js
 node scripts/forgeflow/test-render-architecture-docs.js
+node scripts/forgeflow/test-render-ownership-map.js
 node scripts/forgeflow/test-render-command-index.js
 node scripts/forgeflow/test-render-context-retention.js
 node scripts/forgeflow/test-render-context-wave-plan.js

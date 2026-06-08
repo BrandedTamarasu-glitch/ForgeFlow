@@ -82,6 +82,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/render-learning-action-router.js',
   'scripts/forgeflow/render-learning-capture-nudge.js',
   'scripts/forgeflow/render-next-work-ranking.js',
+  'scripts/forgeflow/render-ownership-map.js',
   'scripts/forgeflow/render-outcome-capture-plan.js',
   'scripts/forgeflow/render-pattern-review.js',
   'scripts/forgeflow/render-post-release-install-verify.js',
