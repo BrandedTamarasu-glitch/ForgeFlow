@@ -104,6 +104,7 @@ const CANONICAL_NON_REQUIRED_MANAGED_SOURCES = [
   'commands/forgeflow-profile-bootstrap.md',
   'commands/forgeflow-profile-review.md',
   'commands/forgeflow-project-brief.md',
+  'commands/forgeflow-project-model.md',
   'commands/forgeflow-release-check.md',
   'commands/forgeflow-release-consumption.md',
   'commands/forgeflow-release-consumption-loop.md',

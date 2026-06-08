@@ -509,6 +509,7 @@ const synthesis = JSON.parse(fs.readFileSync(path.join(outDir, 'synthesis-input.
 const telemetry = JSON.parse(fs.readFileSync(path.join(outDir, 'context-telemetry.json'), 'utf8'));
 const insightsReport = JSON.parse(fs.readFileSync(path.join(outDir, 'latest-insights-report.json'), 'utf8'));
 const userProfile = fs.readFileSync(path.join(outDir, 'user-profile.md'), 'utf8');
+const projectOperatingModel = fs.readFileSync(path.join(outDir, 'project-operating-model.md'), 'utf8');
 const artifactManifest = JSON.parse(fs.readFileSync(path.join(outDir, 'packet-artifacts.json'), 'utf8'));
 const artifactManifestMarkdown = fs.readFileSync(path.join(outDir, 'packet-artifacts.md'), 'utf8');
 const agentContextContract = JSON.parse(fs.readFileSync(path.join(outDir, 'agent-context-contract.json'), 'utf8'));
@@ -544,6 +545,7 @@ const checks = [
   ['latest insights written', fs.existsSync(path.join(outDir, 'latest-insights.md'))],
   ['latest insights report written', fs.existsSync(path.join(outDir, 'latest-insights-report.json'))],
   ['user profile written', fs.existsSync(path.join(outDir, 'user-profile.md'))],
+  ['project operating model written', fs.existsSync(path.join(outDir, 'project-operating-model.md'))],
   ['code topology written', fs.existsSync(path.join(outDir, 'code-topology.json'))],
   ['code topology review focus written', fs.existsSync(path.join(outDir, 'code-topology-review-focus.md'))],
   ['code topology telemetry written', fs.existsSync(path.join(outDir, 'code-topology-telemetry.json'))],
@@ -554,6 +556,7 @@ const checks = [
   ['latest insights linked', synthesis.latest_insights_path.endsWith('latest-insights.md')],
   ['latest insights report linked', synthesis.latest_insights_report_path.endsWith('latest-insights-report.json')],
   ['user profile linked', synthesis.user_profile_path.endsWith('user-profile.md') && synthesis.user_profile_report && typeof synthesis.user_profile_report.injected === 'boolean'],
+  ['project operating model linked', synthesis.project_operating_model_path.endsWith('project-operating-model.md') && synthesis.project_operating_model_report && synthesis.project_operating_model_report.status],
   ['latest failure digest linked', synthesis.latest_failure_digest_path && synthesis.latest_failure_digest_path.endsWith('failure-digest.md')],
   ['latest failure digest freshness linked', synthesis.latest_failure_digest_freshness && synthesis.latest_failure_digest_freshness.status === 'attention'],
   ['latest failure digest triage linked', synthesis.latest_failure_digest_triage && synthesis.latest_failure_digest_triage.state === 'stale' && synthesis.latest_failure_digest_triage.usefulness === 'limited'],
@@ -561,10 +564,12 @@ const checks = [
   ['agent context contract linked', synthesis.agent_context_contract_path && synthesis.agent_context_contract_path.endsWith('agent-context-contract.json')],
   ['agent context contract written', agentContextContract.agents && agentContextContract.agents.warden_reviewer && agentContextContract.agents.warden_reviewer.prohibited_uses.length > 0],
   ['agent context contracts in synthesis', synthesis.agent_context_contracts && synthesis.agent_context_contracts.warden_reviewer && synthesis.agent_context_contracts.warden_reviewer.allowed_signals.includes('latest-failure-digest')],
+  ['agent context contracts verify operating model', synthesis.agent_context_contracts.warden_reviewer.verify_before_use.includes('project-operating-model')],
   ['packet artifact manifest written', artifactManifest.artifacts.some((item) => item.name === 'latest-failure-digest' && item.decision === 'metadata-only' && item.reason === 'digest-stale')],
   ['packet artifact manifest markdown written', artifactManifestMarkdown.includes('| latest-failure-digest | metadata-only | digest-stale | forgeflow-failure-digest |')],
   ['packet artifact manifest covers latest insights', artifactManifest.artifacts.some((item) => item.name === 'latest-insights' && item.decision === 'included' && item.status === 'injected')],
   ['packet artifact manifest covers user profile', artifactManifest.artifacts.some((item) => item.name === 'user-profile' && ['included', 'metadata-only'].includes(item.decision) && item.status)],
+  ['packet artifact manifest covers operating model', artifactManifest.artifacts.some((item) => item.name === 'project-operating-model' && item.decision === 'included' && item.confidence)],
   ['packet artifact manifest covers topology provenance', artifactManifest.artifacts.some((item) => item.name === 'code-topology' && item.decision === 'included' && item.provenance && item.provenance.source === 'build-context-pack')],
   ['project code map linked to current pack', synthesis.project_code_map_path === path.relative(repoRoot, path.join(outDir, 'project-code-map.md'))],
   ['project code topology linked to current pack', synthesis.project_code_topology_path === synthesis.code_topology_path],
@@ -584,6 +589,7 @@ const checks = [
   ['code topology summary has section ranges', synthesis.code_topology_summary.changed_file_neighbors.every((item) => (item.sections || []).every((section) => Number.isInteger(section.end_line)))],
   ['agent packet includes latest insights', wardenPacket.includes('## Latest Insights')],
   ['agent packet includes user profile guidance', wardenPacket.includes('## User Profile Guidance') && userProfile.includes('Forgeflow User Profile')],
+  ['agent packet includes operating model guidance', wardenPacket.includes('## Project Operating Model') && projectOperatingModel.includes('High-care files:') && projectOperatingModel.includes('Proof boundary:') && wardenPacket.includes('project-operating-model')],
   ['agent packet includes artifact trust manifest', wardenPacket.includes('## Packet Artifact Trust') && wardenPacket.includes('| latest-failure-digest | metadata-only | digest-stale | forgeflow-failure-digest |')],
   ['agent packet includes context contract', wardenPacket.includes('## Agent Context Contract') && wardenPacket.includes('Do not override current user instructions')],
   ['agent packet gates stale failure digest body', wardenPacket.includes('## Latest Failure Digest') && wardenPacket.includes('Freshness: attention') && wardenPacket.includes('Triage state: stale') && wardenPacket.includes('Digest body skipped') && !wardenPacket.includes('FAIL context packet fixture')],

@@ -35,6 +35,7 @@ const {
   defaultConfigPath,
   readConfig,
 } = require('./check-context-budget');
+const { compactProjectOperatingModel } = require('./build-project-operating-model');
 
 const DEFAULT_MAX_MEMORY_CHARS = 8000;
 const DEFAULT_MAX_DIFF_CHARS = 18000;
@@ -930,12 +931,38 @@ function userProfileArtifact(userProfileResult, root, outDir) {
   );
 }
 
-function packetArtifactManifest({ root, outDir, latestInsightsResult, latestFailure, topologyContext, projectCodeMapPath, userProfileResult }) {
+function projectOperatingModelArtifact(model, root, outDir) {
+  const status = model ? model.status || 'unknown' : 'missing';
+  return artifactDecision(
+    'project-operating-model',
+    path.relative(root, path.join(outDir, 'project-operating-model.md')),
+    model ? 'included' : 'skipped',
+    model ? `operating-model-${status}` : 'operating-model-unavailable',
+    {
+      status,
+      confidence: model && model.confidence ? model.confidence.band : '',
+      next_action: model ? '' : 'forgeflow-project-model',
+    },
+  );
+}
+
+function readProjectOperatingModel(root) {
+  const projectDir = defaultProjectDir(root);
+  const file = path.join(projectDir, 'context', 'project-operating-model.json');
+  try {
+    return readJson(file, projectDir);
+  } catch (_err) {
+    return null;
+  }
+}
+
+function packetArtifactManifest({ root, outDir, latestInsightsResult, latestFailure, topologyContext, projectCodeMapPath, userProfileResult, projectOperatingModel }) {
   const artifacts = [
     artifactDecision('diff-summary', path.relative(root, path.join(outDir, 'diff-summary.md')), 'included', 'current-diff-scope'),
     artifactDecision('memory-hits', path.relative(root, path.join(outDir, 'memory-hits.md')), 'included', 'local-memory-filtered'),
     latestInsightsArtifact(latestInsightsResult.report, root, outDir),
     userProfileArtifact(userProfileResult, root, outDir),
+    projectOperatingModelArtifact(projectOperatingModel, root, outDir),
     latestFailure.artifact || artifactDecision('latest-failure-digest', path.relative(root, path.join(outDir, 'failure-digest.md')), 'skipped', 'failure-digest-unavailable'),
     artifactDecision(
       'project-code-map',
@@ -1010,7 +1037,7 @@ function contextContractForAgent(agent) {
     agent,
     allowed_signals: ['diff-summary', 'packet-artifact-trust'],
     advisory_signals: ['memory-hits'],
-    verify_before_use: ['latest-insights', 'user-profile-guidance', 'project-code-map', 'living-map-guidance', 'latest-failure-digest'],
+    verify_before_use: ['latest-insights', 'user-profile-guidance', 'project-operating-model', 'project-code-map', 'living-map-guidance', 'latest-failure-digest'],
     prohibited_uses: [
       'Do not treat local learnings or profile guidance as approval.',
       'Do not override current user instructions, code, tests, or review evidence.',
@@ -1019,19 +1046,19 @@ function contextContractForAgent(agent) {
   };
   if (agent.startsWith('smith')) {
     base.allowed_signals.push('code-topology', 'project-code-map');
-    base.advisory_signals.push('latest-insights');
+    base.advisory_signals.push('latest-insights', 'project-operating-model');
     base.primary_use = 'Use topology and learning signals to focus craft, data, service, and test review.';
   } else if (agent.startsWith('warden') || agent === 'aegis') {
     base.allowed_signals.push('latest-failure-digest', 'code-topology');
-    base.advisory_signals.push('latest-insights');
+    base.advisory_signals.push('latest-insights', 'project-operating-model');
     base.primary_use = 'Use signals to prioritize security and systems checks, then verify every high-risk claim from visible evidence.';
   } else if (agent.startsWith('lumen')) {
     base.allowed_signals.push('user-profile-guidance');
-    base.advisory_signals.push('latest-insights', 'living-map-guidance');
+    base.advisory_signals.push('latest-insights', 'living-map-guidance', 'project-operating-model');
     base.primary_use = 'Use profile and project signals to align UX, accessibility, copy, and service-path checks.';
   } else if (agent.startsWith('atlas')) {
     base.allowed_signals.push('latest-insights', 'user-profile-guidance', 'living-map-guidance');
-    base.advisory_signals.push('latest-failure-digest', 'project-code-map');
+    base.advisory_signals.push('latest-failure-digest', 'project-code-map', 'project-operating-model');
     base.primary_use = 'Use signals to check scope, sequencing, stale guidance, and cross-agent coverage.';
   } else {
     base.primary_use = 'Use local signals as advisory context only after checking current files and task scope.';
@@ -1057,7 +1084,7 @@ function renderContextContract(contract) {
   ].join('\n');
 }
 
-function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, userProfile, latestFailure, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, contextContract, task) {
+function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, userProfile, projectOperatingModel, latestFailure, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, contextContract, task) {
   const relevant = relevantFilesForAgent(agent, manifest);
   const rules = rulePack(agent, route, manifest);
   return [
@@ -1092,6 +1119,9 @@ function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestI
     '',
     '## User Profile Guidance',
     userProfile.replace(/^# Forgeflow User Profile[^\n]*\s*/u, '').trim() || '(none)',
+    '',
+    '## Project Operating Model',
+    projectOperatingModel,
     '',
     '## Latest Failure Digest',
     latestFailure,
@@ -1156,6 +1186,8 @@ function buildContextPack(opts) {
   const latestInsights = latestInsightsResult.markdown;
   const userProfileResult = compactUserProfile({ root, projectDir: defaultProjectDir(root) }, 3500);
   const userProfile = userProfileResult.markdown;
+  const projectOperatingModel = readProjectOperatingModel(root);
+  const projectOperatingModelMarkdown = compactProjectOperatingModel(projectOperatingModel, 3200);
   const latestFailure = latestFailureDigest(outDir, root);
   const latestFailurePath = path.join(outDir, 'failure-digest.md');
   const projectCodeMap = projectCodeMapFromTopology(root, topologyContext);
@@ -1164,14 +1196,14 @@ function buildContextPack(opts) {
   const livingMapGuidance = livingMapReviewGuidance(livingMapSummary);
   const topologySummary = compactTopology(topologyContext);
   const topology = topologyReport(topologyContext, root);
-  const artifactManifest = packetArtifactManifest({ root, outDir, latestInsightsResult, latestFailure, topologyContext, projectCodeMapPath, userProfileResult });
+  const artifactManifest = packetArtifactManifest({ root, outDir, latestInsightsResult, latestFailure, topologyContext, projectCodeMapPath, userProfileResult, projectOperatingModel });
   const artifactManifestMarkdown = renderArtifactManifest(artifactManifest);
   const agents = route.agents.included || [];
   const packets = {};
   const contextContracts = Object.fromEntries(agents.map((agent) => [agent, contextContractForAgent(agent)]));
 
   for (const agent of agents) {
-    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, userProfile, latestFailure.markdown, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, contextContracts[agent], effectiveOpts.task);
+    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, userProfile, projectOperatingModelMarkdown, latestFailure.markdown, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, contextContracts[agent], effectiveOpts.task);
     const file = path.join(packetDir, `${agent}.md`);
     writeFileSafe(file, content);
     packets[agent] = path.relative(root, file);
@@ -1210,6 +1242,12 @@ function buildContextPack(opts) {
       issue_count: userProfileResult.result.check.issues.length,
       files: userProfileResult.result.files,
     },
+    project_operating_model_path: path.relative(root, path.join(outDir, 'project-operating-model.md')),
+    project_operating_model_report: {
+      status: projectOperatingModel ? projectOperatingModel.status : 'missing',
+      confidence: projectOperatingModel ? projectOperatingModel.confidence : null,
+      artifact: projectOperatingModel && projectOperatingModel.artifacts ? projectOperatingModel.artifacts.json : '',
+    },
     latest_failure_digest_path: fs.existsSync(latestFailurePath) ? path.relative(root, latestFailurePath) : null,
     latest_failure_digest_freshness: latestFailure.freshness,
     latest_failure_digest_triage: latestFailure.triage || null,
@@ -1242,6 +1280,7 @@ function buildContextPack(opts) {
   writeFileSafe(path.join(outDir, 'memory-hits.md'), `${memoryHits}\n`);
   writeFileSafe(path.join(outDir, 'latest-insights.md'), `${latestInsights || '# Latest Insights\n\n(none)'}\n`);
   writeFileSafe(path.join(outDir, 'user-profile.md'), `${userProfile || '# User Profile Guidance\n\n(none)'}\n`);
+  writeFileSafe(path.join(outDir, 'project-operating-model.md'), `# Project Operating Model\n\n${projectOperatingModelMarkdown}\n`);
   writeFileSafe(projectCodeMapPath, `# Project Code Map\n\n${projectCodeMap}\n`);
   writeJson(path.join(outDir, 'latest-insights-report.json'), latestInsightsResult.report);
   writeJson(path.join(outDir, 'packet-artifacts.json'), artifactManifest);

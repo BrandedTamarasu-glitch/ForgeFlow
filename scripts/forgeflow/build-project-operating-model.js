@@ -352,6 +352,56 @@ function renderMarkdown(model) {
   return `${lines.join('\n')}\n`;
 }
 
+function compactProjectOperatingModel(model, maxChars = 3200) {
+  if (!model) return '(none)';
+  const lines = [
+    `Artifact: ${model.artifacts ? model.artifacts.json : '(missing)'}`,
+    `Status: ${model.status || 'unknown'}`,
+    `Confidence: ${model.confidence ? `${model.confidence.band} - ${model.confidence.reason}` : 'unknown'}`,
+    `Readiness: ${model.project_state ? model.project_state.readiness : 'unknown'}`,
+    '',
+    'High-care files:',
+    ...renderCompactItems(model.high_care_files, (item) => `- ${md(item.path)}: ${md(item.reason)} (${md(item.confidence)})`),
+    '',
+    'Read first:',
+    ...renderCompactItems(model.agent_guidance ? model.agent_guidance.read_first : [], (item) => `- ${md(item)}`),
+    '',
+    'Avoid first:',
+    ...renderCompactItems(model.agent_guidance ? model.agent_guidance.avoid_first : [], (item) => `- ${md(item)}`),
+    '',
+    'Validate first:',
+    ...renderCompactItems(model.agent_guidance ? model.agent_guidance.validate_first : [], (item) => `- ${md(item)}`),
+    '',
+    'Proof boundary:',
+    ...renderCompactItems(model.agent_guidance ? model.agent_guidance.proof_boundary : [], (item) => `- ${md(item)}`),
+    '',
+    'Review policy:',
+    `- ${md(model.review_policy_hints ? model.review_policy_hints.auto_fix_boundary : 'Do not auto-fix broad or high-risk changes without explicit human approval.')}`,
+    `- ${md(model.review_policy_hints ? model.review_policy_hints.sandbox_prerequisite : 'Validate proposals in an isolated sandbox before mutating the source checkout.')}`,
+    '',
+    'Boundary: advisory only; verify against current code, tests, user intent, and review artifacts before acting.',
+  ];
+  return truncate(lines.join('\n'), maxChars);
+}
+
+function renderCompactItems(items, formatter, limit = 5) {
+  const selected = (items || []).slice(0, limit);
+  return selected.length > 0 ? selected.map(formatter) : ['- (none)'];
+}
+
+function md(value) {
+  return String(value || '').replace(/([\\`*_{}\[\]()#+\-.!|>])/g, '\\$&');
+}
+
+function truncate(text, maxChars) {
+  if (!Number.isFinite(maxChars) || maxChars <= 0 || text.length <= maxChars) return text;
+  const limit = Math.max(0, maxChars - 80);
+  const clipped = text.slice(0, limit);
+  const lineEnd = clipped.lastIndexOf('\n');
+  const boundary = lineEnd > Math.floor(limit * 0.7) ? lineEnd : limit;
+  return `${clipped.slice(0, boundary).trimEnd()}\n\n[truncated to ${maxChars} chars]`;
+}
+
 function main() {
   const opts = parseArgs(process.argv.slice(2));
   const model = buildProjectOperatingModel(opts);
@@ -373,6 +423,7 @@ if (require.main === module) {
 
 module.exports = {
   buildProjectOperatingModel,
+  compactProjectOperatingModel,
   countDomains,
   defaultJsonOut,
   defaultProjectDir,

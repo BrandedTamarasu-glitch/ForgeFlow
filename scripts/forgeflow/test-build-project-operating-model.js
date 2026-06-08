@@ -4,6 +4,7 @@ const os = require('os');
 const path = require('path');
 const {
   buildProjectOperatingModel,
+  compactProjectOperatingModel,
   countDomains,
   domainName,
   parseArgs,
@@ -68,6 +69,7 @@ const topology = {
 const out = path.join(contextDir, 'project-operating-model.json');
 const model = buildProjectOperatingModel({ root, projectDir, out, intelligence, topology });
 const markdown = renderMarkdown(model);
+const compact = compactProjectOperatingModel(model, 1600);
 const missingTopology = buildProjectOperatingModel({
   root,
   projectDir,
@@ -105,6 +107,7 @@ const checks = [
   ['includes sandbox policy hint', model.review_policy_hints.sandbox_prerequisite.includes('isolated sandbox') && model.review_policy_hints.auto_fix_boundary.includes('security')],
   ['includes source provenance', model.provenance.sources.includes('project-intelligence') && model.provenance.sources.includes('code-topology')],
   ['markdown renders advisory sections', markdown.includes('# Forgeflow Project Operating Model') && markdown.includes('advisory only') && markdown.includes('## Domains') && markdown.includes('## High-Care Files') && markdown.includes('## Review Policy Hints') && markdown.includes('Sandbox prerequisite:')],
+  ['compact model renders packet guidance', compact.includes('High-care files:') && compact.includes('Read first:') && compact.includes('Avoid first:') && compact.includes('Validate first:') && compact.includes('Proof boundary:') && compact.includes('advisory only')],
   ['cli opts parse', cliOpts.root === root && cliOpts.projectDir === projectDir && cliOpts.out === out && cliOpts.json === true && cliOpts.refresh === true],
 ];
 
