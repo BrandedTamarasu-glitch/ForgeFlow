@@ -24,6 +24,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-architecture` | Render advisory architecture docs from local topology, project intelligence, operating model, and learning artifacts; add `--write` to save local `.forgeflow/<project>/context/architecture.*` files. |
 | `/forgeflow-invocation-hints` | Render advisory runtime entrypoint and invocation hints from package metadata, config files, topology, architecture evidence, and static conventions; add `--write` to save local `.forgeflow/<project>/context/invocation-hints.*` files. |
 | `/forgeflow-ownership` | Render advisory owner-surface recommendations from local topology, architecture, project operating-model, and optional CODEOWNERS evidence; add `--write` to save local `.forgeflow/<project>/context/ownership-map.*` files. |
+| `/forgeflow-dogfood-report` | Review Phase 8-11 local evidence and context-pack signals, then recommend keep, refine, or consider narrow opt-in automation promotion; add `--write` to save local `.forgeflow/<project>/context/dogfood-report.*` files. |
 | `/forgeflow-code-map` | Generate a compact project code map with topology, sections, changed-section hints, import-gap triage, living project-map categories, Git provenance, and generated artifact paths. |
 | `/forgeflow-command-args` | Validate a small command-argument string against an explicit allowlist without executing the command. |
 | `/forgeflow-command-wrapper-batch` | Rank the next small batch of command-wrapper contract cleanup candidates without editing command files. |
@@ -147,6 +148,7 @@ scripts/forgeflow/classify-review-auto.js --findings .forgeflow/Forgeflow/review
 scripts/forgeflow/render-architecture-docs.js --json
 scripts/forgeflow/render-invocation-hints.js --json
 scripts/forgeflow/render-ownership-map.js --json
+scripts/forgeflow/render-dogfood-report.js --json
 scripts/forgeflow/build-review-autofix-proposal.js --executor docs-reference --finding .forgeflow/Forgeflow/review-finding.json --file README.md --search "old text" --replace "new text" --json
 scripts/forgeflow/run-review-autofix-sandbox.js --proposal .forgeflow/Forgeflow/review-auto/proposal-input.json --json
 scripts/forgeflow/apply-review-autofix-proposal.js --proposal .forgeflow/Forgeflow/review-auto/proposals/<id>/proposal.json --json
