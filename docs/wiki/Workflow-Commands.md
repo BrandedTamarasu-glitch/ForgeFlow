@@ -22,6 +22,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/audit` | Run a deeper systems/security/craft audit. |
 | `/dashboard` | Start the optional local metrics dashboard on port 4003. |
 | `/forgeflow-architecture` | Render advisory architecture docs from local topology, project intelligence, operating model, and learning artifacts; add `--write` to save local `.forgeflow/<project>/context/architecture.*` files. |
+| `/forgeflow-invocation-hints` | Render advisory runtime entrypoint and invocation hints from package metadata, config files, topology, architecture evidence, and static conventions; add `--write` to save local `.forgeflow/<project>/context/invocation-hints.*` files. |
 | `/forgeflow-ownership` | Render advisory owner-surface recommendations from local topology, architecture, project operating-model, and optional CODEOWNERS evidence; add `--write` to save local `.forgeflow/<project>/context/ownership-map.*` files. |
 | `/forgeflow-code-map` | Generate a compact project code map with topology, sections, changed-section hints, import-gap triage, living project-map categories, Git provenance, and generated artifact paths. |
 | `/forgeflow-command-args` | Validate a small command-argument string against an explicit allowlist without executing the command. |
@@ -144,6 +145,7 @@ scripts/forgeflow/render-first-useful-win.js --project-dir .forgeflow/Forgeflow
 scripts/forgeflow/next-action-contract.js --project-dir .forgeflow/Forgeflow
 scripts/forgeflow/classify-review-auto.js --findings .forgeflow/Forgeflow/review-findings.json --json
 scripts/forgeflow/render-architecture-docs.js --json
+scripts/forgeflow/render-invocation-hints.js --json
 scripts/forgeflow/render-ownership-map.js --json
 scripts/forgeflow/build-review-autofix-proposal.js --executor docs-reference --finding .forgeflow/Forgeflow/review-finding.json --file README.md --search "old text" --replace "new text" --json
 scripts/forgeflow/run-review-autofix-sandbox.js --proposal .forgeflow/Forgeflow/review-auto/proposal-input.json --json

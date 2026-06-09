@@ -48,7 +48,7 @@ function helperGroupForSource(source) {
   if (/^(install-|update-|health-|forgeflow-version|runtime-|render-update-|render-guided-repair|render-post-release-install-verify)/.test(file)) {
     return 'install-update-health';
   }
-  if (/^(build-|check-context|context-|compact-|capture-|failure-|advise-|seed-budget|render-architecture|render-context|render-ownership|render-stale|render-validation|show-code|show-project-trends)/.test(file)) {
+  if (/^(build-|check-context|context-|compact-|capture-|failure-|advise-|seed-budget|render-architecture|render-context|render-invocation|render-ownership|render-stale|render-validation|show-code|show-project-trends)/.test(file)) {
     return 'context-intelligence';
   }
   if (/^(record-)/.test(file)) {

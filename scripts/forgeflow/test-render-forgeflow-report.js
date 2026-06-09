@@ -192,6 +192,8 @@ const refreshedReport = buildReport({
 const cliOpts = parseArgs([
   '--root',
   root,
+  '--period',
+  'all',
   '--metrics-root',
   metricsRoot,
   '--patterns-dir',
