@@ -21,6 +21,7 @@ The chat panel in the dashboard UI connects to port 4001 (agent-chat), not this 
 |---|---|
 | `server.js` | HTTP server — routes requests, serves static files, enforces security headers |
 | `metrics.js` | Reads and aggregates the JSONL telemetry file into the `/api/metrics` response shape |
+| `readiness.js` | Reads existing local Forgeflow artifacts into the `/api/readiness` project-readiness response shape |
 | `team.js` | Stub — reserved for `/forgeflow-sync` team aggregation in Phase 4C. Currently exports a `readTeamSync` that returns `[]`; not yet imported by `server.js`. |
 | `public/index.html` | Dashboard UI — single-page, no build step required |
 
@@ -110,8 +111,40 @@ Examples:
 ## Security
 
 - **`cwd` field is NEVER present in any API response.** The `cwd` value from telemetry records is used only internally to resolve file paths. It must not appear in any field of the HTTP response — including nested objects.
+- **`/api/readiness` must not expose absolute project artifact paths.** It may include the project basename, card ids, statuses, summaries, and next commands only.
 - **Symlink rejection:** The server must refuse to follow symlinks when resolving the JSONL file path. If the resolved path is not identical to the canonical real path, the request is rejected with 403.
 - **Response headers:** All API responses must include:
   - `Content-Type: application/json`
   - `X-Content-Type-Options: nosniff`
   - `Cache-Control: no-store`
+
+## `/api/readiness` Response Shape
+
+The readiness endpoint is advisory and read-only. It reads existing local artifacts and the dogfood refresh-plan helper in-process. It does not refresh artifacts, write files, run shell commands, spawn agents, call GitHub, export telemetry, commit, push, or promote automation.
+
+```json
+{
+  "schema_version": "1",
+  "generated_at": "<ISO8601>",
+  "project": "<project-basename>",
+  "status": "ready|watch|attention",
+  "cards": [
+    {
+      "id": "release-readiness",
+      "label": "Release Readiness",
+      "status": "ready",
+      "summary": "0 blocker(s) in latest saved snapshot.",
+      "next": ""
+    }
+  ],
+  "artifacts": {
+    "latest_insights": "injected",
+    "context_telemetry": "pass",
+    "release_readiness": "ready",
+    "dogfood_report": "ready",
+    "project_operating_model": "present"
+  },
+  "next": "/forgeflow-dogfood-report --write",
+  "boundary": "Dashboard readiness is read-only..."
+}
+```

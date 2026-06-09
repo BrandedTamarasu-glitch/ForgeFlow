@@ -4,12 +4,15 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { scanMetrics } = require('./metrics');
+const { scanReadiness } = require('./readiness');
 
 const INDEX_HTML = path.join(__dirname, 'public', 'index.html');
 
 function createServer(opts) {
   const { onError } = opts;
   const metricsRoot = opts.metricsRoot;
+  const projectRoot = opts.projectRoot || process.cwd();
+  const projectDir = opts.projectDir;
 
   const server = http.createServer(async (req, res) => {
     const host = req.headers.host;
@@ -58,6 +61,23 @@ function createServer(opts) {
       return;
     }
 
+    if (req.url === '/api/readiness') {
+      try {
+        const body = JSON.stringify(await scanReadiness({ projectRoot, projectDir }));
+        res.writeHead(200, {
+          'Content-Type': 'application/json; charset=utf-8',
+          'X-Content-Type-Options': 'nosniff',
+          'Cache-Control': 'no-store'
+        });
+        res.end(body);
+      } catch (err) {
+        console.error('readiness error:', err);
+        res.writeHead(500);
+        res.end('Internal Server Error');
+      }
+      return;
+    }
+
     if (req.url === '/' || req.url === '/index.html') {
       try {
         const html = await fs.promises.readFile(INDEX_HTML, 'utf8');
@@ -97,6 +117,7 @@ if (require.main === module) {
   const mainOpts = {
     port: 4003,
     metricsRoot: path.resolve(os.homedir(), '.claude', 'projects'),
+    projectRoot: process.cwd(),
     onError: (err) => {
       if (err.code === 'EADDRINUSE') {
         console.error('Port 4003 in use. Check: lsof -i :4003');

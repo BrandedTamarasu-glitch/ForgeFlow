@@ -6,22 +6,27 @@ import { createRequire } from 'module';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import * as http from 'http';
+import * as fs from 'fs';
+import * as os from 'os';
 
 const require = createRequire(import.meta.url);
 const { createServer } = require('../server.js') as { createServer: (opts: {
   port: number;
   metricsRoot: string;
+  projectRoot?: string;
+  projectDir?: string;
   onError?: (err: NodeJS.ErrnoException) => void;
 }) => http.Server };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES_ROOT = path.resolve(__dirname, '../../../fixtures/metrics-root');
 
-function startServer(metricsRoot: string): Promise<{ baseUrl: string; close: () => Promise<void> }> {
+function startServer(metricsRoot: string, opts: { projectRoot?: string; projectDir?: string } = {}): Promise<{ baseUrl: string; close: () => Promise<void> }> {
   return new Promise((resolve, reject) => {
     const srv = createServer({
       port: 0,
       metricsRoot,
+      ...opts,
       onError: reject
     });
     srv.listen(0, '127.0.0.1', () => {
@@ -31,6 +36,34 @@ function startServer(metricsRoot: string): Promise<{ baseUrl: string; close: () 
       resolve({ baseUrl, close });
     });
   });
+}
+
+function writeJson(file: string, value: unknown): void {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+function makeReadinessFixture(): { projectRoot: string; projectDir: string } {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-dashboard-readiness-'));
+  const projectDir = path.join(projectRoot, '.forgeflow', path.basename(projectRoot));
+  const contextDir = path.join(projectDir, 'context');
+  const latestDir = path.join(contextDir, 'latest');
+  writeJson(path.join(contextDir, 'project-operating-model.json'), { schema_version: '1', status: 'ready' });
+  writeJson(path.join(latestDir, 'latest-insights-report.json'), { status: 'injected', freshness: { status: 'current' } });
+  writeJson(path.join(latestDir, 'context-telemetry.json'), { budget_status: 'pass', compact_tokens: 800, estimated_saved_tokens: 1200 });
+  writeJson(path.join(projectDir, 'release-readiness', 'last.json'), { status: 'ready', blockers: [] });
+  writeJson(path.join(contextDir, 'architecture.json'), { schema_version: '1' });
+  writeJson(path.join(contextDir, 'ownership-map.json'), { schema_version: '1' });
+  writeJson(path.join(contextDir, 'invocation-hints.json'), { schema_version: '1' });
+  writeJson(path.join(latestDir, 'synthesis-input.json'), { context_blocks: [{ name: 'architecture-intelligence' }] });
+  writeJson(path.join(latestDir, 'packet-artifacts.json'), { packet_count: 4 });
+  writeJson(path.join(latestDir, 'code-topology.json'), { nodes: [] });
+  writeJson(path.join(contextDir, 'dogfood-report.json'), {
+    status: 'ready',
+    promotion_decision: 'consider-promote',
+    promotion_reason: 'Fixture evidence is complete.'
+  });
+  return { projectRoot, projectDir };
 }
 
 // Node's built-in fetch (undici) rewrites the Host header, ignoring caller overrides.
@@ -167,6 +200,32 @@ test('GET /api/team returns 200 with synced:false', async () => {
     assert.equal(res.status, 200);
     const body = await res.json() as { synced: boolean };
     assert.equal(body.synced, false);
+  } finally {
+    await close();
+  }
+});
+
+test('GET /api/readiness returns local project readiness cards', async () => {
+  const fixture = makeReadinessFixture();
+  const { baseUrl, close } = await startServer(FIXTURES_ROOT, fixture);
+  try {
+    const res = await get(baseUrl, '/api/readiness');
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get('cache-control'), 'no-store');
+    const body = await res.json() as {
+      schema_version: string;
+      status: string;
+      project: string;
+      cards: Array<{ id: string; status: string; next: string }>;
+      boundary: string;
+    };
+    assert.equal(body.schema_version, '1');
+    assert.equal(body.status, 'ready');
+    assert.equal(body.project, path.basename(fixture.projectRoot));
+    assert.ok(body.cards.some((card) => card.id === 'release-readiness' && card.status === 'ready'));
+    assert.ok(body.cards.some((card) => card.id === 'dogfood-refresh-plan' && card.next === '/forgeflow-dogfood-report --write'));
+    assert.ok(body.boundary.includes('does not refresh'));
+    assert.equal(JSON.stringify(body).includes(fixture.projectRoot), false);
   } finally {
     await close();
   }

@@ -23,6 +23,7 @@ Use it when you want to inspect Forgeflow activity across projects:
 - auto-fix activity
 - project-level usage
 - parse warnings in local telemetry
+- current project readiness signals
 
 The dashboard reads local telemetry from:
 
@@ -31,6 +32,14 @@ The dashboard reads local telemetry from:
 ```
 
 It does not send telemetry to a hosted service.
+
+The dashboard also exposes a read-only project readiness endpoint:
+
+```text
+GET /api/readiness
+```
+
+That endpoint reads existing local Forgeflow artifacts for project health, latest insights, context budget, release readiness, dogfood report status, and the dogfood refresh-plan next action. It does not refresh artifacts, write files, run shell commands, spawn agents, call GitHub, or export telemetry.
 
 ## Agent Chat Dashboard
 

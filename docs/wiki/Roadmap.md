@@ -6,6 +6,39 @@ Forgeflow is currently a local-first developer workflow for Claude Code and Code
 
 Forgeflow now has the local install, health, repair, rollback, release, docs, demo, template-installer, evaluation, adoption, field-validation, distribution-readiness, team-trial guidance, learning path, code topology, project trends, project intelligence, release-to-install preflight, and report surfaces needed for broader use. The current phase is evidence-driven stabilization: run bounded maintainer trials, keep smoke and release checks green, collect public-safe summaries, and make targeted fixes from observed evidence.
 
+## Planned Deferred Work
+
+The next selected deferred work items are the two safest high-value extensions:
+
+1. Visual dashboard expansion.
+2. Cross-project/org operating model.
+
+Both tracks stay local-first and advisory. They do not introduce GitHub mutation, PR comments, CI auto-push, LLM-generated patching, multi-fix batches, or automatic promotion.
+
+### Phase 14: Dashboard Evidence API
+
+Add a read-only dashboard data aggregator for project health, learning status, context budget, release readiness summary, dogfood report status, and dogfood refresh-plan next action. The endpoint should read existing local artifacts and helper outputs only. It must not refresh artifacts, write files, spawn agents, call GitHub, or export telemetry.
+
+### Phase 15: Dashboard UI Panel
+
+Add a compact Project Readiness panel to the optional local dashboard. The panel should show status badges, stale-evidence warnings, and copyable next commands. It should remain dense, keyboard accessible, responsive, and readable without relying on color alone. It must not run shell commands or mutate local state.
+
+### Phase 16: Cross-Project Source Inventory
+
+Add a read-only helper that inventories trusted local Forgeflow project artifacts across explicit roots or known Forgeflow state locations. It should summarize available project operating models, learning rollups, dogfood reports, trends, freshness, skipped projects, and privacy blockers without scanning broad home directories by default.
+
+### Phase 17: Cross-Project Operating Model Rollup
+
+Aggregate repeated validation norms, risk zones, high-care surfaces, repeated blockers, and confidence by evidence source into an advisory org-level operating model. It should use counts, freshness, and public-safe summaries rather than raw project details.
+
+### Phase 18: Cross-Project Model Display And Context Hook
+
+Add a `/forgeflow-org-model` display command and, only if compact and quality-gated, optional context-pack injection. The guidance must remain verify-before-use and cannot override current project evidence, user instructions, security requirements, accessibility requirements, or product judgment.
+
+### Still Deferred
+
+Full runtime call graph, CODEOWNERS/GitHub ownership sync mutation, LLM-generated patching, PR comment bots, CI auto-push, multi-fix batches, hosted dashboard, and telemetry export remain out of scope for this track.
+
 ## Pilot Evidence Collection Work
 
 No new broad feature track is currently selected. Remaining work should stay inside the phases below unless pilot evidence exposes a higher-priority gap.

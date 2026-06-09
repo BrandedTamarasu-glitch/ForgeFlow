@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow - V4.3.67 Changelog</title>
+  <style>
+    body { background: #0d0d0d; color: #ddd8cc; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.65; margin: 0; }
+    main { max-width: 820px; margin: 0 auto; padding: 72px 32px 96px; }
+    .version { color: #7a7670; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
+    h1 { font-size: 40px; font-weight: 400; line-height: 1.15; margin: 14px 0 20px; }
+    h2 { border-top: 1px solid #303030; color: #f0a232; font-size: 18px; font-weight: 600; margin: 42px 0 18px; padding-top: 28px; }
+    p, li { color: #c9c2b6; }
+    code { background: #1c1c1c; border: 1px solid #303030; border-radius: 4px; color: #f0c070; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 1px 5px; }
+    a { color: #f0a232; text-decoration: underline; text-underline-offset: 0.16em; }
+    .nav { display: flex; justify-content: space-between; margin-top: 52px; padding-top: 24px; border-top: 1px solid #303030; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="version">Forgeflow V4.3.67 · 9 June 2026</div>
+    <h1>Release: Dashboard Evidence API</h1>
+    <p>
+      Forgeflow 4.3.67 lands Phase 14 of the dashboard and operating-model track. The optional local dashboard now has a read-only readiness API that gathers existing project evidence into one compact response.
+    </p>
+
+    <h2>Readiness API</h2>
+    <ul>
+      <li><code>GET /api/readiness</code> returns project health, learning status, context budget, release readiness, dogfood report, and dogfood refresh-plan cards.</li>
+      <li>The aggregator reads existing local artifacts under the project Forgeflow state instead of recomputing or refreshing them.</li>
+      <li>The response includes a compact next action so the dashboard can point users to the evidence command that matters most.</li>
+    </ul>
+
+    <h2>Safety Boundary</h2>
+    <ul>
+      <li>The endpoint is read-only and sends <code>Cache-Control: no-store</code>.</li>
+      <li>It does not write artifacts, spawn agents, run shell commands, refresh evidence, call GitHub, or export telemetry.</li>
+      <li>Project artifact paths are normalized so the API does not expose absolute local filesystem roots.</li>
+    </ul>
+
+    <h2>Docs And Planning</h2>
+    <ul>
+      <li>The dashboard docs describe the new readiness endpoint and its non-mutating boundary.</li>
+      <li>The dashboard service context documents the response shape and privacy expectation for future UI work.</li>
+      <li>The roadmap records Phases 14 through 18 for the dashboard panel and cross-project operating-model track.</li>
+    </ul>
+
+    <h2>Validation</h2>
+    <ul>
+      <li><code>node --test services/dashboard/__tests__/readiness.test.js</code></li>
+      <li>Full <code>scripts/forgeflow/test-*.js</code> suite</li>
+      <li><code>node scripts/forgeflow/smoke-check.js --mode source --json</code></li>
+      <li><code>node scripts/forgeflow/render-release-readiness.js --json</code></li>
+      <li><code>git diff --check</code></li>
+    </ul>
+
+    <div class="nav">
+      <a href="./v4.3.66.html">&larr; V4.3.66</a>
+      <span>V4.3.67</span>
+    </div>
+  </main>
+</body>
+</html>
