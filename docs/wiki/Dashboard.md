@@ -41,6 +41,8 @@ GET /api/readiness
 
 That endpoint reads existing local Forgeflow artifacts for project health, latest insights, context budget, release readiness, dogfood report status, and the dogfood refresh-plan next action. It does not refresh artifacts, write files, run shell commands, spawn agents, call GitHub, or export telemetry.
 
+The dashboard UI shows those signals in the Project Readiness panel. The panel renders status labels, stale or missing evidence states, the current next action, and a copy-only command button. It does not run the command for the user or mutate project state.
+
 ## Agent Chat Dashboard
 
 Run:

@@ -8,6 +8,8 @@ const http = require('http');
 const { createServer } = require('../server');
 const { scanReadiness } = require('../readiness');
 
+const INDEX_HTML = path.resolve(__dirname, '..', 'public', 'index.html');
+
 function writeJson(file, value) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`);
@@ -101,4 +103,14 @@ test('GET /api/readiness serves no-store local readiness JSON', async () => {
   } finally {
     await server.close();
   }
+});
+
+test('dashboard HTML includes read-only project readiness panel contract', () => {
+  const html = fs.readFileSync(INDEX_HTML, 'utf8');
+  assert.match(html, /id="readiness-panel"/);
+  assert.match(html, /id="readiness-status"/);
+  assert.match(html, /id="readiness-cards"/);
+  assert.match(html, /id="readiness-copy-command"/);
+  assert.match(html, /fetch\('\/api\/readiness'/);
+  assert.doesNotMatch(html, /\/api\/readiness[^]*method:\s*'POST'/);
 });

@@ -23,7 +23,7 @@ The chat panel in the dashboard UI connects to port 4001 (agent-chat), not this 
 | `metrics.js` | Reads and aggregates the JSONL telemetry file into the `/api/metrics` response shape |
 | `readiness.js` | Reads existing local Forgeflow artifacts into the `/api/readiness` project-readiness response shape |
 | `team.js` | Stub — reserved for `/forgeflow-sync` team aggregation in Phase 4C. Currently exports a `readTeamSync` that returns `[]`; not yet imported by `server.js`. |
-| `public/index.html` | Dashboard UI — single-page, no build step required |
+| `public/index.html` | Dashboard UI — single-page, no build step required. Renders `/api/metrics` trends and the read-only `/api/readiness` Project Readiness panel. |
 
 ---
 
@@ -148,3 +148,14 @@ The readiness endpoint is advisory and read-only. It reads existing local artifa
   "boundary": "Dashboard readiness is read-only..."
 }
 ```
+
+## Project Readiness Panel
+
+The UI consumes `/api/readiness` only through `GET`. It renders:
+
+- the overall status as visible text, not color alone
+- six readiness cards with label, status, and summary
+- one copy-only next-action command when the API provides `next`
+- the API boundary text
+
+Controls in this panel must stay read-only. Copying a command to the clipboard is allowed; executing commands, refreshing artifacts, writing files, calling GitHub, spawning agents, or promoting automation from the dashboard is out of scope.

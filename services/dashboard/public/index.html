@@ -372,6 +372,168 @@
       font-style: italic;
     }
 
+    /* ── Readiness panel ───────────────────────────────────────── */
+    #readiness-panel {
+      flex-shrink: 0;
+    }
+
+    .panel-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .panel-title-row .panel-title {
+      margin-bottom: 0;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      padding: 2px 8px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .status-pill.ready,
+    .status-pill.pass,
+    .status-pill.present,
+    .status-pill.injected {
+      border-color: rgba(63, 185, 80, 0.45);
+      background: rgba(63, 185, 80, 0.12);
+      color: var(--accent-green);
+    }
+
+    .status-pill.watch,
+    .status-pill.warning,
+    .status-pill.warn,
+    .status-pill.missing,
+    .status-pill.refresh-needed {
+      border-color: rgba(210, 153, 34, 0.45);
+      background: rgba(210, 153, 34, 0.12);
+      color: var(--accent-yellow);
+    }
+
+    .status-pill.attention,
+    .status-pill.error,
+    .status-pill.fail,
+    .status-pill.failed,
+    .status-pill.invalid,
+    .status-pill.blocked {
+      border-color: rgba(248, 81, 73, 0.45);
+      background: rgba(248, 81, 73, 0.12);
+      color: var(--accent-red);
+    }
+
+    #readiness-state,
+    #readiness-boundary {
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    #readiness-state.error {
+      color: var(--accent-red);
+    }
+
+    .readiness-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .readiness-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 6px 8px;
+      padding: 9px 10px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .readiness-card strong {
+      color: var(--text-primary);
+      font-size: 13px;
+      font-weight: 600;
+      min-width: 0;
+    }
+
+    .readiness-card p {
+      grid-column: 1 / -1;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .readiness-next {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+
+    .readiness-next-label {
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .command-copy-row {
+      display: flex;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .command-copy-row code {
+      flex: 1;
+      min-width: 0;
+      overflow-wrap: anywhere;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-primary);
+      font-size: 12px;
+      padding: 5px 7px;
+    }
+
+    .command-copy-row button {
+      flex-shrink: 0;
+      padding: 5px 8px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-secondary);
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .command-copy-row button:hover,
+    .command-copy-row button:focus-visible {
+      background: var(--bg-hover);
+      border-color: var(--accent-blue);
+      color: var(--text-primary);
+      outline: 2px solid var(--accent-blue);
+      outline-offset: 2px;
+    }
+
+    .copy-status {
+      min-height: 16px;
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
     /* ── Chat panel ────────────────────────────────────────────── */
     #chat-panel {
       flex: 1;
@@ -485,6 +647,46 @@
       }
       a, button {
         outline: 2px solid ButtonText;
+      }
+    }
+
+    @media (max-width: 760px) {
+      body {
+        height: auto;
+        min-height: 100vh;
+        overflow: auto;
+      }
+
+      header {
+        flex-wrap: wrap;
+      }
+
+      .header-spacer {
+        flex-basis: 100%;
+        height: 0;
+      }
+
+      main {
+        flex-direction: column;
+        min-height: auto;
+        overflow: visible;
+      }
+
+      .col-left,
+      .col-center,
+      .col-right {
+        flex: none;
+        flex-basis: auto;
+        width: 100%;
+        overflow: visible;
+      }
+
+      #chart-wrap svg {
+        min-width: 0;
+      }
+
+      #chat-panel {
+        min-height: 260px;
       }
     }
   </style>
@@ -651,7 +853,26 @@
     </section>
 
     <!-- Right column: chat -->
-    <aside class="col-right" aria-label="Agent chat">
+    <aside class="col-right" aria-label="Project readiness and agent chat">
+      <section class="panel" id="readiness-panel" aria-labelledby="readiness-heading">
+        <div class="panel-title-row">
+          <h2 id="readiness-heading" class="panel-title">Project readiness</h2>
+          <span class="status-pill" id="readiness-status">Loading</span>
+        </div>
+
+        <p id="readiness-state" role="status" aria-live="polite">Loading readiness…</p>
+        <div id="readiness-cards" class="readiness-cards" hidden></div>
+        <div id="readiness-next" class="readiness-next" hidden>
+          <span class="readiness-next-label">Next action</span>
+          <div class="command-copy-row">
+            <code id="readiness-next-command"></code>
+            <button type="button" id="readiness-copy-command">Copy</button>
+          </div>
+          <span class="copy-status" id="readiness-copy-status" aria-live="polite"></span>
+        </div>
+        <p id="readiness-boundary" hidden></p>
+      </section>
+
       <div class="panel" id="chat-panel">
         <p class="panel-title">Agent chat</p>
 
@@ -675,6 +896,7 @@
   <script>
     /* ── State ──────────────────────────────────────────────────── */
     let metricsData = null;
+    let readinessData = null;
     let activeWindow = 'all';
     let activeProject = '';
 
@@ -710,6 +932,98 @@
         metricsData = await res.json();
       } finally {
         clearTimeout(timeout);
+      }
+    }
+
+    async function loadReadiness() {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      try {
+        const res = await fetch('/api/readiness', { signal: controller.signal });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        readinessData = await res.json();
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+
+    function normalizeStatusClass(status) {
+      return String(status || 'unknown').toLowerCase().replace(/[^a-z0-9-]+/g, '-');
+    }
+
+    function setReadinessStatus(status) {
+      const pill = document.getElementById('readiness-status');
+      const normalized = normalizeStatusClass(status);
+      pill.className = `status-pill ${normalized}`;
+      pill.textContent = String(status || 'unknown');
+    }
+
+    function renderReadinessError(err) {
+      const state = document.getElementById('readiness-state');
+      setReadinessStatus('attention');
+      state.hidden = false;
+      state.className = 'error';
+      state.textContent = err.name === 'AbortError'
+        ? 'Readiness request timed out.'
+        : `Readiness unavailable: ${err.message}`;
+      document.getElementById('readiness-cards').hidden = true;
+      document.getElementById('readiness-next').hidden = true;
+      document.getElementById('readiness-boundary').hidden = true;
+    }
+
+    function makeStatusPill(status) {
+      const span = document.createElement('span');
+      span.className = `status-pill ${normalizeStatusClass(status)}`;
+      span.textContent = String(status || 'unknown');
+      return span;
+    }
+
+    function renderReadiness(data) {
+      const state = document.getElementById('readiness-state');
+      const cards = document.getElementById('readiness-cards');
+      const next = document.getElementById('readiness-next');
+      const command = document.getElementById('readiness-next-command');
+      const boundary = document.getElementById('readiness-boundary');
+
+      if (!data) return;
+      setReadinessStatus(data.status);
+      state.hidden = false;
+      state.className = '';
+      state.textContent = data.project ? `${data.project} · ${new Date(data.generated_at).toLocaleTimeString()}` : 'Readiness loaded';
+
+      cards.replaceChildren();
+      (data.cards || []).forEach(item => {
+        const article = document.createElement('article');
+        article.className = 'readiness-card';
+
+        const label = document.createElement('strong');
+        label.textContent = item.label || item.id || 'Readiness item';
+
+        const pill = makeStatusPill(item.status);
+
+        const summary = document.createElement('p');
+        summary.textContent = item.summary || '';
+
+        article.appendChild(label);
+        article.appendChild(pill);
+        article.appendChild(summary);
+        cards.appendChild(article);
+      });
+      cards.hidden = false;
+
+      if (data.next) {
+        command.textContent = data.next;
+        next.hidden = false;
+      } else {
+        command.textContent = '';
+        next.hidden = true;
+      }
+
+      if (data.boundary) {
+        boundary.textContent = data.boundary;
+        boundary.hidden = false;
+      } else {
+        boundary.hidden = true;
       }
     }
 
@@ -1121,6 +1435,23 @@
       const fetchStatus = document.getElementById('fetch-status');
       const parseWarn   = document.getElementById('parse-warning');
       const parseCount  = document.getElementById('parse-warning-count');
+      const copyButton  = document.getElementById('readiness-copy-command');
+      const copyStatus  = document.getElementById('readiness-copy-status');
+
+      copyButton.addEventListener('click', async () => {
+        const value = document.getElementById('readiness-next-command').textContent || '';
+        if (!value) return;
+        try {
+          await navigator.clipboard.writeText(value);
+          copyStatus.textContent = 'Copied';
+        } catch (err) {
+          copyStatus.textContent = 'Copy unavailable';
+        }
+      });
+
+      const readinessPromise = loadReadiness()
+        .then(() => renderReadiness(readinessData))
+        .catch(renderReadinessError);
 
       // -- Window toggle buttons
       document.querySelectorAll('.window-controls button').forEach(btn => {
@@ -1166,6 +1497,8 @@
         errorText.textContent = msg;
         errorBanner.classList.add('visible');
       }
+
+      await readinessPromise;
 
       // -- WebSocket chat panel
       initChat();
