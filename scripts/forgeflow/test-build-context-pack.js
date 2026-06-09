@@ -16,11 +16,23 @@ const repoProjectContextDir = path.join(repoRoot, '.forgeflow', path.basename(re
 fs.mkdirSync(repoProjectContextDir, { recursive: true });
 const seededProjectCodeMapPath = path.join(repoProjectContextDir, 'project-code-map.md');
 const seededTopologyPath = path.join(repoProjectContextDir, 'code-topology.json');
+const seededArchitecturePath = path.join(repoProjectContextDir, 'architecture.json');
+const seededOwnershipPath = path.join(repoProjectContextDir, 'ownership-map.json');
+const seededInvocationPath = path.join(repoProjectContextDir, 'invocation-hints.json');
 const previousProjectCodeMap = fs.existsSync(seededProjectCodeMapPath)
   ? fs.readFileSync(seededProjectCodeMapPath, 'utf8')
   : null;
 const previousTopology = fs.existsSync(seededTopologyPath)
   ? fs.readFileSync(seededTopologyPath, 'utf8')
+  : null;
+const previousArchitecture = fs.existsSync(seededArchitecturePath)
+  ? fs.readFileSync(seededArchitecturePath, 'utf8')
+  : null;
+const previousOwnership = fs.existsSync(seededOwnershipPath)
+  ? fs.readFileSync(seededOwnershipPath, 'utf8')
+  : null;
+const previousInvocation = fs.existsSync(seededInvocationPath)
+  ? fs.readFileSync(seededInvocationPath, 'utf8')
   : null;
 fs.writeFileSync(seededProjectCodeMapPath, [
   '# Forgeflow Project Code Map',
@@ -54,6 +66,22 @@ fs.writeFileSync(seededTopologyPath, JSON.stringify({
   changed_sections: {
     'legacy/stale-topology.js': [{ kind: 'function', name: 'stale', line: 1, end_line: 1, changed_lines: [1] }],
   },
+}, null, 2));
+fs.writeFileSync(seededArchitecturePath, JSON.stringify({
+  status: 'ready',
+  entrypoints: [{ path: 'src/auth/session.ts', evidence: 'test entrypoint' }],
+  validation_norms: [{ command_or_pattern: 'npm test' }],
+  gaps: [{ kind: 'static-import-gap', action: 'verify dynamic imports manually' }],
+}, null, 2));
+fs.writeFileSync(seededOwnershipPath, JSON.stringify({
+  status: 'ready',
+  high_care_files: [{ path: 'src/auth/session.ts', recommended_lane: 'Warden', owner_surface: 'security', reasons: ['auth high-care'] }],
+  coverage_gaps: [{ path: 'src/auth/session.ts', owner_surface: 'security', recommended_lane: 'Warden', reason: 'no CODEOWNERS coverage' }],
+}, null, 2));
+fs.writeFileSync(seededInvocationPath, JSON.stringify({
+  status: 'ready',
+  invocation_hints: [{ kind: 'package-script', path: 'package.json', suggested_invocation: 'npm test', evidence: 'scripts.test' }],
+  gaps: [],
 }, null, 2));
 const compactMap = compactProjectCodeMap(repoRoot);
 const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-'));
@@ -531,6 +559,21 @@ if (previousTopology === null) {
 } else {
   fs.writeFileSync(seededTopologyPath, previousTopology);
 }
+if (previousArchitecture === null) {
+  fs.unlinkSync(seededArchitecturePath);
+} else {
+  fs.writeFileSync(seededArchitecturePath, previousArchitecture);
+}
+if (previousOwnership === null) {
+  fs.unlinkSync(seededOwnershipPath);
+} else {
+  fs.writeFileSync(seededOwnershipPath, previousOwnership);
+}
+if (previousInvocation === null) {
+  fs.unlinkSync(seededInvocationPath);
+} else {
+  fs.writeFileSync(seededInvocationPath, previousInvocation);
+}
 
 const checks = [
   ['result out dir', result.out_dir === outDir],
@@ -557,6 +600,7 @@ const checks = [
   ['latest insights report linked', synthesis.latest_insights_report_path.endsWith('latest-insights-report.json')],
   ['user profile linked', synthesis.user_profile_path.endsWith('user-profile.md') && synthesis.user_profile_report && typeof synthesis.user_profile_report.injected === 'boolean'],
   ['project operating model linked', synthesis.project_operating_model_path.endsWith('project-operating-model.md') && synthesis.project_operating_model_report && synthesis.project_operating_model_report.status],
+  ['architecture intelligence linked', synthesis.architecture_intelligence_path.endsWith('architecture-intelligence.md') && synthesis.architecture_intelligence_report && synthesis.architecture_intelligence_report.architecture.status === 'present' && synthesis.architecture_intelligence_report.ownership.status === 'present' && synthesis.architecture_intelligence_report.invocation.status === 'present'],
   ['latest failure digest linked', synthesis.latest_failure_digest_path && synthesis.latest_failure_digest_path.endsWith('failure-digest.md')],
   ['latest failure digest freshness linked', synthesis.latest_failure_digest_freshness && synthesis.latest_failure_digest_freshness.status === 'attention'],
   ['latest failure digest triage linked', synthesis.latest_failure_digest_triage && synthesis.latest_failure_digest_triage.state === 'stale' && synthesis.latest_failure_digest_triage.usefulness === 'limited'],
@@ -565,11 +609,13 @@ const checks = [
   ['agent context contract written', agentContextContract.agents && agentContextContract.agents.warden_reviewer && agentContextContract.agents.warden_reviewer.prohibited_uses.length > 0],
   ['agent context contracts in synthesis', synthesis.agent_context_contracts && synthesis.agent_context_contracts.warden_reviewer && synthesis.agent_context_contracts.warden_reviewer.allowed_signals.includes('latest-failure-digest')],
   ['agent context contracts verify operating model', synthesis.agent_context_contracts.warden_reviewer.verify_before_use.includes('project-operating-model')],
+  ['agent context contracts verify architecture intelligence', synthesis.agent_context_contracts.warden_reviewer.verify_before_use.includes('architecture-intelligence') && synthesis.agent_context_contracts.warden_reviewer.advisory_signals.includes('architecture-intelligence')],
   ['packet artifact manifest written', artifactManifest.artifacts.some((item) => item.name === 'latest-failure-digest' && item.decision === 'metadata-only' && item.reason === 'digest-stale')],
   ['packet artifact manifest markdown written', artifactManifestMarkdown.includes('| latest-failure-digest | metadata-only | digest-stale | forgeflow-failure-digest |')],
   ['packet artifact manifest covers latest insights', artifactManifest.artifacts.some((item) => item.name === 'latest-insights' && item.decision === 'included' && item.status === 'injected')],
   ['packet artifact manifest covers user profile', artifactManifest.artifacts.some((item) => item.name === 'user-profile' && ['included', 'metadata-only'].includes(item.decision) && item.status)],
   ['packet artifact manifest covers operating model', artifactManifest.artifacts.some((item) => item.name === 'project-operating-model' && item.decision === 'included' && item.confidence)],
+  ['packet artifact manifest covers architecture intelligence', artifactManifest.artifacts.some((item) => item.name === 'architecture-intelligence' && item.decision === 'included' && item.reason === 'architecture-intelligence-3-of-3-present')],
   ['packet artifact manifest covers topology provenance', artifactManifest.artifacts.some((item) => item.name === 'code-topology' && item.decision === 'included' && item.provenance && item.provenance.source === 'build-context-pack')],
   ['project code map linked to current pack', synthesis.project_code_map_path === path.relative(repoRoot, path.join(outDir, 'project-code-map.md'))],
   ['project code topology linked to current pack', synthesis.project_code_topology_path === synthesis.code_topology_path],
@@ -590,6 +636,7 @@ const checks = [
   ['agent packet includes latest insights', wardenPacket.includes('## Latest Insights')],
   ['agent packet includes user profile guidance', wardenPacket.includes('## User Profile Guidance') && userProfile.includes('Forgeflow User Profile')],
   ['agent packet includes operating model guidance', wardenPacket.includes('## Project Operating Model') && projectOperatingModel.includes('High-care files:') && projectOperatingModel.includes('Proof boundary:') && wardenPacket.includes('project-operating-model')],
+  ['agent packet includes architecture intelligence', wardenPacket.includes('## Architecture Intelligence') && wardenPacket.includes('Proof boundary: Advisory static architecture') && wardenPacket.includes('src/auth/session.ts') && wardenPacket.includes('run hint: npm test')],
   ['agent packet includes artifact trust manifest', wardenPacket.includes('## Packet Artifact Trust') && wardenPacket.includes('| latest-failure-digest | metadata-only | digest-stale | forgeflow-failure-digest |')],
   ['agent packet includes context contract', wardenPacket.includes('## Agent Context Contract') && wardenPacket.includes('Do not override current user instructions')],
   ['agent packet gates stale failure digest body', wardenPacket.includes('## Latest Failure Digest') && wardenPacket.includes('Freshness: attention') && wardenPacket.includes('Triage state: stale') && wardenPacket.includes('Digest body skipped') && !wardenPacket.includes('FAIL context packet fixture')],

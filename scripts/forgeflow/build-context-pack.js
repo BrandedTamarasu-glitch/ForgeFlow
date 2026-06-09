@@ -956,13 +956,77 @@ function readProjectOperatingModel(root) {
   }
 }
 
-function packetArtifactManifest({ root, outDir, latestInsightsResult, latestFailure, topologyContext, projectCodeMapPath, userProfileResult, projectOperatingModel }) {
+function readContextArtifact(root, basename) {
+  const projectDir = defaultProjectDir(root);
+  const file = path.join(projectDir, 'context', basename);
+  try {
+    return { status: 'present', path: file, value: readJson(file, projectDir) };
+  } catch (_err) {
+    return { status: fs.existsSync(file) ? 'invalid' : 'missing', path: file, value: null };
+  }
+}
+
+function compactList(items, render, limit = 5) {
+  if (!Array.isArray(items) || items.length === 0) return ['- None found in current evidence.'];
+  return items.slice(0, limit).map(render);
+}
+
+function compactArchitectureIntelligence(artifacts, maxChars = 3600) {
+  const architecture = artifacts.architecture.value || {};
+  const ownership = artifacts.ownership.value || {};
+  const invocation = artifacts.invocation.value || {};
+  const lines = [
+    'Proof boundary: Advisory static architecture, ownership, and invocation evidence only. Verify current files, tests, runtime behavior, and review artifacts before acting.',
+    '',
+    'Artifact status:',
+    `- architecture: ${artifacts.architecture.status}`,
+    `- ownership: ${artifacts.ownership.status}`,
+    `- invocation: ${artifacts.invocation.status}`,
+    '',
+    'Read first:',
+    ...compactList(architecture.entrypoints, (item) => `- ${item.path || item.name}: ${item.evidence || item.source || 'architecture entrypoint'}`, 4),
+    '',
+    'High-care owner surfaces:',
+    ...compactList(ownership.high_care_files, (item) => `- ${item.path}: ${item.recommended_lane || 'review'}/${item.owner_surface || 'unknown'}; ${Array.isArray(item.reasons) ? item.reasons.join('; ') : item.reason || 'high-care file'}`, 5),
+    '',
+    'Invocation hints:',
+    ...compactList(invocation.invocation_hints, (item) => {
+      const run = item.suggested_invocation ? `; run hint: ${item.suggested_invocation}` : '';
+      return `- ${item.kind}: ${item.path || item.name || item.package}${run}; evidence: ${item.evidence || 'static convention'}`;
+    }, 5),
+    '',
+    'Validate first:',
+    ...compactList(architecture.validation_norms, (item) => `- ${item.command_or_pattern || item}`, 4),
+    '',
+    'Avoid first:',
+    ...compactList([...(architecture.gaps || []), ...(ownership.coverage_gaps || []), ...(invocation.gaps || [])], (item) => `- ${item.kind || item.owner_surface || item.path || 'gap'}: ${item.action || item.reason || item.path || 'verify before acting'}`, 6),
+  ];
+  return truncate(lines.join('\n'), maxChars);
+}
+
+function architectureIntelligenceArtifact(artifacts, root, outDir) {
+  const statuses = [artifacts.architecture.status, artifacts.ownership.status, artifacts.invocation.status];
+  const present = statuses.filter((status) => status === 'present').length;
+  return artifactDecision(
+    'architecture-intelligence',
+    path.relative(root, path.join(outDir, 'architecture-intelligence.md')),
+    present > 0 ? 'included' : 'metadata-only',
+    present > 0 ? `architecture-intelligence-${present}-of-3-present` : 'architecture-intelligence-unavailable',
+    {
+      status: statuses.join(','),
+      next_action: present === 3 ? '' : 'forgeflow-architecture --write && forgeflow-ownership --write && forgeflow-invocation-hints --write',
+    },
+  );
+}
+
+function packetArtifactManifest({ root, outDir, latestInsightsResult, latestFailure, topologyContext, projectCodeMapPath, userProfileResult, projectOperatingModel, architectureIntelligenceArtifacts }) {
   const artifacts = [
     artifactDecision('diff-summary', path.relative(root, path.join(outDir, 'diff-summary.md')), 'included', 'current-diff-scope'),
     artifactDecision('memory-hits', path.relative(root, path.join(outDir, 'memory-hits.md')), 'included', 'local-memory-filtered'),
     latestInsightsArtifact(latestInsightsResult.report, root, outDir),
     userProfileArtifact(userProfileResult, root, outDir),
     projectOperatingModelArtifact(projectOperatingModel, root, outDir),
+    architectureIntelligenceArtifact(architectureIntelligenceArtifacts, root, outDir),
     latestFailure.artifact || artifactDecision('latest-failure-digest', path.relative(root, path.join(outDir, 'failure-digest.md')), 'skipped', 'failure-digest-unavailable'),
     artifactDecision(
       'project-code-map',
@@ -1037,7 +1101,7 @@ function contextContractForAgent(agent) {
     agent,
     allowed_signals: ['diff-summary', 'packet-artifact-trust'],
     advisory_signals: ['memory-hits'],
-    verify_before_use: ['latest-insights', 'user-profile-guidance', 'project-operating-model', 'project-code-map', 'living-map-guidance', 'latest-failure-digest'],
+    verify_before_use: ['latest-insights', 'user-profile-guidance', 'project-operating-model', 'architecture-intelligence', 'project-code-map', 'living-map-guidance', 'latest-failure-digest'],
     prohibited_uses: [
       'Do not treat local learnings or profile guidance as approval.',
       'Do not override current user instructions, code, tests, or review evidence.',
@@ -1046,19 +1110,19 @@ function contextContractForAgent(agent) {
   };
   if (agent.startsWith('smith')) {
     base.allowed_signals.push('code-topology', 'project-code-map');
-    base.advisory_signals.push('latest-insights', 'project-operating-model');
+    base.advisory_signals.push('latest-insights', 'project-operating-model', 'architecture-intelligence');
     base.primary_use = 'Use topology and learning signals to focus craft, data, service, and test review.';
   } else if (agent.startsWith('warden') || agent === 'aegis') {
     base.allowed_signals.push('latest-failure-digest', 'code-topology');
-    base.advisory_signals.push('latest-insights', 'project-operating-model');
+    base.advisory_signals.push('latest-insights', 'project-operating-model', 'architecture-intelligence');
     base.primary_use = 'Use signals to prioritize security and systems checks, then verify every high-risk claim from visible evidence.';
   } else if (agent.startsWith('lumen')) {
     base.allowed_signals.push('user-profile-guidance');
-    base.advisory_signals.push('latest-insights', 'living-map-guidance', 'project-operating-model');
+    base.advisory_signals.push('latest-insights', 'living-map-guidance', 'project-operating-model', 'architecture-intelligence');
     base.primary_use = 'Use profile and project signals to align UX, accessibility, copy, and service-path checks.';
   } else if (agent.startsWith('atlas')) {
     base.allowed_signals.push('latest-insights', 'user-profile-guidance', 'living-map-guidance');
-    base.advisory_signals.push('latest-failure-digest', 'project-code-map', 'project-operating-model');
+    base.advisory_signals.push('latest-failure-digest', 'project-code-map', 'project-operating-model', 'architecture-intelligence');
     base.primary_use = 'Use signals to check scope, sequencing, stale guidance, and cross-agent coverage.';
   } else {
     base.primary_use = 'Use local signals as advisory context only after checking current files and task scope.';
@@ -1084,7 +1148,7 @@ function renderContextContract(contract) {
   ].join('\n');
 }
 
-function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, userProfile, projectOperatingModel, latestFailure, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, contextContract, task) {
+function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, userProfile, projectOperatingModel, architectureIntelligence, latestFailure, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, contextContract, task) {
   const relevant = relevantFilesForAgent(agent, manifest);
   const rules = rulePack(agent, route, manifest);
   return [
@@ -1122,6 +1186,9 @@ function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestI
     '',
     '## Project Operating Model',
     projectOperatingModel,
+    '',
+    '## Architecture Intelligence',
+    architectureIntelligence,
     '',
     '## Latest Failure Digest',
     latestFailure,
@@ -1188,6 +1255,12 @@ function buildContextPack(opts) {
   const userProfile = userProfileResult.markdown;
   const projectOperatingModel = readProjectOperatingModel(root);
   const projectOperatingModelMarkdown = compactProjectOperatingModel(projectOperatingModel, 3200);
+  const architectureIntelligenceArtifacts = {
+    architecture: readContextArtifact(root, 'architecture.json'),
+    ownership: readContextArtifact(root, 'ownership-map.json'),
+    invocation: readContextArtifact(root, 'invocation-hints.json'),
+  };
+  const architectureIntelligenceMarkdown = compactArchitectureIntelligence(architectureIntelligenceArtifacts, 3600);
   const latestFailure = latestFailureDigest(outDir, root);
   const latestFailurePath = path.join(outDir, 'failure-digest.md');
   const projectCodeMap = projectCodeMapFromTopology(root, topologyContext);
@@ -1196,14 +1269,14 @@ function buildContextPack(opts) {
   const livingMapGuidance = livingMapReviewGuidance(livingMapSummary);
   const topologySummary = compactTopology(topologyContext);
   const topology = topologyReport(topologyContext, root);
-  const artifactManifest = packetArtifactManifest({ root, outDir, latestInsightsResult, latestFailure, topologyContext, projectCodeMapPath, userProfileResult, projectOperatingModel });
+  const artifactManifest = packetArtifactManifest({ root, outDir, latestInsightsResult, latestFailure, topologyContext, projectCodeMapPath, userProfileResult, projectOperatingModel, architectureIntelligenceArtifacts });
   const artifactManifestMarkdown = renderArtifactManifest(artifactManifest);
   const agents = route.agents.included || [];
   const packets = {};
   const contextContracts = Object.fromEntries(agents.map((agent) => [agent, contextContractForAgent(agent)]));
 
   for (const agent of agents) {
-    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, userProfile, projectOperatingModelMarkdown, latestFailure.markdown, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, contextContracts[agent], effectiveOpts.task);
+    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, userProfile, projectOperatingModelMarkdown, architectureIntelligenceMarkdown, latestFailure.markdown, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, contextContracts[agent], effectiveOpts.task);
     const file = path.join(packetDir, `${agent}.md`);
     writeFileSafe(file, content);
     packets[agent] = path.relative(root, file);
@@ -1248,6 +1321,22 @@ function buildContextPack(opts) {
       confidence: projectOperatingModel ? projectOperatingModel.confidence : null,
       artifact: projectOperatingModel && projectOperatingModel.artifacts ? projectOperatingModel.artifacts.json : '',
     },
+    architecture_intelligence_path: path.relative(root, path.join(outDir, 'architecture-intelligence.md')),
+    architecture_intelligence_report: {
+      architecture: {
+        status: architectureIntelligenceArtifacts.architecture.status,
+        artifact: architectureIntelligenceArtifacts.architecture.path,
+      },
+      ownership: {
+        status: architectureIntelligenceArtifacts.ownership.status,
+        artifact: architectureIntelligenceArtifacts.ownership.path,
+      },
+      invocation: {
+        status: architectureIntelligenceArtifacts.invocation.status,
+        artifact: architectureIntelligenceArtifacts.invocation.path,
+      },
+      boundary: 'Advisory static architecture, ownership, and invocation evidence only. Verify current files, tests, runtime behavior, and review artifacts before acting.',
+    },
     latest_failure_digest_path: fs.existsSync(latestFailurePath) ? path.relative(root, latestFailurePath) : null,
     latest_failure_digest_freshness: latestFailure.freshness,
     latest_failure_digest_triage: latestFailure.triage || null,
@@ -1281,6 +1370,7 @@ function buildContextPack(opts) {
   writeFileSafe(path.join(outDir, 'latest-insights.md'), `${latestInsights || '# Latest Insights\n\n(none)'}\n`);
   writeFileSafe(path.join(outDir, 'user-profile.md'), `${userProfile || '# User Profile Guidance\n\n(none)'}\n`);
   writeFileSafe(path.join(outDir, 'project-operating-model.md'), `# Project Operating Model\n\n${projectOperatingModelMarkdown}\n`);
+  writeFileSafe(path.join(outDir, 'architecture-intelligence.md'), `# Architecture Intelligence\n\n${architectureIntelligenceMarkdown}\n`);
   writeFileSafe(projectCodeMapPath, `# Project Code Map\n\n${projectCodeMap}\n`);
   writeJson(path.join(outDir, 'latest-insights-report.json'), latestInsightsResult.report);
   writeJson(path.join(outDir, 'packet-artifacts.json'), artifactManifest);
