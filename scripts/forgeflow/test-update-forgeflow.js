@@ -72,6 +72,7 @@ const CANONICAL_NON_REQUIRED_MANAGED_SOURCES = [
   'commands/forgeflow-context-wave-build.md',
   'commands/forgeflow-context-wave-plan.md',
   'commands/forgeflow-capture-output.md',
+  'commands/forgeflow-dogfood-refresh-plan.md',
   'commands/forgeflow-dogfood-report.md',
   'commands/forgeflow-drift.md',
   'commands/forgeflow-efficiency-gaps.md',

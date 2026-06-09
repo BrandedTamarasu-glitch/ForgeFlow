@@ -46,6 +46,7 @@ node scripts/forgeflow/test-render-adoption-pack.js
 node scripts/forgeflow/test-render-architecture-docs.js
 node scripts/forgeflow/test-render-invocation-hints.js
 node scripts/forgeflow/test-render-ownership-map.js
+node scripts/forgeflow/test-render-dogfood-refresh-plan.js
 node scripts/forgeflow/test-render-dogfood-report.js
 node scripts/forgeflow/test-render-command-index.js
 node scripts/forgeflow/test-render-context-retention.js

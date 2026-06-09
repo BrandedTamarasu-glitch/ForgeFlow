@@ -70,6 +70,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/render-command-index.js',
   'scripts/forgeflow/render-context-retention.js',
   'scripts/forgeflow/render-context-wave-plan.js',
+  'scripts/forgeflow/render-dogfood-refresh-plan.js',
   'scripts/forgeflow/render-dogfood-report.js',
   'scripts/forgeflow/render-efficiency-gap-plan.js',
   'scripts/forgeflow/render-first-run-guide.js',
