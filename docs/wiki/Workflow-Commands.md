@@ -20,8 +20,16 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/review` | Review changed files with explainable routing and multi-agent synthesis, then record the final verdict in `.forgeflow/<project>/review-history.md` for `/ship`. |
 | `/review-auto` | Apply conservative safe fixes, refresh/check project learnings, then re-review and record the post-fix approval state. |
 | `/audit` | Run a deeper systems/security/craft audit. |
-| `/dashboard` | Start the optional local metrics dashboard on port 4003. |
+| `/agent-chat:on` | Start the agent-chat WebSocket and dashboard server on local ports 4000 and 4001 for live workflow visibility. |
+| `/agent-chat:off` | Stop agent-chat and preserve the auto-saved chat log when messages were captured. |
+| `/create-agent` | Interactively create a local custom Claude Code agent under `~/.claude/agents/custom-*.md`; managed updates do not overwrite these files. |
+| `/dashboard` | Start the optional local metrics dashboard on port 4003, including the Project Readiness panel backed by `GET /api/readiness`. |
+| `/debate` | Run a structured false-positive stress test against a code sample and sealed answer key. |
+| `/fleet` | Decompose a phased spec into isolated worktree shards, run parallel Forgeflow implementers, then merge sequentially with validation. |
+| `/handoff` | Write a rolling `.claude/handoff.md` so a future session can resume with current branch, PR, validation, pending work, and next action context. |
+| `/quick` | Dispatch one or more Forgeflow agents directly for a short task without running the full lifecycle. |
 | `/forgeflow-architecture` | Render advisory architecture docs from local topology, project intelligence, operating model, and learning artifacts; add `--write` to save local `.forgeflow/<project>/context/architecture.*` files. |
+| `/forgeflow-adoption` | Print a concise adoption pack with fit guidance, first-trial steps, proof boundaries, and repeat/expand/fix/defer rubric. |
 | `/forgeflow-invocation-hints` | Render advisory runtime entrypoint and invocation hints from package metadata, config files, topology, architecture evidence, and static conventions; add `--write` to save local `.forgeflow/<project>/context/invocation-hints.*` files. |
 | `/forgeflow-ownership` | Render advisory owner-surface recommendations from local topology, architecture, project operating-model, and optional CODEOWNERS evidence; add `--write` to save local `.forgeflow/<project>/context/ownership-map.*` files. |
 | `/forgeflow-dogfood-refresh-plan` | Show the ordered local refresh commands needed before rerunning the dogfood report; read-only and does not run those commands. |
@@ -87,6 +95,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-release-verify` | Print the compact local post-publish summary for sharing, with installed-version/runtime-drift consumability evidence, optional local snapshot save/comparison, and explicit `--github` read-only remote evidence. |
 | `/forgeflow-smoke` | Run downstream readiness smoke by default; add `--mode source` for source-tree release guards or `--mode full` for both groups. |
 | `/forgeflow-support` | Write a local support bundle with version, health, smoke, plan-only release readiness with post-publish verification, code-map acceptance health, docs drift, project trends, and consolidated next actions. Treat it as local support data because it may include local paths. |
+| `/forgeflow-sync` | Sync selected shared Forgeflow state with a team-owned git remote; local agent notes stay per-user and are never synced. |
 | `/forgeflow-stale-artifact-plan` | Show minimal refresh commands for stale local guidance artifacts without refreshing or deleting them. |
 | `/forgeflow-telemetry-quality` | Summarize whether local telemetry and outcome evidence are strong enough for calibration, including trusted sources, weakest sources, confidence, evidence ladder, and one next quality action. |
 | `/forgeflow-trends` | Show the current project's code-map trend, operating-model drift, living project-map categories, import-gap status, artifact freshness, latest-insights readiness/freshness, latest failure-digest provenance/freshness, project-learning consumption, and context-advisor status. Add `--refresh` to refresh project learnings and latest-insights readiness first; stale reports recommend it directly. |
@@ -98,7 +107,17 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-workflow-ending-capture` | Recommend the one outcome recorder command to consider after review, next-work, or agent-feedback workflow endings, including required evidence values, the matching learning-capture nudge, and observed-evidence stop rule. |
 | `/forgeflow-workflow-readiness` | Show the next safe workflow-readiness action and automation runbook across review waves, calibration, profile, telemetry, and runtime inventory while keeping high-risk `/review` safe-args work paused. |
 | `/forgeflow-wrapper-drift-plan` | Group command-wrapper drift into safe mechanical, manual, and high-risk buckets with validation commands. |
+| `/sync-upstream` | Sync Forgeflow meta-work from `~/.claude/` back into the Forgeflow repo, then optionally commit and push. |
+| `/ui-iterate` | Run measured UI/theme iteration with Playwright screenshots, accessibility scoring, variant ranking, and a local report. |
 | `/ship` | Prepare presentation, PR, CI checks, and release handoff after a passing review-history gate; potential secrets are hard blockers. |
+
+## Reference-Only Command Docs
+
+Some command files document setup surfaces rather than normal interactive commands:
+
+| Page | Purpose |
+|---|---|
+| `/ci-wrapper` | GitHub Actions PR-review wiring guide for the headless CI wrapper, budget config, verdict JSON schema, rollout gates, and auth requirements. |
 
 Living project-map categories include baseline, missing-history, new hotspot, cooling hotspot, import-gap growth/reduction per metric, changed-section churn, graph-growth score, and stable structure. They are static JS/TS import and section signals only.
 

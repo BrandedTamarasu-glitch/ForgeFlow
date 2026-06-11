@@ -43,6 +43,15 @@ Use `/forgeflow-learning-action` when you want Forgeflow to turn the weakest lea
 3. Follow the first failing or warning recommendation before starting a review.
 
 Use `/forgeflow-smoke --mode source` from a Forgeflow checkout when you want source-tree release guards instead of downstream project readiness checks.
+Use `/dashboard` when you want the same project-readiness signals in a local UI. The Project Readiness panel reads `GET /api/readiness`, shows status cards and one copy-only next action, and does not run commands or mutate local state.
+
+## Build Project Architecture Intelligence
+
+1. Run `/forgeflow-code-map` to generate static topology, hotspot, import-gap, section, and living-map signals.
+2. Run `/forgeflow-project-model` to build the project operating model from topology, learnings, validation, review outcomes, and user profile signals.
+3. Run `/forgeflow-architecture --write`, `/forgeflow-ownership --write`, and `/forgeflow-invocation-hints --write` when you want local architecture, owner-surface, and runtime-entrypoint artifacts.
+4. Run `/forgeflow-dogfood-refresh-plan` if dogfood evidence is incomplete.
+5. Run `/forgeflow-dogfood-report --write` to decide whether the architecture-intelligence path should be kept, refined, or considered for narrow opt-in automation.
 
 ## Investigate A Failed Command
 
@@ -100,6 +109,7 @@ If implementation notes are missing or stale, refresh or repair them before ship
 | Weak learning or telemetry source | `/forgeflow-learning-action` |
 | Guidance artifacts stale | `/forgeflow-stale-artifact-plan` |
 | Need readiness confidence | `/forgeflow-smoke` |
+| Want readiness in a UI | `/dashboard`, then inspect the Project Readiness panel |
 | Failure output is too noisy | `/forgeflow-failure-digest` |
 | Need to capture noisy output first | `/forgeflow-capture-output --mode <mode> --command <cmd>` |
 | Validation command failed | `/forgeflow-validation-failure-capture --command "<cmd>"`, then feed the failed output to `/forgeflow-capture-output` |
@@ -110,4 +120,6 @@ If implementation notes are missing or stale, refresh or repair them before ship
 | Unsure whether review findings are auto-fix safe | `/forgeflow-review-auto-classify --findings <json>` |
 | Need saved review-auto classification evidence | `/forgeflow-review-auto-evidence --findings <json>` |
 | Need current project trends | `/forgeflow-trends --refresh` |
+| Need architecture or owner-surface guidance | `/forgeflow-code-map`, then `/forgeflow-architecture --write`, `/forgeflow-ownership --write`, and `/forgeflow-invocation-hints --write` |
+| Dogfood evidence is incomplete | `/forgeflow-dogfood-refresh-plan` |
 | Need release confidence | `/forgeflow-release-readiness`, then `/forgeflow-release-verify` after publishing, then `/forgeflow-release-follow-through`, then `/forgeflow-release-consumption-loop` and `/forgeflow-release-consumption` for the final consumed-or-attention rollup |

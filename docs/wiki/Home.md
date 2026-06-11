@@ -101,6 +101,21 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 - [Local Data And Privacy](Local-Data-And-Privacy)
 - [Roadmap](Roadmap)
 
+## What Forgeflow Covers
+
+Forgeflow is broader than review. The current wiki documents these capability areas:
+
+- **Install, update, repair, and release:** `/update-forgeflow`, `/forgeflow-version`, `/forgeflow-health`, `/forgeflow-repair`, `/forgeflow-update-verify`, release readiness, release verification, release consumption, runtime drift, source smoke, and support bundles.
+- **Lifecycle work:** `/discuss`, `/research`, `/plan`, `/consult`, `/implement`, `/review`, `/review-auto`, `/audit`, `/ship`, and `/handoff`.
+- **Direct agent work:** `/quick` for one-off agent dispatch, `/create-agent` for local custom Claude agents, `/debate` for false-positive stress tests, `/fleet` for isolated parallel worktree shards, and `/ui-iterate` for measured UI/theme iteration.
+- **Context and token efficiency:** context packs, memory summaries, scope manifests, topology, budget checks, context advisor, focused review waves, command-output compaction, failure digests, noisy-command advice, and context telemetry.
+- **Project intelligence:** code maps, trends, health timeline, project operating model, project decision briefs, architecture docs, invocation hints, ownership map, dogfood report, dogfood refresh plan, and latest-insights injection.
+- **Learning loops:** project learnings, pattern learning rollups, user operating profile, project experience profile, profile review/compliance, learning status, learning action routing, outcome capture, agent feedback, next-work ranking, and workflow-ending capture.
+- **Review automation safety:** review evidence schema checks, review-auto classification, deterministic sandbox proposals, explicit apply flow with rollback on failed validation, review-auto status, output contracts, and command-argument safety.
+- **Adoption and pilots:** first-run guide, first-run simulator, first-run results and rollups, first useful win, first task report, adoption loop, pilot scripts, adoption pack, evaluation summaries, and public-safe sharing guidance.
+- **Dashboards:** local metrics dashboard, Project Readiness panel backed by `GET /api/readiness`, and agent-chat dashboard for live workflow visibility.
+- **Team and CI surfaces:** team-state sync guidance, CI wrapper reference docs, sync-upstream for Forgeflow meta-work, and privacy boundaries for local, private-team, and public sharing.
+
 ## Role Paths
 
 Use these entry points when you know what job you are trying to do:

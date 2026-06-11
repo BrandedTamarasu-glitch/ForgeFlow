@@ -26,6 +26,12 @@ This can include:
 - scope manifests
 - context telemetry
 - context advisor history
+- code topology and code-map history
+- latest-insights readiness reports
+- project operating model snapshots
+- architecture, ownership, invocation-hint, dogfood-report, and dogfood-refresh evidence
+- review-auto sandbox and apply evidence
+- first-run, pilot, agent-feedback, next-work, and review outcome records
 
 User operating preferences are stored under:
 
@@ -91,6 +97,8 @@ Keep raw `review-outcomes.jsonl`, user/profile records, context packets, memory 
 Support bundles include a snippet-free redaction preview that reports sensitive categories and counts without showing the matched values. Use it as a starting point, not as proof that the bundle is public-safe.
 
 Implementation notes live at `.forgeflow/<project-name>/implementation-notes.md`. They are local handoff context for decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes discovered during `/implement`. Keep them out of commits and do not paste secrets, raw settings JSON, tokens, private URLs, customer names, or large source snippets into the file.
+
+The local dashboard reads metrics from `~/.claude/projects/<project>/memory/forgeflow-metrics.jsonl` and project readiness from `.forgeflow/<project-name>/context/` and `.forgeflow/<project-name>/release-readiness/`. The dashboard server is local-only, serves API responses with `Cache-Control: no-store`, and the Project Readiness panel copies suggested commands instead of executing them.
 
 ## Sensitive Files
 
