@@ -82,7 +82,8 @@ Use `/forgeflow-review-auto-evidence --findings <json>` when you want a saved lo
 2. Read the reuse candidates, avoid-first list, do-not-simplify boundaries, validation minimum, known ceiling, and upgrade trigger.
 3. Continue with `/consult` when the lean decision says the work is current and bounded. The consultation and implementation handoffs carry the compact lean section forward when the helper is available.
 4. Run `/forgeflow-lean-review` after implementation when you want a separate over-engineering-only lane before normal review.
-5. Defer or ask the user when the decision says the task is speculative or lacks a concrete requirement.
+5. Run `/forgeflow-output-contract --lean-file <path>` on generated lean handoffs or review notes when you want a warning if the writeup is larger than code/result first plus three concise bullets.
+6. Defer or ask the user when the decision says the task is speculative or lacks a concrete requirement.
 
 ## Ship A Change
 

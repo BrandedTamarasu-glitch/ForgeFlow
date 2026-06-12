@@ -73,7 +73,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-next-work-ranking` | Rank next-work candidates from current local evidence, confidence, demotion, and validation signals, including copy-ready outcome prompts, without refreshing artifacts or auto-selecting work. |
 | `/forgeflow-next-work-outcome` | Record local advisory feedback on whether a next-work recommendation was useful, ignored, incorrect, or blocked. |
 | `/forgeflow-outcome-capture-plan` | Show missing local outcome evidence streams, concrete recorder prompts, and per-stream observed-evidence runbooks without writing records. |
-| `/forgeflow-output-contract` | Spot-check representative helper output for status, next, reason, and advisory boundary fields. |
+| `/forgeflow-output-contract` | Spot-check representative helper output for status, next, reason, and advisory boundary fields. Add `--lean-file <path>` to warn on overlong generated lean handoffs while preserving raw-required evidence. |
 | `/forgeflow-pilot` | Print the repeatable maintainer pilot script by default, or add `--path new-user` for the state-aware first-real-task evaluation path with guided repair, release-readiness preview, project intelligence, living map status, agent-feedback signal, and a public-safe result template. |
 | `/forgeflow-profile` | Show, check, or record local advisory user operating preferences and project experience preferences for context-pack injection. |
 | `/forgeflow-profile-bootstrap` | Preview explicit operating and project experience preference records, show required and optional prompt groups plus a guided setup path, then write only with `--write`. |
