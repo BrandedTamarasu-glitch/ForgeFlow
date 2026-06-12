@@ -76,6 +76,13 @@ Use `/forgeflow-review-evidence-schema --findings <json>` before classification 
 Use `/forgeflow-review-auto-classify --findings <json>` first when you have captured findings and want a read-only safe/risky/blocker preview.
 Use `/forgeflow-review-auto-evidence --findings <json>` when you want a saved local classification artifact before applying fixes.
 
+## Keep A Work Item Lean
+
+1. Run `/forgeflow-lean-decision --task "<work item>"` before `/consult` when the risk is over-building, adding a dependency too early, or creating an abstraction before reuse has been checked.
+2. Read the reuse candidates, avoid-first list, do-not-simplify boundaries, validation minimum, known ceiling, and upgrade trigger.
+3. Continue with `/consult` when the lean decision says the work is current and bounded.
+4. Defer or ask the user when the decision says the task is speculative or lacks a concrete requirement.
+
 ## Ship A Change
 
 1. Confirm review history has an approved final verdict.
