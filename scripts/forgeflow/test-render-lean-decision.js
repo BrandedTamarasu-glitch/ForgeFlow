@@ -4,6 +4,7 @@ const {
   buildLeanDecision,
   forbiddenSimplifications,
   parseArgs,
+  renderBriefSection,
   renderMarkdown,
   reuseCandidates,
   validationMinimum,
@@ -64,6 +65,7 @@ const optional = buildLeanDecision({
   invocation: {},
 });
 const markdown = renderMarkdown(dateDecision);
+const briefSection = renderBriefSection(dateDecision);
 const opts = parseArgs(['--root', '.', '--project-dir', '.forgeflow/Demo', '--task', 'Add cache', '--json']);
 
 const checks = [
@@ -76,6 +78,7 @@ const checks = [
   ['missing task is attention', missing.status === 'attention' && missing.decision === 'needs-task'],
   ['optional work can defer', optional.decision === 'skip-or-defer'],
   ['renders markdown', markdown.includes('# Forgeflow Lean Decision') && markdown.includes('## Do Not Simplify') && markdown.includes('Known ceiling')],
+  ['renders implementation brief section', briefSection.includes('## Lean Decision') && briefSection.includes('### Do First') && briefSection.includes('### Avoid First') && briefSection.includes('### Validate With') && briefSection.includes('### Do Not Simplify') && briefSection.includes('### Upgrade When') && briefSection.includes('Lean guidance is advisory only')],
   ['parses args', opts.root === path.resolve('.') && opts.projectDir === path.resolve('.forgeflow/Demo') && opts.task === 'Add cache' && opts.json === true],
   ['boundary is read-only', dateDecision.boundary.includes('read-only') && dateDecision.boundary.includes('does not edit files')],
 ];

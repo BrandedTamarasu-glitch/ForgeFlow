@@ -233,6 +233,47 @@ function renderMarkdown(result) {
   return lines.join('\n');
 }
 
+function renderBriefSection(result) {
+  const validationCommands = result.validation_minimum.commands.length
+    ? result.validation_minimum.commands
+    : ['Add one focused runnable check for non-trivial logic.'];
+  const lines = [
+    '## Lean Decision',
+    '',
+    `- Decision: ${result.decision}`,
+    `- Reason: ${result.reason}`,
+    '',
+    '### Do First',
+    '',
+    ...result.do_first.map((item) => `- ${item}`),
+    '',
+    '### Avoid First',
+    '',
+    ...result.avoid_first.map((item) => `- ${item}`),
+    '',
+    '### Validate With',
+    '',
+    ...validationCommands.map((item) => `- ${item}`),
+    ...result.validation_minimum.notes.map((item) => `- ${item}`),
+  ];
+  for (const norm of result.validation_minimum.project_norms) lines.push(`- Project norm: ${norm}`);
+  lines.push(
+    '',
+    '### Do Not Simplify',
+    '',
+    ...result.do_not_simplify.map((item) => `- ${item}`),
+    '',
+    '### Upgrade When',
+    '',
+    `- Known ceiling: ${result.known_ceiling}`,
+    `- Upgrade trigger: ${result.upgrade_trigger}`,
+    '',
+    'Lean guidance is advisory only. It cannot remove explicit requirements, security, accessibility, validation, or data-loss safeguards.',
+    '',
+  );
+  return lines.join('\n');
+}
+
 function main() {
   const opts = parseArgs(process.argv.slice(2));
   const result = buildLeanDecision(opts);
@@ -253,6 +294,7 @@ module.exports = {
   buildLeanDecision,
   forbiddenSimplifications,
   parseArgs,
+  renderBriefSection,
   renderMarkdown,
   reuseCandidates,
   validationMinimum,

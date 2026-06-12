@@ -10,6 +10,7 @@ const { showProjectLearnings } = require('./show-project-learnings');
 const { showProjectTrends } = require('./show-project-trends');
 const { compactUserProfile } = require('./user-profile');
 const { readNextWorkOutcomes } = require('./record-next-work-outcome');
+const { buildLeanDecision, renderBriefSection: renderLeanBriefSection } = require('./render-lean-decision');
 const VALID_FEEDBACK_SIGNALS = new Set(['useful', 'unclear', 'ignored', 'incorrect']);
 const VALID_FEEDBACK_CONFIDENCE = new Set(['low', 'medium', 'high']);
 const NEXT_WORK_SOURCE_RANK = Object.freeze({
@@ -1273,11 +1274,26 @@ function suggestedReviewLanes(item, brief) {
 function implementationNotesSeeds(item) {
   return [
     `decision: Confirmed scope for "${item.title}" before editing.`,
+    'tradeoff: Record the lean decision, chosen minimum path, known ceiling, and upgrade trigger if a smaller path is used.',
     'spec-gap: Record any product or acceptance-criteria gap discovered during implementation.',
     'tradeoff: Record why the chosen slice stayed bounded and what was deferred.',
     'validation: Record focused tests, full validation, and review result.',
     'follow-up: Record any remaining advisory signal that was not safe to resolve in this slice.',
   ];
+}
+
+function leanDecisionText(item, brief) {
+  return [
+    item.title,
+    item.what_to_change,
+    item.how_to_prove,
+    item.stop_when,
+    ...(item.start_with || []),
+    ...(item.validate_with || []),
+    ...(brief.read_first || []),
+    ...(brief.avoid_first || []),
+    ...(brief.validate_first || []),
+  ].filter(Boolean).join('\n');
 }
 
 function renderImplementationBriefStub(intelligence, index = 1) {
@@ -1315,6 +1331,12 @@ function renderImplementationBriefStub(intelligence, index = 1) {
   lines.push('- Confirm the requested product outcome and exact acceptance criteria before editing.');
   lines.push('- Keep the first implementation slice bounded to the candidate above unless current evidence requires a smaller prerequisite.');
   lines.push('- Do not treat this generated stub as user approval for broad refactors or speculative features.');
+  const leanDecision = buildLeanDecision({
+    root: path.dirname(path.dirname(intelligence.project_dir || process.cwd())),
+    projectDir: intelligence.project_dir,
+    text: leanDecisionText(item, brief),
+  });
+  lines.push('', renderLeanBriefSection(leanDecision).trim());
   lines.push('', '## Start With', '');
   const startWith = [
     ...(item.start_with || []),

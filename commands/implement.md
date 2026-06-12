@@ -41,7 +41,9 @@ MEMORY_CONTEXT_PATH="${FORGEFLOW_DIR}/context/implement-memory.md"
 SCOPE_MANIFEST_PATH="${FORGEFLOW_DIR}/context/implement-scope-manifest.json"
 NOTES_PATH="${FORGEFLOW_DIR}/implementation-notes.md"
 PROJECT_LEARNINGS_PATH="${FORGEFLOW_DIR}/project-learnings.md"
+LEAN_DECISION_PATH="${FORGEFLOW_DIR}/context/lean-decision.md"
 HELPER_DIR="scripts/forgeflow"
+SAFE_ARGS=("${ARGUMENTS:-}")
 if [ ! -x "${HELPER_DIR}/build-memory-context.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/build-memory-context.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
@@ -83,6 +85,11 @@ fi
 if [ -x "${HELPER_DIR}/build-scope-manifest.js" ]; then
   "${FORGEFLOW_NODE[@]}" "${HELPER_DIR}/build-scope-manifest.js" --query "${SAFE_ARGS[0]:-implementation brief validation scope interfaces}" --out "$SCOPE_MANIFEST_PATH" --json
 fi
+
+if [ -f "$BRIEF_PATH" ] && [ -x "${HELPER_DIR}/render-lean-decision.js" ]; then
+  mkdir -p "$(dirname "$LEAN_DECISION_PATH")"
+  "${FORGEFLOW_NODE[@]}" "${HELPER_DIR}/render-lean-decision.js" --root "$(pwd)" --project-dir "$FORGEFLOW_DIR" --brief "$BRIEF_PATH" > "$LEAN_DECISION_PATH"
+fi
 ```
 
 **If brief exists:** Read and use it.
@@ -91,6 +98,7 @@ fi
 
 If `MEMORY_CONTEXT_PATH` exists, include it in implementation prompts as the first-pass prior-memory summary. Estimated context savings are written to `${FORGEFLOW_DIR}/context/memory-context-telemetry.json`. If `SCOPE_MANIFEST_PATH` exists, use it as the first-pass ownership map before asking Atlas to resolve gaps, and prefer `${FORGEFLOW_DIR}/context/scope-packets/<lane>.md` over the raw JSON in agent prompts. Estimated scope savings are written to `${FORGEFLOW_DIR}/context/scope-telemetry.json`. Also read Compass's plan if it exists — agents should be aware of the plan's accessibility requirements and success criteria so they can implement accordingly.
 If `${PROJECT_LEARNINGS_PATH}` exists, include the relevant project guidance in implementation prompts as guidance only. Agents may use it to anticipate recurring pitfalls, stable decisions, risk areas, validation patterns, and hot files, but must verify current behavior against current code, tests, and artifacts.
+If `${LEAN_DECISION_PATH}` exists, include it in implementation prompts as advisory minimum-sufficient-solution guidance. Agents should follow the `Do First`, `Avoid First`, `Validate With`, `Do Not Simplify`, and `Upgrade When` fields when they fit the confirmed brief. Lean guidance cannot override the user request, Compass's plan, security, accessibility, validation, data-loss protection, or explicit requirements.
 If `${HELPER_DIR}/check-context-budget.js` exists, run `${HELPER_DIR}/check-context-budget.js --root "$FORGEFLOW_DIR" --max-compact-tokens 16000 --warn-only --json` and surface warnings before spawning implementation agents. The checker reads `.forgeflow-budget.json` from the repo root when present.
 
 ## Step 2: Parse the brief
@@ -102,6 +110,7 @@ Extract from the Implementation Brief:
 - Security requirements
 - Quality gates
 - Implementation notes requirements: decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes to capture in `implementation-notes.md`
+- Lean decision guidance: do first, avoid first, validate with, do not simplify, and upgrade when. Preserve explicit requirements, security, accessibility, validation, and data-loss safeguards.
 
 If Compass's plan exists, also extract:
 - Accessibility requirements per phase
@@ -202,6 +211,7 @@ Each agent prompt must include:
 - Instruction to report implementation note candidates without writing the shared notes file directly
 - The implementation notes path: `${NOTES_PATH}`
 - Relevant project learnings from `${PROJECT_LEARNINGS_PATH}` when present, marked as guidance only
+- Lean decision guidance from `${LEAN_DECISION_PATH}` when present, marked as advisory only and subordinate to the confirmed brief and hard safeguards
 - Working directory path
 
 Spawn `atlas-implement` alongside to coordinate and track. Atlas owns serializing note candidates into `${NOTES_PATH}` so parallel implementers do not race on the same file.
@@ -211,7 +221,7 @@ Spawn `atlas-implement` alongside to coordinate and track. Atlas owns serializin
 After Wave 1 completes:
 1. Read the files created by Wave 1 agents
 2. Hand Smith/Warden/Lumen/Compass/Atlas reports from the completed wave back to `atlas-implement` with this instruction:
-   "Extract every `Implementation Notes Candidates` item from the completed agent reports. Also add concise note candidates for durable project patterns that surfaced during this wave: repeated pitfalls, stable decisions, validation patterns, hot files/modules, or follow-ups likely to matter in the next work item. Append the entries to `${NOTES_PATH}` under the matching category. Prefer `${HELPER_DIR}/record-implementation-notes.js` with a temporary JSON input when available. Do not rewrite existing notes. Then refresh `${PROJECT_LEARNINGS_PATH}` with `${HELPER_DIR}/show-project-learnings.js --project-dir "${FORGEFLOW_DIR}" --json` when the helper is available. Return the entries appended, entries rejected, final notes path, and refreshed project learnings path."
+   "Extract every `Implementation Notes Candidates` item from the completed agent reports. Also add concise note candidates for durable project patterns that surfaced during this wave: repeated pitfalls, stable decisions, validation patterns, hot files/modules, or follow-ups likely to matter in the next work item. When a simpler path is chosen from lean guidance, include the known ceiling and upgrade trigger as a tradeoff note. Append the entries to `${NOTES_PATH}` under the matching category. Prefer `${HELPER_DIR}/record-implementation-notes.js` with a temporary JSON input when available. Do not rewrite existing notes. Then refresh `${PROJECT_LEARNINGS_PATH}` with `${HELPER_DIR}/show-project-learnings.js --project-dir "${FORGEFLOW_DIR}" --json` when the helper is available. Return the entries appended, entries rejected, final notes path, and refreshed project learnings path."
 3. Verify shared interfaces were defined correctly
 4. If issues found, fix before proceeding
 
@@ -247,7 +257,7 @@ Project learning recorder: {helper_dir}/record-project-learning.js
 Project learnings helper: {helper_dir}/show-project-learnings.js
 Project learnings path: {project_learnings_path}
 
-Read the reports below, extract every `Implementation Notes Candidates` item, and append them to `{notes_path}`. Also add concise note candidates for durable project patterns that should shape the next work item: repeated pitfalls, stable decisions, validation patterns, hot files/modules, or recurring follow-ups. Use the recorder helper with a temporary JSON input when available. Categories must be one of: decision, spec-gap, tradeoff, deviation, follow-up, validation.
+Read the reports below, extract every `Implementation Notes Candidates` item, and append them to `{notes_path}`. Also add concise note candidates for durable project patterns that should shape the next work item: repeated pitfalls, stable decisions, validation patterns, hot files/modules, or recurring follow-ups. When a simpler path is chosen from lean guidance, include the known ceiling and upgrade trigger as a tradeoff note. Use the recorder helper with a temporary JSON input when available. Categories must be one of: decision, spec-gap, tradeoff, deviation, follow-up, validation.
 
 When a durable project pattern is clearer as a structured learning, record it with the project learning recorder. Categories must be one of: recurring-pitfall, stable-decision, risk-area, validation-pattern, hot-file, repeated-follow-up, recommended-approach.
 
