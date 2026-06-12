@@ -51,6 +51,7 @@ Canonical pattern files (promotion targets):
 
 Telemetry aggregate (supplementary, not primary):
 - `~/.claude/projects/<sanitized-cwd>/memory/forgeflow-metrics.jsonl` — counts only, not learning text
+- `~/.codex/projects/<sanitized-cwd>/memory/forgeflow-metrics.jsonl` — same schema when Codex instrumentation records events
 </context>
 
 ## Gotchas

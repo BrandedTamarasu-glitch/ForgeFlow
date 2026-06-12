@@ -2,10 +2,11 @@
 
 ## Overview
 
-Every Forgeflow event is written as a single JSON line to:
+Every Forgeflow event is written as a single JSON line under the active runtime metrics root:
 
 ```
 ~/.claude/projects/<sanitized-cwd>/memory/forgeflow-metrics.jsonl
+~/.codex/projects/<sanitized-cwd>/memory/forgeflow-metrics.jsonl
 ```
 
 where `<sanitized-cwd>` is the full working directory path with `/` replaced by `-`.
@@ -25,6 +26,7 @@ All records share these fields regardless of event type.
 | `session_id` | `string` | Claude session identifier, or `"unknown"` if not available. |
 | `project` | `string` | Basename of the working directory at event time. |
 | `cwd` | `string` | Full working directory path at event time. |
+| `runtime` | `string` | Runtime that recorded the event, usually `"claude-code"` or `"codex"`. Missing on pre-runtime records. |
 | `event` | `string` | Event type. One of the 8 values listed in the Event Types section. |
 | `command` | `string` | Slash command that triggered this event (e.g. `/review`, `/fleet`). |
 | `detail` | `object` | Event-specific payload. Shape varies by `event` — see below. |

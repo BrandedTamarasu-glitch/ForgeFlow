@@ -53,6 +53,7 @@ Forgeflow telemetry is JSONL and is intended for local use:
 
 ```text
 ~/.claude/projects/<project>/memory/forgeflow-metrics.jsonl
+~/.codex/projects/<project>/memory/forgeflow-metrics.jsonl
 ```
 
 Telemetry helps summarize:

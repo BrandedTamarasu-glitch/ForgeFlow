@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 // Forgeflow Telemetry — PostToolUse hook
 //
-// Records Forgeflow events to ~/.claude/projects/<sanitized-cwd>/memory/forgeflow-metrics.jsonl
+// Records Forgeflow events to the active runtime metrics root:
+//   Claude Code: ~/.claude/projects/<sanitized-cwd>/memory/forgeflow-metrics.jsonl
+//   Codex:       ~/.codex/projects/<sanitized-cwd>/memory/forgeflow-metrics.jsonl
 // so /forgeflow-metrics can summarize usage over time.
 //
 // Event schema (one JSON per line):
@@ -28,57 +30,82 @@
 const fs = require('fs');
 const path = require('path');
 
-let input = '';
-const stdinTimeout = setTimeout(() => process.exit(0), 1500);
+function normalizeRuntime(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (normalized === 'codex') return 'codex';
+  return 'claude-code';
+}
 
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', chunk => input += chunk);
-process.stdin.on('end', () => {
-  clearTimeout(stdinTimeout);
+function metricsRootForRuntime(runtime, env = process.env) {
+  if (env.FORGEFLOW_METRICS_ROOT) return path.resolve(env.FORGEFLOW_METRICS_ROOT);
+  const home = env.HOME || '';
+  if (!home) return '';
+  if (runtime === 'codex') return path.join(env.CODEX_HOME || path.join(home, '.codex'), 'projects');
+  return path.join(env.CLAUDE_HOME || path.join(home, '.claude'), 'projects');
+}
+
+function metricsFileForCwd(cwd, runtime, env = process.env) {
+  const metricsRoot = metricsRootForRuntime(runtime, env);
+  if (!metricsRoot) return '';
+  const sanitizedCwd = String(cwd || '').replace(/\//g, '-');
+  return path.join(metricsRoot, sanitizedCwd, 'memory', 'forgeflow-metrics.jsonl');
+}
+
+function recordEvents(data, env = process.env) {
+  const cwd = data.cwd || process.cwd();
+  const runtime = normalizeRuntime(data.runtime || env.FORGEFLOW_RUNTIME);
+  const sessionId = data.session_id || 'unknown';
+  const toolName = data.tool_name;
+  const toolInput = data.tool_input || {};
+  const toolOutput = typeof data.tool_output === 'string'
+    ? data.tool_output
+    : JSON.stringify(data.tool_output || '');
+  const projectName = path.basename(cwd);
+  const events = detectEvents(toolName, toolInput, toolOutput);
+  if (events.length === 0) return { recorded: 0, metrics_file: metricsFileForCwd(cwd, runtime, env), runtime };
+
+  const metricsFile = metricsFileForCwd(cwd, runtime, env);
+  if (!metricsFile) return { recorded: 0, metrics_file: '', runtime };
+
+  try { fs.mkdirSync(path.dirname(metricsFile), { recursive: true }); } catch (_) {}
+
+  const ts = new Date().toISOString();
+  const lines = events.map(ev => JSON.stringify({
+    schema_version: '1',
+    ts,
+    session_id: sessionId,
+    project: projectName,
+    cwd,
+    runtime,
+    ...ev
+  }));
+
   try {
-    const data = JSON.parse(input);
-    const cwd = data.cwd || process.cwd();
-    const sessionId = data.session_id || 'unknown';
-    const toolName = data.tool_name;
-    const toolInput = data.tool_input || {};
-    const toolOutput = typeof data.tool_output === 'string'
-      ? data.tool_output
-      : JSON.stringify(data.tool_output || '');
+    fs.appendFileSync(metricsFile, lines.join('\n') + '\n');
+    return { recorded: lines.length, metrics_file: metricsFile, runtime };
+  } catch (_) {
+    return { recorded: 0, metrics_file: metricsFile, runtime };
+  }
+}
 
-    // Only instrument forgeflow-related activity
-    const projectName = path.basename(cwd);
-    const events = detectEvents(toolName, toolInput, toolOutput);
-    if (events.length === 0) {
-      process.exit(0);
-    }
+function main() {
+  let input = '';
+  const stdinTimeout = setTimeout(() => process.exit(0), 1500);
 
-    // Resolve metrics file path
-    const home = process.env.HOME || '';
-    if (!home) process.exit(0);
-    const sanitizedCwd = cwd.replace(/\//g, '-');
-    const metricsDir = path.join(home, '.claude', 'projects', sanitizedCwd, 'memory');
-    const metricsFile = path.join(metricsDir, 'forgeflow-metrics.jsonl');
-
-    // Ensure dir exists (best-effort)
-    try { fs.mkdirSync(metricsDir, { recursive: true }); } catch (_) {}
-
-    const ts = new Date().toISOString();
-    const lines = events.map(ev => JSON.stringify({
-      schema_version: '1',
-      ts,
-      session_id: sessionId,
-      project: projectName,
-      cwd,
-      ...ev
-    }));
-
-    // Append atomically
+  process.stdin.setEncoding('utf8');
+  process.stdin.on('data', chunk => input += chunk);
+  process.stdin.on('end', () => {
+    clearTimeout(stdinTimeout);
     try {
-      fs.appendFileSync(metricsFile, lines.join('\n') + '\n');
-    } catch (_) { /* fail-open */ }
-  } catch (_) { /* fail-open on any error */ }
-  process.exit(0);
-});
+      recordEvents(JSON.parse(input));
+    } catch (_) { /* fail-open on any error */ }
+    process.exit(0);
+  });
+}
+
+if (require.main === module) {
+  main();
+}
 
 function detectEvents(toolName, toolInput, toolOutput) {
   const events = [];
@@ -201,3 +228,11 @@ function detectEvents(toolName, toolInput, toolOutput) {
 
   return events;
 }
+
+module.exports = {
+  detectEvents,
+  metricsFileForCwd,
+  metricsRootForRuntime,
+  normalizeRuntime,
+  recordEvents
+};

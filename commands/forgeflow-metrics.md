@@ -21,7 +21,7 @@ $ARGUMENTS:
 - `--calibration` — also generate per-agent/per-class calibration using `scripts/forgeflow/summarize-calibration.js` when available
 - `--outcomes <jsonl>` — summarize local review outcome records using `scripts/forgeflow/record-review-outcome.js` when available
 
-Reads from `~/.claude/projects/<sanitized-cwd>/memory/forgeflow-metrics.jsonl` across all project dirs.
+Reads from `~/.claude/projects/<sanitized-cwd>/memory/forgeflow-metrics.jsonl` and `~/.codex/projects/<sanitized-cwd>/memory/forgeflow-metrics.jsonl` across all project dirs.
 </context>
 
 ## Gotchas
@@ -29,24 +29,32 @@ Reads from `~/.claude/projects/<sanitized-cwd>/memory/forgeflow-metrics.jsonl` a
 - **Verdict detection is regex-based on Agent output.** If an agent's verdict line format drifts (e.g., new verdict category), the hook misses it. Check `hooks/forgeflow-telemetry.js` `detectEvents()` when Forgeflow output formats change.
 - **Command invocation is inferred, not direct.** The hook detects `/handoff` via `.claude/handoff.md` writes, `/fleet` via worktree removal, `/review-auto` via `chore(auto-fix)` commits. A command aborted before producing its signature artifact won't register.
 - **Multi-project summaries assume project name uniqueness.** Two projects both named `api` will merge in the summary. Use `--project` to disambiguate via path.
-- **No retention policy.** JSONL files grow forever. For long-running setups, archive older logs manually: `gzip ~/.claude/projects/<old-project>/memory/forgeflow-metrics.jsonl`.
+- **No retention policy.** JSONL files grow forever. For long-running setups, archive older logs manually under `~/.claude/projects/<old-project>/memory/` or `~/.codex/projects/<old-project>/memory/`.
 
 <process>
 
 ## Step 1: Collect metrics files
 
 ```bash
-find "$HOME/.claude/projects" -name "forgeflow-metrics.jsonl" -type f 2>/dev/null
+{
+  find "$HOME/.claude/projects" -name "forgeflow-metrics.jsonl" -type f 2>/dev/null
+  find "$HOME/.codex/projects" -name "forgeflow-metrics.jsonl" -type f 2>/dev/null
+} | sort -u
 ```
 
 If no files found, exit:
 ```
 No Forgeflow telemetry found.
 
-The telemetry hook writes to ~/.claude/projects/<project>/memory/forgeflow-metrics.jsonl
-on PostToolUse events. If you have not yet invoked /review, /review-auto, /fleet,
-/ui-iterate, /handoff, or /ship in an instrumented session, there is nothing
-to summarize yet.
+The telemetry hook writes to the active runtime metrics root:
+  ~/.claude/projects/<project>/memory/forgeflow-metrics.jsonl
+  ~/.codex/projects/<project>/memory/forgeflow-metrics.jsonl
+
+Claude Code capture runs on PostToolUse events. Codex capture requires Codex
+instrumentation or a command that calls the shared telemetry writer with
+FORGEFLOW_RUNTIME=codex. If you have not yet invoked /review, /review-auto,
+/fleet, /ui-iterate, /handoff, or /ship in an instrumented session, there is
+nothing to summarize yet.
 
 Verify the hook is wired:
   cat ~/.claude/settings.json | grep forgeflow-telemetry
@@ -196,7 +204,7 @@ Compute and include:
 </process>
 
 <success_criteria>
-- [ ] Aggregated metrics across all `forgeflow-metrics.jsonl` files in `~/.claude/projects/`
+- [ ] Aggregated metrics across all `forgeflow-metrics.jsonl` files in `~/.claude/projects/` and `~/.codex/projects/`
 - [ ] Period filter applied correctly (week/month/all)
 - [ ] Project filter applied when `--project` specified
 - [ ] Signals section interprets numbers (not just lists counts)
