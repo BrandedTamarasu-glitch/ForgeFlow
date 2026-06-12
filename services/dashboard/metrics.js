@@ -54,6 +54,25 @@ function createZeroWeekBucket(week) {
   };
 }
 
+function addCounts(target, source) {
+  for (const [key, value] of Object.entries(source || {})) {
+    if (typeof value === 'number') target[key] = (target[key] || 0) + value;
+  }
+}
+
+function mergeProjectSummary(target, source) {
+  target.file_count += source.file_count || 0;
+  addCounts(target.event_totals, source.event_totals);
+  addCounts(target.verdicts.arbiter, source.verdicts && source.verdicts.arbiter);
+  addCounts(target.verdicts.compass, source.verdicts && source.verdicts.compass);
+  addCounts(target.auto_fix, source.auto_fix);
+}
+
+function mergeWeekBucket(target, source) {
+  addCounts(target.arbiter, source.arbiter);
+  addCounts(target.compass, source.compass);
+}
+
 function applyRecord(record, summary, weekMap) {
   if (Object.prototype.hasOwnProperty.call(summary.event_totals, record.event)) {
     summary.event_totals[record.event]++;
@@ -140,4 +159,34 @@ async function scanMetrics(metricsRoot) {
   };
 }
 
-module.exports = { scanMetrics };
+async function scanMetricsRoots(metricsRoots) {
+  const roots = [...new Set((metricsRoots || []).filter(Boolean))];
+  const projectMap = new Map();
+  const weekMap = new Map();
+  let parseWarnings = 0;
+
+  for (const root of roots) {
+    const result = await scanMetrics(root);
+    parseWarnings += result.parse_warnings || 0;
+
+    for (const project of result.projects || []) {
+      if (!projectMap.has(project.project)) {
+        projectMap.set(project.project, createZeroProjectSummary(project.project));
+      }
+      mergeProjectSummary(projectMap.get(project.project), project);
+    }
+
+    for (const week of result.verdicts || []) {
+      if (!weekMap.has(week.week)) weekMap.set(week.week, createZeroWeekBucket(week.week));
+      mergeWeekBucket(weekMap.get(week.week), week);
+    }
+  }
+
+  return {
+    projects: [...projectMap.values()],
+    verdicts: [...weekMap.values()].sort((a, b) => a.week.localeCompare(b.week)),
+    parse_warnings: parseWarnings
+  };
+}
+
+module.exports = { scanMetrics, scanMetricsRoots };

@@ -434,7 +434,7 @@ The metrics dashboard is an optional local read-only HTTP server:
 /dashboard
 ```
 
-It runs on `http://127.0.0.1:4003` and reads local telemetry files from `~/.claude/projects/`. The dashboard also shows a Project Readiness panel backed by `GET /api/readiness`, with text-labeled status cards for project health, learning status, context budget, release readiness, dogfood report state, and dogfood refresh-plan readiness. The panel provides one copy-only next action and does not run commands, refresh artifacts, write files, spawn agents, call GitHub, or export telemetry.
+It runs on `http://127.0.0.1:4003` and reads local telemetry files from both `~/.claude/projects/` and `~/.codex/projects/`. The dashboard also shows a Project Readiness panel backed by `GET /api/readiness`, with text-labeled status cards for project health, learning status, context budget, release readiness, dogfood report state, and dogfood refresh-plan readiness. The panel provides one copy-only next action and does not run commands, refresh artifacts, write files, spawn agents, call GitHub, or export telemetry.
 
 For live agent-message observability, use `/agent-chat:on`, which runs a separate local dashboard on port `4001`. Stop it with `/agent-chat:off`. Forgeflow works without either dashboard.
 

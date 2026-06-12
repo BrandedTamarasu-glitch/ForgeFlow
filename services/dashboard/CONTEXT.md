@@ -9,7 +9,7 @@ Read-only local dashboard. Reads Forgeflow metrics from the JSONL telemetry file
 | Port | 4003 (hardcoded, no env var) |
 | Protocol | HTTP only — no WebSocket |
 | Access | `127.0.0.1` only |
-| Data source | `~/.claude/projects/<sanitized-cwd>/memory/forgeflow-metrics.jsonl` |
+| Data source | `~/.claude/projects/<sanitized-cwd>/memory/forgeflow-metrics.jsonl` and `~/.codex/projects/<sanitized-cwd>/memory/forgeflow-metrics.jsonl` |
 
 The chat panel in the dashboard UI connects to port 4001 (agent-chat), not this server.
 
@@ -20,7 +20,7 @@ The chat panel in the dashboard UI connects to port 4001 (agent-chat), not this 
 | File | Purpose |
 |---|---|
 | `server.js` | HTTP server — routes requests, serves static files, enforces security headers |
-| `metrics.js` | Reads and aggregates the JSONL telemetry file into the `/api/metrics` response shape |
+| `metrics.js` | Reads and aggregates JSONL telemetry files from one or more runtime roots into the `/api/metrics` response shape |
 | `readiness.js` | Reads existing local Forgeflow artifacts into the `/api/readiness` project-readiness response shape |
 | `team.js` | Stub — reserved for `/forgeflow-sync` team aggregation in Phase 4C. Currently exports a `readTeamSync` that returns `[]`; not yet imported by `server.js`. |
 | `public/index.html` | Dashboard UI — single-page, no build step required. Renders `/api/metrics` trends and the read-only `/api/readiness` Project Readiness panel. |

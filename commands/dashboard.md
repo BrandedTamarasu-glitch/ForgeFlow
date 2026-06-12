@@ -1,6 +1,6 @@
 ---
 name: dashboard
-description: Start the optional local Forgeflow metrics dashboard (port 4003). Reads local forgeflow-metrics.jsonl telemetry; separate from the agent-chat dashboard on port 4001.
+description: Start the optional local Forgeflow metrics dashboard (port 4003). Reads local Claude and Codex forgeflow-metrics.jsonl telemetry; separate from the agent-chat dashboard on port 4001.
 allowed-tools: [Bash]
 ---
 
@@ -8,7 +8,7 @@ allowed-tools: [Bash]
 `node services/dashboard/server.js` — starts the read-only metrics dashboard at http://127.0.0.1:4003
 To stop: `kill $(cat /tmp/dashboard.pid)` or Ctrl+C if running in foreground.
 
-Use this dashboard after Forgeflow workflows have produced telemetry. For live agent-message observability, use `/agent-chat:on` instead.
+Use this dashboard after Forgeflow workflows have produced telemetry under `~/.claude/projects/` or `~/.codex/projects/`. For live agent-message observability, use `/agent-chat:on` instead.
 
 ## Step 1 — Resolve repo root
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"

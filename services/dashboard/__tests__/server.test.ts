@@ -12,7 +12,8 @@ import * as os from 'os';
 const require = createRequire(import.meta.url);
 const { createServer } = require('../server.js') as { createServer: (opts: {
   port: number;
-  metricsRoot: string;
+  metricsRoot?: string;
+  metricsRoots?: string[];
   projectRoot?: string;
   projectDir?: string;
   onError?: (err: NodeJS.ErrnoException) => void;
@@ -21,11 +22,11 @@ const { createServer } = require('../server.js') as { createServer: (opts: {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES_ROOT = path.resolve(__dirname, '../../../fixtures/metrics-root');
 
-function startServer(metricsRoot: string, opts: { projectRoot?: string; projectDir?: string } = {}): Promise<{ baseUrl: string; close: () => Promise<void> }> {
+function startServer(metricsRoot: string | string[], opts: { projectRoot?: string; projectDir?: string } = {}): Promise<{ baseUrl: string; close: () => Promise<void> }> {
   return new Promise((resolve, reject) => {
     const srv = createServer({
       port: 0,
-      metricsRoot,
+      ...(Array.isArray(metricsRoot) ? { metricsRoots: metricsRoot } : { metricsRoot }),
       ...opts,
       onError: reject
     });
@@ -41,6 +42,11 @@ function startServer(metricsRoot: string, opts: { projectRoot?: string; projectD
 function writeJson(file: string, value: unknown): void {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+function appendJsonl(file: string, value: unknown): void {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.appendFileSync(file, `${JSON.stringify(value)}\n`);
 }
 
 function makeReadinessFixture(): { projectRoot: string; projectDir: string } {
@@ -177,6 +183,53 @@ test('worktree dirs dedup into one project entry', async () => {
     const res = await get(baseUrl, '/api/metrics');
     const body = await res.json() as { projects: unknown[] };
     assert.equal(body.projects.length, 1);
+  } finally {
+    await close();
+  }
+});
+
+test('GET /api/metrics aggregates Claude and Codex metrics roots', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-dashboard-multiroot-'));
+  const claudeRoot = path.join(root, 'claude-projects');
+  const codexRoot = path.join(root, 'codex-projects');
+  const claudeFile = path.join(claudeRoot, 'shared-project', 'memory', 'forgeflow-metrics.jsonl');
+  const codexFile = path.join(codexRoot, 'shared-project', 'memory', 'forgeflow-metrics.jsonl');
+  appendJsonl(claudeFile, {
+    schema_version: '1',
+    ts: '2026-06-10T10:00:00.000Z',
+    session_id: 'claude-session',
+    project: 'shared-project',
+    cwd: '/home/user/Claude/shared-project',
+    event: 'verdict',
+    command: '/review',
+    detail: { reviewer: 'arbiter', verdict: 'APPROVE' }
+  });
+  appendJsonl(codexFile, {
+    schema_version: '1',
+    ts: '2026-06-10T10:05:00.000Z',
+    session_id: 'codex-session',
+    project: 'shared-project',
+    cwd: '/home/user/openai-cli/shared-project',
+    event: 'verdict',
+    command: '/review',
+    detail: { reviewer: 'arbiter', verdict: 'REVISE' }
+  });
+
+  const { baseUrl, close } = await startServer([claudeRoot, codexRoot]);
+  try {
+    const res = await get(baseUrl, '/api/metrics');
+    assert.equal(res.status, 200);
+    const body = await res.json() as {
+      projects: Array<{ project: string; file_count: number; verdicts: { arbiter: Record<string, number> } }>;
+      verdicts: Array<{ arbiter: Record<string, number> }>;
+    };
+    assert.equal(body.projects.length, 1);
+    assert.equal(body.projects[0].project, 'shared-project');
+    assert.equal(body.projects[0].file_count, 2);
+    assert.equal(body.projects[0].verdicts.arbiter.APPROVE, 1);
+    assert.equal(body.projects[0].verdicts.arbiter.REVISE, 1);
+    assert.equal(body.verdicts[0].arbiter.APPROVE, 1);
+    assert.equal(body.verdicts[0].arbiter.REVISE, 1);
   } finally {
     await close();
   }

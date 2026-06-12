@@ -3,14 +3,27 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { scanMetrics } = require('./metrics');
+const { scanMetricsRoots } = require('./metrics');
 const { scanReadiness } = require('./readiness');
 
 const INDEX_HTML = path.join(__dirname, 'public', 'index.html');
 
+function defaultMetricsRoots(home = os.homedir()) {
+  return [
+    path.resolve(home, '.claude', 'projects'),
+    path.resolve(home, '.codex', 'projects')
+  ];
+}
+
+function metricsRootsFromOptions(opts = {}) {
+  if (Array.isArray(opts.metricsRoots)) return opts.metricsRoots;
+  if (opts.metricsRoot) return [opts.metricsRoot];
+  return defaultMetricsRoots();
+}
+
 function createServer(opts) {
   const { onError } = opts;
-  const metricsRoot = opts.metricsRoot;
+  const metricsRoots = metricsRootsFromOptions(opts);
   const projectRoot = opts.projectRoot || process.cwd();
   const projectDir = opts.projectDir;
 
@@ -28,7 +41,7 @@ function createServer(opts) {
 
     if (req.url === '/api/metrics' || req.url.startsWith('/api/metrics?')) {
       try {
-        const result = await scanMetrics(metricsRoot);
+        const result = await scanMetricsRoots(metricsRoots);
         const body = JSON.stringify({
           schema_version: '1',
           generated_at: new Date().toISOString(),
@@ -116,7 +129,7 @@ module.exports = { createServer };
 if (require.main === module) {
   const mainOpts = {
     port: 4003,
-    metricsRoot: path.resolve(os.homedir(), '.claude', 'projects'),
+    metricsRoots: defaultMetricsRoots(),
     projectRoot: process.cwd(),
     onError: (err) => {
       if (err.code === 'EADDRINUSE') {
@@ -139,3 +152,5 @@ if (require.main === module) {
   process.on('SIGTERM', shutdown);
   process.on('SIGINT', shutdown);
 }
+
+module.exports.defaultMetricsRoots = defaultMetricsRoots;

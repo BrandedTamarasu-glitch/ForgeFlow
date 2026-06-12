@@ -25,10 +25,11 @@ Use it when you want to inspect Forgeflow activity across projects:
 - parse warnings in local telemetry
 - current project readiness signals
 
-The dashboard reads local telemetry from:
+The dashboard reads local telemetry from both default runtime roots:
 
 ```text
 ~/.claude/projects/<project>/memory/forgeflow-metrics.jsonl
+~/.codex/projects/<project>/memory/forgeflow-metrics.jsonl
 ```
 
 It does not send telemetry to a hosted service.

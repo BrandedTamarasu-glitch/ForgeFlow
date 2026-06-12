@@ -98,7 +98,7 @@ Support bundles include a snippet-free redaction preview that reports sensitive 
 
 Implementation notes live at `.forgeflow/<project-name>/implementation-notes.md`. They are local handoff context for decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes discovered during `/implement`. Keep them out of commits and do not paste secrets, raw settings JSON, tokens, private URLs, customer names, or large source snippets into the file.
 
-The local dashboard reads metrics from `~/.claude/projects/<project>/memory/forgeflow-metrics.jsonl` and project readiness from `.forgeflow/<project-name>/context/` and `.forgeflow/<project-name>/release-readiness/`. The dashboard server is local-only, serves API responses with `Cache-Control: no-store`, and the Project Readiness panel copies suggested commands instead of executing them.
+The local dashboard reads metrics from `~/.claude/projects/<project>/memory/forgeflow-metrics.jsonl` and `~/.codex/projects/<project>/memory/forgeflow-metrics.jsonl`, then reads project readiness from `.forgeflow/<project-name>/context/` and `.forgeflow/<project-name>/release-readiness/`. The dashboard server is local-only, serves API responses with `Cache-Control: no-store`, and the Project Readiness panel copies suggested commands instead of executing them.
 
 ## Sensitive Files
 
