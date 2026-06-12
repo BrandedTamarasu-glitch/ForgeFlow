@@ -1019,7 +1019,80 @@ function architectureIntelligenceArtifact(artifacts, root, outDir) {
   );
 }
 
-function packetArtifactManifest({ root, outDir, latestInsightsResult, latestFailure, topologyContext, projectCodeMapPath, userProfileResult, projectOperatingModel, architectureIntelligenceArtifacts }) {
+function leanGuidanceArtifact(leanGuidance, root, outDir) {
+  const report = leanGuidance && leanGuidance.report ? leanGuidance.report : {};
+  return artifactDecision(
+    'lean-guidance',
+    path.relative(root, path.join(outDir, 'lean-guidance.md')),
+    leanGuidance && leanGuidance.injected ? 'included' : 'metadata-only',
+    leanGuidance ? leanGuidance.reason : 'lean-guidance-unavailable',
+    {
+      status: report.status || 'missing',
+      lean_decision: report.lean_decision || '',
+      next_action: leanGuidance && leanGuidance.injected ? '' : 'forgeflow-lean-decision --task "<work item>" && forgeflow-lean-report --write',
+    },
+  );
+}
+
+function leanGuidanceDecision({ artifacts, leanReport, latestInsightsResult, userProfileResult, projectOperatingModel }) {
+  const profileStatus = userProfileResult && userProfileResult.result && userProfileResult.result.check
+    ? userProfileResult.result.check.status
+    : 'missing';
+  const report = leanReport.value || {};
+  const signals = report.signals || {};
+  const telemetry = signals.telemetry || {};
+  const gates = {
+    lean_decision_present: artifacts.leanDecision.status === 'present',
+    lean_report_present: leanReport.status === 'present',
+    lean_report_ready: report.status === 'ready' && report.lean_decision === 'continue-dogfood',
+    latest_insights_injected: Boolean(latestInsightsResult && latestInsightsResult.report && latestInsightsResult.report.status === 'injected'),
+    profile_not_failing: profileStatus !== 'fail',
+    operating_model_present: Boolean(projectOperatingModel),
+    telemetry_ready: telemetry.status === 'ready',
+  };
+  const failed = Object.entries(gates).filter(([, value]) => !value).map(([key]) => key);
+  return {
+    gates,
+    injected: failed.length === 0,
+    reason: failed.length === 0 ? 'lean-guidance-quality-gates-passing' : `lean-guidance-gates-blocked:${failed.join(',')}`,
+    report,
+  };
+}
+
+function compactLeanGuidance(decision, maxChars = 2200) {
+  const report = decision.report || {};
+  const signals = report.signals || {};
+  const leanDecision = signals.lean_decision || {};
+  const notes = signals.implementation_notes || {};
+  const review = signals.lean_review || {};
+  const output = signals.output_contract || {};
+  const diff = signals.diff || {};
+  const telemetry = signals.telemetry || {};
+  const tokens = signals.context_tokens || {};
+  const lines = [
+    'Proof boundary: Advisory lean delivery guidance only. Verify the current user request, code, tests, security, accessibility, validation, and data-loss safeguards before acting.',
+    'Do not delete code, remove dependencies, shrink validation, change routing, or apply review-auto from this guidance alone.',
+    '',
+    'Quality gates:',
+    ...Object.entries(decision.gates || {}).map(([key, value]) => `- ${key}: ${value ? 'pass' : 'blocked'}`),
+    '',
+    'Use first:',
+    `- Prefer reuse/native/stdlib/project-pattern checks already captured by lean decision counts (${leanDecision.reuse_candidates || 0} reuse candidates, ${leanDecision.avoid_first_items || 0} avoid-first items).`,
+    `- Keep validation at or above the lean minimum (${leanDecision.validation_minimum_items || 0} item(s)); never simplify hard boundaries (${leanDecision.do_not_simplify_items || 0} item(s)).`,
+    `- Preserve simplification ceilings in implementation notes (${notes.ceiling_notes || 0} ceiling note(s), ${notes.validation_mentions || 0} validation mention(s)).`,
+    '',
+    'Watch:',
+    `- Current diff size: ${diff.files_changed || 0} files, +${diff.lines_added || 0}/-${diff.lines_removed || 0}.`,
+    `- Lean review findings: ${review.findings_count || 0}; prose-budget warnings: ${output.lean_warning_count || 0}.`,
+    `- Telemetry: ${telemetry.status || 'unknown'} (${telemetry.evidence_score || 0}); context saved tokens: ${tokens.estimated_saved_tokens || 0}.`,
+    '',
+    'Upgrade when:',
+    '- The explicit spec, second caller, repeated ceiling hit, security/accessibility need, validation evidence, or user direction requires more than the lean path.',
+  ];
+  return truncate(lines.join('\n'), maxChars);
+}
+
+function packetArtifactManifest({ root, outDir, latestInsightsResult, latestFailure, topologyContext, projectCodeMapPath, userProfileResult, projectOperatingModel, architectureIntelligenceArtifacts, leanGuidance }) {
   const artifacts = [
     artifactDecision('diff-summary', path.relative(root, path.join(outDir, 'diff-summary.md')), 'included', 'current-diff-scope'),
     artifactDecision('memory-hits', path.relative(root, path.join(outDir, 'memory-hits.md')), 'included', 'local-memory-filtered'),
@@ -1027,6 +1100,7 @@ function packetArtifactManifest({ root, outDir, latestInsightsResult, latestFail
     userProfileArtifact(userProfileResult, root, outDir),
     projectOperatingModelArtifact(projectOperatingModel, root, outDir),
     architectureIntelligenceArtifact(architectureIntelligenceArtifacts, root, outDir),
+    leanGuidanceArtifact(leanGuidance, root, outDir),
     latestFailure.artifact || artifactDecision('latest-failure-digest', path.relative(root, path.join(outDir, 'failure-digest.md')), 'skipped', 'failure-digest-unavailable'),
     artifactDecision(
       'project-code-map',
@@ -1101,7 +1175,7 @@ function contextContractForAgent(agent) {
     agent,
     allowed_signals: ['diff-summary', 'packet-artifact-trust'],
     advisory_signals: ['memory-hits'],
-    verify_before_use: ['latest-insights', 'user-profile-guidance', 'project-operating-model', 'architecture-intelligence', 'project-code-map', 'living-map-guidance', 'latest-failure-digest'],
+    verify_before_use: ['latest-insights', 'user-profile-guidance', 'project-operating-model', 'architecture-intelligence', 'lean-guidance', 'project-code-map', 'living-map-guidance', 'latest-failure-digest'],
     prohibited_uses: [
       'Do not treat local learnings or profile guidance as approval.',
       'Do not override current user instructions, code, tests, or review evidence.',
@@ -1110,19 +1184,19 @@ function contextContractForAgent(agent) {
   };
   if (agent.startsWith('smith')) {
     base.allowed_signals.push('code-topology', 'project-code-map');
-    base.advisory_signals.push('latest-insights', 'project-operating-model', 'architecture-intelligence');
+    base.advisory_signals.push('latest-insights', 'project-operating-model', 'architecture-intelligence', 'lean-guidance');
     base.primary_use = 'Use topology and learning signals to focus craft, data, service, and test review.';
   } else if (agent.startsWith('warden') || agent === 'aegis') {
     base.allowed_signals.push('latest-failure-digest', 'code-topology');
-    base.advisory_signals.push('latest-insights', 'project-operating-model', 'architecture-intelligence');
+    base.advisory_signals.push('latest-insights', 'project-operating-model', 'architecture-intelligence', 'lean-guidance');
     base.primary_use = 'Use signals to prioritize security and systems checks, then verify every high-risk claim from visible evidence.';
   } else if (agent.startsWith('lumen')) {
     base.allowed_signals.push('user-profile-guidance');
-    base.advisory_signals.push('latest-insights', 'living-map-guidance', 'project-operating-model', 'architecture-intelligence');
+    base.advisory_signals.push('latest-insights', 'living-map-guidance', 'project-operating-model', 'architecture-intelligence', 'lean-guidance');
     base.primary_use = 'Use profile and project signals to align UX, accessibility, copy, and service-path checks.';
   } else if (agent.startsWith('atlas')) {
     base.allowed_signals.push('latest-insights', 'user-profile-guidance', 'living-map-guidance');
-    base.advisory_signals.push('latest-failure-digest', 'project-code-map', 'project-operating-model', 'architecture-intelligence');
+    base.advisory_signals.push('latest-failure-digest', 'project-code-map', 'project-operating-model', 'architecture-intelligence', 'lean-guidance');
     base.primary_use = 'Use signals to check scope, sequencing, stale guidance, and cross-agent coverage.';
   } else {
     base.primary_use = 'Use local signals as advisory context only after checking current files and task scope.';
@@ -1148,7 +1222,7 @@ function renderContextContract(contract) {
   ].join('\n');
 }
 
-function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, userProfile, projectOperatingModel, architectureIntelligence, latestFailure, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, contextContract, task) {
+function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, userProfile, projectOperatingModel, architectureIntelligence, leanGuidanceMarkdown, latestFailure, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, contextContract, task) {
   const relevant = relevantFilesForAgent(agent, manifest);
   const rules = rulePack(agent, route, manifest);
   return [
@@ -1189,6 +1263,9 @@ function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestI
     '',
     '## Architecture Intelligence',
     architectureIntelligence,
+    '',
+    '## Lean Guidance',
+    leanGuidanceMarkdown || '(metadata only; lean quality gates did not pass)',
     '',
     '## Latest Failure Digest',
     latestFailure,
@@ -1261,6 +1338,18 @@ function buildContextPack(opts) {
     invocation: readContextArtifact(root, 'invocation-hints.json'),
   };
   const architectureIntelligenceMarkdown = compactArchitectureIntelligence(architectureIntelligenceArtifacts, 3600);
+  const leanArtifacts = {
+    leanDecision: readContextArtifact(root, 'lean-decision.json'),
+  };
+  const leanReportArtifact = readContextArtifact(root, 'lean-report.json');
+  const leanGuidance = leanGuidanceDecision({
+    artifacts: leanArtifacts,
+    leanReport: leanReportArtifact,
+    latestInsightsResult,
+    userProfileResult,
+    projectOperatingModel,
+  });
+  const leanGuidanceMarkdown = leanGuidance.injected ? compactLeanGuidance(leanGuidance) : '';
   const latestFailure = latestFailureDigest(outDir, root);
   const latestFailurePath = path.join(outDir, 'failure-digest.md');
   const projectCodeMap = projectCodeMapFromTopology(root, topologyContext);
@@ -1269,14 +1358,14 @@ function buildContextPack(opts) {
   const livingMapGuidance = livingMapReviewGuidance(livingMapSummary);
   const topologySummary = compactTopology(topologyContext);
   const topology = topologyReport(topologyContext, root);
-  const artifactManifest = packetArtifactManifest({ root, outDir, latestInsightsResult, latestFailure, topologyContext, projectCodeMapPath, userProfileResult, projectOperatingModel, architectureIntelligenceArtifacts });
+  const artifactManifest = packetArtifactManifest({ root, outDir, latestInsightsResult, latestFailure, topologyContext, projectCodeMapPath, userProfileResult, projectOperatingModel, architectureIntelligenceArtifacts, leanGuidance });
   const artifactManifestMarkdown = renderArtifactManifest(artifactManifest);
   const agents = route.agents.included || [];
   const packets = {};
   const contextContracts = Object.fromEntries(agents.map((agent) => [agent, contextContractForAgent(agent)]));
 
   for (const agent of agents) {
-    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, userProfile, projectOperatingModelMarkdown, architectureIntelligenceMarkdown, latestFailure.markdown, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, contextContracts[agent], effectiveOpts.task);
+    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, userProfile, projectOperatingModelMarkdown, architectureIntelligenceMarkdown, leanGuidanceMarkdown, latestFailure.markdown, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, contextContracts[agent], effectiveOpts.task);
     const file = path.join(packetDir, `${agent}.md`);
     writeFileSafe(file, content);
     packets[agent] = path.relative(root, file);
@@ -1337,6 +1426,15 @@ function buildContextPack(opts) {
       },
       boundary: 'Advisory static architecture, ownership, and invocation evidence only. Verify current files, tests, runtime behavior, and review artifacts before acting.',
     },
+    lean_guidance_path: path.relative(root, path.join(outDir, 'lean-guidance.md')),
+    lean_guidance_report: {
+      injected: leanGuidance.injected,
+      reason: leanGuidance.reason,
+      gates: leanGuidance.gates,
+      status: leanGuidance.report.status || 'missing',
+      lean_decision: leanGuidance.report.lean_decision || '',
+      boundary: 'Advisory lean guidance only. It cannot override user instructions, current code, tests, security, accessibility, validation, or data-loss safeguards.',
+    },
     latest_failure_digest_path: fs.existsSync(latestFailurePath) ? path.relative(root, latestFailurePath) : null,
     latest_failure_digest_freshness: latestFailure.freshness,
     latest_failure_digest_triage: latestFailure.triage || null,
@@ -1371,6 +1469,7 @@ function buildContextPack(opts) {
   writeFileSafe(path.join(outDir, 'user-profile.md'), `${userProfile || '# User Profile Guidance\n\n(none)'}\n`);
   writeFileSafe(path.join(outDir, 'project-operating-model.md'), `# Project Operating Model\n\n${projectOperatingModelMarkdown}\n`);
   writeFileSafe(path.join(outDir, 'architecture-intelligence.md'), `# Architecture Intelligence\n\n${architectureIntelligenceMarkdown}\n`);
+  writeFileSafe(path.join(outDir, 'lean-guidance.md'), `# Lean Guidance\n\n${leanGuidanceMarkdown || '(metadata only; lean quality gates did not pass)'}\n`);
   writeFileSafe(projectCodeMapPath, `# Project Code Map\n\n${projectCodeMap}\n`);
   writeJson(path.join(outDir, 'latest-insights-report.json'), latestInsightsResult.report);
   writeJson(path.join(outDir, 'packet-artifacts.json'), artifactManifest);
