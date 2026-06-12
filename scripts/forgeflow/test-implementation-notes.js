@@ -57,6 +57,18 @@ fs.writeFileSync(inputPath, JSON.stringify([
 ], null, 2));
 const recordResult = recordImplementationNotes({ projectDir, input: inputPath });
 const notesContent = fs.readFileSync(path.join(projectDir, 'implementation-notes.md'), 'utf8');
+const leanDecisionPath = path.join(tmpDir, 'lean-decision.json');
+fs.writeFileSync(leanDecisionPath, JSON.stringify({
+  task_present: true,
+  implementation_note_candidate: {
+    agent: 'Atlas',
+    category: 'tradeoff',
+    note: 'Lean path selected: simplify-first. Known ceiling: Simple path covers one caller only.',
+    why: 'Upgrade trigger: Add abstraction after a second caller appears.',
+  },
+}, null, 2));
+const leanResult = recordImplementationNotes({ projectDir, leanDecision: leanDecisionPath });
+const notesAfterLean = fs.readFileSync(path.join(projectDir, 'implementation-notes.md'), 'utf8');
 const cliResult = spawnSync(process.execPath, [
   path.join(repoRoot, 'scripts/forgeflow/record-implementation-notes.js'),
   '--project-dir',
@@ -180,10 +192,11 @@ const checks = [
   ['context pack includes project learnings', files.contextPack.includes("'project-learnings.md'")],
   ['consult loads notes path', files.consult.includes('NOTES_PATH="${FORGEFLOW_DIR}/implementation-notes.md"')],
   ['consult loads project learnings path', files.consult.includes('PROJECT_LEARNINGS_PATH="${FORGEFLOW_DIR}/project-learnings.md"')],
-  ['consult carries lean decision into brief', files.consult.includes('LEAN_DECISION_PATH="${FORGEFLOW_DIR}/context/lean-decision.md"') && files.consult.includes('render-lean-decision.js') && files.consult.includes('## Lean Decision')],
+  ['consult carries lean decision into brief', files.consult.includes('LEAN_DECISION_PATH="${FORGEFLOW_DIR}/context/lean-decision.md"') && files.consult.includes('LEAN_DECISION_JSON_PATH="${FORGEFLOW_DIR}/context/lean-decision.json"') && files.consult.includes('render-lean-decision.js') && files.consult.includes('## Lean Decision')],
   ['implement initializes notes', files.implement.includes('NOTES_PATH="${FORGEFLOW_DIR}/implementation-notes.md"') && files.implement.includes('cat > "$NOTES_PATH"')],
   ['implement consumes project learnings as guidance', files.implement.includes('PROJECT_LEARNINGS_PATH="${FORGEFLOW_DIR}/project-learnings.md"') && files.implement.includes('guidance only')],
-  ['implement carries lean decision into prompts', files.implement.includes('LEAN_DECISION_PATH="${FORGEFLOW_DIR}/context/lean-decision.md"') && files.implement.includes('render-lean-decision.js') && files.implement.includes('Do Not Simplify') && files.implement.includes('known ceiling and upgrade trigger')],
+  ['implement carries lean decision into prompts', files.implement.includes('LEAN_DECISION_PATH="${FORGEFLOW_DIR}/context/lean-decision.md"') && files.implement.includes('LEAN_DECISION_JSON_PATH="${FORGEFLOW_DIR}/context/lean-decision.json"') && files.implement.includes('render-lean-decision.js') && files.implement.includes('Do Not Simplify') && files.implement.includes('known ceiling and upgrade trigger')],
+  ['implement records lean ceiling via recorder', files.implement.includes('record-implementation-notes.js --lean-decision') && files.implement.includes('Lean decision JSON path')],
   ['implement routes candidates to atlas', files.implement.includes('Implementation note consolidation checkpoint') && files.implement.includes('record-implementation-notes.js')],
   ['implement refreshes project learnings after notes', files.implement.includes('show-project-learnings.js --project-dir') && files.implement.includes('PROJECT_LEARNINGS_PATH')],
   ['review consumes notes as context', files.review.includes('NOTES_PATH="${FORGEFLOW_DIR}/implementation-notes.md"') && files.review.includes('not proof')],
@@ -191,6 +204,7 @@ const checks = [
   ['ship summarizes notes', files.ship.includes('"implementation_notes"') && files.ship.includes('do not dump raw notes')],
   ['ship refreshes project learnings', files.ship.includes('show-project-learnings.js') && files.ship.includes('PROJECT_LEARNINGS_PATH="${FORGEFLOW_DIR}/project-learnings.md"')],
   ['recorder helper exists', files.recorder.includes('recordImplementationNotes') && files.recorder.includes('VALID_CATEGORIES')],
+  ['recorder supports lean decision ceiling capture', files.recorder.includes('--lean-decision <json-file>') && leanResult.entries === 1 && notesAfterLean.includes('Lean path selected: simplify-first') && notesAfterLean.includes('Upgrade trigger: Add abstraction after a second caller appears')],
   ['recorder installed as runtime helper', files.installManifest.includes('scripts/forgeflow/record-implementation-notes.js')],
   ['recorder appends candidates', recordResult.entries === 2 && notesContent.includes('Record implementation notes as Markdown') && notesContent.includes('Manual verification remains required')],
   ['recorder cli appends candidate', cliResult.status === 0 && notesAfterCli.includes('Review notes before ship')],
@@ -206,7 +220,7 @@ const checks = [
   ['atlas present schema includes notes', files.atlasPresent.includes('"implementation_notes"')],
   ['arbiter consult brief requires notes', files.arbiterConsult.includes('## Implementation Notes Requirements')],
   ['arbiter implement verifies notes', files.arbiterImplement.includes('## Implementation Notes') && files.arbiterImplement.includes('Redaction check')],
-  ['atlas owns serialization', files.atlas.includes('Maintain implementation notes') && files.atlas.includes('serialize note candidates')],
+  ['atlas owns serialization', files.atlas.includes('Maintain implementation notes') && files.atlas.includes('serialize note candidates') && files.atlas.includes('--lean-decision <json>')],
   ['atlas refreshes project learnings', files.atlas.includes('Refresh project learnings') && files.atlas.includes('rollup-project-learnings.js')],
   ['codex skills mention lean decision', files.skillConsult.includes('render-lean-decision.js') && files.skillConsult.includes('Lean Decision') && files.skillImplement.includes('render-lean-decision.js') && files.skillImplement.includes('known ceiling and upgrade trigger')],
   ['implementers emit candidates', ['smith', 'warden', 'lumen', 'compass'].every((name) => files[name].includes('Implementation Notes Candidates'))],

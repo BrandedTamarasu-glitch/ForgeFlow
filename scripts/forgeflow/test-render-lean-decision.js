@@ -72,6 +72,7 @@ const checks = [
   ['detects native date candidate', dateDecision.reuse_candidates.some((item) => item.kind === 'native' && item.candidate.includes('date'))],
   ['detects installed dependencies', reuseCandidates('validate schema', pkg, {}).some((item) => item.candidate.includes('zod'))],
   ['uses simplify-first decision', dateDecision.decision === 'simplify-first' && dateDecision.next_command === '/consult'],
+  ['emits implementation note candidate', dateDecision.implementation_note_candidate && dateDecision.implementation_note_candidate.category === 'tradeoff' && dateDecision.implementation_note_candidate.note.includes('Known ceiling') && dateDecision.implementation_note_candidate.why.includes('Upgrade trigger')],
   ['keeps safety boundaries', authDecision.do_not_simplify.includes('authentication and authorization behavior') && forbiddenSimplifications('money ledger').includes('money correctness and concurrency')],
   ['adds command validation minimum', commandDecision.validation_minimum.commands.includes('node scripts/forgeflow/test-command-wrapper-smoke.js') && commandDecision.validation_minimum.commands.includes('node scripts/forgeflow/test-doc-links.js')],
   ['uses project validation norms', validationMinimum('helper', { model: { validation_norms: ['Run helper test.'] } }).project_norms[0] === 'Run helper test.'],

@@ -9,6 +9,7 @@ const VALID_CATEGORIES = new Set(['decision', 'spec-gap', 'tradeoff', 'deviation
 function usage() {
   console.error([
     'Usage: record-implementation-notes.js [--project-dir <dir>] --input <json-file> [--json]',
+    '       record-implementation-notes.js [--project-dir <dir>] --lean-decision <json-file> [--json]',
     '       record-implementation-notes.js [--project-dir <dir>] --agent <name> --category <category> --note <text> [--why <text>] [--json]',
   ].join('\n'));
 }
@@ -17,6 +18,7 @@ function parseArgs(argv) {
   const opts = {
     projectDir: '',
     input: '',
+    leanDecision: '',
     agent: '',
     category: '',
     note: '',
@@ -29,6 +31,8 @@ function parseArgs(argv) {
       opts.projectDir = path.resolve(argv[++i] || '');
     } else if (arg === '--input') {
       opts.input = path.resolve(argv[++i] || '');
+    } else if (arg === '--lean-decision') {
+      opts.leanDecision = path.resolve(argv[++i] || '');
     } else if (arg === '--agent') {
       opts.agent = argv[++i] || '';
     } else if (arg === '--category') {
@@ -128,6 +132,11 @@ function loadEntries(opts) {
     const parsed = JSON.parse(fs.readFileSync(opts.input, 'utf8'));
     return (Array.isArray(parsed) ? parsed : [parsed]).map(normalizeEntry);
   }
+  if (opts.leanDecision) {
+    const parsed = JSON.parse(fs.readFileSync(opts.leanDecision, 'utf8'));
+    if (!parsed.task_present || !parsed.implementation_note_candidate) return [];
+    return [normalizeEntry(parsed.implementation_note_candidate)];
+  }
   return [normalizeEntry({
     agent: opts.agent,
     category: opts.category,
@@ -174,6 +183,7 @@ function recordImplementationNotes(opts = {}) {
   const projectDir = opts.projectDir || defaultProjectDir(root);
   const file = ensureNotesFile(projectDir);
   const entries = loadEntries(opts);
+  if (entries.length === 0) return { file, entries: 0 };
   let content = fs.readFileSync(file, 'utf8');
   const now = new Date();
   for (const category of VALID_CATEGORIES) {
@@ -190,7 +200,7 @@ function recordImplementationNotes(opts = {}) {
 
 function main() {
   const opts = parseArgs(process.argv.slice(2));
-  if (!opts.input && (!opts.category || !opts.note)) {
+  if (!opts.input && !opts.leanDecision && (!opts.category || !opts.note)) {
     usage();
     process.exit(2);
   }

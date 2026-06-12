@@ -59,6 +59,7 @@ SCOPE_MANIFEST_PATH="${FORGEFLOW_DIR}/context/consult-scope-manifest.json"
 NOTES_PATH="${FORGEFLOW_DIR}/implementation-notes.md"
 PROJECT_LEARNINGS_PATH="${FORGEFLOW_DIR}/project-learnings.md"
 LEAN_DECISION_PATH="${FORGEFLOW_DIR}/context/lean-decision.md"
+LEAN_DECISION_JSON_PATH="${FORGEFLOW_DIR}/context/lean-decision.json"
 HELPER_DIR="scripts/forgeflow"
 SAFE_ARGS=("${ARGUMENTS:-}")
 FORGEFLOW_NODE=(env -u NODE_OPTIONS -u NODE_PATH node)
@@ -79,6 +80,7 @@ fi
 if [ -x "${HELPER_DIR}/render-lean-decision.js" ]; then
   mkdir -p "$(dirname "$LEAN_DECISION_PATH")"
   "${FORGEFLOW_NODE[@]}" "${HELPER_DIR}/render-lean-decision.js" --root "$(pwd)" --project-dir "$FORGEFLOW_DIR" --task "${SAFE_ARGS[0]:-consult implementation brief architecture security frontend coordination}" > "$LEAN_DECISION_PATH"
+  "${FORGEFLOW_NODE[@]}" "${HELPER_DIR}/render-lean-decision.js" --root "$(pwd)" --project-dir "$FORGEFLOW_DIR" --task "${SAFE_ARGS[0]:-consult implementation brief architecture security frontend coordination}" --json > "$LEAN_DECISION_JSON_PATH"
 fi
 ```
 

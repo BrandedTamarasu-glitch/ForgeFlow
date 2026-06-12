@@ -42,6 +42,7 @@ SCOPE_MANIFEST_PATH="${FORGEFLOW_DIR}/context/implement-scope-manifest.json"
 NOTES_PATH="${FORGEFLOW_DIR}/implementation-notes.md"
 PROJECT_LEARNINGS_PATH="${FORGEFLOW_DIR}/project-learnings.md"
 LEAN_DECISION_PATH="${FORGEFLOW_DIR}/context/lean-decision.md"
+LEAN_DECISION_JSON_PATH="${FORGEFLOW_DIR}/context/lean-decision.json"
 HELPER_DIR="scripts/forgeflow"
 SAFE_ARGS=("${ARGUMENTS:-}")
 if [ ! -x "${HELPER_DIR}/build-memory-context.js" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/build-memory-context.js" ]; then
@@ -89,6 +90,7 @@ fi
 if [ -f "$BRIEF_PATH" ] && [ -x "${HELPER_DIR}/render-lean-decision.js" ]; then
   mkdir -p "$(dirname "$LEAN_DECISION_PATH")"
   "${FORGEFLOW_NODE[@]}" "${HELPER_DIR}/render-lean-decision.js" --root "$(pwd)" --project-dir "$FORGEFLOW_DIR" --brief "$BRIEF_PATH" > "$LEAN_DECISION_PATH"
+  "${FORGEFLOW_NODE[@]}" "${HELPER_DIR}/render-lean-decision.js" --root "$(pwd)" --project-dir "$FORGEFLOW_DIR" --brief "$BRIEF_PATH" --json > "$LEAN_DECISION_JSON_PATH"
 fi
 ```
 
@@ -221,7 +223,7 @@ Spawn `atlas-implement` alongside to coordinate and track. Atlas owns serializin
 After Wave 1 completes:
 1. Read the files created by Wave 1 agents
 2. Hand Smith/Warden/Lumen/Compass/Atlas reports from the completed wave back to `atlas-implement` with this instruction:
-   "Extract every `Implementation Notes Candidates` item from the completed agent reports. Also add concise note candidates for durable project patterns that surfaced during this wave: repeated pitfalls, stable decisions, validation patterns, hot files/modules, or follow-ups likely to matter in the next work item. When a simpler path is chosen from lean guidance, include the known ceiling and upgrade trigger as a tradeoff note. Append the entries to `${NOTES_PATH}` under the matching category. Prefer `${HELPER_DIR}/record-implementation-notes.js` with a temporary JSON input when available. Do not rewrite existing notes. Then refresh `${PROJECT_LEARNINGS_PATH}` with `${HELPER_DIR}/show-project-learnings.js --project-dir "${FORGEFLOW_DIR}" --json` when the helper is available. Return the entries appended, entries rejected, final notes path, and refreshed project learnings path."
+   "Extract every `Implementation Notes Candidates` item from the completed agent reports. Also add concise note candidates for durable project patterns that surfaced during this wave: repeated pitfalls, stable decisions, validation patterns, hot files/modules, or follow-ups likely to matter in the next work item. When a simpler path is chosen from lean guidance, include the known ceiling and upgrade trigger as a tradeoff note. Prefer `${HELPER_DIR}/record-implementation-notes.js --lean-decision "${LEAN_DECISION_JSON_PATH}" --project-dir "${FORGEFLOW_DIR}" --json` when available, then append any additional entries under the matching category with a temporary JSON input. Do not rewrite existing notes. Then refresh `${PROJECT_LEARNINGS_PATH}` with `${HELPER_DIR}/show-project-learnings.js --project-dir "${FORGEFLOW_DIR}" --json` when the helper is available. Return the entries appended, entries rejected, final notes path, and refreshed project learnings path."
 3. Verify shared interfaces were defined correctly
 4. If issues found, fix before proceeding
 
@@ -256,8 +258,9 @@ Recorder helper: {helper_dir}/record-implementation-notes.js
 Project learning recorder: {helper_dir}/record-project-learning.js
 Project learnings helper: {helper_dir}/show-project-learnings.js
 Project learnings path: {project_learnings_path}
+Lean decision JSON path: {lean_decision_json_path}
 
-Read the reports below, extract every `Implementation Notes Candidates` item, and append them to `{notes_path}`. Also add concise note candidates for durable project patterns that should shape the next work item: repeated pitfalls, stable decisions, validation patterns, hot files/modules, or recurring follow-ups. When a simpler path is chosen from lean guidance, include the known ceiling and upgrade trigger as a tradeoff note. Use the recorder helper with a temporary JSON input when available. Categories must be one of: decision, spec-gap, tradeoff, deviation, follow-up, validation.
+Read the reports below, extract every `Implementation Notes Candidates` item, and append them to `{notes_path}`. Also add concise note candidates for durable project patterns that should shape the next work item: repeated pitfalls, stable decisions, validation patterns, hot files/modules, or recurring follow-ups. When a simpler path is chosen from lean guidance, include the known ceiling and upgrade trigger as a tradeoff note. Prefer the recorder helper with `--lean-decision {lean_decision_json_path}` when the JSON artifact exists, then use a temporary JSON input for additional notes. Categories must be one of: decision, spec-gap, tradeoff, deviation, follow-up, validation.
 
 When a durable project pattern is clearer as a structured learning, record it with the project learning recorder. Categories must be one of: recurring-pitfall, stable-decision, risk-area, validation-pattern, hot-file, repeated-follow-up, recommended-approach.
 

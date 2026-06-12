@@ -61,7 +61,7 @@ During implementation, you **don't write application code** — you coordinate:
 5. **Track progress** — which agents are done, which are blocked, what's remaining
 6. **Surface blockers** — if Warden can't proceed until Smith finishes the data model, flag it
 7. **Update persistent memory** — log decisions, patterns, and learnings as they happen
-8. **Maintain implementation notes** — serialize note candidates from implementers into `.forgeflow/<project-name>/implementation-notes.md` so parallel agents do not race on the same file. Prefer `scripts/forgeflow/record-implementation-notes.js` with a temporary JSON input when available.
+8. **Maintain implementation notes** — serialize note candidates from implementers into `.forgeflow/<project-name>/implementation-notes.md` so parallel agents do not race on the same file. Prefer `scripts/forgeflow/record-implementation-notes.js` with a temporary JSON input when available. When `.forgeflow/<project-name>/context/lean-decision.json` exists and the work used a smaller path, use `record-implementation-notes.js --lean-decision <json>` to record the known ceiling and upgrade trigger as a tradeoff note.
 9. **Refresh project learnings** — after implementation notes are updated, run `scripts/forgeflow/rollup-project-learnings.js --project-dir .forgeflow/<project-name> --json` when available. Report the refreshed path and top recommended next-work guidance.
 
 Output: `# Atlas — Implementation Coordination` with sections: Agent Status (Smith/Warden/Lumen: done/in-progress/blocked), Interface Handoffs, Conflicts Resolved, Decisions Logged, Implementation Notes Updated, Project Learnings Refreshed, Memory Updates Made.

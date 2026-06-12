@@ -172,6 +172,14 @@ function buildLeanDecision(opts = {}) {
   const decision = decisionFor(text, reuse, forbidden);
   const ceiling = ceilingFor(decision.decision, text);
   const validation = validationMinimum(text, artifacts);
+  const noteCandidate = decision.status === 'ready' && text.trim()
+    ? {
+      agent: 'Atlas',
+      category: 'tradeoff',
+      note: `Lean path selected: ${decision.decision}. Known ceiling: ${ceiling.known_ceiling}`,
+      why: `Upgrade trigger: ${ceiling.upgrade_trigger}`,
+    }
+    : null;
   return {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
@@ -193,6 +201,7 @@ function buildLeanDecision(opts = {}) {
     validation_minimum: validation,
     known_ceiling: ceiling.known_ceiling,
     upgrade_trigger: ceiling.upgrade_trigger,
+    implementation_note_candidate: noteCandidate,
     next_command: decision.status === 'attention' ? '/forgeflow-lean-decision --task "<work item>"' : '/consult',
     boundary: 'Lean decision is read-only and advisory. It does not edit files, remove explicit requirements, install dependencies, spawn agents, change review routing, commit, push, or call the network.',
   };
