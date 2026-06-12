@@ -81,7 +81,8 @@ Use `/forgeflow-review-auto-evidence --findings <json>` when you want a saved lo
 1. Run `/forgeflow-lean-decision --task "<work item>"` before `/consult` when the risk is over-building, adding a dependency too early, or creating an abstraction before reuse has been checked.
 2. Read the reuse candidates, avoid-first list, do-not-simplify boundaries, validation minimum, known ceiling, and upgrade trigger.
 3. Continue with `/consult` when the lean decision says the work is current and bounded. The consultation and implementation handoffs carry the compact lean section forward when the helper is available.
-4. Defer or ask the user when the decision says the task is speculative or lacks a concrete requirement.
+4. Run `/forgeflow-lean-review` after implementation when you want a separate over-engineering-only lane before normal review.
+5. Defer or ask the user when the decision says the task is speculative or lacks a concrete requirement.
 
 ## Ship A Change
 

@@ -39,6 +39,7 @@ const workflowEnding = helperWrapper('commands/forgeflow-workflow-ending-capture
 const learningAction = helperWrapper('commands/forgeflow-learning-action.md', 'render-learning-action-router.js');
 const firstRunSimulator = helperWrapper('commands/forgeflow-first-run-simulator.md', 'render-first-run-simulator.js');
 const firstRun = helperWrapper('commands/forgeflow-first-run.md', 'render-first-run-guide.js');
+const leanReview = helperWrapper('commands/forgeflow-lean-review.md', 'render-lean-review.js');
 
 const checks = [
   ['context retention wrapper references helper', contextRetention.referencesHelper],
@@ -68,6 +69,9 @@ const checks = [
   ['first-run wrapper scrubs node env and safe args', firstRun.scrubsNodeEnvironment && firstRun.invokesHelperWithSafeArgs],
   ['first-run wrapper preserves quoted project names before tokenizing', firstRun.markdown.includes('PROJECT_NAME_SEGMENT="${BASH_REMATCH[0]}"') && firstRun.markdown.includes('PROJECT_NAME_ARG="${BASH_REMATCH[2]}"') && firstRun.markdown.includes('RAW_ARGS="${RAW_ARGS/$PROJECT_NAME_SEGMENT/ }"')],
   ['first-run wrapper rejects leftover project-name token', firstRun.markdown.includes('--project-name) echo "Invalid --project-name for /forgeflow-first-run"; exit 2 ;;')],
+  ['lean review wrapper checks regular helper file', leanReview.referencesHelper && leanReview.checksRepoLocalFile && leanReview.fallsBackToInstalledHelper],
+  ['lean review wrapper scrubs node env and safe args', leanReview.scrubsNodeEnvironment && leanReview.invokesHelperWithSafeArgs],
+  ['lean review wrapper accepts diff and json only', leanReview.markdown.includes('--diff <path>') && leanReview.markdown.includes('Unsupported arguments for /forgeflow-lean-review')],
 ];
 
 let failed = 0;

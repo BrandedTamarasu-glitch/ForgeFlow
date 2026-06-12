@@ -94,6 +94,7 @@ const checks = [
   ['runtime helpers include insight injection', RUNTIME_HELPERS.includes('scripts/forgeflow/render-insight-injection.js')],
   ['runtime helpers include learning action router', RUNTIME_HELPERS.includes('scripts/forgeflow/render-learning-action-router.js')],
   ['runtime helpers include lean decision', RUNTIME_HELPERS.includes('scripts/forgeflow/render-lean-decision.js')],
+  ['runtime helpers include lean review', RUNTIME_HELPERS.includes('scripts/forgeflow/render-lean-review.js')],
   ['runtime helpers include learning capture nudge', RUNTIME_HELPERS.includes('scripts/forgeflow/render-learning-capture-nudge.js')],
   ['runtime helpers include next work ranking', RUNTIME_HELPERS.includes('scripts/forgeflow/render-next-work-ranking.js')],
   ['runtime helpers include outcome capture plan', RUNTIME_HELPERS.includes('scripts/forgeflow/render-outcome-capture-plan.js')],
