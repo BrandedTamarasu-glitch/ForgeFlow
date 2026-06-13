@@ -93,6 +93,7 @@ const checks = [
   ['runtime helpers include guided repair', RUNTIME_HELPERS.includes('scripts/forgeflow/render-guided-repair.js')],
   ['runtime helpers include insight injection', RUNTIME_HELPERS.includes('scripts/forgeflow/render-insight-injection.js')],
   ['runtime helpers include learning action router', RUNTIME_HELPERS.includes('scripts/forgeflow/render-learning-action-router.js')],
+  ['runtime helpers include lean benchmark', RUNTIME_HELPERS.includes('scripts/forgeflow/render-lean-benchmark.js')],
   ['runtime helpers include lean decision', RUNTIME_HELPERS.includes('scripts/forgeflow/render-lean-decision.js')],
   ['runtime helpers include lean mode', RUNTIME_HELPERS.includes('scripts/forgeflow/render-lean-mode.js')],
   ['runtime helpers include lean review', RUNTIME_HELPERS.includes('scripts/forgeflow/render-lean-review.js')],
