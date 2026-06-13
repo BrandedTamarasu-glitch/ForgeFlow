@@ -20,6 +20,15 @@ const diff = [
   '+const futureProofPluginRegistry = {};',
   '+class ExportManager {}',
   '+if (false) console.log("dead code");',
+  'diff --git a/package.json b/package.json',
+  '--- a/package.json',
+  '+++ b/package.json',
+  '@@ -1,3 +1,6 @@',
+  '+{',
+  '+  "dependencies": {',
+  '+    "left-pad": "^1.3.0"',
+  '+  }',
+  '+}',
   'diff --git a/docs/guide.md b/docs/guide.md',
   '--- a/docs/guide.md',
   '+++ b/docs/guide.md',
@@ -57,20 +66,42 @@ const clean = buildLeanReview({ root: process.cwd(), diffText: 'diff --git a/src
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-lean-review-'));
 const diffFile = path.join(tmp, 'diff.patch');
 fs.writeFileSync(diffFile, diff);
+const projectDir = path.join(tmp, '.forgeflow', 'Demo');
+fs.mkdirSync(path.join(projectDir, 'context'), { recursive: true });
+fs.writeFileSync(path.join(projectDir, 'context', 'code-topology.json'), JSON.stringify({
+  nodes: [
+    { path: 'src/demo.js', fan_in: 0, fan_out: 1 },
+    { path: 'package.json', fan_in: 3, fan_out: 0 },
+  ],
+  changed_file_neighbors: [
+    { path: 'src/demo.js', read_next: [{ path: 'src/existing-helper.js' }] },
+  ],
+}, null, 2));
+fs.writeFileSync(path.join(projectDir, 'context', 'invocation-hints.json'), JSON.stringify({
+  invocation_hints: [
+    { kind: 'package-script', path: 'package.json', suggested_invocation: 'npm test' },
+  ],
+}, null, 2));
 const fromFile = buildLeanReview({ root: tmp, diff: diffFile });
-const opts = parseArgs(['--root', tmp, '--diff', diffFile, '--json']);
+const withProjectEvidence = buildLeanReview({ root: tmp, projectDir, diff: diffFile });
+const opts = parseArgs(['--root', tmp, '--project-dir', projectDir, '--diff', diffFile, '--json']);
 
 const foundTags = new Set(result.findings.map((item) => item.class));
+const packageFinding = withProjectEvidence.findings.find((item) => item.file === 'package.json');
+const demoFinding = withProjectEvidence.findings.find((item) => item.file === 'src/demo.js' && item.class === 'shrink');
 const checks = [
   ['tag vocabulary stable', TAGS.join(',') === 'delete,stdlib,native,reuse,yagni,shrink,prose-bloat'],
-  ['parses changed files', parsed.length === 4 && parsed.some((file) => file.file === 'src/demo.js')],
+  ['parses changed files', parsed.length === 5 && parsed.some((file) => file.file === 'src/demo.js')],
   ['detects every planned tag', TAGS.every((tag) => foundTags.has(tag))],
   ['skips hard boundary scopes', result.skipped.some((item) => item.file === 'src/auth.js') && result.skipped.some((item) => item.file === 'src/form.js')],
   ['schema compatible findings', schema.status === 'pass' && result.findings.every((item) => item.source === 'forgeflow-lean-review' && item.tier === 'NIT' && item.file && item.line > 0)],
   ['renders markdown with estimate', markdown.includes('# Forgeflow Lean Review') && markdown.includes('Estimated net removable lines:') && markdown.includes('## Skipped Boundaries')],
   ['clean diff ships', clean.status === 'clean' && clean.final_line === 'Lean already. Ship.' && renderMarkdown(clean).includes('Lean already. Ship.')],
   ['reads diff file safely', fromFile.findings_count === result.findings_count],
-  ['parses args', opts.root === tmp && opts.diff === diffFile && opts.json === true],
+  ['dependency delta gets project evidence', packageFinding && packageFinding.project_evidence.some((item) => item.includes('dependency delta: added left-pad')) && packageFinding.project_evidence.some((item) => item.includes('invocation hint'))],
+  ['topology evidence enriches findings', demoFinding && demoFinding.project_evidence.some((item) => item.includes('static topology')) && demoFinding.project_evidence.some((item) => item.includes('second-caller evidence'))],
+  ['project evidence boundary reported', withProjectEvidence.project_evidence.boundary.includes('static and advisory')],
+  ['parses args', opts.root === tmp && opts.projectDir === projectDir && opts.diff === diffFile && opts.json === true],
 ];
 
 let failed = 0;

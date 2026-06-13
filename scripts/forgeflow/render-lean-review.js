@@ -8,7 +8,7 @@ const TAGS = ['delete', 'stdlib', 'native', 'reuse', 'yagni', 'shrink', 'prose-b
 const HARD_BOUNDARY_RE = /\b(auth|authorization|permission|security|secret|token|password|crypto|migration|schema|database|payment|money|invoice|ledger|a11y|accessibility|keyboard|screen reader|validation|sanitize|csrf|xss|data loss)\b/i;
 
 function usage() {
-  console.error('Usage: render-lean-review.js [--root <repo>] [--diff <path>] [--json]');
+  console.error('Usage: render-lean-review.js [--root <repo>] [--project-dir <dir>] [--diff <path>] [--json]');
 }
 
 function requireValue(argv, name, index) {
@@ -18,11 +18,14 @@ function requireValue(argv, name, index) {
 }
 
 function parseArgs(argv) {
-  const opts = { root: process.cwd(), diff: '', json: false };
+  const opts = { root: process.cwd(), projectDir: '', diff: '', json: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--root') {
       opts.root = path.resolve(requireValue(argv, arg, i));
+      i += 1;
+    } else if (arg === '--project-dir') {
+      opts.projectDir = path.resolve(requireValue(argv, arg, i));
       i += 1;
     } else if (arg === '--diff') {
       opts.diff = path.resolve(requireValue(argv, arg, i));
@@ -92,6 +95,93 @@ function addedText(file) {
   return file.added.map((line) => line.text).join('\n');
 }
 
+function defaultProjectDir(root) {
+  return path.join(root, '.forgeflow', path.basename(root));
+}
+
+function readJsonArtifact(file, projectDir) {
+  try {
+    if (!file || !require('fs').existsSync(file)) return { status: 'missing', path: file, value: null };
+    return { status: 'present', path: file, value: JSON.parse(safeReadTextFile(file, projectDir).content) };
+  } catch (err) {
+    return { status: 'invalid', path: file, value: null, reason: err.message };
+  }
+}
+
+function firstPresentJson(projectDir, basenames) {
+  for (const basename of basenames) {
+    const artifact = readJsonArtifact(path.join(projectDir, 'context', basename), projectDir);
+    if (artifact.status === 'present') return artifact;
+  }
+  return readJsonArtifact(path.join(projectDir, 'context', basenames[0]), projectDir);
+}
+
+function loadProjectEvidence(root, projectDir = '') {
+  const resolvedProjectDir = path.resolve(projectDir || defaultProjectDir(root));
+  const topology = firstPresentJson(resolvedProjectDir, ['code-topology.json', 'latest/code-topology.json']);
+  const invocation = firstPresentJson(resolvedProjectDir, ['invocation-hints.json', 'latest/invocation-hints.json']);
+  return {
+    project_dir: resolvedProjectDir,
+    artifacts: {
+      topology: { status: topology.status, path: topology.path },
+      invocation: { status: invocation.status, path: invocation.path },
+    },
+    topology: topology.value || {},
+    invocation: invocation.value || {},
+  };
+}
+
+function nodeForFile(topology, file) {
+  const nodes = Array.isArray(topology.nodes) ? topology.nodes : [];
+  return nodes.find((node) => node.path === file) || null;
+}
+
+function topologyEvidence(file, evidence, findingClass) {
+  const topology = evidence.topology || {};
+  const node = nodeForFile(topology, file.file);
+  const items = [];
+  if (node) {
+    items.push(`static topology: fan-in ${node.fan_in || 0}, fan-out ${node.fan_out || 0}`);
+    if (['reuse', 'yagni', 'shrink'].includes(findingClass)) {
+      if ((node.fan_in || 0) >= 2) items.push(`second-caller evidence: ${node.fan_in} static importer(s) depend on this file`);
+      else items.push('second-caller evidence: no repeated static importer found in topology');
+    }
+  }
+  const neighbor = (Array.isArray(topology.changed_file_neighbors) ? topology.changed_file_neighbors : []).find((item) => item.path === file.file);
+  if (neighbor && Array.isArray(neighbor.read_next) && neighbor.read_next.length) {
+    items.push(`read-next evidence: ${neighbor.read_next.slice(0, 2).map((item) => item.path).filter(Boolean).join(', ')}`);
+  }
+  return items.filter(Boolean);
+}
+
+function invocationEvidence(file, evidence) {
+  const hints = Array.isArray(evidence.invocation.invocation_hints) ? evidence.invocation.invocation_hints : [];
+  return hints
+    .filter((hint) => hint.path === file.file || (hint.path && file.file.startsWith(`${hint.path}/`)))
+    .slice(0, 2)
+    .map((hint) => `invocation hint: ${hint.kind || 'entrypoint'} ${hint.path || hint.name || ''}${hint.suggested_invocation ? ` via ${hint.suggested_invocation}` : ''}`.trim());
+}
+
+function dependencyAdditions(file) {
+  if (!/(^|\/)package\.json$/.test(file.file)) return [];
+  return file.added
+    .map((line) => line.text.match(/^\s*"([^"]+)"\s*:\s*"[^"]+"\s*,?\s*$/))
+    .filter(Boolean)
+    .map((match) => match[1])
+    .filter((name) => !['name', 'version', 'description', 'type', 'main', 'module', 'scripts', 'dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'].includes(name))
+    .slice(0, 8);
+}
+
+function projectEvidence(file, findingClass, evidence) {
+  const items = [
+    ...topologyEvidence(file, evidence, findingClass),
+    ...invocationEvidence(file, evidence),
+  ];
+  const deps = dependencyAdditions(file);
+  if (deps.length) items.push(`dependency delta: added ${deps.join(', ')}`);
+  return items.slice(0, 5);
+}
+
 function boundaryReasons(file) {
   const text = addedText(file);
   const reasons = [];
@@ -105,7 +195,7 @@ function firstLine(file, pattern) {
   return found ? found.line : (file.added[0] ? file.added[0].line : 1);
 }
 
-function makeFinding(file, tag, title, evidence, line, removableLines = 1) {
+function makeFinding(file, tag, title, evidence, line, removableLines = 1, projectEvidenceItems = []) {
   return {
     id: `lean-${tag}-${file.file.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase()}`,
     source: 'forgeflow-lean-review',
@@ -115,6 +205,7 @@ function makeFinding(file, tag, title, evidence, line, removableLines = 1) {
     file: file.file,
     line,
     evidence,
+    project_evidence: projectEvidenceItems,
     removable_lines: removableLines,
   };
 }
@@ -126,14 +217,14 @@ function proseBloat(file) {
   return makeFinding(file, 'prose-bloat', 'Added explanatory prose may be larger than the decision needs.', 'Long prose-only addition; keep result, skipped work, and upgrade trigger concise.', proseLines[0].line, Math.max(3, proseLines.length - 5));
 }
 
-function findingsForFile(file) {
+function findingsForFile(file, evidence = { topology: {}, invocation: {} }) {
   const boundaries = boundaryReasons(file);
   if (boundaries.length) return { findings: [], skipped: [{ file: file.file, reasons: boundaries }] };
   const text = addedText(file);
   const findings = [];
-  const add = (tag, title, evidence, pattern, removableLines = 1) => {
+  const add = (tag, title, evidenceText, pattern, removableLines = 1) => {
     if (findings.some((item) => item.class === tag)) return;
-    findings.push(makeFinding(file, tag, title, evidence, firstLine(file, pattern), removableLines));
+    findings.push(makeFinding(file, tag, title, evidenceText, firstLine(file, pattern), removableLines, projectEvidence(file, tag, evidence)));
   };
 
   if (/\b(if\s*\(\s*false\s*\)|dead code|TODO:\s*remove|temporary unused)\b/i.test(text)) {
@@ -154,19 +245,24 @@ function findingsForFile(file) {
   if (/\bclass\s+\w*(Manager|Coordinator|Orchestrator)|function\s+\w*(Manager|Coordinator|Orchestrator)|create[A-Z]\w*Factory\b/.test(text)) {
     add('shrink', 'A new manager/factory layer may be larger than the current slice needs.', 'Prefer direct project-consistent code until a second caller or measured need appears.', /\b(class\s+\w*(Manager|Coordinator|Orchestrator)|function\s+\w*(Manager|Coordinator|Orchestrator)|create[A-Z]\w*Factory)\b/, 5);
   }
+  const deps = dependencyAdditions(file);
+  if (deps.length) {
+    add('reuse', 'New dependency should cite stdlib, native, installed, or project-pattern alternatives first.', `Package diff adds ${deps.join(', ')}; verify the project does not already cover this capability.`, /^\s*"[^"]+"\s*:\s*"[^"]+"/, Math.max(1, deps.length));
+  }
   const prose = proseBloat(file);
-  if (prose) findings.push(prose);
+  if (prose) findings.push({ ...prose, project_evidence: projectEvidence(file, prose.class, evidence) });
   return { findings, skipped: [] };
 }
 
 function buildLeanReview(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
+  const evidence = opts.projectEvidence || loadProjectEvidence(root, opts.projectDir || '');
   const diff = opts.diffText ?? readDiff({ root, diff: opts.diff || '' });
   const files = parseDiff(diff);
   const findings = [];
   const skipped = [];
   for (const file of files) {
-    const result = findingsForFile(file);
+    const result = findingsForFile(file, evidence);
     findings.push(...result.findings);
     skipped.push(...result.skipped);
   }
@@ -190,6 +286,10 @@ function buildLeanReview(opts = {}) {
     findings_count: deduped.length,
     estimated_net_removable_lines: estimated,
     skipped,
+    project_evidence: {
+      artifacts: evidence.artifacts,
+      boundary: 'Project evidence is static and advisory. It does not prove runtime behavior, call flow, dependency severity, or correctness.',
+    },
     schema_check: schema.status,
     boundary: 'Lean review is read-only and checks only over-engineering complexity. It is not a correctness, security, performance, accessibility, or validation review and never applies fixes.',
     final_line: deduped.length ? `Estimated net removable lines: ${estimated}` : 'Lean already. Ship.',
@@ -214,6 +314,9 @@ function renderMarkdown(result) {
   for (const finding of result.findings) {
     lines.push(`- ${finding.class}: ${finding.file}:${finding.line} - ${finding.title}`);
     lines.push(`  - Evidence: ${finding.evidence}`);
+    if (Array.isArray(finding.project_evidence) && finding.project_evidence.length) {
+      lines.push(`  - Project evidence: ${finding.project_evidence.join('; ')}`);
+    }
     lines.push(`  - Removable lines: ${finding.removable_lines}`);
   }
   if (result.skipped.length) {
@@ -244,6 +347,7 @@ module.exports = {
   TAGS,
   buildLeanReview,
   findingsForFile,
+  loadProjectEvidence,
   parseArgs,
   parseDiff,
   renderMarkdown,
