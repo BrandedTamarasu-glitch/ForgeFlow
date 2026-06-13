@@ -20,6 +20,7 @@ const seededArchitecturePath = path.join(repoProjectContextDir, 'architecture.js
 const seededOwnershipPath = path.join(repoProjectContextDir, 'ownership-map.json');
 const seededInvocationPath = path.join(repoProjectContextDir, 'invocation-hints.json');
 const seededLeanDecisionPath = path.join(repoProjectContextDir, 'lean-decision.json');
+const seededLeanPolicyPath = path.join(repoProjectContextDir, 'lean-policy.json');
 const seededLeanReportPath = path.join(repoProjectContextDir, 'lean-report.json');
 const previousProjectCodeMap = fs.existsSync(seededProjectCodeMapPath)
   ? fs.readFileSync(seededProjectCodeMapPath, 'utf8')
@@ -38,6 +39,9 @@ const previousInvocation = fs.existsSync(seededInvocationPath)
   : null;
 const previousLeanDecision = fs.existsSync(seededLeanDecisionPath)
   ? fs.readFileSync(seededLeanDecisionPath, 'utf8')
+  : null;
+const previousLeanPolicy = fs.existsSync(seededLeanPolicyPath)
+  ? fs.readFileSync(seededLeanPolicyPath, 'utf8')
   : null;
 const previousLeanReport = fs.existsSync(seededLeanReportPath)
   ? fs.readFileSync(seededLeanReportPath, 'utf8')
@@ -100,6 +104,12 @@ fs.writeFileSync(seededLeanDecisionPath, JSON.stringify({
     validation_minimum: ['context-pack test'],
     do_not_simplify: ['security'],
   },
+}, null, 2));
+fs.writeFileSync(seededLeanPolicyPath, JSON.stringify({
+  schema_version: '1',
+  profile: 'strict',
+  enabled: true,
+  max_guidance_tokens: 1800,
 }, null, 2));
 fs.writeFileSync(seededLeanReportPath, JSON.stringify({
   schema_version: '1',
@@ -633,6 +643,11 @@ if (previousLeanDecision === null) {
 } else {
   fs.writeFileSync(seededLeanDecisionPath, previousLeanDecision);
 }
+if (previousLeanPolicy === null) {
+  fs.unlinkSync(seededLeanPolicyPath);
+} else {
+  fs.writeFileSync(seededLeanPolicyPath, previousLeanPolicy);
+}
 if (previousLeanReport === null) {
   fs.unlinkSync(seededLeanReportPath);
 } else {
@@ -667,6 +682,8 @@ const checks = [
   ['project operating model linked', synthesis.project_operating_model_path.endsWith('project-operating-model.md') && synthesis.project_operating_model_report && synthesis.project_operating_model_report.status],
   ['architecture intelligence linked', synthesis.architecture_intelligence_path.endsWith('architecture-intelligence.md') && synthesis.architecture_intelligence_report && synthesis.architecture_intelligence_report.architecture.status === 'present' && synthesis.architecture_intelligence_report.ownership.status === 'present' && synthesis.architecture_intelligence_report.invocation.status === 'present'],
   ['lean guidance linked', synthesis.lean_guidance_path.endsWith('lean-guidance.md') && synthesis.lean_guidance_report && synthesis.lean_guidance_report.injected === true && synthesis.lean_guidance_report.gates.telemetry_ready === true],
+  ['lean policy profile linked', synthesis.lean_guidance_report.policy && synthesis.lean_guidance_report.policy.profile === 'strict' && synthesis.lean_guidance_report.gates.lean_policy_allows_guidance === true],
+  ['lean guidance names mode', leanGuidance.includes('Lean mode: strict (lean-policy).')],
   ['latest failure digest linked', synthesis.latest_failure_digest_path && synthesis.latest_failure_digest_path.endsWith('failure-digest.md')],
   ['latest failure digest freshness linked', synthesis.latest_failure_digest_freshness && synthesis.latest_failure_digest_freshness.status === 'attention'],
   ['latest failure digest triage linked', synthesis.latest_failure_digest_triage && synthesis.latest_failure_digest_triage.state === 'stale' && synthesis.latest_failure_digest_triage.usefulness === 'limited'],

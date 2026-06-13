@@ -1021,6 +1021,7 @@ function architectureIntelligenceArtifact(artifacts, root, outDir) {
 
 function leanGuidanceArtifact(leanGuidance, root, outDir) {
   const report = leanGuidance && leanGuidance.report ? leanGuidance.report : {};
+  const policy = leanGuidance && leanGuidance.policy ? leanGuidance.policy : {};
   return artifactDecision(
     'lean-guidance',
     path.relative(root, path.join(outDir, 'lean-guidance.md')),
@@ -1029,9 +1030,26 @@ function leanGuidanceArtifact(leanGuidance, root, outDir) {
     {
       status: report.status || 'missing',
       lean_decision: report.lean_decision || '',
+      lean_profile: policy.profile || 'balanced',
+      lean_enabled: policy.enabled !== false,
       next_action: leanGuidance && leanGuidance.injected ? '' : 'forgeflow-lean-decision --task "<work item>" && forgeflow-lean-report --write',
     },
   );
+}
+
+function effectiveLeanPolicy(source) {
+  const value = source && source.value && typeof source.value === 'object' ? source.value : {};
+  const profile = String(value.profile || 'balanced').toLowerCase();
+  const knownProfile = ['off', 'balanced', 'strict', 'ultra'].includes(profile) ? profile : 'balanced';
+  const defaultTokens = knownProfile === 'ultra' ? 1400 : knownProfile === 'strict' ? 1800 : knownProfile === 'off' ? 0 : 2200;
+  return {
+    status: source ? source.status : 'missing',
+    profile: knownProfile,
+    enabled: knownProfile !== 'off' && value.enabled !== false,
+    valid: !source || source.status !== 'invalid',
+    max_guidance_tokens: Number(value.max_guidance_tokens || defaultTokens),
+    source: source && source.status === 'present' ? 'lean-policy' : 'default',
+  };
 }
 
 function leanGuidanceDecision({ artifacts, leanReport, latestInsightsResult, userProfileResult, projectOperatingModel }) {
@@ -1041,7 +1059,10 @@ function leanGuidanceDecision({ artifacts, leanReport, latestInsightsResult, use
   const report = leanReport.value || {};
   const signals = report.signals || {};
   const telemetry = signals.telemetry || {};
+  const policy = effectiveLeanPolicy(artifacts.leanPolicy);
   const gates = {
+    lean_policy_valid: policy.valid,
+    lean_policy_allows_guidance: policy.enabled,
     lean_decision_present: artifacts.leanDecision.status === 'present',
     lean_report_present: leanReport.status === 'present',
     lean_report_ready: report.status === 'ready' && report.lean_decision === 'continue-dogfood',
@@ -1056,10 +1077,11 @@ function leanGuidanceDecision({ artifacts, leanReport, latestInsightsResult, use
     injected: failed.length === 0,
     reason: failed.length === 0 ? 'lean-guidance-quality-gates-passing' : `lean-guidance-gates-blocked:${failed.join(',')}`,
     report,
+    policy,
   };
 }
 
-function compactLeanGuidance(decision, maxChars = 2200) {
+function compactLeanGuidance(decision, maxChars = null) {
   const report = decision.report || {};
   const signals = report.signals || {};
   const leanDecision = signals.lean_decision || {};
@@ -1069,9 +1091,12 @@ function compactLeanGuidance(decision, maxChars = 2200) {
   const diff = signals.diff || {};
   const telemetry = signals.telemetry || {};
   const tokens = signals.context_tokens || {};
+  const policy = decision.policy || {};
+  const limit = Number(maxChars || policy.max_guidance_tokens || 2200);
   const lines = [
     'Proof boundary: Advisory lean delivery guidance only. Verify the current user request, code, tests, security, accessibility, validation, and data-loss safeguards before acting.',
     'Do not delete code, remove dependencies, shrink validation, change routing, or apply review-auto from this guidance alone.',
+    `Lean mode: ${policy.profile || 'balanced'} (${policy.source || 'default'}).`,
     '',
     'Quality gates:',
     ...Object.entries(decision.gates || {}).map(([key, value]) => `- ${key}: ${value ? 'pass' : 'blocked'}`),
@@ -1089,7 +1114,7 @@ function compactLeanGuidance(decision, maxChars = 2200) {
     'Upgrade when:',
     '- The explicit spec, second caller, repeated ceiling hit, security/accessibility need, validation evidence, or user direction requires more than the lean path.',
   ];
-  return truncate(lines.join('\n'), maxChars);
+  return truncate(lines.join('\n'), limit);
 }
 
 function packetArtifactManifest({ root, outDir, latestInsightsResult, latestFailure, topologyContext, projectCodeMapPath, userProfileResult, projectOperatingModel, architectureIntelligenceArtifacts, leanGuidance }) {
@@ -1340,6 +1365,7 @@ function buildContextPack(opts) {
   const architectureIntelligenceMarkdown = compactArchitectureIntelligence(architectureIntelligenceArtifacts, 3600);
   const leanArtifacts = {
     leanDecision: readContextArtifact(root, 'lean-decision.json'),
+    leanPolicy: readContextArtifact(root, 'lean-policy.json'),
   };
   const leanReportArtifact = readContextArtifact(root, 'lean-report.json');
   const leanGuidance = leanGuidanceDecision({
@@ -1431,6 +1457,7 @@ function buildContextPack(opts) {
       injected: leanGuidance.injected,
       reason: leanGuidance.reason,
       gates: leanGuidance.gates,
+      policy: leanGuidance.policy,
       status: leanGuidance.report.status || 'missing',
       lean_decision: leanGuidance.report.lean_decision || '',
       boundary: 'Advisory lean guidance only. It cannot override user instructions, current code, tests, security, accessibility, validation, or data-loss safeguards.',
