@@ -79,6 +79,7 @@ const checks = [
   ['runtime helpers include validation failure capture', RUNTIME_HELPERS.includes('scripts/forgeflow/render-validation-failure-capture.js')],
   ['runtime helpers include stale artifact plan', RUNTIME_HELPERS.includes('scripts/forgeflow/render-stale-artifact-plan.js')],
   ['runtime helpers include learning signal policy', RUNTIME_HELPERS.includes('scripts/forgeflow/learning-signal-policy.js')],
+  ['runtime helpers include lean markers', RUNTIME_HELPERS.includes('scripts/forgeflow/lean-markers.js')],
   ['runtime helpers include pattern review', RUNTIME_HELPERS.includes('scripts/forgeflow/render-pattern-review.js')],
   ['runtime helpers include runtime drift snapshot', RUNTIME_HELPERS.includes('scripts/forgeflow/runtime-drift-snapshot.js')],
   ['runtime helpers include pilot evidence rollup', RUNTIME_HELPERS.includes('scripts/forgeflow/rollup-pilot-evidence.js')],

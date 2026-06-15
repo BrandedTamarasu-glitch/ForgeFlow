@@ -53,6 +53,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/install-manifest.js',
   'scripts/forgeflow/latest-insights-state.js',
   'scripts/forgeflow/learning-signal-policy.js',
+  'scripts/forgeflow/lean-markers.js',
   'scripts/forgeflow/next-action-contract.js',
   'scripts/forgeflow/output-contract.js',
   'scripts/forgeflow/privacy-boundary.js',

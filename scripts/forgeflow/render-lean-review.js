@@ -3,6 +3,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { safeReadTextFile } = require('./file-safety');
 const { checkReviewEvidenceSchema } = require('./check-review-evidence-schema');
+const { parseLeanMarkersFromLines, summarizeLeanMarkers } = require('./lean-markers');
 
 const TAGS = ['delete', 'stdlib', 'native', 'reuse', 'yagni', 'shrink', 'prose-bloat'];
 const HARD_BOUNDARY_RE = /\b(auth|authorization|permission|security|secret|token|password|crypto|migration|schema|database|payment|money|invoice|ledger|a11y|accessibility|keyboard|screen reader|validation|sanitize|csrf|xss|data loss)\b/i;
@@ -190,6 +191,19 @@ function boundaryReasons(file) {
   return reasons;
 }
 
+function markerReview(file) {
+  const markers = parseLeanMarkersFromLines(file.added, file.file);
+  const summary = summarizeLeanMarkers(markers);
+  const issues = [];
+  for (const marker of markers) {
+    if (!marker.valid) issues.push({ file: file.file, line: marker.line, kind: marker.kind, issue: marker.issue });
+    if (marker.kind === 'no-new-deps' && dependencyAdditions(file).length) {
+      issues.push({ file: file.file, line: marker.line, kind: marker.kind, issue: 'marker-conflicts-with-dependency-addition' });
+    }
+  }
+  return { markers: summary.markers, summary, issues };
+}
+
 function firstLine(file, pattern) {
   const found = file.added.find((line) => pattern.test(line.text));
   return found ? found.line : (file.added[0] ? file.added[0].line : 1);
@@ -222,6 +236,7 @@ function findingsForFile(file, evidence = { topology: {}, invocation: {} }) {
   if (boundaries.length) return { findings: [], skipped: [{ file: file.file, reasons: boundaries }] };
   const text = addedText(file);
   const findings = [];
+  const markers = markerReview(file);
   const add = (tag, title, evidenceText, pattern, removableLines = 1) => {
     if (findings.some((item) => item.class === tag)) return;
     findings.push(makeFinding(file, tag, title, evidenceText, firstLine(file, pattern), removableLines, projectEvidence(file, tag, evidence)));
@@ -251,7 +266,7 @@ function findingsForFile(file, evidence = { topology: {}, invocation: {} }) {
   }
   const prose = proseBloat(file);
   if (prose) findings.push({ ...prose, project_evidence: projectEvidence(file, prose.class, evidence) });
-  return { findings, skipped: [] };
+  return { findings, skipped: [], markers };
 }
 
 function buildLeanReview(opts = {}) {
@@ -261,10 +276,16 @@ function buildLeanReview(opts = {}) {
   const files = parseDiff(diff);
   const findings = [];
   const skipped = [];
+  const markerSummaries = [];
+  const markerIssues = [];
   for (const file of files) {
     const result = findingsForFile(file, evidence);
     findings.push(...result.findings);
     skipped.push(...result.skipped);
+    if (result.markers && result.markers.summary.count > 0) {
+      markerSummaries.push({ file: file.file, ...result.markers.summary });
+      markerIssues.push(...result.markers.issues);
+    }
   }
   const deduped = [];
   const seen = new Set();
@@ -286,6 +307,14 @@ function buildLeanReview(opts = {}) {
     findings_count: deduped.length,
     estimated_net_removable_lines: estimated,
     skipped,
+    lean_markers: {
+      files: markerSummaries.length,
+      count: markerSummaries.reduce((sum, item) => sum + item.count, 0),
+      invalid_count: markerSummaries.reduce((sum, item) => sum + item.invalid_count, 0),
+      summaries: markerSummaries,
+      issues: markerIssues,
+      boundary: 'Lean markers are advisory breadcrumbs. They do not justify removing required behavior and do not replace tests, current code evidence, security, accessibility, or user instructions.',
+    },
     project_evidence: {
       artifacts: evidence.artifacts,
       boundary: 'Project evidence is static and advisory. It does not prove runtime behavior, call flow, dependency severity, or correctness.',
@@ -322,6 +351,15 @@ function renderMarkdown(result) {
   if (result.skipped.length) {
     lines.push('', '## Skipped Boundaries', '');
     for (const item of result.skipped) lines.push(`- ${item.file}: ${item.reasons.join(', ')}`);
+  }
+  if (result.lean_markers && result.lean_markers.count > 0) {
+    lines.push('', '## Lean Markers', '');
+    lines.push(`- Markers: ${result.lean_markers.count}`);
+    lines.push(`- Invalid markers: ${result.lean_markers.invalid_count}`);
+    lines.push(`- Boundary: ${result.lean_markers.boundary}`);
+    for (const issue of result.lean_markers.issues) {
+      lines.push(`- Issue: ${issue.file}:${issue.line} ${issue.kind} ${issue.issue}`);
+    }
   }
   lines.push('', result.final_line, '');
   return lines.join('\n');
