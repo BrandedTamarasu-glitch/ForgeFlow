@@ -86,10 +86,11 @@ Use `/forgeflow-review-auto-evidence --findings <json>` when you want a saved lo
 6. Run `/forgeflow-lean-review` after implementation when you want a separate over-engineering-only lane before normal review.
 7. Use optional `forgeflow: lean: <reason>` or `forgeflow: upgrade when: <trigger>` breadcrumbs only when code or handoff intent would otherwise be unclear.
 8. Run `/forgeflow-lean-debt` when you want a ledger of lean shortcuts, known ceilings, and missing upgrade triggers so deferrals stay visible.
-9. Run `/forgeflow-output-contract --lean-file <path>` on generated lean handoffs or review notes when you want a warning if the writeup is larger than code/result first plus three concise bullets.
-10. Run `/forgeflow-lean-report --write` when you want local aggregate evidence about whether lean guidance is helping: diff size, ceiling capture, review/prose warnings, context savings, and telemetry quality. Later context packs can inject compact lean guidance only when lean mode permits it and the lean report plus related quality gates pass.
-11. Run `/forgeflow-lean-benchmark --baseline <json> --current <json>` when you have comparable aggregate baseline and lean-guided metrics and want a local before/after comparison without raw snippets or hosted telemetry.
-12. Defer or ask the user when the decision says the task is speculative or lacks a concrete requirement.
+9. Run `/forgeflow-lean-audit` when you want repo-wide over-engineering candidates before selecting a cleanup work item.
+10. Run `/forgeflow-output-contract --lean-file <path>` on generated lean handoffs or review notes when you want a warning if the writeup is larger than code/result first plus three concise bullets.
+11. Run `/forgeflow-lean-report --write` when you want local aggregate evidence about whether lean guidance is helping: diff size, ceiling capture, review/prose warnings, context savings, and telemetry quality. Later context packs can inject compact lean guidance only when lean mode permits it and the lean report plus related quality gates pass.
+12. Run `/forgeflow-lean-benchmark --baseline <json> --current <json>` when you have comparable aggregate baseline and lean-guided metrics and want a local before/after comparison without raw snippets or hosted telemetry.
+13. Defer or ask the user when the decision says the task is speculative or lacks a concrete requirement.
 
 ## Ship A Change
 
