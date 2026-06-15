@@ -6,6 +6,16 @@ Forgeflow is currently a local-first developer workflow for Claude Code and Code
 
 Forgeflow now has the local install, health, repair, rollback, release, docs, demo, template-installer, evaluation, adoption, field-validation, distribution-readiness, team-trial guidance, learning path, code topology, project trends, project intelligence, release-to-install preflight, and report surfaces needed for broader use. The current phase is evidence-driven stabilization: run bounded maintainer trials, keep smoke and release checks green, collect public-safe summaries, and make targeted fixes from observed evidence.
 
+## Current Release State
+
+Forgeflow 4.3.71 is the latest pushed build. The most recent completed lean phases added:
+
+- Lean activation status, lean debt ledger, whole-repo lean audit, lean benchmark lab, and higher-precision lean review findings.
+- `/forgeflow-lean-review` now reports confidence, replacement guidance, estimated net lines, why-safe/why-not-safe evidence, proof steps, and visible suppressed-candidate records.
+- README, hosted docs, GitHub Wiki source, GitHub Wiki, plugin metadata, changelog, release tag, and GitHub release are current for 4.3.71.
+
+Resume after reboot from a clean `main` worktree at tag `v4.3.71`. No additional phase is currently selected in the tracked roadmap; choose the next item from observed smoke, pilot, or support evidence before starting another feature slice.
+
 ## Planned Deferred Work
 
 The next selected deferred work items are the two safest high-value extensions:
