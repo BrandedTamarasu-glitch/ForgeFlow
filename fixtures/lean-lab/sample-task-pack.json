@@ -1,0 +1,23 @@
+{
+  "schema_version": "1",
+  "name": "Forgeflow lean lab sample task pack",
+  "required_sample_size_per_mode": 2,
+  "tasks": [
+    {
+      "id": "wrapper-cleanup",
+      "title": "Remove a duplicate command-wrapper branch while preserving validation",
+      "validation": [
+        "node scripts/forgeflow/test-command-wrapper-contract.js",
+        "node scripts/forgeflow/test-command-coverage.js"
+      ]
+    },
+    {
+      "id": "docs-trim",
+      "title": "Trim duplicated command documentation without losing command coverage",
+      "validation": [
+        "node scripts/forgeflow/test-doc-links.js",
+        "node scripts/forgeflow/test-command-coverage.js"
+      ]
+    }
+  ]
+}

@@ -92,6 +92,7 @@ const CANONICAL_NON_REQUIRED_MANAGED_SOURCES = [
   'commands/forgeflow-lean-benchmark.md',
   'commands/forgeflow-lean-debt.md',
   'commands/forgeflow-lean-decision.md',
+  'commands/forgeflow-lean-lab.md',
   'commands/forgeflow-lean-mode.md',
   'commands/forgeflow-lean-report.md',
   'commands/forgeflow-lean-review.md',

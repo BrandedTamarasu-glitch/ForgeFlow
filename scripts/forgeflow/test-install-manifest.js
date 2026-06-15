@@ -98,6 +98,7 @@ const checks = [
   ['runtime helpers include lean benchmark', RUNTIME_HELPERS.includes('scripts/forgeflow/render-lean-benchmark.js')],
   ['runtime helpers include lean debt', RUNTIME_HELPERS.includes('scripts/forgeflow/render-lean-debt.js')],
   ['runtime helpers include lean decision', RUNTIME_HELPERS.includes('scripts/forgeflow/render-lean-decision.js')],
+  ['runtime helpers include lean lab', RUNTIME_HELPERS.includes('scripts/forgeflow/render-lean-lab.js')],
   ['runtime helpers include lean mode', RUNTIME_HELPERS.includes('scripts/forgeflow/render-lean-mode.js')],
   ['runtime helpers include lean review', RUNTIME_HELPERS.includes('scripts/forgeflow/render-lean-review.js')],
   ['runtime helpers include lean status', RUNTIME_HELPERS.includes('scripts/forgeflow/render-lean-status.js')],

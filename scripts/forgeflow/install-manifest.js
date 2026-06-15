@@ -89,6 +89,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/render-lean-benchmark.js',
   'scripts/forgeflow/render-lean-debt.js',
   'scripts/forgeflow/render-lean-decision.js',
+  'scripts/forgeflow/render-lean-lab.js',
   'scripts/forgeflow/render-lean-mode.js',
   'scripts/forgeflow/render-lean-report.js',
   'scripts/forgeflow/render-lean-review.js',

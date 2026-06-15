@@ -1,0 +1,101 @@
+{
+  "schema_version": "1",
+  "runs": [
+    {
+      "task_id": "wrapper-cleanup",
+      "mode": "baseline",
+      "loc": 42,
+      "files_changed": 2,
+      "validation_passed": true,
+      "review_findings": 2,
+      "context_tokens": 900,
+      "cost_usd": 0.05,
+      "latency_ms": 5000,
+      "follow_up_fixes": 1
+    },
+    {
+      "task_id": "docs-trim",
+      "mode": "baseline",
+      "loc": 24,
+      "files_changed": 1,
+      "validation_passed": true,
+      "review_findings": 1,
+      "context_tokens": 700,
+      "cost_usd": 0.04,
+      "latency_ms": 4000,
+      "follow_up_fixes": 0
+    },
+    {
+      "task_id": "wrapper-cleanup",
+      "mode": "balanced",
+      "loc": 28,
+      "files_changed": 1,
+      "validation_passed": true,
+      "review_findings": 1,
+      "context_tokens": 620,
+      "cost_usd": 0.03,
+      "latency_ms": 3500,
+      "follow_up_fixes": 0
+    },
+    {
+      "task_id": "docs-trim",
+      "mode": "balanced",
+      "loc": 16,
+      "files_changed": 1,
+      "validation_passed": true,
+      "review_findings": 0,
+      "context_tokens": 520,
+      "cost_usd": 0.02,
+      "latency_ms": 3200,
+      "follow_up_fixes": 0
+    },
+    {
+      "task_id": "wrapper-cleanup",
+      "mode": "strict",
+      "loc": 18,
+      "files_changed": 1,
+      "validation_passed": true,
+      "review_findings": 0,
+      "context_tokens": 420,
+      "cost_usd": 0.02,
+      "latency_ms": 2900,
+      "follow_up_fixes": 0
+    },
+    {
+      "task_id": "docs-trim",
+      "mode": "strict",
+      "loc": 12,
+      "files_changed": 1,
+      "validation_passed": true,
+      "review_findings": 0,
+      "context_tokens": 400,
+      "cost_usd": 0.02,
+      "latency_ms": 2800,
+      "follow_up_fixes": 0
+    },
+    {
+      "task_id": "wrapper-cleanup",
+      "mode": "ultra",
+      "loc": 10,
+      "files_changed": 1,
+      "validation_passed": true,
+      "review_findings": 0,
+      "context_tokens": 330,
+      "cost_usd": 0.01,
+      "latency_ms": 2500,
+      "follow_up_fixes": 0
+    },
+    {
+      "task_id": "docs-trim",
+      "mode": "ultra",
+      "loc": 8,
+      "files_changed": 1,
+      "validation_passed": true,
+      "review_findings": 0,
+      "context_tokens": 300,
+      "cost_usd": 0.01,
+      "latency_ms": 2400,
+      "follow_up_fixes": 0
+    }
+  ]
+}
