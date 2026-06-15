@@ -6,7 +6,7 @@ allowed-tools:
   - Bash
 ---
 <objective>
-Show a read-only over-engineering review lane for the current diff. It reports only lean complexity findings with explicit tags: `delete`, `stdlib`, `native`, `reuse`, `yagni`, `shrink`, and `prose-bloat`. Findings include static project evidence from topology, invocation hints, package dependency deltas, and optional `forgeflow: lean` markers when those artifacts are available.
+Show a read-only over-engineering review lane for the current diff. It reports only lean complexity findings with explicit tags: `delete`, `stdlib`, `native`, `reuse`, `yagni`, `shrink`, and `prose-bloat`. Findings include static project evidence from topology, invocation hints, package dependency deltas, optional `forgeflow: lean` markers, confidence, replacement guidance, why-safe/why-not-safe evidence, proof steps, and suppressed false-positive candidates when those artifacts are available.
 </objective>
 
 <process>
@@ -59,6 +59,8 @@ env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/render-lean-review.js" "${S
 - [ ] Output is read-only and does not apply fixes.
 - [ ] Findings use only the planned lean tags.
 - [ ] Static project evidence is labeled advisory and is not treated as runtime proof.
+- [ ] Findings include confidence, replacement guidance, estimated net lines, why-safe/why-not-safe evidence, and proof steps.
+- [ ] Obvious semantic false positives are suppressed and reported as skipped boundaries, not hidden.
 - [ ] Lean markers are reported as advisory breadcrumbs and cannot override requirements, tests, security, accessibility, or user instructions.
 - [ ] Output says this is not a correctness, security, performance, accessibility, or validation review.
 - [ ] Clean diffs end with `Lean already. Ship.`

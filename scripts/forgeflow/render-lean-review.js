@@ -183,6 +183,81 @@ function projectEvidence(file, findingClass, evidence) {
   return items.slice(0, 5);
 }
 
+function nodeFanIn(file, evidence) {
+  const node = nodeForFile(evidence.topology || {}, file.file);
+  return node ? Number(node.fan_in || 0) : 0;
+}
+
+function suppressionReasons(file, tag, evidence) {
+  const text = addedText(file);
+  const reasons = [];
+  if (tag === 'stdlib' && /\b(localeCompare|Intl\.Collator|domain order|semantic order|stable sort|custom comparator)\b/i.test(text)) {
+    reasons.push('sort-semantics-present');
+  }
+  if (tag === 'native' && /\b(date range|range selection|timezone|time zone|masked input|recurrence|calendar grid)\b/i.test(text)) {
+    reasons.push('native-date-input-may-not-cover-requirement');
+  }
+  if (['reuse', 'yagni', 'shrink'].includes(tag) && /\b(second caller exists|third caller exists|shared by|used by another|existing consumer)\b/i.test(text)) {
+    reasons.push('explicit-reuse-or-second-caller-evidence');
+  }
+  if (['reuse', 'yagni', 'shrink'].includes(tag) && nodeFanIn(file, evidence) >= 3) {
+    reasons.push('high-static-fan-in-needs-manual-review');
+  }
+  return reasons;
+}
+
+function replacementFor(tag, file, deps = []) {
+  if (deps.length) return `Check standard library, native platform, installed dependencies, and project patterns before adding ${deps.join(', ')}.`;
+  const replacements = {
+    delete: 'Delete the disabled or explicitly temporary lines if no current requirement depends on them.',
+    stdlib: 'Use the runtime sort API or an existing project sort helper unless custom ordering semantics are required.',
+    native: 'Use native browser input or an existing project component unless the current requirement needs custom date behavior.',
+    reuse: 'Reuse the existing project pattern or inline the call until a second caller proves the helper.',
+    yagni: 'Remove future-facing registry/factory structure until a current requirement needs it.',
+    shrink: 'Inline the manager/factory layer or keep direct project-consistent code for this slice.',
+    'prose-bloat': 'Keep the result, skipped work, validation, and upgrade trigger; move background narrative out of the handoff.',
+  };
+  return replacements[tag] || 'Prefer the smallest current implementation that preserves required behavior.';
+}
+
+function confidenceFor(tag, projectEvidenceItems, suppressions, deps = []) {
+  if (suppressions.length) return 'low';
+  if (deps.length) return 'medium';
+  if (tag === 'delete') return 'high';
+  if (projectEvidenceItems.some((item) => item.includes('second-caller evidence: no repeated'))) return 'high';
+  if (projectEvidenceItems.length >= 2) return 'medium';
+  return 'medium';
+}
+
+function proofFor(file, tag, deps = []) {
+  const proof = [
+    `Inspect ${file.file} against the current requirement before removing anything.`,
+    'Run the focused validation that covers the touched behavior.',
+  ];
+  if (deps.length) proof.push(`Confirm ${deps.join(', ')} is not already covered by stdlib, native platform, installed deps, or project helpers.`);
+  if (tag === 'prose-bloat') proof.push('Confirm the shortened handoff still names result, validation, deferrals, and upgrade trigger.');
+  return proof;
+}
+
+function enrichFinding(finding, file, deps, projectEvidenceItems, suppressions) {
+  const confidence = confidenceFor(finding.class, projectEvidenceItems, suppressions, deps);
+  return {
+    ...finding,
+    confidence,
+    replacement: replacementFor(finding.class, file, deps),
+    estimated_net_lines: finding.removable_lines,
+    why_safe: [
+      finding.evidence,
+      ...projectEvidenceItems.filter((item) => item.includes('no repeated') || item.includes('dependency delta') || item.includes('invocation hint')).slice(0, 3),
+    ],
+    why_not_safe: [
+      'Lean findings are advisory only and cannot remove explicit requirements, validation, security, accessibility, data-loss prevention, or user-requested behavior.',
+      ...projectEvidenceItems.filter((item) => item.includes('second-caller evidence:') && !item.includes('no repeated')).slice(0, 2),
+    ],
+    proof: proofFor(file, finding.class, deps),
+  };
+}
+
 function boundaryReasons(file) {
   const text = addedText(file);
   const reasons = [];
@@ -221,6 +296,7 @@ function makeFinding(file, tag, title, evidence, line, removableLines = 1, proje
     evidence,
     project_evidence: projectEvidenceItems,
     removable_lines: removableLines,
+    estimated_net_lines: removableLines,
   };
 }
 
@@ -236,10 +312,19 @@ function findingsForFile(file, evidence = { topology: {}, invocation: {} }) {
   if (boundaries.length) return { findings: [], skipped: [{ file: file.file, reasons: boundaries }] };
   const text = addedText(file);
   const findings = [];
+  const suppressed = [];
   const markers = markerReview(file);
   const add = (tag, title, evidenceText, pattern, removableLines = 1) => {
     if (findings.some((item) => item.class === tag)) return;
-    findings.push(makeFinding(file, tag, title, evidenceText, firstLine(file, pattern), removableLines, projectEvidence(file, tag, evidence)));
+    const deps = tag === 'reuse' ? dependencyAdditions(file) : [];
+    const projectEvidenceItems = projectEvidence(file, tag, evidence);
+    const suppressions = deps.length ? [] : suppressionReasons(file, tag, evidence);
+    if (suppressions.length) {
+      suppressed.push({ file: file.file, class: tag, line: firstLine(file, pattern), reasons: suppressions });
+      return;
+    }
+    const finding = makeFinding(file, tag, title, evidenceText, firstLine(file, pattern), removableLines, projectEvidenceItems);
+    findings.push(enrichFinding(finding, file, deps, projectEvidenceItems, suppressions));
   };
 
   if (/\b(if\s*\(\s*false\s*\)|dead code|TODO:\s*remove|temporary unused)\b/i.test(text)) {
@@ -265,8 +350,11 @@ function findingsForFile(file, evidence = { topology: {}, invocation: {} }) {
     add('reuse', 'New dependency should cite stdlib, native, installed, or project-pattern alternatives first.', `Package diff adds ${deps.join(', ')}; verify the project does not already cover this capability.`, /^\s*"[^"]+"\s*:\s*"[^"]+"/, Math.max(1, deps.length));
   }
   const prose = proseBloat(file);
-  if (prose) findings.push({ ...prose, project_evidence: projectEvidence(file, prose.class, evidence) });
-  return { findings, skipped: [], markers };
+  if (prose) {
+    const projectEvidenceItems = projectEvidence(file, prose.class, evidence);
+    findings.push(enrichFinding({ ...prose, project_evidence: projectEvidenceItems }, file, [], projectEvidenceItems, []));
+  }
+  return { findings, skipped: [], suppressed, markers };
 }
 
 function buildLeanReview(opts = {}) {
@@ -282,6 +370,7 @@ function buildLeanReview(opts = {}) {
     const result = findingsForFile(file, evidence);
     findings.push(...result.findings);
     skipped.push(...result.skipped);
+    skipped.push(...(result.suppressed || []).map((item) => ({ file: item.file, reasons: [`suppressed-${item.class}`, ...item.reasons], line: item.line })));
     if (result.markers && result.markers.summary.count > 0) {
       markerSummaries.push({ file: file.file, ...result.markers.summary });
       markerIssues.push(...result.markers.issues);
@@ -342,11 +431,16 @@ function renderMarkdown(result) {
   lines.push('## Findings', '');
   for (const finding of result.findings) {
     lines.push(`- ${finding.class}: ${finding.file}:${finding.line} - ${finding.title}`);
+    lines.push(`  - Confidence: ${finding.confidence}`);
     lines.push(`  - Evidence: ${finding.evidence}`);
     if (Array.isArray(finding.project_evidence) && finding.project_evidence.length) {
       lines.push(`  - Project evidence: ${finding.project_evidence.join('; ')}`);
     }
-    lines.push(`  - Removable lines: ${finding.removable_lines}`);
+    lines.push(`  - Replacement: ${finding.replacement}`);
+    lines.push(`  - Estimated net lines: ${finding.estimated_net_lines}`);
+    if (Array.isArray(finding.why_safe) && finding.why_safe.length) lines.push(`  - Why safe: ${finding.why_safe.join('; ')}`);
+    if (Array.isArray(finding.why_not_safe) && finding.why_not_safe.length) lines.push(`  - Why not safe: ${finding.why_not_safe.join('; ')}`);
+    if (Array.isArray(finding.proof) && finding.proof.length) lines.push(`  - Proof: ${finding.proof.join('; ')}`);
   }
   if (result.skipped.length) {
     lines.push('', '## Skipped Boundaries', '');

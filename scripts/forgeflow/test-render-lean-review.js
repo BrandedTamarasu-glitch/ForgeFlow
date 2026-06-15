@@ -67,6 +67,16 @@ const markdown = renderMarkdown(result);
 const parsed = parseDiff(diff);
 const schema = checkReviewEvidenceSchema(result.findings);
 const clean = buildLeanReview({ root: process.cwd(), diffText: 'diff --git a/src/a.js b/src/a.js\n--- a/src/a.js\n+++ b/src/a.js\n@@ -1 +1 @@\n+const ok = true;\n' });
+const semanticSort = buildLeanReview({ root: process.cwd(), diffText: [
+  'diff --git a/src/sort.js b/src/sort.js',
+  '--- a/src/sort.js',
+  '+++ b/src/sort.js',
+  '@@ -1,1 +1,7 @@',
+  '+function customSort(items) {',
+  '+  return items.sort((a, b) => a.label.localeCompare(b.label));',
+  '+}',
+  '',
+].join('\n') });
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-lean-review-'));
 const diffFile = path.join(tmp, 'diff.patch');
 fs.writeFileSync(diffFile, diff);
@@ -99,9 +109,11 @@ const checks = [
   ['detects every planned tag', TAGS.every((tag) => foundTags.has(tag))],
   ['skips hard boundary scopes', result.skipped.some((item) => item.file === 'src/auth.js') && result.skipped.some((item) => item.file === 'src/form.js')],
   ['schema compatible findings', schema.status === 'pass' && result.findings.every((item) => item.source === 'forgeflow-lean-review' && item.tier === 'NIT' && item.file && item.line > 0)],
-  ['renders markdown with estimate', markdown.includes('# Forgeflow Lean Review') && markdown.includes('Estimated net removable lines:') && markdown.includes('## Skipped Boundaries')],
+  ['adds precision fields', result.findings.every((item) => item.confidence && item.replacement && item.estimated_net_lines > 0 && Array.isArray(item.why_safe) && Array.isArray(item.why_not_safe) && Array.isArray(item.proof))],
+  ['renders markdown with estimate', markdown.includes('# Forgeflow Lean Review') && markdown.includes('Estimated net removable lines:') && markdown.includes('## Skipped Boundaries') && markdown.includes('Confidence:') && markdown.includes('Replacement:')],
   ['renders lean marker summary', markdown.includes('## Lean Markers') && markdown.includes('marker-missing-detail')],
   ['clean diff ships', clean.status === 'clean' && clean.final_line === 'Lean already. Ship.' && renderMarkdown(clean).includes('Lean already. Ship.')],
+  ['semantic sort false positive suppressed', semanticSort.status === 'clean' && semanticSort.skipped.some((item) => item.reasons.includes('suppressed-stdlib') && item.reasons.includes('sort-semantics-present'))],
   ['reads diff file safely', fromFile.findings_count === result.findings_count],
   ['dependency delta gets project evidence', packageFinding && packageFinding.project_evidence.some((item) => item.includes('dependency delta: added left-pad')) && packageFinding.project_evidence.some((item) => item.includes('invocation hint'))],
   ['topology evidence enriches findings', demoFinding && demoFinding.project_evidence.some((item) => item.includes('static topology')) && demoFinding.project_evidence.some((item) => item.includes('second-caller evidence'))],
