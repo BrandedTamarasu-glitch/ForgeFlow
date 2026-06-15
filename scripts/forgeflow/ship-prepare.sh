@@ -166,6 +166,52 @@ node "$HELPER_ROOT/scripts/forgeflow/check-implementation-notes.js" \
   --json > "$NOTES_CHECK_JSON"
 NOTES_CHECK_STATUS="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("status", "unknown"))' "$NOTES_CHECK_JSON")"
 
+LEAN_READINESS_JSON="$SHIP_DIR/lean-readiness.json"
+python3 - <<'PY' "$LEAN_READINESS_JSON" "$FORGEFLOW_DIR/context/lean-decision.json" "$FORGEFLOW_DIR/context/lean-report.json" "$IMPLEMENTATION_NOTES_PATH"
+import json, pathlib, sys
+out_path, decision_path, report_path, notes_path = sys.argv[1:]
+decision = pathlib.Path(decision_path)
+report = pathlib.Path(report_path)
+notes = pathlib.Path(notes_path)
+issues = []
+if not decision.exists():
+  status = "not-applicable"
+  reason = "No lean decision artifact is present."
+else:
+  status = "pass"
+  reason = "Lean decision has matching report and ceiling evidence."
+  if not report.exists():
+    issues.append({
+      "code": "lean-report-missing",
+      "message": "Lean decision exists but lean-report.json is missing.",
+      "fix": "Run /forgeflow-lean-report --write before relying on lean metrics.",
+    })
+  notes_text = notes.read_text(encoding="utf8") if notes.exists() else ""
+  if not any(phrase in notes_text for phrase in ["Lean path selected", "Known ceiling", "Upgrade trigger"]):
+    issues.append({
+      "code": "lean-ceiling-evidence-missing",
+      "message": "Lean decision exists but implementation notes do not show ceiling or upgrade-trigger evidence.",
+      "fix": "Record the lean ceiling with record-implementation-notes.js --lean-decision.",
+    })
+  if issues:
+    status = "warn"
+    reason = "Lean decision exists, but lean report or ceiling evidence is missing."
+payload = {
+  "schema_version": "1",
+  "status": status,
+  "reason": reason,
+  "decision_path": str(decision),
+  "report_path": str(report),
+  "notes_path": str(notes),
+  "issues": issues,
+  "boundary": "Lean readiness is advisory. It does not bypass or fail review gate, PR creation, push, CI follow-up, security, accessibility, validation, or user instructions by itself.",
+}
+path = pathlib.Path(out_path)
+path.parent.mkdir(parents=True, exist_ok=True)
+path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf8")
+PY
+LEAN_READINESS_STATUS="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("status", "unknown"))' "$LEAN_READINESS_JSON")"
+
 PROJECT_LEARNINGS_JSON="$SHIP_DIR/project-learnings-rollup.json"
 node "$HELPER_ROOT/scripts/forgeflow/show-project-learnings.js" \
   --project-dir "$FORGEFLOW_DIR" \
@@ -190,6 +236,11 @@ $SUMMARY_TEXT
 - Status: $NOTES_CHECK_STATUS
 - Report: $NOTES_CHECK_JSON
 
+## Lean Readiness
+
+- Status: $LEAN_READINESS_STATUS
+- Report: $LEAN_READINESS_JSON
+
 ## Project Learnings
 
 - Refreshed: $PROJECT_LEARNINGS_PATH
@@ -200,6 +251,7 @@ $SUMMARY_TEXT
 - $SHIP_DIR/ship-summary.json
 - $SHIP_DIR/ship-presentation.html
 - $NOTES_CHECK_JSON
+- $LEAN_READINESS_JSON
 - $PROJECT_LEARNINGS_JSON
 EOF
 
@@ -207,4 +259,5 @@ printf 'SUMMARY_JSON=%s\n' "$SHIP_DIR/ship-summary.json"
 printf 'PRESENTATION_HTML=%s\n' "$SHIP_DIR/ship-presentation.html"
 printf 'PR_BODY_MD=%s\n' "$BODY_FILE"
 printf 'IMPLEMENTATION_NOTES_CHECK_JSON=%s\n' "$NOTES_CHECK_JSON"
+printf 'LEAN_READINESS_JSON=%s\n' "$LEAN_READINESS_JSON"
 printf 'PROJECT_LEARNINGS_JSON=%s\n' "$PROJECT_LEARNINGS_JSON"

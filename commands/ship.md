@@ -45,6 +45,8 @@ PROJECT_NAME=$(basename "$(pwd)")
 FORGEFLOW_DIR=".forgeflow/${PROJECT_NAME}"
 NOTES_PATH="${FORGEFLOW_DIR}/implementation-notes.md"
 PROJECT_LEARNINGS_PATH="${FORGEFLOW_DIR}/project-learnings.md"
+LEAN_DECISION_JSON_PATH="${FORGEFLOW_DIR}/context/lean-decision.json"
+LEAN_REPORT_JSON_PATH="${FORGEFLOW_DIR}/context/lean-report.json"
 ```
 </context>
 
@@ -107,6 +109,14 @@ Read each of these if present -- do not fail if missing:
 - `${FORGEFLOW_DIR}/project-learnings.md`
 
 Also check for `CONTEXT.md` in the working directory. If it exists, read it and pass to Compass and Atlas — it provides service-specific context that improves presentation quality.
+
+### 1d.0 Lean readiness advisory
+
+If `${LEAN_DECISION_JSON_PATH}` exists, check whether `${LEAN_REPORT_JSON_PATH}` exists and whether `${NOTES_PATH}` contains a lean ceiling or upgrade trigger phrase such as `Lean path selected`, `Known ceiling`, or `Upgrade trigger`.
+
+- If the lean decision exists and either the report or ceiling evidence is missing, print a warning and continue:
+  "Lean readiness warning: lean decision exists, but lean report or ceiling evidence is missing. Run `/forgeflow-lean-report --write` or record the ceiling before relying on lean metrics."
+- This is advisory only. It must not bypass or fail the review gate, push, PR creation, or CI follow-up by itself.
 
 ### 1d.1 Implementation notes quality check
 Resolve the helper directory before running release-gated checks:

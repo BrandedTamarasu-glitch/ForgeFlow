@@ -169,6 +169,7 @@ const shipPrepareResult = spawnSync(path.join(repoRoot, 'scripts/forgeflow/ship-
 const preparedSummaryPath = path.join(shipNotesDir, 'ship', 'ship-summary.json');
 const preparedHtmlPath = path.join(shipNotesDir, 'ship', 'ship-presentation.html');
 const preparedCheckPath = path.join(shipNotesDir, 'ship', 'implementation-notes-check.json');
+const preparedLeanReadinessPath = path.join(shipNotesDir, 'ship', 'lean-readiness.json');
 const preparedLearningsPath = path.join(shipNotesDir, 'ship', 'project-learnings-rollup.json');
 const preparedBodyPath = path.join(shipNotesDir, 'ship', 'pr-body.md');
 const preparedSummary = fs.existsSync(preparedSummaryPath)
@@ -177,6 +178,9 @@ const preparedSummary = fs.existsSync(preparedSummaryPath)
 const preparedHtml = fs.existsSync(preparedHtmlPath) ? fs.readFileSync(preparedHtmlPath, 'utf8') : '';
 const preparedCheck = fs.existsSync(preparedCheckPath)
   ? JSON.parse(fs.readFileSync(preparedCheckPath, 'utf8'))
+  : {};
+const preparedLeanReadiness = fs.existsSync(preparedLeanReadinessPath)
+  ? JSON.parse(fs.readFileSync(preparedLeanReadinessPath, 'utf8'))
   : {};
 const preparedLearnings = fs.existsSync(preparedLearningsPath)
   ? JSON.parse(fs.readFileSync(preparedLearningsPath, 'utf8'))
@@ -201,8 +205,10 @@ const checks = [
   ['implement refreshes project learnings after notes', files.implement.includes('show-project-learnings.js --project-dir') && files.implement.includes('PROJECT_LEARNINGS_PATH')],
   ['review consumes notes as context', files.review.includes('NOTES_PATH="${FORGEFLOW_DIR}/implementation-notes.md"') && files.review.includes('not proof')],
   ['review consumes project learnings as guidance', files.review.includes('PROJECT_LEARNINGS_PATH="${FORGEFLOW_DIR}/project-learnings.md"') && files.review.includes('project_learnings_content')],
+  ['review auto-runs lean advisory lane', files.review.includes('Step 3.4b: Automatic lean review advisory lane') && files.review.includes('LEAN_REVIEW_JSON="${CONTEXT_PACK_DIR}/lean-review.json"') && files.review.includes('Lean Review Advisory')],
   ['ship summarizes notes', files.ship.includes('"implementation_notes"') && files.ship.includes('do not dump raw notes')],
   ['ship refreshes project learnings', files.ship.includes('show-project-learnings.js') && files.ship.includes('PROJECT_LEARNINGS_PATH="${FORGEFLOW_DIR}/project-learnings.md"')],
+  ['ship warns on lean readiness gaps', files.ship.includes('Lean readiness warning') && files.ship.includes('LEAN_DECISION_JSON_PATH') && files.ship.includes('LEAN_REPORT_JSON_PATH')],
   ['recorder helper exists', files.recorder.includes('recordImplementationNotes') && files.recorder.includes('VALID_CATEGORIES')],
   ['recorder supports lean decision ceiling capture', files.recorder.includes('--lean-decision <json-file>') && leanResult.entries === 1 && notesAfterLean.includes('Lean path selected: simplify-first') && notesAfterLean.includes('Upgrade trigger: Add abstraction after a second caller appears')],
   ['recorder installed as runtime helper', files.installManifest.includes('scripts/forgeflow/record-implementation-notes.js')],
@@ -215,6 +221,8 @@ const checks = [
   ['ship prepare renders notes html', preparedHtml.includes('Implementation Notes') && preparedHtml.includes('Ship helper needed a summary bridge')],
   ['ship prepare writes notes check', preparedCheck.status === 'pass' && preparedCheck.ship_summary === preparedSummaryPath],
   ['ship prepare body includes notes check', preparedBody.includes('## Implementation Notes Check') && preparedBody.includes('implementation-notes-check.json')],
+  ['ship prepare writes lean readiness', preparedLeanReadiness.status === 'not-applicable' && preparedLeanReadinessPath.endsWith('lean-readiness.json')],
+  ['ship prepare body includes lean readiness', preparedBody.includes('## Lean Readiness') && preparedBody.includes('lean-readiness.json')],
   ['ship prepare refreshes project learnings', preparedLearnings.out === path.join(shipNotesDir, 'project-learnings.md')],
   ['ship prepare body includes project learnings', preparedBody.includes('## Project Learnings') && preparedBody.includes('project-learnings-rollup.json')],
   ['atlas present schema includes notes', files.atlasPresent.includes('"implementation_notes"')],

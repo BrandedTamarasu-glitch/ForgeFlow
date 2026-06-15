@@ -457,7 +457,22 @@ if [ -x "${HELPER_DIR}/check-context-budget.js" ]; then
 fi
 ```
 
+## Step 3.4b: Automatic lean review advisory lane
+
+When the lean-review helper is available, run it automatically as a read-only advisory lane. This writes local artifacts only and must not affect correctness/security/accessibility/performance verdicts unless a reviewer independently confirms the same concern with current code evidence.
+
+```bash
+LEAN_REVIEW_MD="${CONTEXT_PACK_DIR}/lean-review.md"
+LEAN_REVIEW_JSON="${CONTEXT_PACK_DIR}/lean-review.json"
+if [ -x "${HELPER_DIR}/render-lean-review.js" ]; then
+  mkdir -p "$CONTEXT_PACK_DIR"
+  "${HELPER_DIR}/render-lean-review.js" --root "$PROJECT_ROOT" --project-dir "$FORGEFLOW_DIR" > "$LEAN_REVIEW_MD" || true
+  "${HELPER_DIR}/render-lean-review.js" --root "$PROJECT_ROOT" --project-dir "$FORGEFLOW_DIR" --json > "$LEAN_REVIEW_JSON" || true
+fi
+```
+
 If the context pack exists, pass the matching `agent-packets/<agent>.md` file contents to each reviewer, `route.json` and `synthesis-input.json` to Arbiter, and `synthesis-input.json` plus Compass's phase artifacts to Compass. The packet includes a **Latest Insights** section from project learnings; agents may use it to anticipate recurring risks and validation patterns, but every finding still needs current evidence. If latest insights are blocked, read `latest-insights-report.json` for the gate status and top check issues. For JS/TS changes, packets also include a **Code Topology** section with static fan-in/fan-out, changed-file neighbor guidance, and code-map trend metadata, while `synthesis-input.json` exposes `code_topology_summary` for Arbiter and Compass. Treat topology as import-graph context, not runtime proof.
+If `lean-review.md` or `lean-review.json` exists, pass it as a separate **Lean Review Advisory** lane to Arbiter and Compass. It is over-engineering guidance only: it cannot block approval, change review routing, apply fixes, delete code, remove dependencies, shrink validation, or override current evidence by itself.
 
 ## Step 3.5: Context Pre-Loading
 
