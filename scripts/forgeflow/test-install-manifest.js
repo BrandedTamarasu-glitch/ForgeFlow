@@ -98,6 +98,7 @@ const checks = [
   ['runtime helpers include lean decision', RUNTIME_HELPERS.includes('scripts/forgeflow/render-lean-decision.js')],
   ['runtime helpers include lean mode', RUNTIME_HELPERS.includes('scripts/forgeflow/render-lean-mode.js')],
   ['runtime helpers include lean review', RUNTIME_HELPERS.includes('scripts/forgeflow/render-lean-review.js')],
+  ['runtime helpers include lean status', RUNTIME_HELPERS.includes('scripts/forgeflow/render-lean-status.js')],
   ['runtime helpers include learning capture nudge', RUNTIME_HELPERS.includes('scripts/forgeflow/render-learning-capture-nudge.js')],
   ['runtime helpers include next work ranking', RUNTIME_HELPERS.includes('scripts/forgeflow/render-next-work-ranking.js')],
   ['runtime helpers include outcome capture plan', RUNTIME_HELPERS.includes('scripts/forgeflow/render-outcome-capture-plan.js')],

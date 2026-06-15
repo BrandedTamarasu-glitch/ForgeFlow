@@ -80,14 +80,15 @@ Use `/forgeflow-review-auto-evidence --findings <json>` when you want a saved lo
 
 1. Run `/forgeflow-lean-decision --task "<work item>"` before `/consult` when the risk is over-building, adding a dependency too early, or creating an abstraction before reuse has been checked.
 2. Optionally run `/forgeflow-lean-mode --profile balanced|strict|ultra --write` to persist a project lean preference, or `--profile off --write` to keep lean guidance explicit-only.
-3. Read the reuse candidates, avoid-first list, do-not-simplify boundaries, validation minimum, known ceiling, and upgrade trigger.
-4. Continue with `/consult` when the lean decision says the work is current and bounded. The consultation and implementation handoffs carry the compact lean section forward when the helper is available.
-5. Run `/forgeflow-lean-review` after implementation when you want a separate over-engineering-only lane before normal review.
-6. Use optional `forgeflow: lean: <reason>` or `forgeflow: upgrade when: <trigger>` breadcrumbs only when code or handoff intent would otherwise be unclear.
-7. Run `/forgeflow-output-contract --lean-file <path>` on generated lean handoffs or review notes when you want a warning if the writeup is larger than code/result first plus three concise bullets.
-8. Run `/forgeflow-lean-report --write` when you want local aggregate evidence about whether lean guidance is helping: diff size, ceiling capture, review/prose warnings, context savings, and telemetry quality. Later context packs can inject compact lean guidance only when lean mode permits it and the lean report plus related quality gates pass.
-9. Run `/forgeflow-lean-benchmark --baseline <json> --current <json>` when you have comparable aggregate baseline and lean-guided metrics and want a local before/after comparison without raw snippets or hosted telemetry.
-10. Defer or ask the user when the decision says the task is speculative or lacks a concrete requirement.
+3. Run `/forgeflow-lean-status` when you need to know whether lean guidance is configured, stale, blocked, or eligible for context-pack injection before starting agent-heavy work.
+4. Read the reuse candidates, avoid-first list, do-not-simplify boundaries, validation minimum, known ceiling, and upgrade trigger.
+5. Continue with `/consult` when the lean decision says the work is current and bounded. The consultation and implementation handoffs carry the compact lean section forward when the helper is available.
+6. Run `/forgeflow-lean-review` after implementation when you want a separate over-engineering-only lane before normal review.
+7. Use optional `forgeflow: lean: <reason>` or `forgeflow: upgrade when: <trigger>` breadcrumbs only when code or handoff intent would otherwise be unclear.
+8. Run `/forgeflow-output-contract --lean-file <path>` on generated lean handoffs or review notes when you want a warning if the writeup is larger than code/result first plus three concise bullets.
+9. Run `/forgeflow-lean-report --write` when you want local aggregate evidence about whether lean guidance is helping: diff size, ceiling capture, review/prose warnings, context savings, and telemetry quality. Later context packs can inject compact lean guidance only when lean mode permits it and the lean report plus related quality gates pass.
+10. Run `/forgeflow-lean-benchmark --baseline <json> --current <json>` when you have comparable aggregate baseline and lean-guided metrics and want a local before/after comparison without raw snippets or hosted telemetry.
+11. Defer or ask the user when the decision says the task is speculative or lacks a concrete requirement.
 
 ## Ship A Change
 

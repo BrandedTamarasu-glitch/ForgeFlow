@@ -93,6 +93,7 @@ const CANONICAL_NON_REQUIRED_MANAGED_SOURCES = [
   'commands/forgeflow-lean-mode.md',
   'commands/forgeflow-lean-report.md',
   'commands/forgeflow-lean-review.md',
+  'commands/forgeflow-lean-status.md',
   'commands/forgeflow-learning-action.md',
   'commands/forgeflow-learning-capture-nudge.md',
   'commands/forgeflow-learning-policy.md',
