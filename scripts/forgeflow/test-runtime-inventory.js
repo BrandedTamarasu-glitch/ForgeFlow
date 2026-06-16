@@ -59,7 +59,7 @@ const checks = [
   ['includes nested commands', sources.includes('commands/agent-chat/on.md') && names.includes('agent-chat/on')],
   ['matches health command inventory', sameList(names, health.commands)],
   ['runtime helper list matches install manifest', sameList(helpers, RUNTIME_HELPERS.slice().sort())],
-  ['runtime helper list includes new lean gap helpers', helpers.includes('scripts/forgeflow/render-lean-behavior-eval.js') && helpers.includes('scripts/forgeflow/render-lean-session.js') && helpers.includes('scripts/forgeflow/render-lean-portability-pack.js')],
+  ['runtime helper list includes new lean gap helpers', helpers.includes('scripts/forgeflow/render-lean-behavior-eval.js') && helpers.includes('scripts/forgeflow/render-lean-session.js') && helpers.includes('scripts/forgeflow/render-lean-portability-pack.js') && helpers.includes('scripts/forgeflow/render-lean-eval-pack.js') && helpers.includes('scripts/forgeflow/lean-config.js') && helpers.includes('scripts/forgeflow/lean-rule-builder.js')],
   ['expected runtime sources match managed helpers', sameList(expectedRuntime, helpers)],
   ['expected template sources are managed templates', expectedTemplates.includes('templates/forgeflow-budget.json') && expectedTemplates.every((source) => source.startsWith('templates/'))],
   ['expected install sources include dynamic and static surfaces', expectedInstall.includes('commands/forgeflow-health.md') && expectedInstall.includes('hooks/forgeflow-gate.js') && expectedInstall.includes('templates/forgeflow-budget.json') && expectedInstall.includes('scripts/forgeflow/runtime-inventory.js')],

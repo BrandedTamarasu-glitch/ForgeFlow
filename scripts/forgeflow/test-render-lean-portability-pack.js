@@ -23,7 +23,7 @@ const markdown = renderMarkdown(written);
 const opts = parseArgs(['--root', root, '--project-dir', projectDir, '--profile', 'lite', '--write', '--json']);
 
 const checks = [
-  ['target list stable', TARGETS.length === 5 && TARGETS.some((target) => target.name === 'generic-skill')],
+  ['target list stable', TARGETS.length >= 11 && TARGETS.some((target) => target.name === 'generic-skill') && TARGETS.some((target) => target.name === 'openclaw')],
   ['missing status before write', missing.status === 'missing' && missing.summary.missing === TARGETS.length],
   ['write creates every target', written.status === 'pass' && written.targets.every((target) => fs.existsSync(target.path))],
   ['current after write', current.status === 'pass' && current.targets.every((target) => target.status === 'current')],

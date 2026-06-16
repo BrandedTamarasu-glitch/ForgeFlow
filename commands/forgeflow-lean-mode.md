@@ -1,16 +1,16 @@
 ---
 name: forgeflow-lean-mode
-description: Show or persist the project lean guidance profile
-argument-hint: "[--profile lite|off|balanced|strict|ultra] [--write] [--json]"
+description: Show or persist the lean guidance profile
+argument-hint: "[--profile lite|off|balanced|strict|ultra] [--write] [--user] [--json]"
 allowed-tools:
   - Bash
 ---
 <objective>
-Show or persist the project-local lean guidance profile used by context packs. The mode is advisory only; it never edits code, removes dependencies, shrinks validation, changes routing, commits, pushes, or calls the network.
+Show or persist the project-local or user-level lean guidance profile used by context packs and lean activation. The mode is advisory only; it never edits code, removes dependencies, shrinks validation, changes routing, commits, pushes, or calls the network.
 </objective>
 
 <process>
-Validate `$ARGUMENTS`. Accept only no arguments, `--json`, `--write`, and `--profile lite|off|balanced|strict|ultra`.
+Validate `$ARGUMENTS`. Accept only no arguments, `--json`, `--write`, `--user`, and `--profile lite|off|balanced|strict|ultra`.
 
 ```bash
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -31,7 +31,7 @@ while [ "$i" -lt "${#USER_ARGS[@]}" ]; do
   arg="${USER_ARGS[$i]}"
   case "$arg" in
     "") ;;
-    --json|--write) SAFE_ARGS+=("$arg") ;;
+    --json|--write|--user) SAFE_ARGS+=("$arg") ;;
     --profile)
       next_i=$((i + 1))
       profile="${USER_ARGS[$next_i]:-}"
@@ -50,8 +50,8 @@ env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/render-lean-mode.js" "${SAF
 </process>
 
 <success_criteria>
-- [ ] Output shows the effective project lean profile and whether lean guidance is enabled.
-- [ ] `--write` writes only `.forgeflow/<project>/context/lean-policy.md` and `.json`.
+- [ ] Output shows the effective lean profile and whether lean guidance is enabled.
+- [ ] `--write` writes only `.forgeflow/<project>/context/lean-policy.md` and `.json`; `--user --write` writes only the user-level Forgeflow lean config.
 - [ ] Profiles are limited to `lite`, `off`, `balanced`, `strict`, and `ultra`.
 - [ ] The command remains advisory and does not change implementation, review, commit, push, or network behavior.
 </success_criteria>

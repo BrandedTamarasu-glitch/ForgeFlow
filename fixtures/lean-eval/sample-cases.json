@@ -1,0 +1,31 @@
+{
+  "schema_version": "1",
+  "cases": [
+    {
+      "name": "hardware-calibration-good",
+      "text": "function readTemp(raw) { if (raw > 0) return raw + offset; }\nconst offset = 0; // calibration offset, measure your own reference thermometer\nassert(readTemp(1) === 1);\nUsed native platform and existing dependency checks before custom code.",
+      "expect": "pass"
+    },
+    {
+      "name": "hardware-calibration-bad",
+      "text": "function moveServo(ms) { if (ms) return ms; } // servo timer\nassert(moveServo(1) === 1);\nUsed native platform.",
+      "expect": "fail"
+    },
+    {
+      "name": "requested-explanation-good",
+      "requested_explanation": true,
+      "text": "- Replaced the custom wrapper because the platform API covers the current behavior.\n- Kept the validation branch so trust-boundary input still fails closed.\n- Left one assert so the parser has a runnable check.\n- Deferred the broader abstraction until a second caller appears.\n- This is intentionally longer because the user requested a detailed explanation of the tradeoff.",
+      "expect": "warn"
+    },
+    {
+      "name": "dependency-avoidance-bad",
+      "text": "npm install left-pad\nfunction pad(x) { if (x) return x; }\nassert(pad('a') === 'a');",
+      "expect": "fail"
+    },
+    {
+      "name": "explicit-requirement-bad",
+      "text": "Skipped the explicit accessibility requirement to keep this short.",
+      "expect": "fail"
+    }
+  ]
+}

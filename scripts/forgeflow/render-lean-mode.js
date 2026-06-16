@@ -2,47 +2,18 @@
 const fs = require('fs');
 const path = require('path');
 const { isPathInside, safeReadTextFile, writeFileSafe, writeJsonSafe } = require('./file-safety');
-
-const PROFILES = {
-  off: {
-    enabled: false,
-    label: 'off',
-    behavior: 'Do not inject lean guidance into context packs.',
-    guidance: 'Lean checks stay available as explicit commands only.',
-    max_guidance_tokens: 0,
-  },
-  lite: {
-    enabled: true,
-    label: 'lite',
-    behavior: 'Build what was asked, but name the smaller lean alternative in one concise line.',
-    guidance: 'Use lite when the team wants visibility into lean options without having lean guidance steer implementation.',
-    max_guidance_tokens: 900,
-  },
-  balanced: {
-    enabled: true,
-    label: 'balanced',
-    behavior: 'Prefer reuse, native, standard-library, and project-pattern checks before custom code.',
-    guidance: 'Keep lean guidance advisory and preserve explicit requirements, safety, accessibility, validation, and data-loss safeguards.',
-    max_guidance_tokens: 2200,
-  },
-  strict: {
-    enabled: true,
-    label: 'strict',
-    behavior: 'Require a clear reason before adding abstractions, dependencies, broad wrappers, or future-proofing.',
-    guidance: 'Use the smallest project-consistent change unless the spec, second caller, or validation evidence justifies expansion.',
-    max_guidance_tokens: 1800,
-  },
-  ultra: {
-    enabled: true,
-    label: 'ultra',
-    behavior: 'Challenge every new file, dependency, abstraction, and long explanation before implementation.',
-    guidance: 'Still do not simplify security, accessibility, trust-boundary validation, data-loss prevention, tests, or explicit user requirements.',
-    max_guidance_tokens: 1400,
-  },
-};
+const {
+  PROFILES,
+  defaultProjectDir,
+  envDefault,
+  normalizeProfile,
+  readUserLeanConfig,
+  userLeanConfigPath,
+  writeUserLeanConfig,
+} = require('./lean-config');
 
 function usage() {
-  console.error('Usage: render-lean-mode.js [--root <repo>] [--project-dir <dir>] [--profile lite|off|balanced|strict|ultra] [--write] [--json]');
+  console.error('Usage: render-lean-mode.js [--root <repo>] [--project-dir <dir>] [--profile lite|off|balanced|strict|ultra] [--write] [--user] [--json]');
 }
 
 function requireValue(argv, name, index) {
@@ -52,7 +23,7 @@ function requireValue(argv, name, index) {
 }
 
 function parseArgs(argv) {
-  const opts = { root: process.cwd(), projectDir: '', profile: '', write: false, json: false };
+  const opts = { root: process.cwd(), projectDir: '', profile: '', write: false, user: false, json: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--root') {
@@ -66,6 +37,8 @@ function parseArgs(argv) {
       i += 1;
     } else if (arg === '--write') {
       opts.write = true;
+    } else if (arg === '--user') {
+      opts.user = true;
     } else if (arg === '--json') {
       opts.json = true;
     } else if (arg === '--help' || arg === '-h') {
@@ -76,10 +49,6 @@ function parseArgs(argv) {
     }
   }
   return opts;
-}
-
-function defaultProjectDir(root) {
-  return path.join(root, '.forgeflow', path.basename(root));
 }
 
 function isoNow() {
@@ -102,15 +71,8 @@ function policyPath(projectDir, basename) {
   return resolved;
 }
 
-function normalizeProfile(profile) {
-  const normalized = String(profile || '').trim().toLowerCase();
-  if (!normalized) return '';
-  if (!PROFILES[normalized]) throw new Error(`Unsupported lean profile: ${profile}`);
-  return normalized;
-}
-
 function defaultProfile() {
-  return normalizeProfile(process.env.FORGEFLOW_LEAN_DEFAULT_MODE || '') || 'balanced';
+  return envDefault() || 'balanced';
 }
 
 function readExistingPolicy(projectDir) {
@@ -126,7 +88,10 @@ function buildLeanMode(opts = {}) {
   const projectDir = safeProjectDir(opts.projectDir || defaultProjectDir(root));
   const requestedProfile = normalizeProfile(opts.profile || '');
   const existing = readExistingPolicy(projectDir);
-  const profile = requestedProfile || normalizeProfile(existing && existing.profile) || defaultProfile();
+  const userConfig = readUserLeanConfig();
+  const userProfile = normalizeProfile(userConfig && userConfig.profile);
+  const fromEnv = envDefault();
+  const profile = requestedProfile || normalizeProfile(existing && existing.profile) || fromEnv || userProfile || 'balanced';
   const definition = PROFILES[profile];
   const result = {
     schema_version: '1',
@@ -141,19 +106,25 @@ function buildLeanMode(opts = {}) {
     guidance: definition.guidance,
     max_guidance_tokens: definition.max_guidance_tokens,
     available_profiles: Object.keys(PROFILES),
-    source: requestedProfile ? 'requested' : (existing ? 'existing-policy' : 'default'),
+    source: requestedProfile ? 'requested' : (existing ? 'existing-policy' : (fromEnv ? 'FORGEFLOW_LEAN_DEFAULT_MODE' : (userProfile ? 'user-config' : 'default'))),
     boundary: 'Lean mode is advisory. It does not edit code, remove dependencies, shrink validation, change routing, commit, push, or call the network.',
     next: requestedProfile && opts.write ? '/forgeflow-lean-decision --task "<work item>"' : `/forgeflow-lean-mode --profile ${profile} --write`,
     next_reason: requestedProfile && opts.write ? 'Lean mode was persisted for this project.' : 'Persist a project lean profile when you want context packs to carry a stable preference.',
     artifacts: {},
   };
-  if (opts.write) {
+  if (opts.write && opts.user) {
+    const written = writeUserLeanConfig(profile);
+    result.artifacts = { user_config: written.path };
+    result.next = '/forgeflow-lean-session';
+    result.next_reason = 'User-level lean default was persisted.';
+  } else if (opts.write) {
     const jsonPath = policyPath(projectDir, 'lean-policy.json');
     const markdownPath = policyPath(projectDir, 'lean-policy.md');
     writeJsonSafe(jsonPath, result);
     writeFileSafe(markdownPath, renderMarkdown(result));
     result.artifacts = { json: jsonPath, markdown: markdownPath };
   }
+  result.user_config_path = userLeanConfigPath();
   return result;
 }
 
@@ -165,6 +136,7 @@ function renderMarkdown(result) {
     `Profile: ${result.profile}`,
     `Enabled: ${result.enabled ? 'yes' : 'no'}`,
     `Source: ${result.source}`,
+    `User config: ${result.user_config_path}`,
     '',
     result.boundary,
     '',

@@ -1,8 +1,7 @@
 #!/usr/bin/env node
-const fs = require('fs');
 const path = require('path');
-const { safeReadTextFile } = require('./file-safety');
-const { PROFILES, normalizeProfile } = require('./render-lean-mode');
+const { resolveLeanProfile: resolveProfile } = require('./lean-config');
+const { STOP_PHRASES, instructionLines } = require('./lean-rule-builder');
 
 function usage() {
   console.error('Usage: render-lean-session.js [--root <repo>] [--project-dir <dir>] [--profile lite|off|balanced|strict|ultra] [--json]');
@@ -39,76 +38,14 @@ function parseArgs(argv) {
   return opts;
 }
 
-function defaultProjectDir(root) {
-  return path.join(root, '.forgeflow', path.basename(root));
-}
-
-function policyPath(projectDir) {
-  return path.join(projectDir, 'context', 'lean-policy.json');
-}
-
-function readPolicy(projectDir) {
-  const file = policyPath(projectDir);
-  if (!fs.existsSync(file)) return null;
-  try {
-    return JSON.parse(safeReadTextFile(file, projectDir).content);
-  } catch (_err) {
-    return null;
-  }
-}
-
-function envDefault() {
-  try {
-    return normalizeProfile(process.env.FORGEFLOW_LEAN_DEFAULT_MODE || '');
-  } catch (_err) {
-    return '';
-  }
-}
-
 function resolveLeanProfile(opts = {}) {
-  const explicit = opts.profile ? normalizeProfile(opts.profile) : '';
-  if (explicit) return { profile: explicit, source: 'requested' };
-  const root = path.resolve(opts.root || process.cwd());
-  const projectDir = path.resolve(opts.projectDir || defaultProjectDir(root));
-  const policy = readPolicy(projectDir);
-  if (policy && policy.profile) {
-    try {
-      return { profile: normalizeProfile(policy.profile) || 'balanced', source: 'project-policy' };
-    } catch (_err) {
-      return { profile: 'balanced', source: 'invalid-project-policy' };
-    }
-  }
-  const fromEnv = envDefault();
-  if (fromEnv) return { profile: fromEnv, source: 'FORGEFLOW_LEAN_DEFAULT_MODE' };
-  return { profile: 'balanced', source: 'default' };
-}
-
-function instructionLines(profile) {
-  if (profile === 'off') return ['Forgeflow lean guidance is off for this project.'];
-  const definition = PROFILES[profile] || PROFILES.balanced;
-  const lines = [
-    `FORGEFLOW LEAN SESSION ACTIVE - profile: ${profile}`,
-    '',
-    definition.behavior,
-    definition.guidance,
-    '',
-    'Before custom code, check: current need, stdlib, native platform, installed dependencies, project patterns, then minimum custom code.',
-    'Prefer deletion, direct code, and fewer files when current requirements allow it.',
-    'For complex requests, take the smallest safe path and name the fuller path only when the user needs it.',
-    '',
-    'Do not simplify away security, accessibility, trust-boundary validation, data-loss prevention, explicit requirements, calibration/tuning knobs, or one focused check for non-trivial logic.',
-    'Use implementation notes or lean markers for known ceilings and upgrade triggers.',
-    'This guidance is advisory; current user instructions, code evidence, tests, and review findings win.',
-  ];
-  if (profile === 'lite') {
-    lines.splice(5, 0, 'Lite mode: build what was asked, but name the smaller alternative in one concise line.');
-  }
-  return lines;
+  const resolved = resolveProfile(opts);
+  return { profile: resolved.profile, source: resolved.source };
 }
 
 function buildLeanSession(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
-  const projectDir = path.resolve(opts.projectDir || defaultProjectDir(root));
+  const projectDir = path.resolve(opts.projectDir || path.join(root, '.forgeflow', path.basename(root)));
   const resolved = resolveLeanProfile({ ...opts, root, projectDir });
   const enabled = resolved.profile !== 'off';
   const instructions = instructionLines(resolved.profile).join('\n');
@@ -122,7 +59,7 @@ function buildLeanSession(opts = {}) {
     source: resolved.source,
     enabled,
     statusline: enabled ? `LEAN:${resolved.profile}` : 'LEAN:off',
-    stop_phrases: ['normal mode', 'stop lean', 'lean off'],
+    stop_phrases: STOP_PHRASES,
     instructions,
     boundary: 'Lean session guidance is display-only. It does not edit settings, install hooks, mutate context, change routing, commit, push, or call the network.',
   };

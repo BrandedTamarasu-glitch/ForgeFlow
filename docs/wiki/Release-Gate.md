@@ -88,11 +88,15 @@ node scripts/forgeflow/test-render-review-auto-evidence.js
 node scripts/forgeflow/test-run-review-autofix-sandbox.js
 node scripts/forgeflow/test-show-review-autofix-status.js
 node scripts/forgeflow/test-learning-signal-policy.js
+node scripts/forgeflow/test-lean-config.js
+node scripts/forgeflow/test-lean-rule-builder.js
+node scripts/forgeflow/test-lean-activation-hook.js
 node scripts/forgeflow/test-rollup-pattern-learnings.js
 node scripts/forgeflow/test-render-pattern-review.js
 node scripts/forgeflow/test-render-lean-behavior-eval.js
 node scripts/forgeflow/test-render-lean-session.js
 node scripts/forgeflow/test-render-lean-portability-pack.js
+node scripts/forgeflow/test-render-lean-eval-pack.js
 node scripts/forgeflow/test-rollup-pilot-evidence.js
 node scripts/forgeflow/test-rollup-project-learnings.js
 node scripts/forgeflow/test-show-project-learnings.js

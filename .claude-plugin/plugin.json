@@ -52,6 +52,7 @@
     "post-install": {
       "description": "After install, wire the PostToolUse hooks and statusline in ~/.claude/settings.json, then restart Claude Code so commands and hooks reload.",
       "hooks-to-wire": [
+        "forgeflow-lean-activate.js",
         "forgeflow-gate.js",
         "forgeflow-context-monitor.js",
         "forgeflow-telemetry.js"
@@ -63,6 +64,12 @@
       ],
       "manual-settings": {
         "statusLine.command": "node \"~/.claude/hooks/forgeflow-statusline.js\"",
+        "SessionStart": [
+          "node \"~/.claude/hooks/forgeflow-lean-activate.js\""
+        ],
+        "UserPromptSubmit": [
+          "node \"~/.claude/hooks/forgeflow-lean-activate.js\""
+        ],
         "PostToolUse": [
           "node \"~/.claude/hooks/forgeflow-context-monitor.js\"",
           "node \"~/.claude/hooks/forgeflow-gate.js\"",

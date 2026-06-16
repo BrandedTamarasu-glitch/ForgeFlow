@@ -3,12 +3,19 @@ const fs = require('fs');
 const path = require('path');
 const { writeFileSafe } = require('./file-safety');
 const { buildLeanSession } = require('./render-lean-session');
+const { buildPortableRule } = require('./lean-rule-builder');
 
 const TARGETS = [
   { name: 'agents', file: 'AGENTS-lean.md', heading: '# Forgeflow Lean Agent Rules' },
   { name: 'cursor', file: 'cursor-lean.mdc', heading: '# Forgeflow Lean Cursor Rule' },
   { name: 'windsurf', file: 'windsurf-lean.md', heading: '# Forgeflow Lean Windsurf Rule' },
+  { name: 'cline', file: 'clinerules-lean.md', heading: '# Forgeflow Lean Cline Rule' },
   { name: 'copilot', file: 'copilot-instructions-lean.md', heading: '# Forgeflow Lean Copilot Instructions' },
+  { name: 'copilot-cli', file: 'copilot-cli-lean.md', heading: '# Forgeflow Lean Copilot CLI Instructions' },
+  { name: 'kiro', file: 'kiro-steering-lean.md', heading: '# Forgeflow Lean Kiro Steering' },
+  { name: 'opencode', file: 'opencode-lean.md', heading: '# Forgeflow Lean OpenCode Rule' },
+  { name: 'gemini-antigravity', file: 'gemini-antigravity-lean.md', heading: '# Forgeflow Lean Gemini And Antigravity Rule' },
+  { name: 'openclaw', file: 'openclaw-lean-skill.md', heading: '# Forgeflow Lean OpenClaw Skill' },
   { name: 'generic-skill', file: 'forgeflow-lean-skill.md', heading: '# Forgeflow Lean Skill' },
 ];
 
@@ -58,17 +65,7 @@ function outDir(projectDir) {
 }
 
 function targetText(target, session) {
-  return [
-    target.heading,
-    '',
-    `Profile: ${session.profile}`,
-    `Source: ${session.source}`,
-    '',
-    session.boundary,
-    '',
-    session.instructions,
-    '',
-  ].join('\n');
+  return buildPortableRule({ profile: session.profile, heading: target.heading, source: session.source });
 }
 
 function existingStatus(file, expected) {

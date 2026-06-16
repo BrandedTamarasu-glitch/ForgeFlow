@@ -49,6 +49,22 @@ function currentTask(session) {
   }
 }
 
+function leanBadge() {
+  const candidates = [
+    process.env.FORGEFLOW_LEAN_STATE_DIR && path.join(process.env.FORGEFLOW_LEAN_STATE_DIR, 'lean-active.json'),
+    process.env.PLUGIN_DATA && path.join(process.env.PLUGIN_DATA, 'lean-active.json'),
+    path.join(process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude'), 'forgeflow', 'lean-active.json'),
+  ].filter(Boolean);
+  for (const file of candidates) {
+    try {
+      if (!fs.existsSync(file)) continue;
+      const state = JSON.parse(fs.readFileSync(file, 'utf8'));
+      if (state && state.profile && state.profile !== 'off') return ` \x1b[36mLEAN:${String(state.profile).toUpperCase()}\x1b[0m`;
+    } catch (_) {}
+  }
+  return '';
+}
+
 let input = '';
 const stdinTimeout = setTimeout(() => process.exit(0), 3000);
 
@@ -63,6 +79,7 @@ process.stdin.on('end', () => {
     const model = data.model?.display_name || 'Claude';
     const dir = path.basename(data.workspace?.current_dir || process.cwd());
     const task = currentTask(session);
+    const lean = leanBadge();
     const middle = task
       ? `\x1b[1m${task}\x1b[0m | \x1b[2m${dir}\x1b[0m`
       : `\x1b[2m${dir}\x1b[0m`;
@@ -95,10 +112,10 @@ process.stdin.on('end', () => {
         ctx = `\x1b[5;31m${bar} ${used}%\x1b[0m`;
       }
 
-      process.stdout.write(`\x1b[2m${model}\x1b[0m | ${middle} ${ctx}`);
+      process.stdout.write(`\x1b[2m${model}\x1b[0m${lean} | ${middle} ${ctx}`);
     } else {
       // No context data yet — output minimal status
-      process.stdout.write(`\x1b[2m${model}\x1b[0m | ${middle}`);
+      process.stdout.write(`\x1b[2m${model}\x1b[0m${lean} | ${middle}`);
     }
   } catch (_) {}
 });
