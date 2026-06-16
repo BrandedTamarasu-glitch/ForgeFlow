@@ -79,7 +79,7 @@ Use `/forgeflow-review-auto-evidence --findings <json>` when you want a saved lo
 ## Keep A Work Item Lean
 
 1. Run `/forgeflow-lean-decision --task "<work item>"` before `/consult` when the risk is over-building, adding a dependency too early, or creating an abstraction before reuse has been checked.
-2. Optionally run `/forgeflow-lean-mode --profile balanced|strict|ultra --write` to persist a project lean preference, or `--profile off --write` to keep lean guidance explicit-only.
+2. Optionally run `/forgeflow-lean-mode --profile lite|balanced|strict|ultra --write` to persist a project lean preference, or `--profile off --write` to keep lean guidance explicit-only.
 3. Run `/forgeflow-lean-status` when you need to know whether lean guidance is configured, stale, blocked, or eligible for context-pack injection before starting agent-heavy work.
 4. Read the reuse candidates, avoid-first list, do-not-simplify boundaries, validation minimum, known ceiling, and upgrade trigger.
 5. Continue with `/consult` when the lean decision says the work is current and bounded. The consultation and implementation handoffs carry the compact lean section forward when the helper is available.
@@ -89,9 +89,12 @@ Use `/forgeflow-review-auto-evidence --findings <json>` when you want a saved lo
 9. Run `/forgeflow-lean-audit` when you want repo-wide over-engineering candidates before selecting a cleanup work item.
 10. Run `/forgeflow-output-contract --lean-file <path>` on generated lean handoffs or review notes when you want a warning if the writeup is larger than code/result first plus three concise bullets.
 11. Run `/forgeflow-lean-report --write` when you want local aggregate evidence about whether lean guidance is helping: diff size, ceiling capture, review/prose warnings, context savings, and telemetry quality. Later context packs can inject compact lean guidance only when lean mode permits it and the lean report plus related quality gates pass.
-12. Run `/forgeflow-lean-lab --task-pack <json> --results <json>` when you want to compare baseline, balanced, strict, and ultra guidance modes across repeatable local task results. Treat descriptive output as evidence gathering only until every mode has visible sample size and passing validation.
-13. Run `/forgeflow-lean-benchmark --baseline <json> --current <json>` when you have comparable aggregate baseline and lean-guided metrics and want a local before/after comparison without raw snippets or hosted telemetry.
-14. Defer or ask the user when the decision says the task is speculative or lacks a concrete requirement.
+12. Run `/forgeflow-lean-behavior --file <path>` when you want read-only probes for calibration boundaries, requested explanation preservation, one runnable check, dependency justification, stdlib/native/reuse evidence, and explicit requirement preservation.
+13. Run `/forgeflow-lean-session` when you want compact always-on lean guidance for hook or adapter experiments without editing settings.
+14. Run `/forgeflow-lean-portability --write` when you want portable lean rule copies under `.forgeflow/<project>/lean-portability/`.
+15. Run `/forgeflow-lean-lab --task-pack <json> --results <json>` when you want to compare baseline, balanced, strict, and ultra guidance modes across repeatable local task results. Treat descriptive output as evidence gathering only until every mode has visible sample size and passing validation.
+16. Run `/forgeflow-lean-benchmark --baseline <json> --current <json>` when you have comparable aggregate baseline and lean-guided metrics and want a local before/after comparison without raw snippets or hosted telemetry.
+17. Defer or ask the user when the decision says the task is speculative or lacks a concrete requirement.
 
 ## Ship A Change
 

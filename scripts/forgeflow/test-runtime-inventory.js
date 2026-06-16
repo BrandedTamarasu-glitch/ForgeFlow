@@ -5,6 +5,9 @@ const os = require('os');
 const {
   commandNames,
   commandSources,
+  expectedInstallSources,
+  expectedRuntimeSources,
+  expectedTemplateSources,
   groupRuntimeHelpers,
   healthInventory,
   helperGroupForSource,
@@ -22,6 +25,9 @@ const sources = commandSources(root);
 const names = commandNames(root);
 const health = healthInventory(root);
 const helpers = managedRuntimeHelpers();
+const expectedRuntime = expectedRuntimeSources();
+const expectedTemplates = expectedTemplateSources();
+const expectedInstall = expectedInstallSources(root);
 const helperEntries = runtimeHelperEntries();
 const summary = inventorySummary(root);
 const pressure = coordinationPressure(helperEntries);
@@ -53,6 +59,10 @@ const checks = [
   ['includes nested commands', sources.includes('commands/agent-chat/on.md') && names.includes('agent-chat/on')],
   ['matches health command inventory', sameList(names, health.commands)],
   ['runtime helper list matches install manifest', sameList(helpers, RUNTIME_HELPERS.slice().sort())],
+  ['runtime helper list includes new lean gap helpers', helpers.includes('scripts/forgeflow/render-lean-behavior-eval.js') && helpers.includes('scripts/forgeflow/render-lean-session.js') && helpers.includes('scripts/forgeflow/render-lean-portability-pack.js')],
+  ['expected runtime sources match managed helpers', sameList(expectedRuntime, helpers)],
+  ['expected template sources are managed templates', expectedTemplates.includes('templates/forgeflow-budget.json') && expectedTemplates.every((source) => source.startsWith('templates/'))],
+  ['expected install sources include dynamic and static surfaces', expectedInstall.includes('commands/forgeflow-health.md') && expectedInstall.includes('hooks/forgeflow-gate.js') && expectedInstall.includes('templates/forgeflow-budget.json') && expectedInstall.includes('scripts/forgeflow/runtime-inventory.js')],
   ['runtime helper entries expose groups', helperEntries.length === helpers.length && helperEntries.every((item) => item.source && item.helper_group && item.installed_name)],
   ['inventory summary exposes registry counts', summary.command_count === sources.length && summary.runtime_helper_count === helpers.length && summary.helper_groups.length > 0],
   ['inventory summary exposes canonical registry', summary.command_names.length === names.length && summary.managed_registry.runtime_helpers === helpers.length && summary.managed_registry.install_manifest_sources > helpers.length],

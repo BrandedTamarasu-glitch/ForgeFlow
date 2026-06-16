@@ -1,7 +1,7 @@
 ---
 name: forgeflow-lean-mode
 description: Show or persist the project lean guidance profile
-argument-hint: "[--profile off|balanced|strict|ultra] [--write] [--json]"
+argument-hint: "[--profile lite|off|balanced|strict|ultra] [--write] [--json]"
 allowed-tools:
   - Bash
 ---
@@ -10,7 +10,7 @@ Show or persist the project-local lean guidance profile used by context packs. T
 </objective>
 
 <process>
-Validate `$ARGUMENTS`. Accept only no arguments, `--json`, `--write`, and `--profile off|balanced|strict|ultra`.
+Validate `$ARGUMENTS`. Accept only no arguments, `--json`, `--write`, and `--profile lite|off|balanced|strict|ultra`.
 
 ```bash
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -36,7 +36,7 @@ while [ "$i" -lt "${#USER_ARGS[@]}" ]; do
       next_i=$((i + 1))
       profile="${USER_ARGS[$next_i]:-}"
       case "$profile" in
-        off|balanced|strict|ultra) SAFE_ARGS+=("--profile" "$profile"); i=$next_i ;;
+        lite|off|balanced|strict|ultra) SAFE_ARGS+=("--profile" "$profile"); i=$next_i ;;
         *) echo "Unsupported lean profile for /forgeflow-lean-mode"; exit 2 ;;
       esac
       ;;
@@ -52,6 +52,6 @@ env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/render-lean-mode.js" "${SAF
 <success_criteria>
 - [ ] Output shows the effective project lean profile and whether lean guidance is enabled.
 - [ ] `--write` writes only `.forgeflow/<project>/context/lean-policy.md` and `.json`.
-- [ ] Profiles are limited to `off`, `balanced`, `strict`, and `ultra`.
+- [ ] Profiles are limited to `lite`, `off`, `balanced`, `strict`, and `ultra`.
 - [ ] The command remains advisory and does not change implementation, review, commit, push, or network behavior.
 </success_criteria>

@@ -7,6 +7,7 @@ const { parseLeanMarkersFromLines, summarizeLeanMarkers } = require('./lean-mark
 
 const TAGS = ['delete', 'stdlib', 'native', 'reuse', 'yagni', 'shrink', 'prose-bloat'];
 const HARD_BOUNDARY_RE = /\b(auth|authorization|permission|security|secret|token|password|crypto|migration|schema|database|payment|money|invoice|ledger|a11y|accessibility|keyboard|screen reader|validation|sanitize|csrf|xss|data loss)\b/i;
+const CALIBRATION_RE = /\b(sensor|clock|timer|servo|pwm|adc|thermistor|temperature|hardware|robot|motor|calibrat(?:e|ion)|drift|tolerance|offset|trim|tuning|knob|reference value|per[- ](?:unit|part|device)|reads off)\b/i;
 
 function usage() {
   console.error('Usage: render-lean-review.js [--root <repo>] [--project-dir <dir>] [--diff <path>] [--json]');
@@ -203,6 +204,9 @@ function suppressionReasons(file, tag, evidence) {
   if (['reuse', 'yagni', 'shrink'].includes(tag) && nodeFanIn(file, evidence) >= 3) {
     reasons.push('high-static-fan-in-needs-manual-review');
   }
+  if (CALIBRATION_RE.test(text) && ['delete', 'shrink', 'yagni'].includes(tag)) {
+    reasons.push('calibration-or-real-device-boundary');
+  }
   return reasons;
 }
 
@@ -262,6 +266,7 @@ function boundaryReasons(file) {
   const text = addedText(file);
   const reasons = [];
   if (HARD_BOUNDARY_RE.test(`${file.file}\n${text}`)) reasons.push('hard-boundary-scope');
+  if (CALIBRATION_RE.test(`${file.file}\n${text}`)) reasons.push('calibration-boundary-scope');
   if (/\.(test|spec)\.(js|jsx|ts|tsx)$/.test(file.file) || /(^|\/)(__tests__|tests|e2e)\//.test(file.file)) reasons.push('validation-scope');
   return reasons;
 }

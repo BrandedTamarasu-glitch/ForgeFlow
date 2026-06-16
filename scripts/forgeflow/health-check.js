@@ -20,9 +20,11 @@ const {
 } = require('./latest-insights-state');
 const { failureDigestFreshness, latestFailureDigest } = require('./show-project-trends');
 const {
-  RUNTIME_HELPERS,
-  STATIC_FILES,
-  isManagedSource,
+  expectedInstallSources,
+  expectedRuntimeSources,
+  expectedTemplateSources,
+} = require('./runtime-inventory');
+const {
   manifestEntry,
 } = require('./install-manifest');
 
@@ -150,45 +152,6 @@ function skip(name, detail = {}) {
 function safeMkdir(dir) {
   assertSafeDirectory(dir);
   fs.mkdirSync(dir, { recursive: true });
-}
-
-function expectedRuntimeSources() {
-  return RUNTIME_HELPERS.filter(isManagedSource).sort();
-}
-
-function expectedTemplateSources() {
-  return Array.from(STATIC_FILES)
-    .filter((source) => source.startsWith('templates/'))
-    .sort();
-}
-
-function walkManagedSources(dir, files = []) {
-  if (!fs.existsSync(dir)) return files;
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const file = path.join(dir, entry.name);
-    if (entry.isDirectory()) walkManagedSources(file, files);
-    else if (entry.isFile()) files.push(file);
-  }
-  return files;
-}
-
-function expectedInstallSources() {
-  const sourceRoot = path.resolve(__dirname, '..', '..');
-  const dynamicDirs = [
-    'agents',
-    'commands',
-    'forgeflow-patterns',
-    'project-rules',
-  ];
-  const dynamicSources = dynamicDirs
-    .flatMap((dir) => walkManagedSources(path.join(sourceRoot, dir)))
-    .map((file) => path.relative(sourceRoot, file).replace(/\\/g, '/'));
-  return [...new Set([
-    ...dynamicSources,
-    ...expectedTemplateSources(),
-    ...expectedRuntimeSources(),
-    ...Array.from(STATIC_FILES).filter((source) => source.startsWith('hooks/')),
-  ].filter(isManagedSource))].sort();
 }
 
 function addInstallChecks(checks, installRoot) {

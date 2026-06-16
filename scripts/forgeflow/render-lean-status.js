@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { safeReadTextFile } = require('./file-safety');
 
-const PROFILES = new Set(['off', 'balanced', 'strict', 'ultra']);
+const PROFILES = new Set(['off', 'lite', 'balanced', 'strict', 'ultra']);
 
 function usage() {
   console.error('Usage: render-lean-status.js [--root <repo>] [--project-dir <dir>] [--json]');

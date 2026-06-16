@@ -9,6 +9,7 @@ const HARD_BOUNDARIES = [
   'trust-boundary input validation',
   'data-loss prevention',
   'explicit user requirements',
+  'calibration and physical-world tuning controls',
 ];
 
 function usage() {
@@ -107,6 +108,7 @@ function forbiddenSimplifications(text) {
   if (includesAny(text, ['money', 'payment', 'invoice', 'ledger'])) items.push('money correctness and concurrency');
   if (includesAny(text, ['migration', 'schema', 'database'])) items.push('database integrity and migration safety');
   if (includesAny(text, ['a11y', 'accessibility', 'keyboard', 'screen reader'])) items.push('accessibility acceptance criteria');
+  if (includesAny(text, ['sensor', 'clock', 'timer', 'servo', 'pwm', 'adc', 'thermistor', 'temperature', 'hardware', 'robot', 'motor', 'calibration', 'drift', 'tolerance', 'offset'])) items.push('hardware calibration, drift handling, tolerance, and tuning knobs');
   return [...new Set(items)];
 }
 
@@ -151,6 +153,7 @@ function ceilingFor(decision, text) {
   if (includesAny(text, ['cache', 'memoize'])) return { known_ceiling: 'Simple memoization may not cover TTL, invalidation, cross-process state, or distributed workloads.', upgrade_trigger: 'Add infrastructure when metrics show stale data, capacity pressure, or cross-process coordination needs.' };
   if (includesAny(text, ['rate limit'])) return { known_ceiling: 'Single-process rate limiting may not protect distributed deployments.', upgrade_trigger: 'Move to gateway/shared-store limiting when traffic spans processes or hosts.' };
   if (includesAny(text, ['email validation'])) return { known_ceiling: 'Syntax checks cannot prove mailbox ownership or deliverability.', upgrade_trigger: 'Use confirmation flow or provider verification when ownership matters.' };
+  if (includesAny(text, ['sensor', 'clock', 'timer', 'servo', 'pwm', 'adc', 'thermistor', 'temperature', 'hardware', 'robot', 'motor', 'calibration', 'drift', 'tolerance', 'offset'])) return { known_ceiling: 'A minimal hardware path may not match real devices without calibration, drift handling, tolerance, or tuning controls.', upgrade_trigger: 'Add or preserve calibration knobs when real measurements, device variance, timing drift, or field tuning require them.' };
   return { known_ceiling: 'The lean path may need expansion if a second caller, second implementation, or measured operational need appears.', upgrade_trigger: 'Add abstraction only after duplication, performance evidence, or product requirements justify it.' };
 }
 

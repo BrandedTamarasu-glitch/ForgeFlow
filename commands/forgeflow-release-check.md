@@ -112,6 +112,9 @@ node scripts/forgeflow/test-show-review-autofix-status.js
 node scripts/forgeflow/test-learning-signal-policy.js
 node scripts/forgeflow/test-rollup-pattern-learnings.js
 node scripts/forgeflow/test-render-pattern-review.js
+node scripts/forgeflow/test-render-lean-behavior-eval.js
+node scripts/forgeflow/test-render-lean-session.js
+node scripts/forgeflow/test-render-lean-portability-pack.js
 node scripts/forgeflow/test-rollup-pilot-evidence.js
 node scripts/forgeflow/test-rollup-project-learnings.js
 node scripts/forgeflow/test-show-project-learnings.js

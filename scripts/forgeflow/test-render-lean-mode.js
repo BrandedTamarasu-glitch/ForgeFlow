@@ -16,6 +16,7 @@ const balanced = buildLeanMode({ root, projectDir });
 const strict = buildLeanMode({ root, projectDir, profile: 'strict', write: true });
 const reread = buildLeanMode({ root, projectDir });
 const off = buildLeanMode({ root, projectDir, profile: 'off' });
+const lite = buildLeanMode({ root, projectDir, profile: 'lite' });
 const markdown = renderMarkdown(strict);
 const opts = parseArgs(['--root', root, '--project-dir', projectDir, '--profile', 'ultra', '--write', '--json']);
 
@@ -44,6 +45,7 @@ const checks = [
   ['writes policy artifacts', fs.existsSync(writtenJson) && fs.existsSync(writtenMarkdown)],
   ['rereads existing policy', reread.profile === 'strict' && reread.source === 'existing-policy'],
   ['off disables guidance', off.profile === 'off' && !off.enabled && off.max_guidance_tokens === 0],
+  ['lite profile is advisory alternative mode', lite.profile === 'lite' && lite.enabled && lite.guidance.includes('visibility')],
   ['strict profile is tighter than balanced', PROFILES.strict.max_guidance_tokens < PROFILES.balanced.max_guidance_tokens],
   ['preview preserves requested profile in next action', off.next.includes('--profile off --write')],
   ['markdown renders boundaries', markdown.includes('Profile: strict') && markdown.includes('does not edit code')],

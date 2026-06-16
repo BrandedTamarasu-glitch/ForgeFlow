@@ -1040,8 +1040,8 @@ function leanGuidanceArtifact(leanGuidance, root, outDir) {
 function effectiveLeanPolicy(source) {
   const value = source && source.value && typeof source.value === 'object' ? source.value : {};
   const profile = String(value.profile || 'balanced').toLowerCase();
-  const knownProfile = ['off', 'balanced', 'strict', 'ultra'].includes(profile) ? profile : 'balanced';
-  const defaultTokens = knownProfile === 'ultra' ? 1400 : knownProfile === 'strict' ? 1800 : knownProfile === 'off' ? 0 : 2200;
+  const knownProfile = ['off', 'lite', 'balanced', 'strict', 'ultra'].includes(profile) ? profile : 'balanced';
+  const defaultTokens = knownProfile === 'ultra' ? 1400 : knownProfile === 'strict' ? 1800 : knownProfile === 'lite' ? 900 : knownProfile === 'off' ? 0 : 2200;
   return {
     status: source ? source.status : 'missing',
     profile: knownProfile,

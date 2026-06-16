@@ -43,6 +43,34 @@ function managedStaticFiles() {
   return Array.from(STATIC_FILES).sort();
 }
 
+function expectedRuntimeSources() {
+  return managedRuntimeHelpers();
+}
+
+function expectedTemplateSources() {
+  return managedStaticFiles()
+    .filter((source) => source.startsWith('templates/'))
+    .sort();
+}
+
+function expectedInstallSources(root = path.resolve(__dirname, '..', '..')) {
+  const dynamicDirs = [
+    'agents',
+    'commands',
+    'forgeflow-patterns',
+    'project-rules',
+  ];
+  const dynamicSources = dynamicDirs
+    .flatMap((dir) => walk(path.join(root, dir)))
+    .map((file) => repoRelative(root, file));
+  return [...new Set([
+    ...dynamicSources,
+    ...expectedTemplateSources(),
+    ...expectedRuntimeSources(),
+    ...managedStaticFiles().filter((source) => source.startsWith('hooks/')),
+  ].filter(isManagedSource))].sort();
+}
+
 function helperGroupForSource(source) {
   const file = path.basename(String(source || ''));
   if (/^(install-|update-|health-|forgeflow-version|runtime-|render-update-|render-guided-repair|render-post-release-install-verify)/.test(file)) {
@@ -245,6 +273,9 @@ module.exports = {
   commandNames,
   commandSources,
   coordinationPressure,
+  expectedInstallSources,
+  expectedRuntimeSources,
+  expectedTemplateSources,
   groupRuntimeHelpers,
   healthInventory,
   helperGroupForSource,

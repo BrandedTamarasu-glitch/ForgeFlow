@@ -77,6 +77,17 @@ const semanticSort = buildLeanReview({ root: process.cwd(), diffText: [
   '+}',
   '',
 ].join('\n') });
+const calibrationBoundary = buildLeanReview({ root: process.cwd(), diffText: [
+  'diff --git a/src/servo.js b/src/servo.js',
+  '--- a/src/servo.js',
+  '+++ b/src/servo.js',
+  '@@ -1,1 +1,7 @@',
+  '+const calibrationOffset = 0;',
+  '+function ExportManager() {',
+  '+  return calibrationOffset;',
+  '+}',
+  '',
+].join('\n') });
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-lean-review-'));
 const diffFile = path.join(tmp, 'diff.patch');
 fs.writeFileSync(diffFile, diff);
@@ -114,6 +125,7 @@ const checks = [
   ['renders lean marker summary', markdown.includes('## Lean Markers') && markdown.includes('marker-missing-detail')],
   ['clean diff ships', clean.status === 'clean' && clean.final_line === 'Lean already. Ship.' && renderMarkdown(clean).includes('Lean already. Ship.')],
   ['semantic sort false positive suppressed', semanticSort.status === 'clean' && semanticSort.skipped.some((item) => item.reasons.includes('suppressed-stdlib') && item.reasons.includes('sort-semantics-present'))],
+  ['calibration boundary suppresses simplification', calibrationBoundary.status === 'clean' && calibrationBoundary.skipped.some((item) => item.file === 'src/servo.js' && item.reasons.includes('calibration-boundary-scope'))],
   ['reads diff file safely', fromFile.findings_count === result.findings_count],
   ['dependency delta gets project evidence', packageFinding && packageFinding.project_evidence.some((item) => item.includes('dependency delta: added left-pad')) && packageFinding.project_evidence.some((item) => item.includes('invocation hint'))],
   ['topology evidence enriches findings', demoFinding && demoFinding.project_evidence.some((item) => item.includes('static topology')) && demoFinding.project_evidence.some((item) => item.includes('second-caller evidence'))],

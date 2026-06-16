@@ -64,6 +64,16 @@ const optional = buildLeanDecision({
   ownership: {},
   invocation: {},
 });
+const hardwareDecision = buildLeanDecision({
+  root: '.',
+  projectDir: '.forgeflow/Demo',
+  text: 'Simplify servo timer calibration and sensor drift handling.',
+  packageInfo: pkg,
+  model: {},
+  architecture: {},
+  ownership: {},
+  invocation: {},
+});
 const markdown = renderMarkdown(dateDecision);
 const briefSection = renderBriefSection(dateDecision);
 const opts = parseArgs(['--root', '.', '--project-dir', '.forgeflow/Demo', '--task', 'Add cache', '--json']);
@@ -78,6 +88,7 @@ const checks = [
   ['uses project validation norms', validationMinimum('helper', { model: { validation_norms: ['Run helper test.'] } }).project_norms[0] === 'Run helper test.'],
   ['missing task is attention', missing.status === 'attention' && missing.decision === 'needs-task'],
   ['optional work can defer', optional.decision === 'skip-or-defer'],
+  ['hardware calibration is hard boundary', hardwareDecision.do_not_simplify.includes('hardware calibration, drift handling, tolerance, and tuning knobs') && hardwareDecision.known_ceiling.includes('calibration')],
   ['renders markdown', markdown.includes('# Forgeflow Lean Decision') && markdown.includes('## Do Not Simplify') && markdown.includes('Known ceiling')],
   ['renders implementation brief section', briefSection.includes('## Lean Decision') && briefSection.includes('### Do First') && briefSection.includes('### Avoid First') && briefSection.includes('### Validate With') && briefSection.includes('### Do Not Simplify') && briefSection.includes('### Upgrade When') && briefSection.includes('Lean guidance is advisory only')],
   ['parses args', opts.root === path.resolve('.') && opts.projectDir === path.resolve('.forgeflow/Demo') && opts.task === 'Add cache' && opts.json === true],

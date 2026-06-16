@@ -54,6 +54,11 @@ const offProject = path.join(offRoot, '.forgeflow', 'Demo');
 writeJson(path.join(offProject, 'context', 'lean-policy.json'), { profile: 'off', enabled: false });
 const off = buildLeanStatus({ root: offRoot, projectDir: offProject });
 
+const liteRoot = makeRoot();
+const liteProject = path.join(liteRoot, '.forgeflow', 'Demo');
+writeJson(path.join(liteProject, 'context', 'lean-policy.json'), { profile: 'lite', enabled: true });
+const lite = buildLeanStatus({ root: liteRoot, projectDir: liteProject });
+
 const missingRoot = makeRoot();
 fs.unlinkSync(path.join(missingRoot, 'scripts', 'forgeflow', 'render-lean-review.js'));
 const missing = buildLeanStatus({ root: missingRoot, projectDir: path.join(missingRoot, '.forgeflow', 'Demo') });
@@ -65,6 +70,7 @@ const checks = [
   ['renders markdown gates', markdown.includes('Context injection eligible: yes') && markdown.includes('lean_report_ready: pass')],
   ['blocked reports missing decision next action', blocked.status === 'blocked' && blocked.gates.lean_decision_present === false && blocked.next.includes('/forgeflow-lean-decision')],
   ['off reports re-enable action', off.status === 'off' && off.enabled === false && off.next.includes('/forgeflow-lean-mode --profile balanced --write')],
+  ['lite policy is recognized', lite.lean_mode === 'lite' && lite.enabled === true],
   ['missing helper recommends repair', missing.status === 'attention' && missing.missing_helpers.includes('leanReview') && missing.next === '/update-forgeflow --repair'],
   ['invalid profile falls back to balanced but invalid source blocks', effectivePolicy({ status: 'invalid', value: { profile: 'bogus' } }).profile === 'balanced' && effectivePolicy({ status: 'invalid', value: { profile: 'bogus' } }).valid === false],
   ['parses args', opts.root === root && opts.projectDir === projectDir && opts.json],

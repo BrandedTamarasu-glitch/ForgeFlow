@@ -11,6 +11,13 @@ const PROFILES = {
     guidance: 'Lean checks stay available as explicit commands only.',
     max_guidance_tokens: 0,
   },
+  lite: {
+    enabled: true,
+    label: 'lite',
+    behavior: 'Build what was asked, but name the smaller lean alternative in one concise line.',
+    guidance: 'Use lite when the team wants visibility into lean options without having lean guidance steer implementation.',
+    max_guidance_tokens: 900,
+  },
   balanced: {
     enabled: true,
     label: 'balanced',
@@ -35,7 +42,7 @@ const PROFILES = {
 };
 
 function usage() {
-  console.error('Usage: render-lean-mode.js [--root <repo>] [--project-dir <dir>] [--profile off|balanced|strict|ultra] [--write] [--json]');
+  console.error('Usage: render-lean-mode.js [--root <repo>] [--project-dir <dir>] [--profile lite|off|balanced|strict|ultra] [--write] [--json]');
 }
 
 function requireValue(argv, name, index) {
@@ -102,6 +109,10 @@ function normalizeProfile(profile) {
   return normalized;
 }
 
+function defaultProfile() {
+  return normalizeProfile(process.env.FORGEFLOW_LEAN_DEFAULT_MODE || '') || 'balanced';
+}
+
 function readExistingPolicy(projectDir) {
   const file = policyPath(projectDir, 'lean-policy.json');
   if (!fs.existsSync(file)) return null;
@@ -115,7 +126,7 @@ function buildLeanMode(opts = {}) {
   const projectDir = safeProjectDir(opts.projectDir || defaultProjectDir(root));
   const requestedProfile = normalizeProfile(opts.profile || '');
   const existing = readExistingPolicy(projectDir);
-  const profile = requestedProfile || normalizeProfile(existing && existing.profile) || 'balanced';
+  const profile = requestedProfile || normalizeProfile(existing && existing.profile) || defaultProfile();
   const definition = PROFILES[profile];
   const result = {
     schema_version: '1',
@@ -190,6 +201,7 @@ if (require.main === module) main();
 module.exports = {
   PROFILES,
   buildLeanMode,
+  defaultProfile,
   normalizeProfile,
   parseArgs,
   renderMarkdown,
