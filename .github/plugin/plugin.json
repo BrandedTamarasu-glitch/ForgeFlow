@@ -1,0 +1,11 @@
+{
+  "name": "Forgeflow",
+  "version": "4.3.71",
+  "description": "Forgeflow lean guidance commands for Copilot CLI plugin-compatible hosts.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BrandedTamarasu-glitch/ForgeFlow.git"
+  },
+  "license": "MIT",
+  "commands": "commands/"
+}

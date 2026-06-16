@@ -123,7 +123,11 @@ node scripts/forgeflow/test-render-lean-session.js
 node scripts/forgeflow/test-render-lean-portability-pack.js
 node scripts/forgeflow/test-render-lean-eval-pack.js
 node scripts/forgeflow/test-render-lean-adapter-contract.js
+node scripts/forgeflow/test-render-lean-adapter-drift.js
+node scripts/forgeflow/test-render-lean-adapter-smoke.js
 node scripts/forgeflow/test-render-lean-hook-contract.js
+node scripts/forgeflow/test-render-lean-correctness.js
+node scripts/forgeflow/test-render-lean-host-adapters.js
 node scripts/forgeflow/test-render-lean-host-packages.js
 node scripts/forgeflow/test-render-lean-robustness-eval.js
 node scripts/forgeflow/test-render-lean-rule-canary.js

@@ -1,0 +1,19 @@
+{
+  "name": "Forgeflow",
+  "description": "Forgeflow lean guidance for GitHub Copilot CLI and compatible plugin hosts.",
+  "owner": {
+    "name": "BrandedTamarasu-glitch",
+    "url": "https://github.com/BrandedTamarasu-glitch"
+  },
+  "plugins": [
+    {
+      "name": "Forgeflow",
+      "description": "Lean advisory commands, host adapter checks, and local validation helpers.",
+      "version": "4.3.71",
+      "source": {
+        "source": "github",
+        "repo": "BrandedTamarasu-glitch/ForgeFlow"
+      }
+    }
+  ]
+}

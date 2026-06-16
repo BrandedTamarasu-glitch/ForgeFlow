@@ -1,0 +1,8 @@
+{
+  "name": "Forgeflow",
+  "version": "4.3.71",
+  "description": "Forgeflow lean advisory rules and local validation commands.",
+  "contextFileName": "AGENTS.md",
+  "commands": "commands",
+  "skills": ".openclaw/skills"
+}
