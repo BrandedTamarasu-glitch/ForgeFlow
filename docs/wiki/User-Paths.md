@@ -93,9 +93,12 @@ Use `/forgeflow-review-auto-evidence --findings <json>` when you want a saved lo
 13. Run `/forgeflow-lean-session` when you want compact always-on lean guidance for hook or adapter experiments without editing settings.
 14. Run `/forgeflow-lean-portability --write` when you want portable lean rule copies under `.forgeflow/<project>/lean-portability/`.
 15. Run `/forgeflow-lean-eval` when you want a deterministic local fixture check for the lean behavior probes without model calls.
-16. Run `/forgeflow-lean-lab --task-pack <json> --results <json>` when you want to compare baseline, balanced, strict, and ultra guidance modes across repeatable local task results. Treat descriptive output as evidence gathering only until every mode has visible sample size and passing validation.
-17. Run `/forgeflow-lean-benchmark --baseline <json> --current <json>` when you have comparable aggregate baseline and lean-guided metrics and want a local before/after comparison without raw snippets or hosted telemetry.
-18. Defer or ask the user when the decision says the task is speculative or lacks a concrete requirement.
+16. Run `/forgeflow-lean-robustness` when you want a deterministic local selftest for "lean but wrong" shortcut traps.
+17. Run `/forgeflow-lean-adapter-contract`, `/forgeflow-lean-hook-contract`, and `/forgeflow-lean-rule-canary` before treating lean adapter output as release-ready.
+18. Run `/forgeflow-lean-host-packages --write` when you want a local manifest describing where each generated adapter belongs.
+19. Run `/forgeflow-lean-lab --task-pack <json> --results <json>` when you want to compare baseline, balanced, strict, and ultra guidance modes across repeatable local task results. Treat descriptive output as evidence gathering only until every mode has visible sample size and passing validation.
+20. Run `/forgeflow-lean-benchmark --baseline <json> --current <json>` when you have comparable aggregate baseline and lean-guided metrics and want a local before/after comparison without raw snippets or hosted telemetry.
+21. Defer or ask the user when the decision says the task is speculative or lacks a concrete requirement.
 
 ## Ship A Change
 

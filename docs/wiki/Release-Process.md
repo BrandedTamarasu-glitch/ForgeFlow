@@ -122,6 +122,11 @@ node scripts/forgeflow/test-render-lean-behavior-eval.js
 node scripts/forgeflow/test-render-lean-session.js
 node scripts/forgeflow/test-render-lean-portability-pack.js
 node scripts/forgeflow/test-render-lean-eval-pack.js
+node scripts/forgeflow/test-render-lean-adapter-contract.js
+node scripts/forgeflow/test-render-lean-hook-contract.js
+node scripts/forgeflow/test-render-lean-host-packages.js
+node scripts/forgeflow/test-render-lean-robustness-eval.js
+node scripts/forgeflow/test-render-lean-rule-canary.js
 node scripts/forgeflow/test-rollup-pilot-evidence.js
 node scripts/forgeflow/test-rollup-project-learnings.js
 node scripts/forgeflow/test-show-project-learnings.js
