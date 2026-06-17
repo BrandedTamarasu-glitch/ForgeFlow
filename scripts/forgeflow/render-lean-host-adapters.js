@@ -22,9 +22,11 @@ const HOST_ADAPTERS = [
   {
     host: 'GitHub Copilot CLI',
     tier: 'plugin',
-    files: ['.github/plugin/plugin.json', '.github/plugin/marketplace.json', '.github/copilot-instructions.md'],
+    files: ['.github/plugin/plugin.json', '.github/plugin/marketplace.json', '.github/copilot-instructions.md', 'hooks/copilot-hooks.json'],
     checks: [
       { name: 'copilot plugin points at commands', file: '.github/plugin/plugin.json', includes: ['commands/'] },
+      { name: 'copilot plugin points at skills and hooks', file: '.github/plugin/plugin.json', includes: ['skills/', 'hooks/copilot-hooks.json'] },
+      { name: 'copilot hooks cover bash and powershell', file: 'hooks/copilot-hooks.json', includes: ['sessionStart', 'userPromptSubmitted', 'bash', 'powershell', 'forgeflow-lean-activate.js'] },
       { name: 'copilot instructions carry lean rule', file: '.github/copilot-instructions.md', includes: ['FORGEFLOW LEAN SESSION ACTIVE', 'trust-boundary validation'] },
     ],
   },

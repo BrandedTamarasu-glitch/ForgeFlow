@@ -7,5 +7,7 @@
     "url": "https://github.com/BrandedTamarasu-glitch/ForgeFlow.git"
   },
   "license": "MIT",
-  "commands": "commands/"
+  "commands": "commands/",
+  "skills": "skills/",
+  "hooks": "hooks/copilot-hooks.json"
 }

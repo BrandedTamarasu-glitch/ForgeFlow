@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { renderDogfoodRefreshPlan } = require('../../scripts/forgeflow/render-dogfood-refresh-plan');
+const { buildLeanStatus } = require('../../scripts/forgeflow/render-lean-status');
 
 function defaultProjectDir(projectRoot) {
   return path.join(projectRoot, '.forgeflow', path.basename(projectRoot));
@@ -122,6 +123,21 @@ function dogfoodRefreshCard(refreshPlan) {
   );
 }
 
+function leanCard(leanStatus) {
+  if (!leanStatus || leanStatus.status === 'error') {
+    return card('lean-guidance', 'Lean Guidance', 'error', leanStatus?.reason || 'Unable to render lean status.', '/forgeflow-lean-prime');
+  }
+  const profile = leanStatus.lean_mode || 'unknown';
+  const eligible = leanStatus.injection_eligible ? 'eligible' : 'blocked';
+  return card(
+    'lean-guidance',
+    'Lean Guidance',
+    leanStatus.injection_eligible ? 'ready' : leanStatus.status,
+    `Profile ${profile}; context injection ${eligible}.`,
+    leanStatus.injection_eligible ? '' : (leanStatus.next || '/forgeflow-lean-prime'),
+  );
+}
+
 function overallStatus(cards) {
   const statuses = cards.map((item) => item.status);
   if (statuses.some((item) => ['fail', 'failed', 'error', 'invalid', 'blocked'].includes(item))) return 'attention';
@@ -131,6 +147,7 @@ function overallStatus(cards) {
 
 async function scanReadiness(opts = {}) {
   const projectRoot = path.resolve(opts.projectRoot || process.cwd());
+  const helperRoot = path.resolve(opts.helperRoot || path.join(__dirname, '..', '..'));
   const projectDir = path.resolve(opts.projectDir || defaultProjectDir(projectRoot));
   const contextDir = path.join(projectDir, 'context');
   const latestDir = path.join(contextDir, 'latest');
@@ -149,10 +166,16 @@ async function scanReadiness(opts = {}) {
   ]);
 
   let refreshPlan;
+  let leanStatus;
   try {
     refreshPlan = renderDogfoodRefreshPlan({ root: projectRoot, projectDir });
   } catch (err) {
     refreshPlan = { status: 'error', reason: err.message, next: '/forgeflow-dogfood-refresh-plan' };
+  }
+  try {
+    leanStatus = buildLeanStatus({ root: helperRoot, projectDir });
+  } catch (err) {
+    leanStatus = { status: 'error', reason: err.message, next: '/forgeflow-lean-prime' };
   }
 
   const cards = [
@@ -165,6 +188,7 @@ async function scanReadiness(opts = {}) {
     ),
     learningCard(latestInsights),
     contextBudgetCard(contextTelemetry),
+    leanCard(leanStatus),
     releaseReadinessCard(releaseReadiness),
     dogfoodCard(dogfoodReport),
     dogfoodRefreshCard(refreshPlan),
@@ -182,6 +206,7 @@ async function scanReadiness(opts = {}) {
       release_readiness: statusFromRead(releaseReadiness),
       dogfood_report: statusFromRead(dogfoodReport),
       project_operating_model: statusFromRead(projectModel, projectModel.status),
+      lean_guidance: leanStatus.status,
     },
     next: cards.find((item) => item.next)?.next || '',
     boundary: 'Dashboard readiness is read-only. It reads local artifacts and does not refresh, write, spawn agents, call GitHub, export telemetry, commit, push, or promote automation.',

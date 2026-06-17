@@ -130,6 +130,8 @@ node scripts/forgeflow/test-render-lean-host-adapters.js
 node scripts/forgeflow/test-render-lean-host-command-parity.js
 node scripts/forgeflow/test-render-lean-host-packages.js
 node scripts/forgeflow/test-render-lean-openclaw-skill.js
+node scripts/forgeflow/test-render-lean-prime.js
+node scripts/forgeflow/test-render-lean-skills.js
 node --test pi-extension/test/*.test.js
 node scripts/forgeflow/test-lean-windows-compat.js
 node scripts/forgeflow/test-render-lean-robustness-eval.js

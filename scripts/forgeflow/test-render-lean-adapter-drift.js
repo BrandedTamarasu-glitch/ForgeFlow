@@ -4,6 +4,7 @@ const {
   COPIES,
   INVARIANTS,
   buildLeanAdapterDrift,
+  expectedFileContent,
   parseArgs,
   renderMarkdown,
 } = require('./render-lean-adapter-drift');
@@ -11,14 +12,15 @@ const {
 const root = path.resolve(__dirname, '..', '..');
 const result = buildLeanAdapterDrift({ root });
 const markdown = renderMarkdown(result);
-const opts = parseArgs(['--root', root, '--json']);
+const opts = parseArgs(['--root', root, '--write', '--json']);
 
 const checks = [
   ['adapter drift passes', result.status === 'pass' && result.summary.copies === COPIES.length],
   ['all invariants checked', INVARIANTS.includes('trust-boundary validation') && INVARIANTS.includes('data-loss prevention')],
   ['covers openclaw copy', result.copies.some((item) => item.host === 'OpenClaw' && item.status === 'pass')],
-  ['renders markdown', markdown.includes('# Forgeflow Lean Adapter Drift') && markdown.includes('read-only')],
-  ['parses args', opts.root === root && opts.json],
+  ['expected file includes frontmatter', expectedFileContent(COPIES.find((item) => item.host === 'OpenClaw')).startsWith('---\nname: forgeflow-lean')],
+  ['renders markdown', markdown.includes('# Forgeflow Lean Adapter Drift') && markdown.includes('read-only unless --write')],
+  ['parses args', opts.root === root && opts.write && opts.json],
 ];
 
 let failed = 0;

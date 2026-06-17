@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
+const { writeFileSafe } = require('./file-safety');
 const { buildPortableRule } = require('./lean-rule-builder');
 
 const COPIES = [
@@ -23,7 +24,7 @@ const INVARIANTS = [
 ];
 
 function usage() {
-  console.error('Usage: render-lean-adapter-drift.js [--root <repo>] [--json]');
+  console.error('Usage: render-lean-adapter-drift.js [--root <repo>] [--write] [--json]');
 }
 
 function requireValue(argv, name, index) {
@@ -33,7 +34,7 @@ function requireValue(argv, name, index) {
 }
 
 function parseArgs(argv) {
-  const opts = { root: process.cwd(), json: false };
+  const opts = { root: process.cwd(), write: false, json: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--root') {
@@ -41,6 +42,8 @@ function parseArgs(argv) {
       i += 1;
     } else if (arg === '--json') {
       opts.json = true;
+    } else if (arg === '--write') {
+      opts.write = true;
     } else if (arg === '--help' || arg === '-h') {
       usage();
       process.exit(0);
@@ -64,8 +67,21 @@ function expected(copy) {
   return buildPortableRule({ profile: 'balanced', heading: copy.heading, source: 'committed-adapter' }).trim();
 }
 
-function checkCopy(root, copy) {
+function expectedFileContent(copy) {
+  const body = `${expected(copy)}\n`;
+  if (copy.file === '.cursor/rules/forgeflow-lean.mdc') {
+    return `---\ndescription: Forgeflow lean advisory guidance\nalwaysApply: true\n---\n${body}`;
+  }
+  if (copy.file === '.openclaw/skills/forgeflow-lean/SKILL.md') {
+    return `---\nname: forgeflow-lean\ndescription: Apply Forgeflow lean advisory guidance to coding tasks without changing workflow policy.\n---\n\n${body}`;
+  }
+  return body;
+}
+
+function checkCopy(root, copy, opts = {}) {
   const file = path.join(root, copy.file);
+  const wantedFile = expectedFileContent(copy);
+  if (opts.write) writeFileSafe(file, wantedFile);
   if (!fs.existsSync(file)) {
     return {
       host: copy.host,
@@ -91,17 +107,17 @@ function checkCopy(root, copy) {
 
 function buildLeanAdapterDrift(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
-  const copies = COPIES.map((copy) => checkCopy(root, copy));
+  const copies = COPIES.map((copy) => checkCopy(root, copy, opts));
   const failures = copies.filter((item) => item.status === 'fail').length;
   return {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
     root,
-    status: failures ? 'fail' : 'pass',
+    status: opts.write || !failures ? 'pass' : 'fail',
     copies,
     summary: { copies: copies.length, failures },
-    next: failures ? 'Regenerate or update committed lean adapter copies from lean-rule-builder.js.' : '/forgeflow-lean-host-adapters',
-    boundary: 'Lean adapter drift is read-only. It compares committed adapter instruction copies with canonical generated lean rules but does not rewrite files, install adapters, commit, push, or call the network.',
+    next: failures && !opts.write ? '/forgeflow-lean-adapter-drift --write' : '/forgeflow-lean-host-adapters',
+    boundary: 'Lean adapter drift is read-only unless --write is supplied. It compares or regenerates committed adapter instruction copies from canonical generated lean rules, but does not install adapters, edit host settings, commit, push, or call the network.',
   };
 }
 
@@ -130,6 +146,7 @@ module.exports = {
   COPIES,
   INVARIANTS,
   buildLeanAdapterDrift,
+  expectedFileContent,
   parseArgs,
   renderMarkdown,
 };

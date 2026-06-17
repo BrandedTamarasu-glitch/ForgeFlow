@@ -1,16 +1,16 @@
 ---
 name: forgeflow-lean-adapter-drift
 description: Check committed lean adapter instruction copies for drift
-argument-hint: "[--json]"
+argument-hint: "[--write] [--json]"
 allowed-tools:
   - Bash
 ---
 <objective>
-Compare committed lean adapter instruction copies with canonical generated lean rules and required safety invariants.
+Compare committed lean adapter instruction copies with canonical generated lean rules and required safety invariants. Regenerate those committed copies only when `--write` is explicit.
 </objective>
 
 <process>
-Validate `$ARGUMENTS`. Accept only no arguments or `--json`.
+Validate `$ARGUMENTS`. Accept only no arguments, `--write`, `--json`, or both.
 
 ```bash
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -27,7 +27,7 @@ read -r -a USER_ARGS <<< "${ARGUMENTS:-}"
 for arg in "${USER_ARGS[@]}"; do
   case "$arg" in
     "") ;;
-    --json) SAFE_ARGS+=("$arg") ;;
+    --write|--json) SAFE_ARGS+=("$arg") ;;
     *) echo "Unsupported arguments for /forgeflow-lean-adapter-drift"; exit 2 ;;
   esac
 done
@@ -38,5 +38,6 @@ env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/render-lean-adapter-drift.j
 
 <success_criteria>
 - [ ] Output reports committed adapter copy drift status.
-- [ ] The command does not rewrite files, install adapters, commit, push, or call the network.
+- [ ] `--write` rewrites only committed lean adapter copies from the canonical rule builder.
+- [ ] The command does not install adapters, edit host settings, commit, push, or call the network.
 </success_criteria>

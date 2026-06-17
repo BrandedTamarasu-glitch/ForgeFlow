@@ -80,9 +80,10 @@ test('scanReadiness summarizes local readiness without leaking absolute root', a
   const fixture = makeReadinessFixture();
   const body = await scanReadiness(fixture);
   assert.equal(body.schema_version, '1');
-  assert.equal(body.status, 'ready');
-  assert.equal(body.cards.length, 6);
-  assert.equal(body.next, '/forgeflow-dogfood-report --write');
+  assert.equal(body.status, 'attention');
+  assert.equal(body.cards.length, 7);
+  assert.equal(body.next, '/forgeflow-lean-decision --task "<work item>"');
+  assert.ok(body.cards.some((item) => item.id === 'lean-guidance' && item.status === 'blocked'));
   assert.equal(JSON.stringify(body).includes(fixture.projectRoot), false);
   assert.ok(body.boundary.includes('read-only'));
 });
@@ -96,8 +97,9 @@ test('GET /api/readiness serves no-store local readiness JSON', async () => {
     assert.equal(res.status, 200);
     assert.equal(res.headers['cache-control'], 'no-store');
     assert.equal(res.body.schema_version, '1');
-    assert.equal(res.body.status, 'ready');
+    assert.equal(res.body.status, 'attention');
     assert.ok(res.body.cards.some((item) => item.id === 'release-readiness' && item.status === 'ready'));
+    assert.ok(res.body.cards.some((item) => item.id === 'lean-guidance' && item.next === '/forgeflow-lean-decision --task "<work item>"'));
     assert.ok(res.body.cards.some((item) => item.id === 'dogfood-refresh-plan' && item.next === '/forgeflow-dogfood-report --write'));
     assert.equal(JSON.stringify(res.body).includes(fixture.projectRoot), false);
   } finally {

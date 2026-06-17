@@ -5,6 +5,7 @@ const path = require('path');
 const {
   ARMS,
   TASKS,
+  armScript,
   buildLeanBenchmarkRunner,
   parseArgs,
   renderMarkdown,
@@ -21,6 +22,8 @@ const checks = [
   ['preview ready', preview.status === 'ready' && preview.tasks.length === TASKS.length && preview.arms.length === ARMS.length],
   ['commands keep network opt-in', preview.commands.some((item) => item.requires_network === true) && preview.boundary.includes('FORGEFLOW_BENCHMARK_ALLOW_NETWORK=1')],
   ['write creates plan and script', fs.existsSync(written.artifacts.json) && fs.existsSync(written.artifacts.script) && fs.existsSync(written.artifacts.promptfoo) && fs.existsSync(written.artifacts.tasks)],
+  ['write creates prompt arms', written.artifacts.arms.length === ARMS.length && written.artifacts.arms.every((file) => fs.existsSync(file))],
+  ['arm script carries guidance', armScript(ARMS[1]).includes('Forgeflow lean profile') && armScript(ARMS[0]).includes('Answer normally')],
   ['renders markdown', markdown.includes('# Forgeflow Lean Benchmark Runner') && markdown.includes('opt-in scaffold')],
   ['parses args', opts.root === root && opts.projectDir === projectDir && opts.write && opts.json],
 ];

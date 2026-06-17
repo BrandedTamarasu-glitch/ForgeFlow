@@ -62,12 +62,28 @@ function runnerScript(result) {
   return [
     '#!/usr/bin/env bash',
     'set -euo pipefail',
-    'cat <<EOF',
-    'Forgeflow lean benchmark runner scaffold',
+    'ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"',
+    'test -f "${ROOT}/plan.json"',
+    'test -f "${ROOT}/tasks.json"',
+    'test -f "${ROOT}/promptfooconfig.yaml"',
+    'test -f "${ROOT}/arms/baseline.js"',
+    'test -f "${ROOT}/arms/lean-balanced.js"',
+    'test -f "${ROOT}/arms/lean-strict.js"',
+    'echo "Forgeflow lean benchmark scaffold is complete."',
+    'echo "This script does not call model APIs. Run promptfoo manually after setting provider credentials."',
     '',
-    'This script is intentionally a scaffold. It does not call model APIs by itself.',
-    'Use the commands in plan.json after setting the required model/provider environment.',
-    'EOF',
+  ].join('\n');
+}
+
+function armScript(arm) {
+  const guidance = arm.system
+    ? `Apply this Forgeflow lean profile before answering: ${arm.system}. Preserve correctness, safety, accessibility, trust-boundary validation, and explicit requirements.`
+    : 'Answer normally without Forgeflow lean guidance.';
+  return [
+    'module.exports = async function forgeflowLeanBenchmarkPrompt(vars) {',
+    `  const guidance = ${JSON.stringify(guidance)};`,
+    '  return `${guidance}\\n\\nTask:\\n${vars.task}`;',
+    '};',
     '',
   ].join('\n');
 }
@@ -131,12 +147,14 @@ function buildLeanBenchmarkRunner(opts = {}) {
     writeFileSafe(path.join(dir, 'run.sh'), runnerScript(result));
     writeJsonSafe(path.join(dir, 'tasks.json'), { schema_version: '1', tasks: TASKS, arms: ARMS });
     writeFileSafe(path.join(dir, 'promptfooconfig.yaml'), promptfooConfig());
+    for (const arm of ARMS) writeFileSafe(path.join(dir, 'arms', `${arm.name}.js`), armScript(arm));
     writeFileSafe(path.join(dir, 'README.md'), renderMarkdown(result));
     result.artifacts = {
       json: path.join(dir, 'plan.json'),
       script: path.join(dir, 'run.sh'),
       tasks: path.join(dir, 'tasks.json'),
       promptfoo: path.join(dir, 'promptfooconfig.yaml'),
+      arms: ARMS.map((arm) => path.join(dir, 'arms', `${arm.name}.js`)),
       readme: path.join(dir, 'README.md'),
     };
   }
@@ -168,6 +186,7 @@ if (require.main === module) main();
 module.exports = {
   ARMS,
   TASKS,
+  armScript,
   buildLeanBenchmarkRunner,
   parseArgs,
   renderMarkdown,

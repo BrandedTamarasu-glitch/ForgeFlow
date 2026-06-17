@@ -1,0 +1,159 @@
+#!/usr/bin/env node
+const path = require('path');
+const { buildLeanMode } = require('./render-lean-mode');
+const { buildLeanStatus } = require('./render-lean-status');
+const { buildLeanReport } = require('./render-lean-report');
+const { buildTelemetryQuality } = require('./render-telemetry-quality');
+
+function usage() {
+  console.error('Usage: render-lean-prime.js [--root <repo>] [--project-dir <dir>] [--json]');
+}
+
+function requireValue(argv, name, index) {
+  const value = argv[index + 1] || '';
+  if (!value || value.startsWith('--')) throw new Error(`Missing value for ${name}`);
+  return value;
+}
+
+function parseArgs(argv) {
+  const opts = { root: process.cwd(), projectDir: '', json: false };
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    if (arg === '--root') {
+      opts.root = path.resolve(requireValue(argv, arg, i));
+      i += 1;
+    } else if (arg === '--project-dir') {
+      opts.projectDir = path.resolve(requireValue(argv, arg, i));
+      i += 1;
+    } else if (arg === '--json') {
+      opts.json = true;
+    } else if (arg === '--help' || arg === '-h') {
+      usage();
+      process.exit(0);
+    } else {
+      throw new Error(`Unknown argument: ${arg}`);
+    }
+  }
+  return opts;
+}
+
+function defaultProjectDir(root) {
+  return path.join(root, '.forgeflow', path.basename(root));
+}
+
+function step(id, label, status, next, reason) {
+  return { id, label, status, next: next || '', reason: reason || '' };
+}
+
+function modeStep(mode) {
+  return step(
+    'mode',
+    'Lean mode',
+    mode.enabled ? 'ready' : 'off',
+    mode.enabled ? '' : '/forgeflow-lean-mode --profile balanced --write',
+    mode.enabled ? `Effective profile is ${mode.profile}.` : 'Lean guidance is off.'
+  );
+}
+
+function decisionStep(status) {
+  const present = status.gates?.lean_decision_present === true;
+  return step(
+    'decision',
+    'Lean decision evidence',
+    present ? 'ready' : 'missing',
+    present ? '' : '/forgeflow-lean-decision --task "<work item>"',
+    present ? 'Lean decision artifact is present.' : 'Record the current work item before relying on context-pack lean guidance.'
+  );
+}
+
+function reportStep(status, report) {
+  const present = status.gates?.lean_report_present === true;
+  const ready = status.gates?.lean_report_ready === true;
+  return step(
+    'report',
+    'Lean report evidence',
+    ready ? 'ready' : (present ? 'watch' : 'missing'),
+    ready ? '' : '/forgeflow-lean-report --write',
+    ready ? 'Lean report is present and ready.' : (report.reason || 'Write a local aggregate lean report.')
+  );
+}
+
+function telemetryStep(status, telemetry) {
+  const ready = status.gates?.telemetry_ready === true;
+  return step(
+    'telemetry',
+    'Telemetry quality',
+    ready ? 'ready' : 'watch',
+    ready ? '' : (telemetry.next || '/forgeflow-telemetry-quality'),
+    ready ? 'Telemetry is ready for advisory injection gates.' : (telemetry.reason || 'Telemetry is still too thin for automatic lean context injection.')
+  );
+}
+
+function injectionStep(status) {
+  return step(
+    'injection',
+    'Context-pack injection',
+    status.injection_eligible ? 'ready' : 'blocked',
+    status.injection_eligible ? '' : status.next,
+    status.injection_eligible ? 'Lean guidance is eligible for context packs.' : status.next_reason || status.reason
+  );
+}
+
+function buildLeanPrime(opts = {}) {
+  const root = path.resolve(opts.root || process.cwd());
+  const projectDir = path.resolve(opts.projectDir || defaultProjectDir(root));
+  const mode = buildLeanMode({ root, projectDir });
+  const status = buildLeanStatus({ root, projectDir });
+  const report = buildLeanReport({ root, projectDir });
+  const telemetry = buildTelemetryQuality({ root, projectDir });
+  const steps = [
+    modeStep(mode),
+    decisionStep(status),
+    reportStep(status, report),
+    telemetryStep(status, telemetry),
+    injectionStep(status),
+  ];
+  const next = steps.find((item) => item.next)?.next || '';
+  const blockers = steps.filter((item) => ['missing', 'blocked', 'attention', 'off'].includes(item.status));
+  return {
+    schema_version: '1',
+    generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
+    root,
+    project_dir: projectDir,
+    status: blockers.length ? 'blocked' : 'ready',
+    profile: mode.profile,
+    enabled: mode.enabled,
+    steps,
+    next,
+    next_reason: steps.find((item) => item.next)?.reason || 'Lean first-run evidence is ready.',
+    boundary: 'Lean prime is read-only. It composes existing local lean status, report, and telemetry signals but does not write artifacts, edit settings, change routing, install hooks, commit, push, or call the network.',
+  };
+}
+
+function renderMarkdown(result) {
+  const lines = ['# Forgeflow Lean Prime', '', `Status: ${result.status}`, `Profile: ${result.profile}`, '', result.boundary, '', '## Steps', ''];
+  for (const item of result.steps) {
+    lines.push(`- ${item.status}: ${item.label} - ${item.reason}`);
+  }
+  lines.push('', '## Next', '', result.next || 'No next command required.', '');
+  return lines.join('\n');
+}
+
+function main() {
+  try {
+    const opts = parseArgs(process.argv.slice(2));
+    const result = buildLeanPrime(opts);
+    process.stdout.write(opts.json ? `${JSON.stringify(result, null, 2)}\n` : renderMarkdown(result));
+  } catch (err) {
+    console.error(`lean prime failed: ${err.message}`);
+    process.exit(1);
+  }
+}
+
+if (require.main === module) main();
+
+module.exports = {
+  buildLeanPrime,
+  parseArgs,
+  renderMarkdown,
+};

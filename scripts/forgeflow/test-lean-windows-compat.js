@@ -23,6 +23,7 @@ const statusline = spawnSync(process.execPath, [path.join(root, 'hooks', 'forgef
 });
 
 const hook = require('../../hooks/forgeflow-lean-activate');
+const copilotHooks = JSON.parse(fs.readFileSync(path.join(root, 'hooks', 'copilot-hooks.json'), 'utf8'));
 const previousState = process.env.FORGEFLOW_LEAN_STATE_DIR;
 process.env.FORGEFLOW_LEAN_STATE_DIR = stateDir;
 hook.writeState('lite', 'windows-test');
@@ -35,6 +36,8 @@ const checks = [
   ['statusline shows lean badge when spawn is allowed', statusline.error?.code === 'EPERM' || /LEAN:STRICT/.test(statusline.stdout)],
   ['hook state write works with USERPROFILE env present', state.profile === 'lite'],
   ['state path stays in explicit state dir', fs.existsSync(path.join(stateDir, 'lean-active.json'))],
+  ['copilot hook manifest has windows command', copilotHooks.hooks.sessionStart[0].powershell.includes('forgeflow-lean-activate.js')],
+  ['copilot hook manifest has bash command', copilotHooks.hooks.userPromptSubmitted[0].bash.includes('forgeflow-lean-activate.js')],
 ];
 
 fs.rmSync(temp, { recursive: true, force: true });
