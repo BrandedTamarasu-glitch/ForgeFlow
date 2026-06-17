@@ -3,11 +3,11 @@ const path = require('path');
 const { writeFileSafe, writeJsonSafe } = require('./file-safety');
 
 const TASKS = [
-  'email-validator',
-  'debounce',
-  'csv-sum',
-  'countdown',
-  'rate-limit',
+  { id: 'email-validator', prompt: 'Write a function that validates email addresses.', correctness: 'executable' },
+  { id: 'debounce', prompt: 'Write a reusable debounce function in vanilla JavaScript.', correctness: 'executable' },
+  { id: 'csv-sum', prompt: "Write code that reads sales.csv and sums the 'amount' column.", correctness: 'executable' },
+  { id: 'countdown', prompt: 'Build a countdown timer component that counts down from a given number of seconds.', correctness: 'structural' },
+  { id: 'rate-limit', prompt: "Add rate limiting to an endpoint so users can't spam it.", correctness: 'structural' },
 ];
 
 const ARMS = [
@@ -72,6 +72,28 @@ function runnerScript(result) {
   ].join('\n');
 }
 
+function promptfooConfig() {
+  return [
+    'description: "Forgeflow lean benchmark evidence pack. Opt-in only; requires provider keys and explicit runner invocation."',
+    '',
+    'providers:',
+    '  - id: openai:gpt-5.4-mini',
+    '    config: { max_completion_tokens: 4096 }',
+    '',
+    'prompts:',
+    '  - id: file://arms/baseline.js',
+    '    label: baseline',
+    '  - id: file://arms/lean-balanced.js',
+    '    label: lean-balanced',
+    '  - id: file://arms/lean-strict.js',
+    '    label: lean-strict',
+    '',
+    'tests:',
+    ...TASKS.map((task) => `  - vars: { task: ${JSON.stringify(task.prompt)} }`),
+    '',
+  ].join('\n');
+}
+
 function buildLeanBenchmarkRunner(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const projectDir = path.resolve(opts.projectDir || defaultProjectDir(root));
@@ -107,14 +129,23 @@ function buildLeanBenchmarkRunner(opts = {}) {
   if (opts.write) {
     writeJsonSafe(path.join(dir, 'plan.json'), result);
     writeFileSafe(path.join(dir, 'run.sh'), runnerScript(result));
-    result.artifacts = { json: path.join(dir, 'plan.json'), script: path.join(dir, 'run.sh') };
+    writeJsonSafe(path.join(dir, 'tasks.json'), { schema_version: '1', tasks: TASKS, arms: ARMS });
+    writeFileSafe(path.join(dir, 'promptfooconfig.yaml'), promptfooConfig());
+    writeFileSafe(path.join(dir, 'README.md'), renderMarkdown(result));
+    result.artifacts = {
+      json: path.join(dir, 'plan.json'),
+      script: path.join(dir, 'run.sh'),
+      tasks: path.join(dir, 'tasks.json'),
+      promptfoo: path.join(dir, 'promptfooconfig.yaml'),
+      readme: path.join(dir, 'README.md'),
+    };
   }
   return result;
 }
 
 function renderMarkdown(result) {
   const lines = ['# Forgeflow Lean Benchmark Runner', '', `Status: ${result.status}`, '', result.boundary, '', '## Tasks', ''];
-  for (const task of result.tasks) lines.push(`- ${task}`);
+  for (const task of result.tasks) lines.push(`- ${task.id}: ${task.prompt} (${task.correctness})`);
   lines.push('', '## Commands', '');
   for (const command of result.commands) lines.push(`- ${command.name}: ${command.command}`);
   lines.push('', `Next: ${result.next}`, '');

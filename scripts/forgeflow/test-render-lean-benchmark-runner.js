@@ -20,7 +20,7 @@ const opts = parseArgs(['--root', root, '--project-dir', projectDir, '--write', 
 const checks = [
   ['preview ready', preview.status === 'ready' && preview.tasks.length === TASKS.length && preview.arms.length === ARMS.length],
   ['commands keep network opt-in', preview.commands.some((item) => item.requires_network === true) && preview.boundary.includes('FORGEFLOW_BENCHMARK_ALLOW_NETWORK=1')],
-  ['write creates plan and script', fs.existsSync(written.artifacts.json) && fs.existsSync(written.artifacts.script)],
+  ['write creates plan and script', fs.existsSync(written.artifacts.json) && fs.existsSync(written.artifacts.script) && fs.existsSync(written.artifacts.promptfoo) && fs.existsSync(written.artifacts.tasks)],
   ['renders markdown', markdown.includes('# Forgeflow Lean Benchmark Runner') && markdown.includes('opt-in scaffold')],
   ['parses args', opts.root === root && opts.projectDir === projectDir && opts.write && opts.json],
 ];

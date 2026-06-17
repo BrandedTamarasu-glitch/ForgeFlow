@@ -1,0 +1,35 @@
+{
+  "schema_version": "1",
+  "provider": "local-fixture",
+  "model": "deterministic-selftest",
+  "run_date": "2026-06-17",
+  "repeat": 3,
+  "claims": {
+    "loc": "aggregate fixture only",
+    "cost": "aggregate fixture only",
+    "latency": "aggregate fixture only"
+  },
+  "caveats": "Generation metrics are not a session cost promise; multi-turn agent sessions can cost more or less.",
+  "runs": [
+    {
+      "arm": "baseline",
+      "task": "email-validator",
+      "metrics": {
+        "code_loc": 40,
+        "correct": 1,
+        "cost_usd": 0.01,
+        "latency_seconds": 2.5
+      }
+    },
+    {
+      "arm": "lean-balanced",
+      "task": "email-validator",
+      "metrics": {
+        "code_loc": 12,
+        "correct": 1,
+        "cost_usd": 0.006,
+        "latency_seconds": 1.8
+      }
+    }
+  ]
+}

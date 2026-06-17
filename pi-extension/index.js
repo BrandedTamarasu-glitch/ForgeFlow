@@ -9,7 +9,10 @@ const COMMANDS = [
   'forgeflow-lean-mode',
   'forgeflow-lean-review',
   'forgeflow-lean-audit',
+  'forgeflow-lean-correctness',
   'forgeflow-lean-debt',
+  'forgeflow-lean-host-adapters',
+  'forgeflow-lean-host-command-parity',
   'forgeflow-lean-status',
 ];
 
@@ -106,6 +109,18 @@ export default function forgeflowPiExtension(pi) {
   pi.registerCommand?.('forgeflow-lean-debt', {
     description: 'Run /forgeflow-lean-debt',
     handler: (args, ctx) => sendAlias('/forgeflow-lean-debt', args, { ...ctx, pi }),
+  });
+  pi.registerCommand?.('forgeflow-lean-correctness', {
+    description: 'Run /forgeflow-lean-correctness',
+    handler: (args, ctx) => sendAlias('/forgeflow-lean-correctness', args, { ...ctx, pi }),
+  });
+  pi.registerCommand?.('forgeflow-lean-host-adapters', {
+    description: 'Run /forgeflow-lean-host-adapters',
+    handler: (args, ctx) => sendAlias('/forgeflow-lean-host-adapters', args, { ...ctx, pi }),
+  });
+  pi.registerCommand?.('forgeflow-lean-host-command-parity', {
+    description: 'Run /forgeflow-lean-host-command-parity',
+    handler: (args, ctx) => sendAlias('/forgeflow-lean-host-command-parity', args, { ...ctx, pi }),
   });
   pi.registerCommand?.('forgeflow-lean-status', {
     description: 'Run /forgeflow-lean-status',

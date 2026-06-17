@@ -6,7 +6,10 @@ const HOST_COMMANDS = [
   'forgeflow-lean-mode',
   'forgeflow-lean-review',
   'forgeflow-lean-audit',
+  'forgeflow-lean-correctness',
   'forgeflow-lean-debt',
+  'forgeflow-lean-host-adapters',
+  'forgeflow-lean-host-command-parity',
   'forgeflow-lean-status',
 ];
 

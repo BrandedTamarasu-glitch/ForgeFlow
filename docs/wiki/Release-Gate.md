@@ -100,13 +100,16 @@ node scripts/forgeflow/test-render-lean-eval-pack.js
 node scripts/forgeflow/test-render-lean-adapter-contract.js
 node scripts/forgeflow/test-render-lean-adapter-drift.js
 node scripts/forgeflow/test-render-lean-adapter-smoke.js
+node scripts/forgeflow/test-render-lean-benchmark-results.js
 node scripts/forgeflow/test-render-lean-benchmark-runner.js
 node scripts/forgeflow/test-render-lean-hook-contract.js
 node scripts/forgeflow/test-render-lean-correctness.js
 node scripts/forgeflow/test-render-lean-host-adapters.js
 node scripts/forgeflow/test-render-lean-host-command-parity.js
 node scripts/forgeflow/test-render-lean-host-packages.js
+node scripts/forgeflow/test-render-lean-openclaw-skill.js
 node --test pi-extension/test/*.test.js
+node scripts/forgeflow/test-lean-windows-compat.js
 node scripts/forgeflow/test-render-lean-robustness-eval.js
 node scripts/forgeflow/test-render-lean-rule-canary.js
 node scripts/forgeflow/test-rollup-pilot-evidence.js
