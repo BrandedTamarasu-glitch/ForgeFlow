@@ -13,6 +13,7 @@ const marketplace = JSON.parse(fs.readFileSync(path.join(repoRoot, '.claude-plug
 const codexPlugin = JSON.parse(fs.readFileSync(path.join(repoRoot, '.codex-plugin', 'plugin.json'), 'utf8'));
 const copilotPlugin = JSON.parse(fs.readFileSync(path.join(repoRoot, '.github', 'plugin', 'plugin.json'), 'utf8'));
 const geminiExtension = JSON.parse(fs.readFileSync(path.join(repoRoot, 'gemini-extension.json'), 'utf8'));
+const piPackage = JSON.parse(fs.readFileSync(path.join(repoRoot, 'pi-extension', 'package.json'), 'utf8'));
 const entry = marketplace.plugins.find((item) => item.name === plugin.name);
 
 const requiredDestinations = {
@@ -43,6 +44,7 @@ const checks = [
   ['codex plugin manifest present', codexPlugin.name === 'Forgeflow' && codexPlugin.hooks?.SessionStart?.[0]?.includes('forgeflow-lean-activate.js')],
   ['copilot plugin manifest present', copilotPlugin.name === 'Forgeflow' && copilotPlugin.commands === 'commands/'],
   ['gemini extension manifest present', geminiExtension.name === 'Forgeflow' && geminiExtension.contextFileName === 'AGENTS.md'],
+  ['pi extension package present', piPackage.name === 'forgeflow-pi-extension' && piPackage.main === 'index.js'],
   ['runtime helper list includes version helper', RUNTIME_HELPERS.includes('scripts/forgeflow/forgeflow-version.js')],
   ['manifest maps version helper to installed helper root', destinationFor('scripts/forgeflow/forgeflow-version.js') === '~/.claude/forgeflow/scripts/forgeflow/forgeflow-version.js'],
   ['test helper not managed', !isManagedSource('scripts/forgeflow/test-plugin-manifest.js')],

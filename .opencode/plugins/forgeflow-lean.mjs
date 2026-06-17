@@ -48,7 +48,7 @@ export default async function forgeflowLeanPlugin() {
       output.system.push(session.instructions);
     },
     async 'command.execute.before'(input) {
-      if (!input || input.command !== 'forgeflow-lean') return;
+      if (!input || !['forgeflow-lean', 'forgeflow-lean-mode'].includes(input.command)) return;
       const mode = commandMode(input.arguments);
       if (mode) writeMode(mode);
     },

@@ -1,0 +1,11 @@
+{
+  "name": "forgeflow-pi-extension",
+  "version": "4.3.71",
+  "description": "Forgeflow lean guidance adapter for pi-compatible agent harnesses.",
+  "license": "MIT",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  }
+}

@@ -3,6 +3,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { pathToFileURL } = require('url');
+const { buildLeanHostCommandParity } = require('./render-lean-host-command-parity');
 
 function usage() {
   console.error('Usage: render-lean-adapter-smoke.js [--root <repo>] [--json]');
@@ -66,6 +67,32 @@ async function opencodeSmoke(root) {
   }
 }
 
+async function piSmoke(root) {
+  try {
+    const moduleUrl = `${pathToFileURL(path.join(root, 'pi-extension', 'index.js')).href}?t=${Date.now()}`;
+    const mod = await import(moduleUrl);
+    const commands = new Map();
+    const handlers = new Map();
+    const entries = [];
+    const pi = {
+      registerCommand(name, config) { commands.set(name, config); },
+      on(name, handler) { handlers.set(name, handler); },
+      appendEntry(type, data) { entries.push({ type: 'custom', customType: type, data }); },
+      sendUserMessage() {},
+    };
+    mod.default(pi);
+    await commands.get('forgeflow-lean-mode').handler('strict', { ui: { notify() {} } });
+    const prompt = await handlers.get('before_agent_start')({ systemPrompt: 'base' });
+    const commandNames = mod.commandNames();
+    return {
+      ok: commandNames.every((name) => commands.has(name)) && entries.at(-1)?.data?.mode === 'strict' && /profile: strict/.test(prompt.systemPrompt),
+      detail: 'pi extension registered commands and injected strict lean guidance.',
+    };
+  } catch (err) {
+    return { ok: false, detail: err.message };
+  }
+}
+
 async function buildLeanAdapterSmoke(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const checks = [];
@@ -78,9 +105,15 @@ async function buildLeanAdapterSmoke(opts = {}) {
   checks.push(check('Codex plugin manifest parses', codex.name === 'Forgeflow' && codex.hooks?.SessionStart?.[0]?.includes('forgeflow-lean-activate.js')));
   checks.push(check('Copilot plugin manifest parses', copilot.name === 'Forgeflow' && copilot.commands === 'commands/'));
   checks.push(check('Gemini extension manifest parses', gemini.name === 'Forgeflow' && gemini.contextFileName === 'AGENTS.md'));
-  checks.push(check('OpenClaw skill exists', fs.existsSync(path.join(root, '.openclaw', 'skills', 'forgeflow-lean', 'SKILL.md'))));
+  checks.push(check('Gemini extension exposes commands and skills', gemini.commands === 'commands' && gemini.skills === '.openclaw/skills'));
+  const openClawSkill = fs.readFileSync(path.join(root, '.openclaw', 'skills', 'forgeflow-lean', 'SKILL.md'), 'utf8');
+  checks.push(check('OpenClaw skill parses', /^---\n[\s\S]*?name: forgeflow-lean[\s\S]*?---/.test(openClawSkill) && openClawSkill.includes('FORGEFLOW LEAN SESSION ACTIVE')));
+  const parity = buildLeanHostCommandParity({ root });
+  checks.push(check('Host command parity passes', parity.status === 'pass', `${parity.summary.checks} command surface checks`));
   const opencode = await opencodeSmoke(root);
   checks.push(check('OpenCode plugin smoke loads', opencode.ok, opencode.detail));
+  const pi = await piSmoke(root);
+  checks.push(check('pi extension smoke loads', pi.ok, pi.detail));
 
   const failures = checks.filter((item) => item.status === 'fail').length;
   return {
