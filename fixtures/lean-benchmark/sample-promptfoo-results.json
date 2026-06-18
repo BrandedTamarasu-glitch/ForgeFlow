@@ -1,0 +1,36 @@
+{
+  "provider": "openai:gpt-fixture",
+  "model": "gpt-fixture",
+  "results": [
+    {
+      "vars": {
+        "task_id": "forgeflow-command-wrapper",
+        "task": "Update a Forgeflow slash-command wrapper."
+      },
+      "prompt": {
+        "label": "baseline"
+      },
+      "output": "Change wrapper parsing.\nAdd focused test.",
+      "gradingResult": {
+        "pass": true
+      },
+      "latencyMs": 1500,
+      "cost": 0.01
+    },
+    {
+      "vars": {
+        "task_id": "forgeflow-command-wrapper",
+        "task": "Update a Forgeflow slash-command wrapper."
+      },
+      "prompt": {
+        "label": "lean-balanced"
+      },
+      "output": "Change wrapper parsing.",
+      "gradingResult": {
+        "pass": true
+      },
+      "latencyMs": 900,
+      "cost": 0.006
+    }
+  ]
+}

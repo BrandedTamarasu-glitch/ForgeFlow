@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { writeFileSafe, writeJsonSafe } = require('./file-safety');
+const { importPromptfooResults } = require('./render-lean-benchmark-results');
 
 const TASKS = [
   { id: 'email-validator', prompt: 'Write a function that validates email addresses.', correctness: 'executable' },
@@ -10,6 +11,10 @@ const TASKS = [
   { id: 'csv-sum', prompt: "Write code that reads sales.csv and sums the 'amount' column.", correctness: 'executable' },
   { id: 'countdown', prompt: 'Build a countdown timer component that counts down from a given number of seconds.', correctness: 'structural' },
   { id: 'rate-limit', prompt: "Add rate limiting to an endpoint so users can't spam it.", correctness: 'structural' },
+  { id: 'forgeflow-command-wrapper', prompt: 'Update a Forgeflow slash-command wrapper to accept a new safe flag and reject unsupported arguments.', correctness: 'structural' },
+  { id: 'forgeflow-runtime-manifest', prompt: 'Add a new Forgeflow runtime helper and wire it through install manifest, runtime inventory, and command coverage tests.', correctness: 'structural' },
+  { id: 'forgeflow-dashboard-readiness', prompt: 'Extend the Forgeflow dashboard readiness API with an additive card while preserving read-only behavior and schema compatibility.', correctness: 'structural' },
+  { id: 'forgeflow-release-gate', prompt: 'Add a new release-readiness check, document it in the release gate, and keep the advisory boundary intact.', correctness: 'structural' },
 ];
 
 const ARMS = [
@@ -108,6 +113,17 @@ function runPromptfoo(dir, opts = {}) {
   };
 }
 
+function importRunOutput(root, dir, run) {
+  if (run.status !== 'pass' || !run.output || !fs.existsSync(run.output)) return null;
+  const output = path.join(dir, 'normalized-results.json');
+  const normalized = importPromptfooResults(dir, run.output, output);
+  return {
+    output,
+    runs: Array.isArray(normalized.runs) ? normalized.runs.length : 0,
+    next: `/forgeflow-lean-benchmark-results --results ${output}`,
+  };
+}
+
 function runnerScript(result) {
   return [
     '#!/usr/bin/env bash',
@@ -200,7 +216,8 @@ function reportTemplate() {
     '## Validation',
     '',
     '```bash',
-    'node scripts/forgeflow/render-lean-benchmark-results.js --results <results.json>',
+    'node scripts/forgeflow/render-lean-benchmark-results.js --promptfoo raw-results.json --out normalized-results.json',
+    'node scripts/forgeflow/render-lean-benchmark-results.js --results normalized-results.json',
     '```',
     '',
   ].join('\n');
@@ -260,9 +277,10 @@ function buildLeanBenchmarkRunner(opts = {}) {
   }
   if (opts.run) {
     result.run = runPromptfoo(dir, { runner: opts.runner, runnerFn: opts.runnerFn });
-    result.next = result.run.status === 'pass'
-      ? `/forgeflow-lean-benchmark-results --results ${path.join(dir, 'raw-results.json')}`
-      : result.run.reason;
+    result.imported_results = importRunOutput(root, dir, result.run);
+    result.next = result.imported_results?.next || (result.run.status === 'pass'
+      ? `/forgeflow-lean-benchmark-results --promptfoo ${path.join(dir, 'raw-results.json')} --out ${path.join(dir, 'normalized-results.json')}`
+      : result.run.reason);
   }
   return result;
 }
@@ -298,5 +316,6 @@ module.exports = {
   rawResultTemplate,
   reportTemplate,
   renderMarkdown,
+  importRunOutput,
   runPromptfoo,
 };

@@ -8,7 +8,7 @@ const { buildTelemetryQuality } = require('./render-telemetry-quality');
 const { buildLeanDecision, renderMarkdown: renderLeanDecisionMarkdown } = require('./render-lean-decision');
 
 function usage() {
-  console.error('Usage: render-lean-prime.js [--root <repo>] [--project-dir <dir>] [--task <text>] [--prime-task <text>] [--write-plan] [--json]');
+  console.error('Usage: render-lean-prime.js [--root <repo>] [--project-dir <dir>] [--task <text>] [--prime-task <text>] [--write-plan] [--write-report] [--json]');
 }
 
 function requireValue(argv, name, index) {
@@ -18,7 +18,7 @@ function requireValue(argv, name, index) {
 }
 
 function parseArgs(argv) {
-  const opts = { root: process.cwd(), projectDir: '', task: '', primeTask: '', writePlan: false, json: false };
+  const opts = { root: process.cwd(), projectDir: '', task: '', primeTask: '', writePlan: false, writeReport: false, json: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--root') {
@@ -35,6 +35,8 @@ function parseArgs(argv) {
       i += 1;
     } else if (arg === '--write-plan') {
       opts.writePlan = true;
+    } else if (arg === '--write-report') {
+      opts.writeReport = true;
     } else if (arg === '--json') {
       opts.json = true;
     } else if (arg === '--help' || arg === '-h') {
@@ -143,8 +145,8 @@ function buildLeanPrime(opts = {}) {
     artifacts.lean_decision_markdown = decisionMarkdownPath;
   }
   const mode = buildLeanMode({ root, projectDir });
+  const report = buildLeanReport({ root, projectDir, write: opts.writeReport });
   const status = buildLeanStatus({ root, projectDir });
-  const report = buildLeanReport({ root, projectDir });
   const telemetry = buildTelemetryQuality({ root, projectDir });
   const steps = [
     modeStep(mode),
@@ -171,8 +173,10 @@ function buildLeanPrime(opts = {}) {
     artifacts,
     boundary: 'Lean prime is read-only. It composes existing local lean status, report, and telemetry signals but does not write artifacts, edit settings, change routing, install hooks, commit, push, or call the network.',
   };
+  if (opts.writeReport && report.artifacts) result.artifacts.lean_report = report.artifacts;
   result.plan_commands = planCommands(result, task);
   if (opts.primeTask && !result.plan_commands.includes('/forgeflow-lean-report --write')) result.plan_commands.unshift('/forgeflow-lean-report --write');
+  if (opts.writeReport) result.plan_commands = result.plan_commands.filter((command) => command !== '/forgeflow-lean-report --write');
   if (opts.writePlan || opts.primeTask) {
     const jsonPath = path.join(projectDir, 'context', 'lean-prime-plan.json');
     const markdownPath = path.join(projectDir, 'context', 'lean-prime-plan.md');
@@ -182,6 +186,11 @@ function buildLeanPrime(opts = {}) {
     result.boundary = opts.primeTask
       ? 'Lean prime task writing stores only .forgeflow/<project>/context/lean-decision.{json,md} and lean-prime-plan.{json,md}. It does not edit code, settings, routing, commits, pushes, installs hooks, or call the network.'
       : 'Lean prime plan writing stores only .forgeflow/<project>/context/lean-prime-plan.{json,md}. It does not edit code, settings, routing, commits, pushes, installs hooks, or call the network.';
+  }
+  if (opts.writeReport) {
+    result.boundary = opts.primeTask
+      ? 'Lean prime task/report writing stores only .forgeflow/<project>/context/lean-decision.{json,md}, lean-report.{json,md}, and lean-prime-plan.{json,md}. It does not edit code, settings, routing, commits, pushes, installs hooks, or call the network.'
+      : 'Lean prime report writing stores only .forgeflow/<project>/context/lean-report.{json,md} and optional lean-prime-plan artifacts. It does not edit code, settings, routing, commits, pushes, installs hooks, or call the network.';
   }
   return result;
 }

@@ -9,6 +9,17 @@ const { createServer } = require('../server');
 const { scanReadiness } = require('../readiness');
 
 const INDEX_HTML = path.resolve(__dirname, '..', 'public', 'index.html');
+const READINESS_CARD_ORDER = [
+  'project-health',
+  'learning-status',
+  'context-budget',
+  'lean-prime',
+  'lean-guidance',
+  'release-readiness',
+  'dogfood-report',
+  'dogfood-refresh-plan',
+];
+const LEAN_PRIME_STEP_ORDER = ['mode', 'decision', 'report', 'telemetry', 'injection'];
 
 function writeJson(file, value) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -82,10 +93,18 @@ test('scanReadiness summarizes local readiness without leaking absolute root', a
   assert.equal(body.schema_version, '1');
   assert.equal(body.status, 'attention');
   assert.equal(body.cards.length, 8);
+  assert.deepEqual(body.cards.map((item) => item.id), READINESS_CARD_ORDER);
+  for (const card of body.cards) {
+    assert.deepEqual(Object.keys(card), ['id', 'label', 'status', 'summary', 'next']);
+  }
   assert.equal(body.next, '/forgeflow-lean-decision --task "<work item>"');
   assert.ok(body.cards.some((item) => item.id === 'lean-prime' && item.status === 'blocked'));
   assert.ok(body.cards.some((item) => item.id === 'lean-guidance' && item.status === 'blocked'));
   assert.ok(body.lean_prime_steps.some((item) => item.id === 'decision' && item.status === 'missing'));
+  assert.deepEqual(body.lean_prime_steps.map((item) => item.id), LEAN_PRIME_STEP_ORDER);
+  for (const step of body.lean_prime_steps) {
+    assert.deepEqual(Object.keys(step), ['id', 'status', 'next', 'reason']);
+  }
   assert.equal(JSON.stringify(body).includes(fixture.projectRoot), false);
   assert.ok(body.boundary.includes('read-only'));
 });

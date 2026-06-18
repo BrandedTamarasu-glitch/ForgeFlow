@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { commandNames } = require('./runtime-inventory');
-const { HOST_COMMANDS } = require('./render-lean-host-command-parity');
+const { HOST_PARITY_POLICY } = require('./render-lean-host-command-parity');
 
 function usage() {
   console.error('Usage: render-command-capability-matrix.js [--root <repo>] [--json]');
@@ -60,12 +60,13 @@ function buildCommandCapabilityMatrix(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const names = commandNames(root);
   const piCommands = registeredPiCommands(root);
-  const requiredHostCommands = new Set(HOST_COMMANDS);
+  const requiredHostCommands = new Set(HOST_PARITY_POLICY.required_host_parity || []);
+  const optionalPrefixes = HOST_PARITY_POLICY.optional_prefixes || [];
   const rows = names.map((name) => {
     const commandFile = `commands/${name.replace(/\//g, '/')}.md`;
     const opencodeFile = `.opencode/command/${name}.md`;
     const skillFile = `skills/${skillNameForCommand(name)}/SKILL.md`;
-    const policy = requiredHostCommands.has(name) ? 'required-host-parity' : (name.startsWith('forgeflow-lean-') ? 'optional-lean' : 'forgeflow-only');
+    const policy = requiredHostCommands.has(name) ? 'required-host-parity' : (optionalPrefixes.some((prefix) => name.startsWith(prefix)) ? 'optional-lean' : 'forgeflow-only');
     const gaps = [];
     if (policy === 'required-host-parity' && !piCommands.has(name)) gaps.push('pi_alias');
     if (policy === 'required-host-parity' && !exists(root, opencodeFile)) gaps.push('opencode_command');
@@ -92,6 +93,7 @@ function buildCommandCapabilityMatrix(opts = {}) {
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
     root,
     status: rows.every((row) => row.forgeflow_command) && requiredGaps.length === 0 ? 'pass' : 'fail',
+    policy: HOST_PARITY_POLICY,
     rows,
     summary: counts,
     next: requiredGaps.length ? '/forgeflow-lean-host-command-parity' : '/forgeflow-lean-host-command-parity',

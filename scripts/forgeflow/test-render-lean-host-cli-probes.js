@@ -20,17 +20,21 @@ fs.writeFileSync(evidenceFile, JSON.stringify({ probes: [{ binary: 'claude', sta
 
 const result = buildLeanHostCliProbes({ root, path: tmp });
 const evidenced = buildLeanHostCliProbes({ root, path: tmp, evidence: evidenceFile });
+const templateOut = path.join(tmp, 'host-probe-template.json');
+const templated = buildLeanHostCliProbes({ root, path: tmp, writeTemplate: true, out: templateOut });
+const template = JSON.parse(fs.readFileSync(templateOut, 'utf8'));
 const markdown = renderMarkdown(result);
-const opts = parseArgs(['--root', root, '--path', tmp, '--evidence', evidenceFile, '--json']);
+const opts = parseArgs(['--root', root, '--path', tmp, '--evidence', evidenceFile, '--write-template', '--out', templateOut, '--json']);
 
 const checks = [
   ['lists expected probes', result.probes.length === HOST_PROBES.length],
   ['detects executable on supplied path', result.probes.some((probe) => probe.binary === 'claude' && probe.status === 'present')],
   ['uses manual evidence when supplied', evidenced.probes.some((probe) => probe.binary === 'claude' && probe.status === 'verified' && probe.evidence.note === 'manual probe passed')],
+  ['writes evidence template', fs.existsSync(templateOut) && templated.artifacts.evidence_template === templateOut && template.probes.length === HOST_PROBES.length && templated.next.includes('--evidence')],
   ['reports missing executables without running them', result.status === 'partial' && result.summary.missing > 0],
   ['findOnPath returns basename-safe executable path', path.basename(findOnPath('claude', tmp)) === 'claude'],
   ['renders manual probes', markdown.includes('# Forgeflow Lean Host CLI Probes') && markdown.includes('Manual probe')],
-  ['parses args', opts.root === root && opts.path === tmp && opts.evidence === evidenceFile && opts.json],
+  ['parses args', opts.root === root && opts.path === tmp && opts.evidence === evidenceFile && opts.writeTemplate && opts.out === templateOut && opts.json],
 ];
 
 let failed = 0;

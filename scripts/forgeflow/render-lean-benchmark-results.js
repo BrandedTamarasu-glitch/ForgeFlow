@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
-const { safeReadTextFile } = require('./file-safety');
+const { safeReadTextFile, writeJsonSafe } = require('./file-safety');
 
 const REQUIRED_METRICS = ['code_loc', 'correct', 'cost_usd', 'latency_seconds'];
 
 function usage() {
   console.error('Usage: render-lean-benchmark-results.js --results <json> [--root <repo>] [--json]');
+  console.error('       render-lean-benchmark-results.js --promptfoo <json> --out <json> [--root <repo>] [--json]');
 }
 
 function requireValue(argv, name, index) {
@@ -16,7 +17,7 @@ function requireValue(argv, name, index) {
 }
 
 function parseArgs(argv) {
-  const opts = { root: process.cwd(), results: '', json: false };
+  const opts = { root: process.cwd(), results: '', promptfoo: '', out: '', json: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--root') {
@@ -24,6 +25,12 @@ function parseArgs(argv) {
       i += 1;
     } else if (arg === '--results') {
       opts.results = path.resolve(requireValue(argv, arg, i));
+      i += 1;
+    } else if (arg === '--promptfoo') {
+      opts.promptfoo = path.resolve(requireValue(argv, arg, i));
+      i += 1;
+    } else if (arg === '--out') {
+      opts.out = path.resolve(requireValue(argv, arg, i));
       i += 1;
     } else if (arg === '--json') {
       opts.json = true;
@@ -34,7 +41,8 @@ function parseArgs(argv) {
       throw new Error(`Unknown argument: ${arg}`);
     }
   }
-  if (!opts.results) throw new Error('Missing --results <json>');
+  if (!opts.results && !opts.promptfoo) throw new Error('Missing --results <json> or --promptfoo <json>');
+  if (opts.promptfoo && !opts.out) throw new Error('Missing --out <json> for --promptfoo import');
   return opts;
 }
 
@@ -47,11 +55,90 @@ function hasMetrics(run) {
   return REQUIRED_METRICS.every((key) => Number.isFinite(Number(metrics[key])));
 }
 
+function slug(value, fallback) {
+  const text = String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  return text || fallback;
+}
+
+function promptfooEntries(parsed) {
+  if (Array.isArray(parsed.results)) return parsed.results;
+  if (Array.isArray(parsed.evalResults)) return parsed.evalResults;
+  if (Array.isArray(parsed.table?.body)) return parsed.table.body;
+  if (Array.isArray(parsed.outputs)) return parsed.outputs;
+  return [];
+}
+
+function entryOutput(entry) {
+  return String(
+    entry.output
+    || entry.response?.output
+    || entry.response?.content
+    || entry.response
+    || entry.result
+    || '',
+  );
+}
+
+function entryCorrect(entry) {
+  const pass = entry.gradingResult?.pass ?? entry.success ?? entry.pass;
+  if (pass === true) return 1;
+  if (pass === false) return 0;
+  const score = Number(entry.gradingResult?.score ?? entry.score);
+  return Number.isFinite(score) ? score : 0;
+}
+
+function normalizePromptfooResults(parsed, opts = {}) {
+  const entries = promptfooEntries(parsed);
+  const runs = entries.map((entry, index) => {
+    const vars = entry.vars || entry.test?.vars || {};
+    const output = entryOutput(entry);
+    const arm = entry.prompt?.label || entry.prompt?.id || entry.promptId || entry.prompt || `arm-${index + 1}`;
+    const latencyMs = Number(entry.latencyMs ?? entry.latency_ms ?? entry.response?.latencyMs);
+    const latencySeconds = Number(entry.latency_seconds ?? entry.latencySeconds);
+    return {
+      task_id: vars.task_id || slug(vars.task || entry.test?.description || entry.description, `task-${index + 1}`),
+      arm: slug(arm, `arm-${index + 1}`),
+      iteration: Number(entry.iteration || entry.run || 1),
+      metrics: {
+        code_loc: output ? output.split(/\r?\n/).filter((line) => line.trim()).length : Number(entry.metrics?.code_loc || 0),
+        correct: entryCorrect(entry),
+        cost_usd: Number(entry.cost ?? entry.cost_usd ?? entry.metrics?.cost_usd ?? 0),
+        latency_seconds: Number.isFinite(latencySeconds) ? latencySeconds : (Number.isFinite(latencyMs) ? latencyMs / 1000 : Number(entry.metrics?.latency_seconds || 0)),
+      },
+    };
+  });
+  const provider = parsed.provider || parsed.config?.providers?.[0]?.id || parsed.providerId || '<provider>';
+  const model = parsed.model || parsed.config?.providers?.[0]?.id || parsed.modelId || '<model>';
+  const repeat = Math.max(3, ...runs.map((run) => Number(run.iteration || 1)).filter(Number.isFinite));
+  return {
+    schema_version: '1',
+    provider,
+    model,
+    run_date: opts.runDate || new Date().toISOString().slice(0, 10),
+    repeat,
+    caveats: 'Imported Promptfoo output is generation evidence only; multi-turn session cost can differ from single-turn benchmark cost.',
+    runs,
+    claims: {},
+    source: {
+      format: 'promptfoo',
+      entries: entries.length,
+    },
+  };
+}
+
+function importPromptfooResults(root, promptfooFile, outFile) {
+  const parsed = readResults(root, promptfooFile);
+  const normalized = normalizePromptfooResults(parsed);
+  writeJsonSafe(outFile, normalized);
+  return normalized;
+}
+
 function buildLeanBenchmarkResults(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
-  const file = path.resolve(opts.results || '');
+  const file = path.resolve(opts.results || opts.out || '');
   if (!file) throw new Error('Missing results file');
-  const parsed = readResults(root, file);
+  const imported = opts.promptfoo ? importPromptfooResults(root, path.resolve(opts.promptfoo), file) : null;
+  const parsed = imported || readResults(root, file);
   const runs = Array.isArray(parsed.runs) ? parsed.runs : [];
   const checks = [];
   checks.push({ name: 'schema version present', status: parsed.schema_version === '1' ? 'pass' : 'fail' });
@@ -74,6 +161,7 @@ function buildLeanBenchmarkResults(opts = {}) {
     status: failures ? 'fail' : 'pass',
     checks,
     summary: { checks: checks.length, failures, runs: runs.length },
+    imported: opts.promptfoo ? { source: path.resolve(opts.promptfoo), output: file, format: 'promptfoo' } : null,
     next: failures ? 'Add provider/date/sample/metric/caveat evidence before publishing lean benchmark claims.' : '/forgeflow-lean-benchmark',
     boundary: 'Lean benchmark results validation is read-only. It checks aggregate metadata and claim support but does not run models, install dependencies, mutate context, commit, push, or call the network.',
   };
@@ -103,6 +191,8 @@ if (require.main === module) main();
 module.exports = {
   REQUIRED_METRICS,
   buildLeanBenchmarkResults,
+  importPromptfooResults,
+  normalizePromptfooResults,
   parseArgs,
   renderMarkdown,
 };

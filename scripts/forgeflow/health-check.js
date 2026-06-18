@@ -149,9 +149,40 @@ function skip(name, detail = {}) {
   };
 }
 
+function warn(name, fix, detail = {}) {
+  return {
+    name,
+    status: 'warn',
+    fix,
+    ...detail,
+  };
+}
+
 function safeMkdir(dir) {
   assertSafeDirectory(dir);
   fs.mkdirSync(dir, { recursive: true });
+}
+
+function executableOnPath(name, pathValue = process.env.PATH || '') {
+  for (const dir of String(pathValue).split(path.delimiter).filter(Boolean)) {
+    const file = path.join(dir, name);
+    try {
+      fs.accessSync(file, fs.constants.X_OK);
+      return file;
+    } catch (_err) {
+      // Continue scanning PATH.
+    }
+  }
+  return '';
+}
+
+function addSessionToolChecks(checks) {
+  const rtk = executableOnPath('rtk');
+  checks.push(rtk
+    ? check('rtk command wrapper on PATH', true, '', { path: rtk })
+    : warn('rtk command wrapper on PATH', 'install or expose rtk on PATH before Codex sessions that follow this repo command policy', {
+      reason: 'rtk is not required by Forgeflow runtime helpers, but this repository asks shell sessions to prefix commands with it.',
+    }));
 }
 
 function addInstallChecks(checks, installRoot) {
@@ -391,6 +422,7 @@ function runHealthCheck(opts = {}) {
     checks.push(check('budget config', fs.existsSync(budgetPath), 'run seed-budget-config.js'));
   }
   addInstallChecks(checks, opts.installRoot);
+  addSessionToolChecks(checks);
 
   const failures = checks.filter((item) => item.status === 'fail');
   const latestInsights = latestInsightsReadiness(ffDir, root);

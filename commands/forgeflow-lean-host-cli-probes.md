@@ -1,7 +1,7 @@
 ---
 name: forgeflow-lean-host-cli-probes
 description: Inspect local host CLI availability for manual lean adapter smoke probes
-argument-hint: "[--evidence <json>] [--json]"
+argument-hint: "[--evidence <json>] [--write-template] [--out <json>] [--json]"
 allowed-tools:
   - Bash
 ---
@@ -10,7 +10,7 @@ Report which optional host CLIs are available on PATH and print manual lean adap
 </objective>
 
 <process>
-Validate `$ARGUMENTS`. Accept only no arguments, `--json`, and `--evidence <json>`.
+Validate `$ARGUMENTS`. Accept only no arguments, `--json`, `--write-template`, `--out <json>`, and `--evidence <json>`.
 
 ```bash
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -29,6 +29,17 @@ for ((i = 0; i < ${#USER_ARGS[@]}; i++)); do
   case "$arg" in
     "") ;;
     --json) SAFE_ARGS+=("$arg") ;;
+    --write-template) SAFE_ARGS+=("$arg") ;;
+    --out)
+      next_i=$((i + 1))
+      file="${USER_ARGS[$next_i]:-}"
+      if [ -z "$file" ] || [[ "$file" == --* ]]; then
+        echo "Missing output file for /forgeflow-lean-host-cli-probes"
+        exit 2
+      fi
+      SAFE_ARGS+=(--out "$file")
+      i=$next_i
+      ;;
     --evidence)
       next_i=$((i + 1))
       file="${USER_ARGS[$next_i]:-}"
@@ -50,5 +61,6 @@ env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/render-lean-host-cli-probes
 <success_criteria>
 - [ ] Output lists optional host CLI availability and manual probe commands.
 - [ ] Optional evidence marks manually checked probes without launching host CLIs.
+- [ ] `--write-template` writes a local evidence template without launching host CLIs.
 - [ ] The command does not launch host CLIs, install adapters, edit settings, commit, push, or call the network.
 </success_criteria>

@@ -41,5 +41,5 @@ env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/render-lean-benchmark-runne
 <success_criteria>
 - [ ] Output reports benchmark tasks, arms, and opt-in run commands.
 - [ ] The command does not call models, install dependencies, commit, push, or call the network by default.
-- [ ] `--run` requires `FORGEFLOW_BENCHMARK_ALLOW_NETWORK=1` and an existing promptfoo executable.
+- [ ] `--run` requires `FORGEFLOW_BENCHMARK_ALLOW_NETWORK=1` and an existing promptfoo executable, then imports raw output when available.
 </success_criteria>

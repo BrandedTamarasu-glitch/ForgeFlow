@@ -1,7 +1,7 @@
 ---
 name: forgeflow-lean-prime
 description: Show the first-run path to make lean guidance ready for context injection
-argument-hint: "[--task <text>] [--prime-task <text>] [--write-plan] [--json]"
+argument-hint: "[--task <text>] [--prime-task <text>] [--write-plan] [--write-report] [--json]"
 allowed-tools:
   - Bash
 ---
@@ -10,7 +10,7 @@ Show one first-run checklist for lean guidance: mode, decision evidence, report 
 </objective>
 
 <process>
-Validate `$ARGUMENTS`. Accept only no arguments, `--json`, `--write-plan`, `--task <text>`, and `--prime-task <text>`.
+Validate `$ARGUMENTS`. Accept only no arguments, `--json`, `--write-plan`, `--write-report`, `--task <text>`, and `--prime-task <text>`.
 
 ```bash
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -31,6 +31,9 @@ case "$ARGS" in
 esac
 case "$ARGS" in
   *--write-plan*) SAFE_ARGS+=(--write-plan); ARGS="${ARGS/--write-plan/}" ;;
+esac
+case "$ARGS" in
+  *--write-report*) SAFE_ARGS+=(--write-report); ARGS="${ARGS/--write-report/}" ;;
 esac
 ARGS="${ARGS#"${ARGS%%[![:space:]]*}"}"
 ARGS="${ARGS%"${ARGS##*[![:space:]]}"}"
@@ -58,5 +61,6 @@ env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/render-lean-prime.js" "${SA
 - [ ] Output gives one next command to clear the first blocker.
 - [ ] `--write-plan` writes only `.forgeflow/<project>/context/lean-prime-plan.md` and `.json`.
 - [ ] `--prime-task` writes only `.forgeflow/<project>/context/lean-decision.*` and `lean-prime-plan.*`.
+- [ ] `--write-report` writes only `.forgeflow/<project>/context/lean-report.md` and `.json`.
 - [ ] The command does not edit code, settings, routing, install hooks, commit, push, or call the network.
 </success_criteria>

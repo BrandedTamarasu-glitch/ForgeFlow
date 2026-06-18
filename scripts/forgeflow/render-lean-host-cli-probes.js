@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
-const { safeReadTextFile } = require('./file-safety');
+const { safeReadTextFile, writeJsonSafe } = require('./file-safety');
 
 const HOST_PROBES = [
   { host: 'Claude Code', binary: 'claude', command: '/forgeflow-lean-prime --json' },
@@ -11,7 +11,7 @@ const HOST_PROBES = [
 ];
 
 function usage() {
-  console.error('Usage: render-lean-host-cli-probes.js [--root <repo>] [--path <PATH>] [--evidence <json>] [--json]');
+  console.error('Usage: render-lean-host-cli-probes.js [--root <repo>] [--path <PATH>] [--evidence <json>] [--write-template] [--out <json>] [--json]');
 }
 
 function requireValue(argv, name, index) {
@@ -20,8 +20,12 @@ function requireValue(argv, name, index) {
   return value;
 }
 
+function defaultProjectDir(root) {
+  return path.join(root, '.forgeflow', path.basename(root));
+}
+
 function parseArgs(argv) {
-  const opts = { root: process.cwd(), path: process.env.PATH || '', evidence: '', json: false };
+  const opts = { root: process.cwd(), path: process.env.PATH || '', evidence: '', writeTemplate: false, out: '', json: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--root') {
@@ -32,6 +36,11 @@ function parseArgs(argv) {
       i += 1;
     } else if (arg === '--evidence') {
       opts.evidence = path.resolve(requireValue(argv, arg, i));
+      i += 1;
+    } else if (arg === '--write-template') {
+      opts.writeTemplate = true;
+    } else if (arg === '--out') {
+      opts.out = path.resolve(requireValue(argv, arg, i));
       i += 1;
     } else if (arg === '--json') {
       opts.json = true;
@@ -95,7 +104,7 @@ function buildLeanHostCliProbes(opts = {}) {
   });
   const missing = probes.filter((probe) => probe.status === 'missing').length;
   const verified = probes.filter((probe) => probe.status === 'verified').length;
-  return {
+  const result = {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
     root,
@@ -104,7 +113,29 @@ function buildLeanHostCliProbes(opts = {}) {
     summary: { probes: probes.length, present: probes.length - missing, missing, verified },
     next: missing ? 'Install or expose missing host CLIs on PATH before manual adapter smoke checks.' : (verified === probes.length ? '/forgeflow-lean-host-command-parity' : 'Optionally record manual probe evidence with --evidence <json>.'),
     boundary: 'Lean host CLI probes are read-only. They inspect PATH for executable names and print manual probe commands, but do not launch host CLIs, install adapters, edit settings, commit, push, or call the network.',
+    artifacts: {},
   };
+  if (opts.writeTemplate) {
+    const out = path.resolve(opts.out || path.join(defaultProjectDir(root), 'context', 'lean-host-cli-probe-evidence.template.json'));
+    const template = {
+      schema_version: '1',
+      generated_at: result.generated_at,
+      note: 'Run each manual_probe yourself, then change status to verified or pass when behavior is confirmed.',
+      probes: probes.map((probe) => ({
+        host: probe.host,
+        binary: probe.binary,
+        manual_probe: probe.manual_probe,
+        status: probe.status === 'missing' ? 'missing' : 'pending',
+        checked_at: '',
+        note: '',
+      })),
+    };
+    writeJsonSafe(out, template);
+    result.artifacts.evidence_template = out;
+    result.next = `/forgeflow-lean-host-cli-probes --evidence ${out}`;
+    result.boundary = 'Lean host CLI probe template writing stores only the requested local evidence template. It does not launch host CLIs, install adapters, edit settings, commit, push, or call the network.';
+  }
+  return result;
 }
 
 function renderMarkdown(result) {

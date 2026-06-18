@@ -15,6 +15,13 @@ const HOST_COMMANDS = [
   'forgeflow-lean-status',
 ];
 
+const HOST_PARITY_POLICY = {
+  schema_version: '1',
+  required_host_parity: HOST_COMMANDS,
+  optional_prefixes: ['forgeflow-lean-'],
+  optional_reason: 'Lean commands outside required_host_parity may remain Forgeflow-only until adoption evidence shows they need host parity.',
+};
+
 function usage() {
   console.error('Usage: render-lean-host-command-parity.js [--root <repo>] [--json]');
 }
@@ -72,6 +79,7 @@ function buildLeanHostCommandParity(opts = {}) {
     root,
     status: failures ? 'fail' : 'pass',
     commands: HOST_COMMANDS,
+    policy: HOST_PARITY_POLICY,
     checks,
     summary: { commands: HOST_COMMANDS.length, checks: checks.length, failures },
     next: failures ? 'Add missing host command files or pi registrations.' : '/forgeflow-lean-adapter-smoke',
@@ -104,6 +112,7 @@ if (require.main === module) main();
 
 module.exports = {
   HOST_COMMANDS,
+  HOST_PARITY_POLICY,
   buildLeanHostCommandParity,
   parseArgs,
   renderMarkdown,
