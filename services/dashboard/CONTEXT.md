@@ -134,7 +134,8 @@ The readiness endpoint is advisory and read-only. It reads existing local artifa
       "label": "Release Readiness",
       "status": "ready",
       "summary": "0 blocker(s) in latest saved snapshot.",
-      "next": ""
+      "next": "",
+      "details": []
     }
   ],
   "artifacts": {
@@ -148,7 +149,8 @@ The readiness endpoint is advisory and read-only. It reads existing local artifa
     "host_verification": "ready",
     "benchmark_evidence": "missing",
     "benchmark_run_ledger": "missing",
-    "guidance_aftercare": "current"
+    "guidance_aftercare": "current",
+    "failure_digest": "missing"
   },
   "lean_prime_steps": [
     {
@@ -169,10 +171,11 @@ The readiness endpoint is advisory and read-only. It reads existing local artifa
 The UI consumes `/api/readiness` only through `GET`. It renders:
 
 - the overall status as visible text, not color alone
-- eleven readiness cards with label, status, and summary
+- twelve readiness cards with label, status, summary, next command, and compact details
 - a Lean Prime checklist when the API provides `lean_prime_steps`
 - host verification and benchmark evidence cards based on local probe and benchmark artifacts
 - guidance aftercare status for stale post-commit project guidance
+- failure-digest aftercare status for the latest captured validation failure
 - one copy-only next-action command when the API provides `next`
 - the API boundary text
 

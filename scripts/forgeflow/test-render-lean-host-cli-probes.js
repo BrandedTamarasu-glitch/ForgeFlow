@@ -5,6 +5,7 @@ const path = require('path');
 const {
   HOST_PROBES,
   buildLeanHostCliProbes,
+  evidenceState,
   findOnPath,
   parseArgs,
   renderMarkdown,
@@ -16,7 +17,7 @@ const fakeClaude = path.join(tmp, 'claude');
 fs.writeFileSync(fakeClaude, '#!/bin/sh\nexit 0\n');
 fs.chmodSync(fakeClaude, 0o755);
 const evidenceFile = path.join(tmp, 'evidence.json');
-fs.writeFileSync(evidenceFile, JSON.stringify({ probes: [{ binary: 'claude', status: 'verified', checked_at: '2026-06-18T00:00:00Z', note: 'manual probe passed' }] }, null, 2));
+fs.writeFileSync(evidenceFile, JSON.stringify({ probes: [{ binary: 'claude', status: 'verified', checked_at: '2026-06-18T00:00:00Z', note: 'manual probe passed', output_digest: 'sha256:fixture' }] }, null, 2));
 
 const result = buildLeanHostCliProbes({ root, path: tmp });
 const evidenced = buildLeanHostCliProbes({ root, path: tmp, evidence: evidenceFile });
@@ -29,8 +30,9 @@ const opts = parseArgs(['--root', root, '--path', tmp, '--evidence', evidenceFil
 const checks = [
   ['lists expected probes', result.probes.length === HOST_PROBES.length],
   ['detects executable on supplied path', result.probes.some((probe) => probe.binary === 'claude' && probe.status === 'present')],
-  ['uses manual evidence when supplied', evidenced.probes.some((probe) => probe.binary === 'claude' && probe.status === 'verified' && probe.evidence.note === 'manual probe passed')],
-  ['writes evidence template', fs.existsSync(templateOut) && templated.artifacts.evidence_template === templateOut && template.probes.length === HOST_PROBES.length && templated.next.includes('--evidence')],
+  ['uses manual evidence when supplied', evidenced.probes.some((probe) => probe.binary === 'claude' && probe.status === 'verified' && probe.evidence.note === 'manual probe passed' && probe.evidence_state === 'strong')],
+  ['writes evidence template', fs.existsSync(templateOut) && templated.artifacts.evidence_template === templateOut && template.probes.length === HOST_PROBES.length && template.probes[0].output_digest === '' && templated.next.includes('--evidence')],
+  ['reports evidence requirements', evidenced.evidence_requirements.length >= 4 && evidenced.summary.strong_evidence === 1 && evidenceState({ status: 'verified' }) === 'thin'],
   ['reports missing executables without running them', result.status === 'partial' && result.summary.missing > 0],
   ['findOnPath returns basename-safe executable path', path.basename(findOnPath('claude', tmp)) === 'claude'],
   ['renders manual probes', markdown.includes('# Forgeflow Lean Host CLI Probes') && markdown.includes('Manual probe')],

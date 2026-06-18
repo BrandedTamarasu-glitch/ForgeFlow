@@ -219,11 +219,13 @@ function clearingAction(item) {
 function summarizeCategory(items) {
   const failed = items.filter((item) => item.status === 'fail');
   const planned = items.filter((item) => item.status === 'planned');
+  const warnings = items.filter((item) => item.status === 'warn');
   return {
-    status: failed.length > 0 ? 'fail' : (planned.length > 0 ? 'planned' : 'pass'),
+    status: failed.length > 0 ? 'fail' : (planned.length > 0 ? 'planned' : (warnings.length > 0 ? 'warn' : 'pass')),
     total: items.length,
     failed: failed.length,
     planned: planned.length,
+    warnings: warnings.length,
   };
 }
 
@@ -423,6 +425,87 @@ function releaseToInstallPreflightCheck(root) {
   };
 }
 
+function readJsonSafeIfPresent(root, file) {
+  const fullPath = path.isAbsolute(file) ? file : path.join(root, file);
+  if (!fs.existsSync(fullPath)) return null;
+  try {
+    return JSON.parse(safeReadTextFile(fullPath, root).content);
+  } catch (err) {
+    return { __invalid: true, reason: err.message };
+  }
+}
+
+function advisoryCheck(command, status, stdout, clears) {
+  return {
+    category: 'evidence-readiness',
+    command,
+    status,
+    exit_code: status === 'pass' ? 0 : null,
+    stdout: stdout || '',
+    stderr: '',
+    clears: clears || '',
+  };
+}
+
+function executableOnPath(name, pathValue = process.env.PATH || '') {
+  for (const dir of String(pathValue).split(path.delimiter).filter(Boolean)) {
+    const file = path.join(dir, name);
+    try {
+      fs.accessSync(file, fs.constants.X_OK);
+      return file;
+    } catch (_err) {
+      // Continue scanning PATH.
+    }
+  }
+  return '';
+}
+
+function evidenceReadinessChecks(root, planOnly = false) {
+  if (planOnly) {
+    return [
+      advisoryCheck('lean benchmark evidence advisory', 'planned', '', '/forgeflow-lean-benchmark-runner --run --runner <promptfoo>'),
+      advisoryCheck('host probe evidence advisory', 'planned', '', '/forgeflow-lean-host-cli-probes --write-template'),
+      advisoryCheck('failure digest aftercare advisory', 'planned', '', '/forgeflow-failure-digest after the next failed validation command'),
+      advisoryCheck('rtk policy alignment advisory', 'planned', '', 'Install rtk or expose it on PATH for sessions that follow this repository command policy.'),
+    ];
+  }
+  const projectDir = defaultProjectDir(root);
+  const benchmark = readJsonSafeIfPresent(root, path.join(projectDir, 'context', 'lean-benchmark-runner', 'normalized-results.json'));
+  const benchmarkRuns = Array.isArray(benchmark?.runs) ? benchmark.runs.length : 0;
+  const hostEvidence = readJsonSafeIfPresent(root, path.join(projectDir, 'context', 'lean-host-cli-probe-evidence.json'))
+    || readJsonSafeIfPresent(root, path.join(projectDir, 'context', 'lean-host-cli-probe-evidence.template.json'));
+  const hostProbes = Array.isArray(hostEvidence?.probes) ? hostEvidence.probes : [];
+  const verifiedHosts = hostProbes.filter((item) => ['pass', 'verified'].includes(String(item.status || '').toLowerCase())).length;
+  const failureDigest = path.join(projectDir, 'context', 'latest', 'failure-digest.md');
+  const rtk = executableOnPath('rtk');
+  return [
+    advisoryCheck(
+      'lean benchmark evidence advisory',
+      benchmarkRuns > 0 ? 'pass' : 'warn',
+      benchmarkRuns > 0 ? `${benchmarkRuns} normalized benchmark run(s) available.` : (benchmark?.__invalid ? `Benchmark evidence is invalid: ${benchmark.reason}` : 'No normalized model-backed benchmark evidence found.'),
+      '/forgeflow-lean-benchmark-runner --run --runner <promptfoo>',
+    ),
+    advisoryCheck(
+      'host probe evidence advisory',
+      verifiedHosts > 0 ? 'pass' : 'warn',
+      verifiedHosts > 0 ? `${verifiedHosts} host probe(s) verified.` : (hostEvidence?.__invalid ? `Host probe evidence is invalid: ${hostEvidence.reason}` : 'No verified host probe evidence found.'),
+      '/forgeflow-lean-host-cli-probes --write-template',
+    ),
+    advisoryCheck(
+      'failure digest aftercare advisory',
+      fs.existsSync(failureDigest) ? 'pass' : 'warn',
+      fs.existsSync(failureDigest) ? 'Latest failure digest is present.' : 'No latest failure digest exists yet.',
+      '/forgeflow-failure-digest after the next failed validation command',
+    ),
+    advisoryCheck(
+      'rtk policy alignment advisory',
+      rtk ? 'pass' : 'warn',
+      rtk ? 'rtk command wrapper is on PATH.' : 'rtk command wrapper is not on PATH for this session.',
+      'Install rtk or expose it on PATH for sessions that follow this repository command policy.',
+    ),
+  ];
+}
+
 function localTagExists(root, tag) {
   if (!tag) return false;
   const result = spawnSync('git', ['rev-parse', '--verify', '--quiet', `refs/tags/${tag}`], { cwd: root, encoding: 'utf8' });
@@ -568,6 +651,7 @@ function buildReleaseReadiness(opts = {}) {
   const commands = releaseReadinessCommands(releaseCheck);
   const runner = opts.runner || spawnSync;
   const installPreflight = releaseToInstallPreflightCheck(root);
+  const advisoryChecks = evidenceReadinessChecks(root, opts.planOnly);
   const sourceFailure = sourceError ? [{
     category: 'metadata',
     command: 'read commands/forgeflow-release-check.md',
@@ -576,7 +660,7 @@ function buildReleaseReadiness(opts = {}) {
     stdout: '',
     stderr: sourceError.message,
   }] : [];
-  const checks = sourceFailure.concat([installPreflight.check], commands.map((command) => {
+  const checks = sourceFailure.concat([installPreflight.check], advisoryChecks, commands.map((command) => {
     const category = commandCategory(command);
     if (opts.planOnly) {
       return {
@@ -669,7 +753,7 @@ function renderMarkdown(result) {
     '',
   ];
   for (const [name, summary] of Object.entries(result.categories)) {
-    lines.push(`- ${name}: ${summary.status} (${summary.total} checks, ${summary.failed} failed, ${summary.planned} planned)`);
+    lines.push(`- ${name}: ${summary.status} (${summary.total} checks, ${summary.failed} failed, ${summary.planned} planned, ${summary.warnings || 0} warn)`);
   }
   lines.push('', '## Baseline Comparison', '');
   if (!result.comparison || result.comparison.status === 'no-baseline') {
@@ -739,6 +823,15 @@ function renderMarkdown(result) {
       lines.push(`  - Exit: ${blocker.exit_code}`);
       if (blocker.output) lines.push(`  - Output: ${blocker.output.replace(/\s+/g, ' ')}`);
       lines.push(`  - Clears: ${blocker.clears}`);
+    }
+  }
+  const warnings = result.checks.filter((item) => item.status === 'warn');
+  if (warnings.length > 0) {
+    lines.push('', '## Advisory Warnings', '');
+    for (const item of warnings) {
+      lines.push(`- ${item.command}`);
+      if (item.stdout) lines.push(`  - Detail: ${item.stdout}`);
+      if (item.clears) lines.push(`  - Clears: ${item.clears}`);
     }
   }
   lines.push('');

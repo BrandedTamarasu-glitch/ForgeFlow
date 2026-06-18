@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { writeFileSafe, writeJsonSafe } = require('./file-safety');
-const { importPromptfooResults } = require('./render-lean-benchmark-results');
+const { buildLeanBenchmarkResults, importPromptfooResults } = require('./render-lean-benchmark-results');
 
 const TASKS = [
   { id: 'email-validator', prompt: 'Write a function that validates email addresses.', correctness: 'executable' },
@@ -24,6 +24,27 @@ const ARMS = [
   { name: 'baseline', system: '' },
   { name: 'lean-balanced', system: 'FORGEFLOW_LEAN_PROFILE=balanced' },
   { name: 'lean-strict', system: 'FORGEFLOW_LEAN_PROFILE=strict' },
+];
+
+const HISTORICAL_TASKS = [
+  {
+    id: 'recent-helper-contract-change',
+    source: 'git-history',
+    prompt: 'Replay a recent Forgeflow helper contract change and measure whether lean guidance preserves install/runtime/update wiring.',
+    correctness: 'structural',
+  },
+  {
+    id: 'recent-dashboard-readiness-change',
+    source: 'git-history',
+    prompt: 'Replay a recent dashboard readiness card change and measure schema compatibility, copyable next actions, and read-only boundaries.',
+    correctness: 'structural',
+  },
+  {
+    id: 'recent-release-gate-change',
+    source: 'git-history',
+    prompt: 'Replay a recent release-gate change and measure command allowlist safety, advisory boundaries, and focused test coverage.',
+    correctness: 'structural',
+  },
 ];
 
 function usage() {
@@ -232,6 +253,56 @@ function rawResultTemplate() {
   };
 }
 
+function benchmarkEvidenceChecklist() {
+  return {
+    schema_version: '1',
+    required_before_claims: [
+      'Run the benchmark with explicit model/provider credentials and FORGEFLOW_BENCHMARK_ALLOW_NETWORK=1.',
+      'Use at least 3 iterations for each compared arm.',
+      'Keep task, arm, cost, latency, code size, and correctness metrics per run.',
+      'Validate normalized output with render-lean-benchmark-results.js before publishing any performance claim.',
+      'Record caveats that single-turn benchmark costs can differ from full agent sessions.',
+    ],
+    optional_historical_pack: HISTORICAL_TASKS,
+  };
+}
+
+function storedBenchmarkEvidence(root, dir, projectDir = root) {
+  const normalized = path.join(dir, 'normalized-results.json');
+  if (!fs.existsSync(normalized)) {
+    return {
+      status: 'missing',
+      grade: 'insufficient',
+      runs: 0,
+      tasks: 0,
+      arms: 0,
+      next: '/forgeflow-lean-benchmark-runner --run --runner <promptfoo>',
+    };
+  }
+  try {
+    const result = buildLeanBenchmarkResults({ root: projectDir, results: normalized });
+    return {
+      status: result.status === 'pass' ? 'ready' : 'attention',
+      grade: result.summary.evidence_grade,
+      runs: result.summary.runs,
+      tasks: result.summary.tasks,
+      arms: result.summary.arms,
+      failures: result.summary.failures,
+      next: result.next,
+    };
+  } catch (err) {
+    return {
+      status: 'invalid',
+      grade: 'insufficient',
+      runs: 0,
+      tasks: 0,
+      arms: 0,
+      reason: err.message,
+      next: '/forgeflow-lean-benchmark-results --results .forgeflow/<project>/context/lean-benchmark-runner/normalized-results.json',
+    };
+  }
+}
+
 function reportTemplate() {
   return [
     '# Forgeflow Lean Benchmark Report',
@@ -281,9 +352,11 @@ function buildLeanBenchmarkRunner(opts = {}) {
     project_dir: projectDir,
     status: 'ready',
     tasks: TASKS,
+    historical_tasks: HISTORICAL_TASKS,
     arms: ARMS,
     commands,
     output_dir: dir,
+    evidence: storedBenchmarkEvidence(root, dir, projectDir),
     artifacts: {},
     boundary: 'Lean benchmark runner is an opt-in scaffold. Default output does not call models, install dependencies, mutate context, commit, push, or call the network. Model-backed runs require an explicit external runner and FORGEFLOW_BENCHMARK_ALLOW_NETWORK=1.',
     next: opts.write ? `${dir}/plan.json` : '/forgeflow-lean-benchmark-runner --write',
@@ -292,6 +365,8 @@ function buildLeanBenchmarkRunner(opts = {}) {
     writeJsonSafe(path.join(dir, 'plan.json'), result);
     writeFileSafe(path.join(dir, 'run.sh'), runnerScript(result));
     writeJsonSafe(path.join(dir, 'tasks.json'), { schema_version: '1', tasks: TASKS, arms: ARMS });
+    writeJsonSafe(path.join(dir, 'historical-tasks.json'), { schema_version: '1', tasks: HISTORICAL_TASKS });
+    writeJsonSafe(path.join(dir, 'evidence-checklist.json'), benchmarkEvidenceChecklist());
     writeJsonSafe(path.join(dir, 'raw-results.template.json'), rawResultTemplate());
     writeFileSafe(path.join(dir, 'promptfooconfig.yaml'), promptfooConfig());
     writeFileSafe(path.join(dir, 'report.template.md'), reportTemplate());
@@ -301,6 +376,8 @@ function buildLeanBenchmarkRunner(opts = {}) {
       json: path.join(dir, 'plan.json'),
       script: path.join(dir, 'run.sh'),
       tasks: path.join(dir, 'tasks.json'),
+      historical_tasks: path.join(dir, 'historical-tasks.json'),
+      evidence_checklist: path.join(dir, 'evidence-checklist.json'),
       raw_results_template: path.join(dir, 'raw-results.template.json'),
       promptfoo: path.join(dir, 'promptfooconfig.yaml'),
       report_template: path.join(dir, 'report.template.md'),
@@ -311,6 +388,7 @@ function buildLeanBenchmarkRunner(opts = {}) {
   if (opts.run) {
     result.run = runPromptfoo(dir, { runner: opts.runner, runnerFn: opts.runnerFn });
     result.imported_results = importRunOutput(root, dir, result.run);
+    result.evidence = storedBenchmarkEvidence(root, dir, projectDir);
     result.next = result.imported_results?.next || (result.run.status === 'pass'
       ? `/forgeflow-lean-benchmark-results --promptfoo ${path.join(dir, 'raw-results.json')} --out ${path.join(dir, 'normalized-results.json')}`
       : result.run.reason);
@@ -322,6 +400,14 @@ function buildLeanBenchmarkRunner(opts = {}) {
 function renderMarkdown(result) {
   const lines = ['# Forgeflow Lean Benchmark Runner', '', `Status: ${result.status}`, '', result.boundary, '', '## Tasks', ''];
   for (const task of result.tasks) lines.push(`- ${task.id}: ${task.prompt} (${task.correctness})`);
+  lines.push('', '## Historical Task Pack', '');
+  for (const task of result.historical_tasks || []) lines.push(`- ${task.id}: ${task.prompt} (${task.correctness})`);
+  if (result.evidence) {
+    lines.push('', '## Stored Evidence', '');
+    lines.push(`- Status: ${result.evidence.status}`);
+    lines.push(`- Grade: ${result.evidence.grade}`);
+    lines.push(`- Runs: ${result.evidence.runs}; tasks: ${result.evidence.tasks}; arms: ${result.evidence.arms}`);
+  }
   lines.push('', '## Commands', '');
   for (const command of result.commands) lines.push(`- ${command.name}: ${command.command}`);
   lines.push('', `Next: ${result.next}`, '');
@@ -350,7 +436,9 @@ module.exports = {
   rawResultTemplate,
   reportTemplate,
   renderMarkdown,
+  benchmarkEvidenceChecklist,
   importRunOutput,
+  HISTORICAL_TASKS,
   writeRunLedger,
   runPromptfoo,
 };

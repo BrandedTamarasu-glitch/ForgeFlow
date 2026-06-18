@@ -33,12 +33,14 @@ const opts = parseArgs(['--root', root, '--project-dir', projectDir, '--task', '
 const checks = [
   ['blocked without evidence', result.status === 'blocked' && result.steps.length === 5],
   ['next points to lean decision', result.next === '/forgeflow-lean-decision --task "<work item>"'],
+  ['bootstrap command is available when blocked', result.bootstrap.available && result.bootstrap.command === '/forgeflow-lean-prime --prime-task "<work item>" --write-report' && result.bootstrap.clears.includes('decision')],
   ['task makes next command copyable', taskResult.next === '/forgeflow-lean-decision --task "tighten lean parity"'],
+  ['task makes bootstrap command copyable', taskResult.bootstrap.command === '/forgeflow-lean-prime --prime-task "tighten lean parity" --write-report'],
   ['write plan creates artifacts', fs.existsSync(taskResult.artifacts.json) && fs.existsSync(taskResult.artifacts.markdown)],
   ['prime task writes decision and plan artifacts', fs.existsSync(primedTask.artifacts.lean_decision_json) && fs.existsSync(primedTask.artifacts.lean_decision_markdown) && fs.existsSync(primedTask.artifacts.json) && primedTask.steps.find((item) => item.id === 'decision').status === 'ready'],
   ['prime task can write report artifacts', fs.existsSync(primedReport.artifacts.lean_report.json) && fs.existsSync(primedReport.artifacts.lean_report.markdown) && primedReport.steps.find((item) => item.id === 'report').status !== 'missing' && !primedReport.plan_commands.includes('/forgeflow-lean-report --write')],
   ['telemetry next is command shaped', result.steps.find((item) => item.id === 'telemetry').next.startsWith('/')],
-  ['renders checklist', markdown.includes('# Forgeflow Lean Prime') && markdown.includes('Lean decision evidence')],
+  ['renders checklist', markdown.includes('# Forgeflow Lean Prime') && markdown.includes('Lean decision evidence') && markdown.includes('## Bootstrap')],
   ['boundary is read-only', result.boundary.includes('read-only') && result.boundary.includes('does not write')],
   ['parses args', opts.root === root && opts.projectDir === projectDir && opts.task === 'tighten lean parity' && opts.primeTask === 'prime lean parity' && opts.writePlan && opts.writeReport && opts.json],
 ];

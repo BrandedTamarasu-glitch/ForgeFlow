@@ -31,6 +31,66 @@
       },
       "latencyMs": 900,
       "cost": 0.006
+    },
+    {
+      "vars": {
+        "task_id": "debounce",
+        "task": "Write a reusable debounce function."
+      },
+      "prompt": {
+        "label": "baseline"
+      },
+      "output": "function debounce(fn, wait) {\n  let timer;\n  return (...args) => {\n    clearTimeout(timer);\n    timer = setTimeout(() => fn(...args), wait);\n  };\n}",
+      "gradingResult": {
+        "pass": true
+      },
+      "latencyMs": 1300,
+      "cost": 0.008
+    },
+    {
+      "vars": {
+        "task_id": "debounce",
+        "task": "Write a reusable debounce function."
+      },
+      "prompt": {
+        "label": "lean-balanced"
+      },
+      "output": "const debounce = (fn, wait) => {\n  let timer;\n  return (...args) => {\n    clearTimeout(timer);\n    timer = setTimeout(() => fn(...args), wait);\n  };\n};",
+      "gradingResult": {
+        "pass": true
+      },
+      "latencyMs": 1000,
+      "cost": 0.006
+    },
+    {
+      "vars": {
+        "task_id": "csv-sum",
+        "task": "Sum the amount column from a CSV."
+      },
+      "prompt": {
+        "label": "baseline"
+      },
+      "output": "Read rows, parse amount, accumulate total.",
+      "gradingResult": {
+        "pass": true
+      },
+      "latencyMs": 1400,
+      "cost": 0.009
+    },
+    {
+      "vars": {
+        "task_id": "csv-sum",
+        "task": "Sum the amount column from a CSV."
+      },
+      "prompt": {
+        "label": "lean-balanced"
+      },
+      "output": "Parse CSV rows and sum Number(row.amount).",
+      "gradingResult": {
+        "pass": true
+      },
+      "latencyMs": 950,
+      "cost": 0.005
     }
   ]
 }

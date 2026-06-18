@@ -7,6 +7,7 @@ const { buildLeanHostCliProbes } = require('../../scripts/forgeflow/render-lean-
 const { buildLeanPrime } = require('../../scripts/forgeflow/render-lean-prime');
 const { buildLeanStatus } = require('../../scripts/forgeflow/render-lean-status');
 const { buildStaleArtifactPlan } = require('../../scripts/forgeflow/render-stale-artifact-plan');
+const { latestFailureDigest } = require('../../scripts/forgeflow/show-project-trends');
 
 function defaultProjectDir(projectRoot) {
   return path.join(projectRoot, '.forgeflow', path.basename(projectRoot));
@@ -37,13 +38,14 @@ async function readJson(file, root) {
   }
 }
 
-function card(id, label, status, summary, next) {
+function card(id, label, status, summary, next, details = []) {
   return {
     id,
     label,
     status,
     summary,
     next: next || '',
+    details: details.filter(Boolean).slice(0, 5),
   };
 }
 
@@ -81,6 +83,7 @@ function releaseReadinessCard(releaseReadiness) {
     status,
     `${blockers} blocker(s) in latest saved snapshot.`,
     status === 'ready' ? '' : '/forgeflow-release-readiness',
+    releaseReadiness.value.command_count ? [`${releaseReadiness.value.command_count} checks in latest snapshot.`] : [],
   );
 }
 
@@ -111,6 +114,7 @@ function dogfoodCard(dogfoodReport) {
     dogfoodReport.value.status || decision,
     `Promotion decision: ${decision}.`,
     decision === 'consider-promote' ? '' : '/forgeflow-dogfood-refresh-plan',
+    dogfoodReport.value.promotion_reason ? [dogfoodReport.value.promotion_reason] : [],
   );
 }
 
@@ -157,6 +161,7 @@ function leanPrimeCard(leanPrime) {
     leanPrime.status,
     `${blocked} checklist step(s) need attention.`,
     next,
+    leanPrime.bootstrap?.available ? [`Bootstrap: ${leanPrime.bootstrap.command}`] : [],
   );
 }
 
@@ -176,6 +181,10 @@ function hostVerificationCard(hostProbes) {
     status,
     `${verified}/${probes} host probe(s) verified; ${missing} missing.`,
     next,
+    [
+      `${Number(summary.strong_evidence || 0)} strong evidence item(s).`,
+      `${Number(summary.pending_manual || 0)} probe(s) pending manual evidence.`,
+    ],
   );
 }
 
@@ -191,7 +200,10 @@ function benchmarkEvidenceCard(benchmarkRunner, benchmarkResults, benchmarkLedge
   const summary = status === 'ready'
     ? `${runs} normalized benchmark run(s) available.`
     : `${benchmarkRunner.tasks?.length || 0} task(s) scaffolded; no normalized benchmark evidence yet.`;
-  return card('benchmark-evidence', 'Benchmark Evidence', status, summary, next);
+  return card('benchmark-evidence', 'Benchmark Evidence', status, summary, next, [
+    benchmarkRunner.evidence ? `Evidence grade: ${benchmarkRunner.evidence.grade}.` : '',
+    `${benchmarkRunner.historical_tasks?.length || 0} historical replay task(s) scaffolded.`,
+  ]);
 }
 
 function guidanceAftercareCard(stalePlan) {
@@ -204,6 +216,33 @@ function guidanceAftercareCard(stalePlan) {
     stalePlan.status,
     stalePlan.build_aftercare?.summary || stalePlan.next_reason || 'Guidance aftercare rendered.',
     stalePlan.commands?.[0] || '',
+  );
+}
+
+function failureDigestCard(failureDigest) {
+  if (!failureDigest || failureDigest.status === 'invalid') {
+    return card('failure-digest', 'Failure Digest', 'invalid', failureDigest?.reason || 'Latest failure digest could not be read.', '/forgeflow-failure-digest');
+  }
+  if (!failureDigest.present) {
+    return card(
+      'failure-digest',
+      'Failure Digest',
+      'watch',
+      'No captured validation failure digest yet.',
+      '/forgeflow-failure-digest',
+      [failureDigest.first_run_guidance || 'Capture the next failed validation output.'],
+    );
+  }
+  return card(
+    'failure-digest',
+    'Failure Digest',
+    failureDigest.status || 'present',
+    failureDigest.summary || 'Latest failure digest is present.',
+    failureDigest.raw_required ? '/forgeflow-failure-digest' : '',
+    [
+      failureDigest.mode ? `Mode: ${failureDigest.mode}.` : '',
+      failureDigest.generated_at ? `Generated: ${failureDigest.generated_at}.` : '',
+    ],
   );
 }
 
@@ -244,6 +283,7 @@ async function scanReadiness(opts = {}) {
   let hostProbes;
   let benchmarkRunner;
   let stalePlan;
+  let failureDigest;
   try {
     refreshPlan = renderDogfoodRefreshPlan({ root: projectRoot, projectDir });
   } catch (err) {
@@ -274,6 +314,11 @@ async function scanReadiness(opts = {}) {
   } catch (err) {
     stalePlan = { status: 'error', reason: err.message, next: '/forgeflow-stale-artifact-plan' };
   }
+  try {
+    failureDigest = latestFailureDigest(projectDir);
+  } catch (err) {
+    failureDigest = { status: 'invalid', reason: err.message, present: false };
+  }
 
   const cards = [
     card(
@@ -290,6 +335,7 @@ async function scanReadiness(opts = {}) {
     hostVerificationCard(hostProbes),
     benchmarkEvidenceCard(benchmarkRunner, benchmarkResults, benchmarkLedger),
     guidanceAftercareCard(stalePlan),
+    failureDigestCard(failureDigest),
     releaseReadinessCard(releaseReadiness),
     dogfoodCard(dogfoodReport),
     dogfoodRefreshCard(refreshPlan),
@@ -313,12 +359,14 @@ async function scanReadiness(opts = {}) {
       benchmark_evidence: statusFromRead(benchmarkResults),
       benchmark_run_ledger: statusFromRead(benchmarkLedger),
       guidance_aftercare: stalePlan.status,
+      failure_digest: failureDigest.status,
     },
     lean_prime_steps: (leanPrime.steps || []).map((item) => ({
       id: item.id,
       status: item.status,
       next: item.next,
       reason: item.reason,
+      label: item.label,
     })),
     next: cards.find((item) => item.next)?.next || '',
     boundary: 'Dashboard readiness is read-only. It reads local artifacts and does not refresh, write, spawn agents, call GitHub, export telemetry, commit, push, or promote automation.',

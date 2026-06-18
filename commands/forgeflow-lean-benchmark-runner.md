@@ -6,7 +6,7 @@ allowed-tools:
   - Bash
 ---
 <objective>
-Render a reproducible benchmark runner scaffold for lean guidance comparisons without running model calls by default.
+Render a reproducible benchmark runner scaffold for lean guidance comparisons without running model calls by default. The scaffold includes current task prompts, a historical replay task pack, and an evidence checklist for publishable benchmark claims.
 </objective>
 
 <process>
@@ -40,6 +40,8 @@ env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/render-lean-benchmark-runne
 
 <success_criteria>
 - [ ] Output reports benchmark tasks, arms, and opt-in run commands.
+- [ ] Output reports stored benchmark evidence grade when normalized results exist.
+- [ ] `--write` creates `historical-tasks.json` and `evidence-checklist.json`.
 - [ ] The command does not call models, install dependencies, commit, push, or call the network by default.
 - [ ] `--run` requires `FORGEFLOW_BENCHMARK_ALLOW_NETWORK=1` and an existing promptfoo executable, then imports raw output and writes a local run ledger when available.
 </success_criteria>

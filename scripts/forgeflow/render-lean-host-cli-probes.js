@@ -64,7 +64,21 @@ function readEvidence(root, evidenceFile) {
       status: item.status || '',
       checked_at: item.checked_at || '',
       note: item.note || '',
+      command: item.command || item.manual_probe || '',
+      output_digest: item.output_digest || '',
     }]));
+}
+
+function evidenceState(manual) {
+  const status = String(manual.status || '').toLowerCase();
+  const verified = ['pass', 'verified'].includes(status);
+  const hasTimestamp = /^\d{4}-\d{2}-\d{2}T/.test(String(manual.checked_at || ''));
+  const hasNote = String(manual.note || '').trim().length > 0;
+  const hasDigest = String(manual.output_digest || '').trim().length > 0;
+  if (verified && hasTimestamp && hasNote) return hasDigest ? 'strong' : 'verified';
+  if (verified) return 'thin';
+  if (status) return status;
+  return 'missing';
 }
 
 function isExecutable(file) {
@@ -93,6 +107,7 @@ function buildLeanHostCliProbes(opts = {}) {
     const executable = findOnPath(probe.binary, pathValue);
     const manual = evidence[probe.binary] || {};
     const verified = ['pass', 'verified'].includes(String(manual.status || '').toLowerCase());
+    const proof = evidenceState(manual);
     return {
       host: probe.host,
       binary: probe.binary,
@@ -100,6 +115,7 @@ function buildLeanHostCliProbes(opts = {}) {
       executable: executable ? path.basename(executable) : '',
       manual_probe: probe.command,
       evidence: manual,
+      evidence_state: proof,
     };
   });
   const missing = probes.filter((probe) => probe.status === 'missing').length;
@@ -110,10 +126,25 @@ function buildLeanHostCliProbes(opts = {}) {
     root,
     status: missing ? 'partial' : (verified === probes.length ? 'verified' : 'ready'),
     probes,
-    summary: { probes: probes.length, present: probes.length - missing, missing, verified },
+    summary: {
+      probes: probes.length,
+      present: probes.length - missing,
+      missing,
+      verified,
+      strong_evidence: probes.filter((probe) => probe.evidence_state === 'strong').length,
+      thin_evidence: probes.filter((probe) => probe.evidence_state === 'thin').length,
+      pending_manual: probes.filter((probe) => probe.status === 'present').length,
+    },
     next: missing ? 'Install or expose missing host CLIs on PATH before manual adapter smoke checks.' : (verified === probes.length ? '/forgeflow-lean-host-command-parity' : 'Optionally record manual probe evidence with --evidence <json>.'),
     boundary: 'Lean host CLI probes are read-only. They inspect PATH for executable names and print manual probe commands, but do not launch host CLIs, install adapters, edit settings, commit, push, or call the network.',
     artifacts: {},
+    evidence_requirements: [
+      'manual probe command run by a developer',
+      'verified or pass status',
+      'checked_at ISO timestamp',
+      'short note explaining observed behavior',
+      'optional output_digest instead of raw host output',
+    ],
   };
   if (opts.writeTemplate) {
     const out = path.resolve(opts.out || path.join(defaultProjectDir(root), 'context', 'lean-host-cli-probe-evidence.template.json'));
@@ -125,8 +156,10 @@ function buildLeanHostCliProbes(opts = {}) {
         host: probe.host,
         binary: probe.binary,
         manual_probe: probe.manual_probe,
+        command: probe.manual_probe,
         status: probe.status === 'missing' ? 'missing' : 'pending',
         checked_at: '',
+        output_digest: '',
         note: '',
       })),
     };
@@ -144,6 +177,7 @@ function renderMarkdown(result) {
     lines.push(`- ${probe.status}: ${probe.host} (${probe.binary})`);
     lines.push(`  - Manual probe: \`${probe.manual_probe}\``);
     if (probe.evidence?.note) lines.push(`  - Evidence: ${probe.evidence.note}`);
+    if (probe.evidence_state && probe.evidence_state !== 'missing') lines.push(`  - Evidence state: ${probe.evidence_state}`);
   }
   lines.push('', `Next: ${result.next}`, '');
   return lines.join('\n');
@@ -166,6 +200,7 @@ module.exports = {
   HOST_PROBES,
   buildLeanHostCliProbes,
   findOnPath,
+  evidenceState,
   parseArgs,
   readEvidence,
   renderMarkdown,

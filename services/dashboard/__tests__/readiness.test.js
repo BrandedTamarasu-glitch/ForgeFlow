@@ -18,6 +18,7 @@ const READINESS_CARD_ORDER = [
   'host-verification',
   'benchmark-evidence',
   'guidance-aftercare',
+  'failure-digest',
   'release-readiness',
   'dogfood-report',
   'dogfood-refresh-plan',
@@ -95,10 +96,11 @@ test('scanReadiness summarizes local readiness without leaking absolute root', a
   const body = await scanReadiness(fixture);
   assert.equal(body.schema_version, '1');
   assert.equal(body.status, 'attention');
-  assert.equal(body.cards.length, 11);
+  assert.equal(body.cards.length, 12);
   assert.deepEqual(body.cards.map((item) => item.id), READINESS_CARD_ORDER);
   for (const card of body.cards) {
-    assert.deepEqual(Object.keys(card), ['id', 'label', 'status', 'summary', 'next']);
+    assert.deepEqual(Object.keys(card), ['id', 'label', 'status', 'summary', 'next', 'details']);
+    assert.ok(Array.isArray(card.details));
   }
   assert.equal(body.next, '/forgeflow-lean-prime --prime-task "<work item>" --write-report');
   assert.ok(body.cards.some((item) => item.id === 'lean-prime' && item.status === 'blocked'));
@@ -107,10 +109,11 @@ test('scanReadiness summarizes local readiness without leaking absolute root', a
   assert.ok(body.cards.some((item) => item.id === 'host-verification' && ['ready', 'watch', 'partial'].includes(item.status)));
   assert.ok(body.cards.some((item) => item.id === 'benchmark-evidence' && item.status === 'missing'));
   assert.ok(body.cards.some((item) => item.id === 'guidance-aftercare'));
+  assert.ok(body.cards.some((item) => item.id === 'failure-digest' && item.status === 'watch'));
   assert.ok(body.lean_prime_steps.some((item) => item.id === 'decision' && item.status === 'missing'));
   assert.deepEqual(body.lean_prime_steps.map((item) => item.id), LEAN_PRIME_STEP_ORDER);
   for (const step of body.lean_prime_steps) {
-    assert.deepEqual(Object.keys(step), ['id', 'status', 'next', 'reason']);
+    assert.deepEqual(Object.keys(step), ['id', 'status', 'next', 'reason', 'label']);
   }
   assert.equal(JSON.stringify(body).includes(fixture.projectRoot), false);
   assert.ok(body.boundary.includes('read-only'));
@@ -132,6 +135,7 @@ test('GET /api/readiness serves no-store local readiness JSON', async () => {
     assert.ok(res.body.cards.some((item) => item.id === 'host-verification'));
     assert.ok(res.body.cards.some((item) => item.id === 'benchmark-evidence'));
     assert.ok(res.body.cards.some((item) => item.id === 'guidance-aftercare'));
+    assert.ok(res.body.cards.some((item) => item.id === 'failure-digest'));
     assert.ok(res.body.lean_prime_steps.some((item) => item.id === 'telemetry' && item.next.startsWith('/')));
     assert.ok(res.body.cards.some((item) => item.id === 'dogfood-refresh-plan' && item.next === '/forgeflow-dogfood-report --write'));
     assert.equal(JSON.stringify(res.body).includes(fixture.projectRoot), false);
@@ -148,6 +152,7 @@ test('dashboard HTML includes read-only project readiness panel contract', () =>
   assert.match(html, /id="readiness-lean-prime"/);
   assert.match(html, /id="readiness-lean-prime-list"/);
   assert.match(html, /id="readiness-copy-command"/);
+  assert.match(html, /item\.details/);
   assert.match(html, /fetch\('\/api\/readiness'/);
   assert.doesNotMatch(html, /\/api\/readiness[^]*method:\s*'POST'/);
 });

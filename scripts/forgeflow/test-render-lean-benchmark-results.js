@@ -33,8 +33,9 @@ const opts = parseArgs(['--root', root, '--results', fixture, '--json']);
 const importOpts = parseArgs(['--root', root, '--promptfoo', promptfooFixture, '--out', importedOut, '--json']);
 
 const checks = [
-  ['benchmark results pass', result.status === 'pass' && result.summary.runs === 2],
-  ['promptfoo import passes', imported.status === 'pass' && imported.summary.runs === 2 && imported.imported.format === 'promptfoo'],
+  ['benchmark results pass', result.status === 'pass' && result.summary.runs === 6 && result.summary.evidence_grade === 'publishable'],
+  ['benchmark result aggregates arms', result.arm_summaries.length === 2 && result.summary.tasks === 3 && result.summary.arms === 2],
+  ['promptfoo import passes', imported.status === 'pass' && imported.summary.runs === 6 && imported.imported.format === 'promptfoo' && imported.summary.evidence_grade === 'publishable'],
   ['promptfoo normalizer maps required metrics', normalized.runs.length === 1 && normalized.runs[0].metrics.correct === 1 && normalized.runs[0].metrics.latency_seconds === 1.2],
   ['required metrics include cost and latency', REQUIRED_METRICS.includes('cost_usd') && REQUIRED_METRICS.includes('latency_seconds')],
   ['renders markdown', markdown.includes('# Forgeflow Lean Benchmark Results') && markdown.includes('read-only')],

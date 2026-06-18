@@ -97,6 +97,36 @@ function adoptionRecommendations(root, rows) {
   }];
 }
 
+function optionalPromotionPlan(root, rows) {
+  const count = pilotCount(root);
+  const weights = [
+    ['prime', 5],
+    ['benchmark', 4],
+    ['host', 4],
+    ['decision', 3],
+    ['status', 3],
+    ['adapter', 2],
+  ];
+  return rows
+    .filter((row) => row.policy === 'optional-lean' && (!row.pi_alias || !row.opencode_command))
+    .map((row) => {
+      const score = weights.reduce((total, [needle, value]) => total + (row.command.includes(needle) ? value : 0), 0)
+        + (row.skill ? 1 : 0)
+        + (row.forgeflow_command ? 1 : 0);
+      const missing = [];
+      if (!row.pi_alias) missing.push('pi_alias');
+      if (!row.opencode_command) missing.push('opencode_command');
+      return {
+        command: row.command,
+        score,
+        missing,
+        action: `Review ${row.command} for host parity; add ${missing.join(' and ')} if developer workflow usage justifies promotion.`,
+      };
+    })
+    .sort((a, b) => b.score - a.score || a.command.localeCompare(b.command))
+    .slice(0, count >= 3 ? 8 : 3);
+}
+
 function buildCommandCapabilityMatrix(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const names = commandNames(root);
@@ -131,6 +161,7 @@ function buildCommandCapabilityMatrix(opts = {}) {
     optional_host_candidates: rows.filter((row) => row.policy === 'optional-lean' && (!row.pi_alias || !row.opencode_command)).length,
   };
   const recommendations = adoptionRecommendations(root, rows);
+  const promotionPlan = optionalPromotionPlan(root, rows);
   return {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
@@ -139,6 +170,11 @@ function buildCommandCapabilityMatrix(opts = {}) {
     policy: HOST_PARITY_POLICY,
     rows,
     recommendations,
+    promotion_plan: {
+      status: promotionPlan.length > 0 ? 'review' : 'complete',
+      candidates: promotionPlan,
+      evidence: `pilot_count=${pilotCount(root)}`,
+    },
     summary: counts,
     next: requiredGaps.length ? '/forgeflow-lean-host-command-parity' : '/forgeflow-lean-host-command-parity',
     boundary: 'Command capability matrix generation is read-only. It scans committed command, host adapter, and skill files but does not install adapters, edit settings, commit, push, or call the network.',
@@ -164,6 +200,10 @@ function renderMarkdown(result) {
     lines.push(`- ${item.status}: ${item.reason} (${item.evidence})`);
     for (const command of item.commands || []) lines.push(`  - ${command}`);
   }
+  lines.push('', '## Optional Promotion Plan', '');
+  for (const item of result.promotion_plan?.candidates || []) {
+    lines.push(`- ${item.command}: score ${item.score}; missing ${item.missing.join(', ')}`);
+  }
   lines.push('', `Next: ${result.next}`, '');
   return lines.join('\n');
 }
@@ -185,6 +225,7 @@ if (require.main === module) main();
 module.exports = {
   buildCommandCapabilityMatrix,
   adoptionRecommendations,
+  optionalPromotionPlan,
   parseArgs,
   renderMarkdown,
   skillNameForCommand,

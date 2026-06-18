@@ -55,6 +55,42 @@ function hasMetrics(run) {
   return REQUIRED_METRICS.every((key) => Number.isFinite(Number(metrics[key])));
 }
 
+function armSummaries(runs) {
+  const byArm = new Map();
+  for (const run of runs) {
+    const arm = String(run.arm || 'unknown');
+    const bucket = byArm.get(arm) || {
+      arm,
+      runs: 0,
+      correct: 0,
+      code_loc: 0,
+      cost_usd: 0,
+      latency_seconds: 0,
+    };
+    const metrics = run.metrics || {};
+    bucket.runs += 1;
+    bucket.correct += Number(metrics.correct || 0);
+    bucket.code_loc += Number(metrics.code_loc || 0);
+    bucket.cost_usd += Number(metrics.cost_usd || 0);
+    bucket.latency_seconds += Number(metrics.latency_seconds || 0);
+    byArm.set(arm, bucket);
+  }
+  return [...byArm.values()].map((item) => ({
+    arm: item.arm,
+    runs: item.runs,
+    correctness_rate: item.runs ? Number((item.correct / item.runs).toFixed(4)) : 0,
+    avg_code_loc: item.runs ? Number((item.code_loc / item.runs).toFixed(2)) : 0,
+    avg_cost_usd: item.runs ? Number((item.cost_usd / item.runs).toFixed(6)) : 0,
+    avg_latency_seconds: item.runs ? Number((item.latency_seconds / item.runs).toFixed(3)) : 0,
+  })).sort((a, b) => a.arm.localeCompare(b.arm));
+}
+
+function taskCoverage(runs) {
+  const tasks = new Set(runs.map((run) => run.task_id || run.task).filter(Boolean));
+  const arms = new Set(runs.map((run) => run.arm).filter(Boolean));
+  return { tasks: tasks.size, arms: arms.size };
+}
+
 function slug(value, fallback) {
   const text = String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   return text || fallback;
@@ -152,7 +188,12 @@ function buildLeanBenchmarkResults(opts = {}) {
   const hasPerformanceClaim = Boolean(claims.cost || claims.latency || claims.loc);
   checks.push({ name: 'performance claims have aggregate evidence', status: !hasPerformanceClaim || checks.slice(1, 6).every((item) => item.status === 'pass') ? 'pass' : 'fail' });
   checks.push({ name: 'session-cost caveat present', status: String(parsed.caveats || '').toLowerCase().includes('session') && String(parsed.caveats || '').toLowerCase().includes('cost') ? 'pass' : 'fail' });
+  const coverage = taskCoverage(runs);
+  checks.push({ name: 'multi-task coverage visible', status: coverage.tasks >= 3 ? 'pass' : 'fail' });
+  checks.push({ name: 'arm comparison visible', status: coverage.arms >= 2 ? 'pass' : 'fail' });
   const failures = checks.filter((item) => item.status === 'fail').length;
+  const passed = checks.length - failures;
+  const evidenceGrade = failures === 0 ? 'publishable' : (runs.length > 0 && passed >= Math.ceil(checks.length * 0.7) ? 'partial' : 'insufficient');
   return {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
@@ -160,7 +201,23 @@ function buildLeanBenchmarkResults(opts = {}) {
     results: file,
     status: failures ? 'fail' : 'pass',
     checks,
-    summary: { checks: checks.length, failures, runs: runs.length },
+    summary: {
+      checks: checks.length,
+      failures,
+      runs: runs.length,
+      tasks: coverage.tasks,
+      arms: coverage.arms,
+      evidence_grade: evidenceGrade,
+    },
+    arm_summaries: armSummaries(runs),
+    evidence_requirements: [
+      'provider and model metadata',
+      'repeat count of at least 3',
+      'at least 3 distinct tasks',
+      'at least 2 comparison arms',
+      'code_loc, correct, cost_usd, and latency_seconds per run',
+      'session cost caveat before publishing performance claims',
+    ],
     imported: opts.promptfoo ? { source: path.resolve(opts.promptfoo), output: file, format: 'promptfoo' } : null,
     next: failures ? 'Add provider/date/sample/metric/caveat evidence before publishing lean benchmark claims.' : '/forgeflow-lean-benchmark',
     boundary: 'Lean benchmark results validation is read-only. It checks aggregate metadata and claim support but does not run models, install dependencies, mutate context, commit, push, or call the network.',

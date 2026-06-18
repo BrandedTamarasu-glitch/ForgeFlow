@@ -184,6 +184,8 @@ function addSessionToolChecks(checks) {
       reason: 'rtk is not required by Forgeflow runtime helpers, but this repository asks shell sessions to prefix commands with it.',
       verify: 'command -v rtk',
       repair: 'Install rtk or add its install directory to PATH for non-interactive shells.',
+      policy_alignment: 'repo-command-policy',
+      impact: 'Codex sessions may be unable to follow AGENTS.md command-prefix guidance until rtk is available.',
     }));
 }
 

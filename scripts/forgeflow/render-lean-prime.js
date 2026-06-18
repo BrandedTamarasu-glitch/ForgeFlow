@@ -120,6 +120,21 @@ function planCommands(result, task) {
   return [...new Set(commands)];
 }
 
+function bootstrap(result, task) {
+  const commands = result.plan_commands.length ? result.plan_commands : [];
+  const blocked = result.steps.filter((item) => item.status !== 'ready');
+  return {
+    available: blocked.length > 0,
+    task: task || '<work item>',
+    command: task
+      ? `/forgeflow-lean-prime --prime-task ${JSON.stringify(task)} --write-report`
+      : '/forgeflow-lean-prime --prime-task "<work item>" --write-report',
+    commands,
+    clears: blocked.map((item) => item.id),
+    note: 'Bootstrap writes local decision, report, and plan evidence for the named work item only.',
+  };
+}
+
 function injectionStep(status) {
   return step(
     'injection',
@@ -177,6 +192,7 @@ function buildLeanPrime(opts = {}) {
   result.plan_commands = planCommands(result, task);
   if (opts.primeTask && !result.plan_commands.includes('/forgeflow-lean-report --write')) result.plan_commands.unshift('/forgeflow-lean-report --write');
   if (opts.writeReport) result.plan_commands = result.plan_commands.filter((command) => command !== '/forgeflow-lean-report --write');
+  result.bootstrap = bootstrap(result, task);
   if (opts.writePlan || opts.primeTask) {
     const jsonPath = path.join(projectDir, 'context', 'lean-prime-plan.json');
     const markdownPath = path.join(projectDir, 'context', 'lean-prime-plan.md');
@@ -202,6 +218,11 @@ function renderMarkdown(result) {
   }
   lines.push('', '## Plan Commands', '');
   for (const command of result.plan_commands.length ? result.plan_commands : ['No plan commands required.']) lines.push(`- ${command}`);
+  if (result.bootstrap?.available) {
+    lines.push('', '## Bootstrap', '');
+    lines.push(`- ${result.bootstrap.command}`);
+    lines.push(`- Clears: ${result.bootstrap.clears.join(', ') || 'none'}`);
+  }
   lines.push('', '## Next', '', result.next || 'No next command required.', '');
   return lines.join('\n');
 }

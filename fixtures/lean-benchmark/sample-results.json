@@ -30,6 +30,46 @@
         "cost_usd": 0.006,
         "latency_seconds": 1.8
       }
+    },
+    {
+      "arm": "baseline",
+      "task": "debounce",
+      "metrics": {
+        "code_loc": 34,
+        "correct": 1,
+        "cost_usd": 0.009,
+        "latency_seconds": 2.1
+      }
+    },
+    {
+      "arm": "lean-balanced",
+      "task": "debounce",
+      "metrics": {
+        "code_loc": 16,
+        "correct": 1,
+        "cost_usd": 0.005,
+        "latency_seconds": 1.4
+      }
+    },
+    {
+      "arm": "baseline",
+      "task": "forgeflow-command-wrapper",
+      "metrics": {
+        "code_loc": 52,
+        "correct": 1,
+        "cost_usd": 0.014,
+        "latency_seconds": 3.2
+      }
+    },
+    {
+      "arm": "lean-balanced",
+      "task": "forgeflow-command-wrapper",
+      "metrics": {
+        "code_loc": 24,
+        "correct": 1,
+        "cost_usd": 0.008,
+        "latency_seconds": 2.2
+      }
     }
   ]
 }

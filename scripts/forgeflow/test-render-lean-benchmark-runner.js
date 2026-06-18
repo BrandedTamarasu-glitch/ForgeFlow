@@ -4,8 +4,10 @@ const os = require('os');
 const path = require('path');
 const {
   ARMS,
+  HISTORICAL_TASKS,
   TASKS,
   armScript,
+  benchmarkEvidenceChecklist,
   buildLeanBenchmarkRunner,
   parseArgs,
   rawResultTemplate,
@@ -33,16 +35,21 @@ const runResult = buildLeanBenchmarkRunner({
     fs.writeFileSync(args[outIndex], JSON.stringify({
       provider: 'fake-provider',
       model: 'fake-model',
-      results: [
-        {
-          vars: { task_id: 'forgeflow-command-wrapper', task: 'Update wrapper' },
-          prompt: { label: 'lean-balanced' },
-          output: 'changed wrapper',
-          gradingResult: { pass: true },
-          latencyMs: 1000,
-          cost: 0.001,
-        },
-      ],
+    results: [
+      ['forgeflow-command-wrapper', 'baseline'],
+      ['forgeflow-command-wrapper', 'lean-balanced'],
+      ['debounce', 'baseline'],
+      ['debounce', 'lean-balanced'],
+      ['csv-sum', 'baseline'],
+      ['csv-sum', 'lean-balanced'],
+    ].map(([taskId, arm]) => ({
+      vars: { task_id: taskId, task: `Task ${taskId}` },
+      prompt: { label: arm },
+      output: 'changed wrapper',
+      gradingResult: { pass: true },
+      latencyMs: 1000,
+      cost: 0.001,
+    })),
     }, null, 2));
     return { status: 0, stdout: 'fake promptfoo ok', stderr: '' };
   },
@@ -55,16 +62,18 @@ const ledger = JSON.parse(fs.readFileSync(runResult.artifacts.run_ledger, 'utf8'
 
 const checks = [
   ['preview ready', preview.status === 'ready' && preview.tasks.length === TASKS.length && preview.tasks.some((task) => task.id === 'forgeflow-command-wrapper') && preview.tasks.some((task) => task.id === 'forgeflow-benchmark-import') && preview.arms.length === ARMS.length],
+  ['preview exposes historical tasks and missing evidence', preview.historical_tasks.length === HISTORICAL_TASKS.length && preview.evidence.status === 'missing'],
   ['commands keep network opt-in', preview.commands.some((item) => item.requires_network === true) && preview.boundary.includes('FORGEFLOW_BENCHMARK_ALLOW_NETWORK=1')],
   ['write creates plan and script', fs.existsSync(written.artifacts.json) && fs.existsSync(written.artifacts.script) && fs.existsSync(written.artifacts.promptfoo) && fs.existsSync(written.artifacts.tasks)],
   ['write creates prompt arms', written.artifacts.arms.length === ARMS.length && written.artifacts.arms.every((file) => fs.existsSync(file))],
-  ['write creates reproducible result templates', fs.existsSync(written.artifacts.raw_results_template) && fs.existsSync(written.artifacts.report_template)],
+  ['write creates reproducible result templates', fs.existsSync(written.artifacts.raw_results_template) && fs.existsSync(written.artifacts.report_template) && fs.existsSync(written.artifacts.historical_tasks) && fs.existsSync(written.artifacts.evidence_checklist)],
   ['raw template has runs', rawResultTemplate().runs.length === TASKS.length * ARMS.length],
   ['report template points to validator', reportTemplate().includes('render-lean-benchmark-results.js')],
   ['run blocked without explicit env', blockedRun.status === 'blocked' && blockedRun.reason.includes('FORGEFLOW_BENCHMARK_ALLOW_NETWORK')],
   ['run executes explicit runner when env allows it', runResult.run.status === 'pass' && runResult.next.includes('/forgeflow-lean-benchmark-results')],
-  ['run imports raw promptfoo output when present', runResult.imported_results && fs.existsSync(runResult.imported_results.output) && runResult.imported_results.runs === 1],
-  ['run writes benchmark ledger', fs.existsSync(runResult.artifacts.run_ledger) && ledger.summary.imported_runs === 1 && ledger.entries[0].normalized_output === runResult.imported_results.output],
+  ['run imports raw promptfoo output when present', runResult.imported_results && fs.existsSync(runResult.imported_results.output) && runResult.imported_results.runs === 6 && runResult.evidence.grade === 'publishable'],
+  ['run writes benchmark ledger', fs.existsSync(runResult.artifacts.run_ledger) && ledger.summary.imported_runs === 6 && ledger.entries[0].normalized_output === runResult.imported_results.output],
+  ['evidence checklist documents requirements', benchmarkEvidenceChecklist().required_before_claims.length >= 5],
   ['exports ledger writer', typeof writeRunLedger === 'function'],
   ['arm script carries guidance', armScript(ARMS[1]).includes('Forgeflow lean profile') && armScript(ARMS[0]).includes('Answer normally')],
   ['renders markdown', markdown.includes('# Forgeflow Lean Benchmark Runner') && markdown.includes('opt-in scaffold')],
