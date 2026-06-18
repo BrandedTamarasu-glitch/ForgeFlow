@@ -13,6 +13,8 @@ const COMMANDS = [
   'forgeflow-lean-debt',
   'forgeflow-lean-host-adapters',
   'forgeflow-lean-host-command-parity',
+  'forgeflow-lean-prime',
+  'forgeflow-lean-skills',
   'forgeflow-lean-status',
 ];
 
@@ -121,6 +123,14 @@ export default function forgeflowPiExtension(pi) {
   pi.registerCommand?.('forgeflow-lean-host-command-parity', {
     description: 'Run /forgeflow-lean-host-command-parity',
     handler: (args, ctx) => sendAlias('/forgeflow-lean-host-command-parity', args, { ...ctx, pi }),
+  });
+  pi.registerCommand?.('forgeflow-lean-prime', {
+    description: 'Run /forgeflow-lean-prime',
+    handler: (args, ctx) => sendAlias('/forgeflow-lean-prime', args, { ...ctx, pi }),
+  });
+  pi.registerCommand?.('forgeflow-lean-skills', {
+    description: 'Run /forgeflow-lean-skills',
+    handler: (args, ctx) => sendAlias('/forgeflow-lean-skills', args, { ...ctx, pi }),
   });
   pi.registerCommand?.('forgeflow-lean-status', {
     description: 'Run /forgeflow-lean-status',

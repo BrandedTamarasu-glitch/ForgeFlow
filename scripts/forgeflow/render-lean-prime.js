@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 const path = require('path');
+const { writeFileSafe, writeJsonSafe } = require('./file-safety');
 const { buildLeanMode } = require('./render-lean-mode');
 const { buildLeanStatus } = require('./render-lean-status');
 const { buildLeanReport } = require('./render-lean-report');
 const { buildTelemetryQuality } = require('./render-telemetry-quality');
 
 function usage() {
-  console.error('Usage: render-lean-prime.js [--root <repo>] [--project-dir <dir>] [--json]');
+  console.error('Usage: render-lean-prime.js [--root <repo>] [--project-dir <dir>] [--task <text>] [--write-plan] [--json]');
 }
 
 function requireValue(argv, name, index) {
@@ -16,7 +17,7 @@ function requireValue(argv, name, index) {
 }
 
 function parseArgs(argv) {
-  const opts = { root: process.cwd(), projectDir: '', json: false };
+  const opts = { root: process.cwd(), projectDir: '', task: '', writePlan: false, json: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--root') {
@@ -25,6 +26,11 @@ function parseArgs(argv) {
     } else if (arg === '--project-dir') {
       opts.projectDir = path.resolve(requireValue(argv, arg, i));
       i += 1;
+    } else if (arg === '--task') {
+      opts.task = requireValue(argv, arg, i);
+      i += 1;
+    } else if (arg === '--write-plan') {
+      opts.writePlan = true;
     } else if (arg === '--json') {
       opts.json = true;
     } else if (arg === '--help' || arg === '-h') {
@@ -43,6 +49,11 @@ function defaultProjectDir(root) {
 
 function step(id, label, status, next, reason) {
   return { id, label, status, next: next || '', reason: reason || '' };
+}
+
+function commandOrFallback(value, fallback) {
+  const text = String(value || '').trim();
+  return /^\/[A-Za-z0-9][A-Za-z0-9:/_-]*(?:\s|$)/.test(text) ? text : fallback;
 }
 
 function modeStep(mode) {
@@ -80,13 +91,27 @@ function reportStep(status, report) {
 
 function telemetryStep(status, telemetry) {
   const ready = status.gates?.telemetry_ready === true;
+  const next = ready ? '' : commandOrFallback(telemetry.next, '/forgeflow-telemetry-quality');
   return step(
     'telemetry',
     'Telemetry quality',
     ready ? 'ready' : 'watch',
-    ready ? '' : (telemetry.next || '/forgeflow-telemetry-quality'),
+    next,
     ready ? 'Telemetry is ready for advisory injection gates.' : (telemetry.reason || 'Telemetry is still too thin for automatic lean context injection.')
   );
+}
+
+function planCommands(result, task) {
+  const commands = [];
+  if (!result.enabled) commands.push('/forgeflow-lean-mode --profile balanced --write');
+  const decision = result.steps.find((item) => item.id === 'decision');
+  if (decision && decision.status !== 'ready') {
+    commands.push(task ? `/forgeflow-lean-decision --task ${JSON.stringify(task)}` : '/forgeflow-lean-decision --task "<work item>"');
+  }
+  const report = result.steps.find((item) => item.id === 'report');
+  if (report && report.status !== 'ready') commands.push('/forgeflow-lean-report --write');
+  commands.push('/forgeflow-lean-status');
+  return [...new Set(commands)];
 }
 
 function injectionStep(status) {
@@ -115,7 +140,7 @@ function buildLeanPrime(opts = {}) {
   ];
   const next = steps.find((item) => item.next)?.next || '';
   const blockers = steps.filter((item) => ['missing', 'blocked', 'attention', 'off'].includes(item.status));
-  return {
+  const result = {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
     root,
@@ -124,10 +149,23 @@ function buildLeanPrime(opts = {}) {
     profile: mode.profile,
     enabled: mode.enabled,
     steps,
-    next,
+    next: opts.task && next === '/forgeflow-lean-decision --task "<work item>"' ? `/forgeflow-lean-decision --task ${JSON.stringify(opts.task)}` : next,
     next_reason: steps.find((item) => item.next)?.reason || 'Lean first-run evidence is ready.',
+    task: opts.task || '',
+    plan_commands: [],
+    artifacts: {},
     boundary: 'Lean prime is read-only. It composes existing local lean status, report, and telemetry signals but does not write artifacts, edit settings, change routing, install hooks, commit, push, or call the network.',
   };
+  result.plan_commands = planCommands(result, opts.task || '');
+  if (opts.writePlan) {
+    const jsonPath = path.join(projectDir, 'context', 'lean-prime-plan.json');
+    const markdownPath = path.join(projectDir, 'context', 'lean-prime-plan.md');
+    writeJsonSafe(jsonPath, result);
+    writeFileSafe(markdownPath, renderMarkdown(result));
+    result.artifacts = { json: jsonPath, markdown: markdownPath };
+    result.boundary = 'Lean prime plan writing stores only .forgeflow/<project>/context/lean-prime-plan.{json,md}. It does not edit code, settings, routing, commits, pushes, installs hooks, or call the network.';
+  }
+  return result;
 }
 
 function renderMarkdown(result) {
@@ -135,6 +173,8 @@ function renderMarkdown(result) {
   for (const item of result.steps) {
     lines.push(`- ${item.status}: ${item.label} - ${item.reason}`);
   }
+  lines.push('', '## Plan Commands', '');
+  for (const command of result.plan_commands.length ? result.plan_commands : ['No plan commands required.']) lines.push(`- ${command}`);
   lines.push('', '## Next', '', result.next || 'No next command required.', '');
   return lines.join('\n');
 }
@@ -154,6 +194,7 @@ if (require.main === module) main();
 
 module.exports = {
   buildLeanPrime,
+  commandOrFallback,
   parseArgs,
   renderMarkdown,
 };

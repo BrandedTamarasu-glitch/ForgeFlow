@@ -147,6 +147,7 @@ const CANONICAL_NON_REQUIRED_MANAGED_SOURCES = [
   'commands/forgeflow-release-verify.md',
   'commands/forgeflow-repair.md',
   'commands/forgeflow-report.md',
+  'commands/forgeflow-skills.md',
   'commands/forgeflow-architecture.md',
   'commands/forgeflow-review-auto-classify.md',
   'commands/forgeflow-review-auto-evidence.md',
@@ -187,6 +188,16 @@ const CANONICAL_NON_REQUIRED_MANAGED_SOURCES = [
   'hooks/copilot-hooks.json',
   'project-rules/commit-hygiene.md',
   'project-rules/dev-environment.md',
+  'skills/forgeflow-audit/SKILL.md',
+  'skills/forgeflow-implement/SKILL.md',
+  'skills/forgeflow-lean-audit/SKILL.md',
+  'skills/forgeflow-lean-debt/SKILL.md',
+  'skills/forgeflow-lean-prime/SKILL.md',
+  'skills/forgeflow-lean-review/SKILL.md',
+  'skills/forgeflow-lean/SKILL.md',
+  'skills/forgeflow-plan/SKILL.md',
+  'skills/forgeflow-review/SKILL.md',
+  'skills/forgeflow-ship/SKILL.md',
 ];
 
 async function localFetcher(_repo, _sha, source) {

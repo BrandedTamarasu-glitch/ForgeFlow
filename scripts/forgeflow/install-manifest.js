@@ -84,6 +84,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/render-first-task-adoption-loop.js',
   'scripts/forgeflow/render-first-task-report.js',
   'scripts/forgeflow/render-forgeflow-report.js',
+  'scripts/forgeflow/render-forgeflow-skills.js',
   'scripts/forgeflow/render-guided-repair.js',
   'scripts/forgeflow/render-insight-injection.js',
   'scripts/forgeflow/render-invocation-hints.js',
@@ -218,6 +219,7 @@ function categoryFor(source) {
   if (/^agents\/[^/]+\.md$/.test(file)) return 'agent';
   if (/^agents\/_shared\/[^/]+\.md$/.test(file)) return 'shared-agent';
   if (/^commands\/[^/]+(?:\/[^/]+)?\.md$/.test(file)) return 'command';
+  if (/^skills\/[^/]+\/SKILL\.md$/.test(file)) return 'skill';
   if (/^project-rules\/[^/]+\.md$/.test(file)) return 'project-rule';
   if (/^forgeflow-patterns\/[^/]+\.md$/.test(file)) return 'pattern';
   if (STATIC_FILES.has(file)) return file.split('/')[0].slice(0, -1);
@@ -241,6 +243,7 @@ function destinationFor(source, home = '~/.claude') {
   if (/^agents\/[^/]+\.md$/.test(file)) return path.posix.join(home, file);
   if (/^agents\/_shared\/[^/]+\.md$/.test(file)) return path.posix.join(home, file);
   if (/^commands\/[^/]+(?:\/[^/]+)?\.md$/.test(file)) return path.posix.join(home, file);
+  if (/^skills\/[^/]+\/SKILL\.md$/.test(file)) return path.posix.join(home, file);
   if (/^project-rules\/[^/]+\.md$/.test(file)) return path.posix.join(home, file);
   if (/^forgeflow-patterns\/[^/]+\.md$/.test(file)) return path.posix.join(home, file);
   if (/^templates\/[^/]+$/.test(file)) return path.posix.join(home, file);

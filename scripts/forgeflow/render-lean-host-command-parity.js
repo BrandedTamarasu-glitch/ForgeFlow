@@ -10,6 +10,8 @@ const HOST_COMMANDS = [
   'forgeflow-lean-debt',
   'forgeflow-lean-host-adapters',
   'forgeflow-lean-host-command-parity',
+  'forgeflow-lean-prime',
+  'forgeflow-lean-skills',
   'forgeflow-lean-status',
 ];
 

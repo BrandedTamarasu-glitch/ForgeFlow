@@ -24,6 +24,7 @@
   "components": {
     "agents": "agents/",
     "commands": "commands/",
+    "skills": "skills/",
     "hooks": "hooks/",
     "templates": "templates/",
     "project-rules": "project-rules/",
@@ -36,6 +37,7 @@
       "agents/_shared/*.md": "~/.claude/agents/_shared/",
       "commands/*.md": "~/.claude/commands/",
       "commands/*/*.md": "~/.claude/commands/",
+      "skills/*/SKILL.md": "~/.claude/skills/",
       "hooks/*.js": "~/.claude/hooks/",
       "templates/*": "~/.claude/templates/",
       "project-rules/*.md": "~/.claude/project-rules/",

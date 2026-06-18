@@ -455,6 +455,8 @@ For live agent-message observability, use `/agent-chat:on`, which runs a separat
 - [Wiki source](docs/wiki/Home.md)
 - [User paths](docs/wiki/User-Paths.md)
 - [Lean quick path](docs/wiki/Lean-Quick-Path.md)
+- [Lean evidence](docs/wiki/Lean-Evidence.md)
+- [Lean portability](docs/wiki/Lean-Portability.md)
 - [Forgeflow 4.3 release brief](docs/wiki/Forgeflow-4.3-Release-Brief.md)
 - [Why Forgeflow](docs/wiki/Why-Forgeflow.md)
 - [Project learnings](docs/wiki/Project-Learnings.md)

@@ -110,6 +110,52 @@ function promptfooConfig() {
   ].join('\n');
 }
 
+function rawResultTemplate() {
+  return {
+    schema_version: '1',
+    provider: '<provider>',
+    model: '<model>',
+    run_date: '<YYYY-MM-DD>',
+    repeat: 10,
+    caveats: 'Session cost can differ because real agent sessions re-inject guidance each turn.',
+    runs: TASKS.flatMap((task) => ARMS.map((arm) => ({
+      task_id: task.id,
+      arm: arm.name,
+      iteration: 1,
+      metrics: {
+        code_loc: 0,
+        correct: 0,
+        cost_usd: 0,
+        latency_seconds: 0,
+      },
+    }))),
+    claims: {},
+  };
+}
+
+function reportTemplate() {
+  return [
+    '# Forgeflow Lean Benchmark Report',
+    '',
+    'Fill this report from `raw-results.template.json` after running the promptfoo config.',
+    '',
+    '## Required Evidence',
+    '',
+    '- Provider and model',
+    '- Run date',
+    '- Repeat count of at least 3',
+    '- Correctness gate per run',
+    '- Cost and latency caveat for full agent sessions',
+    '',
+    '## Validation',
+    '',
+    '```bash',
+    'node scripts/forgeflow/render-lean-benchmark-results.js --results <results.json>',
+    '```',
+    '',
+  ].join('\n');
+}
+
 function buildLeanBenchmarkRunner(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const projectDir = path.resolve(opts.projectDir || defaultProjectDir(root));
@@ -146,14 +192,18 @@ function buildLeanBenchmarkRunner(opts = {}) {
     writeJsonSafe(path.join(dir, 'plan.json'), result);
     writeFileSafe(path.join(dir, 'run.sh'), runnerScript(result));
     writeJsonSafe(path.join(dir, 'tasks.json'), { schema_version: '1', tasks: TASKS, arms: ARMS });
+    writeJsonSafe(path.join(dir, 'raw-results.template.json'), rawResultTemplate());
     writeFileSafe(path.join(dir, 'promptfooconfig.yaml'), promptfooConfig());
+    writeFileSafe(path.join(dir, 'report.template.md'), reportTemplate());
     for (const arm of ARMS) writeFileSafe(path.join(dir, 'arms', `${arm.name}.js`), armScript(arm));
     writeFileSafe(path.join(dir, 'README.md'), renderMarkdown(result));
     result.artifacts = {
       json: path.join(dir, 'plan.json'),
       script: path.join(dir, 'run.sh'),
       tasks: path.join(dir, 'tasks.json'),
+      raw_results_template: path.join(dir, 'raw-results.template.json'),
       promptfoo: path.join(dir, 'promptfooconfig.yaml'),
+      report_template: path.join(dir, 'report.template.md'),
       arms: ARMS.map((arm) => path.join(dir, 'arms', `${arm.name}.js`)),
       readme: path.join(dir, 'README.md'),
     };
@@ -189,5 +239,7 @@ module.exports = {
   armScript,
   buildLeanBenchmarkRunner,
   parseArgs,
+  rawResultTemplate,
+  reportTemplate,
   renderMarkdown,
 };

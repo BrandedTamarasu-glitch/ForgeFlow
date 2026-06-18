@@ -16,15 +16,19 @@ fs.writeFileSync(path.join(projectDir, 'context', 'project-operating-model.json'
 fs.writeFileSync(path.join(projectDir, 'context', 'latest', 'latest-insights-report.json'), '{"status":"ready"}\n');
 
 const result = buildLeanPrime({ root, projectDir });
+const taskResult = buildLeanPrime({ root, projectDir, task: 'tighten lean parity', writePlan: true });
 const markdown = renderMarkdown(result);
-const opts = parseArgs(['--root', root, '--project-dir', projectDir, '--json']);
+const opts = parseArgs(['--root', root, '--project-dir', projectDir, '--task', 'tighten lean parity', '--write-plan', '--json']);
 
 const checks = [
   ['blocked without evidence', result.status === 'blocked' && result.steps.length === 5],
   ['next points to lean decision', result.next === '/forgeflow-lean-decision --task "<work item>"'],
+  ['task makes next command copyable', taskResult.next === '/forgeflow-lean-decision --task "tighten lean parity"'],
+  ['write plan creates artifacts', fs.existsSync(taskResult.artifacts.json) && fs.existsSync(taskResult.artifacts.markdown)],
+  ['telemetry next is command shaped', result.steps.find((item) => item.id === 'telemetry').next.startsWith('/')],
   ['renders checklist', markdown.includes('# Forgeflow Lean Prime') && markdown.includes('Lean decision evidence')],
   ['boundary is read-only', result.boundary.includes('read-only') && result.boundary.includes('does not write')],
-  ['parses args', opts.root === root && opts.projectDir === projectDir && opts.json],
+  ['parses args', opts.root === root && opts.projectDir === projectDir && opts.task === 'tighten lean parity' && opts.writePlan && opts.json],
 ];
 
 let failed = 0;

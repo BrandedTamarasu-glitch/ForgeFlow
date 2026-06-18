@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { renderDogfoodRefreshPlan } = require('../../scripts/forgeflow/render-dogfood-refresh-plan');
+const { buildLeanPrime } = require('../../scripts/forgeflow/render-lean-prime');
 const { buildLeanStatus } = require('../../scripts/forgeflow/render-lean-status');
 
 function defaultProjectDir(projectRoot) {
@@ -138,6 +139,20 @@ function leanCard(leanStatus) {
   );
 }
 
+function leanPrimeCard(leanPrime) {
+  if (!leanPrime || leanPrime.status === 'error') {
+    return card('lean-prime', 'Lean Prime', 'error', leanPrime?.reason || 'Unable to render lean prime checklist.', '/forgeflow-lean-prime');
+  }
+  const blocked = (leanPrime.steps || []).filter((item) => item.status !== 'ready').length;
+  return card(
+    'lean-prime',
+    'Lean Prime',
+    leanPrime.status,
+    `${blocked} checklist step(s) need attention.`,
+    leanPrime.next || '',
+  );
+}
+
 function overallStatus(cards) {
   const statuses = cards.map((item) => item.status);
   if (statuses.some((item) => ['fail', 'failed', 'error', 'invalid', 'blocked'].includes(item))) return 'attention';
@@ -167,6 +182,7 @@ async function scanReadiness(opts = {}) {
 
   let refreshPlan;
   let leanStatus;
+  let leanPrime;
   try {
     refreshPlan = renderDogfoodRefreshPlan({ root: projectRoot, projectDir });
   } catch (err) {
@@ -176,6 +192,11 @@ async function scanReadiness(opts = {}) {
     leanStatus = buildLeanStatus({ root: helperRoot, projectDir });
   } catch (err) {
     leanStatus = { status: 'error', reason: err.message, next: '/forgeflow-lean-prime' };
+  }
+  try {
+    leanPrime = buildLeanPrime({ root: helperRoot, projectDir });
+  } catch (err) {
+    leanPrime = { status: 'error', reason: err.message, next: '/forgeflow-lean-prime', steps: [] };
   }
 
   const cards = [
@@ -188,6 +209,7 @@ async function scanReadiness(opts = {}) {
     ),
     learningCard(latestInsights),
     contextBudgetCard(contextTelemetry),
+    leanPrimeCard(leanPrime),
     leanCard(leanStatus),
     releaseReadinessCard(releaseReadiness),
     dogfoodCard(dogfoodReport),
@@ -207,7 +229,14 @@ async function scanReadiness(opts = {}) {
       dogfood_report: statusFromRead(dogfoodReport),
       project_operating_model: statusFromRead(projectModel, projectModel.status),
       lean_guidance: leanStatus.status,
+      lean_prime: leanPrime.status,
     },
+    lean_prime_steps: (leanPrime.steps || []).map((item) => ({
+      id: item.id,
+      status: item.status,
+      next: item.next,
+      reason: item.reason,
+    })),
     next: cards.find((item) => item.next)?.next || '',
     boundary: 'Dashboard readiness is read-only. It reads local artifacts and does not refresh, write, spawn agents, call GitHub, export telemetry, commit, push, or promote automation.',
   };

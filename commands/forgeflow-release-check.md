@@ -53,6 +53,7 @@ node scripts/forgeflow/test-guidance-contract.js
 node scripts/forgeflow/test-failure-digest.js
 node scripts/forgeflow/test-check-agent-drift.js
 node scripts/forgeflow/test-render-forgeflow-report.js
+node scripts/forgeflow/test-render-forgeflow-skills.js
 node scripts/forgeflow/test-render-release-notes.js
 node scripts/forgeflow/test-render-post-release-install-verify.js
 node scripts/forgeflow/test-render-release-readiness.js
@@ -134,6 +135,7 @@ node scripts/forgeflow/test-render-lean-prime.js
 node scripts/forgeflow/test-render-lean-skills.js
 node --test pi-extension/test/*.test.js
 node scripts/forgeflow/test-lean-windows-compat.js
+node scripts/forgeflow/test-lean-host-install-smoke.js
 node scripts/forgeflow/test-render-lean-robustness-eval.js
 node scripts/forgeflow/test-render-lean-rule-canary.js
 node scripts/forgeflow/test-rollup-pilot-evidence.js
