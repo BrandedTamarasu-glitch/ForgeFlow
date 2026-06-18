@@ -126,6 +126,20 @@ scripts/forgeflow/advise-context.js --root .forgeflow --record --json
 scripts/forgeflow/render-release-readiness.js --plan-only --json
 ```
 
+## Evidence Readiness
+
+After the first real task or before making release claims, check the local evidence surfaces:
+
+```bash
+scripts/forgeflow/render-lean-prime.js --json
+scripts/forgeflow/render-lean-benchmark-runner.js --json
+scripts/forgeflow/render-lean-host-cli-probes.js --json
+scripts/forgeflow/render-command-capability-matrix.js --json
+scripts/forgeflow/render-release-readiness.js --plan-only --json
+```
+
+Use [Lean Evidence](Lean-Evidence) for the model-backed benchmark, host verification, failure-digest, and release advisory workflow.
+
 If you installed through `/update-forgeflow` and do not have a local checkout, replace `scripts/forgeflow/` with:
 
 ```text

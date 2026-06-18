@@ -99,6 +99,9 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 - [Settings And Recovery](Settings-And-Recovery)
 - [Release Process](Release-Process)
 - [Release Gate](Release-Gate)
+- [Lean Evidence](Lean-Evidence)
+- [Lean Quick Path](Lean-Quick-Path)
+- [Lean Portability](Lean-Portability)
 - [Template Installer](Template-Installer)
 - [Local Data And Privacy](Local-Data-And-Privacy)
 - [Roadmap](Roadmap)
@@ -112,10 +115,11 @@ Forgeflow is broader than review. The current wiki documents these capability ar
 - **Direct agent work:** `/quick` for one-off agent dispatch, `/create-agent` for local custom Claude agents, `/debate` for false-positive stress tests, `/fleet` for isolated parallel worktree shards, and `/ui-iterate` for measured UI/theme iteration.
 - **Context and token efficiency:** context packs, memory summaries, scope manifests, topology, budget checks, context advisor, focused review waves, command-output compaction, failure digests, noisy-command advice, and context telemetry.
 - **Project intelligence:** code maps, trends, health timeline, project operating model, project decision briefs, architecture docs, invocation hints, ownership map, dogfood report, dogfood refresh plan, and latest-insights injection.
+- **Evidence readiness:** Lean Prime bootstrap, benchmark evidence grading, historical benchmark replay tasks, host CLI proof states, failure-digest aftercare, RTK policy alignment, and release-readiness advisory warnings.
 - **Learning loops:** project learnings, pattern learning rollups, user operating profile, project experience profile, profile review/compliance, learning status, learning action routing, outcome capture, agent feedback, next-work ranking, and workflow-ending capture.
 - **Review automation safety:** review evidence schema checks, review-auto classification, deterministic sandbox proposals, explicit apply flow with rollback on failed validation, review-auto status, output contracts, lean handoff budget warnings, lean delivery metrics, and command-argument safety.
 - **Adoption and pilots:** first-run guide, first-run simulator, first-run results and rollups, first useful win, first task report, adoption loop, pilot scripts, adoption pack, evaluation summaries, and public-safe sharing guidance.
-- **Dashboards:** local metrics dashboard, Project Readiness panel backed by `GET /api/readiness`, and agent-chat dashboard for live workflow visibility.
+- **Dashboards:** local metrics dashboard, 12-card Project Readiness panel backed by `GET /api/readiness`, and agent-chat dashboard for live workflow visibility.
 - **Team and CI surfaces:** team-state sync guidance, CI wrapper reference docs, sync-upstream for Forgeflow meta-work, and privacy boundaries for local, private-team, and public sharing.
 
 ## Role Paths
@@ -127,7 +131,7 @@ Use these entry points when you know what job you are trying to do:
 - Codex users: [Codex First Run](Codex-First-Run), [Quick Start](Quick-Start), [Agent Roles](Agent-Roles), [Review Routing](Review-Routing)
 - Maintainers: [Maintainer Pilot](Maintainer-Pilot), [Branch Trial](Branch-Trial), [Field Validation](Field-Validation), [First-Run Friction](First-Run-Friction)
 - Reviewers: [Review Routing](Review-Routing), [Context Intelligence](Context-Intelligence), [Project Learnings](Project-Learnings), [Implementation Notes](Implementation-Notes)
-- Release owners: [Release Process](Release-Process), [Release Gate](Release-Gate), [Clean Checkout Install Verification](Clean-Checkout-Install-Verification), [Template Installer](Template-Installer)
+- Release owners: [Release Process](Release-Process), [Release Gate](Release-Gate), [Lean Evidence](Lean-Evidence), [Clean Checkout Install Verification](Clean-Checkout-Install-Verification), [Template Installer](Template-Installer)
 - Project leads: [Adoption Pack](Adoption-Pack), [Team Adoption Criteria](Team-Adoption-Criteria), [Pilot Adoption Comparison](Pilot-Adoption-Comparison), [Pilot Next Action Decision](Pilot-Next-Action-Decision)
 - Support owners: [Support Triage](Support-Triage), [Friction To Fix](Friction-To-Fix), [Team Privacy Boundaries](Team-Privacy-Boundaries), [Local Data And Privacy](Local-Data-And-Privacy)
 
@@ -139,13 +143,13 @@ Use these entry points when you know what job you are trying to do:
 - Understand local learning: [Project Learnings](Project-Learnings), [Evaluation Sharing](Evaluation-Sharing), [Evaluation Summary Collection](Evaluation-Summary-Collection)
 - Compare outcomes: [Workflow Comparison](Workflow-Comparison), [Public-Safe Examples](Public-Examples), [Pilot Evidence Log](Pilot-Evidence-Log)
 - Decide whether to expand: [Pilot Public Summary](Pilot-Public-Summary), [Pilot Support Rollup](Pilot-Support-Rollup), [Adoption Pack](Adoption-Pack)
-- Plan future work: [Roadmap](Roadmap), [CI And Headless Deferrals](CI-Headless-Deferrals), [Dashboard](Dashboard)
+- Plan future work: [Roadmap](Roadmap), [CI And Headless Deferrals](CI-Headless-Deferrals), [Dashboard](Dashboard), [Lean Evidence](Lean-Evidence)
 
 ## Core Idea
 
 Forgeflow separates software delivery into phases and assigns each phase to agents with explicit responsibilities. This keeps planning, implementation, validation, and final judgment from collapsing into one overbroad prompt.
 
-The current build also adds local context intelligence: bounded context packets, compact memory summaries, scope manifests, context telemetry, budget checks, health repair, smoke checks, release-to-install readiness preflight, pilot scripts, project intelligence, and trend-aware context recommendations. These helpers keep agent prompts smaller while preserving the local project memory needed for end-to-end work. Local artifact reads and writes reject symlinks, include untracked work in generated context, and can fail CI when context budgets are exceeded.
+The current build also adds local context intelligence and evidence readiness: bounded context packets, compact memory summaries, scope manifests, context telemetry, budget checks, health repair, smoke checks, release-to-install readiness preflight, benchmark evidence grading, host proof templates, pilot scripts, project intelligence, and trend-aware context recommendations. These helpers keep agent prompts smaller while preserving the local project memory needed for end-to-end work. Local artifact reads and writes reject symlinks, include untracked work in generated context, and can fail CI when context budgets are exceeded.
 
 Forgeflow also carries implementation context and pilot evidence forward. `/implement` maintains local implementation notes, `/ship` checks and summarizes those notes, `/forgeflow-smoke` verifies the local stabilization path, `/forgeflow-adoption` prints a public-safe adoption pack and small-team handoff checklist, and `/forgeflow-pilot` prints either the default maintainer-trial script or a first-real-task new-user path with evidence capture and support/adoption rollups under `.forgeflow/<project-name>/`.
 

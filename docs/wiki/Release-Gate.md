@@ -162,6 +162,15 @@ For a grouped, non-mutating readiness view that also runs the release-to-install
 /forgeflow-release-readiness
 ```
 
+The readiness view also reports advisory evidence warnings for:
+
+- normalized model-backed benchmark evidence
+- manually verified host CLI probe evidence
+- latest failure-digest aftercare
+- RTK command-policy alignment
+
+These warnings do not tag, push, publish, call GitHub, or replace the explicit release checklist. Clear them before release notes or public summaries claim performance improvements, host portability, host verification, or current failure-triage proof.
+
 ## Public Summary Example
 
 Use the sample fixture to prove the public-summary path renders before release:
