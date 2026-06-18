@@ -116,6 +116,8 @@ test('dashboard HTML includes read-only project readiness panel contract', () =>
   assert.match(html, /id="readiness-panel"/);
   assert.match(html, /id="readiness-status"/);
   assert.match(html, /id="readiness-cards"/);
+  assert.match(html, /id="readiness-lean-prime"/);
+  assert.match(html, /id="readiness-lean-prime-list"/);
   assert.match(html, /id="readiness-copy-command"/);
   assert.match(html, /fetch\('\/api\/readiness'/);
   assert.doesNotMatch(html, /\/api\/readiness[^]*method:\s*'POST'/);

@@ -490,6 +490,41 @@
       text-transform: uppercase;
     }
 
+    .readiness-checklist {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+
+    .readiness-checklist h3 {
+      color: var(--text-primary);
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 7px;
+    }
+
+    .readiness-checklist ul {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .readiness-checklist li {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 4px 7px;
+      align-items: start;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .readiness-checklist code {
+      grid-column: 2;
+      overflow-wrap: anywhere;
+      color: var(--text-primary);
+      font-size: 11px;
+    }
+
     .command-copy-row {
       display: flex;
       gap: 6px;
@@ -862,6 +897,10 @@
 
         <p id="readiness-state" role="status" aria-live="polite">Loading readiness…</p>
         <div id="readiness-cards" class="readiness-cards" hidden></div>
+        <div id="readiness-lean-prime" class="readiness-checklist" hidden>
+          <h3>Lean Prime checklist</h3>
+          <ul id="readiness-lean-prime-list"></ul>
+        </div>
         <div id="readiness-next" class="readiness-next" hidden>
           <span class="readiness-next-label">Next action</span>
           <div class="command-copy-row">
@@ -967,6 +1006,7 @@
         ? 'Readiness request timed out.'
         : `Readiness unavailable: ${err.message}`;
       document.getElementById('readiness-cards').hidden = true;
+      document.getElementById('readiness-lean-prime').hidden = true;
       document.getElementById('readiness-next').hidden = true;
       document.getElementById('readiness-boundary').hidden = true;
     }
@@ -984,6 +1024,8 @@
       const next = document.getElementById('readiness-next');
       const command = document.getElementById('readiness-next-command');
       const boundary = document.getElementById('readiness-boundary');
+      const leanPrime = document.getElementById('readiness-lean-prime');
+      const leanPrimeList = document.getElementById('readiness-lean-prime-list');
 
       if (!data) return;
       setReadinessStatus(data.status);
@@ -1010,6 +1052,23 @@
         cards.appendChild(article);
       });
       cards.hidden = false;
+
+      leanPrimeList.replaceChildren();
+      (data.lean_prime_steps || []).forEach(item => {
+        const li = document.createElement('li');
+        const pill = makeStatusPill(item.status);
+        const label = document.createElement('span');
+        label.textContent = item.label || item.id || 'Lean Prime step';
+        li.appendChild(pill);
+        li.appendChild(label);
+        if (item.next) {
+          const code = document.createElement('code');
+          code.textContent = item.next;
+          li.appendChild(code);
+        }
+        leanPrimeList.appendChild(li);
+      });
+      leanPrime.hidden = leanPrimeList.children.length === 0;
 
       if (data.next) {
         command.textContent = data.next;

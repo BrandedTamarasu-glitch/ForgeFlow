@@ -97,11 +97,12 @@ Use `/forgeflow-review-auto-evidence --findings <json>` when you want a saved lo
 17. Run `/forgeflow-lean-eval` when you want a deterministic local fixture check for the lean behavior probes without model calls.
 18. Run `/forgeflow-lean-correctness` and `/forgeflow-lean-robustness` when you want deterministic local selftests for "lean but wrong" shortcut traps.
 19. Run `/forgeflow-lean-adapter-contract`, `/forgeflow-lean-hook-contract`, `/forgeflow-lean-adapter-smoke`, `/forgeflow-lean-adapter-drift`, and `/forgeflow-lean-rule-canary` before treating lean adapter output as release-ready.
-20. Run `/forgeflow-lean-host-adapters`, `/forgeflow-lean-host-command-parity`, and `/forgeflow-lean-pi-smoke` to validate committed adapter artifacts, command-capable host parity, and pi runtime behavior.
+20. Run `/forgeflow-lean-host-adapters`, `/forgeflow-lean-host-cli-probes`, `/forgeflow-lean-host-command-parity`, `/forgeflow-command-capability`, and `/forgeflow-lean-pi-smoke` to validate committed adapter artifacts, optional host CLI availability, command-capable host parity, command surface coverage, and pi runtime behavior.
 21. Run `/forgeflow-lean-host-packages --write` when you want a local manifest describing where each generated adapter belongs.
 22. Run `/forgeflow-lean-lab --task-pack <json> --results <json>` when you want to compare baseline, balanced, strict, and ultra guidance modes across repeatable local task results. Treat descriptive output as evidence gathering only until every mode has visible sample size and passing validation.
-23. Run `/forgeflow-lean-benchmark-runner --write` to generate an opt-in benchmark scaffold, `/forgeflow-lean-benchmark-results --results <json>` to validate model-backed evidence, then `/forgeflow-lean-benchmark --baseline <json> --current <json>` when you have comparable aggregate baseline and lean-guided metrics.
-24. Defer or ask the user when the decision says the task is speculative or lacks a concrete requirement.
+23. Run `/forgeflow-lean-demo-report --write` when you need a compact local demo readiness report across Lean Prime, host coverage, skills, and benchmark setup.
+24. Run `/forgeflow-lean-benchmark-runner --write` to generate an opt-in benchmark scaffold, `/forgeflow-lean-benchmark-results --results <json>` to validate model-backed evidence, then `/forgeflow-lean-benchmark --baseline <json> --current <json>` when you have comparable aggregate baseline and lean-guided metrics.
+25. Defer or ask the user when the decision says the task is speculative or lacks a concrete requirement.
 
 ## Ship A Change
 

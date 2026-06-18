@@ -36,6 +36,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-dogfood-report` | Review Phase 8-11 local evidence and context-pack signals, then recommend keep, refine, or consider narrow opt-in automation promotion; add `--write` to save local `.forgeflow/<project>/context/dogfood-report.*` files. |
 | `/forgeflow-code-map` | Generate a compact project code map with topology, sections, changed-section hints, import-gap triage, living project-map categories, Git provenance, and generated artifact paths. |
 | `/forgeflow-command-args` | Validate a small command-argument string against an explicit allowlist without executing the command. |
+| `/forgeflow-command-capability` | Render a read-only matrix of command-wrapper, Pi, OpenCode, and skill coverage across Forgeflow commands. |
 | `/forgeflow-command-wrapper-batch` | Rank the next small batch of command-wrapper contract cleanup candidates without editing command files. |
 | `/forgeflow-compact-output` | Compact allowlisted noisy command output while preserving exact output for unsafe command classes. |
 | `/forgeflow-context-advisor` | Show context budget, savings, topology coverage, trend deltas, and proof-preserving trim recommendations. |
@@ -74,9 +75,11 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-lean-correctness` | Run executable local correctness canaries that accept known-good snippets and reject known lazy-wrong snippets. |
 | `/forgeflow-lean-debt` | Build a local ledger from `forgeflow:` markers, lean-decision ceilings, and implementation-note upgrade triggers; flags shortcuts that do not name when to revisit them. Add `--write` to save `.forgeflow/<project>/context/lean-debt.md` and `.json`. |
 | `/forgeflow-lean-decision` | Show read-only minimum-sufficient-solution guidance for a work item, including reuse candidates, avoid-first guidance, do-not-simplify boundaries, validation minimum, known ceiling, and upgrade trigger. `/consult`, `/implement`, Codex consult/implement skills, and generated project-intelligence brief stubs carry the same compact lean section into handoffs when available. `/implement` also writes a JSON sidecar that `record-implementation-notes.js --lean-decision` can append as a ceiling tradeoff note. |
+| `/forgeflow-lean-demo-report` | Summarize local Lean Prime, host adapters, command parity, skills, and benchmark scaffold readiness for demos. Add `--write` to save `.forgeflow/<project>/context/lean-demo-report.*`. |
 | `/forgeflow-lean-eval` | Run the local deterministic lean eval pack against fixture outputs. It checks behavior-probe expectations without calling models, running generated code, installing dependencies, or using the network. |
 | `/forgeflow-lean-hook-contract` | Run the lean activation hook subprocess contract when local process spawning is available; sandbox denial is reported as an environment-blocked warning. |
 | `/forgeflow-lean-host-adapters` | Validate committed lean host adapter artifacts for plugin, extension, instruction, and skill-tier hosts. |
+| `/forgeflow-lean-host-cli-probes` | Inspect PATH for optional host CLI executables and print manual lean adapter probe commands without launching host applications. |
 | `/forgeflow-lean-host-command-parity` | Check that pi registered lean commands have matching Forgeflow and OpenCode command files. |
 | `/forgeflow-lean-host-packages` | Render host package guidance for lean adapters. Add `--write` to save `.forgeflow/<project>/lean-packages/manifest.json` and `README.md`. |
 | `/forgeflow-lean-lab` | Compare baseline, balanced, strict, and ultra guidance across repeatable local task-pack results. Use `--task-pack <json> --results <json>` for explicit inputs; add `--write` to save `.forgeflow/<project>/context/lean-lab.md` and `.json`. Rankings require visible sample size and passing validation evidence. |
