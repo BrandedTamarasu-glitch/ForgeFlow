@@ -15,6 +15,9 @@ const TASKS = [
   { id: 'forgeflow-runtime-manifest', prompt: 'Add a new Forgeflow runtime helper and wire it through install manifest, runtime inventory, and command coverage tests.', correctness: 'structural' },
   { id: 'forgeflow-dashboard-readiness', prompt: 'Extend the Forgeflow dashboard readiness API with an additive card while preserving read-only behavior and schema compatibility.', correctness: 'structural' },
   { id: 'forgeflow-release-gate', prompt: 'Add a new release-readiness check, document it in the release gate, and keep the advisory boundary intact.', correctness: 'structural' },
+  { id: 'forgeflow-command-safety', prompt: 'Tighten a Forgeflow command wrapper so shell arguments remain allowlisted and multi-word task text still works.', correctness: 'structural' },
+  { id: 'forgeflow-health-diagnostic', prompt: 'Add a non-failing Forgeflow health diagnostic for a missing local tool and cover it with a focused test.', correctness: 'structural' },
+  { id: 'forgeflow-benchmark-import', prompt: 'Normalize model-runner benchmark output into Forgeflow benchmark results and preserve the local evidence boundary.', correctness: 'structural' },
 ];
 
 const ARMS = [
@@ -122,6 +125,36 @@ function importRunOutput(root, dir, run) {
     runs: Array.isArray(normalized.runs) ? normalized.runs.length : 0,
     next: `/forgeflow-lean-benchmark-results --results ${output}`,
   };
+}
+
+function writeRunLedger(dir, result) {
+  const run = result.run || {};
+  const imported = result.imported_results || null;
+  const ledger = {
+    schema_version: '1',
+    generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
+    status: run.status || 'not-run',
+    summary: {
+      runs: run.status ? 1 : 0,
+      imported_runs: Number(imported?.runs || 0),
+      normalized_output: imported?.output || '',
+    },
+    entries: run.status ? [{
+      status: run.status,
+      command: run.command || '',
+      exit_code: run.exit_code,
+      raw_output: run.output || '',
+      normalized_output: imported?.output || '',
+      imported_runs: Number(imported?.runs || 0),
+      next: imported?.next || result.next || '',
+      stdout: run.stdout || '',
+      stderr: run.stderr || '',
+    }] : [],
+    boundary: 'Benchmark run ledger is local evidence only. It records runner status and normalized output paths but does not call models, install dependencies, commit, push, or call the network.',
+  };
+  const file = path.join(dir, 'run-ledger.json');
+  writeJsonSafe(file, ledger);
+  return file;
 }
 
 function runnerScript(result) {
@@ -281,6 +314,7 @@ function buildLeanBenchmarkRunner(opts = {}) {
     result.next = result.imported_results?.next || (result.run.status === 'pass'
       ? `/forgeflow-lean-benchmark-results --promptfoo ${path.join(dir, 'raw-results.json')} --out ${path.join(dir, 'normalized-results.json')}`
       : result.run.reason);
+    result.artifacts.run_ledger = writeRunLedger(dir, result);
   }
   return result;
 }
@@ -317,5 +351,6 @@ module.exports = {
   reportTemplate,
   renderMarkdown,
   importRunOutput,
+  writeRunLedger,
   runPromptfoo,
 };

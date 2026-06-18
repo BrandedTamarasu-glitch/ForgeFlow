@@ -12,6 +12,7 @@ const {
   reportTemplate,
   renderMarkdown,
   runPromptfoo,
+  writeRunLedger,
 } = require('./render-lean-benchmark-runner');
 
 const root = path.resolve(__dirname, '..', '..');
@@ -50,9 +51,10 @@ if (previousAllow === undefined) delete process.env.FORGEFLOW_BENCHMARK_ALLOW_NE
 else process.env.FORGEFLOW_BENCHMARK_ALLOW_NETWORK = previousAllow;
 const markdown = renderMarkdown(preview);
 const opts = parseArgs(['--root', root, '--project-dir', projectDir, '--write', '--run', '--runner', fakeRunner, '--json']);
+const ledger = JSON.parse(fs.readFileSync(runResult.artifacts.run_ledger, 'utf8'));
 
 const checks = [
-  ['preview ready', preview.status === 'ready' && preview.tasks.length === TASKS.length && preview.tasks.some((task) => task.id === 'forgeflow-command-wrapper') && preview.arms.length === ARMS.length],
+  ['preview ready', preview.status === 'ready' && preview.tasks.length === TASKS.length && preview.tasks.some((task) => task.id === 'forgeflow-command-wrapper') && preview.tasks.some((task) => task.id === 'forgeflow-benchmark-import') && preview.arms.length === ARMS.length],
   ['commands keep network opt-in', preview.commands.some((item) => item.requires_network === true) && preview.boundary.includes('FORGEFLOW_BENCHMARK_ALLOW_NETWORK=1')],
   ['write creates plan and script', fs.existsSync(written.artifacts.json) && fs.existsSync(written.artifacts.script) && fs.existsSync(written.artifacts.promptfoo) && fs.existsSync(written.artifacts.tasks)],
   ['write creates prompt arms', written.artifacts.arms.length === ARMS.length && written.artifacts.arms.every((file) => fs.existsSync(file))],
@@ -62,6 +64,8 @@ const checks = [
   ['run blocked without explicit env', blockedRun.status === 'blocked' && blockedRun.reason.includes('FORGEFLOW_BENCHMARK_ALLOW_NETWORK')],
   ['run executes explicit runner when env allows it', runResult.run.status === 'pass' && runResult.next.includes('/forgeflow-lean-benchmark-results')],
   ['run imports raw promptfoo output when present', runResult.imported_results && fs.existsSync(runResult.imported_results.output) && runResult.imported_results.runs === 1],
+  ['run writes benchmark ledger', fs.existsSync(runResult.artifacts.run_ledger) && ledger.summary.imported_runs === 1 && ledger.entries[0].normalized_output === runResult.imported_results.output],
+  ['exports ledger writer', typeof writeRunLedger === 'function'],
   ['arm script carries guidance', armScript(ARMS[1]).includes('Forgeflow lean profile') && armScript(ARMS[0]).includes('Answer normally')],
   ['renders markdown', markdown.includes('# Forgeflow Lean Benchmark Runner') && markdown.includes('opt-in scaffold')],
   ['parses args', opts.root === root && opts.projectDir === projectDir && opts.write && opts.run && opts.runner === fakeRunner && opts.json],

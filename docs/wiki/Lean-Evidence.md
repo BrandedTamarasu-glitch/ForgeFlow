@@ -10,6 +10,8 @@ Use this path when you want proof instead of intuition:
 4. Run `/forgeflow-lean-report --write`.
 5. Run `/forgeflow-lean-review` before normal review when the risk is over-building.
 6. Use `/forgeflow-lean-lab --task-pack <json> --results <json>` for repeatable local comparisons.
-7. Use `/forgeflow-lean-benchmark-runner --write` and validate model-backed results with `/forgeflow-lean-benchmark-results --promptfoo raw-results.json --out normalized-results.json`, then `/forgeflow-lean-benchmark-results --results normalized-results.json`.
+7. Use `/forgeflow-lean-benchmark-runner --write` and validate model-backed results with `/forgeflow-lean-benchmark-results --promptfoo raw-results.json --out normalized-results.json`, then `/forgeflow-lean-benchmark-results --results normalized-results.json`. Model-backed runs also write a local benchmark run ledger for dashboard/readiness evidence.
+
+Run `/forgeflow-stale-artifact-plan` after commits when latest project guidance or insights are stale; its post-commit aftercare commands keep Lean Prime and dashboard guidance current.
 
 Do not publish performance claims from single samples, failed validation, missing correctness gates, or results without the session-cost caveat.

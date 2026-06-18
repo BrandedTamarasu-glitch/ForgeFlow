@@ -2,8 +2,11 @@
 const fs = require('fs');
 const path = require('path');
 const { renderDogfoodRefreshPlan } = require('../../scripts/forgeflow/render-dogfood-refresh-plan');
+const { buildLeanBenchmarkRunner } = require('../../scripts/forgeflow/render-lean-benchmark-runner');
+const { buildLeanHostCliProbes } = require('../../scripts/forgeflow/render-lean-host-cli-probes');
 const { buildLeanPrime } = require('../../scripts/forgeflow/render-lean-prime');
 const { buildLeanStatus } = require('../../scripts/forgeflow/render-lean-status');
+const { buildStaleArtifactPlan } = require('../../scripts/forgeflow/render-stale-artifact-plan');
 
 function defaultProjectDir(projectRoot) {
   return path.join(projectRoot, '.forgeflow', path.basename(projectRoot));
@@ -144,12 +147,63 @@ function leanPrimeCard(leanPrime) {
     return card('lean-prime', 'Lean Prime', 'error', leanPrime?.reason || 'Unable to render lean prime checklist.', '/forgeflow-lean-prime');
   }
   const blocked = (leanPrime.steps || []).filter((item) => item.status !== 'ready').length;
+  const decisionMissing = (leanPrime.steps || []).some((item) => item.id === 'decision' && item.status !== 'ready');
+  const next = decisionMissing
+    ? '/forgeflow-lean-prime --prime-task "<work item>" --write-report'
+    : (leanPrime.next || '');
   return card(
     'lean-prime',
     'Lean Prime',
     leanPrime.status,
     `${blocked} checklist step(s) need attention.`,
-    leanPrime.next || '',
+    next,
+  );
+}
+
+function hostVerificationCard(hostProbes) {
+  if (!hostProbes || hostProbes.status === 'error') {
+    return card('host-verification', 'Host Verification', 'error', hostProbes?.reason || 'Unable to inspect host CLI probes.', '/forgeflow-lean-host-cli-probes');
+  }
+  const summary = hostProbes.summary || {};
+  const verified = Number(summary.verified || 0);
+  const probes = Number(summary.probes || 0);
+  const missing = Number(summary.missing || 0);
+  const status = missing > 0 ? 'partial' : (verified === probes && probes > 0 ? 'ready' : 'watch');
+  const next = status === 'ready' ? '' : '/forgeflow-lean-host-cli-probes --write-template';
+  return card(
+    'host-verification',
+    'Host Verification',
+    status,
+    `${verified}/${probes} host probe(s) verified; ${missing} missing.`,
+    next,
+  );
+}
+
+function benchmarkEvidenceCard(benchmarkRunner, benchmarkResults, benchmarkLedger) {
+  if (!benchmarkRunner || benchmarkRunner.status === 'error') {
+    return card('benchmark-evidence', 'Benchmark Evidence', 'error', benchmarkRunner?.reason || 'Unable to render benchmark evidence.', '/forgeflow-lean-benchmark-runner');
+  }
+  const resultsPresent = benchmarkResults.status === 'present';
+  const ledgerPresent = benchmarkLedger.status === 'present';
+  const runs = Number(benchmarkResults.value?.summary?.runs || benchmarkResults.value?.runs?.length || benchmarkLedger.value?.summary?.imported_runs || 0);
+  const status = resultsPresent && runs > 0 ? 'ready' : (ledgerPresent ? 'watch' : 'missing');
+  const next = status === 'ready' ? '/forgeflow-lean-benchmark-results --results .forgeflow/<project>/context/lean-benchmark-runner/normalized-results.json' : '/forgeflow-lean-benchmark-runner --write';
+  const summary = status === 'ready'
+    ? `${runs} normalized benchmark run(s) available.`
+    : `${benchmarkRunner.tasks?.length || 0} task(s) scaffolded; no normalized benchmark evidence yet.`;
+  return card('benchmark-evidence', 'Benchmark Evidence', status, summary, next);
+}
+
+function guidanceAftercareCard(stalePlan) {
+  if (!stalePlan || stalePlan.status === 'error') {
+    return card('guidance-aftercare', 'Guidance Aftercare', 'error', stalePlan?.reason || 'Unable to render stale artifact plan.', '/forgeflow-stale-artifact-plan');
+  }
+  return card(
+    'guidance-aftercare',
+    'Guidance Aftercare',
+    stalePlan.status,
+    stalePlan.build_aftercare?.summary || stalePlan.next_reason || 'Guidance aftercare rendered.',
+    stalePlan.commands?.[0] || '',
   );
 }
 
@@ -172,17 +226,24 @@ async function scanReadiness(opts = {}) {
     releaseReadiness,
     dogfoodReport,
     projectModel,
+    benchmarkResults,
+    benchmarkLedger,
   ] = await Promise.all([
     readJson(path.join(latestDir, 'latest-insights-report.json'), projectDir),
     readJson(path.join(latestDir, 'context-telemetry.json'), projectDir),
     readJson(path.join(projectDir, 'release-readiness', 'last.json'), projectDir),
     readJson(path.join(contextDir, 'dogfood-report.json'), projectDir),
     readJson(path.join(contextDir, 'project-operating-model.json'), projectDir),
+    readJson(path.join(contextDir, 'lean-benchmark-runner', 'normalized-results.json'), projectDir),
+    readJson(path.join(contextDir, 'lean-benchmark-runner', 'run-ledger.json'), projectDir),
   ]);
 
   let refreshPlan;
   let leanStatus;
   let leanPrime;
+  let hostProbes;
+  let benchmarkRunner;
+  let stalePlan;
   try {
     refreshPlan = renderDogfoodRefreshPlan({ root: projectRoot, projectDir });
   } catch (err) {
@@ -198,6 +259,21 @@ async function scanReadiness(opts = {}) {
   } catch (err) {
     leanPrime = { status: 'error', reason: err.message, next: '/forgeflow-lean-prime', steps: [] };
   }
+  try {
+    hostProbes = buildLeanHostCliProbes({ root: helperRoot });
+  } catch (err) {
+    hostProbes = { status: 'error', reason: err.message, next: '/forgeflow-lean-host-cli-probes' };
+  }
+  try {
+    benchmarkRunner = buildLeanBenchmarkRunner({ root: helperRoot, projectDir });
+  } catch (err) {
+    benchmarkRunner = { status: 'error', reason: err.message, next: '/forgeflow-lean-benchmark-runner' };
+  }
+  try {
+    stalePlan = buildStaleArtifactPlan({ root: projectRoot, projectDir });
+  } catch (err) {
+    stalePlan = { status: 'error', reason: err.message, next: '/forgeflow-stale-artifact-plan' };
+  }
 
   const cards = [
     card(
@@ -211,6 +287,9 @@ async function scanReadiness(opts = {}) {
     contextBudgetCard(contextTelemetry),
     leanPrimeCard(leanPrime),
     leanCard(leanStatus),
+    hostVerificationCard(hostProbes),
+    benchmarkEvidenceCard(benchmarkRunner, benchmarkResults, benchmarkLedger),
+    guidanceAftercareCard(stalePlan),
     releaseReadinessCard(releaseReadiness),
     dogfoodCard(dogfoodReport),
     dogfoodRefreshCard(refreshPlan),
@@ -230,6 +309,10 @@ async function scanReadiness(opts = {}) {
       project_operating_model: statusFromRead(projectModel, projectModel.status),
       lean_guidance: leanStatus.status,
       lean_prime: leanPrime.status,
+      host_verification: hostProbes.status,
+      benchmark_evidence: statusFromRead(benchmarkResults),
+      benchmark_run_ledger: statusFromRead(benchmarkLedger),
+      guidance_aftercare: stalePlan.status,
     },
     lean_prime_steps: (leanPrime.steps || []).map((item) => ({
       id: item.id,

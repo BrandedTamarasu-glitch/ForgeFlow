@@ -182,6 +182,8 @@ function addSessionToolChecks(checks) {
     ? check('rtk command wrapper on PATH', true, '', { path: rtk })
     : warn('rtk command wrapper on PATH', 'install or expose rtk on PATH before Codex sessions that follow this repo command policy', {
       reason: 'rtk is not required by Forgeflow runtime helpers, but this repository asks shell sessions to prefix commands with it.',
+      verify: 'command -v rtk',
+      repair: 'Install rtk or add its install directory to PATH for non-interactive shells.',
     }));
 }
 
@@ -556,6 +558,8 @@ function renderMarkdown(result) {
     const details = [];
     if (item.reason) details.push(item.reason);
     if (item.status === 'skip' && item.fix) details.push(`next: ${item.fix}`);
+    if (item.status === 'warn' && item.fix) details.push(`next: ${item.fix}`);
+    if (item.status === 'warn' && item.verify) details.push(`verify: ${item.verify}`);
     const suffix = details.length > 0 ? ` (${details.join('; ')})` : '';
     lines.push(`- ${item.status.toUpperCase()}: ${item.name}${suffix}`);
   }

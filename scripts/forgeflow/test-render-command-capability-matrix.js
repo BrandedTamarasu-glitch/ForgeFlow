@@ -18,9 +18,10 @@ const review = result.rows.find((row) => row.command === 'review');
 const checks = [
   ['matrix passes for command wrappers', result.status === 'pass' && result.summary.commands > 100],
   ['policy metadata is explicit', result.policy.schema_version === '1' && result.policy.required_host_parity.includes('forgeflow-lean-prime') && result.policy.optional_prefixes.includes('forgeflow-lean-')],
+  ['adoption recommendations are present', Array.isArray(result.recommendations) && result.recommendations.length > 0 && typeof result.summary.optional_host_candidates === 'number'],
   ['lean prime has required host command coverage', leanPrime && leanPrime.policy === 'required-host-parity' && leanPrime.forgeflow_command && leanPrime.pi_alias && leanPrime.opencode_command && leanPrime.gaps.length === 0],
   ['core review maps to skill', review && review.skill && skillNameForCommand('review') === 'forgeflow-review'],
-  ['renders policy table', markdown.includes('# Forgeflow Command Capability Matrix') && markdown.includes('| Command | Policy | Forgeflow | Pi | OpenCode | Skill | Gaps |')],
+  ['renders policy table', markdown.includes('# Forgeflow Command Capability Matrix') && markdown.includes('| Command | Policy | Forgeflow | Pi | OpenCode | Skill | Gaps |') && markdown.includes('## Adoption Recommendations')],
   ['parses args', opts.root === root && opts.json],
 ];
 

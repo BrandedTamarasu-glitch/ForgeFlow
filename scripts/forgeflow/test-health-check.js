@@ -248,6 +248,7 @@ const checks = [
   ['gitignore updated', fs.readFileSync(path.join(root, '.gitignore'), 'utf8').includes('.forgeflow/')],
   ['budget seeded', fs.existsSync(path.join(root, '.forgeflow-budget.json'))],
   ['rtk session guidance included without failing health', fixed.checks.some((item) => item.name === 'rtk command wrapper on PATH' && ['pass', 'warn'].includes(item.status)) && renderMarkdown(fixed).includes('rtk command wrapper on PATH')],
+  ['rtk warning renders repair guidance when missing', !fixed.checks.find((item) => item.name === 'rtk command wrapper on PATH' && item.status === 'warn') || renderMarkdown(fixed).includes('verify: command -v rtk')],
   ['latest notes check summarized', withNotesCheck.latest_notes_check.status === 'warn' && withNotesCheck.latest_notes_check.issues === 2],
   ['latest notes check counts failures', withNotesCheck.latest_notes_check.failures === 1 && withNotesCheck.latest_notes_check.warnings === 1],
   ['latest notes check renders', withNotesCheckMarkdown.includes('## Latest Implementation Notes Check') && withNotesCheckMarkdown.includes('Status: warn')],

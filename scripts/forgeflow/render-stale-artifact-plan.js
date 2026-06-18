@@ -40,11 +40,14 @@ function buildStaleArtifactPlan(opts = {}) {
   if (issues.some((issue) => /code-map|latest-insights|project-guidance/i.test(issue.code || issue.message || ''))) commands.push('/forgeflow-trends --refresh');
   if (trends.failure_digest && trends.failure_digest.status === 'missing') commands.push('/forgeflow-failure-digest');
   if (trends.advisor && trends.advisor.recommendation_actions && trends.advisor.recommendation_actions.includes('trim-budget-violation')) commands.push('/forgeflow-context-wave-plan');
+  if (issues.length > 0 && commands.length === 0) commands.push('/forgeflow-trends --refresh');
+  const uniqueCommands = [...new Set(commands)];
   const buildAftercare = {
     status: issues.length ? 'needed' : 'current',
     summary: issues.length
       ? 'Run the minimal refresh commands after commits before relying on project guidance, Lean Prime, or review context.'
       : 'No post-build guidance refresh is currently needed.',
+    commands: uniqueCommands,
   };
   return {
     schema_version: '1',
@@ -52,9 +55,14 @@ function buildStaleArtifactPlan(opts = {}) {
     root,
     project_dir: projectDir,
     issues,
-    commands: [...new Set(commands)],
+    commands: uniqueCommands,
     build_aftercare: buildAftercare,
-    next: commands[0] || 'No refresh needed.',
+    post_commit_aftercare: {
+      status: buildAftercare.status,
+      commands: uniqueCommands,
+      reason: buildAftercare.summary,
+    },
+    next: uniqueCommands[0] || 'No refresh needed.',
     next_reason: issues.length ? 'One or more local guidance artifacts are stale, missing, or over budget.' : 'Local guidance artifacts are current.',
     boundary: 'Stale artifact plan is read-only. It reports minimal refresh commands but does not refresh, delete, archive, commit, or push.',
   };

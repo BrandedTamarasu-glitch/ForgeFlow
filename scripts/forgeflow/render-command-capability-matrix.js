@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
+const { safeReadTextFile } = require('./file-safety');
 const { commandNames } = require('./runtime-inventory');
 const { HOST_PARITY_POLICY } = require('./render-lean-host-command-parity');
 
@@ -56,6 +57,46 @@ function skillNameForCommand(name) {
   return core[name] || direct;
 }
 
+function defaultProjectDir(root) {
+  return path.join(root, '.forgeflow', path.basename(root));
+}
+
+function pilotCount(root) {
+  const file = path.join(defaultProjectDir(root), 'pilot-evidence-rollup.md');
+  if (!fs.existsSync(file)) return 0;
+  let content = '';
+  try {
+    content = safeReadTextFile(file, defaultProjectDir(root)).content;
+  } catch (_err) {
+    return 0;
+  }
+  return Number.parseInt((content.match(/^Pilot count:\s*(\d+)/m) || [])[1] || '0', 10) || 0;
+}
+
+function adoptionRecommendations(root, rows) {
+  const count = pilotCount(root);
+  const optionalCandidates = rows
+    .filter((row) => row.policy === 'optional-lean' && (!row.pi_alias || !row.opencode_command))
+    .map((row) => row.command)
+    .sort();
+  if (optionalCandidates.length === 0) {
+    return [{
+      status: 'complete',
+      reason: 'No optional lean host parity candidates are missing pi or OpenCode coverage.',
+      commands: [],
+      evidence: `pilot_count=${count}`,
+    }];
+  }
+  return [{
+    status: count >= 3 ? 'recommend-review' : 'watch',
+    reason: count >= 3
+      ? 'Local pilot evidence is high enough to review optional lean commands for host parity promotion.'
+      : 'Keep optional lean commands as Forgeflow-only until adoption evidence is stronger.',
+    commands: optionalCandidates.slice(0, 10),
+    evidence: `pilot_count=${count}`,
+  }];
+}
+
 function buildCommandCapabilityMatrix(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const names = commandNames(root);
@@ -87,7 +128,9 @@ function buildCommandCapabilityMatrix(opts = {}) {
     opencode_commands: rows.filter((row) => row.opencode_command).length,
     skills: rows.filter((row) => row.skill).length,
     required_host_gaps: requiredGaps.length,
+    optional_host_candidates: rows.filter((row) => row.policy === 'optional-lean' && (!row.pi_alias || !row.opencode_command)).length,
   };
+  const recommendations = adoptionRecommendations(root, rows);
   return {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
@@ -95,6 +138,7 @@ function buildCommandCapabilityMatrix(opts = {}) {
     status: rows.every((row) => row.forgeflow_command) && requiredGaps.length === 0 ? 'pass' : 'fail',
     policy: HOST_PARITY_POLICY,
     rows,
+    recommendations,
     summary: counts,
     next: requiredGaps.length ? '/forgeflow-lean-host-command-parity' : '/forgeflow-lean-host-command-parity',
     boundary: 'Command capability matrix generation is read-only. It scans committed command, host adapter, and skill files but does not install adapters, edit settings, commit, push, or call the network.',
@@ -114,6 +158,11 @@ function renderMarkdown(result) {
   ];
   for (const row of result.rows) {
     lines.push(`| ${row.command} | ${row.policy} | ${row.forgeflow_command ? 'yes' : 'no'} | ${row.pi_alias ? 'yes' : 'no'} | ${row.opencode_command ? 'yes' : 'no'} | ${row.skill ? 'yes' : 'no'} | ${row.gaps.join(', ') || ''} |`);
+  }
+  lines.push('', '## Adoption Recommendations', '');
+  for (const item of result.recommendations || []) {
+    lines.push(`- ${item.status}: ${item.reason} (${item.evidence})`);
+    for (const command of item.commands || []) lines.push(`  - ${command}`);
   }
   lines.push('', `Next: ${result.next}`, '');
   return lines.join('\n');
@@ -135,6 +184,7 @@ if (require.main === module) main();
 
 module.exports = {
   buildCommandCapabilityMatrix,
+  adoptionRecommendations,
   parseArgs,
   renderMarkdown,
   skillNameForCommand,
