@@ -78,7 +78,7 @@ Use `/forgeflow-review-auto-evidence --findings <json>` when you want a saved lo
 
 ## Keep A Work Item Lean
 
-1. Run `/forgeflow-lean-prime` when you want the shortest first-run checklist for lean mode, decision evidence, report evidence, telemetry quality, and context-injection readiness.
+1. Run `/forgeflow-lean-prime` when you want the shortest first-run checklist for lean mode, decision evidence, report evidence, telemetry quality, and context-injection readiness. Use `/forgeflow-lean-prime --prime-task "<work item>"` when you want one command to write the lean decision and prime plan artifacts for the current work item.
 2. Run `/forgeflow-lean-decision --task "<work item>"` before `/consult` when the risk is over-building, adding a dependency too early, or creating an abstraction before reuse has been checked.
 3. Optionally run `/forgeflow-lean-mode --profile lite|balanced|strict|ultra --write` to persist a project lean preference, `--profile strict --user --write` for a user-level default, or `--profile off --write` to keep lean guidance explicit-only.
 4. Run `/forgeflow-lean-status` when you need to know whether lean guidance is configured, stale, blocked, or eligible for context-pack injection before starting agent-heavy work.
@@ -97,11 +97,11 @@ Use `/forgeflow-review-auto-evidence --findings <json>` when you want a saved lo
 17. Run `/forgeflow-lean-eval` when you want a deterministic local fixture check for the lean behavior probes without model calls.
 18. Run `/forgeflow-lean-correctness` and `/forgeflow-lean-robustness` when you want deterministic local selftests for "lean but wrong" shortcut traps.
 19. Run `/forgeflow-lean-adapter-contract`, `/forgeflow-lean-hook-contract`, `/forgeflow-lean-adapter-smoke`, `/forgeflow-lean-adapter-drift`, and `/forgeflow-lean-rule-canary` before treating lean adapter output as release-ready.
-20. Run `/forgeflow-lean-host-adapters`, `/forgeflow-lean-host-cli-probes`, `/forgeflow-lean-host-command-parity`, `/forgeflow-command-capability`, and `/forgeflow-lean-pi-smoke` to validate committed adapter artifacts, optional host CLI availability, command-capable host parity, command surface coverage, and pi runtime behavior.
+20. Run `/forgeflow-lean-host-adapters`, `/forgeflow-lean-host-cli-probes`, `/forgeflow-lean-host-command-parity`, `/forgeflow-command-capability`, and `/forgeflow-lean-pi-smoke` to validate committed adapter artifacts, optional host CLI availability, command-capable host parity, policy-aware command surface coverage, and pi runtime behavior. Add `--evidence <json>` to the host CLI probe after manually checking real host commands.
 21. Run `/forgeflow-lean-host-packages --write` when you want a local manifest describing where each generated adapter belongs.
 22. Run `/forgeflow-lean-lab --task-pack <json> --results <json>` when you want to compare baseline, balanced, strict, and ultra guidance modes across repeatable local task results. Treat descriptive output as evidence gathering only until every mode has visible sample size and passing validation.
 23. Run `/forgeflow-lean-demo-report --write` when you need a compact local demo readiness report across Lean Prime, host coverage, skills, and benchmark setup.
-24. Run `/forgeflow-lean-benchmark-runner --write` to generate an opt-in benchmark scaffold, `/forgeflow-lean-benchmark-results --results <json>` to validate model-backed evidence, then `/forgeflow-lean-benchmark --baseline <json> --current <json>` when you have comparable aggregate baseline and lean-guided metrics.
+24. Run `/forgeflow-lean-benchmark-runner --write` to generate an opt-in benchmark scaffold, or `FORGEFLOW_BENCHMARK_ALLOW_NETWORK=1 /forgeflow-lean-benchmark-runner --run` when a local promptfoo executable and provider credentials are intentionally available. Use `/forgeflow-lean-benchmark-results --results <json>` to validate model-backed evidence, then `/forgeflow-lean-benchmark --baseline <json> --current <json>` when you have comparable aggregate baseline and lean-guided metrics.
 25. Defer or ask the user when the decision says the task is speculative or lacks a concrete requirement.
 
 ## Ship A Change
@@ -120,7 +120,8 @@ If implementation notes are missing or stale, refresh or repair them before ship
 3. Run `/forgeflow-release-readiness` to execute the release-check list and the release-to-install source preflight. Add `--save-current` to record the current local snapshot, then use `--compare-last` on a later run to see newly failing, cleared, and category-movement comparison without remembering a JSON path. After publishing, use `/forgeflow-release-verify --save` for the compact shareable local post-publish evidence; add `--github` only when you want read-only GitHub release/tag evidence. Run `/forgeflow-release-follow-through` after update verification to confirm post-publish verify, update verify, and runtime consumability are all accounted for. Use `/forgeflow-release-consumption-loop` to see the next update, smoke, or consumption step and whether the loop has a complete or attention badge, then use `/forgeflow-release-consumption` for the final consumed-or-attention rollup; add `--with-smoke` only when you want it to run downstream smoke, and `--save` only when you want a local snapshot. Use the helper directly with `scripts/forgeflow/render-release-readiness.js --baseline <prior-json>` when you need to compare against a specific prior run.
 4. Render the public evaluation summary if release notes cite evaluation evidence.
 5. Run `/forgeflow-smoke --mode source` for source-tree release guards when you want a shorter local check.
-6. Tag and publish only after release checks pass.
+6. Run `/forgeflow-stale-artifact-plan` after landing release-prep commits when you need the minimal guidance refresh aftercare before relying on project trends or latest insights.
+7. Tag and publish only after release checks pass.
 
 ## Quick Symptom Map
 

@@ -18,8 +18,16 @@ if [ -n "${ARGUMENTS:-}" ]; then
   exit 2
 fi
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+HELPER="${ROOT}/scripts/forgeflow/run-lean-pi-smoke.js"
+if [ ! -x "${HELPER}" ] && [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/run-lean-pi-smoke.js" ]; then
+  HELPER="$HOME/.claude/forgeflow/scripts/forgeflow/run-lean-pi-smoke.js"
+fi
+if [ ! -x "${HELPER}" ]; then
+  echo "Lean pi smoke helper is not installed. Run /update-forgeflow --repair, then retry /forgeflow-lean-pi-smoke."
+  exit 1
+fi
 cd "${ROOT}"
-env -u NODE_OPTIONS -u NODE_PATH node --test pi-extension/test/*.test.js
+env -u NODE_OPTIONS -u NODE_PATH node "${HELPER}"
 ```
 </process>
 

@@ -1,5 +1,7 @@
 #!/usr/bin/env node
+const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 const { writeFileSafe, writeJsonSafe } = require('./file-safety');
 
 const TASKS = [
@@ -17,7 +19,7 @@ const ARMS = [
 ];
 
 function usage() {
-  console.error('Usage: render-lean-benchmark-runner.js [--root <repo>] [--project-dir <dir>] [--write] [--json]');
+  console.error('Usage: render-lean-benchmark-runner.js [--root <repo>] [--project-dir <dir>] [--write] [--run] [--runner <path>] [--json]');
 }
 
 function requireValue(argv, name, index) {
@@ -27,7 +29,7 @@ function requireValue(argv, name, index) {
 }
 
 function parseArgs(argv) {
-  const opts = { root: process.cwd(), projectDir: '', write: false, json: false };
+  const opts = { root: process.cwd(), projectDir: '', write: false, run: false, runner: '', json: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--root') {
@@ -38,6 +40,12 @@ function parseArgs(argv) {
       i += 1;
     } else if (arg === '--write') {
       opts.write = true;
+    } else if (arg === '--run') {
+      opts.run = true;
+      opts.write = true;
+    } else if (arg === '--runner') {
+      opts.runner = path.resolve(requireValue(argv, arg, i));
+      i += 1;
     } else if (arg === '--json') {
       opts.json = true;
     } else if (arg === '--help' || arg === '-h') {
@@ -56,6 +64,48 @@ function defaultProjectDir(root) {
 
 function outDir(projectDir) {
   return path.join(projectDir, 'context', 'lean-benchmark-runner');
+}
+
+function executableOnPath(name, pathValue = process.env.PATH || '') {
+  for (const dir of String(pathValue).split(path.delimiter).filter(Boolean)) {
+    const file = path.join(dir, name);
+    try {
+      fs.accessSync(file, fs.constants.X_OK);
+      return file;
+    } catch (_err) {
+      // Continue scanning PATH.
+    }
+  }
+  return '';
+}
+
+function runPromptfoo(dir, opts = {}) {
+  if (process.env.FORGEFLOW_BENCHMARK_ALLOW_NETWORK !== '1') {
+    return {
+      status: 'blocked',
+      command: '',
+      reason: 'Set FORGEFLOW_BENCHMARK_ALLOW_NETWORK=1 before model-backed benchmark execution.',
+    };
+  }
+  const runner = opts.runner || executableOnPath('promptfoo');
+  if (!runner) {
+    return {
+      status: 'blocked',
+      command: 'promptfoo eval -c promptfooconfig.yaml -o raw-results.json',
+      reason: 'promptfoo executable was not found on PATH. Install it or pass --runner <path>.',
+    };
+  }
+  const args = ['eval', '-c', path.join(dir, 'promptfooconfig.yaml'), '-o', path.join(dir, 'raw-results.json')];
+  const spawn = opts.runnerFn || spawnSync;
+  const result = spawn(runner, args, { cwd: dir, encoding: 'utf8' });
+  return {
+    status: !result.error && result.status === 0 ? 'pass' : 'fail',
+    command: `${runner} ${args.join(' ')}`,
+    exit_code: result.status,
+    stdout: String(result.stdout || '').trim().slice(0, 1200),
+    stderr: String(result.stderr || result.error?.message || '').trim().slice(0, 1200),
+    output: path.join(dir, 'raw-results.json'),
+  };
 }
 
 function runnerScript(result) {
@@ -208,6 +258,12 @@ function buildLeanBenchmarkRunner(opts = {}) {
       readme: path.join(dir, 'README.md'),
     };
   }
+  if (opts.run) {
+    result.run = runPromptfoo(dir, { runner: opts.runner, runnerFn: opts.runnerFn });
+    result.next = result.run.status === 'pass'
+      ? `/forgeflow-lean-benchmark-results --results ${path.join(dir, 'raw-results.json')}`
+      : result.run.reason;
+  }
   return result;
 }
 
@@ -242,4 +298,5 @@ module.exports = {
   rawResultTemplate,
   reportTemplate,
   renderMarkdown,
+  runPromptfoo,
 };

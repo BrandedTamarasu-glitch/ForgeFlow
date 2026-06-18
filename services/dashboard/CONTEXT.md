@@ -142,8 +142,19 @@ The readiness endpoint is advisory and read-only. It reads existing local artifa
     "context_telemetry": "pass",
     "release_readiness": "ready",
     "dogfood_report": "ready",
-    "project_operating_model": "present"
+    "project_operating_model": "present",
+    "lean_guidance": "blocked",
+    "lean_prime": "blocked"
   },
+  "lean_prime_steps": [
+    {
+      "id": "decision",
+      "label": "Lean decision evidence",
+      "status": "missing",
+      "next": "/forgeflow-lean-decision --task \"<work item>\"",
+      "reason": "Record the current work item before relying on context-pack lean guidance."
+    }
+  ],
   "next": "/forgeflow-dogfood-report --write",
   "boundary": "Dashboard readiness is read-only..."
 }
@@ -154,7 +165,8 @@ The readiness endpoint is advisory and read-only. It reads existing local artifa
 The UI consumes `/api/readiness` only through `GET`. It renders:
 
 - the overall status as visible text, not color alone
-- six readiness cards with label, status, and summary
+- eight readiness cards with label, status, and summary
+- a Lean Prime checklist when the API provides `lean_prime_steps`
 - one copy-only next-action command when the API provides `next`
 - the API boundary text
 

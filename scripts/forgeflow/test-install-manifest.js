@@ -129,6 +129,7 @@ const checks = [
   ['runtime helpers include lean session', RUNTIME_HELPERS.includes('scripts/forgeflow/render-lean-session.js')],
   ['runtime helpers include lean skills', RUNTIME_HELPERS.includes('scripts/forgeflow/render-lean-skills.js')],
   ['runtime helpers include lean status', RUNTIME_HELPERS.includes('scripts/forgeflow/render-lean-status.js')],
+  ['runtime helpers include lean pi smoke runner', RUNTIME_HELPERS.includes('scripts/forgeflow/run-lean-pi-smoke.js')],
   ['runtime helpers include learning capture nudge', RUNTIME_HELPERS.includes('scripts/forgeflow/render-learning-capture-nudge.js')],
   ['runtime helpers include next work ranking', RUNTIME_HELPERS.includes('scripts/forgeflow/render-next-work-ranking.js')],
   ['runtime helpers include outcome capture plan', RUNTIME_HELPERS.includes('scripts/forgeflow/render-outcome-capture-plan.js')],

@@ -37,9 +37,15 @@ function buildStaleArtifactPlan(opts = {}) {
     ...((trends.failure_digest && trends.failure_digest.freshness && trends.failure_digest.freshness.issues) || []),
   ];
   const commands = [];
-  if (issues.some((issue) => /code-map|latest-insights|project-guidance/i.test(issue.code || issue.message || ''))) commands.push('forgeflow-trends --refresh');
-  if (trends.failure_digest && trends.failure_digest.status === 'missing') commands.push('forgeflow-failure-digest');
-  if (trends.advisor && trends.advisor.recommendation_actions && trends.advisor.recommendation_actions.includes('trim-budget-violation')) commands.push('forgeflow-context-wave-plan');
+  if (issues.some((issue) => /code-map|latest-insights|project-guidance/i.test(issue.code || issue.message || ''))) commands.push('/forgeflow-trends --refresh');
+  if (trends.failure_digest && trends.failure_digest.status === 'missing') commands.push('/forgeflow-failure-digest');
+  if (trends.advisor && trends.advisor.recommendation_actions && trends.advisor.recommendation_actions.includes('trim-budget-violation')) commands.push('/forgeflow-context-wave-plan');
+  const buildAftercare = {
+    status: issues.length ? 'needed' : 'current',
+    summary: issues.length
+      ? 'Run the minimal refresh commands after commits before relying on project guidance, Lean Prime, or review context.'
+      : 'No post-build guidance refresh is currently needed.',
+  };
   return {
     schema_version: '1',
     status: issues.length ? 'refresh-needed' : 'current',
@@ -47,6 +53,7 @@ function buildStaleArtifactPlan(opts = {}) {
     project_dir: projectDir,
     issues,
     commands: [...new Set(commands)],
+    build_aftercare: buildAftercare,
     next: commands[0] || 'No refresh needed.',
     next_reason: issues.length ? 'One or more local guidance artifacts are stale, missing, or over budget.' : 'Local guidance artifacts are current.',
     boundary: 'Stale artifact plan is read-only. It reports minimal refresh commands but does not refresh, delete, archive, commit, or push.',
@@ -60,6 +67,8 @@ function renderMarkdown(result) {
     `Status: ${result.status}`,
     '',
     result.boundary,
+    '',
+    `Build aftercare: ${result.build_aftercare.status} - ${result.build_aftercare.summary}`,
     '',
     '## Issues',
     '',

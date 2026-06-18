@@ -11,14 +11,28 @@ const {
   rawResultTemplate,
   reportTemplate,
   renderMarkdown,
+  runPromptfoo,
 } = require('./render-lean-benchmark-runner');
 
 const root = path.resolve(__dirname, '..', '..');
 const projectDir = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-benchmark-runner-')), '.forgeflow', 'Demo');
 const preview = buildLeanBenchmarkRunner({ root, projectDir });
 const written = buildLeanBenchmarkRunner({ root, projectDir, write: true });
+const blockedRun = runPromptfoo(path.join(projectDir, 'context', 'lean-benchmark-runner'));
+const fakeRunner = path.join(path.dirname(projectDir), 'promptfoo-fake');
+const previousAllow = process.env.FORGEFLOW_BENCHMARK_ALLOW_NETWORK;
+process.env.FORGEFLOW_BENCHMARK_ALLOW_NETWORK = '1';
+const runResult = buildLeanBenchmarkRunner({
+  root,
+  projectDir,
+  run: true,
+  runner: fakeRunner,
+  runnerFn: () => ({ status: 0, stdout: 'fake promptfoo ok', stderr: '' }),
+});
+if (previousAllow === undefined) delete process.env.FORGEFLOW_BENCHMARK_ALLOW_NETWORK;
+else process.env.FORGEFLOW_BENCHMARK_ALLOW_NETWORK = previousAllow;
 const markdown = renderMarkdown(preview);
-const opts = parseArgs(['--root', root, '--project-dir', projectDir, '--write', '--json']);
+const opts = parseArgs(['--root', root, '--project-dir', projectDir, '--write', '--run', '--runner', fakeRunner, '--json']);
 
 const checks = [
   ['preview ready', preview.status === 'ready' && preview.tasks.length === TASKS.length && preview.arms.length === ARMS.length],
@@ -28,9 +42,11 @@ const checks = [
   ['write creates reproducible result templates', fs.existsSync(written.artifacts.raw_results_template) && fs.existsSync(written.artifacts.report_template)],
   ['raw template has runs', rawResultTemplate().runs.length === TASKS.length * ARMS.length],
   ['report template points to validator', reportTemplate().includes('render-lean-benchmark-results.js')],
+  ['run blocked without explicit env', blockedRun.status === 'blocked' && blockedRun.reason.includes('FORGEFLOW_BENCHMARK_ALLOW_NETWORK')],
+  ['run executes explicit runner when env allows it', runResult.run.status === 'pass' && runResult.next.includes('/forgeflow-lean-benchmark-results')],
   ['arm script carries guidance', armScript(ARMS[1]).includes('Forgeflow lean profile') && armScript(ARMS[0]).includes('Answer normally')],
   ['renders markdown', markdown.includes('# Forgeflow Lean Benchmark Runner') && markdown.includes('opt-in scaffold')],
-  ['parses args', opts.root === root && opts.projectDir === projectDir && opts.write && opts.json],
+  ['parses args', opts.root === root && opts.projectDir === projectDir && opts.write && opts.run && opts.runner === fakeRunner && opts.json],
 ];
 
 let failed = 0;

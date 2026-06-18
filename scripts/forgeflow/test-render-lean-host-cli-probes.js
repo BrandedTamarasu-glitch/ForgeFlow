@@ -10,23 +10,27 @@ const {
   renderMarkdown,
 } = require('./render-lean-host-cli-probes');
 
-const root = path.resolve(__dirname, '..', '..');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-host-cli-probes-'));
+const root = tmp;
 const fakeClaude = path.join(tmp, 'claude');
 fs.writeFileSync(fakeClaude, '#!/bin/sh\nexit 0\n');
 fs.chmodSync(fakeClaude, 0o755);
+const evidenceFile = path.join(tmp, 'evidence.json');
+fs.writeFileSync(evidenceFile, JSON.stringify({ probes: [{ binary: 'claude', status: 'verified', checked_at: '2026-06-18T00:00:00Z', note: 'manual probe passed' }] }, null, 2));
 
 const result = buildLeanHostCliProbes({ root, path: tmp });
+const evidenced = buildLeanHostCliProbes({ root, path: tmp, evidence: evidenceFile });
 const markdown = renderMarkdown(result);
-const opts = parseArgs(['--root', root, '--path', tmp, '--json']);
+const opts = parseArgs(['--root', root, '--path', tmp, '--evidence', evidenceFile, '--json']);
 
 const checks = [
   ['lists expected probes', result.probes.length === HOST_PROBES.length],
   ['detects executable on supplied path', result.probes.some((probe) => probe.binary === 'claude' && probe.status === 'present')],
+  ['uses manual evidence when supplied', evidenced.probes.some((probe) => probe.binary === 'claude' && probe.status === 'verified' && probe.evidence.note === 'manual probe passed')],
   ['reports missing executables without running them', result.status === 'partial' && result.summary.missing > 0],
   ['findOnPath returns basename-safe executable path', path.basename(findOnPath('claude', tmp)) === 'claude'],
   ['renders manual probes', markdown.includes('# Forgeflow Lean Host CLI Probes') && markdown.includes('Manual probe')],
-  ['parses args', opts.root === root && opts.path === tmp && opts.json],
+  ['parses args', opts.root === root && opts.path === tmp && opts.evidence === evidenceFile && opts.json],
 ];
 
 let failed = 0;

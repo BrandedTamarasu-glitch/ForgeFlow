@@ -1,7 +1,7 @@
 ---
 name: forgeflow-lean-host-cli-probes
 description: Inspect local host CLI availability for manual lean adapter smoke probes
-argument-hint: "[--json]"
+argument-hint: "[--evidence <json>] [--json]"
 allowed-tools:
   - Bash
 ---
@@ -10,7 +10,7 @@ Report which optional host CLIs are available on PATH and print manual lean adap
 </objective>
 
 <process>
-Validate `$ARGUMENTS`. Accept only no arguments or `--json`.
+Validate `$ARGUMENTS`. Accept only no arguments, `--json`, and `--evidence <json>`.
 
 ```bash
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -24,10 +24,21 @@ if [ ! -x "${HELPER_DIR}/render-lean-host-cli-probes.js" ]; then
 fi
 SAFE_ARGS=(--root "${ROOT}")
 read -r -a USER_ARGS <<< "${ARGUMENTS:-}"
-for arg in "${USER_ARGS[@]}"; do
+for ((i = 0; i < ${#USER_ARGS[@]}; i++)); do
+  arg="${USER_ARGS[$i]}"
   case "$arg" in
     "") ;;
     --json) SAFE_ARGS+=("$arg") ;;
+    --evidence)
+      next_i=$((i + 1))
+      file="${USER_ARGS[$next_i]:-}"
+      if [ -z "$file" ] || [[ "$file" == --* ]]; then
+        echo "Missing evidence file for /forgeflow-lean-host-cli-probes"
+        exit 2
+      fi
+      SAFE_ARGS+=(--evidence "$file")
+      i=$next_i
+      ;;
     *) echo "Unsupported arguments for /forgeflow-lean-host-cli-probes"; exit 2 ;;
   esac
 done
@@ -38,5 +49,6 @@ env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/render-lean-host-cli-probes
 
 <success_criteria>
 - [ ] Output lists optional host CLI availability and manual probe commands.
+- [ ] Optional evidence marks manually checked probes without launching host CLIs.
 - [ ] The command does not launch host CLIs, install adapters, edit settings, commit, push, or call the network.
 </success_criteria>

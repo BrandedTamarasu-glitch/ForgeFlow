@@ -1,7 +1,7 @@
 ---
 name: forgeflow-lean-benchmark-runner
 description: Render an opt-in lean benchmark runner scaffold
-argument-hint: "[--write] [--json]"
+argument-hint: "[--write] [--run] [--json]"
 allowed-tools:
   - Bash
 ---
@@ -10,7 +10,7 @@ Render a reproducible benchmark runner scaffold for lean guidance comparisons wi
 </objective>
 
 <process>
-Validate `$ARGUMENTS`. Accept only no arguments, `--write`, and `--json`.
+Validate `$ARGUMENTS`. Accept only no arguments, `--write`, `--run`, and `--json`.
 
 ```bash
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -29,7 +29,7 @@ read -r -a USER_ARGS <<< "${ARGUMENTS:-}"
 for arg in "${USER_ARGS[@]}"; do
   case "$arg" in
     "") ;;
-    --write|--json) SAFE_ARGS+=("$arg") ;;
+    --write|--run|--json) SAFE_ARGS+=("$arg") ;;
     *) echo "Unsupported arguments for /forgeflow-lean-benchmark-runner"; exit 2 ;;
   esac
 done
@@ -40,5 +40,6 @@ env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/render-lean-benchmark-runne
 
 <success_criteria>
 - [ ] Output reports benchmark tasks, arms, and opt-in run commands.
-- [ ] The command does not call models, install dependencies, commit, push, or call the network.
+- [ ] The command does not call models, install dependencies, commit, push, or call the network by default.
+- [ ] `--run` requires `FORGEFLOW_BENCHMARK_ALLOW_NETWORK=1` and an existing promptfoo executable.
 </success_criteria>

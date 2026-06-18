@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { commandNames } = require('./runtime-inventory');
+const { HOST_COMMANDS } = require('./render-lean-host-command-parity');
 
 function usage() {
   console.error('Usage: render-command-capability-matrix.js [--root <repo>] [--json]');
@@ -59,32 +60,41 @@ function buildCommandCapabilityMatrix(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
   const names = commandNames(root);
   const piCommands = registeredPiCommands(root);
+  const requiredHostCommands = new Set(HOST_COMMANDS);
   const rows = names.map((name) => {
     const commandFile = `commands/${name.replace(/\//g, '/')}.md`;
     const opencodeFile = `.opencode/command/${name}.md`;
     const skillFile = `skills/${skillNameForCommand(name)}/SKILL.md`;
+    const policy = requiredHostCommands.has(name) ? 'required-host-parity' : (name.startsWith('forgeflow-lean-') ? 'optional-lean' : 'forgeflow-only');
+    const gaps = [];
+    if (policy === 'required-host-parity' && !piCommands.has(name)) gaps.push('pi_alias');
+    if (policy === 'required-host-parity' && !exists(root, opencodeFile)) gaps.push('opencode_command');
     return {
       command: name,
+      policy,
       forgeflow_command: exists(root, commandFile),
       pi_alias: piCommands.has(name),
       opencode_command: exists(root, opencodeFile),
       skill: exists(root, skillFile),
+      gaps,
     };
   });
+  const requiredGaps = rows.filter((row) => row.gaps.length > 0);
   const counts = {
     commands: rows.length,
     pi_aliases: rows.filter((row) => row.pi_alias).length,
     opencode_commands: rows.filter((row) => row.opencode_command).length,
     skills: rows.filter((row) => row.skill).length,
+    required_host_gaps: requiredGaps.length,
   };
   return {
     schema_version: '1',
     generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
     root,
-    status: rows.every((row) => row.forgeflow_command) ? 'pass' : 'fail',
+    status: rows.every((row) => row.forgeflow_command) && requiredGaps.length === 0 ? 'pass' : 'fail',
     rows,
     summary: counts,
-    next: '/forgeflow-lean-host-command-parity',
+    next: requiredGaps.length ? '/forgeflow-lean-host-command-parity' : '/forgeflow-lean-host-command-parity',
     boundary: 'Command capability matrix generation is read-only. It scans committed command, host adapter, and skill files but does not install adapters, edit settings, commit, push, or call the network.',
   };
 }
@@ -97,11 +107,11 @@ function renderMarkdown(result) {
     '',
     result.boundary,
     '',
-    '| Command | Forgeflow | Pi | OpenCode | Skill |',
-    '| --- | --- | --- | --- | --- |',
+    '| Command | Policy | Forgeflow | Pi | OpenCode | Skill | Gaps |',
+    '| --- | --- | --- | --- | --- | --- | --- |',
   ];
   for (const row of result.rows) {
-    lines.push(`| ${row.command} | ${row.forgeflow_command ? 'yes' : 'no'} | ${row.pi_alias ? 'yes' : 'no'} | ${row.opencode_command ? 'yes' : 'no'} | ${row.skill ? 'yes' : 'no'} |`);
+    lines.push(`| ${row.command} | ${row.policy} | ${row.forgeflow_command ? 'yes' : 'no'} | ${row.pi_alias ? 'yes' : 'no'} | ${row.opencode_command ? 'yes' : 'no'} | ${row.skill ? 'yes' : 'no'} | ${row.gaps.join(', ') || ''} |`);
   }
   lines.push('', `Next: ${result.next}`, '');
   return lines.join('\n');

@@ -13,7 +13,8 @@ const opts = parseArgs(['--root', root, '--project-dir', projectDir, '--json']);
 
 const checks = [
   ['detects refresh need', result.status === 'refresh-needed'],
-  ['returns commands array', Array.isArray(result.commands)],
+  ['returns slash-command refresh array', Array.isArray(result.commands) && result.commands.every((command) => command.startsWith('/'))],
+  ['returns build aftercare summary', result.build_aftercare.status === 'needed' && markdown.includes('Build aftercare: needed')],
   ['renders boundary', markdown.includes('does not refresh')],
   ['parses args', opts.root === root && opts.projectDir === projectDir && opts.json === true],
 ];
