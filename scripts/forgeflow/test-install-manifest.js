@@ -67,6 +67,8 @@ const checks = [
   ['runtime helpers include profile review and compliance', RUNTIME_HELPERS.includes('scripts/forgeflow/render-profile-review.js') && RUNTIME_HELPERS.includes('scripts/forgeflow/check-profile-compliance.js')],
   ['runtime helpers include project decision brief', RUNTIME_HELPERS.includes('scripts/forgeflow/render-project-decision-brief.js')],
   ['runtime helpers include research divergence renderer', RUNTIME_HELPERS.includes('scripts/forgeflow/render-research-divergence.js')],
+  ['runtime helpers include research divergence eval renderer', RUNTIME_HELPERS.includes('scripts/forgeflow/render-research-divergence-eval.js')],
+  ['runtime helpers include research divergence eval results renderer', RUNTIME_HELPERS.includes('scripts/forgeflow/render-research-divergence-eval-results.js')],
   ['runtime helpers include review wave prep', RUNTIME_HELPERS.includes('scripts/forgeflow/render-review-wave-prep.js')],
   ['runtime helpers include next-action contract', RUNTIME_HELPERS.includes('scripts/forgeflow/next-action-contract.js')],
   ['runtime helpers include output contract', RUNTIME_HELPERS.includes('scripts/forgeflow/output-contract.js')],

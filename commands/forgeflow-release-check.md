@@ -146,6 +146,8 @@ node scripts/forgeflow/test-rollup-project-learnings.js
 node scripts/forgeflow/test-show-project-learnings.js
 node scripts/forgeflow/test-render-project-decision-brief.js
 node scripts/forgeflow/test-render-research-divergence.js
+node scripts/forgeflow/test-render-research-divergence-eval.js
+node scripts/forgeflow/test-render-research-divergence-eval-results.js
 node scripts/forgeflow/test-show-project-trends.js
 node scripts/forgeflow/test-build-project-intelligence.js
 node scripts/forgeflow/test-build-project-operating-model.js

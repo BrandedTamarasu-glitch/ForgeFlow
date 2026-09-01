@@ -129,6 +129,8 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/render-profile-bootstrap.js',
   'scripts/forgeflow/render-profile-review.js',
   'scripts/forgeflow/render-project-decision-brief.js',
+  'scripts/forgeflow/render-research-divergence-eval-results.js',
+  'scripts/forgeflow/render-research-divergence-eval.js',
   'scripts/forgeflow/render-research-divergence.js',
   'scripts/forgeflow/render-review-wave-prep.js',
   'scripts/forgeflow/render-review-auto-evidence.js',

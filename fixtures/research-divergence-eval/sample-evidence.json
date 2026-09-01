@@ -1,0 +1,30 @@
+{
+  "schema_version": "1",
+  "benchmark_id": "forgeflow-research-divergence-v1",
+  "source": {
+    "generation_kind": "model-backed",
+    "provider": "fixture-provider",
+    "model": "fixture-model",
+    "judge": {"kind": "model", "provider": "fixture-provider", "model": "fixture-judge", "method": "independent rubric scoring"},
+    "captured_at": "2026-09-01T00:00:00Z",
+    "fixture": true
+  },
+  "runs": [
+    {"task_id":"architecture-boundary","arm":"baseline","iteration":1,"metrics":{"breadth":2,"novelty":2,"trap_detection":3,"actionability":4,"builder_usefulness":4,"latency_ms":1000,"cost_usd":0.01,"failed":false,"route_abstained":false}},
+    {"task_id":"architecture-boundary","arm":"diverge","iteration":1,"metrics":{"breadth":4,"novelty":4,"trap_detection":4,"actionability":4,"builder_usefulness":4,"latency_ms":2200,"cost_usd":0.03,"failed":false,"route_abstained":false}},
+    {"task_id":"intermittent-timeout","arm":"baseline","iteration":1,"metrics":{"breadth":3,"novelty":2,"trap_detection":3,"actionability":4,"builder_usefulness":4,"latency_ms":1000,"cost_usd":0.01,"failed":false,"route_abstained":false}},
+    {"task_id":"intermittent-timeout","arm":"diverge","iteration":1,"metrics":{"breadth":4,"novelty":4,"trap_detection":4,"actionability":4,"builder_usefulness":4,"latency_ms":2200,"cost_usd":0.03,"failed":false,"route_abstained":false}},
+    {"task_id":"credential-rotation","arm":"baseline","iteration":1,"metrics":{"breadth":3,"novelty":2,"trap_detection":4,"actionability":4,"builder_usefulness":4,"latency_ms":1000,"cost_usd":0.01,"failed":false,"route_abstained":false}},
+    {"task_id":"credential-rotation","arm":"diverge","iteration":1,"metrics":{"breadth":4,"novelty":4,"trap_detection":5,"actionability":4,"builder_usefulness":4,"latency_ms":2200,"cost_usd":0.03,"failed":false,"route_abstained":false}},
+    {"task_id":"keyboard-workflow","arm":"baseline","iteration":1,"metrics":{"breadth":3,"novelty":2,"trap_detection":3,"actionability":4,"builder_usefulness":4,"latency_ms":1000,"cost_usd":0.01,"failed":false,"route_abstained":false}},
+    {"task_id":"keyboard-workflow","arm":"diverge","iteration":1,"metrics":{"breadth":4,"novelty":4,"trap_detection":4,"actionability":4,"builder_usefulness":4,"latency_ms":2200,"cost_usd":0.03,"failed":false,"route_abstained":false}},
+    {"task_id":"canonical-http-status","arm":"baseline","iteration":1,"metrics":{"breadth":1,"novelty":1,"trap_detection":3,"actionability":5,"builder_usefulness":5,"latency_ms":500,"cost_usd":0.005,"failed":false,"route_abstained":false}},
+    {"task_id":"canonical-http-status","arm":"diverge","iteration":1,"metrics":{"breadth":1,"novelty":1,"trap_detection":5,"actionability":5,"builder_usefulness":5,"latency_ms":500,"cost_usd":0.005,"failed":false,"route_abstained":true}},
+    {"task_id":"known-root-cause-null","arm":"baseline","iteration":1,"metrics":{"breadth":1,"novelty":1,"trap_detection":4,"actionability":5,"builder_usefulness":5,"latency_ms":500,"cost_usd":0.005,"failed":false,"route_abstained":false}},
+    {"task_id":"known-root-cause-null","arm":"diverge","iteration":1,"metrics":{"breadth":1,"novelty":1,"trap_detection":5,"actionability":5,"builder_usefulness":5,"latency_ms":500,"cost_usd":0.005,"failed":false,"route_abstained":true}},
+    {"task_id":"low-stakes-color","arm":"baseline","iteration":1,"metrics":{"breadth":1,"novelty":1,"trap_detection":3,"actionability":5,"builder_usefulness":5,"latency_ms":500,"cost_usd":0.005,"failed":false,"route_abstained":false}},
+    {"task_id":"low-stakes-color","arm":"diverge","iteration":1,"metrics":{"breadth":1,"novelty":1,"trap_detection":5,"actionability":5,"builder_usefulness":5,"latency_ms":500,"cost_usd":0.005,"failed":false,"route_abstained":true}},
+    {"task_id":"canonical-exit-code","arm":"baseline","iteration":1,"metrics":{"breadth":1,"novelty":1,"trap_detection":3,"actionability":5,"builder_usefulness":5,"latency_ms":500,"cost_usd":0.005,"failed":false,"route_abstained":false}},
+    {"task_id":"canonical-exit-code","arm":"diverge","iteration":1,"metrics":{"breadth":1,"novelty":1,"trap_detection":5,"actionability":5,"builder_usefulness":5,"latency_ms":500,"cost_usd":0.005,"failed":false,"route_abstained":true}}
+  ]
+}

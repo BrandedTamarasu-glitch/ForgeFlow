@@ -141,6 +141,7 @@ Or start the full delivery workflow:
 /discuss
 /research
 /research --diverge choose between several consequential architecture approaches
+/forgeflow-research-divergence-eval
 /plan
 /consult
 /implement
@@ -154,6 +155,7 @@ Codex users can run the same workflow through skills:
 $discuss frame the feature
 $research evaluate options
 $research --diverge evaluate non-obvious options and hidden traps
+$forgeflow-research-divergence-eval preview the eight-task comparison pack
 $plan create the implementation plan
 $consult produce the implementation brief
 $implement execute the brief
