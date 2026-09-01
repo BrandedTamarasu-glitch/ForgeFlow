@@ -94,7 +94,7 @@ function helperGroupForSource(source) {
   if (/^(render-release|render-ship|ship-|smoke-|render-support|render-pilot|render-adoption|render-evaluation|summarize-)/.test(file)) {
     return 'release-shipping';
   }
-  if (/^(agent-chat|check-agent|check-codex-agent|generate-codex|explain-review|classify-review|render-review|check-review|guidance-|next-action|output-|privacy-|command-args|index-memory|build-memory|build-scope)/.test(file)) {
+  if (/^(agent-chat|check-agent|check-codex-agent|generate-codex|explain-review|classify-review|render-research|render-review|check-review|guidance-|next-action|output-|privacy-|command-args|index-memory|build-memory|build-scope)/.test(file)) {
     return 'agent-workflow';
   }
   if (/^(command-wrapper-contract|render-command-wrapper-batch)/.test(file)) {

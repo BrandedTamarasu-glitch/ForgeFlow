@@ -1,7 +1,7 @@
 ---
 name: research
 description: Run the Forgeflow in research mode — investigate patterns, technology options, and prior art
-argument-hint: "[optional: specific questions to research or path to discussion summary]"
+argument-hint: "[--diverge] [optional: specific questions to research or path to discussion summary]"
 allowed-tools:
   - Read
   - Write
@@ -27,13 +27,22 @@ $ARGUMENTS — Optional. Can be:
 - Empty: loads discussion from `.forgeflow/<project-name>/current-discussion.md`
 - Specific questions to research
 - Path to a discussion summary file
+- `--diverge` followed by a question or summary path: run isolated option generation before evidence-based convergence
 
 $ARGUMENTS is provided by the user after the slash command (e.g., `/research` or `/research What auth libraries work with our stack?`). The command runner injects it as the argument string.
 </context>
 
 <process>
 
+## Routing gate
+
+Parse `--diverge` before running any helper or loading project state, remove it from the research question, and record whether the flag was explicitly supplied. The default route remains Steps 0–4 below.
+
+For `--diverge`, run the preflight now. Divergence is appropriate for open-ended, consequential decisions with multiple plausible approaches. If selected automatically, abstain and use default research for lookups, canonical-answer questions, known-root-cause bugs, or low-stakes decisions. An explicit user flag overrides this abstention gate. The divergent route is read-only: skip state initialization, memory-context generation, telemetry, and every file write described below.
+
 ## Step 0: Context Pre-Loading
+
+Run this step only for the default route. For `--diverge`, read narrowly relevant existing discussion, memory, `CONTEXT.md`, accessibility, and codebase material only for the independent Atlas evidence lane and later Compass critic. Do not generate or update context artifacts.
 
 Apply the security denylist before reading any file: exclude `.env`, `*.pem`, `*.key`, `*.p12`, `*.cert`, `*.secret`, and any file with `password`, `secret`, or `token` in the filename (case-insensitive).
 
@@ -130,9 +139,41 @@ After both agents complete, combine outputs into unified Research Findings.
 
 Compass's analysis and recommendations are the primary structure. Atlas's codebase findings and memories are integrated throughout.
 
+## Divergent route: isolated generation and separate criticism
+
+When `--diverge` is active, replace Steps 2 and 3 with this route:
+
+1. Extract a minimal branch packet containing only:
+   - the research task
+   - immutable constraints explicitly stated by the user
+   - exactly one frame
+   - this candidate format: `Approach`, `Why it could work`, `Key assumptions`, `Failure signals`, `First experiment`
+
+   Do not include `<injected-context>`, project memory, discussion artifacts, codebase evidence, existing recommendations, or another lane's output. Do not let a branch read or search the project. Use `scripts/forgeflow/render-research-divergence.js --task "<task>" --constraint "<constraint>" --json` to render deterministic packets when the checkout helper exists; otherwise resolve the same helper from the active host runtime. If it is unavailable, construct the same minimal packets manually and disclose that helper validation was skipped.
+2. Launch all three fixed, isolated lanes in parallel:
+   - **inversion:** assume the obvious approach fails; derive the opposite design and the conditions that make it work.
+   - **remove-assumption:** remove one load-bearing assumption and derive a viable approach from the resulting constraint set.
+   - **3am-on-call:** optimize for diagnosis, containment, and safe recovery by a tired on-call engineer.
+3. In parallel with branch generation, run `atlas-early` on Claude or `atlas_early` on Codex with the normal preloaded codebase and memory context. This evidence lane must remain separate and must never message or provide context to a divergent branch.
+4. Show the status of every divergent lane. Retry a missing, malformed, or failed lane once with the same packet. If it fails again, label that lane unavailable and the research `DEGRADED`; continue with successful lanes and never synthesize a replacement.
+5. Spawn a separate Compass critic only after lane generation completes. On Claude use `compass-research`; on Codex use `compass_researcher`. Give the critic:
+   - all successful lane outputs, labeled by frame
+   - the normal `<injected-context>`, discussion, compact memory, Atlas/codebase evidence, accessibility context, and working directory
+   - explicit instruction to criticize and converge, not generate another unconstrained list
+6. Require the critic to emit:
+   - clusters by underlying approach, including duplicated ideas and shared assumptions
+   - a shortlist of two to four candidates
+   - for each shortlisted candidate: **Strength**, **Attraction**, **Hidden trap and mechanism**, **Disconfirming test**, **Salvage condition**, and **First implementation step**
+   - one **Non-obvious viable candidate**
+   - **Load-bearing risk**, **First falsification experiment**, and **Final recommendation**
+
+Raw lane prompts and outputs are ephemeral. Never save them to `current-research.md`, any memory/context file, `CONTEXT.md`, or another indexed artifact. Only the critic's converged decision content may proceed to the read-only presentation in Step 4. This boundary applies equally to Claude and Codex.
+
 ## Step 4: Present and save
 
-Display Research Findings to the user. Save to `.forgeflow/<project-name>/current-research.md`.
+Display Research Findings to the user. On the default route, save to `.forgeflow/<project-name>/current-research.md`. On the divergent route, do not write any file; return the converged findings only in the response.
+
+For divergent research, include the route rationale, status of all three lanes, degraded status if applicable, clusters, shortlist and structured trap ledger, non-obvious viable candidate, falsification experiment, and final recommendation. Present only this converged content.
 
 ```
 ## Research Complete
@@ -155,5 +196,8 @@ Or: modify the research, then run `/plan`
 - [ ] Accessibility patterns researched
 - [ ] Risks identified with likelihood and impact
 - [ ] Clear recommendation made with rationale
-- [ ] Research saved to .forgeflow/ for reference
+- [ ] On the default route, research saved to .forgeflow/ for reference
+- [ ] For `--diverge`: branches received only task, immutable constraints, and one fixed frame
+- [ ] For `--diverge`: lane failures were retried once and remain visible if unavailable
+- [ ] For `--diverge`: no divergent content was saved or indexed
 </success_criteria>

@@ -140,6 +140,7 @@ Or start the full delivery workflow:
 ```text
 /discuss
 /research
+/research --diverge choose between several consequential architecture approaches
 /plan
 /consult
 /implement
@@ -152,6 +153,7 @@ Codex users can run the same workflow through skills:
 ```text
 $discuss frame the feature
 $research evaluate options
+$research --diverge evaluate non-obvious options and hidden traps
 $plan create the implementation plan
 $consult produce the implementation brief
 $implement execute the brief

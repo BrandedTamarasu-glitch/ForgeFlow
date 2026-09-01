@@ -123,6 +123,7 @@ node scripts/forgeflow/test-rollup-pilot-evidence.js
 node scripts/forgeflow/test-rollup-project-learnings.js
 node scripts/forgeflow/test-show-project-learnings.js
 node scripts/forgeflow/test-render-project-decision-brief.js
+node scripts/forgeflow/test-render-research-divergence.js
 node scripts/forgeflow/test-show-project-trends.js
 node scripts/forgeflow/test-show-project-health-timeline.js
 node scripts/forgeflow/test-build-project-intelligence.js
