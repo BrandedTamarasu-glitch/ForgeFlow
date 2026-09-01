@@ -19,7 +19,7 @@ fs.writeFileSync(path.join(projectDir, 'agent-feedback.jsonl'), [
   JSON.stringify({ schema_version: '1', agent: 'warden_reviewer', signal: 'incorrect', summary: 'Review https://example.internal/team', confidence: 'high', evidence_count: 2 }),
 ].join('\n'));
 
-const result = rollupAgentFeedback({ projectDir });
+const result = rollupAgentFeedback({ projectDir, now: new Date('2026-05-20T00:00:00Z') });
 const markdown = renderMarkdown(result);
 const customOut = path.join(projectDir, 'context', 'custom-feedback.json');
 const custom = rollupAgentFeedback(parseArgs([

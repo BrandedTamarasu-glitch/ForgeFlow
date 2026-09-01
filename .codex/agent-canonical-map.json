@@ -4,7 +4,7 @@
   "agents": {
     ".codex/agents/compass-debate-validator.toml": {
       "canonical": "agents/compass-review.md",
-      "sha256": "1a91040ef5040eac512fbd2f3a199450979dc1f39cdbbda685c6f96b6bca9ffb"
+      "sha256": "4d50d4c188447955f783212292c3ef5bd1230f39e92e7745a5a9141344436299"
     },
     ".codex/agents/compass-discusser.toml": {
       "canonical": "agents/compass-discuss.md",
@@ -20,11 +20,11 @@
     },
     ".codex/agents/compass-reviewer.toml": {
       "canonical": "agents/compass-review.md",
-      "sha256": "1a91040ef5040eac512fbd2f3a199450979dc1f39cdbbda685c6f96b6bca9ffb"
+      "sha256": "4d50d4c188447955f783212292c3ef5bd1230f39e92e7745a5a9141344436299"
     },
     ".codex/agents/compass-validator.toml": {
       "canonical": "agents/compass-implement.md",
-      "sha256": "6ece436410989629816cc29ccd3f92118e31bb5a4b84f8d3fc6887b3a35c6393"
+      "sha256": "b086ea23b3d7b192e28be5db24725f07796caa4c3414fac55b0348356fbfb501"
     },
     ".codex/agents/smith-auditor.toml": {
       "canonical": "agents/smith-audit.md",
@@ -36,15 +36,15 @@
     },
     ".codex/agents/smith-implementer.toml": {
       "canonical": "agents/smith-implement.md",
-      "sha256": "a6a93ca0088b63c627e7f6b5143f226b9696bcae742cecaa3ae66632113777c7"
+      "sha256": "e34b4dfbd0689080528611a8091584578ef27f7d355d7cffaf6844e1a507d97e"
     },
     ".codex/agents/smith-reviewer.toml": {
       "canonical": "agents/smith-review.md",
-      "sha256": "f2984df25310db4298953d85b676fe7e06c9e5ec73b4031ca7e33ab80a5d9571"
+      "sha256": "76e05e726dfb4444ecf0a9679dc3701cf0a7bccc17f037f5f8f58c07c10b4d72"
     },
     ".codex/agents/warden-auditor.toml": {
       "canonical": "agents/warden-audit.md",
-      "sha256": "ea04b85897f2093350786e6e1c1156a992a26edd01c97c350dccfe2948e96da8"
+      "sha256": "17e9b8f3d30e07f6cb3e77acf4cb9e723f8ed15ef60d9c3192f2018f1ed789d8"
     },
     ".codex/agents/warden-consultant.toml": {
       "canonical": "agents/warden-consult.md",
@@ -52,27 +52,27 @@
     },
     ".codex/agents/warden-implementer.toml": {
       "canonical": "agents/warden-implement.md",
-      "sha256": "9caa5ec8214c9ca7183d515690ab65faa49da600bae7d1692061d20c9ebe4c2b"
+      "sha256": "e4eca780f7dc3f36f8a1f03c067fa9b9a0b1755da733df45f3dca484b04096b8"
     },
     ".codex/agents/warden-reviewer.toml": {
       "canonical": "agents/warden-review.md",
-      "sha256": "c880341f3b8710f9e6968c244fa1be8d86b178d626f59b461e894025726b22c2"
+      "sha256": "be7d65bf35fb9f18a3044d92c679b6be4316b01d35702dd8fef011d0b3728e93"
     },
     ".codex/agents/arbiter-consultant.toml": {
       "canonical": "agents/arbiter-consult.md",
-      "sha256": "acc28bb463e7b58dc19d3ff6621b63cd722a731986667c8391770d10e322f491"
+      "sha256": "885277f0e328d2f2e7cf88a0208cdd71d7f2bcb869bcc4bde817f28bda2fd02b"
     },
     ".codex/agents/arbiter-debate-judge.toml": {
       "canonical": "agents/arbiter-review.md",
-      "sha256": "f5aee7dd00197c34283e26069ad4457b59d74f2cc29e21ab957b3677783dbe26"
+      "sha256": "206e7d54a500ee560336c3bc8c3c626745754742f69d8623036e71da4d489ba7"
     },
     ".codex/agents/arbiter-implementer.toml": {
       "canonical": "agents/arbiter-implement.md",
-      "sha256": "b4a8981feb6ce8210b76ca780454873c24d898b52cb790488ac2f932f7892dd9"
+      "sha256": "b6c3ed9f9d8fd0162012a908c5efb154a266f3e4ad0222bcf1fc7bd9dc595343"
     },
     ".codex/agents/arbiter-reviewer.toml": {
       "canonical": "agents/arbiter-review.md",
-      "sha256": "f5aee7dd00197c34283e26069ad4457b59d74f2cc29e21ab957b3677783dbe26"
+      "sha256": "206e7d54a500ee560336c3bc8c3c626745754742f69d8623036e71da4d489ba7"
     },
     ".codex/agents/aegis.toml": {
       "codex_native": true,
@@ -80,7 +80,7 @@
     },
     ".codex/agents/atlas-consultant.toml": {
       "canonical": "agents/atlas-consult.md",
-      "sha256": "173a1d568c998d3a6d6b5f817968e43c684c89cdff1db089868ae94ad2bae22f"
+      "sha256": "bc582e6b9d7960e92e83edccb81529f4c21c15719ff3fc7d316cab62915bd049"
     },
     ".codex/agents/atlas-early.toml": {
       "canonical": "agents/atlas-early.md",
@@ -88,23 +88,32 @@
     },
     ".codex/agents/atlas-implementer.toml": {
       "canonical": "agents/atlas-implement.md",
-      "sha256": "cc7eed613d477749a15a43b0fdaa8a158924db513eb1961b785d6b6d34e991a0"
+      "sha256": "694caa5a1dedcd0bd7a121edae90f7ae5c24e56fb3ce5d18e46ab6072e2c7807"
     },
     ".codex/agents/atlas-reviewer.toml": {
       "canonical": "agents/atlas-review.md",
-      "sha256": "d072d875b7fc7f4bee8493da108ab5b9ecfb3cbfa558e7b9ba8d2d371f4329b0"
+      "sha256": "d0c67d7991cf2ef7a5229a8df27bb2b592e82b72271c0fa6582e15e8b86c2ab5"
+    },
+    ".codex/agents/atlas-presenter.toml": {
+      "canonical": "agents/atlas-present.md",
+      "sha256": "c8c3b1fedee3b2ca5a3e05666cd7ecef3c16d6a608e18de42cbb7f7259b3e505",
+      "sandbox_mode": "workspace-write"
     },
     ".codex/agents/lumen-consultant.toml": {
       "canonical": "agents/lumen-consult.md",
       "sha256": "805ea812c3bd77dc4bf25fba4babf38cfd72acf43c0cea0580b5ad59f6e9a55d"
     },
+    ".codex/agents/compass-presenter.toml": {
+      "canonical": "agents/compass-present.md",
+      "sha256": "ef389d8e016eba972becfb9edc3820e4b6fe3ec3084c757a282cb15574216f18"
+    },
     ".codex/agents/lumen-implementer.toml": {
       "canonical": "agents/lumen-implement.md",
-      "sha256": "951f529ae05d622af3aa5139cbaf5827e91f405b0399b5eaa059e22cd3c8fdc9"
+      "sha256": "1436164d736817c3c54ccd995d89291412d74e22efacf75d42e3ae0f49d0a6f0"
     },
     ".codex/agents/lumen-reviewer.toml": {
       "canonical": "agents/lumen-review.md",
-      "sha256": "48b72fdb4cfd42ad72d7b3ebbd3c6baaff8b5f07359258363372452575942a1c"
+      "sha256": "e4c5a292b49c053c047083a207cf5dc1b1b2c401347f856828a9405cc99b2cfb"
     }
   }
 }

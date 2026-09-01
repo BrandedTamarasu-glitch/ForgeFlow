@@ -6,6 +6,7 @@ const {
   parseArgs,
   renderMarkdown,
   skillNameForCommand,
+  codexSkillNamesForCommand,
 } = require('./render-command-capability-matrix');
 
 const root = path.resolve(__dirname, '..', '..');
@@ -22,8 +23,11 @@ const checks = [
   ['adoption recommendations are present', Array.isArray(result.recommendations) && result.recommendations.length > 0 && typeof result.summary.optional_host_candidates === 'number'],
   ['optional promotion plan is ranked', result.promotion_plan.status === 'review' && result.promotion_plan.candidates.length > 0 && result.promotion_plan.candidates.every((item) => Array.isArray(item.missing)) && optionalPromotionPlan(root, result.rows).length === result.promotion_plan.candidates.length],
   ['lean prime has required host command coverage', leanPrime && leanPrime.policy === 'required-host-parity' && leanPrime.forgeflow_command && leanPrime.pi_alias && leanPrime.opencode_command && leanPrime.gaps.length === 0],
-  ['core review maps to skill', review && review.skill && skillNameForCommand('review') === 'forgeflow-review'],
-  ['renders policy table', markdown.includes('# Forgeflow Command Capability Matrix') && markdown.includes('| Command | Policy | Forgeflow | Pi | OpenCode | Skill | Gaps |') && markdown.includes('## Adoption Recommendations') && markdown.includes('## Optional Promotion Plan')],
+  ['core review maps both skill surfaces', review && review.codex_skill && review.codex_skill_name === 'forge-review' && review.host_wrapper_skill && skillNameForCommand('review') === 'forgeflow-review'],
+  ['Codex aliases are explicit', codexSkillNamesForCommand('consult').includes('forgeflow-consult') && codexSkillNamesForCommand('review')[0] === 'forge-review'],
+  ['Codex-only workflows are reported', ['consult', 'research', 'quick', 'create-agent'].every((name) => result.rows.find((row) => row.command === name)?.codex_skill)],
+  ['nested command aliases map to Codex skills', ['agent-chat/on', 'agent-chat/off'].every((name) => result.rows.find((row) => row.command === name)?.codex_skill)],
+  ['renders policy table', markdown.includes('# Forgeflow Command Capability Matrix') && markdown.includes('| Command | Policy | Forgeflow | Pi | OpenCode | Codex skill | Host wrapper | Gaps |') && markdown.includes('## Adoption Recommendations') && markdown.includes('## Optional Promotion Plan')],
   ['parses args', opts.root === root && opts.json],
 ];
 

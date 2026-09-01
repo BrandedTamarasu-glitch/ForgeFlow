@@ -8,13 +8,13 @@ Forgeflow now has the local install, health, repair, rollback, release, docs, de
 
 ## Current Release State
 
-Forgeflow 4.3.71 is the latest pushed build. The most recent completed lean phases added:
+Forgeflow 4.3.72 is the latest pushed build. The latest patch restores canonical Claude/Codex agent parity and installs the Codex runtime helpers required by those workflows.
 
 - Lean activation status, lean debt ledger, whole-repo lean audit, lean benchmark lab, and higher-precision lean review findings.
 - `/forgeflow-lean-review` now reports confidence, replacement guidance, estimated net lines, why-safe/why-not-safe evidence, proof steps, and visible suppressed-candidate records.
-- README, hosted docs, GitHub Wiki source, GitHub Wiki, plugin metadata, changelog, release tag, and GitHub release are current for 4.3.71.
+- README, hosted docs, GitHub Wiki source, plugin metadata, changelog, release tag, and GitHub release are current for 4.3.72.
 
-Resume after reboot from a clean `main` worktree at tag `v4.3.71`. No additional phase is currently selected in the tracked roadmap; choose the next item from observed smoke, pilot, or support evidence before starting another feature slice.
+Resume after reboot from a clean `main` worktree at tag `v4.3.72`. No additional phase is currently selected in the tracked roadmap; choose the next item from observed smoke, pilot, or support evidence before starting another feature slice.
 
 ## Planned Deferred Work
 

@@ -149,7 +149,7 @@ let missingFreshnessContent = fs.readFileSync(path.join(missingFreshness, 'proje
 missingFreshnessContent = missingFreshnessContent.replace('- Generated at: 2026-05-20T00:00:00Z\n', '');
 fs.writeFileSync(path.join(missingFreshness, 'project-learnings.md'), missingFreshnessContent);
 
-const goodResult = checkProjectLearnings({ projectDir: good });
+const goodResult = checkProjectLearnings({ projectDir: good, now: new Date('2026-05-20T00:00:00Z') });
 const placeholderResult = checkProjectLearnings({ projectDir: placeholder });
 const strictPlaceholder = spawnSync(path.join(repoRoot, 'scripts/forgeflow/check-project-learnings.js'), [
   '--project-dir',

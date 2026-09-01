@@ -132,8 +132,17 @@ function codexSources() {
   const skills = walk(path.join(repoRoot, '.agents', 'skills'))
     .map(relative)
     .filter((source) => /^\.agents\/skills\/[^/]+\/.+/.test(source));
+  const runtime = [
+    ...walk(path.join(repoRoot, 'scripts', 'forgeflow')),
+    ...walk(path.join(repoRoot, 'templates')),
+    ...walk(path.join(repoRoot, 'forgeflow-patterns')),
+    ...walk(path.join(repoRoot, 'services', 'agent-chat')),
+  ]
+    .map(relative)
+    .filter((source) => !source.includes('/node_modules/'))
+    .filter((source) => !/^scripts\/forgeflow\/test-/.test(source));
   const support = ['.codex/agent-canonical-map.json'];
-  return [...agents, ...skills, ...support.filter((source) => isRegularSourceFile(path.join(repoRoot, source)))].sort();
+  return [...agents, ...skills, ...runtime, ...support.filter((source) => isRegularSourceFile(path.join(repoRoot, source)))].sort();
 }
 
 function codexDestination(source, home) {
@@ -146,12 +155,16 @@ function codexDestination(source, home) {
   if (source === '.codex/agent-canonical-map.json') {
     return path.join(home, 'forgeflow', 'agent-canonical-map.json');
   }
+  if (/^(scripts\/forgeflow|templates|forgeflow-patterns|services\/agent-chat)\//.test(source)) {
+    return path.join(home, 'forgeflow', source);
+  }
   return '';
 }
 
 function installCodex({ home, dryRun = false } = {}) {
   const copied = [];
-  for (const source of codexSources()) {
+  const sources = codexSources();
+  for (const source of sources) {
     copied.push(copyFile({
       source,
       destination: codexDestination(source, home),
@@ -162,8 +175,16 @@ function installCodex({ home, dryRun = false } = {}) {
     target: 'codex',
     home,
     copied,
+    agent_names: sources
+      .filter((source) => /^\.codex\/agents\/[^/]+\.toml$/.test(source))
+      .map((source) => path.basename(source, '.toml')),
+    skill_names: sources
+      .filter((source) => /^\.agents\/skills\/[^/]+\/SKILL\.md$/.test(source))
+      .map((source) => source.split('/')[2]),
+    canonical_entrypoints: ['discuss', 'research', 'plan', 'consult', 'implement', 'forge-review', 'audit', 'ship', 'quick', 'create-agent', 'update-forgeflow'],
     manual_steps: [
       'Restart Codex so copied agents and skills are discovered.',
+      'Forgeflow runtime helpers are installed under CODEX_HOME/forgeflow for use outside the source checkout.',
       'If needed, merge settings from .codex/config.toml into your Codex config instead of overwriting local settings.',
     ],
   };
@@ -192,6 +213,11 @@ function renderMarkdown(result) {
   ];
   for (const item of result.results) {
     lines.push('', `${item.target}: ${item.copied.length} files -> ${item.home}`);
+    if (item.target === 'codex') {
+      lines.push(`- agents: ${item.agent_names.length}`);
+      lines.push(`- skills: ${item.skill_names.length}`);
+      lines.push(`- canonical entrypoints: ${item.canonical_entrypoints.join(', ')}`);
+    }
     for (const step of item.manual_steps) lines.push(`- ${step}`);
   }
   return lines.join('\n');

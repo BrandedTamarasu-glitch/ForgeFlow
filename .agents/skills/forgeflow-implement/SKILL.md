@@ -5,6 +5,8 @@ description: Run the Forgeflow implementation workflow using an implementation b
 
 Use this skill when the user wants Codex to execute work using the Forgeflow structure.
 
+Resolve every `scripts/forgeflow/...` helper from the current checkout first, then from `${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow`. A missing helper means the Codex runtime installation needs repair; it does not mean the workflow is unsupported in Codex.
+
 Workflow:
 1. Load the implementation brief from `.forgeflow/<project-name>/current-brief.md` unless the user points at another brief.
 2. Build compact local memory context with `scripts/forgeflow/build-memory-context.js` and first-pass file ownership packets with `scripts/forgeflow/build-scope-manifest.js` when available.

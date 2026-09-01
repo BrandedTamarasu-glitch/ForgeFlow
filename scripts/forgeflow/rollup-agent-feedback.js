@@ -251,7 +251,7 @@ function rollupAgentFeedback(opts = {}) {
   const corrective = (base.by_signal.incorrect || 0) + (base.by_signal.unclear || 0) + (base.by_signal.ignored || 0);
   const result = {
     schema_version: '1',
-    generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
+    generated_at: (opts.now || new Date()).toISOString().replace(/\.\d{3}Z$/, 'Z'),
     status: feedback.status,
     project_dir: projectDir,
     source_file: feedback.file,
@@ -269,7 +269,7 @@ function rollupAgentFeedback(opts = {}) {
     })),
     correction_themes: correctionThemes(feedback.valid),
     promotion_candidates: promotionCandidates(feedback.valid),
-    stale_markers: staleMarkers(feedback.valid),
+    stale_markers: staleMarkers(feedback.valid, opts.now || new Date()),
     boundary: 'Advisory only. Verify feedback against current code, tests, and review artifacts before changing agent prompts or project guidance.',
     artifacts: {
       json: out,

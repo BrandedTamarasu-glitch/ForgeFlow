@@ -5,10 +5,12 @@ description: Run the Forgeflow review workflow by spawning specialist reviewers,
 
 Use this skill when the user wants a multi-agent review of current changes, specific files, or a diff against a git ref.
 
+Resolve helpers before running them: set `FORGEFLOW_HELPER_DIR` to `scripts/forgeflow` when that directory exists, otherwise to `${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow`. A missing helper means the Codex runtime installation needs repair; it does not mean review is unsupported in Codex.
+
 Before other work, run:
 
 ```bash
-scripts/forgeflow/ensure-forgeflow-state.sh
+"$FORGEFLOW_HELPER_DIR/ensure-forgeflow-state.sh"
 ```
 
 Workflow:

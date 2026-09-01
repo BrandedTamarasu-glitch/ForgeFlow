@@ -5,11 +5,13 @@ description: Final Forgeflow shipping workflow for presentation generation, PR p
 
 Use this skill when the user explicitly wants to ship the branch.
 
+Resolve helpers before running them: set `FORGEFLOW_HELPER_DIR` to `scripts/forgeflow` when that directory exists, otherwise to `${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow`. A missing helper means the Codex runtime installation needs repair; it does not mean shipping is unsupported in Codex.
+
 Start by running:
 
 ```bash
-scripts/forgeflow/ensure-forgeflow-state.sh
-scripts/forgeflow/ship-prepare.sh "<optional title>"
+"$FORGEFLOW_HELPER_DIR/ensure-forgeflow-state.sh"
+"$FORGEFLOW_HELPER_DIR/ship-prepare.sh" "<optional title>"
 ```
 
 `ship-prepare.sh` creates:

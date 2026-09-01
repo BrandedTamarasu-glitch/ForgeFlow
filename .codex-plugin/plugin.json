@@ -1,6 +1,6 @@
 {
   "name": "Forgeflow",
-  "version": "4.3.71",
+  "version": "4.3.72",
   "description": "Forgeflow lean guidance adapter for Codex. Installs shared commands, hooks, and runtime helpers from this repository.",
   "repository": {
     "type": "git",

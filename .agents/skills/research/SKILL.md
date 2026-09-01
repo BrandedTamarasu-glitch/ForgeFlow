@@ -5,6 +5,8 @@ description: Run the Forgeflow research workflow to evaluate options, prior art,
 
 Use this skill when the user wants research after discussion and before planning.
 
+Resolve helpers before running them: use `scripts/forgeflow` from the current checkout when present; otherwise use `${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow`. If neither exists, report a missing Codex runtime installation.
+
 Before other work, run:
 
 ```bash

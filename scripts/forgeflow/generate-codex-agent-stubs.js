@@ -10,7 +10,7 @@ const MISSING_SUMMARY_GUIDANCE = [
 ].join(' ');
 
 function usage() {
-  console.error('Usage: generate-codex-agent-stubs.js --agent <.codex/agents/name.toml> [--map <path>] [--out <path>] [--stdout]');
+  console.error('Usage: generate-codex-agent-stubs.js (--agent <.codex/agents/name.toml> | --all) [--map <path>] [--out <path>] [--stdout]');
 }
 
 function parseArgs(argv) {
@@ -19,6 +19,7 @@ function parseArgs(argv) {
     mapPath: path.join(repoRoot, '.codex/agent-canonical-map.json'),
     out: '',
     stdout: false,
+    all: false,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -31,6 +32,8 @@ function parseArgs(argv) {
       opts.out = argv[++i] || '';
     } else if (arg === '--stdout') {
       opts.stdout = true;
+    } else if (arg === '--all') {
+      opts.all = true;
     } else if (arg === '--help' || arg === '-h') {
       usage();
       process.exit(0);
@@ -147,9 +150,12 @@ function buildInstructions(markdown, entry) {
     parts.push(`Canonical excerpts for manual review:\n\n${selected}`);
   }
   if (parts.length === 0) {
-    parts.push(MISSING_SUMMARY_GUIDANCE);
+    parts.push(stripFrontmatter(markdown).trim());
   }
-  return parts.join('\n\n');
+  return [
+    'Codex runtime adapter: perform this role with Codex tools and collaboration primitives. Treat Claude-specific tool names as capability descriptions, not as a reason to stop. Resolve Forgeflow helpers from the checkout or ${CODEX_HOME:-$HOME/.codex}/forgeflow, and use the Codex home for user-level Forgeflow state.',
+    parts.join('\n\n'),
+  ].join('\n\n');
 }
 
 function buildStub(agent, entry, opts = {}) {
@@ -166,9 +172,9 @@ function buildStub(agent, entry, opts = {}) {
   const existing = readExistingFields(path.resolve(repoRoot, agent));
   const name = existing.name || path.basename(agent, '.toml').replace(/-/g, '_');
   const description = existing.description || frontmatter.description || `Codex port of ${frontmatter.name || entry.canonical}.`;
-  const model = existing.model || opts.model || 'gpt-5.4-mini';
-  const reasoning = existing.model_reasoning_effort || opts.reasoning || 'medium';
-  const sandbox = existing.sandbox_mode || opts.sandbox || 'read-only';
+  const model = entry.model || existing.model || opts.model || 'gpt-5.4-mini';
+  const reasoning = entry.model_reasoning_effort || existing.model_reasoning_effort || opts.reasoning || 'medium';
+  const sandbox = entry.sandbox_mode || existing.sandbox_mode || opts.sandbox || 'read-only';
   const instructions = buildInstructions(markdown, entry);
 
   return [
@@ -186,11 +192,24 @@ function buildStub(agent, entry, opts = {}) {
 
 function main() {
   const opts = parseArgs(process.argv.slice(2));
-  if (!opts.agent) {
+  if (!opts.agent && !opts.all) {
     usage();
     process.exit(2);
   }
   const map = readMap(opts.mapPath);
+  if (opts.all) {
+    if (opts.out || opts.stdout) throw new Error('--all writes mapped agents in place and cannot be combined with --out or --stdout');
+    for (const [agent, entry] of Object.entries(map.agents || {})) {
+      if (entry.codex_native) continue;
+      const canonicalPath = path.resolve(repoRoot, entry.canonical);
+      entry.sha256 = sha256(fs.readFileSync(canonicalPath, 'utf8'));
+      const outPath = path.resolve(repoRoot, agent);
+      fs.mkdirSync(path.dirname(outPath), { recursive: true });
+      fs.writeFileSync(outPath, buildStub(agent, entry));
+    }
+    fs.writeFileSync(opts.mapPath, `${JSON.stringify(map, null, 2)}\n`);
+    return;
+  }
   const entry = (map.agents || {})[opts.agent];
   if (!entry) {
     throw new Error(`map does not contain ${opts.agent}`);

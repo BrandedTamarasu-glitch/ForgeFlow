@@ -213,6 +213,6 @@ Spawn smith_reviewer, warden_reviewer, lumen_reviewer, and atlas_reviewer on thi
 
 ## Notes
 
-- This is a Codex-native first pass, not a byte-for-byte port of Claude slash-command behavior.
-- The agent personalities and responsibilities were preserved, but the execution model is adapted to Codex subagents and skills.
-- The old markdown prompts remain useful source material if you want a deeper or more literal conversion later.
+- Codex agents are generated from the full canonical Claude prompts and checked by SHA-256 drift validation.
+- The agent personalities, responsibilities, gates, and output contracts are preserved; only host tool names and dispatch mechanics are adapted to Codex agents and skills.
+- Claude slash-command files remain a broader command surface than Codex skills. Use the canonical Codex skill entrypoints above instead of assuming identical slash-command names.

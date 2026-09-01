@@ -57,6 +57,25 @@ function skillNameForCommand(name) {
   return core[name] || direct;
 }
 
+function codexSkillNamesForCommand(name) {
+  const aliases = {
+    'agent-chat/on': ['agent-chat-on'],
+    'agent-chat/off': ['agent-chat-off'],
+    review: ['forge-review', 'forgeflow-review'],
+    consult: ['consult', 'forgeflow-consult'],
+    implement: ['implement', 'forgeflow-implement'],
+    plan: ['plan'],
+    audit: ['audit'],
+    ship: ['ship'],
+    discuss: ['discuss'],
+    research: ['research'],
+    quick: ['quick'],
+    'create-agent': ['create-agent'],
+    'update-forgeflow': ['update-forgeflow'],
+  };
+  return aliases[name] || [];
+}
+
 function defaultProjectDir(root) {
   return path.join(root, '.forgeflow', path.basename(root));
 }
@@ -136,7 +155,9 @@ function buildCommandCapabilityMatrix(opts = {}) {
   const rows = names.map((name) => {
     const commandFile = `commands/${name.replace(/\//g, '/')}.md`;
     const opencodeFile = `.opencode/command/${name}.md`;
-    const skillFile = `skills/${skillNameForCommand(name)}/SKILL.md`;
+    const hostWrapperFile = `skills/${skillNameForCommand(name)}/SKILL.md`;
+    const codexSkillNames = codexSkillNamesForCommand(name);
+    const codexSkill = codexSkillNames.find((skillName) => exists(root, `.agents/skills/${skillName}/SKILL.md`)) || '';
     const policy = requiredHostCommands.has(name) ? 'required-host-parity' : (optionalPrefixes.some((prefix) => name.startsWith(prefix)) ? 'optional-lean' : 'forgeflow-only');
     const gaps = [];
     if (policy === 'required-host-parity' && !piCommands.has(name)) gaps.push('pi_alias');
@@ -147,7 +168,10 @@ function buildCommandCapabilityMatrix(opts = {}) {
       forgeflow_command: exists(root, commandFile),
       pi_alias: piCommands.has(name),
       opencode_command: exists(root, opencodeFile),
-      skill: exists(root, skillFile),
+      codex_skill: Boolean(codexSkill),
+      codex_skill_name: codexSkill,
+      host_wrapper_skill: exists(root, hostWrapperFile),
+      skill: exists(root, hostWrapperFile),
       gaps,
     };
   });
@@ -156,7 +180,9 @@ function buildCommandCapabilityMatrix(opts = {}) {
     commands: rows.length,
     pi_aliases: rows.filter((row) => row.pi_alias).length,
     opencode_commands: rows.filter((row) => row.opencode_command).length,
-    skills: rows.filter((row) => row.skill).length,
+    codex_skills: rows.filter((row) => row.codex_skill).length,
+    host_wrapper_skills: rows.filter((row) => row.host_wrapper_skill).length,
+    skills: rows.filter((row) => row.host_wrapper_skill).length,
     required_host_gaps: requiredGaps.length,
     optional_host_candidates: rows.filter((row) => row.policy === 'optional-lean' && (!row.pi_alias || !row.opencode_command)).length,
   };
@@ -189,11 +215,11 @@ function renderMarkdown(result) {
     '',
     result.boundary,
     '',
-    '| Command | Policy | Forgeflow | Pi | OpenCode | Skill | Gaps |',
-    '| --- | --- | --- | --- | --- | --- | --- |',
+    '| Command | Policy | Forgeflow | Pi | OpenCode | Codex skill | Host wrapper | Gaps |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- |',
   ];
   for (const row of result.rows) {
-    lines.push(`| ${row.command} | ${row.policy} | ${row.forgeflow_command ? 'yes' : 'no'} | ${row.pi_alias ? 'yes' : 'no'} | ${row.opencode_command ? 'yes' : 'no'} | ${row.skill ? 'yes' : 'no'} | ${row.gaps.join(', ') || ''} |`);
+    lines.push(`| ${row.command} | ${row.policy} | ${row.forgeflow_command ? 'yes' : 'no'} | ${row.pi_alias ? 'yes' : 'no'} | ${row.opencode_command ? 'yes' : 'no'} | ${row.codex_skill_name || 'no'} | ${row.host_wrapper_skill ? 'yes' : 'no'} | ${row.gaps.join(', ') || ''} |`);
   }
   lines.push('', '## Adoption Recommendations', '');
   for (const item of result.recommendations || []) {
@@ -229,4 +255,5 @@ module.exports = {
   parseArgs,
   renderMarkdown,
   skillNameForCommand,
+  codexSkillNamesForCommand,
 };

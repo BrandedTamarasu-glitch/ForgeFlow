@@ -5,6 +5,8 @@ description: Run the Forgeflow consultation workflow to produce an implementatio
 
 Use this skill when the user wants the Forgeflow team to design the approach before implementation.
 
+Resolve every `scripts/forgeflow/...` helper from the current checkout first, then from `${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow`. A missing helper means the Codex runtime installation needs repair; it does not mean the workflow is unsupported in Codex.
+
 Workflow:
 1. Build compact local memory context with `scripts/forgeflow/build-memory-context.js` when available.
 2. Build first-pass file ownership packets with `scripts/forgeflow/build-scope-manifest.js` when available.

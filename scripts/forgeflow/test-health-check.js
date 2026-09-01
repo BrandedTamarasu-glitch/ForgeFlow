@@ -87,7 +87,7 @@ fs.writeFileSync(projectLearningsPath, [
   '- Re-run project-learning checks after insight changes.',
   '',
 ].join('\n'));
-const withProjectLearnings = runHealthCheck({ root, fix: false });
+const withProjectLearnings = runHealthCheck({ root, fix: false, now: new Date('2026-05-20T00:00:00Z') });
 const withProjectLearningsMarkdown = renderMarkdown(withProjectLearnings);
 fs.writeFileSync(projectLearningsPath, [
   '# Project Learnings',

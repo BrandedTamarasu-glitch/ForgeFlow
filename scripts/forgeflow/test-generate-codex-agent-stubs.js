@@ -22,7 +22,8 @@ const checks = [
   ['manual summary included', stub.includes('Review concrete correctness and accessibility evidence.')],
   ['canonical source included', stub.includes('canonical_source = "fixtures/prompt-parity/sample-agent.md"')],
   ['instructions included', stub.includes('Canonical excerpts for manual review')],
-  ['fallback guidance is deterministic', fallbackStub.includes(MISSING_SUMMARY_GUIDANCE)],
+  ['fallback embeds canonical behavior', fallbackStub.includes('## Mode: Review')],
+  ['Codex runtime adapter included', fallbackStub.includes('Codex runtime adapter:')],
   ['fallback has no vague todo', !fallbackStub.includes('TODO: Add a manually curated Codex summary')],
 ];
 

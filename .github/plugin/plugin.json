@@ -1,6 +1,6 @@
 {
   "name": "Forgeflow",
-  "version": "4.3.71",
+  "version": "4.3.72",
   "description": "Forgeflow lean guidance commands for Copilot CLI plugin-compatible hosts.",
   "repository": {
     "type": "git",

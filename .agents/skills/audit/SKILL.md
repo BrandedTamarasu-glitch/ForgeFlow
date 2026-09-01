@@ -5,10 +5,12 @@ description: Run a deep Forgeflow audit across the codebase or a focused subsyst
 
 Use this skill when the user wants a deep audit rather than a PR-style review.
 
+Resolve helpers before running them: use `scripts/forgeflow` from the current checkout when present; otherwise use `${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow`. If neither exists, report that the Codex Forgeflow runtime needs repair instead of claiming the workflow is unsupported.
+
 Before other work, run:
 
 ```bash
-scripts/forgeflow/ensure-forgeflow-state.sh
+"$FORGEFLOW_HELPER_DIR/ensure-forgeflow-state.sh"
 ```
 
 Workflow:

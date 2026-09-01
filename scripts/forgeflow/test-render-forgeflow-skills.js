@@ -16,6 +16,7 @@ const opts = parseArgs(['--root', root, '--write', '--json']);
 const checks = [
   ['core skills current', result.status === 'pass' && result.skills.length === SKILLS.length],
   ['review skill present', result.skills.some((item) => item.name === 'forgeflow-review' && item.command === '/review')],
+  ['review skill avoids Codex built-in collision', skillText(SKILLS.find((item) => item.name === 'forgeflow-review')).includes('do not invoke `/review`, which is a Codex built-in')],
   ['skill body carries boundary', skillText(SKILLS[0]).includes('Do not commit, push')],
   ['renders markdown', markdown.includes('# Forgeflow Skills') && markdown.includes('read-only unless --write')],
   ['parses args', opts.root === root && opts.write && opts.json],

@@ -332,9 +332,9 @@ function latestProjectLearnings(ffDir) {
   };
 }
 
-function latestProjectLearningsCheck(ffDir) {
+function latestProjectLearningsCheck(ffDir, now) {
   try {
-    const result = checkProjectLearnings({ projectDir: ffDir });
+    const result = checkProjectLearnings({ projectDir: ffDir, now });
     const failures = result.issues.filter((item) => item.severity === 'fail').length;
     const warnings = result.issues.filter((item) => item.severity === 'warn').length;
     return {
@@ -437,7 +437,7 @@ function runHealthCheck(opts = {}) {
     dirty: gitRepo ? git(['status', '--short'], root).split(/\r?\n/).filter(Boolean).length > 0 : false,
   });
   failureDigest.triage = classifyFailureDigest(failureDigest, failureDigest.freshness);
-  const projectLearningsCheck = latestProjectLearningsCheck(ffDir);
+  const projectLearningsCheck = latestProjectLearningsCheck(ffDir, opts.now);
   const recommendations = healthRecommendations({ latestInsights, projectLearningsCheck, failureDigest });
   return {
     schema_version: '1',

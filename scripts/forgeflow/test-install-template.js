@@ -16,6 +16,7 @@ const dryClaudeHome = path.join(root, 'dry-claude');
 const dryCodexHome = path.join(root, 'dry-codex');
 
 const result = installTemplate({ target: 'both', claudeHome, codexHome });
+const codexResult = result.results.find((item) => item.target === 'codex');
 const dryRun = installTemplate({
   target: 'both',
   claudeHome: dryClaudeHome,
@@ -26,6 +27,9 @@ const dryRun = installTemplate({
 const codexAgent = path.join(codexHome, 'agents', 'smith-reviewer.toml');
 const codexSkill = path.join(codexHome, 'skills', 'forgeflow-review', 'SKILL.md');
 const codexMap = path.join(codexHome, 'forgeflow', 'agent-canonical-map.json');
+const codexHelper = path.join(codexHome, 'forgeflow', 'scripts', 'forgeflow', 'health-check.js');
+const codexTemplate = path.join(codexHome, 'forgeflow', 'templates', 'ship-presentation.html');
+const codexPattern = path.join(codexHome, 'forgeflow', 'forgeflow-patterns', 'recurring-blockers.md');
 const claudeCommand = path.join(claudeHome, 'commands', 'review.md');
 const claudeHelper = path.join(claudeHome, 'forgeflow', 'scripts', 'forgeflow', 'health-check.js');
 const regularSource = path.join(root, 'regular.txt');
@@ -46,9 +50,17 @@ const checks = [
   ['codex agent installed', fs.existsSync(codexAgent)],
   ['codex skill installed', fs.existsSync(codexSkill)],
   ['codex map installed', fs.existsSync(codexMap)],
+  ['codex runtime helper installed', fs.existsSync(codexHelper)],
+  ['codex template installed', fs.existsSync(codexTemplate)],
+  ['codex pattern installed', fs.existsSync(codexPattern)],
   ['codex sources include agents', codexSources().includes('.codex/agents/smith-reviewer.toml')],
   ['codex sources include skills', codexSources().includes('.agents/skills/forgeflow-review/SKILL.md')],
+  ['codex sources include runtime helpers', codexSources().includes('scripts/forgeflow/health-check.js')],
   ['codex destination maps agent home', codexDestination('.codex/agents/smith-reviewer.toml', '/tmp/codex') === '/tmp/codex/agents/smith-reviewer.toml'],
+  ['codex destination maps runtime root', codexDestination('scripts/forgeflow/health-check.js', '/tmp/codex') === '/tmp/codex/forgeflow/scripts/forgeflow/health-check.js'],
+  ['codex inventory reports full skill set', codexResult.skill_names.includes('research') && codexResult.skill_names.includes('forge-review') && codexResult.skill_names.includes('create-agent')],
+  ['codex inventory reports agent fleet', codexResult.agent_names.includes('smith-reviewer') && codexResult.agent_names.includes('warden-auditor')],
+  ['codex inventory reports canonical entrypoints', codexResult.canonical_entrypoints.includes('consult') && codexResult.canonical_entrypoints.includes('forge-review')],
   ['regular source accepted', isRegularSourceFile(regularSource) === true],
   ['symlink source rejected', !symlinkCreated || isRegularSourceFile(symlinkSource) === false],
   ['dry run reports dry mode', dryRun.dry_run === true],

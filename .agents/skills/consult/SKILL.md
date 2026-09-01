@@ -7,10 +7,12 @@ Delegate to the `forgeflow-consult` workflow.
 
 Use this skill when the user wants Forgeflow consultation before implementation.
 
+Resolve helpers before running them: set `FORGEFLOW_HELPER_DIR` to `scripts/forgeflow` when that directory exists, otherwise to `${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow`. If neither exists, report a missing Codex runtime installation.
+
 Before other work, run:
 
 ```bash
-scripts/forgeflow/ensure-forgeflow-state.sh
+"$FORGEFLOW_HELPER_DIR/ensure-forgeflow-state.sh"
 ```
 
 Workflow:
