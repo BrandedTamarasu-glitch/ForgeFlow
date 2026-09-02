@@ -158,6 +158,7 @@ const checks = [
   ['release check runs agent feedback test', releaseCheck.includes('node scripts/forgeflow/test-record-agent-feedback.js')],
   ['release check runs agent feedback rollup test', releaseCheck.includes('node scripts/forgeflow/test-rollup-agent-feedback.js')],
   ['release check runs project learning recorder test', releaseCheck.includes('node scripts/forgeflow/test-record-project-learning.js')],
+  ['release check runs project learning correction test', releaseCheck.includes('node scripts/forgeflow/test-correct-project-learning.js')],
   ['release check runs next work outcome test', releaseCheck.includes('node scripts/forgeflow/test-record-next-work-outcome.js')],
   ['release check runs learning status test', releaseCheck.includes('node scripts/forgeflow/test-show-learning-status.js')],
   ['release check runs health timeline test', releaseCheck.includes('node scripts/forgeflow/test-show-project-health-timeline.js')],

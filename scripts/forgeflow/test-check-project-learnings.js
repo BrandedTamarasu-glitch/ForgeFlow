@@ -109,6 +109,7 @@ writeCandidates(invalidMetadata, [
   JSON.stringify({ schema_version: '1', category: 'risk-area', learning: 'Bad status', status: 'retired' }),
   JSON.stringify({ schema_version: '1', category: 'risk-area', learning: 'Oversized replacement', superseded_by: 'x'.repeat(241) }),
   JSON.stringify({ schema_version: '1', category: 'risk-area', learning: 'Missing replacement', status: 'superseded' }),
+  JSON.stringify({ schema_version: '1', id: 'plc_0123456789abcdef', category: 'risk-area', learning: 'Forged stable id' }),
 ]);
 
 const missingBoundary = project('missing-boundary');
@@ -186,7 +187,7 @@ const checks = [
   ['sensitive output redacted', !sensitiveCli.stdout.includes('SHOULD_NOT_PRINT') && !sensitiveCli.stderr.includes('SHOULD_NOT_PRINT')],
   ['git ssh shorthand url fails', privateUrlResult.status === 'fail' && privateUrlResult.issues.some((item) => item.code === 'sensitive-content' && item.pattern === 'private-url')],
   ['bad candidate fails', badCandidateResult.status === 'fail' && badCandidateResult.issues.some((item) => item.code === 'candidate-category-invalid') && badCandidateResult.issues.some((item) => item.code === 'candidate-json-invalid')],
-  ['invalid candidate metadata fails', invalidMetadataResult.status === 'fail' && invalidMetadataResult.issues.some((item) => item.code === 'candidate-confidence-invalid') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-evidence-count-invalid') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-application-guidance-oversized') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-status-invalid') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-superseded-by-oversized')],
+  ['invalid candidate metadata fails', invalidMetadataResult.status === 'fail' && invalidMetadataResult.issues.some((item) => item.code === 'candidate-confidence-invalid') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-evidence-count-invalid') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-application-guidance-oversized') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-status-invalid') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-superseded-by-oversized') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-id-invalid')],
   ['superseded candidates without replacement warn', invalidMetadataResult.issues.some((item) => item.code === 'candidate-superseded-by-missing')],
   ['missing proof boundary fails', missingBoundaryResult.status === 'fail' && missingBoundaryResult.issues.some((item) => item.code === 'proof-boundary-missing')],
   ['stale freshness warns', staleResult.status === 'warn' && staleResult.issues.some((item) => item.code === 'freshness-stale' && item.age_days > 30)],

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { spawnSync } = require('child_process');
 const { appendFileSafe } = require('./file-safety');
 const { containsSensitiveContent } = require('./privacy-boundary');
@@ -139,6 +140,18 @@ function normalizeSupersededBy(value) {
   return text;
 }
 
+// This deliberately excludes timestamps and lifecycle metadata.  A learning keeps
+// the same handle while it is retired, and older JSONL records without an id get
+// the same derived handle when they are read later.
+function projectLearningId(entry) {
+  const identity = [
+    cleanText(entry && entry.category),
+    cleanText(entry && entry.learning),
+    cleanText((entry && entry.source) || 'Atlas'),
+  ].join('\n');
+  return `plc_${crypto.createHash('sha256').update(identity).digest('hex').slice(0, 16)}`;
+}
+
 function normalizeEntry(entry) {
   const normalized = {
     schema_version: '1',
@@ -153,6 +166,7 @@ function normalizeEntry(entry) {
     status: normalizeStatus(entry.status),
     superseded_by: normalizeSupersededBy(entry.superseded_by ?? entry.supersededBy),
   };
+  normalized.id = projectLearningId(normalized);
   if (!VALID_CATEGORIES.has(normalized.category)) {
     throw new Error('Invalid project learning category');
   }
@@ -188,7 +202,7 @@ function recordProjectLearning(opts = {}) {
   const root = repoRoot();
   const projectDir = opts.projectDir || defaultProjectDir(root);
   const out = path.join(projectDir, 'project-learning-candidates.jsonl');
-  const entries = loadEntries(opts);
+  const entries = Array.isArray(opts.inputEntries) ? opts.inputEntries.map(normalizeEntry) : loadEntries(opts);
   for (const entry of entries) {
     appendFileSafe(out, `${JSON.stringify(entry)}\n`);
   }
@@ -224,6 +238,9 @@ module.exports = {
   VALID_CONFIDENCE,
   VALID_STATUS,
   containsSensitiveContent,
+  cleanText,
+  normalizeEntry,
   parseArgs,
+  projectLearningId,
   recordProjectLearning,
 };

@@ -63,6 +63,7 @@ const checks = [
   ['runtime helpers include project learnings checker', RUNTIME_HELPERS.includes('scripts/forgeflow/check-project-learnings.js')],
   ['runtime helpers include pilot evidence recorder', RUNTIME_HELPERS.includes('scripts/forgeflow/record-pilot-evidence.js')],
   ['runtime helpers include project learning recorder', RUNTIME_HELPERS.includes('scripts/forgeflow/record-project-learning.js')],
+  ['runtime helpers include project learning correction', RUNTIME_HELPERS.includes('scripts/forgeflow/correct-project-learning.js')],
   ['runtime helpers include user profile helpers', RUNTIME_HELPERS.includes('scripts/forgeflow/user-profile.js') && RUNTIME_HELPERS.includes('scripts/forgeflow/record-user-profile.js') && RUNTIME_HELPERS.includes('scripts/forgeflow/check-user-profile.js') && RUNTIME_HELPERS.includes('scripts/forgeflow/show-user-profile.js')],
   ['runtime helpers include profile bootstrap', RUNTIME_HELPERS.includes('scripts/forgeflow/render-profile-bootstrap.js')],
   ['runtime helpers include profile review and compliance', RUNTIME_HELPERS.includes('scripts/forgeflow/render-profile-review.js') && RUNTIME_HELPERS.includes('scripts/forgeflow/check-profile-compliance.js')],

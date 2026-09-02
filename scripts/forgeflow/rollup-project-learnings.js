@@ -4,6 +4,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { compareCodeMapTrend } = require('./show-code-map');
 const { containsSensitiveContent } = require('./privacy-boundary');
+const { projectLearningId } = require('./record-project-learning');
 
 const DEFAULT_MAX_ITEMS = 8;
 
@@ -132,7 +133,18 @@ function candidateStatus(entry) {
 }
 
 function activeLearningCandidates(candidates) {
-  return (Array.isArray(candidates) ? candidates : []).filter((entry) => candidateStatus(entry) === 'active');
+  return resolvedLearningCandidates(candidates).filter((entry) => candidateStatus(entry) === 'active');
+}
+
+// JSONL is append-only.  Later records with the same stable id are lifecycle
+// updates for the same learning, rather than a second active item.
+function resolvedLearningCandidates(candidates) {
+  const latest = new Map();
+  for (const entry of Array.isArray(candidates) ? candidates : []) {
+    if (!entry || typeof entry !== 'object') continue;
+    latest.set(projectLearningId(entry), entry);
+  }
+  return [...latest.values()];
 }
 
 function inactiveLearningSummary(candidates, maxItems = 5) {
@@ -371,9 +383,9 @@ function buildRollup(inputs = {}, opts = {}) {
       implementation_notes: Boolean(inputs.hasImplementationNotes),
       learning_candidates: allLearningCandidates.length,
       learning_candidates_active: learningCandidates.length,
-      learning_candidates_inactive: allLearningCandidates.filter((entry) => ['stale', 'superseded'].includes(candidateStatus(entry))).length,
-      learning_candidates_invalid: allLearningCandidates.filter((entry) => candidateStatus(entry) === 'invalid').length,
-      learning_candidates_inactive_examples: inactiveLearningSummary(allLearningCandidates),
+      learning_candidates_inactive: resolvedLearningCandidates(allLearningCandidates).filter((entry) => ['stale', 'superseded'].includes(candidateStatus(entry))).length,
+      learning_candidates_invalid: resolvedLearningCandidates(allLearningCandidates).filter((entry) => candidateStatus(entry) === 'invalid').length,
+      learning_candidates_inactive_examples: inactiveLearningSummary(resolvedLearningCandidates(allLearningCandidates)),
       review_outcomes: reviewOutcomes.length,
       ship_summary: Boolean(inputs.hasShipSummary),
       code_map: Boolean(inputs.hasCodeMap),
@@ -508,6 +520,7 @@ if (require.main === module) {
 module.exports = {
   buildRollup,
   activeLearningCandidates,
+  resolvedLearningCandidates,
   candidateStatus,
   inactiveLearningSummary,
   containsSensitiveContent,

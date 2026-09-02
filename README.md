@@ -264,6 +264,7 @@ Forgeflow includes local-only helpers that reduce agent prompt load before revie
 - **Validation failure capture:** `/forgeflow-validation-failure-capture --command "<cmd>"` maps a failed validation command to the correct capture mode, failure-digest path, and first-run capture prompt without executing the command or writing the digest. `/forgeflow-validation-plan` includes a compact "If a command fails" section with the matching capture command for focused, full-suite, and source-smoke checks. Exact diffs, patches, hashes, and file-list outputs stay raw-required.
 - **Memory index:** `index-memory.js` indexes local Forgeflow memory so agents can use compact project history instead of reading full notes.
 - **Memory context:** `build-memory-context.js` builds a compact memory summary for research, planning, consultation, and implementation.
+- **Memory correction:** `/forgeflow-memory-correct --id <candidate-id> --replacement "<guidance>"` previews an exact project-memory correction first. Add `--write` to append a new active replacement and a retirement event for the old candidate. It never deletes or rewrites history, and it never reads or changes user-profile memory.
 - **Scope manifests:** `build-scope-manifest.js` creates file ownership packets for implementation waves.
 - **Context telemetry:** context, memory, scope, and topology helpers emit token estimates and savings telemetry.
 - **Budget checks:** `check-context-budget.js` reads `.forgeflow-budget.json` and warns when compact context exceeds configured limits.
@@ -424,6 +425,8 @@ For the current checkout, `show-project-learnings.js` refreshes the compact code
 `/ship` refreshes the file during handoff prep, and `/forgeflow-health` surfaces the latest local summary plus latest-insights readiness/freshness when they exist.
 During `/implement`, Atlas refreshes project learnings after implementation-note consolidation when the helper is available.
 Structured candidates are stored locally in `.forgeflow/<project-name>/project-learning-candidates.jsonl` when Atlas records explicit learning categories. Candidates may include `confidence` (`low`, `medium`, or `high`), `evidence_count`, compact `application_guidance`, `status` (`active`, `stale`, or `superseded`), and `superseded_by` replacement guidance. Rollups keep inactive candidates in local history but omit them from agent-facing guidance. Rollups include `Generated at` freshness metadata.
+
+When one ID-stamped project learning is wrong or outdated, use `/forgeflow-memory-correct --id <candidate-id> --replacement "<guidance>"` to preview the correction. Add `--write` only after confirming the preview. The correction appends a replacement candidate and a retirement event for the exact old ID; it does not delete or rewrite records. Legacy candidates without IDs remain readable but cannot be exactly targeted, and user-profile preferences are outside this command's scope.
 
 From Claude Code, use the command view:
 

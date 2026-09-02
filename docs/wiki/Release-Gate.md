@@ -73,6 +73,7 @@ node scripts/forgeflow/test-record-pilot-evidence.js
 node scripts/forgeflow/test-record-agent-feedback.js
 node scripts/forgeflow/test-rollup-agent-feedback.js
 node scripts/forgeflow/test-record-project-learning.js
+node scripts/forgeflow/test-correct-project-learning.js
 node scripts/forgeflow/test-record-next-work-outcome.js
 node scripts/forgeflow/test-show-learning-status.js
 node scripts/forgeflow/test-user-profile.js

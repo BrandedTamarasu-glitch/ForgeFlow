@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { sensitiveIssues: privacySensitiveIssues } = require('./privacy-boundary');
+const { projectLearningId } = require('./record-project-learning');
 
 const REQUIRED_SECTIONS = [
   'Recurring Pitfalls',
@@ -174,6 +175,9 @@ function checkCandidates(file) {
   issues.push(...sensitiveIssues(rawLines, file));
   for (const record of records) {
     const value = record.value || {};
+    if (value.id !== undefined && value.id !== projectLearningId(value)) {
+      issues.push(issue('fail', 'candidate-id-invalid', 'Project learning candidate id does not match its stable content identity', { source: file, line: record.line }));
+    }
     if (!VALID_CATEGORIES.has(value.category)) {
       issues.push(issue('fail', 'candidate-category-invalid', 'Project learning candidate has invalid category', { source: file, line: record.line }));
     }

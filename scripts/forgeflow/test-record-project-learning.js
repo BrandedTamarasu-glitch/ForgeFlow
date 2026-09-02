@@ -176,6 +176,7 @@ const checks = [
   ['records input entries', result.entries === 2],
   ['writes jsonl file', fs.existsSync(file) && records.length === 2],
   ['normalizes schema', records.every((record) => record.schema_version === '1' && record.ts)],
+  ['assigns stable candidate ids', records.every((record) => /^plc_[a-z0-9-]+$/u.test(record.id)) && new Set(records.map((record) => record.id)).size === records.length],
   ['preserves category', records[0].category === 'validation-pattern'],
   ['preserves confidence metadata', records[0].confidence === 'high' && records[0].evidence_count === 3],
   ['preserves application guidance', records[0].application_guidance === 'Run the focused test before trusting release readiness.'],
