@@ -11,6 +11,7 @@ const {
   writeJsonSafe,
 } = require('./file-safety');
 const { buildMemoryIndex } = require('./index-memory');
+const { selectMemoryRecords, renderMemorySelection, sourceClass } = require('./memory-retrieval');
 const { showProjectLearnings } = require('./show-project-learnings');
 const { checkProjectLearnings } = require('./check-project-learnings');
 const { compactUserProfile } = require('./user-profile');
@@ -318,70 +319,82 @@ function buildMemoryHitsFromIndex(root, indexPath, files, route, task, maxChars)
   }
   if (!index || !Array.isArray(index.records)) return null;
   const keys = keywords(files, route, task);
-  const hits = [];
-
-  for (const item of index.records) {
-    const text = String(item.text || '');
-    const haystack = `${text} ${item.source || ''} ${(item.keywords || []).join(' ')}`.toLowerCase();
-    const score = keys.reduce((sum, key) => sum + (haystack.includes(key) ? 1 : 0), 0);
-    if (score > 0 || item.kind === 'heading') {
-      hits.push({
-        source: item.source || '(unknown)',
-        line: item.line || 1,
-        score,
-        kind: item.kind || 'memory',
-        text,
-      });
-    }
-  }
-
-  const selected = selectMemoryHits(hits);
-  const rendered = [
-    '# Memory Hits',
-    '',
-    `Index: ${path.relative(root, indexPath)}`,
-    `Keywords: ${keys.join(', ') || '(none)'}`,
-    '',
-  ];
-  for (const hit of selected) {
-    rendered.push(`- ${hit.source}:${hit.line} [${hit.kind}] ${hit.text}`);
-  }
-  if (selected.length === 0) {
-    rendered.push('(no local memory hits)');
-  }
-  return truncate(rendered.join('\n'), maxChars);
+  const selection = selectMemoryRecords(index.records, keys.join(' '));
+  return truncate(renderMemorySelection(selection, {
+    title: '# Memory Hits',
+    indexLabel: `Index: ${path.relative(root, indexPath)}`,
+    keywords: keys,
+  }), maxChars);
 }
 
-function memorySourceWeight(source = '') {
-  if (source.endsWith('project-learnings.md')) return 5;
-  if (source.endsWith('implementation-notes.md')) return 4;
-  if (source.endsWith('current-brief.md') || source.endsWith('current-plan.md')) return 3;
-  if (source.endsWith('review-history.md')) return 2;
-  return 1;
+function memoryRetrievalDiagnostics(root, indexPath, files, route, task) {
+  if (indexPath && fs.existsSync(indexPath)) {
+    try {
+      const index = readJson(indexPath, defaultProjectDir(root));
+      if (index && Array.isArray(index.records)) {
+        return selectMemoryRecords(index.records, keywords(files, route, task).join(' ')).diagnostics;
+      }
+    } catch (_err) {
+      // Fall through to the safe direct-read fallback.
+    }
+  }
+  const fallback = buildFallbackMemorySelection(root, files, route, task);
+  return fallback ? fallback.selection.diagnostics : null;
 }
 
 function selectMemoryHits(hits, maxHits = 48, perSource = 10) {
-  const seenText = new Set();
-  const sourceCounts = new Map();
-  const selected = [];
-  const ranked = hits
-    .map((hit) => ({
-      ...hit,
-      weighted_score: Number(hit.score || 0) * 10 + memorySourceWeight(hit.source),
-      normalized_text: String(hit.text || '').replace(/\s+/g, ' ').trim().toLowerCase(),
-    }))
-    .sort((a, b) => b.weighted_score - a.weighted_score || memorySourceWeight(b.source) - memorySourceWeight(a.source) || a.source.localeCompare(b.source) || a.line - b.line);
-  for (const hit of ranked) {
-    if (!hit.normalized_text || seenText.has(hit.normalized_text)) continue;
-    const source = hit.source || '(unknown)';
-    const count = sourceCounts.get(source) || 0;
-    if (count >= perSource && hit.score <= 0) continue;
-    seenText.add(hit.normalized_text);
-    sourceCounts.set(source, count + 1);
-    selected.push(hit);
-    if (selected.length >= maxHits) break;
+  // Keep the exported legacy helper usable for callers that already supplied
+  // filtered hits, while new retrieval paths pass the focused task query above.
+  const query = hits.map((hit) => String(hit.text || '')).join(' ');
+  return selectMemoryRecords(hits, query, { maxHits, perSource }).selected;
+}
+
+function buildFallbackMemorySelection(root, files, route, task) {
+  const projectDir = defaultProjectDir(root);
+  try {
+    if (fs.existsSync(projectDir)) assertSafeDirectory(projectDir);
+  } catch (_err) {
+    return null;
   }
-  return selected;
+  const keys = keywords(files, route, task);
+  const records = [];
+  for (const file of memoryFiles(root)) {
+    if (!fs.existsSync(file)) continue;
+    const rel = path.relative(root, file);
+    let source = null;
+    try {
+      source = safeReadTextFile(file, projectDir);
+    } catch (_err) {
+      continue;
+    }
+    const metadata = {
+      source_class: sourceClass(path.basename(file)),
+      source_mtime_ms: Math.round(source.stat.mtimeMs),
+    };
+    const lines = source.content.split(/\r?\n/);
+    for (let i = 0; i < lines.length; i += 1) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      if (file.endsWith('.jsonl')) {
+        try {
+          const parsed = JSON.parse(line);
+          records.push({
+            source: rel,
+            line: i + 1,
+            kind: 'jsonl',
+            text: parsed.summary || parsed.finding || parsed.pattern || parsed.message || JSON.stringify(parsed),
+            lifecycle: typeof parsed.status === 'string' ? parsed.status.toLowerCase() : '',
+            ...metadata,
+          });
+        } catch (_err) {
+          records.push({ source: rel, line: i + 1, kind: 'jsonl-invalid', text: line, lifecycle: 'invalid', ...metadata });
+        }
+      } else if (/^(#{1,4}\s+|[-*]\s+|\d+[.)]\s+)/.test(line)) {
+        records.push({ source: rel, line: i + 1, kind: /^#{1,4}\s+/.test(line) ? 'heading' : 'bullet', text: line, ...metadata });
+      }
+    }
+  }
+  return { keys, selection: selectMemoryRecords(records, keys.join(' ')) };
 }
 
 function buildMemoryHits(root, files, route, task, maxChars, indexPath = null) {
@@ -393,38 +406,12 @@ function buildMemoryHits(root, files, route, task, maxChars, indexPath = null) {
   }
   const indexed = buildMemoryHitsFromIndex(root, indexPath, files, route, task, maxChars);
   if (indexed) return indexed;
-
-  const keys = keywords(files, route, task);
-  const hits = [];
-  for (const file of memoryFiles(root)) {
-    if (!fs.existsSync(file)) continue;
-    const rel = path.relative(root, file);
-    let lines = [];
-    try {
-      lines = safeReadTextFile(file, projectDir).content.split(/\r?\n/);
-    } catch (_err) {
-      continue;
-    }
-    for (let i = 0; i < lines.length; i += 1) {
-      const line = lines[i].trim();
-      if (!line) continue;
-      const lower = line.toLowerCase();
-      const score = keys.reduce((sum, key) => sum + (lower.includes(key) ? 1 : 0), 0);
-      if (score > 0 || /^#{1,3}\s/.test(line)) {
-        hits.push({ source: rel, line: i + 1, score, text: line });
-      }
-    }
-  }
-
-  const selected = selectMemoryHits(hits);
-  const rendered = ['# Memory Hits', '', `Keywords: ${keys.join(', ') || '(none)'}`, ''];
-  for (const hit of selected) {
-    rendered.push(`- ${hit.source}:${hit.line} ${hit.text}`);
-  }
-  if (selected.length === 0) {
-    rendered.push('(no local memory hits)');
-  }
-  return truncate(rendered.join('\n'), maxChars);
+  const fallback = buildFallbackMemorySelection(root, files, route, task);
+  if (!fallback) return '# Memory Hits\n\n(no strong local memory hits)';
+  return truncate(renderMemorySelection(fallback.selection, {
+    title: '# Memory Hits',
+    keywords: fallback.keys,
+  }), maxChars);
 }
 
 function renderLatestInsightsGate(result, root) {
@@ -1350,6 +1337,7 @@ function buildContextPack(opts) {
   const diffSummary = buildDiffSummary(route.files, root, effectiveOpts);
   const memoryIndexPath = ensureMemoryIndex(root, effectiveOpts.memoryIndex !== false);
   const memoryHits = buildMemoryHits(root, route.files, route, effectiveOpts.task, effectiveOpts.maxMemoryChars, memoryIndexPath);
+  const memoryRetrieval = memoryRetrievalDiagnostics(root, memoryIndexPath, route.files, route, effectiveOpts.task);
   const topologyContext = buildTopologyContext(root, outDir, route.files);
   const latestInsightsResult = buildLatestInsightsResult(root, 5000, { codeMap: topologyContext ? topologyContext.topology : undefined });
   const latestInsights = latestInsightsResult.markdown;
@@ -1410,6 +1398,7 @@ function buildContextPack(opts) {
       diff_summary_chars: textChars(diffSummary),
       packet_chars: sum(packetFiles.map((file) => fileChars(file))),
       memory_index_used: Boolean(memoryIndexPath),
+      memory_retrieval: memoryRetrieval,
     },
   });
 

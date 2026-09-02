@@ -1,0 +1,17 @@
+{
+  "query": "session cache invalidation release guard",
+  "selected_ids": [
+    "current-brief:4",
+    "project-learnings:8",
+    "implementation-notes:11",
+    "review-history:21"
+  ],
+  "inactive_ids": [
+    "project-learnings:32",
+    "project-learnings:39",
+    "learnings:41"
+  ],
+  "unrelated_id": "current-plan:1",
+  "duplicate_id": "implementation-notes:16",
+  "no_match_query": "astronomy telescope orbital mechanics"
+}

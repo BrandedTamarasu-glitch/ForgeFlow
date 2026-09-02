@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { buildMemoryIndex, tokenize } = require('./index-memory');
+const { selectMemoryRecords, renderMemorySelection } = require('./memory-retrieval');
 const {
   contextTelemetry,
   sum,
@@ -141,41 +142,16 @@ function splitMemoryBudget(maxChars, userProfileBlock) {
 }
 
 function renderMemoryContext(root, indexPath, records, keys, maxHits, maxChars) {
-  const hits = [];
-  for (const record of records) {
-    const text = String(record.text || '');
-    const haystack = `${text} ${record.source || ''} ${(record.keywords || []).join(' ')}`.toLowerCase();
-    const score = keys.reduce((sum, key) => sum + (haystack.includes(key) ? 1 : 0), 0);
-    if (score > 0 || record.kind === 'heading') {
-      hits.push({
-        source: record.source || '(unknown)',
-        line: record.line || 1,
-        kind: record.kind || 'memory',
-        text,
-        score,
-      });
-    }
-  }
-
-  const selected = hits
-    .sort((a, b) => b.score - a.score || a.source.localeCompare(b.source) || a.line - b.line)
-    .slice(0, maxHits);
-  const lines = [
-    '# Forgeflow Memory Context',
-    '',
-    `Index: ${path.relative(root, indexPath)}`,
-    `Keywords: ${keys.join(', ') || '(none)'}`,
-    '',
-  ];
-  for (const hit of selected) {
-    lines.push(`- ${hit.source}:${hit.line} [${hit.kind}] ${hit.text}`);
-  }
-  if (selected.length === 0) {
-    lines.push('(no local memory hits)');
-  }
+  const selection = selectMemoryRecords(records, keys.join(' '), { maxHits });
+  const lines = renderMemorySelection(selection, {
+    title: '# Forgeflow Memory Context',
+    indexLabel: `Index: ${path.relative(root, indexPath)}`,
+    keywords: keys,
+  });
   return {
-    markdown: truncate(lines.join('\n'), maxChars),
-    selected_count: selected.length,
+    markdown: truncate(lines, maxChars),
+    selected_count: selection.diagnostics.selected_count,
+    diagnostics: selection.diagnostics,
   };
 }
 
@@ -219,6 +195,7 @@ function buildMemoryContext(opts = {}) {
       sources: indexResult.index.sources.length,
       records: records.length,
       selected_count: rendered.selected_count,
+      memory_retrieval: rendered.diagnostics,
       max_hits: opts.maxHits,
       max_chars: opts.maxChars,
     },

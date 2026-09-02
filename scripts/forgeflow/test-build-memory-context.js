@@ -89,6 +89,7 @@ const checks = [
   ['tiny budget remains bounded', tinyResult.markdown.length <= 220 && tinyContent.includes('## User Profile Guidance') && !tinyContent.includes('Session token reviews')],
   ['zero budget is empty', zeroResult.markdown.trim() === '' && fs.readFileSync(zeroOut, 'utf8').trim() === ''],
   ['telemetry kind', telemetry.kind === 'memory-context'],
+  ['telemetry carries retrieval counts', telemetry.detail && telemetry.detail.memory_retrieval && ['eligible', 'excluded_inactive', 'query_matches', 'selected_count'].every((key) => Number.isInteger(telemetry.detail.memory_retrieval[key]))],
   ['telemetry estimates tokens', Number.isInteger(telemetry.estimated_compact_tokens)],
   ['symlink context destination blocked', symlinkContextBlocked && fs.readFileSync(outsideContext, 'utf8') === 'do not overwrite\n'],
 ];

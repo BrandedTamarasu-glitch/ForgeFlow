@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { safeReadTextFile, writeJsonSafe } = require('./file-safety');
+const { sourceClass } = require('./memory-retrieval');
 
 const DEFAULT_MAX_TEXT_CHARS = 320;
 
@@ -86,18 +87,22 @@ function compact(value, maxChars) {
   return `${text.slice(0, Math.max(0, maxChars - 3)).trimEnd()}...`;
 }
 
-function record(source, line, kind, text, maxTextChars) {
-  return {
+function record(source, line, kind, text, maxTextChars, metadata = {}) {
+  const result = {
     id: `${source}:${line}`,
     source,
     line,
     kind,
     text: compact(text, maxTextChars),
     keywords: tokenize(text),
+    source_class: metadata.sourceClass || 'other',
+    source_mtime_ms: metadata.sourceMtimeMs || 0,
   };
+  if (metadata.lifecycle) result.lifecycle = metadata.lifecycle;
+  return result;
 }
 
-function indexMarkdown(source, content, maxTextChars) {
+function indexMarkdown(source, content, maxTextChars, metadata = {}) {
   const records = [];
   const lines = content.split(/\r?\n/);
   let currentHeading = '';
@@ -108,17 +113,17 @@ function indexMarkdown(source, content, maxTextChars) {
     const heading = line.match(/^(#{1,4})\s+(.+)$/);
     if (heading) {
       currentHeading = heading[2].trim();
-      records.push(record(source, i + 1, 'heading', currentHeading, maxTextChars));
+      records.push(record(source, i + 1, 'heading', currentHeading, maxTextChars, metadata));
       continue;
     }
     if (/^[-*]\s+/.test(line) || /^\d+[.)]\s+/.test(line)) {
-      records.push(record(source, i + 1, 'bullet', `${currentHeading ? `${currentHeading}: ` : ''}${line}`, maxTextChars));
+      records.push(record(source, i + 1, 'bullet', `${currentHeading ? `${currentHeading}: ` : ''}${line}`, maxTextChars, metadata));
     }
   }
   return records;
 }
 
-function indexJsonl(source, content, maxTextChars) {
+function indexJsonl(source, content, maxTextChars, metadata = {}) {
   const records = [];
   const lines = content.split(/\r?\n/);
   for (let i = 0; i < lines.length; i += 1) {
@@ -127,9 +132,10 @@ function indexJsonl(source, content, maxTextChars) {
     try {
       const parsed = JSON.parse(line);
       const text = parsed.summary || parsed.finding || parsed.pattern || parsed.message || JSON.stringify(parsed);
-      records.push(record(source, i + 1, 'jsonl', text, maxTextChars));
+      const lifecycle = typeof parsed.status === 'string' ? parsed.status.toLowerCase() : '';
+      records.push(record(source, i + 1, 'jsonl', text, maxTextChars, { ...metadata, lifecycle }));
     } catch (_err) {
-      records.push(record(source, i + 1, 'jsonl-invalid', line, maxTextChars));
+      records.push(record(source, i + 1, 'jsonl-invalid', line, maxTextChars, { ...metadata, lifecycle: 'invalid' }));
     }
   }
   return records;
@@ -151,15 +157,20 @@ function buildMemoryIndex(opts = {}) {
       path: rel,
       bytes: stat.size,
       mtime_ms: Math.round(stat.mtimeMs),
+      source_class: sourceClass(name),
     });
+    const metadata = {
+      sourceClass: sourceClass(name),
+      sourceMtimeMs: Math.round(stat.mtimeMs),
+    };
     const indexed = name.endsWith('.jsonl')
-      ? indexJsonl(rel, content, opts.maxTextChars || DEFAULT_MAX_TEXT_CHARS)
-      : indexMarkdown(rel, content, opts.maxTextChars || DEFAULT_MAX_TEXT_CHARS);
+      ? indexJsonl(rel, content, opts.maxTextChars || DEFAULT_MAX_TEXT_CHARS, metadata)
+      : indexMarkdown(rel, content, opts.maxTextChars || DEFAULT_MAX_TEXT_CHARS, metadata);
     records.push(...indexed);
   }
 
   const index = {
-    schema_version: '1',
+    schema_version: '2',
     generated_at: new Date().toISOString(),
     project_dir: path.relative(root, projectDir),
     sources,

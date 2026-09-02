@@ -360,6 +360,29 @@ const explicitRootCliJson = explicitRootCliResult ? {
   tracked_lines: explicitRootCliResult.route.tracked_lines,
   untracked_lines: explicitRootCliResult.route.untracked_lines,
 } : null;
+const fallbackMemoryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-memory-fallback-'));
+spawnSync('git', ['init'], { cwd: fallbackMemoryRoot, encoding: 'utf8' });
+fs.writeFileSync(path.join(fallbackMemoryRoot, 'session-cache.js'), 'export const sessionCache = true;\n');
+const fallbackMemoryProject = path.join(fallbackMemoryRoot, '.forgeflow', path.basename(fallbackMemoryRoot));
+fs.mkdirSync(fallbackMemoryProject, { recursive: true });
+fs.writeFileSync(path.join(fallbackMemoryProject, 'learnings.jsonl'), [
+  JSON.stringify({ summary: 'Active session cache invalidation release guard', status: 'active' }),
+  JSON.stringify({ summary: 'STALE_MEMORY_MARKER session cache invalidation release guard', status: 'stale' }),
+  JSON.stringify({ summary: 'SUPERSEDED_MEMORY_MARKER session cache invalidation release guard', status: 'superseded' }),
+  'INVALID_MEMORY_MARKER session cache invalidation release guard',
+  '',
+].join('\n'));
+const fallbackMemoryOut = path.join(fallbackMemoryProject, 'context', 'fallback');
+const fallbackMemoryResult = buildContextPack({
+  root: fallbackMemoryRoot,
+  out: fallbackMemoryOut,
+  task: 'Review session cache invalidation release guard',
+  memoryIndex: false,
+  maxMemoryChars: 4000,
+  maxDiffChars: 4000,
+});
+const fallbackMemoryHits = fs.readFileSync(path.join(fallbackMemoryOut, 'memory-hits.md'), 'utf8');
+const fallbackMemoryTelemetry = JSON.parse(fs.readFileSync(path.join(fallbackMemoryOut, 'context-telemetry.json'), 'utf8'));
 const untrackedRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-untracked-'));
 spawnSync('git', ['init'], { cwd: untrackedRoot, encoding: 'utf8' });
 fs.writeFileSync(path.join(untrackedRoot, 'untracked-helper.js'), 'export const value = 1;\n');
@@ -735,6 +758,7 @@ const checks = [
   ['agent packet includes topology-guided review focus', topologyGuidancePacket.includes('## Code Topology') && topologyGuidancePacket.includes('topology-guided focus') && topologyGuidancePacket.includes('topology hint')],
   ['agent packet escapes markdown paths', wardenPacket.includes('src/auth/session\\.ts')],
   ['telemetry token estimate', Number.isInteger(telemetry.estimated_compact_tokens)],
+  ['telemetry carries memory retrieval counts', telemetry.detail && telemetry.detail.memory_retrieval && ['eligible', 'excluded_inactive', 'query_matches', 'selected_count'].every((key) => Number.isInteger(telemetry.detail.memory_retrieval[key]))],
   ['code topology includes changed files', topology.changed_files.includes('src/auth/session.ts')],
   ['code topology context uses compact scope', topology.scope === 'changed-neighborhood'],
   ['latest insights report has status', ['injected', 'missing', 'blocked', 'error'].includes(insightsReport.status)],
@@ -748,6 +772,8 @@ const checks = [
   ['explicit root untracked lines captured', explicitRootResult.route.untracked_lines > 0],
   ['explicit root manifest resolves files', explicitRootResult.manifest.some((file) => file.path === 'src/new.ts' && file.exists === true)],
   ['explicit root explicit line sources preserved', explicitRootCliJson && explicitRootCliJson.lines_changed === 3 && explicitRootCliJson.tracked_lines === 2 && explicitRootCliJson.untracked_lines === 1],
+  ['fallback selects active structured memory only', fallbackMemoryHits.includes('Active session cache invalidation release guard') && !fallbackMemoryHits.includes('STALE_MEMORY_MARKER') && !fallbackMemoryHits.includes('SUPERSEDED_MEMORY_MARKER') && !fallbackMemoryHits.includes('INVALID_MEMORY_MARKER')],
+  ['fallback telemetry reports excluded inactive records', fallbackMemoryResult.telemetry.detail.memory_retrieval && fallbackMemoryResult.telemetry.detail.memory_retrieval.eligible === 1 && fallbackMemoryResult.telemetry.detail.memory_retrieval.excluded_inactive === 3 && fallbackMemoryResult.telemetry.detail.memory_retrieval.query_matches === 1 && fallbackMemoryResult.telemetry.detail.memory_retrieval.selected_count === 1 && fallbackMemoryTelemetry.detail.memory_retrieval.excluded_inactive === 3],
   ['passing insights include project guidance', passingInsights.includes('Check docs drift before release.')],
   ['passing insights report injected', passingInsightsResult.report.status === 'injected' && passingInsightsResult.report.check_status === 'pass'],
   ['blocked insights use quality gate', blockedInsights.includes('Quality Gate') && blockedInsights.includes('quality check returned FAIL')],
