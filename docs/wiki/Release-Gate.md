@@ -125,6 +125,7 @@ node scripts/forgeflow/test-show-project-learnings.js
 node scripts/forgeflow/test-render-project-decision-brief.js
 node scripts/forgeflow/test-render-research-divergence.js
 node scripts/forgeflow/test-render-research-divergence-advice.js
+node scripts/forgeflow/test-research-routing-contract.js
 node scripts/forgeflow/test-render-research-divergence-eval.js
 node scripts/forgeflow/test-render-research-divergence-eval-results.js
 node scripts/forgeflow/test-render-research-divergence-study.js

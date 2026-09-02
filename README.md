@@ -140,7 +140,7 @@ Or start the full delivery workflow:
 ```text
 /discuss
 /research
-/research --diverge choose between several consequential architecture approaches
+/research automatically selects normal or divergent research for focused tasks; use --diverge or --no-diverge to override
 /forgeflow-research-divergence-advice choose between normal and divergent research without running either
 /forgeflow-research-divergence-eval
 /plan

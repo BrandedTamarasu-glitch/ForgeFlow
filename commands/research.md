@@ -1,7 +1,7 @@
 ---
 name: research
 description: Run the Forgeflow in research mode — investigate patterns, technology options, and prior art
-argument-hint: "[--diverge] [optional: specific questions to research or path to discussion summary]"
+argument-hint: "[--diverge|--no-diverge] [optional: specific questions to research or path to discussion summary]"
 allowed-tools:
   - Read
   - Write
@@ -27,7 +27,8 @@ $ARGUMENTS — Optional. Can be:
 - Empty: loads discussion from `.forgeflow/<project-name>/current-discussion.md`
 - Specific questions to research
 - Path to a discussion summary file
-- `--diverge` followed by a question or summary path: run isolated option generation before evidence-based convergence
+- `--diverge` followed by a question or summary path: force isolated option generation before evidence-based convergence
+- `--no-diverge` followed by a question or summary path: force normal research
 
 $ARGUMENTS is provided by the user after the slash command (e.g., `/research` or `/research What auth libraries work with our stack?`). The command runner injects it as the argument string.
 </context>
@@ -36,9 +37,16 @@ $ARGUMENTS is provided by the user after the slash command (e.g., `/research` or
 
 ## Routing gate
 
-Parse `--diverge` before running any helper or loading project state, remove it from the research question, and record whether the flag was explicitly supplied. The default route remains Steps 0–4 below.
+Parse `--diverge` and `--no-diverge` before running any helper or loading project state. Reject both flags together. Remove the selected flag from the research question and record the route reason.
 
-For `--diverge`, run the preflight now. Divergence is appropriate for open-ended, consequential decisions with multiple plausible approaches. If selected automatically, abstain and use default research for lookups, canonical-answer questions, known-root-cause bugs, or low-stakes decisions. An explicit user flag overrides this abstention gate. The divergent route is read-only: skip state initialization, memory-context generation, telemetry, and every file write described below.
+- `--diverge` is an explicit divergent-route override.
+- `--no-diverge` is an explicit normal-research override.
+- With neither flag and a focused research question, run `scripts/forgeflow/render-research-divergence-advice.js --task "<question>" --json` from the checkout helper root, or its installed-runtime equivalent. Use its `suggested_invocation` as the route. Report the recommendation, reason, and exploratory latency tradeoff before research begins.
+- With neither flag and no focused question, use normal research and say that automatic routing needs a focused task.
+
+Automatic routing is advisory-policy execution, not a claim of general superiority. Users can always override it with either flag.
+
+For the divergent route, run the preflight now. Divergence is appropriate for open-ended, consequential decisions with multiple plausible approaches. If selected automatically, abstain and use normal research for lookups, canonical-answer questions, known-root-cause bugs, or low-stakes decisions. An explicit `--diverge` flag overrides this abstention gate. The divergent route is read-only: skip state initialization, memory-context generation, telemetry, and every file write described below.
 
 ## Step 0: Context Pre-Loading
 

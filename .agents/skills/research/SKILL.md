@@ -3,17 +3,25 @@ name: research
 description: Run the Forgeflow research workflow to evaluate options, prior art, codebase patterns, and risks.
 ---
 
-Use this skill when the user wants research after discussion and before planning. The default workflow is unchanged. Use the opt-in divergent workflow only when the user passes `--diverge`.
+Use this skill when the user wants research after discussion and before planning. Route focused tasks automatically with `render-research-divergence-advice.js`; divergence is the default policy outcome only when the helper recommends it.
 
 Resolve helpers before running them: use `scripts/forgeflow` from the current checkout when present; otherwise use `${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow`. If neither exists, report a missing Codex runtime installation.
 
-For the default workflow only, before other work run:
+Parse `--diverge` and `--no-diverge` first. Reject both together. `--diverge` forces divergence; `--no-diverge` forces normal research. With neither flag and a focused task, run:
+
+```bash
+node scripts/forgeflow/render-research-divergence-advice.js --task "<focused task>" --json
+```
+
+Use its recommendation and disclose the reason plus the exploratory latency/token tradeoff. With no focused task, use normal research and disclose that automatic routing needs a focused task. The user may override every automatic result.
+
+For the normal workflow only, before other work run:
 
 ```bash
 scripts/forgeflow/ensure-forgeflow-state.sh
 ```
 
-Route `--diverge` before this command. Divergent research is read-only: do not initialize state, build memory context, emit telemetry, or write any project file. Existing context may be read only for the independent Atlas evidence lane and later Compass critic.
+Route selection must happen before this command. Divergent research is read-only: do not initialize state, build memory context, emit telemetry, or write any project file. Existing context may be read only for the independent Atlas evidence lane and later Compass critic.
 
 Default workflow:
 1. Load `.forgeflow/<project-name>/current-discussion.md` if present, plus any focused user questions.
@@ -23,7 +31,7 @@ Default workflow:
 5. Save the result to `.forgeflow/<project-name>/current-research.md` when appropriate.
 
 `--diverge` workflow:
-1. Run a preflight. Divergence is intended for open-ended, consequential choices with multiple plausible approaches. If routing selected it automatically and the task is a lookup, a known-root-cause bug, a canonical-answer question, or a low-stakes choice, use the default workflow and explain why. An explicit user request for `--diverge` overrides this abstention gate.
+1. Run a preflight. Divergence is intended for open-ended, consequential choices with multiple plausible approaches. If automatic routing selected it for a lookup, a known-root-cause bug, a canonical-answer question, or a low-stakes choice, use the normal workflow and explain why. An explicit `--diverge` override still proceeds.
 2. Do not inject project memory, discussion artifacts, existing recommendations, codebase evidence, or peer output into divergent branches. Extract only the task and immutable constraints. When available, use `scripts/forgeflow/render-research-divergence.js` (or the installed-runtime equivalent described above) to render the three deterministic branch packets, then launch the fixed frames in parallel:
    - `inversion`: assume the obvious approach fails; identify the opposite design and the conditions that make it work.
    - `remove-assumption`: remove one load-bearing assumption and derive a viable approach from the resulting constraint set.
