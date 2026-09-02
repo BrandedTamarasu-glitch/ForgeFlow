@@ -13,7 +13,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | Command | Purpose |
 |---|---|
 | `/discuss` | Frame the problem, user needs, constraints, and open questions. |
-| `/research` | Evaluate options, prior art, codebase patterns, and risks. Add `--diverge` for isolated alternative generation and trap-led convergence. |
+| `/research` | Evaluate options, prior art, codebase patterns, and risks. Focused tasks automatically route to normal or divergent research; use `--no-diverge` or `--diverge` to override. |
 | `/forgeflow-research-divergence-eval` | Preview the built-in eight-task comparison or summarize supplied baseline-versus-divergent evidence. |
 | `/forgeflow-research-divergence-advice` | Recommend normal or divergent research without starting either route. |
 | `/plan` | Produce a phased implementation plan with validation criteria. |
@@ -189,7 +189,9 @@ The three fixed frames run without project memory or access to one another. A se
 
 Use `/forgeflow-research-divergence-eval` or `$forgeflow-research-divergence-eval` to preview the deterministic eight-task evaluation pack. Pass `--results <repository-relative-json>` to summarize captured evidence. Both modes are read-only and call no models or network services. A summary does not prove execution, human validation, general superiority, or transfer beyond the sample; claims must disclose sample size, scorer provenance, failures, and limitations.
 
-Use `/forgeflow-research-divergence-advice <task>` or `$forgeflow-research-divergence-advice` for a deterministic recommendation between `$research` and `$research --diverge`. It never invokes either workflow. Its latency and token figures are exploratory development-pilot evidence, not an automatic routing policy or general quality claim.
+Use `/forgeflow-research-divergence-advice <task>` or `$forgeflow-research-divergence-advice` for a deterministic recommendation between `$research` and `$research --diverge`. It never invokes either workflow. Its latency and token figures are benchmark evidence, not a general quality claim.
+
+Focused `/research <task>` now uses this classifier as an overrideable default policy. `--no-diverge` forces normal research, while `--diverge` forces isolated divergent research. An unfocused `/research` invocation remains normal because it has no task text to classify. See [Research Divergence](Research-Divergence) for evaluation boundaries and current behavior.
 
 ## Context Helpers
 

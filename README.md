@@ -139,10 +139,11 @@ Or start the full delivery workflow:
 
 ```text
 /discuss
-/research
-/research automatically selects normal or divergent research for focused tasks; use --diverge or --no-diverge to override
-/forgeflow-research-divergence-advice choose between normal and divergent research without running either
-/forgeflow-research-divergence-eval
+/research choose a service boundary under uncertain growth
+/research --no-diverge investigate a verified root cause
+/research --diverge compare consequential architecture approaches
+/forgeflow-research-divergence-advice preview the automatic route without starting research
+/forgeflow-research-divergence-eval preview the eight-task comparison pack
 /plan
 /consult
 /implement
@@ -155,6 +156,7 @@ Codex users can run the same workflow through skills:
 ```text
 $discuss frame the feature
 $research evaluate options
+$research automatically routes focused tasks; use --no-diverge or --diverge to override
 $research --diverge evaluate non-obvious options and hidden traps
 $forgeflow-research-divergence-advice recommend a research route, without automatic execution
 $forgeflow-research-divergence-eval preview the eight-task comparison pack
@@ -164,6 +166,12 @@ $implement execute the brief
 $forge-review review the current changes
 $ship prepare the branch
 ```
+
+### Research routing
+
+Focused `/research` tasks route automatically to normal research or isolated divergent research. The selected route is explained before work begins, including the observed latency and token tradeoff. Use `--no-diverge` to force normal research or `--diverge` to force divergence. `/forgeflow-research-divergence-advice <task>` previews that decision without starting research.
+
+Routing is based on a deterministic local classifier and a completed, human-scored benchmark. It remains overrideable, and an unfocused `/research` invocation stays on normal research. See [Research divergence](docs/wiki/Research-Divergence.md) for boundaries and evaluation details.
 
 Forgeflow stores local workflow memory in:
 
