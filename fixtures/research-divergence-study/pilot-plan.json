@@ -1,0 +1,7 @@
+{
+  "schema_version": "1",
+  "description": "Deterministic development pilot: four open-ended tasks for explicit arm comparison and four open-ended plus four controls for prospective neutral route classification.",
+  "iterations": 1,
+  "expected_runs": 16,
+  "raw_outputs": "Keep only in an explicitly supplied external study directory; never copy into .forgeflow/memory."
+}

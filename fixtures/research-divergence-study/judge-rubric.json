@@ -1,0 +1,92 @@
+{
+  "schema_version": "1",
+  "benchmark_id": "forgeflow-research-divergence-study-v1",
+  "instructions": {
+    "blinded": true,
+    "judge_output_independently_before_pair_choice": true,
+    "use_only_supplied_task_constraints_and_outputs": true,
+    "human_scores_govern_promotion": true
+  },
+  "scale": {
+    "minimum": 0,
+    "maximum": 5,
+    "anchors": {
+      "0": "Absent, unusable, or materially harmful.",
+      "1": "Severely deficient; little decision value.",
+      "2": "Partially useful but important gaps dominate.",
+      "3": "Competent and usable with ordinary follow-up.",
+      "4": "Strong; materially improves the decision.",
+      "5": "Exceptional, precise, and directly decision-changing."
+    }
+  },
+  "dimensions": {
+    "breadth": {
+      "question": "How well does the output cover materially distinct feasible approaches?",
+      "zero": "No viable approach or only repetition.",
+      "three": "Several relevant approaches, with some meaningful distinction.",
+      "five": "Comprehensive but disciplined coverage of distinct approaches and tradeoffs."
+    },
+    "novelty": {
+      "question": "Does the output contribute useful non-obvious insight beyond the standard first answer?",
+      "zero": "No relevant insight.",
+      "three": "At least one useful insight beyond the obvious playbook.",
+      "five": "Multiple surprising, feasible insights that materially change the decision."
+    },
+    "trap_detection": {
+      "question": "Does the output identify attractive failure paths and explain their mechanisms and disconfirming evidence?",
+      "zero": "Misses or encourages a consequential trap.",
+      "three": "Identifies a plausible trap and explains why it fails.",
+      "five": "Finds the load-bearing traps, mechanisms, tests, and salvageable parts."
+    },
+    "actionability": {
+      "question": "Can a builder take a safe, concrete, falsifiable next step from this output?",
+      "zero": "No executable direction or unsafe direction.",
+      "three": "A reasonable next step with enough detail to begin.",
+      "five": "A reversible, bounded experiment with success/failure evidence and operational detail."
+    },
+    "builder_usefulness": {
+      "question": "How useful is this output for making and defending the decision today?",
+      "zero": "Cannot support a responsible decision.",
+      "three": "Would support the decision after normal clarification.",
+      "five": "Would confidently use it now; recommendation, rationale, risks, and next step are decision-ready."
+    }
+  },
+  "pair_choice": {
+    "allowed": ["A", "B", "tie", "neither"],
+    "question": "Which output would you use to make this decision today?",
+    "tie_definition": "Both outputs are approximately equally useful and at least minimally usable.",
+    "neither_definition": "Neither output supports a responsible decision."
+  },
+  "critical_error": {
+    "allowed_categories": ["none", "factual", "security", "accessibility", "constraint_violation", "other"],
+    "requires_explanation_when_not_none": true,
+    "definition": "An error serious enough that following the output could invalidate the decision or cause material harm."
+  },
+  "required_judgment_record": {
+    "task_id": "string",
+    "iteration": "integer_1_to_5",
+    "judge_id": "pseudonymous_string",
+    "judge_type": "human_or_cross_model",
+    "output_A": {
+      "breadth": "integer_0_to_5",
+      "novelty": "integer_0_to_5",
+      "trap_detection": "integer_0_to_5",
+      "actionability": "integer_0_to_5",
+      "builder_usefulness": "integer_0_to_5",
+      "critical_error": "category",
+      "critical_error_explanation": "string_or_empty"
+    },
+    "output_B": {
+      "breadth": "integer_0_to_5",
+      "novelty": "integer_0_to_5",
+      "trap_detection": "integer_0_to_5",
+      "actionability": "integer_0_to_5",
+      "builder_usefulness": "integer_0_to_5",
+      "critical_error": "category",
+      "critical_error_explanation": "string_or_empty"
+    },
+    "pair_choice": "A_B_tie_or_neither",
+    "pair_choice_reason": "string",
+    "confidence": "integer_1_to_5"
+  }
+}

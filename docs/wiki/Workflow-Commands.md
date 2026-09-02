@@ -15,6 +15,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/discuss` | Frame the problem, user needs, constraints, and open questions. |
 | `/research` | Evaluate options, prior art, codebase patterns, and risks. Add `--diverge` for isolated alternative generation and trap-led convergence. |
 | `/forgeflow-research-divergence-eval` | Preview the built-in eight-task comparison or summarize supplied baseline-versus-divergent evidence. |
+| `/forgeflow-research-divergence-advice` | Recommend normal or divergent research without starting either route. |
 | `/plan` | Produce a phased implementation plan with validation criteria. |
 | `/consult` | Produce an implementation brief across architecture, security, UX, and coordination. |
 | `/implement` | Execute the current brief with coordinated agents and maintain `.forgeflow/<project>/implementation-notes.md`. |
@@ -187,6 +188,8 @@ $research --diverge choose a durable background-job architecture
 The three fixed frames run without project memory or access to one another. A separate Compass critic checks their candidates against normal codebase evidence, clusters them, records attractive traps and disconfirming tests, and recommends a falsification experiment. Failed lanes are retried once and remain visible if the result must degrade. The divergent route is read-only, including its converged findings; raw branch output is ephemeral. Ordinary `/research` behavior is unchanged.
 
 Use `/forgeflow-research-divergence-eval` or `$forgeflow-research-divergence-eval` to preview the deterministic eight-task evaluation pack. Pass `--results <repository-relative-json>` to summarize captured evidence. Both modes are read-only and call no models or network services. A summary does not prove execution, human validation, general superiority, or transfer beyond the sample; claims must disclose sample size, scorer provenance, failures, and limitations.
+
+Use `/forgeflow-research-divergence-advice <task>` or `$forgeflow-research-divergence-advice` for a deterministic recommendation between `$research` and `$research --diverge`. It never invokes either workflow. Its latency and token figures are exploratory development-pilot evidence, not an automatic routing policy or general quality claim.
 
 ## Context Helpers
 
