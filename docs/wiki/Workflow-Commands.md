@@ -249,7 +249,7 @@ scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json
 scripts/forgeflow/advise-context.js --root .forgeflow --record --json
 ```
 
-These helpers produce bounded context packets, compact memory summaries, file ownership packets, budget warnings, trimming recommendations, learning quality views, and trend history. Context and memory helpers reject symlinked local artifact reads/writes and include untracked files in generated review/scope context.
+These helpers produce bounded context packets, compact memory summaries, file ownership packets, budget warnings, trimming recommendations, learning quality views, and trend history. Memory summaries explain selection and suppression counts for stale/superseded, unrelated, duplicate, per-source, and size-limited records. A selected memory remains advisory: verify it against current files and tests. Context and memory helpers reject symlinked local artifact reads/writes and include untracked files in generated review/scope context. Project-memory diagnostics never read, expose, or change separate user-profile preferences.
 
 ## Implementation Notes
 

@@ -36,6 +36,33 @@ const selection = selectMemoryRecords(records, expected.query, { maxHits: 8, per
 const rendered = renderMemorySelection(selection, { title: '# Fixture Memory Hits', indexLabel: 'fixtures/memory-retrieval' });
 const reversed = selectMemoryRecords([...records].reverse(), expected.query, { maxHits: 8, perSource: 4 });
 const noMatch = selectMemoryRecords(records, expected.no_match_query, { maxHits: 8, perSource: 4 });
+const sourceCapped = selectMemoryRecords([
+  ...records,
+  {
+    id: 'current-brief:8',
+    source: '.forgeflow/Demo/current-brief.md',
+    source_class: 'current',
+    source_mtime_ms: 1767225600000,
+    line: 8,
+    kind: 'bullet',
+    text: 'Session cache release checks must include the guard checklist.',
+    keywords: ['session', 'cache', 'release', 'guard'],
+    lifecycle: 'active',
+  },
+], expected.query, { maxHits: 8, perSource: 1 });
+const maxCapped = selectMemoryRecords(records, expected.query, { maxHits: 2, perSource: 4 });
+const privateInactiveMarker = 'PRIVATE_INACTIVE_MEMORY_MARKER';
+const privateInactive = selectMemoryRecords([
+  ...records,
+  {
+    id: 'project-learnings:private',
+    source: '.forgeflow/Demo/project-learnings.md',
+    kind: 'jsonl',
+    text: `${privateInactiveMarker} cache invalidation guard`,
+    keywords: ['cache', 'invalidation', 'guard'],
+    lifecycle: 'superseded',
+  },
+], expected.query, { maxHits: 8, perSource: 4 });
 const metrics = metricReport(selection, rendered);
 
 assert.deepStrictEqual(ids(selection), expected.selected_ids, 'active relevant records should use the deterministic source-priority order');
@@ -44,6 +71,22 @@ assert.strictEqual(selection.diagnostics.eligible, 6, 'only non-inactive records
 assert.strictEqual(selection.diagnostics.excluded_inactive, 3, 'stale, superseded, and invalid structured records should be excluded');
 assert.strictEqual(selection.diagnostics.query_matches, 5, 'only positive keyword matches should qualify before deduplication');
 assert.strictEqual(selection.diagnostics.selected_count, 4, 'duplicate matching content should collapse before selection');
+assert.strictEqual(selection.diagnostics.excluded_invalid, 1, 'invalid structured records should be counted only as an aggregate exclusion');
+assert.strictEqual(selection.diagnostics.excluded_no_match, 1, 'active irrelevant records should be counted only as an aggregate exclusion');
+assert.strictEqual(selection.diagnostics.suppressed_duplicate, 1, 'duplicate matching records should be counted after ranking');
+assert.strictEqual(selection.diagnostics.suppressed_source_cap, 0, 'the default source cap should not suppress the fixture');
+assert.strictEqual(selection.diagnostics.suppressed_max_hits, 0, 'the generous result cap should not suppress the fixture');
+assert.deepStrictEqual(selection.ranking_policy.source_class_priority, ['current', 'project-learning', 'implementation', 'history', 'other'], 'selection should disclose its stable source-priority policy');
+assert.ok(selection.ranking_policy.tie_breakers.includes('keyword-match-count'), 'selection should disclose its deterministic tie breaker');
+assert.ok(selection.ranking_policy.boundary.includes('active records'), 'selection should disclose the ranking boundary without exposing records');
+assert.ok(selection.selected.every((record) => /^source priority: [a-z-]+; \d+ keyword match(?:es)?$/u.test(record.selection_reason)), 'each selected record should have a concise non-content selection reason');
+assert.ok(rendered.includes('[selected: source priority: current; 4 keyword matches]'), 'rendered output should explain why the highest-priority record was selected');
+assert.strictEqual(sourceCapped.diagnostics.suppressed_source_cap, 1, 'the per-source cap should be reflected in aggregate diagnostics');
+assert.ok(sourceCapped.selected.length <= 4, 'the per-source cap should constrain selected records');
+assert.strictEqual(maxCapped.selected.length, 2, 'the result cap should constrain selected records');
+assert.strictEqual(maxCapped.diagnostics.suppressed_max_hits, 2, 'the result cap should report the number omitted after filtering');
+assert.ok(!JSON.stringify(privateInactive.diagnostics).includes(privateInactiveMarker), 'aggregate diagnostics must not expose suppressed memory content');
+assert.ok(!renderMemorySelection(privateInactive).includes(privateInactiveMarker), 'suppressed memory content must not leak into rendered context');
 assert.ok(expected.inactive_ids.every((id) => !ids(selection).includes(id)), 'inactive records must never leak into selected memory');
 assert.ok(!ids(selection).includes(expected.unrelated_id), 'unrelated headings must not qualify without a keyword match');
 assert.ok(!ids(selection).includes(expected.duplicate_id), 'duplicate material must collapse to one selected record');
@@ -51,6 +94,7 @@ assert.deepStrictEqual(selection.selected.map((record) => record.label), ['curre
 assert.ok(rendered.includes('[current]') && rendered.includes('[active]') && rendered.includes('[verify]'), 'rendered memory should expose trust labels');
 assert.strictEqual(noMatch.selected.length, 0, 'a focused no-match query should select nothing');
 assert.ok(renderMemorySelection(noMatch).includes('(no strong local memory hits)'), 'a focused no-match query should explain the absence of advice');
+assert.ok(renderMemorySelection(noMatch).includes('6 active records did not match.'), 'a no-hit response should expose only the aggregate active non-match count');
 assert.strictEqual(metrics.precision_at_4, 1, 'benchmark precision should be exact for the deterministic fixture');
 assert.strictEqual(metrics.stale_leakage, 0, 'benchmark must have no stale leakage');
 assert.strictEqual(metrics.duplicate_count, 0, 'benchmark must not emit duplicate content');

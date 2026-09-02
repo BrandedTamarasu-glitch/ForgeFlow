@@ -1,6 +1,24 @@
 #!/usr/bin/env node
 // Deterministic, advisory-only selection for the local memory index.
 
+const MEMORY_RANKING_POLICY = Object.freeze({
+  source_class_priority: Object.freeze([
+    'current',
+    'project-learning',
+    'implementation',
+    'history',
+    'other',
+  ]),
+  tie_breakers: Object.freeze([
+    'keyword-match-count',
+    'source-modified-time',
+    'source-path',
+    'line',
+    'record-id',
+  ]),
+  boundary: 'Ranks matching active records only; lifecycle, duplicate, source-cap, and result-cap suppression happen after ranking.',
+});
+
 function keywordList(value) {
   const values = Array.isArray(value) ? value : [value];
   return [...new Set(values.flatMap((item) => String(item || '')
@@ -40,6 +58,11 @@ function inactive(record) {
     || lifecycle === 'invalid';
 }
 
+function invalid(record) {
+  return record.kind === 'jsonl-invalid'
+    || String(record.lifecycle || '').toLowerCase() === 'invalid';
+}
+
 function recordLabel(record) {
   const lifecycle = String(record.lifecycle || '').toLowerCase();
   if (lifecycle === 'current' || record.source_class === 'current') return 'current';
@@ -52,6 +75,12 @@ function matches(record, keys) {
   return keys.filter((key) => haystack.includes(key));
 }
 
+function selectionReason(record) {
+  const count = Array.isArray(record.query_matches) ? record.query_matches.length : 0;
+  const matchLabel = count === 1 ? 'keyword match' : 'keyword matches';
+  return `source priority: ${record.source_class}; ${count} ${matchLabel}`;
+}
+
 function selectMemoryRecords(records, query, options = {}) {
   const keys = keywordList(query);
   const maxHits = Number.isFinite(options.maxHits) ? Math.max(0, options.maxHits) : 48;
@@ -59,8 +88,14 @@ function selectMemoryRecords(records, query, options = {}) {
   const diagnostics = {
     eligible: 0,
     excluded_inactive: 0,
+    excluded_invalid: 0,
+    excluded_no_match: 0,
     query_matches: 0,
+    suppressed_duplicate: 0,
+    suppressed_source_cap: 0,
+    suppressed_max_hits: 0,
     selected_count: 0,
+    ranking_policy: MEMORY_RANKING_POLICY,
   };
   const candidates = [];
 
@@ -68,11 +103,15 @@ function selectMemoryRecords(records, query, options = {}) {
     if (!value || typeof value !== 'object') continue;
     if (inactive(value)) {
       diagnostics.excluded_inactive += 1;
+      if (invalid(value)) diagnostics.excluded_invalid += 1;
       continue;
     }
     diagnostics.eligible += 1;
     const queryMatches = matches(value, keys);
-    if (queryMatches.length === 0) continue;
+    if (queryMatches.length === 0) {
+      diagnostics.excluded_no_match += 1;
+      continue;
+    }
     diagnostics.query_matches += 1;
     const source = String(value.source || '(unknown)');
     const candidate = {
@@ -85,12 +124,13 @@ function selectMemoryRecords(records, query, options = {}) {
       normalized_text: normalizedText(value),
     };
     candidate.label = recordLabel(candidate);
+    candidate.selection_reason = selectionReason(candidate);
     candidates.push(candidate);
   }
 
   const seenText = new Set();
   const sourceCounts = new Map();
-  const selected = candidates
+  const retained = candidates
     .sort((a, b) => classRank(b.source_class) - classRank(a.source_class)
       || b.query_matches.length - a.query_matches.length
       || b.source_mtime_ms - a.source_mtime_ms
@@ -98,16 +138,23 @@ function selectMemoryRecords(records, query, options = {}) {
       || a.line - b.line
       || String(a.id || '').localeCompare(String(b.id || '')))
     .filter((record) => {
-      if (!record.normalized_text || seenText.has(record.normalized_text)) return false;
+      if (!record.normalized_text || seenText.has(record.normalized_text)) {
+        diagnostics.suppressed_duplicate += 1;
+        return false;
+      }
       const count = sourceCounts.get(record.source) || 0;
-      if (count >= perSource) return false;
+      if (count >= perSource) {
+        diagnostics.suppressed_source_cap += 1;
+        return false;
+      }
       seenText.add(record.normalized_text);
       sourceCounts.set(record.source, count + 1);
       return true;
-    })
-    .slice(0, maxHits);
+    });
+  const selected = retained.slice(0, maxHits);
+  diagnostics.suppressed_max_hits = retained.length - selected.length;
   diagnostics.selected_count = selected.length;
-  return { selected, diagnostics, keywords: keys };
+  return { selected, diagnostics, keywords: keys, ranking_policy: MEMORY_RANKING_POLICY };
 }
 
 function renderMemorySelection(selection, options = {}) {
@@ -118,17 +165,26 @@ function renderMemorySelection(selection, options = {}) {
   lines.push(`Keywords: ${keys.join(', ') || '(none)'}`, '');
   const selected = selection && Array.isArray(selection.selected) ? selection.selected : [];
   for (const record of selected) {
-    lines.push(`- ${record.source}:${record.line || 1} [${record.label || 'verify'}] [${record.kind || 'memory'}] ${record.text || ''}`);
+    lines.push(`- ${record.source}:${record.line || 1} [${record.label || 'verify'}] [${record.kind || 'memory'}] [selected: ${record.selection_reason || 'ranked match'}] ${record.text || ''}`);
   }
-  if (selected.length === 0) lines.push('(no strong local memory hits)');
+  if (selected.length === 0) {
+    const diagnostics = selection && selection.diagnostics ? selection.diagnostics : {};
+    const excluded = Number(diagnostics.excluded_no_match || 0);
+    lines.push('(no strong local memory hits)');
+    if (excluded > 0) {
+      lines.push(`${excluded} active record${excluded === 1 ? '' : 's'} did not match.`);
+    }
+  }
   return lines.join('\n');
 }
 
 module.exports = {
   classRank,
   keywordList,
+  MEMORY_RANKING_POLICY,
   recordLabel,
   renderMemorySelection,
+  selectionReason,
   selectMemoryRecords,
   sourceClass,
 };

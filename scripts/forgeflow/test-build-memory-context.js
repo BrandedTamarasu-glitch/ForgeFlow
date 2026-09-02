@@ -90,6 +90,9 @@ const checks = [
   ['zero budget is empty', zeroResult.markdown.trim() === '' && fs.readFileSync(zeroOut, 'utf8').trim() === ''],
   ['telemetry kind', telemetry.kind === 'memory-context'],
   ['telemetry carries retrieval counts', telemetry.detail && telemetry.detail.memory_retrieval && ['eligible', 'excluded_inactive', 'query_matches', 'selected_count'].every((key) => Number.isInteger(telemetry.detail.memory_retrieval[key]))],
+  ['telemetry carries explainability aggregates', telemetry.detail && telemetry.detail.memory_retrieval && ['excluded_invalid', 'excluded_no_match', 'suppressed_duplicate', 'suppressed_source_cap', 'suppressed_max_hits'].every((key) => Number.isInteger(telemetry.detail.memory_retrieval[key]))],
+  ['telemetry carries ranking policy without record text', telemetry.detail && telemetry.detail.memory_retrieval && telemetry.detail.memory_retrieval.ranking_policy && Array.isArray(telemetry.detail.memory_retrieval.ranking_policy.source_class_priority) && !JSON.stringify(telemetry.detail.memory_retrieval).includes('Session token reviews')],
+  ['rendered context explains selected memory', content.includes('[selected: source priority:')],
   ['telemetry estimates tokens', Number.isInteger(telemetry.estimated_compact_tokens)],
   ['symlink context destination blocked', symlinkContextBlocked && fs.readFileSync(outsideContext, 'utf8') === 'do not overwrite\n'],
 ];

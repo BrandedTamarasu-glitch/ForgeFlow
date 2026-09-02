@@ -621,6 +621,7 @@ const route = JSON.parse(fs.readFileSync(path.join(outDir, 'route.json'), 'utf8'
 const manifest = JSON.parse(fs.readFileSync(path.join(outDir, 'file-manifest.json'), 'utf8'));
 const synthesis = JSON.parse(fs.readFileSync(path.join(outDir, 'synthesis-input.json'), 'utf8'));
 const telemetry = JSON.parse(fs.readFileSync(path.join(outDir, 'context-telemetry.json'), 'utf8'));
+const memoryHits = fs.readFileSync(path.join(outDir, 'memory-hits.md'), 'utf8');
 const insightsReport = JSON.parse(fs.readFileSync(path.join(outDir, 'latest-insights-report.json'), 'utf8'));
 const userProfile = fs.readFileSync(path.join(outDir, 'user-profile.md'), 'utf8');
 const projectOperatingModel = fs.readFileSync(path.join(outDir, 'project-operating-model.md'), 'utf8');
@@ -759,6 +760,9 @@ const checks = [
   ['agent packet escapes markdown paths', wardenPacket.includes('src/auth/session\\.ts')],
   ['telemetry token estimate', Number.isInteger(telemetry.estimated_compact_tokens)],
   ['telemetry carries memory retrieval counts', telemetry.detail && telemetry.detail.memory_retrieval && ['eligible', 'excluded_inactive', 'query_matches', 'selected_count'].every((key) => Number.isInteger(telemetry.detail.memory_retrieval[key]))],
+  ['telemetry carries memory explainability aggregates', telemetry.detail && telemetry.detail.memory_retrieval && ['excluded_invalid', 'excluded_no_match', 'suppressed_duplicate', 'suppressed_source_cap', 'suppressed_max_hits'].every((key) => Number.isInteger(telemetry.detail.memory_retrieval[key]))],
+  ['telemetry carries non-content memory ranking policy', telemetry.detail && telemetry.detail.memory_retrieval && telemetry.detail.memory_retrieval.ranking_policy && Array.isArray(telemetry.detail.memory_retrieval.ranking_policy.tie_breakers) && !JSON.stringify(telemetry.detail.memory_retrieval).includes('Session token reviews')],
+  ['memory hits explain selection', memoryHits.includes('[selected: source priority:')],
   ['code topology includes changed files', topology.changed_files.includes('src/auth/session.ts')],
   ['code topology context uses compact scope', topology.scope === 'changed-neighborhood'],
   ['latest insights report has status', ['injected', 'missing', 'blocked', 'error'].includes(insightsReport.status)],
