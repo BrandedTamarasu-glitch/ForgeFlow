@@ -16,7 +16,7 @@ const MEMORY_RANKING_POLICY = Object.freeze({
     'line',
     'record-id',
   ]),
-  boundary: 'Ranks matching active records only; lifecycle, duplicate, source-cap, and result-cap suppression happen after ranking.',
+  boundary: 'Ranks matching unconflicted active records only; explicit conflict controls, lifecycle, duplicate, source-cap, and result-cap suppression happen after ranking.',
 });
 
 function keywordList(value) {
@@ -30,7 +30,7 @@ function keywordList(value) {
 function sourceClass(source = '') {
   const name = String(source).replace(/\\/g, '/').split('/').pop() || '';
   if (/^current-(discussion|research|plan|brief)\.md$/u.test(name)) return 'current';
-  if (name === 'project-learnings.md' || name === 'learnings.jsonl') return 'project-learning';
+  if (name === 'project-learnings.md' || name === 'learnings.jsonl' || name === 'project-learning-candidates.jsonl') return 'project-learning';
   if (name === 'implementation-notes.md') return 'implementation';
   if (name === 'review-history.md') return 'history';
   return 'other';
@@ -56,6 +56,12 @@ function inactive(record) {
     || lifecycle === 'stale'
     || lifecycle === 'superseded'
     || lifecycle === 'invalid';
+}
+
+// Conflict withholding is intentionally driven only by an upstream structured
+// control record. Retrieval never tries to infer disagreement from prose.
+function conflicted(record) {
+  return record.conflict_withheld === true;
 }
 
 function invalid(record) {
@@ -89,6 +95,7 @@ function selectMemoryRecords(records, query, options = {}) {
     eligible: 0,
     excluded_inactive: 0,
     excluded_invalid: 0,
+    excluded_conflicted: 0,
     excluded_no_match: 0,
     query_matches: 0,
     suppressed_duplicate: 0,
@@ -101,6 +108,10 @@ function selectMemoryRecords(records, query, options = {}) {
 
   for (const value of Array.isArray(records) ? records : []) {
     if (!value || typeof value !== 'object') continue;
+    if (conflicted(value)) {
+      diagnostics.excluded_conflicted += 1;
+      continue;
+    }
     if (inactive(value)) {
       diagnostics.excluded_inactive += 1;
       if (invalid(value)) diagnostics.excluded_invalid += 1;
@@ -175,11 +186,16 @@ function renderMemorySelection(selection, options = {}) {
       lines.push(`${excluded} active record${excluded === 1 ? '' : 's'} did not match.`);
     }
   }
+  const conflicted = Number(selection && selection.diagnostics && selection.diagnostics.excluded_conflicted || 0);
+  if (conflicted > 0) {
+    lines.push(`${conflicted} conflicting active record${conflicted === 1 ? ' was' : 's were'} withheld pending correction or clarification.`);
+  }
   return lines.join('\n');
 }
 
 module.exports = {
   classRank,
+  conflicted,
   keywordList,
   MEMORY_RANKING_POLICY,
   recordLabel,

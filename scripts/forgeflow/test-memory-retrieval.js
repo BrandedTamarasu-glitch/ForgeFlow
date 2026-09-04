@@ -63,6 +63,48 @@ const privateInactive = selectMemoryRecords([
     lifecycle: 'superseded',
   },
 ], expected.query, { maxHits: 8, perSource: 4 });
+const privateConflictMarker = 'PRIVATE_CONFLICT_MEMORY_MARKER';
+const conflicted = selectMemoryRecords([
+  ...records,
+  {
+    id: 'project-learning:conflict-one',
+    source: '.forgeflow/Demo/project-learning-candidates.jsonl',
+    kind: 'jsonl',
+    text: `${privateConflictMarker} use canary deploys`,
+    keywords: ['cache', 'invalidation', 'guard'],
+    lifecycle: 'active',
+    conflict_withheld: true,
+  },
+  {
+    id: 'project-learning:conflict-two',
+    source: '.forgeflow/Demo/project-learning-candidates.jsonl',
+    kind: 'jsonl',
+    text: `${privateConflictMarker} use direct deploys`,
+    keywords: ['cache', 'invalidation', 'guard'],
+    lifecycle: 'active',
+    conflict_withheld: true,
+  },
+], expected.query, { maxHits: 8, perSource: 4 });
+const conflictsOnly = selectMemoryRecords([
+  {
+    id: 'project-learning:conflict-one',
+    source: '.forgeflow/Demo/project-learning-candidates.jsonl',
+    kind: 'jsonl',
+    text: `${privateConflictMarker} use canary deploys`,
+    keywords: ['cache', 'invalidation', 'guard'],
+    lifecycle: 'active',
+    conflict_withheld: true,
+  },
+  {
+    id: 'project-learning:conflict-two',
+    source: '.forgeflow/Demo/project-learning-candidates.jsonl',
+    kind: 'jsonl',
+    text: `${privateConflictMarker} use direct deploys`,
+    keywords: ['cache', 'invalidation', 'guard'],
+    lifecycle: 'active',
+    conflict_withheld: true,
+  },
+], expected.query, { maxHits: 8, perSource: 4 });
 const metrics = metricReport(selection, rendered);
 
 assert.deepStrictEqual(ids(selection), expected.selected_ids, 'active relevant records should use the deterministic source-priority order');
@@ -87,6 +129,11 @@ assert.strictEqual(maxCapped.selected.length, 2, 'the result cap should constrai
 assert.strictEqual(maxCapped.diagnostics.suppressed_max_hits, 2, 'the result cap should report the number omitted after filtering');
 assert.ok(!JSON.stringify(privateInactive.diagnostics).includes(privateInactiveMarker), 'aggregate diagnostics must not expose suppressed memory content');
 assert.ok(!renderMemorySelection(privateInactive).includes(privateInactiveMarker), 'suppressed memory content must not leak into rendered context');
+assert.strictEqual(conflicted.diagnostics.excluded_conflicted, 2, 'explicitly conflicted records should be counted only in aggregate');
+assert.ok(!JSON.stringify(conflicted.diagnostics).includes(privateConflictMarker), 'conflict diagnostics must not expose withheld memory content');
+assert.ok(!renderMemorySelection(conflicted).includes(privateConflictMarker), 'conflicting memory content must never leak into rendered context');
+assert.strictEqual(conflictsOnly.selected.length, 0, 'a conflict-only match must abstain instead of choosing a side');
+assert.ok(renderMemorySelection(conflictsOnly).includes('2 conflicting active records were withheld pending correction or clarification.'), 'a conflict-only response should explain the safe abstention');
 assert.ok(expected.inactive_ids.every((id) => !ids(selection).includes(id)), 'inactive records must never leak into selected memory');
 assert.ok(!ids(selection).includes(expected.unrelated_id), 'unrelated headings must not qualify without a keyword match');
 assert.ok(!ids(selection).includes(expected.duplicate_id), 'duplicate material must collapse to one selected record');

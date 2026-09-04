@@ -372,6 +372,11 @@ fs.writeFileSync(path.join(fallbackMemoryProject, 'learnings.jsonl'), [
   'INVALID_MEMORY_MARKER session cache invalidation release guard',
   '',
 ].join('\n'));
+fs.writeFileSync(path.join(fallbackMemoryProject, 'project-learning-candidates.jsonl'), [
+  JSON.stringify({ category: 'stable-decision', learning: 'PRIVATE_FALLBACK_CANARY_GUIDANCE', source: 'Atlas', conflict_key: 'release_channel', conflict_value: 'canary' }),
+  JSON.stringify({ category: 'stable-decision', learning: 'PRIVATE_FALLBACK_DIRECT_GUIDANCE', source: 'Compass', conflict_key: 'release_channel', conflict_value: 'direct' }),
+  '',
+].join('\n'));
 const fallbackMemoryOut = path.join(fallbackMemoryProject, 'context', 'fallback');
 const fallbackMemoryResult = buildContextPack({
   root: fallbackMemoryRoot,
@@ -760,7 +765,7 @@ const checks = [
   ['agent packet escapes markdown paths', wardenPacket.includes('src/auth/session\\.ts')],
   ['telemetry token estimate', Number.isInteger(telemetry.estimated_compact_tokens)],
   ['telemetry carries memory retrieval counts', telemetry.detail && telemetry.detail.memory_retrieval && ['eligible', 'excluded_inactive', 'query_matches', 'selected_count'].every((key) => Number.isInteger(telemetry.detail.memory_retrieval[key]))],
-  ['telemetry carries memory explainability aggregates', telemetry.detail && telemetry.detail.memory_retrieval && ['excluded_invalid', 'excluded_no_match', 'suppressed_duplicate', 'suppressed_source_cap', 'suppressed_max_hits'].every((key) => Number.isInteger(telemetry.detail.memory_retrieval[key]))],
+  ['telemetry carries memory explainability aggregates', telemetry.detail && telemetry.detail.memory_retrieval && ['excluded_invalid', 'excluded_conflicted', 'excluded_no_match', 'suppressed_duplicate', 'suppressed_source_cap', 'suppressed_max_hits'].every((key) => Number.isInteger(telemetry.detail.memory_retrieval[key]))],
   ['telemetry carries non-content memory ranking policy', telemetry.detail && telemetry.detail.memory_retrieval && telemetry.detail.memory_retrieval.ranking_policy && Array.isArray(telemetry.detail.memory_retrieval.ranking_policy.tie_breakers) && !JSON.stringify(telemetry.detail.memory_retrieval).includes('Session token reviews')],
   ['memory hits explain selection', memoryHits.includes('[selected: source priority:')],
   ['code topology includes changed files', topology.changed_files.includes('src/auth/session.ts')],
@@ -778,6 +783,7 @@ const checks = [
   ['explicit root explicit line sources preserved', explicitRootCliJson && explicitRootCliJson.lines_changed === 3 && explicitRootCliJson.tracked_lines === 2 && explicitRootCliJson.untracked_lines === 1],
   ['fallback selects active structured memory only', fallbackMemoryHits.includes('Active session cache invalidation release guard') && !fallbackMemoryHits.includes('STALE_MEMORY_MARKER') && !fallbackMemoryHits.includes('SUPERSEDED_MEMORY_MARKER') && !fallbackMemoryHits.includes('INVALID_MEMORY_MARKER')],
   ['fallback telemetry reports excluded inactive records', fallbackMemoryResult.telemetry.detail.memory_retrieval && fallbackMemoryResult.telemetry.detail.memory_retrieval.eligible === 1 && fallbackMemoryResult.telemetry.detail.memory_retrieval.excluded_inactive === 3 && fallbackMemoryResult.telemetry.detail.memory_retrieval.query_matches === 1 && fallbackMemoryResult.telemetry.detail.memory_retrieval.selected_count === 1 && fallbackMemoryTelemetry.detail.memory_retrieval.excluded_inactive === 3],
+  ['fallback withholds only explicitly conflicting project guidance', !fallbackMemoryHits.includes('PRIVATE_FALLBACK_CANARY_GUIDANCE') && !fallbackMemoryHits.includes('PRIVATE_FALLBACK_DIRECT_GUIDANCE') && fallbackMemoryHits.includes('2 conflicting active records were withheld pending correction or clarification.') && fallbackMemoryResult.telemetry.detail.memory_retrieval.excluded_conflicted === 2 && !JSON.stringify(fallbackMemoryResult.telemetry.detail.memory_retrieval).includes('release_channel')],
   ['passing insights include project guidance', passingInsights.includes('Check docs drift before release.')],
   ['passing insights report injected', passingInsightsResult.report.status === 'injected' && passingInsightsResult.report.check_status === 'pass'],
   ['blocked insights use quality gate', blockedInsights.includes('Quality Gate') && blockedInsights.includes('quality check returned FAIL')],

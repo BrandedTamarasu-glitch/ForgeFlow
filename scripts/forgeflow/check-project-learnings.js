@@ -4,6 +4,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { sensitiveIssues: privacySensitiveIssues } = require('./privacy-boundary');
 const { projectLearningId } = require('./record-project-learning');
+const { conflictSummary } = require('./project-learning-conflicts');
 
 const REQUIRED_SECTIONS = [
   'Recurring Pitfalls',
@@ -206,6 +207,19 @@ function checkCandidates(file) {
     if (String(value.status || '').trim().toLowerCase() === 'superseded' && !String(value.superseded_by || '').trim()) {
       issues.push(issue('warn', 'candidate-superseded-by-missing', 'Superseded project learning candidate should explain the replacement guidance', { source: file, line: record.line }));
     }
+    const conflictKey = String(value.conflict_key || '').trim();
+    const conflictValue = String(value.conflict_value || '').trim();
+    if ((conflictKey && !conflictValue) || (!conflictKey && conflictValue)) {
+      issues.push(issue('fail', 'candidate-conflict-metadata-incomplete', 'Project learning conflict_key and conflict_value must be provided together', { source: file, line: record.line }));
+    } else if (conflictKey && (!/^[a-z][a-z0-9_-]{0,63}$/.test(conflictKey) || conflictKey !== conflictKey.toLowerCase())) {
+      issues.push(issue('fail', 'candidate-conflict-key-invalid', 'Project learning conflict_key must be a short lowercase identifier', { source: file, line: record.line }));
+    } else if (conflictValue.length > 120) {
+      issues.push(issue('fail', 'candidate-conflict-value-oversized', 'Project learning conflict_value is too long', { source: file, line: record.line }));
+    }
+  }
+  const summary = conflictSummary(records.map((record) => record.value));
+  if (summary.conflict_groups > 0) {
+    issues.push(issue('warn', 'candidate-conflicts-withheld', 'Explicitly conflicting active project learnings will be withheld from guidance', { source: file, conflict_groups: summary.conflict_groups, candidates_withheld: summary.conflict_candidates_withheld }));
   }
   return { records: records.length, issues };
 }

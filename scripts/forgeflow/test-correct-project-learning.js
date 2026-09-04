@@ -15,6 +15,8 @@ const original = {
   source: 'Atlas',
   evidence: 'Historical release notes',
   confidence: 'medium',
+  conflict_key: 'release_channel',
+  conflict_value: 'legacy',
 };
 recordProjectLearning({ projectDir, inputEntries: [original] });
 const originalId = projectLearningId(original);
@@ -67,6 +69,7 @@ const checks = [
   ['write appends exactly two records', written.ok && written.result.status === 'written' && written.result.writes === 2 && lines.length === 3],
   ['write retires only the exact target', target && target.status === 'superseded' && replacement && target.superseded_by === replacement.id],
   ['write creates an active replacement', replacement && replacement.status === 'active' && replacement.id !== originalId],
+  ['correction preserves explicit conflict metadata', replacement && replacement.conflict_key === 'release_channel' && replacement.conflict_value === 'legacy'],
   ['rollup suppresses retired guidance and keeps replacement', !rolled.recommended_approach_for_next_work.some((item) => item.includes(original.learning)) && rolled.recommended_approach_for_next_work.some((item) => item.includes(replacement.learning))],
   ['repeat correction cannot append again', !repeat.ok && repeat.error.includes('already inactive') && fs.readFileSync(candidatesFile, 'utf8') === afterWrite],
   ['symlink destination is blocked', !symlink.ok && !fs.readFileSync(outsideFile, 'utf8').includes('Must not write through symlink.')],

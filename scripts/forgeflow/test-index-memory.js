@@ -19,6 +19,17 @@ const allText = index.records.map((record) => `${record.kind} ${record.text} ${(
 const memoryHits = buildMemoryHits(memoryRoot, ['src/auth/session.ts'], {
   reasons: ['auth-sensitive file changed'],
 }, 'review auth session token behavior', 12000, out);
+const conflictRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-memory-index-conflict-'));
+const conflictProjectDir = path.join(conflictRoot, '.forgeflow', path.basename(conflictRoot));
+fs.mkdirSync(conflictProjectDir, { recursive: true });
+fs.writeFileSync(path.join(conflictProjectDir, 'project-learning-candidates.jsonl'), [
+  JSON.stringify({ category: 'stable-decision', learning: 'PRIVATE_CANARY_DEPLOY_GUIDANCE', source: 'Atlas', conflict_key: 'release_channel', conflict_value: 'canary' }),
+  JSON.stringify({ category: 'stable-decision', learning: 'PRIVATE_DIRECT_DEPLOY_GUIDANCE', source: 'Compass', conflict_key: 'release_channel', conflict_value: 'direct' }),
+  '',
+].join('\n'));
+const conflictOut = path.join(conflictProjectDir, 'index', 'memory-index.json');
+const conflictIndexResult = buildMemoryIndex({ projectDir: conflictProjectDir, out: conflictOut });
+const conflictHits = buildMemoryHits(conflictRoot, [], { reasons: [] }, 'deploy release channel', 12000, conflictOut);
 const symlinkProject = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-memory-index-symlink-'));
 const secretFile = path.join(symlinkProject, 'outside-secret.md');
 fs.writeFileSync(secretFile, '- TOP_SECRET_MARKER\n');
@@ -68,9 +79,11 @@ const checks = [
   ['auth keyword', allText.includes('auth')],
   ['session keyword', allText.includes('session')],
   ['context pack uses index', memoryHits.includes(`Index: ${path.relative(memoryRoot, out)}`)],
-  ['indexed hit rendered', memoryHits.includes('[jsonl] Session token reviews')],
+  ['indexed hit rendered', memoryHits.includes('[jsonl]') && memoryHits.includes('Session token reviews')],
   ['implementation note hit rendered', memoryHits.includes('implementation-notes.md')],
   ['project learning hit rendered', memoryHits.includes('project-learnings.md')],
+  ['conflict source indexed with structured withholding metadata', conflictIndexResult.index.sources.some((source) => source.path.endsWith('project-learning-candidates.jsonl')) && conflictIndexResult.index.records.length === 2 && conflictIndexResult.index.records.every((record) => record.conflict_withheld === true)],
+  ['conflicting indexed guidance is withheld without metadata leakage', !conflictHits.includes('PRIVATE_CANARY_DEPLOY_GUIDANCE') && !conflictHits.includes('PRIVATE_DIRECT_DEPLOY_GUIDANCE') && !conflictHits.includes('release_channel') && conflictHits.includes('2 conflicting active records were withheld pending correction or clarification.')],
   ['symlink memory source blocked', symlinkReadBlocked],
   ['symlink index destination blocked', symlinkWriteBlocked && fs.readFileSync(outsideOut, 'utf8') === 'do not overwrite\n'],
 ];

@@ -12,6 +12,8 @@ const {
 } = require('./file-safety');
 const { buildMemoryIndex } = require('./index-memory');
 const { selectMemoryRecords, renderMemorySelection, sourceClass } = require('./memory-retrieval');
+const { conflictedLearningIds, resolvedCandidates } = require('./project-learning-conflicts');
+const { projectLearningId } = require('./record-project-learning');
 const { showProjectLearnings } = require('./show-project-learnings');
 const { checkProjectLearnings } = require('./check-project-learnings');
 const { compactUserProfile } = require('./user-profile');
@@ -282,6 +284,7 @@ function memoryFiles(root) {
     'codebase-map.md',
     'review-history.md',
     'learnings.jsonl',
+    'project-learning-candidates.jsonl',
   ].map((name) => path.join(defaultProjectDir(root), name));
 }
 
@@ -358,6 +361,7 @@ function buildFallbackMemorySelection(root, files, route, task) {
   }
   const keys = keywords(files, route, task);
   const records = [];
+  const projectLearningCandidates = [];
   for (const file of memoryFiles(root)) {
     if (!fs.existsSync(file)) continue;
     const rel = path.relative(root, file);
@@ -378,12 +382,21 @@ function buildFallbackMemorySelection(root, files, route, task) {
       if (file.endsWith('.jsonl')) {
         try {
           const parsed = JSON.parse(line);
+          const isProjectLearningCandidate = path.basename(file) === 'project-learning-candidates.jsonl';
+          if (isProjectLearningCandidate) projectLearningCandidates.push(parsed);
           records.push({
             source: rel,
             line: i + 1,
             kind: 'jsonl',
-            text: parsed.summary || parsed.finding || parsed.pattern || parsed.message || JSON.stringify(parsed),
+            text: isProjectLearningCandidate
+              ? (parsed.learning || parsed.application_guidance || '')
+              : (parsed.summary || parsed.finding || parsed.pattern || parsed.message || JSON.stringify(parsed)),
             lifecycle: typeof parsed.status === 'string' ? parsed.status.toLowerCase() : '',
+            ...(isProjectLearningCandidate ? {
+              learning_id: projectLearningId(parsed),
+              conflict_key: parsed.conflict_key,
+              conflict_value: parsed.conflict_value,
+            } : {}),
             ...metadata,
           });
         } catch (_err) {
@@ -393,6 +406,17 @@ function buildFallbackMemorySelection(root, files, route, task) {
         records.push({ source: rel, line: i + 1, kind: /^#{1,4}\s+/.test(line) ? 'heading' : 'bullet', text: line, ...metadata });
       }
     }
+  }
+  const resolved = new Map(resolvedCandidates(projectLearningCandidates)
+    .map((entry) => [projectLearningId(entry), entry]));
+  const withheld = conflictedLearningIds(projectLearningCandidates);
+  for (const record of records) {
+    if (!record.learning_id) continue;
+    const controllingRecord = resolved.get(record.learning_id);
+    if (controllingRecord && typeof controllingRecord.status === 'string') {
+      record.lifecycle = controllingRecord.status.toLowerCase();
+    }
+    if (withheld.has(record.learning_id)) record.conflict_withheld = true;
   }
   return { keys, selection: selectMemoryRecords(records, keys.join(' ')) };
 }

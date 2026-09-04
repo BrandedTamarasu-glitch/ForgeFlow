@@ -5,6 +5,7 @@ const { spawnSync } = require('child_process');
 const { compareCodeMapTrend } = require('./show-code-map');
 const { containsSensitiveContent } = require('./privacy-boundary');
 const { projectLearningId } = require('./record-project-learning');
+const { activeUnconflictedLearningCandidates, conflictSummary } = require('./project-learning-conflicts');
 
 const DEFAULT_MAX_ITEMS = 8;
 
@@ -133,7 +134,7 @@ function candidateStatus(entry) {
 }
 
 function activeLearningCandidates(candidates) {
-  return resolvedLearningCandidates(candidates).filter((entry) => candidateStatus(entry) === 'active');
+  return activeUnconflictedLearningCandidates(candidates);
 }
 
 // JSONL is append-only.  Later records with the same stable id are lifecycle
@@ -295,6 +296,7 @@ function buildRollup(inputs = {}, opts = {}) {
   const reviewOutcomes = Array.isArray(inputs.reviewOutcomes) ? inputs.reviewOutcomes : [];
   const allLearningCandidates = Array.isArray(inputs.learningCandidates) ? inputs.learningCandidates : [];
   const learningCandidates = activeLearningCandidates(allLearningCandidates);
+  const conflicts = conflictSummary(allLearningCandidates);
   const shipSummary = inputs.shipSummary || {};
   const codeMap = inputs.codeMap || null;
   const codeMapHistory = Array.isArray(inputs.codeMapHistory) ? inputs.codeMapHistory : [];
@@ -383,6 +385,8 @@ function buildRollup(inputs = {}, opts = {}) {
       implementation_notes: Boolean(inputs.hasImplementationNotes),
       learning_candidates: allLearningCandidates.length,
       learning_candidates_active: learningCandidates.length,
+      learning_candidates_conflict_groups: conflicts.conflict_groups,
+      learning_candidates_conflict_withheld: conflicts.conflict_candidates_withheld,
       learning_candidates_inactive: resolvedLearningCandidates(allLearningCandidates).filter((entry) => ['stale', 'superseded'].includes(candidateStatus(entry))).length,
       learning_candidates_invalid: resolvedLearningCandidates(allLearningCandidates).filter((entry) => candidateStatus(entry) === 'invalid').length,
       learning_candidates_inactive_examples: inactiveLearningSummary(resolvedLearningCandidates(allLearningCandidates)),
@@ -425,7 +429,7 @@ function renderMarkdown(rollup) {
     '',
     `- Generated at: ${rollup.generated_at || 'unknown'}`,
     `- Implementation notes: ${rollup.sources.implementation_notes ? 'present' : 'missing'}`,
-    `- Learning candidates: ${rollup.sources.learning_candidates_active || 0} active, ${rollup.sources.learning_candidates_inactive || 0} inactive, ${rollup.sources.learning_candidates_invalid || 0} invalid`,
+    `- Learning candidates: ${rollup.sources.learning_candidates_active || 0} active, ${rollup.sources.learning_candidates_inactive || 0} inactive, ${rollup.sources.learning_candidates_invalid || 0} invalid, ${rollup.sources.learning_candidates_conflict_withheld || 0} withheld for ${rollup.sources.learning_candidates_conflict_groups || 0} explicit conflict group(s)`,
     ...(Array.isArray(rollup.sources.learning_candidates_inactive_examples) && rollup.sources.learning_candidates_inactive_examples.length > 0
       ? rollup.sources.learning_candidates_inactive_examples.map((entry) => `  - ${entry.status}: ${entry.learning}${entry.superseded_by ? ` (replace with: ${entry.superseded_by})` : ''}`)
       : []),

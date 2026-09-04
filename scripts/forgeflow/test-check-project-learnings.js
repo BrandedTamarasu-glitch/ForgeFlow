@@ -110,6 +110,24 @@ writeCandidates(invalidMetadata, [
   JSON.stringify({ schema_version: '1', category: 'risk-area', learning: 'Oversized replacement', superseded_by: 'x'.repeat(241) }),
   JSON.stringify({ schema_version: '1', category: 'risk-area', learning: 'Missing replacement', status: 'superseded' }),
   JSON.stringify({ schema_version: '1', id: 'plc_0123456789abcdef', category: 'risk-area', learning: 'Forged stable id' }),
+  JSON.stringify({ schema_version: '1', category: 'risk-area', learning: 'Incomplete conflict metadata', conflict_key: 'release_channel' }),
+  JSON.stringify({ schema_version: '1', category: 'risk-area', learning: 'Invalid conflict key', conflict_key: 'Release Channel', conflict_value: 'legacy' }),
+  JSON.stringify({ schema_version: '1', category: 'risk-area', learning: 'Oversized conflict value', conflict_key: 'release_channel', conflict_value: 'x'.repeat(121) }),
+]);
+
+const conflicts = project('conflicts');
+writeLearnings(conflicts, {
+  'Recurring Pitfalls': ['A real pitfall.'],
+  'Stable Decisions': ['A current decision.'],
+  'Risk Areas': [],
+  'Validation Patterns': [],
+  'Hot Files And Modules': [],
+  'Repeated Follow-ups': [],
+  'Recommended Approach For Next Work': [],
+});
+writeCandidates(conflicts, [
+  JSON.stringify({ schema_version: '1', category: 'stable-decision', learning: 'Use canary release.', conflict_key: 'release_channel', conflict_value: 'canary' }),
+  JSON.stringify({ schema_version: '1', category: 'stable-decision', learning: 'Use direct release.', conflict_key: 'release_channel', conflict_value: 'direct' }),
 ]);
 
 const missingBoundary = project('missing-boundary');
@@ -167,6 +185,7 @@ const sensitiveCli = spawnSync(path.join(repoRoot, 'scripts/forgeflow/check-proj
 const privateUrlResult = checkProjectLearnings({ projectDir: privateUrlProject });
 const badCandidateResult = checkProjectLearnings({ projectDir: badCandidate });
 const invalidMetadataResult = checkProjectLearnings({ projectDir: invalidMetadata });
+const conflictResult = checkProjectLearnings({ projectDir: conflicts });
 const missingBoundaryResult = checkProjectLearnings({ projectDir: missingBoundary });
 const staleResult = checkProjectLearnings({ projectDir: stale, now: new Date('2026-05-20T00:00:00Z') });
 const missingFreshnessResult = checkProjectLearnings({ projectDir: missingFreshness });
@@ -187,7 +206,8 @@ const checks = [
   ['sensitive output redacted', !sensitiveCli.stdout.includes('SHOULD_NOT_PRINT') && !sensitiveCli.stderr.includes('SHOULD_NOT_PRINT')],
   ['git ssh shorthand url fails', privateUrlResult.status === 'fail' && privateUrlResult.issues.some((item) => item.code === 'sensitive-content' && item.pattern === 'private-url')],
   ['bad candidate fails', badCandidateResult.status === 'fail' && badCandidateResult.issues.some((item) => item.code === 'candidate-category-invalid') && badCandidateResult.issues.some((item) => item.code === 'candidate-json-invalid')],
-  ['invalid candidate metadata fails', invalidMetadataResult.status === 'fail' && invalidMetadataResult.issues.some((item) => item.code === 'candidate-confidence-invalid') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-evidence-count-invalid') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-application-guidance-oversized') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-status-invalid') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-superseded-by-oversized') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-id-invalid')],
+  ['invalid candidate metadata fails', invalidMetadataResult.status === 'fail' && invalidMetadataResult.issues.some((item) => item.code === 'candidate-confidence-invalid') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-evidence-count-invalid') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-application-guidance-oversized') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-status-invalid') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-superseded-by-oversized') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-id-invalid') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-conflict-metadata-incomplete') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-conflict-key-invalid') && invalidMetadataResult.issues.some((item) => item.code === 'candidate-conflict-value-oversized')],
+  ['explicit active conflicts warn with aggregate-only counts', conflictResult.status === 'warn' && conflictResult.issues.some((item) => item.code === 'candidate-conflicts-withheld' && item.conflict_groups === 1 && item.candidates_withheld === 2) && !JSON.stringify(conflictResult.issues).includes('Use canary release.') && !JSON.stringify(conflictResult.issues).includes('Use direct release.')],
   ['superseded candidates without replacement warn', invalidMetadataResult.issues.some((item) => item.code === 'candidate-superseded-by-missing')],
   ['missing proof boundary fails', missingBoundaryResult.status === 'fail' && missingBoundaryResult.issues.some((item) => item.code === 'proof-boundary-missing')],
   ['stale freshness warns', staleResult.status === 'warn' && staleResult.issues.some((item) => item.code === 'freshness-stale' && item.age_days > 30)],

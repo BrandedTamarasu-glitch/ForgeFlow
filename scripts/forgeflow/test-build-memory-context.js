@@ -47,6 +47,23 @@ const zeroResult = buildMemoryContext({
   maxHits: 8,
   maxChars: 0,
 });
+const conflictProject = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-memory-context-conflict-'));
+fs.writeFileSync(path.join(conflictProject, 'project-learning-candidates.jsonl'), [
+  JSON.stringify({ category: 'stable-decision', learning: 'PRIVATE_CANARY_CONTEXT_GUIDANCE', source: 'Atlas', conflict_key: 'release_channel', conflict_value: 'canary' }),
+  JSON.stringify({ category: 'stable-decision', learning: 'PRIVATE_DIRECT_CONTEXT_GUIDANCE', source: 'Compass', conflict_key: 'release_channel', conflict_value: 'direct' }),
+  '',
+].join('\n'));
+const conflictOut = path.join(conflictProject, 'context', 'memory-context.md');
+const conflictTelemetryOut = path.join(conflictProject, 'context', 'memory-context-telemetry.json');
+const conflictResult = buildMemoryContext({
+  projectDir: conflictProject,
+  query: 'release channel deploy',
+  out: conflictOut,
+  indexOut: path.join(conflictProject, 'index', 'memory-index.json'),
+  telemetryOut: conflictTelemetryOut,
+});
+const conflictContent = fs.readFileSync(conflictOut, 'utf8');
+const conflictTelemetry = JSON.parse(fs.readFileSync(conflictTelemetryOut, 'utf8'));
 const symlinkOutProject = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-memory-context-symlink-'));
 fs.writeFileSync(path.join(symlinkOutProject, 'project-learnings.md'), '# Project Learnings\n\n- safe session note\n');
 const outsideContext = path.join(symlinkOutProject, 'outside-context.md');
@@ -90,7 +107,9 @@ const checks = [
   ['zero budget is empty', zeroResult.markdown.trim() === '' && fs.readFileSync(zeroOut, 'utf8').trim() === ''],
   ['telemetry kind', telemetry.kind === 'memory-context'],
   ['telemetry carries retrieval counts', telemetry.detail && telemetry.detail.memory_retrieval && ['eligible', 'excluded_inactive', 'query_matches', 'selected_count'].every((key) => Number.isInteger(telemetry.detail.memory_retrieval[key]))],
-  ['telemetry carries explainability aggregates', telemetry.detail && telemetry.detail.memory_retrieval && ['excluded_invalid', 'excluded_no_match', 'suppressed_duplicate', 'suppressed_source_cap', 'suppressed_max_hits'].every((key) => Number.isInteger(telemetry.detail.memory_retrieval[key]))],
+  ['telemetry carries explainability aggregates', telemetry.detail && telemetry.detail.memory_retrieval && ['excluded_invalid', 'excluded_conflicted', 'excluded_no_match', 'suppressed_duplicate', 'suppressed_source_cap', 'suppressed_max_hits'].every((key) => Number.isInteger(telemetry.detail.memory_retrieval[key]))],
+  ['conflicting project guidance is withheld from memory context', conflictResult.selected_count === 0 && !conflictContent.includes('PRIVATE_CANARY_CONTEXT_GUIDANCE') && !conflictContent.includes('PRIVATE_DIRECT_CONTEXT_GUIDANCE') && conflictContent.includes('2 conflicting active records were withheld pending correction or clarification.')],
+  ['conflict telemetry is aggregate-only', conflictTelemetry.detail.memory_retrieval.excluded_conflicted === 2 && !JSON.stringify(conflictTelemetry.detail.memory_retrieval).includes('PRIVATE_CANARY_CONTEXT_GUIDANCE') && !JSON.stringify(conflictTelemetry.detail.memory_retrieval).includes('release_channel')],
   ['telemetry carries ranking policy without record text', telemetry.detail && telemetry.detail.memory_retrieval && telemetry.detail.memory_retrieval.ranking_policy && Array.isArray(telemetry.detail.memory_retrieval.ranking_policy.source_class_priority) && !JSON.stringify(telemetry.detail.memory_retrieval).includes('Session token reviews')],
   ['rendered context explains selected memory', content.includes('[selected: source priority:')],
   ['telemetry estimates tokens', Number.isInteger(telemetry.estimated_compact_tokens)],

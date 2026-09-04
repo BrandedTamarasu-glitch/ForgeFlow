@@ -21,7 +21,7 @@ const VALID_STATUS = new Set(['active', 'stale', 'superseded']);
 function usage() {
   console.error([
     'Usage: record-project-learning.js [--project-dir <dir>] --input <json-file> [--json]',
-    '       record-project-learning.js [--project-dir <dir>] --category <category> --learning <text> [--source <text>] [--evidence <text>] [--confidence low|medium|high] [--evidence-count <n>] [--application-guidance <text>] [--status active|stale|superseded] [--superseded-by <text>] [--json]',
+    '       record-project-learning.js [--project-dir <dir>] --category <category> --learning <text> [--source <text>] [--evidence <text>] [--confidence low|medium|high] [--evidence-count <n>] [--application-guidance <text>] [--conflict-key <key> --conflict-value <value>] [--status active|stale|superseded] [--superseded-by <text>] [--json]',
   ].join('\n'));
 }
 
@@ -38,6 +38,8 @@ function parseArgs(argv) {
     applicationGuidance: '',
     status: '',
     supersededBy: '',
+    conflictKey: '',
+    conflictValue: '',
     json: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
@@ -64,6 +66,10 @@ function parseArgs(argv) {
       opts.status = argv[++i] || '';
     } else if (arg === '--superseded-by') {
       opts.supersededBy = argv[++i] || '';
+    } else if (arg === '--conflict-key') {
+      opts.conflictKey = argv[++i] || '';
+    } else if (arg === '--conflict-value') {
+      opts.conflictValue = argv[++i] || '';
     } else if (arg === '--json') {
       opts.json = true;
     } else if (arg === '--help' || arg === '-h') {
@@ -140,6 +146,16 @@ function normalizeSupersededBy(value) {
   return text;
 }
 
+function normalizeConflictMetadata(keyValue, valueValue) {
+  const key = cleanText(keyValue || '').toLowerCase();
+  const value = cleanText(valueValue || '').toLowerCase();
+  if (!key && !value) return { conflict_key: '', conflict_value: '' };
+  if (!key || !value) throw new Error('Project learning conflict_key and conflict_value must be provided together');
+  if (!/^[a-z][a-z0-9_-]{0,63}$/.test(key)) throw new Error('Project learning conflict_key must be a short lowercase identifier');
+  if (value.length > 120) throw new Error('Project learning conflict_value must be 120 characters or fewer');
+  return { conflict_key: key, conflict_value: value };
+}
+
 // This deliberately excludes timestamps and lifecycle metadata.  A learning keeps
 // the same handle while it is retired, and older JSONL records without an id get
 // the same derived handle when they are read later.
@@ -153,6 +169,7 @@ function projectLearningId(entry) {
 }
 
 function normalizeEntry(entry) {
+  const conflict = normalizeConflictMetadata(entry.conflict_key ?? entry.conflictKey, entry.conflict_value ?? entry.conflictValue);
   const normalized = {
     schema_version: '1',
     ts: cleanText(entry.ts || new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')),
@@ -165,6 +182,7 @@ function normalizeEntry(entry) {
     application_guidance: normalizeApplicationGuidance(entry.application_guidance ?? entry.applicationGuidance),
     status: normalizeStatus(entry.status),
     superseded_by: normalizeSupersededBy(entry.superseded_by ?? entry.supersededBy),
+    ...conflict,
   };
   normalized.id = projectLearningId(normalized);
   if (!VALID_CATEGORIES.has(normalized.category)) {
@@ -173,7 +191,7 @@ function normalizeEntry(entry) {
   if (!normalized.learning) {
     throw new Error('Project learning is required');
   }
-  const combined = `${normalized.category}\n${normalized.learning}\n${normalized.source}\n${normalized.evidence}\n${normalized.application_guidance}\n${normalized.superseded_by}`;
+  const combined = `${normalized.category}\n${normalized.learning}\n${normalized.source}\n${normalized.evidence}\n${normalized.application_guidance}\n${normalized.superseded_by}\n${normalized.conflict_key}\n${normalized.conflict_value}`;
   if (containsSensitiveContent(combined)) {
     throw new Error('Project learning appears to contain sensitive content');
   }
@@ -195,6 +213,8 @@ function loadEntries(opts) {
     applicationGuidance: opts.applicationGuidance,
     status: opts.status,
     supersededBy: opts.supersededBy,
+    conflictKey: opts.conflictKey,
+    conflictValue: opts.conflictValue,
   })];
 }
 
@@ -240,6 +260,7 @@ module.exports = {
   containsSensitiveContent,
   cleanText,
   normalizeEntry,
+  normalizeConflictMetadata,
   parseArgs,
   projectLearningId,
   recordProjectLearning,

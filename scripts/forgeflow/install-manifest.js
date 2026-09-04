@@ -63,6 +63,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/next-action-contract.js',
   'scripts/forgeflow/output-contract.js',
   'scripts/forgeflow/privacy-boundary.js',
+  'scripts/forgeflow/project-learning-conflicts.js',
   'scripts/forgeflow/record-agent-feedback.js',
   'scripts/forgeflow/record-first-run-result.js',
   'scripts/forgeflow/record-next-work-outcome.js',

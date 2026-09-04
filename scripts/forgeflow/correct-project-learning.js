@@ -8,12 +8,12 @@ const { containsSensitiveContent } = require('./privacy-boundary');
 const { candidateStatus, resolvedLearningCandidates } = require('./rollup-project-learnings');
 
 function usage() {
-  console.error('Usage: correct-project-learning.js [--project-dir <dir>] --id <project-learning-id> --replacement <text> [--category <category>] [--source <text>] [--evidence <text>] [--confidence low|medium|high] [--write] [--json]');
+  console.error('Usage: correct-project-learning.js [--project-dir <dir>] --id <project-learning-id> --replacement <text> [--category <category>] [--source <text>] [--evidence <text>] [--confidence low|medium|high] [--conflict-key <key> --conflict-value <value>] [--write] [--json]');
 }
 
 function parseArgs(argv, options = {}) {
   const exitOnError = options.exitOnError !== false;
-  const opts = { projectDir: '', id: '', replacement: '', category: '', source: '', evidence: '', confidence: '', write: false, json: false };
+  const opts = { projectDir: '', id: '', replacement: '', category: '', source: '', evidence: '', confidence: '', conflictKey: '', conflictValue: '', write: false, json: false };
   function fail(message) {
     if (exitOnError) { console.error(message); usage(); process.exit(2); }
     throw new Error(message);
@@ -32,6 +32,8 @@ function parseArgs(argv, options = {}) {
     else if (arg === '--source') { opts.source = value(arg, i); i += 1; }
     else if (arg === '--evidence') { opts.evidence = value(arg, i); i += 1; }
     else if (arg === '--confidence') { opts.confidence = value(arg, i); i += 1; }
+    else if (arg === '--conflict-key') { opts.conflictKey = value(arg, i); i += 1; }
+    else if (arg === '--conflict-value') { opts.conflictValue = value(arg, i); i += 1; }
     else if (arg === '--write') opts.write = true;
     else if (arg === '--json') opts.json = true;
     else if (arg === '--help' || arg === '-h') { usage(); if (exitOnError) process.exit(0); return opts; }
@@ -73,10 +75,12 @@ function correctProjectLearning(opts = {}) {
   const source = opts.source ? cleanText(opts.source) : target.source;
   const evidence = opts.evidence ? cleanText(opts.evidence) : target.evidence;
   const confidence = opts.confidence ? cleanText(opts.confidence) : target.confidence;
+  const conflictKey = opts.conflictKey ? cleanText(opts.conflictKey) : target.conflict_key;
+  const conflictValue = opts.conflictValue ? cleanText(opts.conflictValue) : target.conflict_value;
   // Retirement must retain the original identity.  Category/source overrides
   // describe the new guidance only, otherwise the retirement would no longer
   // resolve to the target id.
-  const replacementEntry = normalizeEntry({ category, learning: replacement, source, evidence, confidence, evidence_count: target.evidence_count, application_guidance: target.application_guidance, status: 'active' });
+  const replacementEntry = normalizeEntry({ category, learning: replacement, source, evidence, confidence, evidence_count: target.evidence_count, application_guidance: target.application_guidance, conflict_key: conflictKey, conflict_value: conflictValue, status: 'active' });
   const retired = normalizeEntry({ ...target, status: 'superseded', superseded_by: replacementEntry.id });
   const result = { status: opts.write ? 'written' : 'preview', project_dir: projectDir, candidates_file: file, target: { id, category: target.category, learning: target.learning }, retirement: retired, replacement: replacementEntry, writes: opts.write ? 2 : 0 };
   if (opts.write) recordProjectLearning({ projectDir, inputEntries: [retired, replacementEntry] });

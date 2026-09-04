@@ -4,6 +4,8 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { safeReadTextFile, writeJsonSafe } = require('./file-safety');
 const { sourceClass } = require('./memory-retrieval');
+const { conflictedLearningIds, resolvedCandidates } = require('./project-learning-conflicts');
+const { projectLearningId } = require('./record-project-learning');
 
 const DEFAULT_MAX_TEXT_CHARS = 320;
 
@@ -70,6 +72,10 @@ function memoryFileNames() {
     'codebase-map.md',
     'review-history.md',
     'learnings.jsonl',
+    // This append-only source is the authority for project-learning lifecycle
+    // and conflict controls. Its records are rendered as guidance only after
+    // retrieval applies those controls.
+    'project-learning-candidates.jsonl',
   ];
 }
 
@@ -99,6 +105,10 @@ function record(source, line, kind, text, maxTextChars, metadata = {}) {
     source_mtime_ms: metadata.sourceMtimeMs || 0,
   };
   if (metadata.lifecycle) result.lifecycle = metadata.lifecycle;
+  if (metadata.learningId) result.learning_id = metadata.learningId;
+  if (metadata.conflictKey) result.conflict_key = metadata.conflictKey;
+  if (metadata.conflictValue) result.conflict_value = metadata.conflictValue;
+  if (metadata.conflictWithheld) result.conflict_withheld = true;
   return result;
 }
 
@@ -126,17 +136,39 @@ function indexMarkdown(source, content, maxTextChars, metadata = {}) {
 function indexJsonl(source, content, maxTextChars, metadata = {}) {
   const records = [];
   const lines = content.split(/\r?\n/);
+  const candidates = [];
+  const parsedLines = [];
+  const isProjectLearningCandidates = path.basename(source) === 'project-learning-candidates.jsonl';
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i].trim();
     if (!line) continue;
     try {
       const parsed = JSON.parse(line);
-      const text = parsed.summary || parsed.finding || parsed.pattern || parsed.message || JSON.stringify(parsed);
-      const lifecycle = typeof parsed.status === 'string' ? parsed.status.toLowerCase() : '';
-      records.push(record(source, i + 1, 'jsonl', text, maxTextChars, { ...metadata, lifecycle }));
+      parsedLines.push({ line: i + 1, parsed });
+      if (isProjectLearningCandidates) candidates.push(parsed);
     } catch (_err) {
       records.push(record(source, i + 1, 'jsonl-invalid', line, maxTextChars, { ...metadata, lifecycle: 'invalid' }));
     }
+  }
+  const resolved = isProjectLearningCandidates
+    ? new Map(resolvedCandidates(candidates).map((entry) => [projectLearningId(entry), entry]))
+    : new Map();
+  const withheld = isProjectLearningCandidates ? conflictedLearningIds(candidates) : new Set();
+  for (const { line, parsed } of parsedLines) {
+    const learningId = isProjectLearningCandidates ? projectLearningId(parsed) : '';
+    const text = isProjectLearningCandidates
+      ? (parsed.learning || parsed.application_guidance || '')
+      : (parsed.summary || parsed.finding || parsed.pattern || parsed.message || JSON.stringify(parsed));
+    const controllingRecord = resolved.get(learningId) || parsed;
+    const lifecycle = typeof controllingRecord.status === 'string' ? controllingRecord.status.toLowerCase() : '';
+    records.push(record(source, line, 'jsonl', text, maxTextChars, {
+      ...metadata,
+      lifecycle,
+      learningId,
+      conflictKey: isProjectLearningCandidates ? parsed.conflict_key : '',
+      conflictValue: isProjectLearningCandidates ? parsed.conflict_value : '',
+      conflictWithheld: isProjectLearningCandidates && withheld.has(learningId),
+    }));
   }
   return records;
 }
