@@ -11,7 +11,7 @@ const {
 } = require('./context-telemetry');
 const { writeFileSafe, writeJsonSafe } = require('./file-safety');
 
-const DEFAULT_MAX_FILES_PER_LANE = 40;
+const DEFAULT_MAX_FILES_PER_LANE = 30;
 const LANES = ['shared', 'smith', 'warden', 'lumen', 'compass', 'atlas'];
 
 function usage() {
@@ -256,6 +256,7 @@ function buildScopeManifest(opts = {}) {
   }
 
   const maxFiles = Number.isFinite(opts.maxFilesPerLane) ? opts.maxFilesPerLane : DEFAULT_MAX_FILES_PER_LANE;
+  const availableCounts = Object.fromEntries(LANES.map((lane) => [lane, lanes[lane].length]));
   for (const lane of LANES) {
     lanes[lane] = lanes[lane]
       .sort((a, b) => b.score - a.score || String(a.path).localeCompare(String(b.path)))
@@ -270,6 +271,9 @@ function buildScopeManifest(opts = {}) {
     query_tokens: queryTokens,
     lanes,
     counts: Object.fromEntries(LANES.map((lane) => [lane, lanes[lane].length])),
+    available_counts: availableCounts,
+    max_files_per_lane: maxFiles,
+    omitted_counts: Object.fromEntries(LANES.map((lane) => [lane, Math.max(0, availableCounts[lane] - lanes[lane].length)])),
     denied,
   };
 
@@ -288,6 +292,7 @@ function buildScopeManifest(opts = {}) {
       manifest_chars: manifestChars,
       packet_chars: packetChars,
       counts: manifest.counts,
+      omitted_counts: manifest.omitted_counts,
     },
   });
   const telemetryOut = opts.telemetryOut || defaultTelemetryOut(root);

@@ -51,6 +51,7 @@ const checks = [
   ['deny env', manifest.denied.some((entry) => entry.path === '.env')],
   ['deny token', manifest.denied.some((entry) => entry.path === 'config/api-token.txt')],
   ['shared array present', Array.isArray(sharedPaths)],
+  ['records bounded omitted files', result.manifest.max_files_per_lane === 20 && result.manifest.omitted_counts && Object.values(result.manifest.omitted_counts).every(Number.isInteger)],
   ['untracked file auto-discovered', untrackedManifestEntries.some((entry) => entry.path === 'new-work-item.js')],
 ];
 
