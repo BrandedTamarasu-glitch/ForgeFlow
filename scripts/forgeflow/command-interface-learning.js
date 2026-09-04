@@ -10,6 +10,7 @@ const { assertSafeDirectory, isPathInside, safeReadTextFile, writeFileSafe } = r
 const SOURCE = 'Forgeflow command interface evidence';
 const POLICY_FILE = 'command-interface-learning-policy.json';
 const ID_RE = /^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$/;
+const PROJECT_DIR_RE = /^[A-Za-z][A-Za-z0-9]*(?:[-_][A-Za-z0-9]+)*$/;
 
 function usage() { console.error('Usage: command-interface-learning.js --input <sanitized.json> [--root <repo>] [--project-dir <dir>] [--candidate-id <id> --write] [--set-suggestions on|off --write-policy] [--json]'); }
 function value(argv, name, index) { const next = argv[index + 1] || ''; if (!next || next.startsWith('--')) throw new Error(`Missing value for ${name}`); return next; }
@@ -39,7 +40,7 @@ function parseArgs(argv) {
 function safeProjectDir(root, projectDir) {
   const parent = path.join(path.resolve(root), '.forgeflow');
   const resolved = path.resolve(projectDir);
-  if (path.dirname(resolved) !== parent || !ID_RE.test(path.basename(resolved))) throw new Error('Project directory must be a direct .forgeflow project directory inside --root');
+  if (path.dirname(resolved) !== parent || !PROJECT_DIR_RE.test(path.basename(resolved))) throw new Error('Project directory must be a direct .forgeflow project directory inside --root');
   return resolved;
 }
 function policyPath(projectDir) { return path.join(projectDir, 'context', POLICY_FILE); }
@@ -77,7 +78,8 @@ function buildLearning(opts) {
   if (opts.setSuggestions) return { schema_version: '1', status: 'policy-updated', suggestions_enabled: opts.setSuggestions === 'on', policy_path: writePolicy(projectDir, opts.setSuggestions === 'on'), next: 'run-command-interface-learning-preview', next_reason: 'The local suggestion-display preference was updated.', boundary: 'This changes only suggestion display. It never writes durable project memory.' };
   const policy = loadPolicy(projectDir);
   if (!policy.suggestions_enabled) return { schema_version: '1', status: 'suppressed', suggestion_status: 'suppressed', candidates: [], next: 'enable-command-interface-learning-suggestions', next_reason: 'Project policy suppresses promotion suggestions.', boundary: 'Suppression does not change audit results or write durable memory.' };
-  const findings = buildCommandInterfaceEvidence(readObservations(opts.input, opts.root)).findings;
+  const audit = buildCommandInterfaceEvidence(readObservations(opts.input, opts.root));
+  const findings = [...audit.findings, ...(audit.subchain_findings || [])];
   const existing = existingById(projectDir);
   const candidates = findings.map(candidateForFinding).filter(Boolean).map((candidate) => {
     const prior = existing.get(candidate.id);

@@ -6,7 +6,7 @@ const { buildLearning, parseArgs } = require('./command-interface-learning');
 const { buildMemoryIndex } = require('./index-memory');
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-command-learning-'));
-const projectDir = path.join(root, '.forgeflow', 'demo');
+const projectDir = path.join(root, '.forgeflow', 'Demo');
 const input = path.join(root, 'evidence.json');
 const observations = ['one', 'two', 'three'].map((id, index) => ({ id, work_item_id: index === 0 ? 'work-one' : 'work-two', command_chain: ['forgeflow-health', 'forgeflow-smoke'], outcome: 'success', command_calls: 2, decision_output_bytes: 40 }));
 fs.writeFileSync(input, JSON.stringify({ schema_version: '1', observations }));

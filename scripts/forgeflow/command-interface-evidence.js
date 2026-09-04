@@ -205,7 +205,24 @@ function buildCommandInterfaceEvidence(observations) {
         ...verdict,
       };
     });
-  const statuses = findings.map((finding) => finding.status);
+  const subchains = new Map();
+  for (const observation of observations) {
+    for (let index = 0; index < observation.command_chain.length - 1; index += 1) {
+      const chain = observation.command_chain.slice(index, index + 2);
+      const key = chain.join(' > ');
+      if (!subchains.has(key)) subchains.set(key, []);
+      subchains.get(key).push(observation);
+    }
+  }
+  const subchainFindings = [...subchains.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([chain, group]) => ({
+      chain: chain.split(' > '), chain_kind: 'contiguous-pair', observation_count: group.length,
+      distinct_work_item_count: new Set(group.map((item) => item.work_item_id)).size,
+      outcomes: countBy(group, (item) => item.outcome), command_calls: summarizeNumbers(group, 'command_calls'),
+      decision_output_bytes: summarizeNumbers(group, 'decision_output_bytes'), ...chainStatus(group),
+    }));
+  const statuses = [...findings, ...subchainFindings].map((finding) => finding.status);
   const status = statuses.includes('candidate-for-human-review') ? 'candidate-for-human-review'
     : statuses.includes('observe') ? 'observe'
       : statuses.includes('do-not-wrap') ? 'do-not-wrap'
@@ -225,6 +242,7 @@ function buildCommandInterfaceEvidence(observations) {
     observation_count: observations.length,
     finding_count: findings.length,
     findings,
+    subchain_findings: subchainFindings,
     next,
     next_reason: nextReason,
     raw_evidence_read: false,

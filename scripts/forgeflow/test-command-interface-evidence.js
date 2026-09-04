@@ -71,6 +71,11 @@ const outside = rejected(() => readObservations(path.join(os.tmpdir(), 'outside-
 const unsafeProject = rejected(() => runCommandInterfaceEvidence({ root, input: validInput, projectDir: path.join(root, 'elsewhere'), writeReport: true }));
 const invalidWriteArgs = rejected(() => parseArgs(['--input', validInput, '--project-dir', reportProject]));
 const rendered = renderMarkdown(repeat);
+const sharedPair = buildCommandInterfaceEvidence([
+  { ...observation('pair-one', 'work-one'), command_chain: ['forgeflow-health', 'forgeflow-smoke', 'forgeflow-report'] },
+  { ...observation('pair-two', 'work-two'), command_chain: ['forgeflow-health', 'forgeflow-smoke', 'forgeflow-trends'] },
+  { ...observation('pair-three', 'work-three'), command_chain: ['forgeflow-health', 'forgeflow-smoke', 'forgeflow-status'] },
+]);
 
 const checks = [
   ['minimum observation is insufficient evidence', minimum.status === 'insufficient-evidence' && minimum.findings[0].status === 'insufficient-evidence'],
@@ -88,6 +93,7 @@ const checks = [
   ['rejects unsafe report directory and incomplete write intent', unsafeProject && invalidWriteArgs],
   ['output is deterministic and never claims savings or wrapper creation', deterministicA === deterministicB && !rendered.match(/saves?\s+\d|lower\s+(token|call)|better success|wrapper\s+(was|is)\s+created/i)],
   ['result declares raw evidence unread', repeat.raw_evidence_read === false && repeat.boundary.includes('does not collect history')],
+  ['shared contiguous pair can reach human review without treating full chains as equal', sharedPair.subchain_findings.some((item) => item.chain_kind === 'contiguous-pair' && item.status === 'candidate-for-human-review')],
 ];
 
 let failedChecks = 0;
