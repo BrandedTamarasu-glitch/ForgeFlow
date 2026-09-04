@@ -25,7 +25,7 @@ const reenabled = buildLearning({ root, projectDir, setSuggestions: 'on', writeP
 const weak = buildLearning({ root, projectDir, input: weakInput });
 const checks = [
   ['preview is default and does not write', preview.status === 'preview' && candidate.status === 'ready-to-write' && noWrite],
-  ['candidate is aggregate advisory low confidence', candidate.entry.confidence === 'low' && candidate.entry.category === 'validation-pattern' && !JSON.stringify(candidate.entry).includes('work-one') && candidate.entry.application_guidance.includes('does not approve a wrapper')],
+  ['candidate is aggregate advisory low confidence', candidate.chain_kind === 'full-workflow' && candidate.entry.confidence === 'low' && candidate.entry.category === 'validation-pattern' && !JSON.stringify(candidate.entry).includes('work-one') && candidate.entry.application_guidance.includes('does not approve a wrapper')],
   ['exact-id write appends once', written.candidates[0].status === 'written' && stored.includes(candidate.id)],
   ['repeat preview dedupes active entry', duplicate.candidates[0].status === 'already-recorded'],
   ['project opt-out suppresses suggestions only', policy.suggestions_enabled === false && suppressed.status === 'suppressed' && stored === fs.readFileSync(path.join(projectDir, 'project-learning-candidates.jsonl'), 'utf8')],

@@ -266,7 +266,7 @@ function renderMarkdown(result) {
     `Status: ${result.status}`,
     `Summary: ${result.summary}`,
     '',
-    '## Findings',
+    '## Full Workflow Findings',
     '',
   ];
   if (result.findings.length === 0) lines.push('- No findings.');
@@ -275,6 +275,13 @@ function renderMarkdown(result) {
     lines.push(`  - Observations: ${finding.observation_count}; work items: ${finding.distinct_work_item_count}`);
     lines.push(`  - Outcomes: ${Object.entries(finding.outcomes).map(([name, count]) => `${name} ${count}`).join(', ')}`);
     lines.push(`  - Calls observed: ${finding.command_calls.total}; decision-output bytes observed: ${finding.decision_output_bytes.total}`);
+    lines.push(`  - Why: ${finding.reason}`);
+  }
+  lines.push('', '## Shared Contiguous-Pair Findings', '');
+  if (!result.subchain_findings || result.subchain_findings.length === 0) lines.push('- None.');
+  for (const finding of result.subchain_findings || []) {
+    lines.push(`- ${finding.chain.join(' > ')}: ${finding.status} (shared contiguous pair)`);
+    lines.push(`  - Observations: ${finding.observation_count}; work items: ${finding.distinct_work_item_count}`);
     lines.push(`  - Why: ${finding.reason}`);
   }
   lines.push('', `Next: ${result.next}`, `Why: ${result.next_reason}`, '', result.boundary, '');

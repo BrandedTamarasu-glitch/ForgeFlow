@@ -94,6 +94,7 @@ const checks = [
   ['output is deterministic and never claims savings or wrapper creation', deterministicA === deterministicB && !rendered.match(/saves?\s+\d|lower\s+(token|call)|better success|wrapper\s+(was|is)\s+created/i)],
   ['result declares raw evidence unread', repeat.raw_evidence_read === false && repeat.boundary.includes('does not collect history')],
   ['shared contiguous pair can reach human review without treating full chains as equal', sharedPair.subchain_findings.some((item) => item.chain_kind === 'contiguous-pair' && item.status === 'candidate-for-human-review')],
+  ['markdown explains shared pairs separately', renderMarkdown(sharedPair).includes('## Shared Contiguous-Pair Findings') && renderMarkdown(sharedPair).includes('shared contiguous pair')],
 ];
 
 let failedChecks = 0;

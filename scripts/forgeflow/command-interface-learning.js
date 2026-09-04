@@ -64,7 +64,7 @@ function candidateForFinding(finding) {
     application_guidance: 'Advisory only: verify the current task and required validation. This does not approve a wrapper or replace validation.',
     status: 'active', conflict_key: `command_chain_${hashChain(chain)}`, conflict_value: 'advisory-preflight-pattern',
   };
-  return { id: projectLearningId(entry), entry, chain, observation_count: count, distinct_work_item_count: workItems };
+  return { id: projectLearningId(entry), entry, chain, chain_kind: finding.chain_kind || 'full-workflow', observation_count: count, distinct_work_item_count: workItems };
 }
 function existingById(projectDir) {
   const file = path.join(projectDir, 'project-learning-candidates.jsonl');
