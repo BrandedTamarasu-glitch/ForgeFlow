@@ -63,6 +63,7 @@ export interface BridgeConfig {
   readonly bridgePort: number;          // default 4002
   readonly pidFile: string;
   readonly readyFile: string;
+  readonly tokenFile: string;
   readonly maxQueuePerAgent: number;    // default 100
   readonly maxMessageLength: number;    // default 2000
 }

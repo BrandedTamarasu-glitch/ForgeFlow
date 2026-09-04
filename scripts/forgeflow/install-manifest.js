@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const fs = require('fs');
 const path = require('path');
 
 const SCRIPT_EXTENSIONS = new Set(['.js', '.sh']);
@@ -193,14 +194,53 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/user-profile.js',
 ];
 
+const CLAUDE_SOURCE_DIRS = ['agents', 'commands', 'forgeflow-patterns', 'hooks', 'project-rules', 'scripts/forgeflow', 'templates'];
+const CODEX_SOURCE_DIRS = ['.codex/agents', '.agents/skills', 'scripts/forgeflow', 'templates', 'forgeflow-patterns', 'services/agent-chat'];
+
+function normalizeTarget(target = 'claude') {
+  if (!['claude', 'codex'].includes(target)) throw new Error(`Unsupported runtime target: ${target}`);
+  return target;
+}
+
+function walk(root, dir, files = []) {
+  const full = path.join(root, dir);
+  if (!fs.existsSync(full)) return files;
+  for (const entry of fs.readdirSync(full, { withFileTypes: true })) {
+    const relativePath = path.join(dir, entry.name);
+    if (entry.isDirectory()) walk(root, relativePath, files);
+    else if (entry.isFile()) files.push(relativePath.replace(/\\/g, '/'));
+  }
+  return files;
+}
+
+function codexSourceAllowed(source) {
+  return /^\.codex\/agents\/[^/]+\.toml$/.test(source)
+    || /^\.agents\/skills\/[^/]+\/.+/.test(source)
+    || (/^(scripts\/forgeflow|templates|forgeflow-patterns|services\/agent-chat)\//.test(source)
+      && !source.includes('/node_modules/')
+      && !/^scripts\/forgeflow\/test-/.test(source));
+}
+
+function managedSources(root, target = 'claude') {
+  const normalizedTarget = normalizeTarget(target);
+  const dirs = normalizedTarget === 'codex' ? CODEX_SOURCE_DIRS : CLAUDE_SOURCE_DIRS;
+  const files = dirs.flatMap((dir) => walk(root, dir));
+  if (normalizedTarget === 'codex') {
+    if (fs.existsSync(path.join(root, '.codex', 'agent-canonical-map.json'))) files.push('.codex/agent-canonical-map.json');
+    return [...new Set(files.filter((source) => codexSourceAllowed(source) || source === '.codex/agent-canonical-map.json'))].sort();
+  }
+  return [...new Set(files.filter(isManagedSource))].sort();
+}
+
 function usage() {
-  console.error('Usage: install-manifest.js [--source <path>] [--dest <home>] [--json]');
+  console.error('Usage: install-manifest.js [--source <path>] [--target claude|codex] [--dest <home>] [--json]');
 }
 
 function parseArgs(argv) {
   const opts = {
     source: '',
     home: '',
+    target: 'claude',
     json: false,
   };
 
@@ -208,6 +248,8 @@ function parseArgs(argv) {
     const arg = argv[i];
     if (arg === '--source') {
       opts.source = argv[++i] || '';
+    } else if (arg === '--target') {
+      opts.target = argv[++i] || '';
     } else if (arg === '--dest') {
       opts.home = argv[++i] || '';
     } else if (arg === '--json') {
@@ -221,6 +263,8 @@ function parseArgs(argv) {
       process.exit(2);
     }
   }
+
+  opts.target = normalizeTarget(opts.target);
 
   return opts;
 }
@@ -274,16 +318,55 @@ function destinationFor(source, home = '~/.claude') {
   return '';
 }
 
-function manifestEntry(source, home = '~/.claude') {
+function codexDestinationFor(source, home = '~/.codex') {
   const file = normalize(source);
-  const category = categoryFor(file);
+  if (/^\.codex\/agents\/[^/]+\.toml$/.test(file)) return path.join(home, 'agents', path.basename(file));
+  if (/^\.agents\/skills\/[^/]+\/.+/.test(file)) return path.join(home, 'skills', file.replace(/^\.agents\/skills\//, ''));
+  if (file === '.codex/agent-canonical-map.json') return path.join(home, 'forgeflow', 'agent-canonical-map.json');
+  if (codexSourceAllowed(file)) return path.join(home, 'forgeflow', file);
+  return '';
+}
+
+function destinationForTarget(source, home, target = 'claude') {
+  return normalizeTarget(target) === 'codex'
+    ? codexDestinationFor(source, home)
+    : destinationFor(source, home);
+}
+
+function assertSafeDestination(destination, home) {
+  const root = path.resolve(home);
+  const target = path.resolve(destination);
+  const relativePath = path.relative(root, target);
+  if (relativePath === '' || relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+    throw new Error(`Destination escapes runtime home: ${destination}`);
+  }
+  let current = root;
+  for (const segment of relativePath.split(path.sep)) {
+    if (fs.existsSync(current) && fs.lstatSync(current).isSymbolicLink()) {
+      throw new Error(`Refusing symlinked runtime destination path: ${current}`);
+    }
+    current = path.join(current, segment);
+  }
+  if (fs.existsSync(current) && fs.lstatSync(current).isSymbolicLink()) {
+    throw new Error(`Refusing symlinked runtime destination path: ${current}`);
+  }
+}
+
+function manifestEntry(source, home = '~/.claude', target = 'claude') {
+  const file = normalize(source);
+  const normalizedTarget = normalizeTarget(target);
+  const category = normalizedTarget === 'codex'
+    ? (codexSourceAllowed(file) || file === '.codex/agent-canonical-map.json' ? 'runtime-file' : '')
+    : categoryFor(file);
   if (!category) return null;
   return {
     source: file,
-    destination: destinationFor(file, home),
+    destination: destinationForTarget(file, home, normalizedTarget),
     category,
-    preserve: shouldPreserveDestination(file),
-    executable: category === 'runtime-script',
+    preserve: normalizedTarget === 'claude' && shouldPreserveDestination(file),
+    executable: normalizedTarget === 'claude'
+      ? category === 'runtime-script'
+      : file.endsWith('.sh'),
   };
 }
 
@@ -293,7 +376,8 @@ function main() {
     usage();
     process.exit(2);
   }
-  const entry = manifestEntry(opts.source, opts.home || '~/.claude');
+  const home = opts.home || (opts.target === 'codex' ? '~/.codex' : '~/.claude');
+  const entry = manifestEntry(opts.source, home, opts.target);
   if (!entry) {
     process.exit(1);
   }
@@ -311,10 +395,16 @@ if (require.main === module) {
 module.exports = {
   RUNTIME_HELPERS,
   STATIC_FILES,
+  assertSafeDestination,
   categoryFor,
+  codexDestinationFor,
+  codexSourceAllowed,
   destinationFor,
+  destinationForTarget,
   hasUnsafePathSegment,
   isManagedSource,
   manifestEntry,
+  managedSources,
+  normalizeTarget,
   shouldPreserveDestination,
 };

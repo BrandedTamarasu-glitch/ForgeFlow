@@ -17,21 +17,23 @@ ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 PROJECT_NAME="$(basename "${ROOT}")"
 PROJECT_DIR="${ROOT}/.forgeflow/${PROJECT_NAME}"
 HELPER_DIR="${ROOT}/scripts/forgeflow"
+ARG_HELPER="${ROOT}/scripts/forgeflow/command-args.js"
+CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
+if [ ! -f "${HELPER_DIR}/record-command-interface-observation.js" ]; then HELPER_DIR="${CODEX_HOME}/forgeflow/scripts/forgeflow"; fi
 if [ ! -f "${HELPER_DIR}/record-command-interface-observation.js" ]; then HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"; fi
 if [ ! -f "${HELPER_DIR}/record-command-interface-observation.js" ]; then echo "Command observation helper is not installed. Run /update-forgeflow --repair, then retry."; exit 1; fi
+if [ ! -f "${ARG_HELPER}" ]; then ARG_HELPER="${CODEX_HOME}/forgeflow/scripts/forgeflow/command-args.js"; fi
+if [ ! -f "${ARG_HELPER}" ]; then ARG_HELPER="$HOME/.claude/forgeflow/scripts/forgeflow/command-args.js"; fi
+if [ ! -f "${ARG_HELPER}" ]; then echo "Command argument helper is not installed. Run /update-forgeflow --repair, then retry."; exit 1; fi
 SAFE_ARGS=(--project-dir "${PROJECT_DIR}")
-read -r -a USER_ARGS <<< "${ARGUMENTS:-}"
-i=0
-while [ "$i" -lt "${#USER_ARGS[@]}" ]; do
-  arg="${USER_ARGS[$i]}"
-  case "$arg" in
-    --work-item-id|--command-id|--outcome|--command-calls|--decision-output-bytes) i=$((i + 1)); value="${USER_ARGS[$i]:-}"; [ -n "$value" ] || { echo "Missing value for $arg"; exit 2; }; SAFE_ARGS+=("$arg" "$value") ;;
-    --json) SAFE_ARGS+=(--json) ;;
-    "") ;;
-    *) echo "Unsupported arguments for /forgeflow-command-interface-observe"; exit 2 ;;
-  esac
-  i=$((i + 1))
-done
+ARGS_FILE="$(mktemp)" || exit 1
+if ! env -u NODE_OPTIONS -u NODE_PATH node "${ARG_HELPER}" --allow "--work-item-id:value,--command-id:value,--outcome:value,--command-calls:value,--decision-output-bytes:value,--json:boolean" --args "${ARGUMENTS:-}" --nul > "${ARGS_FILE}"; then rm -f "${ARGS_FILE}"; exit 2; fi
+USER_ARGS=()
+while IFS= read -r -d $'\0' arg; do
+  USER_ARGS+=("$arg")
+done < "${ARGS_FILE}"
+rm -f "${ARGS_FILE}"
+SAFE_ARGS+=("${USER_ARGS[@]}")
 for required in --work-item-id --command-id --outcome; do [[ " ${SAFE_ARGS[*]} " == *" ${required} "* ]] || { echo "Missing required ${required}"; exit 2; }; done
 env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/record-command-interface-observation.js" "${SAFE_ARGS[@]}"
 ```

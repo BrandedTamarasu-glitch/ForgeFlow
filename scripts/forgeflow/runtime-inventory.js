@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { RUNTIME_HELPERS, STATIC_FILES, isManagedSource } = require('./install-manifest');
+const { RUNTIME_HELPERS, STATIC_FILES, isManagedSource, managedSources } = require('./install-manifest');
 
 function walk(dir, files = []) {
   if (!fs.existsSync(dir)) return files;
@@ -54,21 +54,7 @@ function expectedTemplateSources() {
 }
 
 function expectedInstallSources(root = path.resolve(__dirname, '..', '..')) {
-  const dynamicDirs = [
-    'agents',
-    'commands',
-    'forgeflow-patterns',
-    'project-rules',
-  ];
-  const dynamicSources = dynamicDirs
-    .flatMap((dir) => walk(path.join(root, dir)))
-    .map((file) => repoRelative(root, file));
-  return [...new Set([
-    ...dynamicSources,
-    ...expectedTemplateSources(),
-    ...expectedRuntimeSources(),
-    ...managedStaticFiles().filter((source) => source.startsWith('hooks/')),
-  ].filter(isManagedSource))].sort();
+  return managedSources(root, 'claude');
 }
 
 function helperGroupForSource(source) {

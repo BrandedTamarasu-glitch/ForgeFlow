@@ -4,7 +4,8 @@
 //   POST /send        — route a chat message through the connection pool
 //   POST /lifecycle   — broadcast a lifecycle event to all agents
 //   POST /verbosity   — change the verbosity threshold
-//   GET  /status      — health and connection state
+//   GET  /health      — unauthenticated liveness probe
+//   GET  /status      — authenticated connection state
 
 import http from 'node:http';
 import crypto from 'node:crypto';
@@ -33,6 +34,7 @@ import type {
 import { shouldPass } from './verbosity.js';
 import { createConnectionPool } from './connections.js';
 import type { ConnectionPool } from './connections.js';
+import { isAuthorized } from './auth.js';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -116,6 +118,10 @@ function methodNotAllowed(res: ServerResponse): void {
   writeJson(res, 405, { ok: false, error: 'Method not allowed' });
 }
 
+function unauthorized(res: ServerResponse): void {
+  writeJson(res, 401, { ok: false, error: 'Unauthorized' });
+}
+
 // ---------------------------------------------------------------------------
 // Lifecycle broadcast
 // Uses the system-level "fc" agent slot as sender for system events,
@@ -156,6 +162,7 @@ function createBridgeConfig(): BridgeConfig {
     bridgePort: BRIDGE_PORT,
     pidFile: `/tmp/chat-bridge-${hash}.pid`,
     readyFile: `/tmp/chat-bridge-${hash}.ready`,
+    tokenFile: `/tmp/chat-bridge-${hash}.token`,
     maxQueuePerAgent: 100,
     maxMessageLength: 2000,
   };
@@ -170,13 +177,26 @@ async function handleRequest(
   res: ServerResponse,
   pool: ConnectionPool,
   state: BridgeState,
+  token: string,
 ): Promise<void> {
   const { method, url } = req;
+
+  // ------------------------------------------------------------------
+  // GET /health
+  // ------------------------------------------------------------------
+  if (url === '/health' && method === 'GET') {
+    writeJson(res, 200, { ok: true });
+    return;
+  }
 
   // ------------------------------------------------------------------
   // GET /status
   // ------------------------------------------------------------------
   if (url === '/status' && method === 'GET') {
+    if (!isAuthorized(req, token)) {
+      unauthorized(res);
+      return;
+    }
     const body: StatusResponse = {
       ok: true,
       connections: pool.getStatus(),
@@ -196,6 +216,11 @@ async function handleRequest(
     } else {
       notFound(res);
     }
+    return;
+  }
+
+  if (!isAuthorized(req, token)) {
+    unauthorized(res);
     return;
   }
 
@@ -342,6 +367,7 @@ async function handleRequest(
 
 async function main(): Promise<void> {
   const config = createBridgeConfig();
+  const token = crypto.randomBytes(32).toString('hex');
 
   const pool = createConnectionPool(config);
 
@@ -360,7 +386,7 @@ async function main(): Promise<void> {
   // Create the HTTP server
   const server = http.createServer(
     (req: IncomingMessage, res: ServerResponse) => {
-      handleRequest(req, res, pool, state).catch((err: unknown) => {
+      handleRequest(req, res, pool, state, token).catch((err: unknown) => {
         const message = err instanceof Error ? err.message : String(err);
         log(`unhandled request error: ${message}`);
         if (!res.headersSent) {
@@ -372,6 +398,22 @@ async function main(): Promise<void> {
 
   server.listen(BRIDGE_PORT, BRIDGE_HOST, () => {
     log(`listening on ${BRIDGE_HOST}:${BRIDGE_PORT}`);
+
+    const tokenTempFile = `${config.tokenFile}.${process.pid}.${crypto.randomBytes(8).toString('hex')}`;
+    try {
+      fs.writeFileSync(tokenTempFile, `${token}\n`, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
+      fs.renameSync(tokenTempFile, config.tokenFile);
+    } catch (err: unknown) {
+      try {
+        fs.unlinkSync(tokenTempFile);
+      } catch {
+        // Best-effort — ignore if the temporary file was never created.
+      }
+      const message = err instanceof Error ? err.message : String(err);
+      log(`failed to write authentication token: ${message}`);
+      server.close(() => process.exit(1));
+      return;
+    }
 
     // Write ready file so shell scripts can poll for startup
     try {
@@ -400,6 +442,11 @@ async function main(): Promise<void> {
       // Remove ready file on clean exit
       try {
         fs.unlinkSync(config.readyFile);
+      } catch {
+        // Best-effort — ignore if already gone
+      }
+      try {
+        fs.unlinkSync(config.tokenFile);
       } catch {
         // Best-effort — ignore if already gone
       }

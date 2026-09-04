@@ -15,6 +15,11 @@ Validate `$ARGUMENTS`. Accept only `--input <path>`, `--project-dir <path>`, `--
 ```bash
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 HELPER_DIR="${ROOT}/scripts/forgeflow"
+ARG_HELPER="${ROOT}/scripts/forgeflow/command-args.js"
+CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
+if [ ! -f "${HELPER_DIR}/command-interface-evidence.js" ]; then
+  HELPER_DIR="${CODEX_HOME}/forgeflow/scripts/forgeflow"
+fi
 if [ ! -f "${HELPER_DIR}/command-interface-evidence.js" ]; then
   HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 fi
@@ -22,54 +27,26 @@ if [ ! -f "${HELPER_DIR}/command-interface-evidence.js" ]; then
   echo "Command interface evidence helper is not installed. Run /update-forgeflow --repair, then retry /forgeflow-command-interface-evidence."
   exit 1
 fi
+if [ ! -f "${ARG_HELPER}" ]; then ARG_HELPER="${CODEX_HOME}/forgeflow/scripts/forgeflow/command-args.js"; fi
+if [ ! -f "${ARG_HELPER}" ]; then ARG_HELPER="$HOME/.claude/forgeflow/scripts/forgeflow/command-args.js"; fi
+if [ ! -f "${ARG_HELPER}" ]; then echo "Command argument helper is not installed. Run /update-forgeflow --repair, then retry."; exit 1; fi
 SAFE_ARGS=()
-HAS_INPUT=false
-HAS_PROJECT_DIR=false
-WANTS_WRITE=false
-read -r -a USER_ARGS <<< "${ARGUMENTS:-}"
-i=0
-while [ "$i" -lt "${#USER_ARGS[@]}" ]; do
-  arg="${USER_ARGS[$i]}"
-  case "$arg" in
-    --input)
-      i=$((i + 1))
-      value="${USER_ARGS[$i]:-}"
-      if [ -z "$value" ]; then
-        echo "Missing value for --input"
-        exit 2
-      fi
-      SAFE_ARGS+=(--input "$value")
-      HAS_INPUT=true
-      ;;
-    --project-dir)
-      i=$((i + 1))
-      value="${USER_ARGS[$i]:-}"
-      if [ -z "$value" ]; then
-        echo "Missing value for --project-dir"
-        exit 2
-      fi
-      SAFE_ARGS+=(--project-dir "$value")
-      HAS_PROJECT_DIR=true
-      ;;
-    --write-report)
-      SAFE_ARGS+=(--write-report)
-      WANTS_WRITE=true
-      ;;
-    --json) SAFE_ARGS+=(--json) ;;
-    "") ;;
-    *) echo "Unsupported arguments for /forgeflow-command-interface-evidence"; exit 2 ;;
-  esac
-  i=$((i + 1))
-done
-if [ "$HAS_INPUT" != true ]; then
+ARGS_FILE="$(mktemp)" || exit 1
+if ! env -u NODE_OPTIONS -u NODE_PATH node "${ARG_HELPER}" --allow "--input:path,--project-dir:path,--write-report:boolean,--json:boolean" --args "${ARGUMENTS:-}" --nul > "${ARGS_FILE}"; then rm -f "${ARGS_FILE}"; exit 2; fi
+USER_ARGS=()
+while IFS= read -r -d $'\0' arg; do
+  USER_ARGS+=("$arg")
+done < "${ARGS_FILE}"
+rm -f "${ARGS_FILE}"
+SAFE_ARGS+=("${USER_ARGS[@]}")
+if [[ " ${SAFE_ARGS[*]} " != *" --input "* ]]; then
   echo "Missing required --input for /forgeflow-command-interface-evidence"
   exit 2
 fi
-if [ "$WANTS_WRITE" = true ] && [ "$HAS_PROJECT_DIR" != true ]; then
+if [[ " ${SAFE_ARGS[*]} " == *" --write-report "* ]] && [[ " ${SAFE_ARGS[*]} " != *" --project-dir "* ]]; then
   echo "--write-report requires --project-dir for /forgeflow-command-interface-evidence"
   exit 2
 fi
-cd "${ROOT}"
 env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/command-interface-evidence.js" "${SAFE_ARGS[@]}"
 ```
 </process>

@@ -4,7 +4,7 @@ const path = require('path');
 const SHELL_META = /[;&|`$<>(){}[\]\n\r]/;
 
 function usage() {
-  console.error('Usage: command-args.js --allow <comma-flags> [--args "<arguments>"] [--json]');
+  console.error('Usage: command-args.js --allow <comma-flags> [--args "<arguments>"] [--json|--nul]');
 }
 
 function tokenize(input = '') {
@@ -88,7 +88,7 @@ function parseCommandArguments(input, allowed) {
 }
 
 function parseArgs(argv) {
-  const opts = { allow: '', args: '', json: false };
+  const opts = { allow: '', args: '', json: false, nul: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--allow') {
@@ -97,6 +97,8 @@ function parseArgs(argv) {
       opts.args = argv[++i] || '';
     } else if (arg === '--json') {
       opts.json = true;
+    } else if (arg === '--nul') {
+      opts.nul = true;
     } else if (arg === '--help' || arg === '-h') {
       usage();
       process.exit(0);
@@ -142,7 +144,8 @@ function buildCommandArgumentCheck(opts = {}) {
 function main() {
   const opts = parseArgs(process.argv.slice(2));
   const result = buildCommandArgumentCheck(opts);
-  process.stdout.write(opts.json ? `${JSON.stringify(result, null, 2)}\n` : renderMarkdown(result));
+  if (opts.nul) process.stdout.write(result.parsed.args.map((arg) => `${arg}\0`).join(''));
+  else process.stdout.write(opts.json ? `${JSON.stringify(result, null, 2)}\n` : renderMarkdown(result));
 }
 
 if (require.main === module) {

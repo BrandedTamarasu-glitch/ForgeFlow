@@ -15,6 +15,14 @@ if [ -z "$agent" ] || [ -z "$level" ] || [ -z "$message" ]; then
 fi
 
 port="${CHAT_BRIDGE_PORT:-4002}"
+token_file="${TOKEN_FILE:-}"
+token=""
+if [ -n "$token_file" ] && [ -r "$token_file" ]; then
+  token="$(cat "$token_file")"
+fi
+if [ -z "$token" ]; then
+  exit 0
+fi
 
 # jq --arg safely handles all special characters — no injection vector
 body=$(jq -n --arg a "$agent" --arg l "$level" --arg m "$message" \
@@ -23,6 +31,7 @@ body=$(jq -n --arg a "$agent" --arg l "$level" --arg m "$message" \
 curl -s --max-time 1 \
   -X POST \
   -H "Content-Type: application/json" \
+  -H "X-Forgeflow-Token: ${token}" \
   -d "$body" \
   "http://127.0.0.1:${port}/send" \
   > /dev/null 2>&1 || true

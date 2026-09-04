@@ -3,8 +3,11 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const {
+  assertSafeDestination,
+  destinationForTarget,
   isManagedSource,
   manifestEntry,
+  managedSources,
 } = require('./install-manifest');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
@@ -85,13 +88,15 @@ function relative(file) {
   return path.relative(repoRoot, file).replace(/\\/g, '/');
 }
 
-function copyFile({ source, destination, executable = false, dryRun = false }) {
+function copyFile({ source, destination, home, executable = false, dryRun = false }) {
   if (!dryRun) {
     const sourcePath = path.join(repoRoot, source);
     if (!isRegularSourceFile(sourcePath)) {
       throw new Error(`Refusing to copy non-regular source file: ${source}`);
     }
+    assertSafeDestination(destination, home);
     fs.mkdirSync(path.dirname(destination), { recursive: true });
+    assertSafeDestination(destination, home);
     fs.copyFileSync(sourcePath, destination);
     fs.chmodSync(destination, executable ? 0o755 : 0o644);
   }
@@ -99,10 +104,7 @@ function copyFile({ source, destination, executable = false, dryRun = false }) {
 }
 
 function installClaude({ home, dryRun = false } = {}) {
-  const files = CLAUDE_SOURCE_DIRS.flatMap((dir) => walk(path.join(repoRoot, dir)))
-    .map(relative)
-    .filter(isManagedSource)
-    .sort();
+  const files = managedSources(repoRoot, 'claude');
   const copied = [];
   for (const source of files) {
     const entry = manifestEntry(source, home);
@@ -110,6 +112,7 @@ function installClaude({ home, dryRun = false } = {}) {
     copied.push(copyFile({
       source,
       destination: entry.destination,
+      home,
       executable: entry.executable,
       dryRun,
     }));
@@ -126,48 +129,24 @@ function installClaude({ home, dryRun = false } = {}) {
 }
 
 function codexSources() {
-  const agents = walk(path.join(repoRoot, '.codex', 'agents'))
-    .map(relative)
-    .filter((source) => /^\.codex\/agents\/[^/]+\.toml$/.test(source));
-  const skills = walk(path.join(repoRoot, '.agents', 'skills'))
-    .map(relative)
-    .filter((source) => /^\.agents\/skills\/[^/]+\/.+/.test(source));
-  const runtime = [
-    ...walk(path.join(repoRoot, 'scripts', 'forgeflow')),
-    ...walk(path.join(repoRoot, 'templates')),
-    ...walk(path.join(repoRoot, 'forgeflow-patterns')),
-    ...walk(path.join(repoRoot, 'services', 'agent-chat')),
-  ]
-    .map(relative)
-    .filter((source) => !source.includes('/node_modules/'))
-    .filter((source) => !/^scripts\/forgeflow\/test-/.test(source));
-  const support = ['.codex/agent-canonical-map.json'];
-  return [...agents, ...skills, ...runtime, ...support.filter((source) => isRegularSourceFile(path.join(repoRoot, source)))].sort();
+  return managedSources(repoRoot, 'codex');
 }
 
 function codexDestination(source, home) {
-  if (source.startsWith('.codex/agents/')) {
-    return path.join(home, 'agents', path.basename(source));
-  }
-  if (source.startsWith('.agents/skills/')) {
-    return path.join(home, 'skills', source.replace(/^\.agents\/skills\//, ''));
-  }
-  if (source === '.codex/agent-canonical-map.json') {
-    return path.join(home, 'forgeflow', 'agent-canonical-map.json');
-  }
-  if (/^(scripts\/forgeflow|templates|forgeflow-patterns|services\/agent-chat)\//.test(source)) {
-    return path.join(home, 'forgeflow', source);
-  }
-  return '';
+  return destinationForTarget(source, home, 'codex');
 }
 
 function installCodex({ home, dryRun = false } = {}) {
   const copied = [];
   const sources = codexSources();
   for (const source of sources) {
+    const entry = manifestEntry(source, home, 'codex');
+    if (!entry) continue;
     copied.push(copyFile({
       source,
-      destination: codexDestination(source, home),
+      destination: entry.destination,
+      home,
+      executable: entry.executable,
       dryRun,
     }));
   }

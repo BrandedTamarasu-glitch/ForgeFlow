@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const {
   RUNTIME_HELPERS,
+  assertSafeDestination,
   categoryFor,
   destinationFor,
   isManagedSource,
@@ -12,6 +14,29 @@ const {
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 const home = '/tmp/claude-home';
+const safeHome = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-manifest-home-'));
+const symlinkRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-manifest-symlink-'));
+const symlinkTarget = path.join(symlinkRoot, 'target');
+const symlinkHome = path.join(symlinkRoot, 'home-link');
+fs.mkdirSync(symlinkTarget, { recursive: true });
+let symlinkDestinationBlocked = true;
+try {
+  fs.symlinkSync(symlinkTarget, symlinkHome);
+  symlinkDestinationBlocked = false;
+  try {
+    assertSafeDestination(path.join(symlinkHome, 'forgeflow', 'health-check.js'), symlinkHome);
+  } catch (_err) {
+    symlinkDestinationBlocked = true;
+  }
+} catch (_err) {
+  symlinkDestinationBlocked = true;
+}
+let destinationEscapeBlocked = false;
+try {
+  assertSafeDestination(path.join(safeHome, '..', 'outside.txt'), safeHome);
+} catch (_err) {
+  destinationEscapeBlocked = true;
+}
 const checks = [
   ['agent managed', isManagedSource('agents/smith-review.md')],
   ['custom agent preserve', shouldPreserveDestination('agents/custom-local.md')],
@@ -164,6 +189,8 @@ const checks = [
   ['non managed rejected', !isManagedSource('services/dashboard/server.js')],
   ['path escape rejected', !isManagedSource('../scripts/forgeflow/health-check.js')],
   ['command traversal rejected', !isManagedSource('commands/../pwned.md')],
+  ['destination escape rejected', destinationEscapeBlocked],
+  ['symlink destination blocked', symlinkDestinationBlocked],
 ];
 
 let failed = 0;

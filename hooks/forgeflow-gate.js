@@ -13,19 +13,27 @@ const fs = require('fs');
 const http = require('http');
 const path = require('path');
 const os = require('os');
+const crypto = require('crypto');
 
 const EDIT_THRESHOLD = 5;       // Unique files edited before suggesting review
 const DEBOUNCE_MS = 600000;     // 10 minutes between advisories
 
-function postLifecycle(event, agent, data) {
+function postLifecycle(event, agent, data, cwd) {
   try {
     const body = JSON.stringify({ event, ...(agent && { agent }), ...(data && { data }) });
+    const cwdHash = crypto.createHash('sha256').update(cwd || process.cwd()).digest('hex').slice(0, 8);
+    const token = fs.readFileSync(path.join(os.tmpdir(), `chat-bridge-${cwdHash}.token`), 'utf8').trim();
+    if (!token) return;
     const req = http.request({
       hostname: '127.0.0.1',
       port: 4002,
       path: '/lifecycle',
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+        'X-Forgeflow-Token': token,
+      },
       timeout: 1000,
     }, () => {});
     req.on('error', () => {});
@@ -197,8 +205,8 @@ process.stdin.on('end', () => {
       const arbiterFinalMatch = outputStr.match(/Final Verdict:\s*(APPROVE|REVISE|BLOCK)/i);
       if (arbiterForgeflowMatch || arbiterFinalMatch) {
         const verdict = (arbiterForgeflowMatch || arbiterFinalMatch)[1].toUpperCase();
-        postLifecycle('arbiter-verdict', 'arbiter', verdict);
-        postLifecycle('review-complete', null, verdict);
+        postLifecycle('arbiter-verdict', 'arbiter', verdict, cwd);
+        postLifecycle('review-complete', null, verdict, cwd);
         state.reviewRun = true;
         fs.writeFileSync(stateFile, JSON.stringify(state));
         process.exit(0);
@@ -208,7 +216,7 @@ process.stdin.on('end', () => {
       const compassMatch = outputStr.match(/Compass['']?s?\s+(?:Final\s+)?Verdict[:\s]*(CONFIRM|CHALLENGE)\b/i);
       if (compassMatch) {
         const verdict = compassMatch[1].toUpperCase();
-        postLifecycle('compass-verdict', 'compass', verdict);
+        postLifecycle('compass-verdict', 'compass', verdict, cwd);
       }
     }
 
@@ -265,8 +273,8 @@ process.stdin.on('end', () => {
     // ── Skip: Forgeflow repo meta-work ──
     // The Forgeflow team shouldn't review changes to itself.
     try {
-      const { execSync } = require('child_process');
-      const remoteUrl = execSync('git -C "' + cwd + '" remote get-url origin 2>/dev/null', {
+      const { execFileSync } = require('child_process');
+      const remoteUrl = execFileSync('git', ['-C', cwd, 'remote', 'get-url', 'origin'], {
         encoding: 'utf-8', timeout: 1000, stdio: ['pipe', 'pipe', 'ignore']
       }).trim();
       if (/[\/:]Forgeflow(\.wiki)?(\.git)?$/i.test(remoteUrl)) {
@@ -321,7 +329,7 @@ process.stdin.on('end', () => {
       'If declined, continue normally. Spawn agents: smith-review, warden-review, ' +
       'lumen-review, atlas-review in parallel, then arbiter-review to synthesize, then compass-review for final verdict.';
 
-    postLifecycle('review-complete', null, triggerReason);
+    postLifecycle('review-complete', null, triggerReason, cwd);
 
     process.stdout.write(JSON.stringify({
       hookSpecificOutput: {

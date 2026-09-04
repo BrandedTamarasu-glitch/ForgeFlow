@@ -258,8 +258,8 @@ function sameList(left, right) {
 
 async function run() {
   const requiredSources = requiredManagedSources();
-  const freshHomeSources = [...new Set([...requiredSources, ...CANONICAL_NON_REQUIRED_MANAGED_SOURCES])].sort();
   const managedSources = allManagedSources();
+  const freshHomeSources = managedSources;
   const freshHome = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-update-fresh-'));
   const freshInstall = await updateForgeflow({
     home: freshHome,
@@ -382,6 +382,35 @@ async function run() {
     },
     fetcher: async () => '#!/usr/bin/env node\nconsole.log("future helper");\n',
   });
+  const codexHome = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-update-codex-'));
+  const codexUpdate = await updateForgeflow({
+    target: 'codex',
+    home: codexHome,
+    repo: 'local/repo',
+    current: '',
+    latest,
+    plan: { firstRun: true, files: ['.codex/agents/smith-reviewer.toml'], deleted: [] },
+    fetcher: localFetcher,
+  });
+  const symlinkTarget = path.join(codexHome, 'symlink-target');
+  const symlinkHome = path.join(codexHome, 'symlink-home');
+  fs.writeFileSync(symlinkTarget, 'not a runtime directory\n');
+  let updaterSymlinkRejected = true;
+  try {
+    fs.symlinkSync(symlinkTarget, symlinkHome);
+    const symlinkUpdate = await updateForgeflow({
+      target: 'codex',
+      home: symlinkHome,
+      repo: 'local/repo',
+      current: '',
+      latest,
+      plan: { firstRun: true, files: ['.codex/agents/smith-reviewer.toml'], deleted: [] },
+      fetcher: localFetcher,
+    });
+    updaterSymlinkRejected = symlinkUpdate.status === 'partial';
+  } catch (_err) {
+    updaterSymlinkRejected = true;
+  }
 
   const rollbackHome = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-update-rollback-'));
   fs.mkdirSync(path.join(rollbackHome, 'commands'), { recursive: true });
@@ -447,6 +476,8 @@ async function run() {
     ['future helper repair status', futureHelper.status === 'repaired'],
     ['future helper installed from tree discovery', fs.existsSync(path.join(futureHelperHome, 'forgeflow', 'scripts', 'forgeflow', 'future-helper.js'))],
     ['future helper executable', (fs.statSync(path.join(futureHelperHome, 'forgeflow', 'scripts', 'forgeflow', 'future-helper.js')).mode & 0o111) !== 0],
+    ['codex updater uses codex runtime root', codexUpdate.status === 'updated' && fs.existsSync(path.join(codexHome, 'agents', 'smith-reviewer.toml'))],
+    ['updater rejects symlinked destination home', updaterSymlinkRejected],
     ['rollback update created backup', rollbackUpdate.backup.created === true],
     ['rollback update removed deleted file', rollbackUpdateRemovedOld],
     ['rollback status', rollback.status === 'rolled-back'],

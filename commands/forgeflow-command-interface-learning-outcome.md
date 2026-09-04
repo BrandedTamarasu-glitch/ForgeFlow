@@ -16,19 +16,19 @@ Require only `--id` and `--outcome`; accept optional `--write` and `--json`. Res
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 PROJECT_DIR="${ROOT}/.forgeflow/$(basename "${ROOT}")"
 HELPER_DIR="${ROOT}/scripts/forgeflow"
+CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
+[ -f "${HELPER_DIR}/record-command-interface-learning-outcome.js" ] || HELPER_DIR="${CODEX_HOME}/forgeflow/scripts/forgeflow"
 [ -f "${HELPER_DIR}/record-command-interface-learning-outcome.js" ] || HELPER_DIR="$HOME/.claude/forgeflow/scripts/forgeflow"
 [ -f "${HELPER_DIR}/record-command-interface-learning-outcome.js" ] || { echo "Learning outcome helper is not installed. Run /update-forgeflow --repair."; exit 1; }
 SAFE_ARGS=(--project-dir "${PROJECT_DIR}")
-read -r -a USER_ARGS <<< "${ARGUMENTS:-}"
-i=0
-while [ "$i" -lt "${#USER_ARGS[@]}" ]; do
-  arg="${USER_ARGS[$i]}"; case "$arg" in
-    --id|--outcome) i=$((i + 1)); value="${USER_ARGS[$i]:-}"; [ -n "$value" ] || { echo "Missing value for $arg"; exit 2; }; SAFE_ARGS+=("$arg" "$value") ;;
-    --write|--json) SAFE_ARGS+=("$arg") ;;
-    "") ;;
-    *) echo "Unsupported arguments for /forgeflow-command-interface-learning-outcome"; exit 2 ;;
-  esac; i=$((i + 1))
-done
+ARGS_FILE="$(mktemp)" || exit 1
+if ! env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/command-args.js" --allow "--id:value,--outcome:value,--write:boolean,--json:boolean" --args "${ARGUMENTS:-}" --nul > "${ARGS_FILE}"; then rm -f "${ARGS_FILE}"; exit 2; fi
+USER_ARGS=()
+while IFS= read -r -d $'\0' arg; do
+  USER_ARGS+=("$arg")
+done < "${ARGS_FILE}"
+rm -f "${ARGS_FILE}"
+SAFE_ARGS+=("${USER_ARGS[@]}")
 for required in --id --outcome; do [[ " ${SAFE_ARGS[*]} " == *" ${required} "* ]] || { echo "Missing required ${required}"; exit 2; }; done
 env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/record-command-interface-learning-outcome.js" "${SAFE_ARGS[@]}"
 ```

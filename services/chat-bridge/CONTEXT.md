@@ -20,7 +20,8 @@ HTTP control plane on `127.0.0.1:4002`. Bridges HTTP callers (shell scripts, age
 | POST | `/send` | Route chat message — `{agent, level, message}` |
 | POST | `/lifecycle` | Broadcast lifecycle event — `{event: string, data?: string}` |
 | POST | `/verbosity` | Change verbosity threshold — `{level: "phase"|"decision"|"conversation"}` |
-| GET | `/status` | Health check — returns connections, room, verbosity, uptime, queued count |
+| GET | `/health` | Unauthenticated liveness probe — returns `{ok:true}` |
+| GET | `/status` | Authenticated bridge state — returns connections, room, verbosity, uptime, queued count |
 
 ## Key Types (types.ts)
 `AgentId`, `VerbosityLevel`, `ChatMessage`, `SendRequest/Response`, `RoomRequest/Response`, `LifecycleRequest/Response`, `BridgeConfig`, `StatusResponse`, `VerbosityResponse`
@@ -52,6 +53,7 @@ Lifecycle events always use agent `'fc'` as sender (hardcoded in `broadcastLifec
 ## Startup / Ready File
 - PID file: `/tmp/chat-bridge-<hash>.pid`
 - Ready file: `/tmp/chat-bridge-<hash>.ready` — written after HTTP server binds; deleted on shutdown
+- Token file: `/tmp/chat-bridge-<hash>.token` — per-repo control token for `/room`, `/send`, `/lifecycle`, `/verbosity`, and `/status`
 - Hash: SHA-256 of `process.cwd()`, first 8 hex chars — ties file names to repo location
 
 ## init-session.sh

@@ -7,6 +7,9 @@ const path = require('path');
 const {
   isManagedSource,
   manifestEntry,
+  assertSafeDestination,
+  managedSources,
+  normalizeTarget,
   RUNTIME_HELPERS,
   STATIC_FILES,
 } = require('./install-manifest');
@@ -28,12 +31,13 @@ try {
 const DEFAULT_REPO = 'BrandedTamarasu-glitch/ForgeFlow';
 
 function usage() {
-  console.error('Usage: update-forgeflow.js [--home <dir>] [--repo owner/name] [--json] [--dry-run] [--repair] [--rollback]');
+  console.error('Usage: update-forgeflow.js [--target claude|codex] [--home <dir>] [--repo owner/name] [--json] [--dry-run] [--repair] [--rollback]');
 }
 
 function parseArgs(argv) {
   const opts = {
-    home: path.join(os.homedir(), '.claude'),
+    target: 'claude',
+    home: '',
     repo: DEFAULT_REPO,
     json: false,
     dryRun: false,
@@ -43,7 +47,9 @@ function parseArgs(argv) {
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg === '--home') {
+    if (arg === '--target') {
+      opts.target = argv[++i] || '';
+    } else if (arg === '--home') {
       opts.home = path.resolve(argv[++i] || '');
     } else if (arg === '--repo') {
       opts.repo = argv[++i] || DEFAULT_REPO;
@@ -64,6 +70,16 @@ function parseArgs(argv) {
       process.exit(2);
     }
   }
+  try {
+    opts.target = normalizeTarget(opts.target);
+  } catch (err) {
+    console.error(err.message);
+    usage();
+    process.exit(2);
+  }
+  if (!opts.home) opts.home = opts.target === 'codex'
+    ? (process.env.CODEX_HOME || path.join(os.homedir(), '.codex'))
+    : path.join(os.homedir(), '.claude');
   return opts;
 }
 
@@ -120,30 +136,31 @@ function readCurrentVersion(home) {
   return value;
 }
 
-function managedFilesFromTree(tree) {
+function managedFilesFromTree(tree, target = 'claude') {
   return tree
     .filter((entry) => entry.type === 'blob')
     .map((entry) => entry.path)
-    .filter(isManagedSource)
-    .filter((source) => !manifestEntry(source).preserve)
+    .filter((source) => Boolean(manifestEntry(source, '', target)))
+    .filter((source) => !manifestEntry(source, '', target).preserve)
     .sort();
 }
 
-function shouldSyncSource(source) {
-  const entry = manifestEntry(source);
-  return Boolean(isManagedSource(source) && entry && !entry.preserve);
+function shouldSyncSource(source, target = 'claude') {
+  const entry = manifestEntry(source, '', target);
+  return Boolean(entry && !entry.preserve);
 }
 
-function requiredManagedSources() {
+function requiredManagedSources(target = 'claude') {
+  if (normalizeTarget(target) === 'codex') return managedSources(path.resolve(__dirname, '..', '..'), 'codex');
   return [
     ...Array.from(STATIC_FILES),
     ...RUNTIME_HELPERS,
   ].sort();
 }
 
-function missingRequiredManagedFiles(home) {
-  return requiredManagedSources()
-    .map((source) => manifestEntry(source, home))
+function missingRequiredManagedFiles(home, target = 'claude') {
+  return requiredManagedSources(target)
+    .map((source) => manifestEntry(source, home, target))
     .filter(Boolean)
     .filter((entry) => !entry.preserve && !fs.existsSync(entry.destination))
     .map((entry) => entry.source);
@@ -156,11 +173,11 @@ async function latestSha(repo) {
   return sha;
 }
 
-async function filesForInstall(repo, current, latest) {
+async function filesForInstall(repo, current, latest, target = 'claude') {
   if (!current) {
     const data = await request(`https://api.github.com/repos/${repo}/git/trees/${latest}?recursive=1`, 'json');
     return {
-      files: managedFilesFromTree(data.tree || []),
+      files: managedFilesFromTree(data.tree || [], target),
       deleted: [],
       firstRun: true,
     };
@@ -172,13 +189,13 @@ async function filesForInstall(repo, current, latest) {
   for (const item of data.files || []) {
     const source = item.filename;
     if (item.status === 'removed') {
-      if (shouldSyncSource(source)) deleted.push(source);
+      if (shouldSyncSource(source, target)) deleted.push(source);
     } else if (item.status === 'renamed') {
-      if (item.previous_filename && shouldSyncSource(item.previous_filename)) {
+      if (item.previous_filename && shouldSyncSource(item.previous_filename, target)) {
         deleted.push(item.previous_filename);
       }
-      if (shouldSyncSource(source)) files.push(source);
-    } else if (['added', 'modified'].includes(item.status) && shouldSyncSource(source)) {
+      if (shouldSyncSource(source, target)) files.push(source);
+    } else if (['added', 'modified'].includes(item.status) && shouldSyncSource(source, target)) {
       files.push(source);
     }
   }
@@ -189,10 +206,10 @@ async function filesForInstall(repo, current, latest) {
   };
 }
 
-async function filesForRepair(repo, latest) {
+async function filesForRepair(repo, latest, target = 'claude') {
   const data = await request(`https://api.github.com/repos/${repo}/git/trees/${latest}?recursive=1`, 'json');
   return {
-    files: managedFilesFromTree(data.tree || []),
+    files: managedFilesFromTree(data.tree || [], target),
     deleted: [],
     firstRun: false,
     repair: true,
@@ -203,8 +220,10 @@ async function fetchRaw(repo, sha, source) {
   return request(`https://raw.githubusercontent.com/${repo}/${sha}/${source}`, 'text');
 }
 
-function writeAtomic(file, content, executable) {
+function writeAtomic(file, content, executable, home) {
+  assertSafeDestination(file, home);
   fs.mkdirSync(path.dirname(file), { recursive: true });
+  assertSafeDestination(file, home);
   const tmp = path.join(path.dirname(file), `.${path.basename(file)}.${process.pid}.tmp`);
   fs.writeFileSync(tmp, content);
   fs.chmodSync(tmp, executable ? 0o755 : 0o644);
@@ -215,7 +234,7 @@ function snapshotPathForSource(root, source) {
   return path.join(root, 'files', source);
 }
 
-function createBackup({ home, files, current, dryRun = false }) {
+function createBackup({ home, target = 'claude', files, current, dryRun = false }) {
   if (dryRun || files.length === 0) {
     return {
       path: backupRoot(home),
@@ -226,6 +245,7 @@ function createBackup({ home, files, current, dryRun = false }) {
   }
 
   const root = backupRoot(home);
+  assertSafeDestination(path.join(root, 'manifest.json'), home);
   fs.rmSync(root, { recursive: true, force: true });
   fs.mkdirSync(path.join(root, 'files'), { recursive: true });
 
@@ -238,7 +258,7 @@ function createBackup({ home, files, current, dryRun = false }) {
 
   const uniqueFiles = [...new Set(files)].sort();
   for (const source of uniqueFiles) {
-    const entry = manifestEntry(source, home);
+    const entry = manifestEntry(source, home, target);
     if (!entry || entry.preserve) continue;
 
     const item = {
@@ -250,6 +270,7 @@ function createBackup({ home, files, current, dryRun = false }) {
     };
 
     if (item.existed) {
+      assertSafeDestination(entry.destination, home);
       const stat = fs.statSync(entry.destination);
       item.mode = stat.mode & 0o777;
       item.backup = snapshotPathForSource(root, source);
@@ -269,16 +290,16 @@ function createBackup({ home, files, current, dryRun = false }) {
   };
 }
 
-async function installFiles({ repo, sha, home, files, fetcher = fetchRaw, dryRun = false }) {
+async function installFiles({ repo, sha, home, target = 'claude', files, fetcher = fetchRaw, dryRun = false }) {
   const synced = [];
   const failed = [];
   for (const source of files) {
-    const entry = manifestEntry(source, home);
+    const entry = manifestEntry(source, home, target);
     if (!entry || entry.preserve) continue;
     const before = sha256File(entry.destination);
     try {
       const content = dryRun ? '' : await fetcher(repo, sha, source);
-      if (!dryRun) writeAtomic(entry.destination, content, entry.executable);
+      if (!dryRun) writeAtomic(entry.destination, content, entry.executable, home);
       const after = dryRun ? before : sha256File(entry.destination);
       synced.push({
         source,
@@ -293,15 +314,18 @@ async function installFiles({ repo, sha, home, files, fetcher = fetchRaw, dryRun
   return { synced, failed };
 }
 
-function deleteFiles({ home, files, dryRun = false }) {
+function deleteFiles({ home, target = 'claude', files, dryRun = false }) {
   const removed = [];
   const failed = [];
   for (const source of files) {
-    const entry = manifestEntry(source, home);
+    const entry = manifestEntry(source, home, target);
     if (!entry || entry.preserve) continue;
     try {
       if (fs.existsSync(entry.destination)) {
-        if (!dryRun) fs.unlinkSync(entry.destination);
+        if (!dryRun) {
+          assertSafeDestination(entry.destination, home);
+          fs.unlinkSync(entry.destination);
+        }
         removed.push({
           source,
           destination: entry.destination,
@@ -315,7 +339,8 @@ function deleteFiles({ home, files, dryRun = false }) {
 }
 
 function rollbackForgeflow(opts = {}) {
-  const home = opts.home || path.join(os.homedir(), '.claude');
+  const target = normalizeTarget(opts.target || 'claude');
+  const home = opts.home || (target === 'codex' ? (process.env.CODEX_HOME || path.join(os.homedir(), '.codex')) : path.join(os.homedir(), '.claude'));
   const manifestPath = backupManifestPath(home);
   if (!fs.existsSync(manifestPath)) {
     return {
@@ -337,11 +362,13 @@ function rollbackForgeflow(opts = {}) {
   for (const item of manifest.files || []) {
     try {
       if (item.existed) {
+        assertSafeDestination(item.destination, home);
         fs.mkdirSync(path.dirname(item.destination), { recursive: true });
         fs.copyFileSync(item.backup, item.destination);
         if (item.mode !== null && item.mode !== undefined) fs.chmodSync(item.destination, item.mode);
         restored.push({ source: item.source, destination: item.destination });
       } else if (fs.existsSync(item.destination)) {
+        assertSafeDestination(item.destination, home);
         fs.unlinkSync(item.destination);
         removed.push({ source: item.source, destination: item.destination });
       }
@@ -352,6 +379,7 @@ function rollbackForgeflow(opts = {}) {
 
   let versionWritten = false;
   if (failed.length === 0 && manifest.version) {
+    assertSafeDestination(versionPath(home), home);
     fs.writeFileSync(versionPath(home), `${manifest.version}\n`);
     versionWritten = true;
   }
@@ -369,15 +397,16 @@ function rollbackForgeflow(opts = {}) {
 }
 
 async function updateForgeflow(opts = {}) {
-  const home = opts.home || path.join(os.homedir(), '.claude');
+  const target = normalizeTarget(opts.target || 'claude');
+  const home = opts.home || (target === 'codex' ? (process.env.CODEX_HOME || path.join(os.homedir(), '.codex')) : path.join(os.homedir(), '.claude'));
   const repo = opts.repo || DEFAULT_REPO;
-  if (opts.rollback) return rollbackForgeflow({ home });
+  if (opts.rollback) return rollbackForgeflow({ home, target });
 
   const current = opts.current !== undefined ? opts.current : readCurrentVersion(home);
   const latest = opts.latest || await latestSha(repo);
   const missingRequired = opts.missingRequired !== undefined
     ? opts.missingRequired
-    : missingRequiredManagedFiles(home);
+    : missingRequiredManagedFiles(home, target);
   const repairNeeded = current === latest && !opts.repair && missingRequired.length > 0;
   const effectiveRepair = Boolean(opts.repair || repairNeeded);
   if (current === latest && !effectiveRepair) {
@@ -398,10 +427,11 @@ async function updateForgeflow(opts = {}) {
   }
 
   const plan = opts.plan || (effectiveRepair
-    ? await filesForRepair(repo, latest)
-    : await filesForInstall(repo, current, latest));
+    ? await filesForRepair(repo, latest, target)
+    : await filesForInstall(repo, current, latest, target));
   const backup = createBackup({
     home,
+    target,
     files: [...plan.files, ...plan.deleted],
     current,
     dryRun: opts.dryRun,
@@ -410,16 +440,18 @@ async function updateForgeflow(opts = {}) {
     repo,
     sha: latest,
     home,
+    target,
     files: plan.files,
     fetcher: opts.fetcher || fetchRaw,
     dryRun: opts.dryRun,
   });
   const removed = installed.failed.length === 0
-    ? deleteFiles({ home, files: plan.deleted, dryRun: opts.dryRun })
+    ? deleteFiles({ home, target, files: plan.deleted, dryRun: opts.dryRun })
     : { removed: [], failed: [] };
   const failures = [...installed.failed, ...removed.failed];
   const versionWritten = failures.length === 0 && !opts.dryRun;
   if (versionWritten) {
+    assertSafeDestination(versionPath(home), home);
     fs.mkdirSync(home, { recursive: true });
     fs.writeFileSync(versionPath(home), `${latest}\n`);
   }
@@ -429,6 +461,7 @@ async function updateForgeflow(opts = {}) {
 
   return {
     schema_version: '1',
+    target,
     status: failures.length === 0 ? (effectiveRepair ? 'repaired' : 'updated') : 'partial',
     current,
     latest,

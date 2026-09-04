@@ -28,6 +28,7 @@ function makeConfig(overrides: Partial<BridgeConfig> = {}): BridgeConfig {
     bridgePort: 4002,
     pidFile: '/tmp/test-bridge.pid',
     readyFile: '/tmp/test-bridge.ready',
+    tokenFile: '/tmp/test-bridge.token',
     maxQueuePerAgent: 5,
     maxMessageLength: 2000,
     ...overrides,

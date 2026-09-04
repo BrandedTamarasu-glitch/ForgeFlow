@@ -3,7 +3,8 @@ const { buildCommandArgumentCheck, parseArgs, parseCommandArguments, tokenize } 
 
 const parsed = parseCommandArguments('--json --findings "tmp/findings file.json"', '--json,--findings:path');
 const report = buildCommandArgumentCheck({ allow: '--json,--out:path', args: '--json --out "tmp/report.md"' });
-const opts = parseArgs(['--allow', '--json,--findings:path', '--args', '--json', '--json']);
+const nulReport = buildCommandArgumentCheck({ allow: '--json,--findings:path', args: '--json --findings "tmp/findings file.json"' });
+const opts = parseArgs(['--allow', '--json,--findings:path', '--args', '--json', '--json', '--nul']);
 let unsafeBlocked = false;
 try {
   parseCommandArguments('--json; rm -rf tmp', '--json');
@@ -27,6 +28,8 @@ const checks = [
   ['tokenizes quotes', tokenize('--findings "tmp/findings file.json"').length === 2],
   ['parses boolean and path', parsed.values['--json'] === true && parsed.values['--findings'] === 'tmp/findings file.json'],
   ['builds report', report.status === 'pass' && report.boundary.includes('does not execute')],
+  ['supports nul mode cli parsing', opts.nul === true],
+  ['nul mode preserves parsed argv', nulReport.parsed.args.join('|') === '--json|--findings|tmp/findings file.json'],
   ['blocks unsafe shell metacharacters', unsafeBlocked],
   ['blocks unsupported flags', unsupportedBlocked],
   ['blocks missing values', missingBlocked],
