@@ -64,6 +64,10 @@ function conflicted(record) {
   return record.conflict_withheld === true;
 }
 
+function incorrectOutcome(record) {
+  return record.outcome_withheld === true;
+}
+
 function invalid(record) {
   return record.kind === 'jsonl-invalid'
     || String(record.lifecycle || '').toLowerCase() === 'invalid';
@@ -96,6 +100,7 @@ function selectMemoryRecords(records, query, options = {}) {
     excluded_inactive: 0,
     excluded_invalid: 0,
     excluded_conflicted: 0,
+    excluded_outcome_incorrect: 0,
     excluded_no_match: 0,
     query_matches: 0,
     suppressed_duplicate: 0,
@@ -110,6 +115,10 @@ function selectMemoryRecords(records, query, options = {}) {
     if (!value || typeof value !== 'object') continue;
     if (conflicted(value)) {
       diagnostics.excluded_conflicted += 1;
+      continue;
+    }
+    if (incorrectOutcome(value)) {
+      diagnostics.excluded_outcome_incorrect += 1;
       continue;
     }
     if (inactive(value)) {
@@ -196,6 +205,7 @@ function renderMemorySelection(selection, options = {}) {
 module.exports = {
   classRank,
   conflicted,
+  incorrectOutcome,
   keywordList,
   MEMORY_RANKING_POLICY,
   recordLabel,

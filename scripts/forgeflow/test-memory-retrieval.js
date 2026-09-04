@@ -105,6 +105,9 @@ const conflictsOnly = selectMemoryRecords([
     conflict_withheld: true,
   },
 ], expected.query, { maxHits: 8, perSource: 4 });
+const incorrectOutcome = selectMemoryRecords([{
+  id: 'project-learning:incorrect-outcome', source: '.forgeflow/Demo/project-learning-candidates.jsonl', kind: 'jsonl', text: 'Cache invalidation guard checklist', keywords: ['cache', 'invalidation', 'guard'], lifecycle: 'active', outcome_withheld: true,
+}], expected.query, { maxHits: 8, perSource: 4 });
 const metrics = metricReport(selection, rendered);
 
 assert.deepStrictEqual(ids(selection), expected.selected_ids, 'active relevant records should use the deterministic source-priority order');
@@ -114,6 +117,7 @@ assert.strictEqual(selection.diagnostics.excluded_inactive, 3, 'stale, supersede
 assert.strictEqual(selection.diagnostics.query_matches, 5, 'only positive keyword matches should qualify before deduplication');
 assert.strictEqual(selection.diagnostics.selected_count, 4, 'duplicate matching content should collapse before selection');
 assert.strictEqual(selection.diagnostics.excluded_invalid, 1, 'invalid structured records should be counted only as an aggregate exclusion');
+assert.strictEqual(incorrectOutcome.diagnostics.excluded_outcome_incorrect, 1, 'explicit incorrect outcomes should withhold only the exact learning record');
 assert.strictEqual(selection.diagnostics.excluded_no_match, 1, 'active irrelevant records should be counted only as an aggregate exclusion');
 assert.strictEqual(selection.diagnostics.suppressed_duplicate, 1, 'duplicate matching records should be counted after ranking');
 assert.strictEqual(selection.diagnostics.suppressed_source_cap, 0, 'the default source cap should not suppress the fixture');

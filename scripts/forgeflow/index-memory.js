@@ -109,7 +109,18 @@ function record(source, line, kind, text, maxTextChars, metadata = {}) {
   if (metadata.conflictKey) result.conflict_key = metadata.conflictKey;
   if (metadata.conflictValue) result.conflict_value = metadata.conflictValue;
   if (metadata.conflictWithheld) result.conflict_withheld = true;
+  if (metadata.outcomeWithheld) result.outcome_withheld = true;
   return result;
+}
+
+function incorrectOutcomeLearningIds(projectDir) {
+  const file = path.join(projectDir, 'command-interface-learning-outcomes.jsonl');
+  if (!fs.existsSync(file)) return new Set();
+  const latest = new Map();
+  for (const line of safeReadTextFile(file, projectDir).content.split(/\r?\n/).filter(Boolean)) {
+    try { const parsed = JSON.parse(line); if (parsed && /^plc_[a-f0-9]{16}$/.test(parsed.learning_id || '') && parsed.outcome) latest.set(parsed.learning_id, parsed.outcome); } catch (_err) { /* Skip invalid local feedback. */ }
+  }
+  return new Set([...latest.entries()].filter(([, outcome]) => outcome === 'incorrect').map(([id]) => id));
 }
 
 function indexMarkdown(source, content, maxTextChars, metadata = {}) {
@@ -154,6 +165,7 @@ function indexJsonl(source, content, maxTextChars, metadata = {}) {
     ? new Map(resolvedCandidates(candidates).map((entry) => [projectLearningId(entry), entry]))
     : new Map();
   const withheld = isProjectLearningCandidates ? conflictedLearningIds(candidates) : new Set();
+  const outcomeWithheld = isProjectLearningCandidates ? (metadata.incorrectOutcomeIds || new Set()) : new Set();
   for (const { line, parsed } of parsedLines) {
     const learningId = isProjectLearningCandidates ? projectLearningId(parsed) : '';
     const text = isProjectLearningCandidates
@@ -168,6 +180,7 @@ function indexJsonl(source, content, maxTextChars, metadata = {}) {
       conflictKey: isProjectLearningCandidates ? parsed.conflict_key : '',
       conflictValue: isProjectLearningCandidates ? parsed.conflict_value : '',
       conflictWithheld: isProjectLearningCandidates && withheld.has(learningId),
+      outcomeWithheld: isProjectLearningCandidates && outcomeWithheld.has(learningId),
     }));
   }
   return records;
@@ -179,6 +192,7 @@ function buildMemoryIndex(opts = {}) {
   const out = opts.out || defaultOut(projectDir);
   const records = [];
   const sources = [];
+  const incorrectOutcomeIds = incorrectOutcomeLearningIds(projectDir);
 
   for (const name of memoryFileNames()) {
     const file = path.join(projectDir, name);
@@ -196,7 +210,7 @@ function buildMemoryIndex(opts = {}) {
       sourceMtimeMs: Math.round(stat.mtimeMs),
     };
     const indexed = name.endsWith('.jsonl')
-      ? indexJsonl(rel, content, opts.maxTextChars || DEFAULT_MAX_TEXT_CHARS, metadata)
+      ? indexJsonl(rel, content, opts.maxTextChars || DEFAULT_MAX_TEXT_CHARS, { ...metadata, incorrectOutcomeIds })
       : indexMarkdown(rel, content, opts.maxTextChars || DEFAULT_MAX_TEXT_CHARS, metadata);
     records.push(...indexed);
   }
