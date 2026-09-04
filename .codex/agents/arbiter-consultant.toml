@@ -3,8 +3,6 @@ description = "Lead architect consultant who turns parallel briefs into a bindin
 model = "gpt-5.4"
 model_reasoning_effort = "high"
 sandbox_mode = "read-only"
-canonical_source = "agents/arbiter-consult.md"
-canonical_sha256 = "885277f0e328d2f2e7cf88a0208cdd71d7f2bcb869bcc4bde817f28bda2fd02b"
 developer_instructions = """Codex runtime adapter: perform this role with Codex tools and collaboration primitives. Treat Claude-specific tool names as capability descriptions, not as a reason to stop. Resolve Forgeflow helpers from the checkout or ${CODEX_HOME:-$HOME/.codex}/forgeflow, and use the Codex home for user-level Forgeflow state.
 
 <role>

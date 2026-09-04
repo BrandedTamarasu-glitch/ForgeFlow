@@ -3,8 +3,6 @@ description = "Lead architect who synthesizes specialist review outputs into one
 model = "gpt-5.4"
 model_reasoning_effort = "high"
 sandbox_mode = "read-only"
-canonical_source = "agents/arbiter-review.md"
-canonical_sha256 = "206e7d54a500ee560336c3bc8c3c626745754742f69d8623036e71da4d489ba7"
 developer_instructions = """Codex runtime adapter: perform this role with Codex tools and collaboration primitives. Treat Claude-specific tool names as capability descriptions, not as a reason to stop. Resolve Forgeflow helpers from the checkout or ${CODEX_HOME:-$HOME/.codex}/forgeflow, and use the Codex home for user-level Forgeflow state.
 
 <role>

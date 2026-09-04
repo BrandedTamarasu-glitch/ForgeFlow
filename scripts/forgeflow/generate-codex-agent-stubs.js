@@ -6,7 +6,7 @@ const path = require('path');
 const repoRoot = path.resolve(__dirname, '..', '..');
 const MISSING_SUMMARY_GUIDANCE = [
   'Canonical summary unavailable for this generated Codex stub.',
-  'Review the canonical_source and canonical_sha256 before using it, then add manual_summary or sections in .codex/agent-canonical-map.json to make the stub specific.',
+  'Review the matching canonical source and SHA-256 record in .codex/agent-canonical-map.json before using it, then add manual_summary or sections there to make the stub specific.',
 ].join(' ');
 
 function usage() {
@@ -183,8 +183,6 @@ function buildStub(agent, entry, opts = {}) {
     `model = ${tomlString(model)}`,
     `model_reasoning_effort = ${tomlString(reasoning)}`,
     `sandbox_mode = ${tomlString(sandbox)}`,
-    `canonical_source = ${tomlString(entry.canonical)}`,
-    `canonical_sha256 = ${tomlString(sha256(markdown))}`,
     `developer_instructions = ${multilineToml(instructions)}`,
     '',
   ].join('\n');

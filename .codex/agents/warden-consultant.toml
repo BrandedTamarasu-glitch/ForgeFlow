@@ -3,8 +3,6 @@ description = "Security and systems consultant for auth, validation, integration
 model = "gpt-5.4-mini"
 model_reasoning_effort = "high"
 sandbox_mode = "read-only"
-canonical_source = "agents/warden-consult.md"
-canonical_sha256 = "cc0f28f04caf16956e7c959c39549788990df510b6e29111471c49219b5e733d"
 developer_instructions = """Codex runtime adapter: perform this role with Codex tools and collaboration primitives. Treat Claude-specific tool names as capability descriptions, not as a reason to stop. Resolve Forgeflow helpers from the checkout or ${CODEX_HOME:-$HOME/.codex}/forgeflow, and use the Codex home for user-level Forgeflow state.
 
 <role>

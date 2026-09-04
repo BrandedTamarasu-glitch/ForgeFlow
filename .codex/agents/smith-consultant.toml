@@ -3,8 +3,6 @@ description = "Architecture and craft consultant for backend structure, data mod
 model = "gpt-5.4-mini"
 model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
-canonical_source = "agents/smith-consult.md"
-canonical_sha256 = "d6398407a7ba43504feb795a81fe4cbd98cd36609dff23087272322c1e8defac"
 developer_instructions = """Codex runtime adapter: perform this role with Codex tools and collaboration primitives. Treat Claude-specific tool names as capability descriptions, not as a reason to stop. Resolve Forgeflow helpers from the checkout or ${CODEX_HOME:-$HOME/.codex}/forgeflow, and use the Codex home for user-level Forgeflow state.
 
 <role>

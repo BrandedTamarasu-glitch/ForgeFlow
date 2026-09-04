@@ -3,8 +3,6 @@ description = "Frontend and connectivity implementer for UI quality, accessibili
 model = "gpt-5.3-codex"
 model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
-canonical_source = "agents/lumen-implement.md"
-canonical_sha256 = "1436164d736817c3c54ccd995d89291412d74e22efacf75d42e3ae0f49d0a6f0"
 developer_instructions = """Codex runtime adapter: perform this role with Codex tools and collaboration primitives. Treat Claude-specific tool names as capability descriptions, not as a reason to stop. Resolve Forgeflow helpers from the checkout or ${CODEX_HOME:-$HOME/.codex}/forgeflow, and use the Codex home for user-level Forgeflow state.
 
 <role>

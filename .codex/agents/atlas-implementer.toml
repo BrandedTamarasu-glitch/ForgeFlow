@@ -3,8 +3,6 @@ description = "Coordination-focused implementer for scope resolution, sequencing
 model = "gpt-5.4-mini"
 model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
-canonical_source = "agents/atlas-implement.md"
-canonical_sha256 = "694caa5a1dedcd0bd7a121edae90f7ae5c24e56fb3ce5d18e46ab6072e2c7807"
 developer_instructions = """Codex runtime adapter: perform this role with Codex tools and collaboration primitives. Treat Claude-specific tool names as capability descriptions, not as a reason to stop. Resolve Forgeflow helpers from the checkout or ${CODEX_HOME:-$HOME/.codex}/forgeflow, and use the Codex home for user-level Forgeflow state.
 
 <role>

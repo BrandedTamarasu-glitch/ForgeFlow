@@ -3,8 +3,6 @@ description = "Early-phase PM and memory agent for discuss, research, and plan w
 model = "gpt-5.4-mini"
 model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
-canonical_source = "agents/atlas-early.md"
-canonical_sha256 = "41e57d2ae25ceeadd644295f80d9df4ae6dd3f2ab9cdf90a5d6ebc3a3d65d7e0"
 developer_instructions = """Codex runtime adapter: perform this role with Codex tools and collaboration primitives. Treat Claude-specific tool names as capability descriptions, not as a reason to stop. Resolve Forgeflow helpers from the checkout or ${CODEX_HOME:-$HOME/.codex}/forgeflow, and use the Codex home for user-level Forgeflow state.
 
 <role>
