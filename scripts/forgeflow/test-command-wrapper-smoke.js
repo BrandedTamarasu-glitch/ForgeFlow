@@ -34,6 +34,7 @@ const contextRetention = helperWrapper('commands/forgeflow-context-retention.md'
 const efficiencyGaps = helperWrapper('commands/forgeflow-efficiency-gaps.md', 'render-efficiency-gap-plan.js');
 const postRelease = helperWrapper('commands/forgeflow-post-release-install-verify.md', 'render-post-release-install-verify.js');
 const wrapperBatch = helperWrapper('commands/forgeflow-command-wrapper-batch.md', 'render-command-wrapper-batch.js');
+const commandInterfaceEvidence = helperWrapper('commands/forgeflow-command-interface-evidence.md', 'command-interface-evidence.js');
 const telemetryQuality = helperWrapper('commands/forgeflow-telemetry-quality.md', 'render-telemetry-quality.js');
 const workflowEnding = helperWrapper('commands/forgeflow-workflow-ending-capture.md', 'render-workflow-ending-capture.js');
 const learningAction = helperWrapper('commands/forgeflow-learning-action.md', 'render-learning-action-router.js');
@@ -57,6 +58,7 @@ const checks = [
   ['post-release wrapper invokes helper with safe args', postRelease.invokesHelperWithSafeArgs],
   ['post-release wrapper only accepts json', postRelease.markdown.includes('Only `--json` is supported') && postRelease.markdown.includes('--json) SAFE_ARGS+=(--json)')],
   ['command wrapper batch rejects unsupported args', wrapperBatch.referencesHelper && wrapperBatch.markdown.includes('Unsupported arguments for /forgeflow-command-wrapper-batch') && wrapperBatch.markdown.includes('SAFE_ARGS+=(--limit "$value")')],
+  ['command interface evidence wrapper validates required and write arguments', commandInterfaceEvidence.referencesHelper && commandInterfaceEvidence.checksRepoLocalFile && commandInterfaceEvidence.fallsBackToInstalledHelper && commandInterfaceEvidence.scrubsNodeEnvironment && commandInterfaceEvidence.invokesHelperWithSafeArgs && commandInterfaceEvidence.markdown.includes('Missing required --input') && commandInterfaceEvidence.markdown.includes('--write-report requires --project-dir') && commandInterfaceEvidence.markdown.includes('Unsupported arguments for /forgeflow-command-interface-evidence')],
   ['telemetry quality rejects unsupported args', telemetryQuality.referencesHelper && telemetryQuality.markdown.includes('Unsupported arguments for /forgeflow-telemetry-quality')],
   ['workflow ending rejects unsupported args', workflowEnding.referencesHelper && workflowEnding.markdown.includes('Unsupported arguments for /forgeflow-workflow-ending-capture') && workflowEnding.markdown.includes('review|next-work|agent-feedback|auto)')],
   ['learning action wrapper checks regular helper file', learningAction.referencesHelper && learningAction.checksRepoLocalFile && learningAction.fallsBackToInstalledHelper],

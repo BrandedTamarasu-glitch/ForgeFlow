@@ -79,6 +79,7 @@ const checks = [
   ['runtime helpers include output contract', RUNTIME_HELPERS.includes('scripts/forgeflow/output-contract.js')],
   ['runtime helpers include review-auto classifier', RUNTIME_HELPERS.includes('scripts/forgeflow/classify-review-auto.js')],
   ['runtime helpers include command args', RUNTIME_HELPERS.includes('scripts/forgeflow/command-args.js')],
+  ['runtime helpers include command interface evidence', RUNTIME_HELPERS.includes('scripts/forgeflow/command-interface-evidence.js')],
   ['runtime helpers include command wrapper contract', RUNTIME_HELPERS.includes('scripts/forgeflow/command-wrapper-contract.js')],
   ['runtime helpers include command wrapper batch', RUNTIME_HELPERS.includes('scripts/forgeflow/render-command-wrapper-batch.js')],
   ['runtime helpers include review evidence schema', RUNTIME_HELPERS.includes('scripts/forgeflow/check-review-evidence-schema.js')],

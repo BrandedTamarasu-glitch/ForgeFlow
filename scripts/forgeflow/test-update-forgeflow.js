@@ -65,6 +65,7 @@ const CANONICAL_NON_REQUIRED_MANAGED_SOURCES = [
   'commands/forgeflow-code-map.md',
   'commands/forgeflow-command-args.md',
   'commands/forgeflow-command-capability.md',
+  'commands/forgeflow-command-interface-evidence.md',
   'commands/forgeflow-command-wrapper-batch.md',
   'commands/forgeflow-compact-output.md',
   'commands/forgeflow-context-advisor.md',
@@ -126,6 +127,7 @@ const CANONICAL_NON_REQUIRED_MANAGED_SOURCES = [
   'commands/forgeflow-learning-policy.md',
   'commands/forgeflow-learning-status.md',
   'commands/forgeflow-learnings.md',
+  'commands/forgeflow-memory-correct.md',
   'commands/forgeflow-metrics.md',
   'commands/forgeflow-next-action-audit.md',
   'commands/forgeflow-next-work-outcome.md',
@@ -204,6 +206,7 @@ const CANONICAL_NON_REQUIRED_MANAGED_SOURCES = [
   'skills/forgeflow-plan/SKILL.md',
   'skills/forgeflow-review/SKILL.md',
   'skills/forgeflow-ship/SKILL.md',
+  'scripts/forgeflow/command-interface-evidence.js',
 ];
 
 async function localFetcher(_repo, _sha, source) {

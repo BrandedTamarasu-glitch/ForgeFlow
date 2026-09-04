@@ -115,6 +115,7 @@ const checks = [
   ['release check runs version drift test', releaseCheck.includes('node scripts/forgeflow/test-release-version.js')],
   ['release check runs command argument safety test', releaseCheck.includes('node scripts/forgeflow/test-command-argument-safety.js')],
   ['release check runs command args helper test', releaseCheck.includes('node scripts/forgeflow/test-command-args.js')],
+  ['release check runs command interface evidence test', releaseCheck.includes('node scripts/forgeflow/test-command-interface-evidence.js')],
   ['release check runs command output capture test', releaseCheck.includes('node scripts/forgeflow/test-capture-command-output.js')],
   ['release check runs command wrapper smoke test', releaseCheck.includes('node scripts/forgeflow/test-command-wrapper-smoke.js')],
   ['release check runs artifact contract test', releaseCheck.includes('node scripts/forgeflow/test-artifact-contracts.js')],

@@ -36,6 +36,7 @@ node scripts/forgeflow/test-command-wrapper-smoke.js
 node scripts/forgeflow/test-command-wrapper-contract.js
 node scripts/forgeflow/test-command-argument-safety.js
 node scripts/forgeflow/test-command-args.js
+node scripts/forgeflow/test-command-interface-evidence.js
 node scripts/forgeflow/test-capture-command-output.js
 node scripts/forgeflow/test-doc-links.js
 node scripts/forgeflow/test-doc-drift-report.js

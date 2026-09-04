@@ -39,6 +39,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/check-user-profile.js',
   'scripts/forgeflow/classify-review-auto.js',
   'scripts/forgeflow/command-args.js',
+  'scripts/forgeflow/command-interface-evidence.js',
   'scripts/forgeflow/command-wrapper-contract.js',
   'scripts/forgeflow/compact-command-output.js',
   'scripts/forgeflow/correct-project-learning.js',

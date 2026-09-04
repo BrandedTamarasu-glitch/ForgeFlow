@@ -39,6 +39,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/forgeflow-code-map` | Generate a compact project code map with topology, sections, changed-section hints, import-gap triage, living project-map categories, Git provenance, and generated artifact paths. |
 | `/forgeflow-command-args` | Validate a small command-argument string against an explicit allowlist without executing the command. |
 | `/forgeflow-command-capability` | Render a read-only policy-aware matrix of command-wrapper, Pi, OpenCode, and skill coverage across Forgeflow commands. Required host-parity gaps fail the matrix, and optional lean host-parity candidates are ranked for review. |
+| `/forgeflow-command-interface-evidence` | Audit explicitly supplied, sanitized command-chain observations for aggregate evidence gaps and future human-review eligibility. It never collects history, reads raw output, creates wrappers, or claims savings. Add `--write-report --project-dir <path>` only to save an aggregate local report under that Forgeflow session directory. |
 | `/forgeflow-command-wrapper-batch` | Rank the next small batch of command-wrapper contract cleanup candidates without editing command files. |
 | `/forgeflow-compact-output` | Compact allowlisted noisy command output while preserving exact output for unsafe command classes. |
 | `/forgeflow-context-advisor` | Show context budget, savings, topology coverage, trend deltas, and proof-preserving trim recommendations. |
