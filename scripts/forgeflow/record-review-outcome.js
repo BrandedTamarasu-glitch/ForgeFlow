@@ -102,6 +102,9 @@ function validateOutcome(record) {
     errors.push('outcome.review_minutes must be a non-negative number');
   }
   if (typeof outcome.auto_fix_success !== 'boolean') errors.push('outcome.auto_fix_success must be a boolean');
+  if (outcome.auto_fix_attempted !== undefined && typeof outcome.auto_fix_attempted !== 'boolean') {
+    errors.push('outcome.auto_fix_attempted must be a boolean when provided');
+  }
   if (typeof outcome.post_merge_regression !== 'boolean') errors.push('outcome.post_merge_regression must be a boolean');
   if (outcome.learning_signals !== undefined) {
     if (!outcome.learning_signals || typeof outcome.learning_signals !== 'object' || Array.isArray(outcome.learning_signals)) {
@@ -188,8 +191,9 @@ function applyOutcome(summary, record) {
   summary.totals.findings_confirmed += outcome.findings_confirmed;
   summary.totals.findings_rejected += outcome.findings_rejected;
   summary.totals.review_minutes += outcome.review_minutes;
+  const autoFixAttempted = outcome.auto_fix_success || outcome.auto_fix_attempted === true;
   summary.totals.auto_fix_success += outcome.auto_fix_success ? 1 : 0;
-  summary.totals.auto_fix_failed += outcome.auto_fix_success ? 0 : 1;
+  summary.totals.auto_fix_failed += autoFixAttempted && !outcome.auto_fix_success ? 1 : 0;
   summary.totals.post_merge_regression += outcome.post_merge_regression ? 1 : 0;
   summary.learning_signals.true_positive += outcome.findings_confirmed;
   summary.learning_signals.false_positive += outcome.findings_rejected;

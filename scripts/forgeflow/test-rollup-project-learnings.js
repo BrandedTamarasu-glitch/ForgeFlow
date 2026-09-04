@@ -63,6 +63,7 @@ fs.writeFileSync(path.join(projectDir, 'review-outcomes.jsonl'), `${JSON.stringi
     findings_confirmed: 2,
     findings_rejected: 0,
     review_minutes: 15,
+    auto_fix_attempted: true,
     auto_fix_success: false,
     post_merge_regression: false,
     finding_classes: [

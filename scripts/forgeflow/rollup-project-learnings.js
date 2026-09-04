@@ -317,7 +317,7 @@ function buildRollup(inputs = {}, opts = {}) {
     if (outcome.post_merge_regression) {
       increment(classCounts, 'post-merge-regression');
     }
-    if (outcome.auto_fix_success === false) {
+    if (outcome.auto_fix_attempted === true && outcome.auto_fix_success === false) {
       increment(classCounts, 'auto-fix-failed');
     }
   }
