@@ -67,6 +67,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/privacy-boundary.js',
   'scripts/forgeflow/project-learning-conflicts.js',
   'scripts/forgeflow/record-agent-feedback.js',
+  'scripts/forgeflow/record-command-interface-observation.js',
   'scripts/forgeflow/record-first-run-result.js',
   'scripts/forgeflow/record-next-work-outcome.js',
   'scripts/forgeflow/record-pilot-evidence.js',
