@@ -1,5 +1,7 @@
 # Forgeflow 4.3.0 Release Brief
 
+> Historical release brief for `v4.3.0`. It is not a statement of the current release, inventory, or install surface. Use the README, [Quick Start](Quick-Start), and [Release Process](Release-Process) for current guidance.
+
 Forgeflow 4.3.0 turns the last few weeks of learning, topology, smoke, and pilot work into a release that is much easier to install, verify, and trust on real projects.
 
 The big shift: Forgeflow is no longer just a multi-agent review workflow. It now has a local feedback loop around the work itself. It can build project context, learn from completed work items, map code topology, refresh agent guidance, verify the install, run a smoke check, and package the evidence from a pilot.

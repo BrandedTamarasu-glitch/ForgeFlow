@@ -29,7 +29,7 @@ After installing or updating, restart Claude Code, then verify:
 
 For an existing local install, see [Migration Guide](Migration-Guide).
 
-Runtime helpers are installed at:
+Claude runtime helpers are installed at:
 
 ```text
 ~/.claude/forgeflow/scripts/forgeflow/
@@ -40,7 +40,11 @@ Set a helper root before running project-local helpers:
 ```bash
 HELPER_ROOT="scripts/forgeflow"
 if [ ! -x "${HELPER_ROOT}/ensure-forgeflow-state.sh" ]; then
-  HELPER_ROOT="$HOME/.claude/forgeflow/scripts/forgeflow"
+  if [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/ensure-forgeflow-state.sh" ]; then
+    HELPER_ROOT="$HOME/.claude/forgeflow/scripts/forgeflow"
+  else
+    HELPER_ROOT="${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow"
+  fi
 fi
 ```
 
@@ -144,4 +148,10 @@ If you installed through `/update-forgeflow` and do not have a local checkout, r
 
 ```text
 ~/.claude/forgeflow/scripts/forgeflow/
+```
+
+If you installed through the Codex template installer and do not have a local checkout, use:
+
+```text
+${CODEX_HOME:-~/.codex}/forgeflow/scripts/forgeflow/
 ```

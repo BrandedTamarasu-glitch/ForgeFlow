@@ -42,7 +42,7 @@ GET /api/readiness
 
 That endpoint reads existing local Forgeflow artifacts for project health, latest insights, context budget, Lean Prime, lean guidance, host verification, benchmark evidence, guidance aftercare, failure-digest aftercare, release readiness, dogfood report status, and the dogfood refresh-plan next action. It does not refresh artifacts, write files, run shell commands, spawn agents, call GitHub, or export telemetry.
 
-The dashboard UI shows those signals in the Project Readiness panel. The panel renders 12 status cards with text labels, stale or missing evidence states, compact detail bullets, the current next action, and a copy-only command button. Detail bullets can include Lean Prime bootstrap commands, verified-host counts, benchmark evidence grade, historical replay-task count, latest release-check count, or the first failure-digest capture prompt. It does not run the command for the user or mutate project state.
+The dashboard UI shows those signals in the Project Readiness panel. The panel renders text-labeled status cards, stale or missing evidence states, compact detail bullets, the current next action, and a copy-only command button. Detail bullets can include Lean Prime bootstrap commands, verified-host counts, benchmark evidence grade, historical replay-task count, latest release-check count, or the first failure-digest capture prompt. It does not run the command for the user or mutate project state.
 
 ## Agent Chat Dashboard
 

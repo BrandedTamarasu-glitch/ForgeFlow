@@ -119,7 +119,7 @@ Statusline:
 ```json
 "statusLine": {
   "type": "command",
-  "command": "node \"/home/corye/.claude/hooks/forgeflow-statusline.js\""
+  "command": "node \"$HOME/.claude/hooks/forgeflow-statusline.js\""
 }
 ```
 
@@ -128,21 +128,21 @@ PostToolUse hooks:
 ```json
 {
   "type": "command",
-  "command": "node \"/home/corye/.claude/hooks/forgeflow-context-monitor.js\""
+  "command": "node \"$HOME/.claude/hooks/forgeflow-context-monitor.js\""
 }
 ```
 
 ```json
 {
   "type": "command",
-  "command": "node \"/home/corye/.claude/hooks/forgeflow-gate.js\""
+  "command": "node \"$HOME/.claude/hooks/forgeflow-gate.js\""
 }
 ```
 
 ```json
 {
   "type": "command",
-  "command": "node \"/home/corye/.claude/hooks/forgeflow-telemetry.js\""
+  "command": "node \"$HOME/.claude/hooks/forgeflow-telemetry.js\""
 }
 ```
 
@@ -159,7 +159,7 @@ After settings changes, restart Claude Code and rerun:
 To use Forgeflow context monitoring, set `statusLine.command` to:
 
 ```text
-node "/home/corye/.claude/hooks/forgeflow-statusline.js"
+node "$HOME/.claude/hooks/forgeflow-statusline.js"
 ```
 
 Keep the old GSD hook file if you want a manual rollback reference. It is not a Forgeflow-managed file.

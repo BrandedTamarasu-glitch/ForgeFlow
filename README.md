@@ -82,25 +82,29 @@ From Claude Code, install or update the Forgeflow command and helper bundle:
 
 That syncs agents, commands, hooks, templates, project rules, patterns, and runtime helpers into `~/.claude/`. The installer is script-backed, pins the installed version to the fetched commit SHA, and can be re-run safely when a new release is available.
 
-Expected result:
+Expected result for the Claude install:
 
 ```text
 Forgeflow installed  (<commit>)
 Runtime helpers: ~/.claude/forgeflow/scripts/forgeflow/
 ```
 
-Runtime helpers are installed at:
+Claude runtime helpers are installed at:
 
 ```text
 ~/.claude/forgeflow/scripts/forgeflow/
 ```
 
-For terminal commands below, use the repo-local helper path when working from a checkout, or the installed helper root when using the no-clone Claude install:
+For terminal commands below, use the repo-local helper path when working from a checkout, or fall back to the installed Claude or Codex helper root:
 
 ```bash
 HELPER_ROOT="scripts/forgeflow"
 if [ ! -x "${HELPER_ROOT}/ensure-forgeflow-state.sh" ]; then
-  HELPER_ROOT="$HOME/.claude/forgeflow/scripts/forgeflow"
+  if [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/ensure-forgeflow-state.sh" ]; then
+    HELPER_ROOT="$HOME/.claude/forgeflow/scripts/forgeflow"
+  else
+    HELPER_ROOT="${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow"
+  fi
 fi
 ```
 
@@ -459,7 +463,7 @@ The metrics dashboard is an optional local read-only HTTP server:
 /dashboard
 ```
 
-It runs on `http://127.0.0.1:4003` and reads local telemetry files from both `~/.claude/projects/` and `~/.codex/projects/`. The dashboard also shows a Project Readiness panel backed by `GET /api/readiness`, with text-labeled status cards for project health, learning status, context budget, Lean Prime, lean guidance, host verification, benchmark evidence, guidance aftercare, failure-digest aftercare, release readiness, dogfood report state, and dogfood refresh-plan readiness. Cards include compact details such as evidence grade, bootstrap command, verified-host counts, and latest snapshot size when available. The panel provides one copy-only next action and does not run commands, refresh artifacts, write files, spawn agents, call GitHub, or export telemetry.
+It runs on `http://127.0.0.1:4003` and reads local telemetry files from both `~/.claude/projects/` and `~/.codex/projects/`. The dashboard also shows a Project Readiness panel backed by `GET /api/readiness`, with text-labeled status cards for the current health, guidance, release, and aftercare signals. Cards include compact details such as evidence grade, bootstrap command, verified-host counts, and latest snapshot size when available. The panel provides one copy-only next action and does not run commands, refresh artifacts, write files, spawn agents, call GitHub, or export telemetry.
 
 For live agent-message observability, use `/agent-chat:on`, which runs a separate local dashboard on port `4001`. Stop it with `/agent-chat:off`. Forgeflow works without either dashboard.
 
@@ -474,10 +478,14 @@ For live agent-message observability, use `/agent-chat:on`, which runs a separat
 - [Hosted docs entry](docs/index.html)
 - [Wiki source](docs/wiki/Home.md)
 - [User paths](docs/wiki/User-Paths.md)
-- [Lean quick path](docs/wiki/Lean-Quick-Path.md)
-- [Lean evidence](docs/wiki/Lean-Evidence.md)
-- [Lean portability](docs/wiki/Lean-Portability.md)
-- [Forgeflow 4.3 release brief](docs/wiki/Forgeflow-4.3-Release-Brief.md)
+- [Quick start](docs/wiki/Quick-Start.md)
+- [Workflow commands](docs/wiki/Workflow-Commands.md)
+- [Codex first run](docs/wiki/Codex-First-Run.md)
+- [Context intelligence](docs/wiki/Context-Intelligence.md)
+- [Local data and privacy](docs/wiki/Local-Data-And-Privacy.md)
+- [Release process](docs/wiki/Release-Process.md)
+- [Release gate](docs/wiki/Release-Gate.md)
+- [Roadmap](docs/wiki/Roadmap.md)
 - [Why Forgeflow](docs/wiki/Why-Forgeflow.md)
 - [Project learnings](docs/wiki/Project-Learnings.md)
 - [Maintainer pilot](docs/wiki/Maintainer-Pilot.md)
@@ -502,9 +510,7 @@ For live agent-message observability, use `/agent-chat:on`, which runs a separat
 - [Field validation](docs/wiki/Field-Validation.md)
 - [Clean checkout install verification](docs/wiki/Clean-Checkout-Install-Verification.md)
 - [Demos](docs/wiki/Demos.md)
-- [Codex first run](docs/wiki/Codex-First-Run.md)
 - [Dashboard](docs/wiki/Dashboard.md)
-- [Context intelligence](docs/wiki/Context-Intelligence.md)
 - [Lean evidence](docs/wiki/Lean-Evidence.md)
 - [Lean portability](docs/wiki/Lean-Portability.md)
 - [Telemetry readiness](docs/wiki/Telemetry-Readiness.md)
@@ -512,8 +518,6 @@ For live agent-message observability, use `/agent-chat:on`, which runs a separat
 - [Common stack examples](docs/wiki/Common-Stack-Examples.md)
 - [Migration guide](docs/wiki/Migration-Guide.md)
 - [Settings and recovery](docs/wiki/Settings-And-Recovery.md)
-- [Release process](docs/wiki/Release-Process.md)
-- [Release gate](docs/wiki/Release-Gate.md)
 - [Template installer](docs/wiki/Template-Installer.md)
 - [Codex migration notes](CODEX_MIGRATION.md)
 - [Telemetry schema](docs/forgeflow-metrics-telemetry-schema.md)

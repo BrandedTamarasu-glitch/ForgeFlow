@@ -11,7 +11,7 @@ Statusline command:
 ```json
 "statusLine": {
   "type": "command",
-  "command": "node \"/home/corye/.claude/hooks/forgeflow-statusline.js\""
+  "command": "node \"$HOME/.claude/hooks/forgeflow-statusline.js\""
 }
 ```
 
@@ -20,21 +20,21 @@ PostToolUse hook commands:
 ```json
 {
   "type": "command",
-  "command": "node \"/home/corye/.claude/hooks/forgeflow-context-monitor.js\""
+  "command": "node \"$HOME/.claude/hooks/forgeflow-context-monitor.js\""
 }
 ```
 
 ```json
 {
   "type": "command",
-  "command": "node \"/home/corye/.claude/hooks/forgeflow-gate.js\""
+  "command": "node \"$HOME/.claude/hooks/forgeflow-gate.js\""
 }
 ```
 
 ```json
 {
   "type": "command",
-  "command": "node \"/home/corye/.claude/hooks/forgeflow-telemetry.js\""
+  "command": "node \"$HOME/.claude/hooks/forgeflow-telemetry.js\""
 }
 ```
 
@@ -111,7 +111,7 @@ Restart Claude Code after rollback, then run:
 If `/forgeflow-health` reports `gsd-statusline.js`, update `statusLine.command` manually to point at:
 
 ```text
-node "/home/corye/.claude/hooks/forgeflow-statusline.js"
+node "$HOME/.claude/hooks/forgeflow-statusline.js"
 ```
 
 Keeping the old GSD hook file is fine as a manual reference. Forgeflow does not manage or delete it.

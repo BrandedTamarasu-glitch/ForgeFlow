@@ -2,7 +2,7 @@
 
 Forgeflow is an end-to-end AI software delivery workflow for Claude Code and Codex.
 
-It coordinates a set of focused agents across the full build lifecycle:
+It coordinates focused agents across the full lifecycle:
 
 ```text
 Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
@@ -12,150 +12,55 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 
 - [Hosted Docs Entry](../index.html)
 - [Why Forgeflow](Why-Forgeflow)
-- [Forgeflow 4.3.72 Patch Notes](../changelogs/v4.3.72.html)
-- [Forgeflow 4.3.71 Patch Notes](../changelogs/v4.3.71.html)
-- [Forgeflow 4.3.70 Patch Notes](../changelogs/v4.3.70.html)
-- [Forgeflow 4.3.69 Patch Notes](../changelogs/v4.3.69.html)
-- [Forgeflow 4.3.67 Patch Notes](../changelogs/v4.3.67.html)
-- [Forgeflow 4.3.66 Patch Notes](../changelogs/v4.3.66.html)
-- [Forgeflow 4.3.65 Patch Notes](../changelogs/v4.3.65.html)
-- [Forgeflow 4.3.64 Patch Notes](../changelogs/v4.3.64.html)
-- [Forgeflow 4.3.52 Patch Notes](../changelogs/v4.3.52.html)
-- [Forgeflow 4.3.51 Patch Notes](../changelogs/v4.3.51.html)
-- [Forgeflow 4.3.50 Patch Notes](../changelogs/v4.3.50.html)
-- [Forgeflow 4.3.49 Patch Notes](../changelogs/v4.3.49.html)
-- [Forgeflow 4.3.48 Patch Notes](../changelogs/v4.3.48.html)
-- [Forgeflow 4.3.47 Patch Notes](../changelogs/v4.3.47.html)
-- [Forgeflow 4.3.46 Patch Notes](../changelogs/v4.3.46.html)
-- [Forgeflow 4.3.45 Patch Notes](../changelogs/v4.3.45.html)
-- [Forgeflow 4.3.44 Patch Notes](../changelogs/v4.3.44.html)
-- [Forgeflow 4.3.43 Patch Notes](../changelogs/v4.3.43.html)
-- [Forgeflow 4.3.42 Patch Notes](../changelogs/v4.3.42.html)
-- [Forgeflow 4.3.39 Patch Notes](../changelogs/v4.3.39.html)
-- [Forgeflow 4.3.38 Patch Notes](../changelogs/v4.3.38.html)
-- [Forgeflow 4.3.37 Patch Notes](../changelogs/v4.3.37.html)
-- [Forgeflow 4.3.36 Patch Notes](../changelogs/v4.3.36.html)
-- [Forgeflow 4.3.35 Patch Notes](../changelogs/v4.3.35.html)
-- [Forgeflow 4.3.30 Patch Notes](../changelogs/v4.3.30.html)
-- [Forgeflow 4.3.29 Patch Notes](../changelogs/v4.3.29.html)
-- [Forgeflow 4.3.28 Patch Notes](../changelogs/v4.3.28.html)
-- [Forgeflow 4.3.27 Patch Notes](../changelogs/v4.3.27.html)
-- [Forgeflow 4.3.26 Patch Notes](../changelogs/v4.3.26.html)
-- [Forgeflow 4.3.25 Patch Notes](../changelogs/v4.3.25.html)
-- [Forgeflow 4.3.24 Patch Notes](../changelogs/v4.3.24.html)
-- [Forgeflow 4.3.23 Patch Notes](../changelogs/v4.3.23.html)
-- [Forgeflow 4.3.19 Patch Notes](../changelogs/v4.3.19.html)
-- [Forgeflow 4.3.18 Patch Notes](../changelogs/v4.3.18.html)
-- [Forgeflow 4.3.14 Patch Notes](../changelogs/v4.3.14.html)
-- [Forgeflow 4.3.13 Patch Notes](../changelogs/v4.3.13.html)
-- [Forgeflow 4.3.12 Patch Notes](../changelogs/v4.3.12.html)
-- [Forgeflow 4.3.11 Patch Notes](../changelogs/v4.3.11.html)
-- [Forgeflow 4.3.10 Patch Notes](../changelogs/v4.3.10.html)
-- [Forgeflow 4.3.9 Patch Notes](../changelogs/v4.3.9.html)
-- [Forgeflow 4.3.8 Patch Notes](../changelogs/v4.3.8.html)
-- [Forgeflow 4.3.7 Patch Notes](../changelogs/v4.3.7.html)
-- [Forgeflow 4.3.6 Patch Notes](../changelogs/v4.3.6.html)
-- [Forgeflow 4.3.5 Patch Notes](../changelogs/v4.3.5.html)
-- [Forgeflow 4.3.4 Patch Notes](../changelogs/v4.3.4.html)
-- [Forgeflow 4.3.3 Patch Notes](../changelogs/v4.3.3.html)
-- [Forgeflow 4.3.2 Patch Notes](../changelogs/v4.3.2.html)
-- [Forgeflow 4.3.1 Patch Notes](../changelogs/v4.3.1.html)
-- [Forgeflow 4.3 Release Brief](Forgeflow-4.3-Release-Brief.md)
-- [Project Learnings](Project-Learnings)
-- [User Profile Guidance](User-Profile-Guidance)
+- [Quick Start](Quick-Start)
+- [User Paths](User-Paths)
+- [Workflow Commands](Workflow-Commands)
+- [Codex First Run](Codex-First-Run)
+- [Latest Tagged Release Notes](../changelogs/v4.3.72.html)
+- [Release Process](Release-Process)
+- [Local Data And Privacy](Local-Data-And-Privacy)
+
+Older changelogs remain under `docs/changelogs/`.
+
+## What Forgeflow Covers
+
+- **Install, update, repair, and release:** `/update-forgeflow`, `/forgeflow-version`, `/forgeflow-health`, `/forgeflow-update-verify`, release readiness, release verification, release consumption, runtime drift, source smoke, and support bundles.
+- **Lifecycle work:** `/discuss`, `/research`, `/plan`, `/consult`, `/implement`, `/review`, `/review-auto`, `/audit`, `/ship`, and `/handoff`.
+- **Direct agent work:** `/quick`, `/create-agent`, `/debate`, `/fleet`, and `/ui-iterate`.
+- **Context and review prep:** context packs, memory summaries, scope manifests, topology, budget checks, context advisor, focused review waves, failure digests, and noisy-command advice.
+- **Project intelligence:** code maps, trends, project operating model, architecture docs, invocation hints, ownership map, dogfood report, and latest-insights injection.
+- **Learning and telemetry:** project learnings, user operating profile, project experience profile, learning status, outcome capture, agent feedback, and local-only telemetry.
+- **Dashboards and team surfaces:** the local metrics dashboard, the Project Readiness panel backed by `GET /api/readiness`, agent-chat, team-state sync guidance, and CI wrapper reference docs.
+
+## Choose A Path
+
+- New users: [Why Forgeflow](Why-Forgeflow), [Quick Start](Quick-Start), [User Paths](User-Paths), [Demos](Demos)
+- Claude Code users: [Quick Start](Quick-Start), [Migration Guide](Migration-Guide), [Settings And Recovery](Settings-And-Recovery)
+- Codex users: [Codex First Run](Codex-First-Run), [Quick Start](Quick-Start), [Review Routing](Review-Routing)
+- Reviewers: [Review Routing](Review-Routing), [Context Intelligence](Context-Intelligence), [Project Learnings](Project-Learnings), [Implementation Notes](Implementation-Notes)
+- Release owners: [Release Process](Release-Process), [Release Gate](Release-Gate), [Clean Checkout Install Verification](Clean-Checkout-Install-Verification), [Template Installer](Template-Installer)
+
+## More Reference
+
+- [Agent Roles](Agent-Roles)
+- [Context Intelligence](Context-Intelligence)
+- [Context Budget Examples](Context-Budget-Examples)
+- [Common Stack Examples](Common-Stack-Examples)
+- [Dashboard](Dashboard)
+- [Lean Evidence](Lean-Evidence)
+- [Lean Quick Path](Lean-Quick-Path)
+- [Lean Portability](Lean-Portability)
 - [Maintainer Pilot](Maintainer-Pilot)
 - [Adoption Pack](Adoption-Pack)
 - [Team Privacy Boundaries](Team-Privacy-Boundaries)
 - [Support Triage](Support-Triage)
-- [Team Adoption Criteria](Team-Adoption-Criteria)
-- [CI And Headless Deferrals](CI-Headless-Deferrals)
-- [Pilot Evidence Log](Pilot-Evidence-Log)
-- [Pilot Public Summary](Pilot-Public-Summary)
-- [Pilot Support Rollup](Pilot-Support-Rollup)
-- [Pilot Adoption Comparison](Pilot-Adoption-Comparison)
-- [Pilot Next Action Decision](Pilot-Next-Action-Decision)
-- [Branch Trial](Branch-Trial)
-- [Public-Safe Examples](Public-Examples)
-- [Package And Release Onboarding](Package-Release-Onboarding)
-- [Evaluation Sharing](Evaluation-Sharing)
-- [Evaluation Summary Collection](Evaluation-Summary-Collection)
-- [Workflow Comparison](Workflow-Comparison)
-- [First-Run Friction](First-Run-Friction)
-- [Friction To Fix](Friction-To-Fix)
-- [Field Validation](Field-Validation)
-- [Clean Checkout Install Verification](Clean-Checkout-Install-Verification)
-- [Quick Start](Quick-Start)
-- [User Paths](User-Paths)
-- [Codex First Run](Codex-First-Run)
-- [Demos](Demos)
-- [Dashboard](Dashboard)
-- [Agent Roles](Agent-Roles)
-- [Workflow Commands](Workflow-Commands)
-- [Research Divergence](Research-Divergence)
-- [Implementation Notes](Implementation-Notes)
-- [Review Routing](Review-Routing)
-- [Context Intelligence](Context-Intelligence)
-- [Context Budget Examples](Context-Budget-Examples)
-- [Common Stack Examples](Common-Stack-Examples)
-- [Migration Guide](Migration-Guide)
-- [Settings And Recovery](Settings-And-Recovery)
-- [Release Process](Release-Process)
-- [Release Gate](Release-Gate)
-- [Lean Evidence](Lean-Evidence)
-- [Lean Quick Path](Lean-Quick-Path)
-- [Lean Portability](Lean-Portability)
-- [Template Installer](Template-Installer)
-- [Local Data And Privacy](Local-Data-And-Privacy)
 - [Roadmap](Roadmap)
-
-## What Forgeflow Covers
-
-Forgeflow is broader than review. The current wiki documents these capability areas:
-
-- **Install, update, repair, and release:** `/update-forgeflow`, `/forgeflow-version`, `/forgeflow-health`, `/forgeflow-repair`, `/forgeflow-update-verify`, release readiness, release verification, release consumption, runtime drift, source smoke, and support bundles.
-- **Lifecycle work:** `/discuss`, `/research`, `/plan`, `/consult`, `/implement`, `/review`, `/review-auto`, `/audit`, `/ship`, and `/handoff`.
-- **Direct agent work:** `/quick` for one-off agent dispatch, `/create-agent` for local custom Claude agents, `/debate` for false-positive stress tests, `/fleet` for isolated parallel worktree shards, and `/ui-iterate` for measured UI/theme iteration.
-- **Context and token efficiency:** context packs, memory summaries, scope manifests, topology, budget checks, context advisor, focused review waves, command-output compaction, failure digests, noisy-command advice, and context telemetry.
-- **Project intelligence:** code maps, trends, health timeline, project operating model, project decision briefs, architecture docs, invocation hints, ownership map, dogfood report, dogfood refresh plan, and latest-insights injection.
-- **Evidence readiness:** Lean Prime bootstrap, benchmark evidence grading, historical benchmark replay tasks, host CLI proof states, failure-digest aftercare, RTK policy alignment, and release-readiness advisory warnings.
-- **Learning loops:** project learnings, pattern learning rollups, user operating profile, project experience profile, profile review/compliance, learning status, learning action routing, outcome capture, agent feedback, next-work ranking, and workflow-ending capture.
-- **Review automation safety:** review evidence schema checks, review-auto classification, deterministic sandbox proposals, explicit apply flow with rollback on failed validation, review-auto status, output contracts, lean handoff budget warnings, lean delivery metrics, and command-argument safety.
-- **Adoption and pilots:** first-run guide, first-run simulator, first-run results and rollups, first useful win, first task report, adoption loop, pilot scripts, adoption pack, evaluation summaries, and public-safe sharing guidance.
-- **Dashboards:** local metrics dashboard, 12-card Project Readiness panel backed by `GET /api/readiness`, and agent-chat dashboard for live workflow visibility.
-- **Team and CI surfaces:** team-state sync guidance, CI wrapper reference docs, sync-upstream for Forgeflow meta-work, and privacy boundaries for local, private-team, and public sharing.
-
-## Role Paths
-
-Use these entry points when you know what job you are trying to do:
-
-- New users: [Why Forgeflow](Why-Forgeflow), [Quick Start](Quick-Start), [User Paths](User-Paths), [Package And Release Onboarding](Package-Release-Onboarding), [Demos](Demos)
-- Claude Code users: [Quick Start](Quick-Start), [Migration Guide](Migration-Guide), [Settings And Recovery](Settings-And-Recovery), [Workflow Commands](Workflow-Commands)
-- Codex users: [Codex First Run](Codex-First-Run), [Quick Start](Quick-Start), [Agent Roles](Agent-Roles), [Review Routing](Review-Routing)
-- Maintainers: [Maintainer Pilot](Maintainer-Pilot), [Branch Trial](Branch-Trial), [Field Validation](Field-Validation), [First-Run Friction](First-Run-Friction)
-- Reviewers: [Review Routing](Review-Routing), [Context Intelligence](Context-Intelligence), [Project Learnings](Project-Learnings), [Implementation Notes](Implementation-Notes)
-- Release owners: [Release Process](Release-Process), [Release Gate](Release-Gate), [Lean Evidence](Lean-Evidence), [Clean Checkout Install Verification](Clean-Checkout-Install-Verification), [Template Installer](Template-Installer)
-- Project leads: [Adoption Pack](Adoption-Pack), [Team Adoption Criteria](Team-Adoption-Criteria), [Pilot Adoption Comparison](Pilot-Adoption-Comparison), [Pilot Next Action Decision](Pilot-Next-Action-Decision)
-- Support owners: [Support Triage](Support-Triage), [Friction To Fix](Friction-To-Fix), [Team Privacy Boundaries](Team-Privacy-Boundaries), [Local Data And Privacy](Local-Data-And-Privacy)
-
-## Task Paths
-
-- Install or repair: [Quick Start](Quick-Start), [Settings And Recovery](Settings-And-Recovery), [Migration Guide](Migration-Guide)
-- Run a first real task: [Branch Trial](Branch-Trial), [User Paths](User-Paths), [Implementation Notes](Implementation-Notes)
-- Prepare review context: [Context Intelligence](Context-Intelligence), [Context Budget Examples](Context-Budget-Examples), [Common Stack Examples](Common-Stack-Examples)
-- Understand local learning: [Project Learnings](Project-Learnings), [Evaluation Sharing](Evaluation-Sharing), [Evaluation Summary Collection](Evaluation-Summary-Collection)
-- Compare outcomes: [Workflow Comparison](Workflow-Comparison), [Public-Safe Examples](Public-Examples), [Pilot Evidence Log](Pilot-Evidence-Log)
-- Decide whether to expand: [Pilot Public Summary](Pilot-Public-Summary), [Pilot Support Rollup](Pilot-Support-Rollup), [Adoption Pack](Adoption-Pack)
-- Plan future work: [Roadmap](Roadmap), [CI And Headless Deferrals](CI-Headless-Deferrals), [Dashboard](Dashboard), [Lean Evidence](Lean-Evidence)
 
 ## Core Idea
 
-Forgeflow separates software delivery into phases and assigns each phase to agents with explicit responsibilities. This keeps planning, implementation, validation, and final judgment from collapsing into one overbroad prompt.
+Forgeflow separates software delivery into phases with explicit responsibilities, so planning, implementation, validation, and final judgment do not collapse into one prompt.
 
-The current build also adds local context intelligence and evidence readiness: bounded context packets, compact memory summaries, scope manifests, context telemetry, budget checks, health repair, smoke checks, release-to-install readiness preflight, benchmark evidence grading, host proof templates, pilot scripts, project intelligence, and trend-aware context recommendations. These helpers keep agent prompts smaller while preserving the local project memory needed for end-to-end work. Local artifact reads and writes reject symlinks, include untracked work in generated context, and can fail CI when context budgets are exceeded.
-
-Forgeflow also carries implementation context and pilot evidence forward. `/implement` maintains local implementation notes, `/ship` checks and summarizes those notes, `/forgeflow-smoke` verifies the local stabilization path, `/forgeflow-adoption` prints a public-safe adoption pack and small-team handoff checklist, and `/forgeflow-pilot` prints either the default maintainer-trial script or a first-real-task new-user path with evidence capture and support/adoption rollups under `.forgeflow/<project-name>/`.
-
-Project learnings are the local project memory layer: a durable, user-editable summary of recurring pitfalls, stable decisions, risk areas, validation patterns, and recommended approaches across work items. Project intelligence turns those signals into readiness, review-prep, next-work briefs, and advisory next-work candidates while agents still verify current code and artifacts.
+The workflow adds local context intelligence and evidence tracking without requiring hosted telemetry. Helpers keep prompts smaller, preserve local project memory, and gate higher-risk automation on visible evidence.
 
 ## Agent Cast
 
