@@ -10,6 +10,7 @@ const { showProjectLearnings } = require('./show-project-learnings');
 const { showProjectTrends } = require('./show-project-trends');
 const { compactUserProfile } = require('./user-profile');
 const { readNextWorkOutcomes } = require('./record-next-work-outcome');
+const { buildStatus: buildCommandInterfaceLearningStatus } = require('./render-command-interface-learning-status');
 const { buildLeanDecision, renderBriefSection: renderLeanBriefSection } = require('./render-lean-decision');
 const VALID_FEEDBACK_SIGNALS = new Set(['useful', 'unclear', 'ignored', 'incorrect']);
 const VALID_FEEDBACK_CONFIDENCE = new Set(['low', 'medium', 'high']);
@@ -991,6 +992,7 @@ function buildProjectIntelligence(opts = {}) {
   const reviewOutcomes = readReviewOutcomes(projectDir);
   const userProfile = compactUserProfile({ root, projectDir }, 2200);
   const nextWorkConfidence = readNextWorkOutcomes(projectDir);
+  const commandInterfaceLearning = buildCommandInterfaceLearningStatus({ projectDir });
   const readiness = readinessState(trends, learnings, allRisks, recommendations);
   const intelligence = {
     schema_version: '1',
@@ -1020,6 +1022,7 @@ function buildProjectIntelligence(opts = {}) {
     agent_feedback: agentFeedback,
     review_outcomes: reviewOutcomes,
     next_work_confidence: nextWorkConfidence,
+    command_interface_learning: commandInterfaceLearning,
     user_profile: {
       status: userProfile.result.check.status,
       injected: userProfile.injected,

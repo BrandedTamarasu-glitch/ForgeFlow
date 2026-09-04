@@ -79,6 +79,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/render-adoption-pack.js',
   'scripts/forgeflow/render-architecture-docs.js',
   'scripts/forgeflow/render-command-wrapper-batch.js',
+  'scripts/forgeflow/render-command-interface-learning-status.js',
   'scripts/forgeflow/render-command-capability-matrix.js',
   'scripts/forgeflow/render-command-index.js',
   'scripts/forgeflow/render-context-retention.js',
