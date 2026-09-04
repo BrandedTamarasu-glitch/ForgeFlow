@@ -57,6 +57,7 @@ const result = spawnSync(script, ['--input', fixture, '--out', outFile, '--json'
 
 checks.push(['cli exit', result.status === 0]);
 checks.push(['cli wrote jsonl', fs.existsSync(outFile) && fs.readFileSync(outFile, 'utf8').trim().length > 0]);
+checks.push(['cli stamps new records', Boolean(JSON.parse(fs.readFileSync(outFile, 'utf8')).recorded_at)]);
 
 const failed = checks.filter(([, ok]) => !ok).map(([name]) => name);
 if (failed.length > 0) {

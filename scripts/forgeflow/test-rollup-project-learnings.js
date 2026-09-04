@@ -51,6 +51,7 @@ fs.writeFileSync(path.join(projectDir, 'implementation-notes.md'), [
 
 fs.writeFileSync(path.join(projectDir, 'review-outcomes.jsonl'), `${JSON.stringify({
   schema_version: '1',
+  recorded_at: '2026-09-04T00:00:00Z',
   change_id: 'one',
   review: {
     mode: 'full-mode',

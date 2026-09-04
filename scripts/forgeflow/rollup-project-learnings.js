@@ -305,8 +305,13 @@ function buildRollup(inputs = {}, opts = {}) {
   const hotFiles = {};
   const reviewModes = {};
   const recommended = [];
+  let historicalReviewOutcomes = 0;
 
   for (const outcomeRecord of reviewOutcomes) {
+    if (!outcomeRecord.recorded_at || Number.isNaN(Date.parse(outcomeRecord.recorded_at))) {
+      historicalReviewOutcomes += 1;
+      continue;
+    }
     const review = outcomeRecord.review || {};
     const outcome = outcomeRecord.outcome || {};
     increment(reviewModes, review.mode);
@@ -391,6 +396,7 @@ function buildRollup(inputs = {}, opts = {}) {
       learning_candidates_invalid: resolvedLearningCandidates(allLearningCandidates).filter((entry) => candidateStatus(entry) === 'invalid').length,
       learning_candidates_inactive_examples: inactiveLearningSummary(resolvedLearningCandidates(allLearningCandidates)),
       review_outcomes: reviewOutcomes.length,
+      review_outcomes_historical: historicalReviewOutcomes,
       ship_summary: Boolean(inputs.hasShipSummary),
       code_map: Boolean(inputs.hasCodeMap),
       code_map_sections: codeMap && codeMap.summary ? codeMap.summary.sections || 0 : 0,

@@ -75,6 +75,9 @@ function validateOutcome(record) {
     return ['record must be an object'];
   }
   if (record.schema_version !== '1') errors.push('schema_version must be "1"');
+  if (record.recorded_at !== undefined && Number.isNaN(Date.parse(record.recorded_at))) {
+    errors.push('recorded_at must be an ISO timestamp when provided');
+  }
   if (!record.change_id) errors.push('change_id is required');
   if (!record.review || typeof record.review !== 'object') errors.push('review object is required');
   if (!record.outcome || typeof record.outcome !== 'object') errors.push('outcome object is required');
@@ -258,7 +261,8 @@ function main() {
     process.exit(2);
   }
 
-  const record = readOutcome(opts.input);
+  const inputRecord = readOutcome(opts.input);
+  const record = inputRecord.recorded_at ? inputRecord : { ...inputRecord, recorded_at: new Date().toISOString() };
   const outPath = opts.out || defaultOutcomePath();
   appendOutcome(record, outPath);
   if (opts.json) {
