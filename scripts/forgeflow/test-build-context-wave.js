@@ -33,12 +33,12 @@ function makeContext(tokens) {
   return { root, contextDir };
 }
 
-const over = makeContext(24000);
+const over = makeContext(12000);
 const built = buildContextWave({ root: over.root, contextDir: over.contextDir, targetTokens: 8000 });
 const markdown = renderMarkdown(built);
 const under = makeContext(4000);
 const currentOk = buildContextWave({ root: under.root, contextDir: under.contextDir, targetTokens: 8000 });
-const missingContext = makeContext(24000);
+const missingContext = makeContext(12000);
 const missing = buildContextWave({ root: missingContext.root, contextDir: missingContext.contextDir, targetTokens: 8000, wave: 'missing' });
 const opts = parseArgs(['--root', over.root, '--context-dir', over.contextDir, '--target-tokens', '8000', '--wave', 'risk-core', '--json']);
 
@@ -47,6 +47,7 @@ const checks = [
   ['builds first wave', built.status === 'built' && built.built_wave.name === 'risk-core'],
   ['writes wave file', fs.existsSync(path.join(over.contextDir, 'waves', 'risk-core-files.txt'))],
   ['writes focused packet', fs.existsSync(path.join(builtOut, 'synthesis-input.json')) && fs.existsSync(path.join(builtOut, 'file-manifest.json'))],
+  ['uses a narrow reviewer packet', built.built_wave.mode === 'thin-mode' && built.built_wave.agents.length === 2],
   ['reports post-build budget', built.post_build_budget.status === built.built_wave.budget_status && Number.isFinite(built.post_build_budget.violation_count)],
   ['reports automation handoff', built.automation_handoff.status === 'focused-packet-ready' && built.automation_handoff.review_packet.wave === 'risk-core' && built.automation_handoff.verification_command.includes('check-context-budget.js')],
   ['does not build under-budget pack', currentOk.status === 'current-packet-ok' && !currentOk.built_wave],

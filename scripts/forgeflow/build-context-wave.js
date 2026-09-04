@@ -108,6 +108,27 @@ function buildContextWave(opts = {}) {
       boundary: 'Context wave build stopped before rebuilding packets because the latest context pack is incomplete.',
     };
   }
+  if (readOnlyPlan.status === 'needs-narrower-scope') {
+    return {
+      schema_version: '1',
+      status: 'manual-scope-needed',
+      root,
+      context_dir: contextDir,
+      requested_wave: opts.wave || '',
+      built_wave: null,
+      wave_plan: readOnlyPlan,
+      automation_handoff: {
+        status: 'blocked-manual-scope-needed',
+        write_boundary: 'none',
+        next_command: 'Narrow the oversized file or provide a smaller file list, then rerun build-context-wave.',
+        verification_command: 'node scripts/forgeflow/render-context-wave-plan.js --json',
+        stop_rule: 'Do not write a focused packet or spawn reviewers for a wave that cannot fit the target on its own.',
+      },
+      next: 'Narrow the oversized file before building a review wave.',
+      next_reason: readOnlyPlan.next_reason,
+      boundary: 'Context wave build stopped because the planned scope cannot fit the target on its own.',
+    };
+  }
   if (readOnlyPlan.status !== 'split-recommended' || readOnlyPlan.waves.length <= 1) {
     return {
       schema_version: '1',
@@ -167,8 +188,9 @@ function buildContextWave(opts = {}) {
     root,
     out: outDir,
     filesPath: waveFile,
-    maxMemoryChars: opts.maxMemoryChars || 4000,
-    maxDiffChars: opts.maxDiffChars || 9000,
+    modeOverride: 'thin',
+    maxMemoryChars: Math.min(opts.maxMemoryChars || 4000, 1000),
+    maxDiffChars: Math.min(opts.maxDiffChars || 9000, 1000),
     task: `Review context wave: ${wave.name}`,
   });
   const packSummary = jsonSummary(pack);
@@ -216,6 +238,7 @@ function buildContextWave(opts = {}) {
       out_dir: path.relative(root, outDir),
       packet_count: packSummary.packet_count,
       agents: packSummary.agents,
+      mode: packSummary.mode,
       estimated_compact_tokens: pack.telemetry.estimated_compact_tokens,
       budget_status: pack.budget.status,
       budget_violations: budgetViolations.length,
@@ -229,7 +252,7 @@ function buildContextWave(opts = {}) {
     next_reason: postBuildBudget.status === 'pass'
       ? 'The broad context pack was split and the selected wave packet was rebuilt from an explicit file list.'
       : 'The selected wave packet was rebuilt, but its context budget still needs attention.',
-    boundary: 'Context wave build writes wave file lists and one focused context pack only. It does not spawn reviewers, edit source files, commit, or push.',
+    boundary: 'Context wave build writes wave file lists and one thin focused context pack only. It does not spawn reviewers, edit source files, commit, or push.',
   };
 }
 
@@ -249,6 +272,7 @@ function renderMarkdown(result) {
     lines.push(`- File list: ${result.built_wave.file_list}`);
     lines.push(`- Context pack: ${result.built_wave.out_dir}`);
     lines.push(`- Agents: ${result.built_wave.agents.join(', ') || '(none)'}`);
+    lines.push(`- Mode: ${result.built_wave.mode}`);
     lines.push(`- Budget: ${result.built_wave.budget_status}`);
     if (result.post_build_budget) lines.push(`- Budget violations: ${result.post_build_budget.violation_count}`);
     lines.push('');

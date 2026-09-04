@@ -30,7 +30,7 @@ function makeEmptyContext() {
   return { root, contextDir };
 }
 
-const over = makeContext(24000);
+const over = makeContext(12000);
 const split = buildReviewWavePrep({ root: over.root, contextDir: over.contextDir, targetTokens: 8000, writeWaveFiles: true });
 const markdown = renderMarkdown(split);
 const under = makeContext(4000);
@@ -40,8 +40,8 @@ const incomplete = buildReviewWavePrep({ root: empty.root, contextDir: empty.con
 const opts = parseArgs(['--root', over.root, '--context-dir', over.contextDir, '--target-tokens', '8000', '--write-wave-files', '--json']);
 
 const checks = [
-  ['splits before review', split.status === 'split-before-review' && split.next.includes('risk-core-files.txt')],
-  ['split follow-through is ready after writing waves', split.follow_through.status === 'ready-to-build-first-wave' && split.follow_through.review_ready === true && split.follow_through.next_command.includes('risk-core-files.txt')],
+  ['splits before review', split.status === 'split-before-review' && split.next.includes("--wave 'risk-core'")],
+  ['split follow-through requires a measured budget check', split.follow_through.status === 'build-and-verify-first-wave' && split.follow_through.review_ready === false && split.follow_through.next_command.includes("--wave 'risk-core'")],
   ['writes wave file', fs.existsSync(path.join(over.contextDir, 'waves', 'risk-core-files.txt'))],
   ['under budget ok', ok.status === 'current-packet-ok' && ok.next.includes('current context pack') && ok.follow_through.review_ready === true],
   ['incomplete blocks review', incomplete.status === 'context-incomplete' && incomplete.next.includes('Rebuild') && incomplete.next_reason.includes('file manifest has no files') && incomplete.follow_through.review_ready === false && incomplete.follow_through.next_command === 'node scripts/forgeflow/build-context-pack.js --json'],

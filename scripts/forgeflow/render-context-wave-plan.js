@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
-const { estimateTokens } = require('./context-telemetry');
 const { assertSafeDirectory, isPathInside, safeReadTextFile, writeFileSafe } = require('./file-safety');
 const { shellQuote } = require('./privacy-boundary');
 
@@ -133,24 +132,62 @@ function safeWaveDir(root, contextDir, waveDir) {
 }
 
 function waveCommand(root, name, file) {
-  const placeholder = `<${name}-files.txt>`;
-  if (!file) return `build-context-pack --files ${shellQuote(placeholder)} --max-memory-chars 4000 --max-diff-chars 9000`;
-  return `build-context-pack --files ${shellQuote(path.relative(root, file))} --max-memory-chars 4000 --max-diff-chars 9000`;
+  const wave = shellQuote(name);
+  const context = file ? ` --context-dir ${shellQuote(path.relative(root, path.dirname(path.dirname(file))))}` : '';
+  return `node scripts/forgeflow/build-context-wave.js --wave ${wave}${context} --json`;
 }
 
 function writeWaveFile(file, files) {
   writeFileSafe(file, `${files.join('\n')}${files.length > 0 ? '\n' : ''}`);
 }
 
-function budgetStatus(tokens, targetTokens) {
+function budgetStatus(tokens, targetTokens, needsNarrowerScope = false) {
   const estimated = Math.max(0, Number(tokens || 0));
   const target = Math.max(1, Number(targetTokens || 1));
   return {
-    status: estimated > target ? 'over-target' : 'within-target',
+    status: needsNarrowerScope ? 'needs-narrower-scope' : (estimated > target ? 'over-target' : 'forecast-within-target'),
     estimated_compact_tokens: estimated,
     target_compact_tokens: target,
     over_by_tokens: Math.max(0, estimated - target),
+    post_build_verification_required: true,
   };
+}
+
+function addEstimatedTokens(files, currentTokens, safetyFactor = 2) {
+  const totalBytes = files.reduce((sum, item) => sum + Math.max(0, Number(item.size_bytes || 0)), 0);
+  const multiplier = Math.max(1, Number(safetyFactor || 1));
+  const fallback = files.length > 0 ? Math.max(1, Math.ceil((currentTokens * multiplier) / files.length)) : 0;
+  return files.map((item) => ({
+    ...item,
+    estimated_compact_tokens: totalBytes > 0
+      ? Math.max(1, Math.ceil((currentTokens * multiplier * Math.max(0, Number(item.size_bytes || 0))) / totalBytes))
+      : fallback,
+  }));
+}
+
+function packWaves(files, targetTokens) {
+  const waves = [];
+  let current = [];
+  let currentTokens = 0;
+  function pushCurrent() {
+    if (current.length === 0) return;
+    waves.push({ files: current, estimatedTokens: currentTokens, needsNarrowerScope: false });
+    current = [];
+    currentTokens = 0;
+  }
+  for (const item of files) {
+    const estimate = Number(item.estimated_compact_tokens || 0);
+    if (estimate > targetTokens) {
+      pushCurrent();
+      waves.push({ files: [item], estimatedTokens: estimate, needsNarrowerScope: true });
+      continue;
+    }
+    if (current.length > 0 && currentTokens + estimate > targetTokens) pushCurrent();
+    current.push(item);
+    currentTokens += estimate;
+  }
+  pushCurrent();
+  return waves;
 }
 
 function proofContract(slice) {
@@ -174,21 +211,18 @@ function buildContextWavePlan(opts = {}) {
   const targetTokens = Math.max(1000, Number(opts.targetTokens || 16000));
   const currentTokens = Number(telemetry.estimated_compact_tokens || 0);
   const topologyScores = topologyIndex(topology);
-  const files = (manifest.files || [])
+  const files = addEstimatedTokens((manifest.files || [])
     .map((item) => enrichFile(item, topologyScores))
-    .sort((a, b) => b.priority_score - a.priority_score || riskRank(a.kind) - riskRank(b.kind) || String(a.path).localeCompare(String(b.path)));
-  const estimatedPerFile = files.length > 0 ? Math.max(100, Math.ceil((currentTokens || targetTokens) / Math.max(files.length, 1))) : 0;
-  const maxFilesPerWave = estimatedPerFile > 0 ? Math.max(1, Math.floor(targetTokens / estimatedPerFile)) : files.length || 1;
+    .sort((a, b) => b.priority_score - a.priority_score || riskRank(a.kind) - riskRank(b.kind) || String(a.path).localeCompare(String(b.path))), currentTokens, 2);
   const waves = [];
   const waveDir = opts.writeWaveFiles ? safeWaveDir(root, contextDir, opts.waveDir) : '';
-  for (let i = 0; i < files.length; i += maxFilesPerWave) {
-    const slice = files.slice(i, i + maxFilesPerWave);
+  for (const packed of packWaves(files, targetTokens)) {
+    const slice = packed.files;
     const name = waveName(waves.length);
     const fileList = slice.map((item) => item.path);
     const waveFile = waveDir ? path.join(waveDir, `${name}-files.txt`) : '';
     if (waveFile) writeWaveFile(waveFile, fileList);
-    const compactTokens = estimateTokens(slice.reduce((sum, item) => sum + Number(item.size_bytes || 0), 0));
-    const budget = budgetStatus(compactTokens, targetTokens);
+    const budget = budgetStatus(packed.estimatedTokens, targetTokens, packed.needsNarrowerScope);
     const proof = proofContract(slice);
     waves.push({
       name,
@@ -198,7 +232,8 @@ function buildContextWavePlan(opts = {}) {
       priority_reasons: [...new Set(slice.flatMap((item) => item.priority_reasons || []))].slice(0, 8),
       proof_files: proof.proof_files,
       proof_contract: proof,
-      estimated_file_tokens: compactTokens,
+      estimated_file_tokens: packed.estimatedTokens,
+      estimation_basis: 'Current compact-token telemetry allocated by manifest byte share with a 2x focused-packet safety margin. Forecast only; rebuild and check the focused packet before review.',
       budget_status: budget,
       wave_file: waveFile ? path.relative(root, waveFile) : '',
       command: waveCommand(root, name, waveFile),
@@ -213,7 +248,7 @@ function buildContextWavePlan(opts = {}) {
   const incomplete = incompleteReasons.length > 0;
   return {
     schema_version: '1',
-    status: incomplete ? 'incomplete' : (currentTokens > targetTokens ? 'split-recommended' : 'within-budget'),
+    status: incomplete ? 'incomplete' : (files.some((item) => item.estimated_compact_tokens > targetTokens) ? 'needs-narrower-scope' : (currentTokens > targetTokens ? 'split-recommended' : 'within-budget')),
     root,
     context_dir: contextDir,
     current_compact_tokens: currentTokens,
@@ -226,12 +261,14 @@ function buildContextWavePlan(opts = {}) {
     proof_file_count: files.filter((item) => item.proof_required).length,
     incomplete_reasons: incompleteReasons,
     waves,
-    next: incomplete ? 'Rebuild the context pack before planning review waves.' : (waves.length > 1 ? waves[0].command : 'Use the current context pack as-is.'),
+    next: incomplete ? 'Rebuild the context pack before planning review waves.' : (waves.some((wave) => wave.budget_status.status === 'needs-narrower-scope') ? 'Manually narrow the oversized file before building a review wave.' : (waves.length > 1 ? waves[0].command : 'Use the current context pack as-is.')),
     next_reason: incomplete
       ? `The latest context pack is incomplete: ${incompleteReasons.join('; ')}.`
+      : (waves.some((wave) => wave.budget_status.status === 'needs-narrower-scope')
+      ? 'At least one file cannot fit the target on its own; narrow that scope before review.'
       : (waves.length > 1
       ? 'The latest context pack is over budget or broad enough to benefit from staged review waves.'
-      : 'The latest context pack is within the target budget or has too few files to split.'),
+      : 'The latest context pack is within the target budget or has too few files to split.')),
     boundary: waveDir
       ? 'Context wave plan wrote explicit wave file lists only. It did not rebuild packets, spawn agents, commit, or push.'
       : 'Context wave plan is read-only. It does not rebuild packets, spawn agents, edit files, commit, or push.',
@@ -261,7 +298,8 @@ function renderMarkdown(result) {
     lines.push(`- ${wave.name}: ${wave.files.length} file(s), kinds ${wave.kinds.join(', ') || '(none)'}`);
     lines.push(`  - Priority: ${wave.priority_score || 0}`);
     if (wave.priority_reasons && wave.priority_reasons.length > 0) lines.push(`  - Reasons: ${wave.priority_reasons.join(', ')}`);
-    if (wave.budget_status) lines.push(`  - Budget: ${wave.budget_status.status}, estimated ${wave.budget_status.estimated_compact_tokens}/${wave.budget_status.target_compact_tokens} compact tokens`);
+    if (wave.budget_status) lines.push(`  - Budget: ${wave.budget_status.status}, forecast ${wave.budget_status.estimated_compact_tokens}/${wave.budget_status.target_compact_tokens} compact tokens; rebuild and verify before review`);
+    if (wave.estimation_basis) lines.push(`  - Forecast basis: ${wave.estimation_basis}`);
     if (wave.proof_files && wave.proof_files.length > 0) lines.push(`  - Proof files: ${wave.proof_files.join(', ')}`);
     if (wave.proof_contract) lines.push(`  - Proof contract: ${wave.proof_contract.required_before_review}`);
     if (wave.wave_file) lines.push(`  - File list: ${wave.wave_file}`);

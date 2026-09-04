@@ -44,6 +44,7 @@ function buildReviewWavePrep(opts = {}) {
   const firstWave = wavePlan.waves[0] || null;
   const splitRecommended = wavePlan.status === 'split-recommended' && wavePlan.waves.length > 1;
   const incomplete = wavePlan.status === 'incomplete';
+  const needsNarrowerScope = wavePlan.status === 'needs-narrower-scope';
   const followThrough = incomplete
     ? {
       status: 'rebuild-context-pack',
@@ -52,14 +53,22 @@ function buildReviewWavePrep(opts = {}) {
       stop_rule: 'Do not spawn reviewers until the context pack has files, telemetry, and synthesis input.',
       reason: `The latest context pack is incomplete: ${(wavePlan.incomplete_reasons || []).join('; ')}.`,
     }
-    : (splitRecommended && firstWave
+    : (needsNarrowerScope
       ? {
-        status: firstWave.wave_file ? 'ready-to-build-first-wave' : 'wave-files-needed',
+        status: 'manual-scope-needed',
+        next_command: 'Narrow the oversized file or provide a smaller file list, then rerun /forgeflow-review-wave-prep.',
+        review_ready: false,
+        stop_rule: 'Do not build or spawn reviewers for a wave that cannot fit the target on its own.',
+        reason: 'At least one planned wave needs narrower scope before it can be safely built.',
+      }
+      : (splitRecommended && firstWave
+      ? {
+        status: firstWave.wave_file ? 'build-and-verify-first-wave' : 'wave-files-needed',
         next_command: firstWave.wave_file ? firstWave.command : '/forgeflow-review-wave-prep --write-wave-files',
-        review_ready: Boolean(firstWave.wave_file),
-        stop_rule: 'Use the first bounded wave before broad review; do not trim raw-required proof files.',
+        review_ready: false,
+        stop_rule: 'Build and verify the first bounded wave before review; do not trim raw-required proof files.',
         reason: firstWave.wave_file
-          ? `First review wave ${firstWave.name} has a file list and can be built.`
+          ? `First review wave ${firstWave.name} has a file list but still needs a measured budget check.`
           : `First review wave ${firstWave.name} is planned, but wave files have not been written yet.`,
       }
       : {
@@ -68,10 +77,10 @@ function buildReviewWavePrep(opts = {}) {
         review_ready: true,
         stop_rule: 'Use the current context pack unless a later budget check moves it over target.',
         reason: 'Context is within budget or too small to split.',
-      });
+      }));
   return {
     schema_version: '1',
-    status: incomplete ? 'context-incomplete' : (splitRecommended ? 'split-before-review' : 'current-packet-ok'),
+    status: incomplete ? 'context-incomplete' : (needsNarrowerScope ? 'manual-scope-needed' : (splitRecommended ? 'split-before-review' : 'current-packet-ok')),
     root: wavePlan.root,
     context_dir: wavePlan.context_dir,
     current_compact_tokens: wavePlan.current_compact_tokens,
@@ -83,14 +92,18 @@ function buildReviewWavePrep(opts = {}) {
     waves: wavePlan.waves,
     next: incomplete
       ? 'Rebuild the context pack before review.'
+      : (needsNarrowerScope
+      ? 'Narrow the oversized file before review.'
       : (splitRecommended && firstWave
       ? firstWave.command
-      : 'Use the current context pack for review.'),
+      : 'Use the current context pack for review.')),
     next_reason: incomplete
       ? `The latest context pack is incomplete: ${(wavePlan.incomplete_reasons || []).join('; ')}.`
+      : (needsNarrowerScope
+      ? 'A planned wave cannot fit the target on its own.'
       : (splitRecommended
       ? 'Context is over budget; start review with the first generated or planned wave.'
-      : 'Context is within budget or too small to split.'),
+      : 'Context is within budget or too small to split.')),
     follow_through: followThrough,
     boundary: 'Review wave prep is advisory. It does not rebuild packets, spawn reviewers, edit source files, commit, or push.',
   };
