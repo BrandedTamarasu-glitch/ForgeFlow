@@ -118,6 +118,7 @@ assert.strictEqual(selection.diagnostics.query_matches, 5, 'only positive keywor
 assert.strictEqual(selection.diagnostics.selected_count, 4, 'duplicate matching content should collapse before selection');
 assert.strictEqual(selection.diagnostics.excluded_invalid, 1, 'invalid structured records should be counted only as an aggregate exclusion');
 assert.strictEqual(incorrectOutcome.diagnostics.excluded_outcome_incorrect, 1, 'explicit incorrect outcomes should withhold only the exact learning record');
+assert.ok(renderMemorySelection(incorrectOutcome).includes('incorrect-outcome feedback'), 'outcome withholding should have aggregate correction guidance');
 assert.strictEqual(selection.diagnostics.excluded_no_match, 1, 'active irrelevant records should be counted only as an aggregate exclusion');
 assert.strictEqual(selection.diagnostics.suppressed_duplicate, 1, 'duplicate matching records should be counted after ranking');
 assert.strictEqual(selection.diagnostics.suppressed_source_cap, 0, 'the default source cap should not suppress the fixture');

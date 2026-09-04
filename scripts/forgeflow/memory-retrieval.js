@@ -199,6 +199,10 @@ function renderMemorySelection(selection, options = {}) {
   if (conflicted > 0) {
     lines.push(`${conflicted} conflicting active record${conflicted === 1 ? ' was' : 's were'} withheld pending correction or clarification.`);
   }
+  const incorrect = Number(selection && selection.diagnostics && selection.diagnostics.excluded_outcome_incorrect || 0);
+  if (incorrect > 0) {
+    lines.push(`${incorrect} command-interface learning record${incorrect === 1 ? ' was' : 's were'} withheld after explicit incorrect-outcome feedback. Correct the exact learning with /forgeflow-memory-correct before relying on replacement guidance.`);
+  }
   return lines.join('\n');
 }
 
