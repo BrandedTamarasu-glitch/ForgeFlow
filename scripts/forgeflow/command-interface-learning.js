@@ -81,7 +81,11 @@ function buildLearning(opts) {
   const audit = buildCommandInterfaceEvidence(readObservations(opts.input, opts.root));
   const findings = [...audit.findings, ...(audit.subchain_findings || [])];
   const existing = existingById(projectDir);
-  const candidates = findings.map(candidateForFinding).filter(Boolean).map((candidate) => {
+  const uniqueCandidates = new Map();
+  for (const candidate of findings.map(candidateForFinding).filter(Boolean)) {
+    if (!uniqueCandidates.has(candidate.id)) uniqueCandidates.set(candidate.id, candidate);
+  }
+  const candidates = [...uniqueCandidates.values()].map((candidate) => {
     const prior = existing.get(candidate.id);
     return { ...candidate, status: prior ? (prior.status === 'active' ? 'already-recorded' : 'existing-lifecycle') : 'ready-to-write' };
   });

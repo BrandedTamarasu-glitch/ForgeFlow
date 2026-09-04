@@ -23,6 +23,9 @@ fs.writeFileSync(weakInput, JSON.stringify({ schema_version: '1', observations: 
 const index = buildMemoryIndex({ projectDir });
 const reenabled = buildLearning({ root, projectDir, setSuggestions: 'on', writePolicy: true });
 const weak = buildLearning({ root, projectDir, input: weakInput });
+const duplicateShapeInput = path.join(root, 'duplicate-shape.json');
+fs.writeFileSync(duplicateShapeInput, JSON.stringify({ schema_version: '1', observations: ['four', 'five', 'six'].map((id, index) => ({ id, work_item_id: `work-${index + 3}`, command_chain: ['forgeflow-health', 'forgeflow-smoke'], outcome: 'success', command_calls: 2, decision_output_bytes: 40 })) }));
+const duplicateShape = buildLearning({ root, projectDir: path.join(root, '.forgeflow', 'Duplicate'), input: duplicateShapeInput });
 const checks = [
   ['preview is default and does not write', preview.status === 'preview' && candidate.status === 'ready-to-write' && noWrite],
   ['candidate is aggregate advisory low confidence', candidate.chain_kind === 'full-workflow' && candidate.entry.confidence === 'low' && candidate.entry.category === 'validation-pattern' && !JSON.stringify(candidate.entry).includes('work-one') && candidate.entry.application_guidance.includes('does not approve a wrapper')],
@@ -32,6 +35,7 @@ const checks = [
   ['weak evidence is not eligible after re-enable', reenabled.suggestions_enabled && weak.status === 'not-eligible'],
   ['memory index includes durable candidate', index.index.records.some((record) => record.text.includes('repeated advisory validation pattern'))],
   ['write requires exact candidate id', (() => { try { parseArgs(['--input', input, '--write']); return false; } catch (_err) { return true; } })()],
+  ['deduplicates equivalent full-workflow and pair previews', duplicateShape.candidates.length === 1],
 ];
 let failed = 0;
 for (const [name, ok] of checks) { if (!ok) { failed += 1; console.error(`FAIL ${name}`); } }
