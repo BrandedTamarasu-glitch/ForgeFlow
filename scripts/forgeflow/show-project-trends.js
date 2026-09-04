@@ -425,8 +425,9 @@ function latestImportGaps(contextDir, limit = 5) {
   const skippedDynamicTotal = gaps.limits.skipped_dynamic_total || 0;
   const productionTotal = gaps.limits.production_total || 0;
   const testFixtureTotal = gaps.limits.test_fixture_total || 0;
+  const needsReviewTotal = gaps.triage && gaps.triage.needs_review_total || 0;
   return {
-    status: productionTotal > 0 ? 'attention' : (unresolvedTotal > 0 || skippedDynamicTotal > 0 ? 'info' : 'clear'),
+    status: needsReviewTotal > 0 ? 'attention' : (unresolvedTotal > 0 || skippedDynamicTotal > 0 ? 'info' : 'clear'),
     unresolved_total: unresolvedTotal,
     skipped_dynamic_total: skippedDynamicTotal,
     production_total: productionTotal,

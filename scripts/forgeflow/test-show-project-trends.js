@@ -283,6 +283,12 @@ fs.writeFileSync(path.join(infoLatestDir, 'latest-insights-report.json'), JSON.s
   issue_count: 0,
 }, null, 2));
 const infoOnlyGaps = showProjectTrends({ root, projectDir: infoProjectDir });
+fs.writeFileSync(path.join(infoContextDir, 'code-topology.json'), JSON.stringify({
+  schema_version: '1',
+  unresolved: [],
+  skipped_dynamic: [{ source: 'src/runtime-loader.ts', expression: 'moduleUrl' }],
+}, null, 2));
+const expectedProductionDynamic = showProjectTrends({ root, projectDir: infoProjectDir });
 const missingDigestProjectDir = path.join(root, '.forgeflow', 'MissingDigest');
 const missingDigestContextDir = path.join(missingDigestProjectDir, 'context');
 const missingDigestLatestDir = path.join(missingDigestContextDir, 'latest');
@@ -534,6 +540,7 @@ const checks = [
   ['summarizes import gaps', result.import_gaps.status === 'attention' && result.import_gaps.unresolved_total === 1 && result.import_gaps.skipped_dynamic_total === 1 && result.recommendations.some((item) => item.command === 'forgeflow-code-map')],
   ['summarizes import gap triage', result.import_gaps.triage.expected_total === 1 && result.import_gaps.triage.needs_review_total === 1 && result.import_gaps.triage.categories.some((item) => item.category === 'local-module-missing')],
   ['keeps test fixture import gaps informational', infoOnlyGaps.import_gaps.status === 'info' && infoOnlyGaps.import_gaps.production_total === 0 && infoOnlyGaps.import_gaps.test_fixture_total === 1 && !infoOnlyGaps.recommendations.some((item) => item.command === 'forgeflow-code-map')],
+  ['keeps expected production dynamic imports informational', expectedProductionDynamic.import_gaps.status === 'info' && expectedProductionDynamic.import_gaps.production_total === 1 && expectedProductionDynamic.import_gaps.triage.needs_review_total === 0 && !expectedProductionDynamic.recommendations.some((item) => item.command === 'forgeflow-code-map')],
   ['symlink project learnings not read', symlinkLearningResult.project_learnings.present === false && !JSON.stringify(symlinkLearningResult).includes('SHOULD_NOT_LEAK')],
   ['symlink topology not read', symlinkTopologyResult.import_gaps.status === 'missing' && !JSON.stringify(symlinkTopologyResult).includes('src/leak.ts')],
   ['hardlink topology not read', hardlinkTopologyResult.import_gaps.status === 'missing' && !JSON.stringify(hardlinkTopologyResult).includes('src/hardlink-leak.ts')],
