@@ -1,47 +1,65 @@
 name: Forgeflow
 
 on:
+  push:
+    branches: [main]
+  workflow_dispatch:
   pull_request:
     types: [opened, synchronize, reopened]
 
 # Allow only one Forgeflow run per PR at a time. New commits cancel in-progress runs.
 concurrency:
-  group: forgeflow-${{ github.event.pull_request.number }}
+  group: forgeflow-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
-# Permissions needed to comment on PRs.
-#
-# LEAST-PRIVILEGE NOTE: `contents: write` is ONLY required for
-# `mode: review-and-fix` in .github/forgeflow-budget.yml (pushes chore(auto-fix)
-# commits). Default mode is `review-only` — tighten to `contents: read`
-# before merging if you are not using auto-fix. Actions doesn't allow
-# dynamic permissions per job, so this is a workflow-level decision.
-#
-# For repos defaulting to review-only, change the next line to `read`:
+# Deterministic validation never receives repository write permissions.
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
+  validate:
+    name: Deterministic tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm test
+      - run: git diff --exit-code
+
   review:
     name: Run the Forgeflow team
+    # Forks lack the model secrets and write token. Their deterministic gate above
+    # still runs, independently of this optional model-backed review.
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: write # Required only for explicitly enabled review-and-fix.
+      pull-requests: write
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
-      - name: Checkout PR branch with full history
+      - name: Checkout exact PR commit with full history
         uses: actions/checkout@v4
         with:
-          # Needed so Step 0.5 classifier can diff against the base branch
-          # and Step 1.5 --incremental can enumerate commits.
           fetch-depth: 0
-          # Check out the PR branch by REF (not SHA) so subsequent auto-fix
-          # pushes from /review-auto have a branch to push to. Using head.sha
-          # would leave the runner on detached HEAD, making
-          # `git branch --show-current` return empty and the push fail.
-          ref: ${{ github.event.pull_request.head.ref }}
-          # Token with write perms for review-and-fix mode pushes.
-          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: ${{ vars.FORGEFLOW_ENABLE_AUTOFIX == 'true' }}
+
+      - name: Prepare explicitly enabled autofix branch
+        if: vars.FORGEFLOW_ENABLE_AUTOFIX == 'true'
+        env:
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          git check-ref-format --branch "$PR_HEAD_REF"
+          git switch -c "$PR_HEAD_REF"
 
       - name: Skip re-run on auto-fix commits
         # Break the loop where /review-auto pushes chore(auto-fix) commits
@@ -130,6 +148,7 @@ jobs:
           GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           CLAUDE_CODE_HEADLESS: '1'
+          FORGEFLOW_ALLOW_AUTOFIX: ${{ vars.FORGEFLOW_ENABLE_AUTOFIX == 'true' && 'true' || 'false' }}
           # Optional model pin — omit to use the Forgeflow team default (claude-opus-4-7).
           CLAUDE_MODEL: ${{ vars.FORGEFLOW_CLAUDE_MODEL || 'claude-opus-4-7' }}
           # Path to the per-repo budget config. Override via repo variable.

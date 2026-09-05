@@ -3,11 +3,10 @@ import { test, expect } from '@playwright/test';
 test('dashboard page renders with correct title', async ({ page }) => {
   const errors: string[] = [];
   page.on('console', msg => {
-    // The WebSocket client in index.html connects to port 4001 (agent-chat),
-    // which is not running in test environments — filter those expected errors.
+    // The chat proxy's upstream is absent in this metrics-only fixture.
+    // Filter WebSocket connection errors, but keep other resource failures.
     if (
       msg.type() === 'error' &&
-      !msg.text().includes('4001') &&
       !msg.text().includes('WebSocket')
     ) {
       errors.push(msg.text());

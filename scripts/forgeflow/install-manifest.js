@@ -2,6 +2,8 @@
 const fs = require('fs');
 const path = require('path');
 
+const CODEX_INVENTORY_SOURCE = 'scripts/forgeflow/installed-codex-inventory.json';
+
 const SCRIPT_EXTENSIONS = new Set(['.js', '.sh']);
 const STATIC_FILES = new Set([
   'templates/ship-presentation.html',
@@ -214,6 +216,7 @@ function walk(root, dir, files = []) {
 }
 
 function codexSourceAllowed(source) {
+  if (hasUnsafePathSegment(source)) return false;
   return /^\.codex\/agents\/[^/]+\.toml$/.test(source)
     || /^\.agents\/skills\/[^/]+\/.+/.test(source)
     || (/^(scripts\/forgeflow|templates|forgeflow-patterns|services\/agent-chat)\//.test(source)
@@ -342,12 +345,12 @@ function assertSafeDestination(destination, home) {
   }
   let current = root;
   for (const segment of relativePath.split(path.sep)) {
-    if (fs.existsSync(current) && fs.lstatSync(current).isSymbolicLink()) {
+    if (fs.lstatSync(current, { throwIfNoEntry: false })?.isSymbolicLink()) {
       throw new Error(`Refusing symlinked runtime destination path: ${current}`);
     }
     current = path.join(current, segment);
   }
-  if (fs.existsSync(current) && fs.lstatSync(current).isSymbolicLink()) {
+  if (fs.lstatSync(current, { throwIfNoEntry: false })?.isSymbolicLink()) {
     throw new Error(`Refusing symlinked runtime destination path: ${current}`);
   }
 }
@@ -368,6 +371,27 @@ function manifestEntry(source, home = '~/.claude', target = 'claude') {
       ? category === 'runtime-script'
       : file.endsWith('.sh'),
   };
+}
+
+// Persist source paths before destination damage can change discovery. Legacy or
+// corrupt installs return null and must bootstrap from the upstream tree.
+function readCodexInventory(home) {
+  const file = codexDestinationFor(CODEX_INVENTORY_SOURCE, home);
+  assertSafeDestination(file, home);
+  try {
+    const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (!data || data.schema_version !== '1' || !Array.isArray(data.sources) || !data.sources.length
+      || data.sources.some((source) => typeof source !== 'string' || !manifestEntry(source, home, 'codex'))
+      || !data.sources.includes(CODEX_INVENTORY_SOURCE)) return null;
+    return [...new Set(data.sources)].sort();
+  } catch (err) {
+    if (err.code === 'ENOENT' || err instanceof SyntaxError) return null;
+    throw err;
+  }
+}
+
+function codexInventoryContent(sources) {
+  return `${JSON.stringify({ schema_version: '1', sources: [...new Set([...sources, CODEX_INVENTORY_SOURCE])].sort() }, null, 2)}\n`;
 }
 
 function main() {
@@ -393,6 +417,9 @@ if (require.main === module) {
 }
 
 module.exports = {
+  CODEX_INVENTORY_SOURCE,
+  codexInventoryContent,
+  readCodexInventory,
   RUNTIME_HELPERS,
   STATIC_FILES,
   assertSafeDestination,

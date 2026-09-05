@@ -1,5 +1,12 @@
 # Release Gate
 
+## Deterministic validation
+
+Run `npm ci --ignore-scripts` followed by `npm test` from a checkout. The runner discovers all helper tests, service tests, the Pi extension suite, and the strict bridge typecheck; it runs sequentially and exits nonzero on any failure. Use `npm run test:helpers` or `npm run test:services` for a focused pass. CI uses Node 24 LTS and runs this gate on every PR (including forks), pushes to main, and manual workflow runs, without model credentials or repository write permissions. The existing release checks below remain required for release-specific evidence.
+
+Model review checks out the exact PR head commit. Forks run deterministic checks but skip the optional model review because repository secrets are unavailable. Automated fixes additionally require the repository variable `FORGEFLOW_ENABLE_AUTOFIX=true` and the explicit `review-and-fix` budget setting; the workflow prepares a same-repository branch at the reviewed commit and ordinary pushes reject a moved branch. A nonzero model process exit always fails the wrapper, even if output includes an approval.
+
+
 Use this before tagging or publishing Forgeflow. It combines repo release checks with a public-safe evaluation summary example so release notes have verifiable evidence without exposing project internals.
 
 ## Local Checks

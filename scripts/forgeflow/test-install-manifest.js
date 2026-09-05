@@ -12,6 +12,8 @@ const {
   shouldPreserveDestination,
 } = require('./install-manifest');
 
+const assert = require('assert/strict');
+
 const repoRoot = path.resolve(__dirname, '..', '..');
 const home = '/tmp/claude-home';
 const safeHome = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-manifest-home-'));
@@ -37,6 +39,12 @@ try {
 } catch (_err) {
   destinationEscapeBlocked = true;
 }
+const dangling = path.join(safeHome, 'dangling');
+fs.symlinkSync(path.join(safeHome, 'absent-target'), dangling);
+assert.throws(() => assertSafeDestination(dangling, safeHome), /symlinked runtime destination/);
+assert.throws(() => assertSafeDestination(path.join(dangling, 'child'), safeHome), /symlinked runtime destination/);
+assert.equal(manifestEntry('.agents/skills/audit/../../outside', safeHome, 'codex'), null);
+
 const checks = [
   ['agent managed', isManagedSource('agents/smith-review.md')],
   ['custom agent preserve', shouldPreserveDestination('agents/custom-local.md')],

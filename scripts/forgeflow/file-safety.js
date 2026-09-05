@@ -30,8 +30,13 @@ function safeReadTextFile(file, root = path.dirname(file)) {
 }
 
 function assertSafeDestination(file) {
-  if (!fs.existsSync(file)) return;
-  const stat = fs.lstatSync(file);
+  let stat;
+  try {
+    stat = fs.lstatSync(file);
+  } catch (err) {
+    if (err.code === 'ENOENT') return;
+    throw err;
+  }
   if (stat.isSymbolicLink()) {
     throw new Error(`Refusing to write symlinked file: ${file}`);
   }
@@ -45,8 +50,13 @@ function assertSafeDestination(file) {
 
 function assertSafeDirectory(dir) {
   const parent = path.dirname(dir);
-  if (fs.existsSync(dir)) {
-    const stat = fs.lstatSync(dir);
+  let stat;
+  try {
+    stat = fs.lstatSync(dir);
+  } catch (err) {
+    if (err.code !== 'ENOENT') throw err;
+  }
+  if (stat) {
     if (stat.isSymbolicLink()) {
       throw new Error(`Refusing to use symlinked directory: ${dir}`);
     }
@@ -59,18 +69,41 @@ function assertSafeDirectory(dir) {
   if (parent && parent !== dir) assertSafeDirectory(parent);
 }
 
-function writeFileSafe(file, content, options) {
+function writeContentSafe(file, content, options, append) {
   assertSafeDestination(file);
   assertSafeDirectory(path.dirname(file));
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, content, options);
+  assertSafeDirectory(path.dirname(file));
+  const settings = typeof options === 'string' ? { encoding: options } : (options || {});
+  const expectedFlag = append ? 'a' : 'w';
+  if (settings.flag && settings.flag !== expectedFlag) {
+    throw new Error(`Unsupported safe-write flag: ${settings.flag}`);
+  }
+  // Open without truncation: validate the actual descriptor before changing bytes.
+  const flags = fs.constants.O_WRONLY | fs.constants.O_CREAT
+    | (fs.constants.O_NOFOLLOW || 0) | (fs.constants.O_NONBLOCK || 0)
+    | (append ? fs.constants.O_APPEND : 0);
+  const fd = fs.openSync(file, flags, settings.mode ?? 0o666);
+  try {
+    const stat = fs.fstatSync(fd);
+    const destination = fs.lstatSync(file);
+    if (!stat.isFile() || stat.nlink !== 1 || destination.isSymbolicLink()
+      || destination.dev !== stat.dev || destination.ino !== stat.ino) {
+      throw new Error(`Refusing to write unsafe file: ${file}`);
+    }
+    if (!append) fs.ftruncateSync(fd, 0);
+    fs.writeFileSync(fd, content, settings);
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
+function writeFileSafe(file, content, options) {
+  writeContentSafe(file, content, options, false);
 }
 
 function appendFileSafe(file, content, options) {
-  assertSafeDestination(file);
-  assertSafeDirectory(path.dirname(file));
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.appendFileSync(file, content, options);
+  writeContentSafe(file, content, options, true);
 }
 
 function writeJsonSafe(file, value) {

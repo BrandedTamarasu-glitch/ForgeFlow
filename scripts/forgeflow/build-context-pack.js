@@ -10,10 +10,8 @@ const {
   writeFileSafe,
   writeJsonSafe,
 } = require('./file-safety');
-const { buildMemoryIndex } = require('./index-memory');
+const { buildMemoryIndex, indexJsonl, indexMarkdown } = require('./index-memory');
 const { selectMemoryRecords, renderMemorySelection, sourceClass } = require('./memory-retrieval');
-const { conflictedLearningIds, resolvedCandidates } = require('./project-learning-conflicts');
-const { projectLearningId } = require('./record-project-learning');
 const { showProjectLearnings } = require('./show-project-learnings');
 const { checkProjectLearnings } = require('./check-project-learnings');
 const { compactUserProfile } = require('./user-profile');
@@ -322,7 +320,7 @@ function buildMemoryHitsFromIndex(root, indexPath, files, route, task, maxChars)
   }
   if (!index || !Array.isArray(index.records)) return null;
   const keys = keywords(files, route, task);
-  const selection = selectMemoryRecords(index.records, keys.join(' '));
+  const selection = selectMemoryRecords(index.records, keys.join(' '), { projectDir: defaultProjectDir(root) });
   return truncate(renderMemorySelection(selection, {
     title: '# Memory Hits',
     indexLabel: `Index: ${path.relative(root, indexPath)}`,
@@ -335,7 +333,7 @@ function memoryRetrievalDiagnostics(root, indexPath, files, route, task) {
     try {
       const index = readJson(indexPath, defaultProjectDir(root));
       if (index && Array.isArray(index.records)) {
-        return selectMemoryRecords(index.records, keywords(files, route, task).join(' ')).diagnostics;
+        return selectMemoryRecords(index.records, keywords(files, route, task).join(' '), { projectDir: defaultProjectDir(root) }).diagnostics;
       }
     } catch (_err) {
       // Fall through to the safe direct-read fallback.
@@ -361,7 +359,6 @@ function buildFallbackMemorySelection(root, files, route, task) {
   }
   const keys = keywords(files, route, task);
   const records = [];
-  const projectLearningCandidates = [];
   for (const file of memoryFiles(root)) {
     if (!fs.existsSync(file)) continue;
     const rel = path.relative(root, file);
@@ -372,53 +369,14 @@ function buildFallbackMemorySelection(root, files, route, task) {
       continue;
     }
     const metadata = {
-      source_class: sourceClass(path.basename(file)),
-      source_mtime_ms: Math.round(source.stat.mtimeMs),
+      sourceClass: sourceClass(path.basename(file)),
+      sourceMtimeMs: Math.round(source.stat.mtimeMs),
     };
-    const lines = source.content.split(/\r?\n/);
-    for (let i = 0; i < lines.length; i += 1) {
-      const line = lines[i].trim();
-      if (!line) continue;
-      if (file.endsWith('.jsonl')) {
-        try {
-          const parsed = JSON.parse(line);
-          const isProjectLearningCandidate = path.basename(file) === 'project-learning-candidates.jsonl';
-          if (isProjectLearningCandidate) projectLearningCandidates.push(parsed);
-          records.push({
-            source: rel,
-            line: i + 1,
-            kind: 'jsonl',
-            text: isProjectLearningCandidate
-              ? (parsed.learning || parsed.application_guidance || '')
-              : (parsed.summary || parsed.finding || parsed.pattern || parsed.message || JSON.stringify(parsed)),
-            lifecycle: typeof parsed.status === 'string' ? parsed.status.toLowerCase() : '',
-            ...(isProjectLearningCandidate ? {
-              learning_id: projectLearningId(parsed),
-              conflict_key: parsed.conflict_key,
-              conflict_value: parsed.conflict_value,
-            } : {}),
-            ...metadata,
-          });
-        } catch (_err) {
-          records.push({ source: rel, line: i + 1, kind: 'jsonl-invalid', text: line, lifecycle: 'invalid', ...metadata });
-        }
-      } else if (/^(#{1,4}\s+|[-*]\s+|\d+[.)]\s+)/.test(line)) {
-        records.push({ source: rel, line: i + 1, kind: /^#{1,4}\s+/.test(line) ? 'heading' : 'bullet', text: line, ...metadata });
-      }
-    }
+    records.push(...(file.endsWith('.jsonl')
+      ? indexJsonl(rel, source.content, 0, metadata)
+      : indexMarkdown(rel, source.content, 0, metadata)));
   }
-  const resolved = new Map(resolvedCandidates(projectLearningCandidates)
-    .map((entry) => [projectLearningId(entry), entry]));
-  const withheld = conflictedLearningIds(projectLearningCandidates);
-  for (const record of records) {
-    if (!record.learning_id) continue;
-    const controllingRecord = resolved.get(record.learning_id);
-    if (controllingRecord && typeof controllingRecord.status === 'string') {
-      record.lifecycle = controllingRecord.status.toLowerCase();
-    }
-    if (withheld.has(record.learning_id)) record.conflict_withheld = true;
-  }
-  return { keys, selection: selectMemoryRecords(records, keys.join(' ')) };
+  return { keys, selection: selectMemoryRecords(records, keys.join(' '), { projectDir }) };
 }
 
 function buildMemoryHits(root, files, route, task, maxChars, indexPath = null) {

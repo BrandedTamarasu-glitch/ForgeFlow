@@ -57,6 +57,7 @@ export interface PooledConnection {
 // ---------------------------------------------------------------------------
 
 export interface BridgeConfig {
+  readonly agentChatTokenFile?: string; // per-session upstream credential; default AGENT_CHAT_TOKEN_FILE
   readonly agentChatHost: string;       // default '127.0.0.1'
   readonly agentChatHttpPort: number;   // default 4000
   readonly bridgeHost: string;          // default '127.0.0.1'

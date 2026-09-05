@@ -40,8 +40,8 @@ Filtered sends return `{ok:true, filtered:true}` — not an error.
 
 ## ConnectionPool (connections.ts)
 - One WS connection per agent to port 4000
-- Per-agent queue (max 100 messages) — messages held until connection is OPEN
-- Automatic reconnect on disconnect
+- Per-agent queue (max 100 messages) — messages held until authenticated upgrade and identity ACK
+- Automatic reconnect on disconnect, re-reading the private agent-chat session token each time; no queued message is sent before ACK
 - `pool.send(ChatMessage)` — routes to correct agent connection
 - `pool.joinRoom(name)` — sends `/join <name>` on all connections
 - `pool.getStatus()` / `pool.getQueuedCount()` — for /status endpoint
@@ -54,10 +54,13 @@ Lifecycle events always use agent `'fc'` as sender (hardcoded in `broadcastLifec
 - PID file: `/tmp/chat-bridge-<hash>.pid`
 - Ready file: `/tmp/chat-bridge-<hash>.ready` — written after HTTP server binds; deleted on shutdown
 - Token file: `/tmp/chat-bridge-<hash>.token` — per-repo control token for `/room`, `/send`, `/lifecycle`, `/verbosity`, and `/status`
+- Upstream token: `${TMPDIR:-/tmp}/agent-chat-<uid>.token`, or `AGENT_CHAT_TOKEN_FILE`; separate from the bridge control token. Header authentication keeps it out of URLs and logs.
+- Every HTTP request pins Host to its listener and rejects foreign Origin/Fetch Metadata.
 - Hash: SHA-256 of `process.cwd()`, first 8 hex chars — ties file names to repo location
 
 ## init-session.sh
 Idempotent via `SESSION_MARKER=/tmp/chat-session-${REPO_HASH}-${BRIDGE_PID}.started`.
+Hashing uses the repo path without a trailing newline; startup runs from that root. Shell clients pass the control header on curl stdin, keeping credentials out of process arguments.
 Steps: start bridge → poll ready file → POST /room → POST /lifecycle `phase_start`.
 Source into agent shells (`. init-session.sh`) so env vars propagate.
 

@@ -74,7 +74,7 @@ function getJson(baseUrl, requestPath) {
       port: Number(parsed.port),
       path: requestPath,
       method: 'GET',
-      headers: { host: '127.0.0.1:4003' },
+      headers: { host: parsed.host },
     }, (res) => {
       const chunks = [];
       res.on('data', (chunk) => chunks.push(chunk));

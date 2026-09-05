@@ -17,6 +17,7 @@
 'use strict';
 
 const { WebSocket }   = require('ws');
+const { readToken } = require('./session-auth');
 const { spawnSync }   = require('child_process');
 const fs              = require('fs');
 const os              = require('os');
@@ -77,7 +78,7 @@ function queryLLM(prompt) {
 
 function connectAgent(agentId, room) {
   return new Promise((resolve, reject) => {
-    const ws = new WebSocket(WS_URL);
+    const ws = new WebSocket(WS_URL, { headers: { 'x-forgeflow-token': readToken() } });
 
     const timer = setTimeout(() => {
       ws.close();
@@ -221,7 +222,11 @@ async function main() {
   // Step 0 — Clear server history so a browser refresh shows a clean room
   await new Promise((resolve, reject) => {
     const http = require('http');
-    const req  = http.request({ host: '127.0.0.1', port: 4001, path: '/clear', method: 'POST' }, resolve);
+    const req  = http.request({ host: '127.0.0.1', port: 4001, path: '/clear', method: 'POST', headers: { 'x-forgeflow-token': readToken() } }, res => {
+      res.resume();
+      if (res.statusCode === 204) resolve();
+      else reject(new Error(`History clear failed (${res.statusCode})`));
+    });
     req.on('error', reject);
     req.end();
   });

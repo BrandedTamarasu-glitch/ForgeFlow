@@ -1,5 +1,4 @@
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
@@ -9,12 +8,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..', '..');
 const { buildLeanSession } = require(path.join(root, 'scripts', 'forgeflow', 'render-lean-session.js'));
 
-function configDir() {
-  return process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config');
-}
+const { configDir } = require(path.join(root, 'scripts', 'forgeflow', 'lean-config.js'));
 
 function statePath() {
-  return path.join(configDir(), 'forgeflow', 'lean-active');
+  return path.join(configDir(), 'lean-active');
 }
 
 function readMode() {
@@ -37,12 +34,13 @@ function commandMode(input) {
   return match ? match[1] : '';
 }
 
-export default async function forgeflowLeanPlugin() {
+export default async function forgeflowLeanPlugin({ directory, worktree } = {}) {
+  const projectRoot = path.resolve(worktree && worktree !== '/' ? worktree : directory || process.cwd());
   return {
     async 'experimental.chat.system.transform'(_input, output) {
       const mode = readMode();
       if (mode === 'off') return;
-      const session = buildLeanSession({ root, projectDir: path.join(root, '.forgeflow', path.basename(root)), profile: mode || 'balanced' });
+      const session = buildLeanSession({ root: projectRoot, profile: mode || '' });
       if (!session.enabled) return;
       output.system = output.system || [];
       output.system.push(session.instructions);

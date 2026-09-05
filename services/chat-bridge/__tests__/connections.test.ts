@@ -8,7 +8,12 @@
 // Run with:
 //   npx tsx --test services/chat-bridge/__tests__/connections.test.ts
 
-import { test } from 'node:test';
+import { test, after } from 'node:test';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import http from 'node:http';
+import agentChat from '../../agent-chat/server.js';
 import assert from 'node:assert/strict';
 import type { BridgeConfig, ChatMessage, AgentId } from '../types.ts';
 import { createConnectionPool } from '../connections.ts';
@@ -19,9 +24,14 @@ import { createConnectionPool } from '../connections.ts';
 
 /** Non-listening port — WS stays in CONNECTING (readyState=0), never OPEN. */
 const DEAD_URL = 'ws://127.0.0.1:29999';
+const fixtureDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bridge-auth-test-'));
+const fixtureToken = path.join(fixtureDir, 'session.token');
+fs.writeFileSync(fixtureToken, 'a'.repeat(64), { mode: 0o600 });
+after(() => fs.rmSync(fixtureDir, { recursive: true, force: true }));
 
 function makeConfig(overrides: Partial<BridgeConfig> = {}): BridgeConfig {
   return {
+    agentChatTokenFile: fixtureToken,
     agentChatHost: '127.0.0.1',
     agentChatHttpPort: 4001,
     bridgeHost: '127.0.0.1',
@@ -139,4 +149,75 @@ test('send() to unknown agent returns false without queuing', async () => {
   assert.equal(pool.getQueuedCount(), 0);
 
   await pool.shutdown();
+});
+
+
+test('legitimate bridge authenticates all agents and delivers queued messages to protected history', { timeout: 10_000 }, async t => {
+  const tokenFile = path.join(fixtureDir, 'upstream.token');
+  const upstream = agentChat.createAgentChatServer({ agentPort: 0, dashboardPort: 0,
+    tokenFile, autoSavePath: path.join(fixtureDir, 'log.md'), logger: () => {} });
+  await upstream.start();
+  const pool = createConnectionPool(makeConfig({ agentChatTokenFile: tokenFile }));
+  t.after(async () => { await pool.shutdown(); await upstream.stop(); });
+  await pool.connect(`ws://127.0.0.1:${upstream.agentServer.address().port}/`);
+  pool.joinRoom('bridge-test');
+  assert.equal(pool.send(makeMessage('fc', ' integration')), false);
+  const deadline = Date.now() + 5_000;
+  while (!Object.values(pool.getStatus()).every(status => status === 'connected')) {
+    assert.ok(Date.now() < deadline, 'all bridge identities authenticate within deadline');
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  assert.equal(pool.getQueuedCount(), 0);
+  const body = await new Promise<string>((resolve, reject) => {
+    http.get({ host: '127.0.0.1', port: upstream.dashServer.address().port, path: '/export',
+      headers: { 'x-forgeflow-token': fs.readFileSync(tokenFile, 'utf8').trim() } }, res => {
+      let text = '';
+      assert.equal(res.statusCode, 200);
+      res.on('data', chunk => { text += chunk; });
+      res.on('end', () => resolve(text));
+    }).on('error', reject);
+  });
+  assert.match(body, /test message integration/);
+});
+
+test('bridge with invalid credential never becomes connected or drains queued messages', { timeout: 10_000 }, async t => {
+  const upstream = agentChat.createAgentChatServer({ agentPort: 0, dashboardPort: 0,
+    tokenFile: path.join(fixtureDir, 'invalid-upstream.token'), logger: () => {} });
+  await upstream.start();
+  const pool = createConnectionPool(makeConfig());
+  t.after(async () => { await pool.shutdown(); await upstream.stop(); });
+  await pool.connect(`ws://127.0.0.1:${upstream.agentServer.address().port}/`);
+  pool.send(makeMessage('compass'));
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(pool.getStatus().compass, 'reconnecting');
+  assert.equal(pool.getQueuedCount(), 1);
+});
+
+test('bridge reconnect reads a rotated upstream credential before delivering queued messages', { timeout: 10_000 }, async t => {
+  const tokenFile = path.join(fixtureDir, 'rotating.token');
+  const upstream = agentChat.createAgentChatServer({ agentPort: 0, dashboardPort: 0, tokenFile, logger: () => {} });
+  await upstream.start();
+  const port = upstream.agentServer.address().port;
+  const pool = createConnectionPool(makeConfig({ agentChatTokenFile: tokenFile }));
+  t.after(async () => { await pool.shutdown(); await upstream.stop(); });
+  await pool.connect(`ws://127.0.0.1:${port}/`);
+  async function waitFor(predicate: () => boolean) {
+    const deadline = Date.now() + 4_000;
+    while (!predicate()) {
+      assert.ok(Date.now() < deadline, 'connection state changed within deadline');
+      await new Promise(resolve => setTimeout(resolve, 20));
+    }
+  }
+  await waitFor(() => pool.getStatus().compass === 'connected');
+  const before = fs.readFileSync(tokenFile, 'utf8');
+  await upstream.stop();
+  await waitFor(() => pool.getStatus().compass !== 'connected');
+  assert.equal(pool.send(makeMessage('compass', ' after restart')), false);
+  const replacement = agentChat.createAgentChatServer({ agentPort: port, dashboardPort: 0,
+    tokenFile, autoSavePath: path.join(fixtureDir, 'rotation-log.md'), logger: () => {} });
+  await replacement.start();
+  t.after(() => replacement.stop());
+  assert.notEqual(fs.readFileSync(tokenFile, 'utf8'), before);
+  await waitFor(() => pool.getStatus().compass === 'connected');
+  assert.equal(pool.getQueuedCount(), 0);
 });

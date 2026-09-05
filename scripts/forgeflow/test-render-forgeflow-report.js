@@ -3,6 +3,23 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const assert = require('node:assert/strict');
+
+function runGit(args, cwd) {
+  const result = spawnSync('git', ['-c', 'commit.gpgsign=false', ...args], {
+    cwd,
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      GIT_AUTHOR_NAME: 'ForgeFlow Test',
+      GIT_AUTHOR_EMAIL: 'test@example.invalid',
+      GIT_COMMITTER_NAME: 'ForgeFlow Test',
+      GIT_COMMITTER_EMAIL: 'test@example.invalid',
+    },
+  });
+  assert.equal(result.status, 0, `git ${args.join(' ')} failed: ${result.error || result.stderr}`);
+  return result.stdout.trim();
+}
 const {
   buildReport,
   collectMetrics,
@@ -21,11 +38,11 @@ fs.mkdirSync(path.join(metricsRoot, 'project-a', 'memory'), { recursive: true })
 fs.mkdirSync(patternsDir, { recursive: true });
 fs.mkdirSync(contextDir, { recursive: true });
 
-spawnSync('git', ['init'], { cwd: root, encoding: 'utf8' });
+runGit(['init'], root);
 fs.writeFileSync(path.join(root, 'README.md'), '# Demo\n');
-spawnSync('git', ['add', 'README.md'], { cwd: root, encoding: 'utf8' });
-spawnSync('git', ['commit', '-m', 'init'], { cwd: root, encoding: 'utf8' });
-const commitShort = spawnSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8' }).stdout.trim();
+runGit(['add', 'README.md'], root);
+runGit(['commit', '-m', 'init'], root);
+const commitShort = runGit(['rev-parse', '--short', 'HEAD'], root);
 
 const metricsFile = path.join(metricsRoot, 'project-a', 'memory', 'forgeflow-metrics.jsonl');
 fs.writeFileSync(metricsFile, [

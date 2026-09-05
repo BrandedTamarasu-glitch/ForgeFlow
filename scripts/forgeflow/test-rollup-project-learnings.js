@@ -250,7 +250,7 @@ const checks = [
   ['preserves total learning candidates source', result.sources.learning_candidates === 8],
   ['counts active inactive and invalid learning candidates', result.sources.learning_candidates_active === 3 && result.sources.learning_candidates_inactive === 2 && result.sources.learning_candidates_invalid === 1],
   ['counts and withholds only explicit conflict groups', result.sources.learning_candidates_conflict_groups === 1 && result.sources.learning_candidates_conflict_withheld === 2 && rendered.includes('2 withheld for 1 explicit conflict group(s)')],
-  ['summarizes inactive lifecycle metadata', result.sources.learning_candidates_inactive_examples.some((item) => item.status === 'superseded' && item.superseded_by.includes('project intelligence')) && rendered.includes('replace with: Use project intelligence rollup guidance instead.')],
+  ['summarizes inactive lifecycle metadata', result.sources.learning_candidates_inactive_examples.some((item) => item.status === 'superseded' && item.superseded_by.includes('project intelligence')) && !rendered.includes('replace with: Use project intelligence rollup guidance instead.')],
   ['captures recurring pitfall', result.recurring_pitfalls.some((line) => line.includes('Release-helper changes'))],
   ['omits non-guidance notes', !result.recurring_pitfalls.some((line) => /^None\b/.test(line)) && !rendered.includes('None from the design')],
   ['captures review risk area', result.risk_areas.some((item) => item.name === 'docs-drift' && item.count === 2)],

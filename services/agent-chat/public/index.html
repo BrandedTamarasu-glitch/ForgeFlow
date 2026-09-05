@@ -405,13 +405,13 @@
     // ------------------------------------------------------------------
     // WebSocket connection
     // ------------------------------------------------------------------
-    const WS_URL = `ws://${location.hostname}:4001`;
+    const WS_URL = `ws://${location.host}/`;
     let ws = null;
     let reconnectDelay = 1000;
 
     function setStatus(state) {
       wsDot.className = state;
-      wsLabel.textContent = state;
+      wsLabel.textContent = state === 'disconnected' ? 'Disconnected. Reload if the server restarted.' : state;
     }
 
     function connect() {

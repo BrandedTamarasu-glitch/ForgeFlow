@@ -122,6 +122,13 @@ validate_number() {
   fi
 }
 
+# CI must separately authorize a writable same-repository branch. Local callers
+# retain the explicit review-and-fix budget setting as their opt-in.
+if [ "$FORGEFLOW_MODE" = "review-and-fix" ] && [ "${GITHUB_ACTIONS:-false}" = "true" ] \
+  && [ "${FORGEFLOW_ALLOW_AUTOFIX:-false}" != "true" ]; then
+  fail "CI autofix requires FORGEFLOW_ENABLE_AUTOFIX and a same-repository PR branch"
+fi
+
 validate_number "max_cost_per_pr_usd" "$MAX_COST_USD"
 validate_enum   "mode" "$FORGEFLOW_MODE" "review-only review-and-fix"
 validate_enum   "routing_cap" "$ROUTING_CAP" "skip thin full deep"
@@ -238,8 +245,12 @@ if match:
     sys.stdout.write(match.group(1).strip())
 PYEOF
 
-if [ ! -s "$VERDICT_JSON" ] || ! jq -e 'type == "object" and has("schema_version")' "$VERDICT_JSON" >/dev/null 2>&1; then
-  log "no verdict block found (or block is not a schema-shaped object) in claude output — emitting failure comment"
+if [ "$CLAUDE_EXIT" -ne 0 ] || [ ! -s "$VERDICT_JSON" ] || ! jq -e 'type == "object" and has("schema_version")' "$VERDICT_JSON" >/dev/null 2>&1; then
+  log "model process failed or verdict block is invalid — emitting failure comment"
+  FAILURE_ARTIFACT=$(mktemp /tmp/forgeflow-verdict-final-XXXXXX.json)
+  jq -n --argjson code "$CLAUDE_EXIT" \
+    '{schema_version: "1", verdict: "ABORTED", reason: "model-process-or-output-failure", model_exit_code: $code}' \
+    > "$FAILURE_ARTIFACT"
 
   # Redact common secret patterns before embedding stderr in a PUBLIC PR
   # comment. Catches Anthropic API keys, bearer tokens, OAuth tokens, and
@@ -258,7 +269,7 @@ if [ ! -s "$VERDICT_JSON" ] || ! jq -e 'type == "object" and has("schema_version
 <!-- forgeflow:verdict schema_version=1 phase=wrapper-failure -->
 ### 🔴 Forgeflow — Wrapper failure
 
-The Forgeflow team ran but did not emit a parseable verdict block. This is a bug in the Forgeflow team itself or the wrapper — not a code issue.
+The model process failed or did not emit a parseable verdict block. Any apparent approval in incomplete output was rejected. Inspect the diagnostic artifact and retry the review.
 
 **Claude exit code:** ${CLAUDE_EXIT}
 
@@ -272,7 +283,7 @@ Please file an issue in BrandedTamarasu-glitch/ForgeFlow with the workflow run U
 <sub>\`schema_version: 1\` · wrapper: forgeflow-pr-review.sh</sub>
 EOF
 
-  post_comment "$body"
+  post_comment "$body" || true
   rm -f "$body" "$RAW_OUT" "$VERDICT_JSON" "${STDERR_OUT}"
   exit 2
 fi
@@ -529,10 +540,11 @@ if [ "$FORGEFLOW_MODE" = "review-and-fix" ] && { [ "$VERDICT" = "REVISE" ] || [ 
     # claude dumps debug to stderr mid-run.
     AUTO_RAW_UNREDACTED=$(mktemp)
     AUTO_RAW=$(mktemp)
+    AUTO_EXIT=0
     CLAUDE_CODE_HEADLESS=1 claude -p "/review-auto --ci --pr ${GITHUB_PR_NUMBER} --from-verdict-json ${VERDICT_ARG_PATH}" \
       --model "$CLAUDE_MODEL" \
       > "$AUTO_RAW_UNREDACTED" 2>&1 \
-      || log "review-auto exited non-zero — manual follow-up needed"
+      || AUTO_EXIT=$?
 
     sed -E \
       -e 's#sk-ant-[A-Za-z0-9_-]{20,}#[REDACTED-anthropic-key]#g' \
@@ -542,6 +554,15 @@ if [ "$FORGEFLOW_MODE" = "review-and-fix" ] && { [ "$VERDICT" = "REVISE" ] || [ 
       -e 's#ghs_[A-Za-z0-9]{20,}#[REDACTED-github-server]#g' \
       "$AUTO_RAW_UNREDACTED" > "$AUTO_RAW"
     rm -f "$AUTO_RAW_UNREDACTED"
+
+    if [ "$AUTO_EXIT" -ne 0 ]; then
+      FAILURE_ARTIFACT=$(mktemp /tmp/forgeflow-verdict-final-XXXXXX.json)
+      jq -n --argjson code "$AUTO_EXIT" \
+        '{schema_version: "1", verdict: "ABORTED", reason: "auto-fix-process-failure", model_exit_code: $code}' > "$FAILURE_ARTIFACT"
+      log "review-auto failed (exit ${AUTO_EXIT}); inspect the working branch before retrying"
+      rm -f "$VERDICT_ARG_PATH" "$AUTO_RAW" "$RAW_OUT" "$VERDICT_JSON" "$STDERR_OUT" "$BODY_FILE"
+      exit 2
+    fi
 
     AUTO_VERDICT_JSON=$(mktemp)
     python3 - "$AUTO_RAW" > "$AUTO_VERDICT_JSON" <<'PYEOF'

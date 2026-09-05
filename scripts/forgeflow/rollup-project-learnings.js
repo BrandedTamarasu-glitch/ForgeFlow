@@ -5,7 +5,7 @@ const { spawnSync } = require('child_process');
 const { compareCodeMapTrend } = require('./show-code-map');
 const { containsSensitiveContent } = require('./privacy-boundary');
 const { projectLearningId } = require('./record-project-learning');
-const { activeUnconflictedLearningCandidates, conflictSummary } = require('./project-learning-conflicts');
+const { activeUnconflictedLearningCandidates, conflictSummary, incorrectOutcomeLearningIds } = require('./project-learning-conflicts');
 
 const DEFAULT_MAX_ITEMS = 8;
 
@@ -133,8 +133,8 @@ function candidateStatus(entry) {
   return ['active', 'stale', 'superseded'].includes(value) ? value : 'invalid';
 }
 
-function activeLearningCandidates(candidates) {
-  return activeUnconflictedLearningCandidates(candidates);
+function activeLearningCandidates(candidates, incorrectIds) {
+  return activeUnconflictedLearningCandidates(candidates, incorrectIds);
 }
 
 // JSONL is append-only.  Later records with the same stable id are lifecycle
@@ -295,7 +295,7 @@ function buildRollup(inputs = {}, opts = {}) {
   const notes = inputs.notes || {};
   const reviewOutcomes = Array.isArray(inputs.reviewOutcomes) ? inputs.reviewOutcomes : [];
   const allLearningCandidates = Array.isArray(inputs.learningCandidates) ? inputs.learningCandidates : [];
-  const learningCandidates = activeLearningCandidates(allLearningCandidates);
+  const learningCandidates = activeLearningCandidates(allLearningCandidates, inputs.incorrectOutcomeIds);
   const conflicts = conflictSummary(allLearningCandidates);
   const shipSummary = inputs.shipSummary || {};
   const codeMap = inputs.codeMap || null;
@@ -436,9 +436,6 @@ function renderMarkdown(rollup) {
     `- Generated at: ${rollup.generated_at || 'unknown'}`,
     `- Implementation notes: ${rollup.sources.implementation_notes ? 'present' : 'missing'}`,
     `- Learning candidates: ${rollup.sources.learning_candidates_active || 0} active, ${rollup.sources.learning_candidates_inactive || 0} inactive, ${rollup.sources.learning_candidates_invalid || 0} invalid, ${rollup.sources.learning_candidates_conflict_withheld || 0} withheld for ${rollup.sources.learning_candidates_conflict_groups || 0} explicit conflict group(s)`,
-    ...(Array.isArray(rollup.sources.learning_candidates_inactive_examples) && rollup.sources.learning_candidates_inactive_examples.length > 0
-      ? rollup.sources.learning_candidates_inactive_examples.map((entry) => `  - ${entry.status}: ${entry.learning}${entry.superseded_by ? ` (replace with: ${entry.superseded_by})` : ''}`)
-      : []),
     `- Review outcomes: ${rollup.sources.review_outcomes}`,
     `- Ship summary: ${rollup.sources.ship_summary ? 'present' : 'missing'}`,
     `- Code map: ${rollup.sources.code_map ? `${rollup.sources.code_map_sections} sections, ${rollup.sources.code_map_changed_sections} changed` : 'missing'}`,
@@ -491,6 +488,7 @@ function rollupProjectLearnings(opts = {}) {
     notes: readImplementationNotes(projectDir),
     reviewOutcomes: readJsonl(reviewOutcomesPath),
     learningCandidates: readJsonl(learningCandidatesPath),
+    incorrectOutcomeIds: incorrectOutcomeLearningIds(projectDir),
     shipSummary: readJson(shipSummaryPath) || {},
     codeMap,
     codeMapHistory,

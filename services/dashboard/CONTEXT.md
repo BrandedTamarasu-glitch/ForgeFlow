@@ -2,16 +2,16 @@
 
 ## Architecture
 
-Read-only local dashboard. Reads Forgeflow metrics from the JSONL telemetry file and exposes them via a single HTTP server. Zero npm runtime dependencies — standard Node.js built-ins only.
+Read-only local dashboard. Reads Forgeflow metrics from the JSONL telemetry file and exposes them via a single HTTP server. Uses Node.js built-ins and `ws` for the authenticated live chat relay.
 
 | Attribute | Value |
 |---|---|
 | Port | 4003 (hardcoded, no env var) |
-| Protocol | HTTP only — no WebSocket |
+| Protocol | HTTP and read-only `/api/chat` WebSocket |
 | Access | `127.0.0.1` only |
 | Data source | `~/.claude/projects/<sanitized-cwd>/memory/forgeflow-metrics.jsonl` and `~/.codex/projects/<sanitized-cwd>/memory/forgeflow-metrics.jsonl` |
 
-The chat panel in the dashboard UI connects to port 4001 (agent-chat), not this server.
+The chat panel connects to `/api/chat` on this same origin. The server relays the read-only agent-chat stream from port 4001 using its private session credential, which never reaches browser JavaScript, URLs, or logs. The agent-chat service must be started separately.
 
 ---
 
@@ -110,6 +110,9 @@ Examples:
 
 ## Security
 
+- **Local origin:** all requests pin Host to the actual loopback listener and reject foreign Origin/Fetch Metadata. The index bootstraps an HttpOnly, SameSite=Strict cookie; chat upgrades require it and an exact same-origin Origin header.
+- **Read-only chat:** browser frames are never forwarded upstream. Missing upstream credentials return 503; the UI retains its reconnect/error status. Reload the dashboard after restarting its server to refresh the browser session.
+- **Test configuration:** `createServer` accepts `chatPort` and `chatTokenFile` overrides for disposable local regression listeners; production defaults to port 4001 and the shared agent-chat credential location.
 - **`cwd` field is NEVER present in any API response.** The `cwd` value from telemetry records is used only internally to resolve file paths. It must not appear in any field of the HTTP response — including nested objects.
 - **`/api/readiness` must not expose absolute project artifact paths.** It may include the project basename, card ids, statuses, summaries, and next commands only.
 - **Symlink rejection:** The server must refuse to follow symlinks when resolving the JSONL file path. If the resolved path is not identical to the canonical real path, the request is rejected with 403.
@@ -180,3 +183,6 @@ The UI consumes `/api/readiness` only through `GET`. It renders:
 - the API boundary text
 
 Controls in this panel must stay read-only. Copying a command to the clipboard is allowed; executing commands, refreshing artifacts, writing files, calling GitHub, spawning agents, or promoting automation from the dashboard is out of scope.
+
+## Chat Proxy Validation
+`node --test services/dashboard/__tests__/chat-proxy.test.js` covers authenticated history and live delivery, foreign/missing credential rejection, protected bootstrap, ignored browser commands, and missing upstream credentials on ephemeral loopback ports.

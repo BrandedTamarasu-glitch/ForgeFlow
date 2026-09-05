@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // Deterministic, advisory-only selection for the local memory index.
 
+const { applyCurrentLearningControls } = require('./project-learning-conflicts');
+
 const MEMORY_RANKING_POLICY = Object.freeze({
   source_class_priority: Object.freeze([
     'current',
@@ -111,7 +113,8 @@ function selectMemoryRecords(records, query, options = {}) {
   };
   const candidates = [];
 
-  for (const value of Array.isArray(records) ? records : []) {
+  const controlled = options.projectDir ? applyCurrentLearningControls(records, options.projectDir) : records;
+  for (const value of Array.isArray(controlled) ? controlled : []) {
     if (!value || typeof value !== 'object') continue;
     if (conflicted(value)) {
       diagnostics.excluded_conflicted += 1;

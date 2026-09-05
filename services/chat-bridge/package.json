@@ -7,11 +7,11 @@
     "start": "node dist/bridge.js"
   },
   "dependencies": {
-    "ws": "^8.18.0"
+    "ws": "^8.21.3"
   },
   "devDependencies": {
-    "typescript": "^5.4.0",
+    "@types/node": "^20.12.0",
     "@types/ws": "^8.5.10",
-    "@types/node": "^20.12.0"
+    "typescript": "^5.4.0"
   }
 }

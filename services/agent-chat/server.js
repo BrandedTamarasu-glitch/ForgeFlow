@@ -3,7 +3,7 @@
 // Two listeners, both bound exclusively to 127.0.0.1:
 //
 //   TCP port 4000  — agent-chat protocol (WebSocket)
-//                    bridge agents authenticate with their agentId, then send
+//                    bridge agents authenticate a session token, select agentId, then send
 //                    JSON ChatMessage objects.
 //
 //   HTTP port 4001 — dashboard (HTTP GET /) + WebSocket fan-out to browsers.
@@ -12,7 +12,8 @@
 // Security:
 //   - Both servers bind '127.0.0.1', never '0.0.0.0'.
 //   - Dashboard renders all content via textContent — no server-side HTML escaping applied.
-//   - No external dependencies beyond the built-in 'ws' module.
+//   - Session credentials and strict Host/Origin checks protect both listeners.
+//   - The only external dependency is the 'ws' package.
 
 'use strict';
 
@@ -21,15 +22,18 @@ const fs = require('fs');
 const path = require('path');
 const { WebSocketServer, WebSocket } = require('ws');
 const os = require('os');
+const crypto = require('crypto');
+const { defaultTokenFile, readToken } = require('./session-auth');
 
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
 
+function createAgentChatServer(options = {}) {
 const AGENT_HOST = '127.0.0.1';
-const AGENT_PORT = 4000;   // bridge → server (agent WebSocket protocol)
+const AGENT_PORT = options.agentPort ?? 4000;   // bridge → server (agent WebSocket protocol)
 const DASH_HOST  = '127.0.0.1';
-const DASH_PORT  = 4001;   // browser → server (dashboard HTTP + WS)
+const DASH_PORT  = options.dashboardPort ?? 4001;   // browser → server (dashboard HTTP + WS)
 
 const VALID_AGENTS = new Set(['compass', 'fc', 'warden', 'lumen', 'atlas', 'arbiter']);
 const VALID_LEVELS = new Set(['phase', 'decision', 'conversation']);
@@ -42,7 +46,10 @@ const MAX_HISTORY = 500;
 
 // Auto-save: written every AUTO_SAVE_INTERVAL messages and on shutdown.
 // Survives dirty exits (process killed, session closed without /agent-chat:off).
-const AUTO_SAVE_PATH = path.join(os.tmpdir(), 'agent-chat-log.md');
+const AUTO_SAVE_PATH = options.autoSavePath ?? path.join(os.tmpdir(), 'agent-chat-log.md');
+const tokenFile = options.tokenFile ?? defaultTokenFile();
+const agentToken = crypto.randomBytes(32).toString('hex');
+const dashboardToken = crypto.randomBytes(32).toString('hex');
 const AUTO_SAVE_INTERVAL = 10; // messages between flushes
 
 // ---------------------------------------------------------------------------
@@ -65,7 +72,45 @@ let currentRoom = '';
 // ---------------------------------------------------------------------------
 
 function log(msg) {
-  process.stderr.write(`[agent-chat] ${msg}\n`);
+  if (options.logger) options.logger(msg);
+  else process.stderr.write(`[agent-chat] ${msg}\n`);
+}
+
+// Pin Host to the actual listener and reject browser requests from other origins.
+function isLocalRequest(req) {
+  const host = req.headers.host;
+  const port = req.socket.localPort;
+  if (host !== `127.0.0.1:${port}` && host !== `localhost:${port}`) return false;
+  if (req.headers.origin !== undefined && req.headers.origin !== `http://${host}`) return false;
+  const site = req.headers['sec-fetch-site'];
+  return site === undefined || site === 'none' || site === 'same-origin';
+}
+
+function matches(supplied, expected) {
+  if (typeof supplied !== 'string') return false;
+  const actual = Buffer.from(supplied);
+  const wanted = Buffer.from(expected);
+  return actual.length === wanted.length && crypto.timingSafeEqual(actual, wanted);
+}
+
+function agentAuthorized(req) {
+  return matches(req.headers['x-forgeflow-token'], agentToken);
+}
+
+function dashboardAuthorized(req) {
+  const cookies = (req.headers.cookie ?? '').split(';').map(part => part.trim());
+  return cookies.some(cookie => cookie.startsWith('forgeflow_chat=') &&
+    matches(cookie.slice('forgeflow_chat='.length), dashboardToken));
+}
+
+function upgrade(server, wss, authorize) {
+  server.on('upgrade', (req, socket, head) => {
+    if (req.url !== '/' || !isLocalRequest(req) || !authorize(req)) {
+      socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\nContent-Length: 0\r\n\r\n');
+      return;
+    }
+    wss.handleUpgrade(req, socket, head, ws => wss.emit('connection', ws, req));
+  });
 }
 
 /** Broadcast a message payload to all connected dashboard WebSocket clients. */
@@ -143,15 +188,17 @@ function broadcastLifecycle(event, extra) {
 // Port 4000 — Agent WebSocket server (bridge → here)
 // ---------------------------------------------------------------------------
 
-const agentServer = http.createServer((_req, res) => {
+const agentServer = http.createServer((req, res) => {
+  if (!isLocalRequest(req)) { res.writeHead(403).end('Forbidden'); return; }
   res.writeHead(404).end('Not Found');
 });
 
-const wssAgents = new WebSocketServer({ server: agentServer });
+const wssAgents = new WebSocketServer({ noServer: true, maxPayload: 16_384 });
+upgrade(agentServer, wssAgents, agentAuthorized);
 
 wssAgents.on('connection', (ws) => {
   agentClients.set(ws, { agentId: null, msgCount: 0, windowStart: Date.now() });
-  log('Agent client connected (unauthenticated)');
+  log('Authenticated agent transport connected');
 
   ws.on('message', (raw) => {
     const text = raw.toString('utf8').trim();
@@ -171,7 +218,7 @@ wssAgents.on('connection', (ws) => {
     }
 
     // -----------------------------------------------------------------------
-    // Authentication: first message is the agentId
+    // Identity selection after authenticated upgrade: first message is the agentId
     // -----------------------------------------------------------------------
     if (state.agentId === null) {
       if (VALID_AGENTS.has(text)) {
@@ -179,7 +226,7 @@ wssAgents.on('connection', (ws) => {
         log(`Agent authenticated: ${text}`);
         ws.send(JSON.stringify({ type: 'ack' }));
       } else {
-        log(`Auth rejected: unknown agentId "${text}"`);
+        log('Unknown agent identity rejected');
         ws.close(1008, 'Unknown agent');
       }
       return;
@@ -211,7 +258,7 @@ wssAgents.on('connection', (ws) => {
     try {
       parsed = JSON.parse(text);
     } catch {
-      log(`Malformed JSON from ${state.agentId}: ${text.slice(0, 80)}`);
+      log(`Malformed JSON from ${state.agentId}`);
       return;
     }
 
@@ -246,15 +293,36 @@ wssAgents.on('connection', (ws) => {
   });
 });
 
-agentServer.listen(AGENT_PORT, AGENT_HOST, () => {
-  log(`Agent WS server listening on ws://${AGENT_HOST}:${AGENT_PORT}`);
-});
-
 // ---------------------------------------------------------------------------
 // Port 4001 — Dashboard HTTP server + WebSocket fan-out (browser → here)
 // ---------------------------------------------------------------------------
 
 const dashServer = http.createServer((req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Security-Policy', "frame-ancestors 'none'");
+  if (!isLocalRequest(req)) {
+    res.writeHead(403).end('Forbidden');
+    return;
+  }
+  const isIndex = req.method === 'GET' && (req.url === '/' || req.url === '/index.html');
+  // Only direct navigation or same-origin fetches may bootstrap a browser session.
+  const mode = req.headers['sec-fetch-mode'];
+  if (isIndex && mode !== undefined && mode !== 'navigate' && req.headers['sec-fetch-site'] !== 'same-origin') {
+    res.writeHead(403).end('Forbidden');
+    return;
+  }
+  if (!isIndex && !agentAuthorized(req) && !dashboardAuthorized(req)) {
+    res.writeHead(401).end('Unauthorized');
+    return;
+  }
+  if (req.method === 'POST' && !agentAuthorized(req) && req.headers.origin !== `http://${req.headers.host}`) {
+    res.writeHead(403).end('Forbidden');
+    return;
+  }
+
   if (req.method === 'POST' && req.url === '/clear') {
     messageHistory.length = 0;
     broadcastLifecycle('history-cleared', { room: currentRoom });
@@ -292,7 +360,8 @@ const dashServer = http.createServer((req, res) => {
       }
       res.writeHead(200, {
         'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'no-cache',
+        'Cache-Control': 'no-store',
+        'Set-Cookie': `forgeflow_chat=${dashboardToken}; HttpOnly; SameSite=Strict; Path=/`,
       }).end(data);
     });
     return;
@@ -301,7 +370,9 @@ const dashServer = http.createServer((req, res) => {
   res.writeHead(404).end('Not Found');
 });
 
-const wssDash = new WebSocketServer({ server: dashServer });
+const wssDash = new WebSocketServer({ noServer: true, maxPayload: 16_384 });
+upgrade(dashServer, wssDash, req => agentAuthorized(req) ||
+  (dashboardAuthorized(req) && req.headers.origin === `http://${req.headers.host}`));
 
 wssDash.on('connection', (ws) => {
   dashboardClients.add(ws);
@@ -325,37 +396,58 @@ wssDash.on('connection', (ws) => {
   });
 });
 
-dashServer.listen(DASH_PORT, DASH_HOST, () => {
-  log(`Dashboard HTTP server listening on http://${DASH_HOST}:${DASH_PORT}`);
-  log(`Dashboard WS  server listening on ws://${DASH_HOST}:${DASH_PORT}`);
-});
-
-// ---------------------------------------------------------------------------
-// Graceful shutdown
-// ---------------------------------------------------------------------------
-
-function shutdown(signal) {
-  log(`Received ${signal}, shutting down`);
-
-  // Final auto-save before closing connections
-  if (messageHistory.length > 0) {
-    autoSave();
-    log(`auto-saved ${messageHistory.length} messages to ${AUTO_SAVE_PATH}`);
-  }
-
-  for (const ws of agentClients.keys()) ws.close();
-  for (const ws of dashboardClients) ws.close();
-
-  agentServer.close(() => {
-    dashServer.close(() => {
-      log('Clean exit');
-      process.exit(0);
+async function start() {
+  const listen = (server, port, host) => new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(port, host, () => {
+      server.removeListener('error', reject);
+      resolve();
     });
   });
-
-  // Force-exit after 5 s if something hangs
-  setTimeout(() => process.exit(1), 5_000).unref();
+  try {
+    await listen(agentServer, AGENT_PORT, AGENT_HOST);
+    await listen(dashServer, DASH_PORT, DASH_HOST);
+    // Publish only after both binds succeed, without following an existing symlink.
+    const temporary = `${tokenFile}.${process.pid}.${crypto.randomBytes(8).toString('hex')}`;
+    try {
+      fs.writeFileSync(temporary, `${agentToken}\n`, { flag: 'wx', mode: 0o600 });
+      fs.renameSync(temporary, tokenFile);
+    } finally {
+      try { fs.unlinkSync(temporary); } catch (err) { if (err.code !== 'ENOENT') throw err; }
+    }
+    log(`Agent WS server listening on ws://${AGENT_HOST}:${agentServer.address().port}`);
+    log(`Dashboard listening on http://${DASH_HOST}:${dashServer.address().port}`);
+  } catch (err) {
+    await stop();
+    throw err;
+  }
 }
 
-process.on('SIGTERM', () => shutdown('SIGTERM'));
-process.on('SIGINT',  () => shutdown('SIGINT'));
+async function stop() {
+  if (messageHistory.length > 0) autoSave();
+  for (const ws of wssAgents.clients) ws.terminate();
+  for (const ws of wssDash.clients) ws.terminate();
+  await Promise.all([agentServer, dashServer].map(server => new Promise(resolve => server.close(resolve))));
+  try {
+    if (readToken(tokenFile) === agentToken) fs.unlinkSync(tokenFile);
+  } catch (err) { if (err.code !== 'ENOENT') log('Could not remove session credential'); }
+}
+
+return { start, stop, agentServer, dashServer };
+}
+
+module.exports = { createAgentChatServer };
+
+if (require.main === module) {
+  const service = createAgentChatServer();
+  service.start().catch(err => {
+    process.stderr.write(`[agent-chat] startup failed: ${err.message}\n`);
+    process.exitCode = 1;
+  });
+  for (const signal of ['SIGTERM', 'SIGINT']) {
+    process.once(signal, () => {
+      const timer = setTimeout(() => process.exit(1), 5_000).unref();
+      service.stop().then(() => clearTimeout(timer));
+    });
+  }
+}

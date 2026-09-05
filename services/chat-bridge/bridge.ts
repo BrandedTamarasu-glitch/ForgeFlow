@@ -34,7 +34,7 @@ import type {
 import { shouldPass } from './verbosity.js';
 import { createConnectionPool } from './connections.js';
 import type { ConnectionPool } from './connections.js';
-import { isAuthorized } from './auth.js';
+import { isAuthorized, isLocalRequest } from './auth.js';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -179,6 +179,10 @@ async function handleRequest(
   state: BridgeState,
   token: string,
 ): Promise<void> {
+  if (!isLocalRequest(req)) {
+    writeJson(res, 403, { ok: false, error: 'Forbidden' });
+    return;
+  }
   const { method, url } = req;
 
   // ------------------------------------------------------------------

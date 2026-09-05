@@ -10,9 +10,26 @@ const {
 } = require('./health-check');
 const { manifestEntry } = require('./install-manifest');
 const { spawnSync } = require('child_process');
+const assert = require('node:assert/strict');
+
+function runGit(args, cwd) {
+  const result = spawnSync('git', ['-c', 'commit.gpgsign=false', ...args], {
+    cwd,
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      GIT_AUTHOR_NAME: 'ForgeFlow Test',
+      GIT_AUTHOR_EMAIL: 'test@example.invalid',
+      GIT_COMMITTER_NAME: 'ForgeFlow Test',
+      GIT_COMMITTER_EMAIL: 'test@example.invalid',
+    },
+  });
+  assert.equal(result.status, 0, `git ${args.join(' ')} failed: ${result.error || result.stderr}`);
+  return result.stdout.trim();
+}
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-health-'));
-spawnSync('git', ['init'], { cwd: root, encoding: 'utf8' });
+runGit(['init'], root);
 const project = path.basename(root);
 const installRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-health-install-'));
 const nonGitRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-health-nongit-'));
@@ -174,10 +191,10 @@ fs.writeFileSync(latestInsightsReportPath, JSON.stringify({
 const withBlockedInsights = runHealthCheck({ root, fix: false });
 const withBlockedInsightsMarkdown = renderMarkdown(withBlockedInsights);
 const customInsightsRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-health-custom-root-'));
-spawnSync('git', ['init'], { cwd: customInsightsRoot, encoding: 'utf8' });
+runGit(['init'], customInsightsRoot);
 fs.writeFileSync(path.join(customInsightsRoot, 'README.md'), '# Custom\n');
-spawnSync('git', ['add', 'README.md'], { cwd: customInsightsRoot, encoding: 'utf8' });
-spawnSync('git', ['commit', '-m', 'init'], { cwd: customInsightsRoot, encoding: 'utf8' });
+runGit(['add', 'README.md'], customInsightsRoot);
+runGit(['commit', '-m', 'init'], customInsightsRoot);
 const customProjectDir = path.join(root, '.forgeflow', 'CustomExternal');
 const customLatestDir = path.join(customProjectDir, 'context', 'latest');
 fs.mkdirSync(customLatestDir, { recursive: true });
@@ -215,7 +232,7 @@ const missingTemplate = runHealthCheck({ root, installRoot, fix: false });
 const nonGit = runHealthCheck({ root: nonGitRoot, fix: true });
 const verbose = spawnSync(process.execPath, [path.join(__dirname, 'health-check.js'), '--root', root, '--verbose'], { encoding: 'utf8' });
 const symlinkRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-health-symlink-'));
-spawnSync('git', ['init'], { cwd: symlinkRoot, encoding: 'utf8' });
+runGit(['init'], symlinkRoot);
 let symlinkGitignoreCheck = { status: 'skip' };
 let symlinkGitignoreState = { safe: true };
 try {
@@ -227,7 +244,7 @@ try {
   symlinkGitignoreCheck = { status: 'skip' };
 }
 const symlinkProjectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-health-project-symlink-'));
-spawnSync('git', ['init'], { cwd: symlinkProjectRoot, encoding: 'utf8' });
+runGit(['init'], symlinkProjectRoot);
 const symlinkProjectTarget = path.join(symlinkProjectRoot, 'outside-project-target');
 const symlinkProjectDir = path.join(symlinkProjectRoot, '.forgeflow', 'SymlinkProject');
 fs.mkdirSync(path.dirname(symlinkProjectDir), { recursive: true });

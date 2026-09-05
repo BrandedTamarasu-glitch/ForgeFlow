@@ -37,7 +37,8 @@ Stop.
 ## Step 2 — Offer to copy the auto-saved log to a permanent location
 
 ```bash
-INFO="$(curl -sf --max-time 2 "http://127.0.0.1:4001/auto-save-path" || echo "")"
+CHAT_CLIENT="${CLAUDE_PLUGIN_ROOT}/services/agent-chat/client.js"
+INFO="$(node "$CHAT_CLIENT" /auto-save-path || echo "")"
 ```
 
 Parse the auto-save path and message count:
@@ -53,15 +54,10 @@ If `MSG_COUNT` > 0:
 Resolve a permanent destination:
 ```bash
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo "$HOME")"
-ROOM="$(curl -sf --max-time 1 "http://127.0.0.1:4001/auto-save-path" | python3 -c "import json,sys; ..." 2>/dev/null || echo "session")"
+ROOM="$(node "$CHAT_CLIENT" /export | grep '^\*\*Room:\*\*' | sed 's/\*\*Room:\*\* //' | tr ' ' '-' || echo "session")"
 DATE_STR="$(date +%Y-%m-%d-%H%M)"
 SAFE_ROOM="$(echo "$ROOM" | tr '/' '-' | tr ' ' '-')"
 DEFAULT_DEST="${REPO_ROOT}/.forgeflow/agent-chat-${SAFE_ROOM}-${DATE_STR}.md"
-```
-
-Fetch the room name from the export header for the default filename:
-```bash
-ROOM="$(curl -sf --max-time 2 "http://127.0.0.1:4001/export" | grep '^\*\*Room:\*\*' | sed 's/\*\*Room:\*\* //' | tr ' ' '-' || echo "session")"
 ```
 
 Tell the user: **"Chat log auto-saved to `$AUTO_SAVE_PATH` ($MSG_COUNT messages). Copy to permanent location? Default: `$DEFAULT_DEST` (yes / no / custom path)"**

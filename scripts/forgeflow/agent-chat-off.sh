@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+HELPER_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+CHAT_CLIENT="$HELPER_ROOT/services/agent-chat/client.js"
+
 MODE="${1:-}"
 CUSTOM_DEST="${2:-}"
 PID_FILE="/tmp/agent-chat.pid"
@@ -17,13 +20,13 @@ if [ -z "${PID:-}" ] || ! kill -0 "$PID" 2>/dev/null; then
   exit 0
 fi
 
-INFO="$(curl -sf --max-time 2 "http://127.0.0.1:4001/auto-save-path" || true)"
+INFO="$(node "$CHAT_CLIENT" /auto-save-path || true)"
 AUTO_SAVE_PATH="$(printf '%s' "$INFO" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('path',''))" 2>/dev/null || true)"
 MSG_COUNT="$(printf '%s' "$INFO" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('messages',0))" 2>/dev/null || echo "0")"
 
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 mkdir -p "$REPO_ROOT/.forgeflow"
-ROOM="$(curl -sf --max-time 2 "http://127.0.0.1:4001/export" | grep '^\*\*Room:\*\*' | sed 's/\*\*Room:\*\* //' | tr ' ' '-' || echo "session")"
+ROOM="$(node "$CHAT_CLIENT" /export | grep '^\*\*Room:\*\*' | sed 's/\*\*Room:\*\* //' | tr ' ' '-' || echo "session")"
 DATE_STR="$(date +%Y-%m-%d-%H%M)"
 DEFAULT_DEST="$REPO_ROOT/.forgeflow/agent-chat-${ROOM}-${DATE_STR}.md"
 

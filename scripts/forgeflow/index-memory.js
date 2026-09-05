@@ -4,7 +4,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { safeReadTextFile, writeJsonSafe } = require('./file-safety');
 const { sourceClass } = require('./memory-retrieval');
-const { conflictedLearningIds, resolvedCandidates } = require('./project-learning-conflicts');
+const { candidateStatus, conflictedLearningIds, resolvedCandidates, incorrectOutcomeLearningIds } = require('./project-learning-conflicts');
 const { projectLearningId } = require('./record-project-learning');
 
 const DEFAULT_MAX_TEXT_CHARS = 320;
@@ -113,18 +113,10 @@ function record(source, line, kind, text, maxTextChars, metadata = {}) {
   return result;
 }
 
-function incorrectOutcomeLearningIds(projectDir) {
-  const file = path.join(projectDir, 'command-interface-learning-outcomes.jsonl');
-  if (!fs.existsSync(file)) return new Set();
-  const latest = new Map();
-  for (const line of safeReadTextFile(file, projectDir).content.split(/\r?\n/).filter(Boolean)) {
-    try { const parsed = JSON.parse(line); if (parsed && /^plc_[a-f0-9]{16}$/.test(parsed.learning_id || '') && parsed.outcome) latest.set(parsed.learning_id, parsed.outcome); } catch (_err) { /* Skip invalid local feedback. */ }
-  }
-  return new Set([...latest.entries()].filter(([, outcome]) => outcome === 'incorrect').map(([id]) => id));
-}
-
 function indexMarkdown(source, content, maxTextChars, metadata = {}) {
   const records = [];
+  // The rollup is a materialized view; raw notes/candidates retain current identity.
+  if (path.basename(source) === 'project-learnings.md' && (metadata.hasLearningControls || content.includes('Durable local guidance generated from Forgeflow'))) return records;
   const lines = content.split(/\r?\n/);
   let currentHeading = '';
   for (let i = 0; i < lines.length; i += 1) {
@@ -172,7 +164,8 @@ function indexJsonl(source, content, maxTextChars, metadata = {}) {
       ? (parsed.learning || parsed.application_guidance || '')
       : (parsed.summary || parsed.finding || parsed.pattern || parsed.message || JSON.stringify(parsed));
     const controllingRecord = resolved.get(learningId) || parsed;
-    const lifecycle = typeof controllingRecord.status === 'string' ? controllingRecord.status.toLowerCase() : '';
+    const lifecycle = isProjectLearningCandidates ? candidateStatus(controllingRecord)
+      : (typeof controllingRecord.status === 'string' ? controllingRecord.status.toLowerCase() : '');
     records.push(record(source, line, 'jsonl', text, maxTextChars, {
       ...metadata,
       lifecycle,
@@ -193,6 +186,7 @@ function buildMemoryIndex(opts = {}) {
   const records = [];
   const sources = [];
   const incorrectOutcomeIds = incorrectOutcomeLearningIds(projectDir);
+  const hasLearningControls = fs.existsSync(path.join(projectDir, 'project-learning-candidates.jsonl')) || incorrectOutcomeIds.size > 0;
 
   for (const name of memoryFileNames()) {
     const file = path.join(projectDir, name);
@@ -206,6 +200,7 @@ function buildMemoryIndex(opts = {}) {
       source_class: sourceClass(name),
     });
     const metadata = {
+      hasLearningControls,
       sourceClass: sourceClass(name),
       sourceMtimeMs: Math.round(stat.mtimeMs),
     };

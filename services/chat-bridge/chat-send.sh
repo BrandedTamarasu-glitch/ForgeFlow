@@ -28,10 +28,9 @@ fi
 body=$(jq -n --arg a "$agent" --arg l "$level" --arg m "$message" \
   '{agent: $a, level: $l, message: $m}')
 
-curl -s --max-time 1 \
+printf 'X-Forgeflow-Token: %s\n' "$token" | curl -s --max-time 1 --header @- \
   -X POST \
   -H "Content-Type: application/json" \
-  -H "X-Forgeflow-Token: ${token}" \
   -d "$body" \
   "http://127.0.0.1:${port}/send" \
   > /dev/null 2>&1 || true

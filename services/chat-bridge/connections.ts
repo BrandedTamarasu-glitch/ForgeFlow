@@ -3,6 +3,9 @@
 // and per-agent message queuing.
 
 import WebSocket from 'ws';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import type { AgentId, ChatMessage, BridgeConfig, PooledConnection } from './types.js';
 import { VALID_AGENTS } from './types.js';
 
@@ -27,6 +30,7 @@ interface AgentState {
   conn: PooledConnection;
   reconnectTimer: ReturnType<typeof setTimeout> | null;
   wsUrl: string;
+  authTimer: ReturnType<typeof setTimeout> | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -105,30 +109,45 @@ export function createConnectionPool(config: BridgeConfig): ConnectionPool {
     if (shutdownRequested) return;
 
     try {
-      const ws = new WebSocket(state.wsUrl);
+      // Read on every reconnect so a restarted upstream can rotate its credential.
+      const file = config.agentChatTokenFile ?? process.env.AGENT_CHAT_TOKEN_FILE ??
+        path.join(os.tmpdir(), `agent-chat-${process.getuid?.() ?? 'user'}.token`);
+      const fd = fs.openSync(file, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+      let token: string;
+      try {
+        const stat = fs.fstatSync(fd);
+        if (!stat.isFile() || stat.nlink !== 1 || (stat.mode & 0o077) !== 0 ||
+            (process.getuid && stat.uid !== process.getuid())) throw new Error('Unsafe upstream credential file');
+        token = fs.readFileSync(fd, 'utf8').trim();
+        if (!/^[a-f0-9]{64}$/.test(token)) throw new Error('Invalid upstream credential');
+      } finally {
+        fs.closeSync(fd);
+      }
+      const ws = new WebSocket(state.wsUrl, { headers: { 'x-forgeflow-token': token } });
+      state.conn.ws = ws;
+      state.authTimer = setTimeout(() => ws.terminate(), 5_000);
 
       ws.on('open', () => {
-        state.conn.ws = ws;
+        ws.send(state.conn.agentId);
+      });
+
+      ws.on('message', raw => {
+        if (state.conn.status === 'connected') return;
+        let payload: unknown;
+        try { payload = JSON.parse(raw.toString()); } catch { return; }
+        if (typeof payload !== 'object' || payload === null || !('type' in payload) || payload.type !== 'ack') return;
+        if (state.authTimer) clearTimeout(state.authTimer);
+        state.authTimer = null;
         state.conn.status = 'connected';
-        state.conn.reconnectAttempts = 0; // reset backoff on success
-
-        // Authenticate: send agent name
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(state.conn.agentId);
-        }
-
-        // Join current room if one is set
-        if (currentRoom && ws.readyState === WebSocket.OPEN) {
-          ws.send(`/join ${currentRoom}`);
-        }
-
-        // Drain queued messages
+        state.conn.reconnectAttempts = 0;
+        if (currentRoom) ws.send(`/join ${currentRoom}`);
         drainQueue(state);
-
         log(`${state.conn.agentId} connected`);
       });
 
       ws.on('close', () => {
+        if (state.authTimer) clearTimeout(state.authTimer);
+        state.authTimer = null;
         state.conn.ws = null;
         state.conn.status = 'disconnected';
         scheduleReconnect(state);
@@ -164,12 +183,16 @@ export function createConnectionPool(config: BridgeConfig): ConnectionPool {
           },
           reconnectTimer: null,
           wsUrl: agentChatWsUrl,
+          authTimer: null,
         };
         agents.set(agentId, state);
         if (delay === 0) {
           openSocket(state);
         } else {
-          setTimeout(() => openSocket(state), delay);
+          state.reconnectTimer = setTimeout(() => {
+            state.reconnectTimer = null;
+            openSocket(state);
+          }, delay);
         }
         delay += STAGGER_MS;
       }
@@ -184,7 +207,7 @@ export function createConnectionPool(config: BridgeConfig): ConnectionPool {
       }
 
       const { conn } = state;
-      if (conn.ws?.readyState === WebSocket.OPEN) {
+      if (conn.status === 'connected' && conn.ws?.readyState === WebSocket.OPEN) {
         conn.ws.send(JSON.stringify(message));
         return true;
       }
@@ -196,7 +219,7 @@ export function createConnectionPool(config: BridgeConfig): ConnectionPool {
     joinRoom(room: string): void {
       currentRoom = room;
       for (const state of agents.values()) {
-        if (state.conn.ws) {
+        if (state.conn.status === 'connected' && state.conn.ws) {
           wsSend(state.conn.ws, `/join ${room}`);
         }
       }
@@ -228,10 +251,14 @@ export function createConnectionPool(config: BridgeConfig): ConnectionPool {
           state.reconnectTimer = null;
         }
 
+        if (state.authTimer) clearTimeout(state.authTimer);
+        state.authTimer = null;
+
         // Close WebSocket
         if (state.conn.ws) {
           state.conn.ws.removeAllListeners();
-          state.conn.ws.close();
+          state.conn.ws.on('error', () => {});
+          state.conn.ws.terminate();
           state.conn.ws = null;
         }
 

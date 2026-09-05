@@ -256,7 +256,179 @@ function sameList(left, right) {
   return left.length === right.length && left.every((item, index) => item === right[index]);
 }
 
+async function runRecoveryRegressions() {
+  const assert = require('assert/strict');
+  const { spawnSync } = require('child_process');
+  const { installCodex, codexSources } = require('./install-template');
+  const { CODEX_INVENTORY_SOURCE } = require('./install-manifest');
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-recovery-regressions-'));
+  const put = (home, source, content, mode = 0o644) => {
+    const destination = manifestEntry(source, home).destination;
+    fs.mkdirSync(path.dirname(destination), { recursive: true });
+    fs.writeFileSync(destination, content, { mode });
+  };
+  const snapshot = (dir) => {
+    const result = {};
+    for (const name of fs.readdirSync(dir)) {
+      const file = path.join(dir, name);
+      const stat = fs.lstatSync(file);
+      result[name] = stat.isDirectory() ? snapshot(file)
+        : { bytes: fs.readFileSync(file).toString('base64'), mode: stat.mode & 0o777 };
+    }
+    return result;
+  };
+  try {
+    const home = path.join(temp, 'retry');
+    put(home, 'commands/review.md', 'original review\n', 0o600);
+    put(home, 'commands/quick.md', 'original quick\n', 0o640);
+    put(home, 'commands/old.md', 'original deleted\n');
+    fs.writeFileSync(versionPath(home), `${previous}\r\n`, { mode: 0o600 });
+    const original = snapshot(home);
+    const plan = { files: ['commands/review.md', 'commands/new.md', 'commands/quick.md'], deleted: ['commands/old.md'] };
+    const options = { home, latest, plan, missingRequired: [], fetcher: async (_repo, _sha, source) => {
+      if (source === 'commands/quick.md') throw new Error('injected failure after successful writes');
+      return `replacement ${source}\n`;
+    } };
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const partial = await updateForgeflow(options);
+      assert.equal(partial.status, 'partial');
+      assert.equal(partial.backup.reused, attempt > 0);
+      assert.equal(fs.readFileSync(path.join(home, 'commands/review.md'), 'utf8'), 'replacement commands/review.md\n');
+      assert.equal(fs.readFileSync(versionPath(home), 'utf8'), `${previous}\r\n`);
+    }
+    // C reverts review.md and removes new.md, so neither appears in A...C.
+    // Resuming that delta on partial B would otherwise publish mixed files.
+    const beforeRetarget = snapshot(home);
+    let retargetFetched = false;
+    await assert.rejects(updateForgeflow({ ...options, latest: '2'.repeat(40),
+      plan: { files: ['commands/quick.md'], deleted: [] },
+      fetcher: async () => { retargetFetched = true; return 'C quick'; },
+    }), /Pending update targets .*Run --rollback/);
+    assert.equal(retargetFetched, false);
+    assert.deepEqual(snapshot(home), beforeRetarget, 'retarget refusal preserves partial state and original snapshot');
+    const retry = await updateForgeflow({ ...options,
+      plan: { files: [...plan.files, 'commands/added-on-retry.md'], deleted: plan.deleted },
+      fetcher: async (_repo, _sha, source) => `final ${source}\n`,
+    });
+    assert.equal(retry.status, 'updated');
+    assert.equal(retry.backup.reused, true);
+    const beforePreview = snapshot(home);
+    const preview = spawnSync(process.execPath, [path.join(__dirname, 'update-forgeflow.js'), '--home', home, '--rollback', '--dry-run', '--json'], { encoding: 'utf8' });
+    assert.ifError(preview.error);
+    assert.equal(preview.status, 0, preview.stderr);
+    assert.equal(JSON.parse(preview.stdout).status, 'rollback-preview');
+    assert.equal(JSON.parse(preview.stdout).version_written, false);
+    assert.deepEqual(snapshot(home), beforePreview, 'CLI rollback dry-run must preserve all bytes and modes including backups');
+    assert.equal(rollbackForgeflow({ home }).status, 'rolled-back');
+    const restored = snapshot(home);
+    delete restored.forgeflow;
+    assert.deepEqual(restored, original, 'rollback after retries restores original bytes, modes, deletions and marker');
+    const retarget = await updateForgeflow({ ...options, latest: '2'.repeat(40),
+      plan: { files: ['commands/quick.md'], deleted: [] }, fetcher: async () => 'C quick' });
+    assert.equal(retarget.status, 'updated');
+    assert.equal(fs.readFileSync(path.join(home, 'commands/review.md'), 'utf8'), 'original review\n');
+    assert.equal(fs.existsSync(path.join(home, 'commands/new.md')), false);
+    assert.equal(fs.readFileSync(path.join(home, 'commands/quick.md'), 'utf8'), 'C quick');
+    assert.equal(fs.readFileSync(versionPath(home), 'utf8').trim(), '2'.repeat(40));
+
+    // Older pending snapshots cannot prove which target was partially applied.
+    const legacy = path.join(temp, 'legacy-pending');
+    put(legacy, 'commands/review.md', 'legacy original');
+    await updateForgeflow({ ...options, home: legacy });
+    const legacyManifestPath = path.join(legacy, 'forgeflow/backups/previous/manifest.json');
+    const legacyManifest = JSON.parse(fs.readFileSync(legacyManifestPath, 'utf8'));
+    delete legacyManifest.to_version;
+    fs.writeFileSync(legacyManifestPath, JSON.stringify(legacyManifest));
+    const beforeLegacyRetry = snapshot(legacy);
+    await assert.rejects(updateForgeflow({ ...options, home: legacy }), /unknown target SHA.*Run --rollback/);
+    assert.deepEqual(snapshot(legacy), beforeLegacyRetry);
+    assert.equal(rollbackForgeflow({ home: legacy }).status, 'rolled-back');
+
+
+    // A completed same-version repair starts its own snapshot.
+    const sameSha = path.join(temp, 'same-sha');
+    put(sameSha, 'commands/review.md', 'before first repair');
+    fs.writeFileSync(versionPath(sameSha), latest);
+    for (const content of ['first repair', 'second repair']) {
+      const repair = await updateForgeflow({ home: sameSha, latest, repair: true,
+        plan: { files: ['commands/review.md'], deleted: [] }, fetcher: async () => content });
+      assert.equal(repair.backup.reused, false);
+    }
+    const beforeFailedBackup = fs.readFileSync(path.join(sameSha, 'forgeflow/backups/previous/manifest.json'), 'utf8');
+    fs.mkdirSync(path.join(sameSha, 'commands/invalid.md'));
+    await assert.rejects(updateForgeflow({ home: sameSha, latest, repair: true,
+      plan: { files: ['commands/review.md', 'commands/invalid.md'], deleted: [] }, fetcher: async () => 'unreachable' }), /non-regular runtime file/);
+    assert.equal(fs.readFileSync(path.join(sameSha, 'forgeflow/backups/previous/manifest.json'), 'utf8'), beforeFailedBackup);
+    rollbackForgeflow({ home: sameSha });
+    assert.equal(fs.readFileSync(path.join(sameSha, 'commands/review.md'), 'utf8'), 'first repair');
+
+    const interrupted = path.join(temp, 'interrupted');
+    put(interrupted, 'commands/review.md', 'before interrupted completion');
+    fs.writeFileSync(versionPath(interrupted), previous);
+    const interruptedOptions = { home: interrupted, latest, missingRequired: [],
+      plan: { files: ['commands/review.md', 'commands/quick.md'], deleted: [] },
+      fetcher: async (_repo, _sha, source) => {
+        if (source.endsWith('quick.md')) throw new Error('partial');
+        return 'after interrupted completion';
+      } };
+    await updateForgeflow(interruptedOptions);
+    // Model interruption between version publication and pending completion.
+    fs.writeFileSync(versionPath(interrupted), latest);
+    const resumed = await updateForgeflow({ ...interruptedOptions, fetcher: async () => 'completed' });
+    assert.equal(resumed.status, 'updated');
+    assert.equal(resumed.backup.reused, true);
+    rollbackForgeflow({ home: interrupted });
+    assert.equal(fs.readFileSync(path.join(interrupted, 'commands/review.md'), 'utf8'), 'before interrupted completion');
+    assert.equal(fs.readFileSync(versionPath(interrupted), 'utf8'), previous);
+
+    const fresh = path.join(temp, 'fresh');
+    await updateForgeflow({ home: fresh, latest, plan: { files: ['commands/review.md'], deleted: [] }, fetcher: async () => 'new' });
+    rollbackForgeflow({ home: fresh });
+    assert.equal(fs.existsSync(versionPath(fresh)), false, 'first-install rollback removes the newly created version marker');
+    assert.equal(fs.existsSync(path.join(fresh, 'commands/review.md')), false);
+
+    const codex = path.join(temp, 'codex');
+    installCodex({ home: codex });
+    fs.writeFileSync(versionPath(codex), latest);
+    const installed = require(path.join(codex, 'forgeflow/scripts/forgeflow/update-forgeflow.js'));
+    const sources = codexSources();
+    const codexOptions = { target: 'codex', home: codex, latest,
+      plan: { files: sources, deleted: [] }, fetcher: localFetcher };
+    for (const source of ['scripts/forgeflow/smoke-check.js', '.codex/agents/smith-reviewer.toml', '.agents/skills/audit/SKILL.md']) {
+      const destination = manifestEntry(source, codex, 'codex').destination;
+      fs.unlinkSync(destination);
+      assert.ok(installed.requiredManagedSources('codex').includes(source));
+      assert.ok(installed.missingRequiredManagedFiles(codex, 'codex').includes(source), `installed inventory must retain ${source}`);
+      const repair = await installed.updateForgeflow(codexOptions);
+      assert.equal(repair.status, 'repaired');
+      assert.ok(repair.missing_required.includes(source));
+      assert.equal(fs.readFileSync(destination, 'utf8'), fs.readFileSync(path.join(repoRoot, source), 'utf8'));
+    }
+    const inventoryPath = manifestEntry(CODEX_INVENTORY_SOURCE, codex, 'codex').destination;
+    for (const corrupt of [null, '{', 'null', '{"schema_version":"1","sources":[]}']) {
+      if (corrupt === null) fs.unlinkSync(inventoryPath);
+      else fs.writeFileSync(inventoryPath, corrupt);
+      const repair = await installed.updateForgeflow(codexOptions);
+      assert.equal(repair.status, 'repaired', 'missing/corrupt legacy inventory triggers repair');
+      assert.equal(repair.inventory_missing, true);
+      assert.ok(JSON.parse(fs.readFileSync(inventoryPath, 'utf8')).sources.includes('.agents/skills/audit/SKILL.md'));
+    }
+    const inventoryBefore = fs.readFileSync(inventoryPath, 'utf8');
+    const newSource = 'scripts/forgeflow/future-added-helper.js';
+    await installed.updateForgeflow({ target: 'codex', home: codex, latest: '3'.repeat(40),
+      plan: { files: [newSource], deleted: ['.agents/skills/audit/SKILL.md'] }, fetcher: async () => 'new helper' });
+    const updatedInventory = JSON.parse(fs.readFileSync(inventoryPath, 'utf8')).sources;
+    assert.ok(updatedInventory.includes(newSource));
+    assert.ok(!updatedInventory.includes('.agents/skills/audit/SKILL.md'));
+    assert.equal(installed.rollbackForgeflow({ home: codex, target: 'codex' }).status, 'rolled-back');
+    assert.equal(fs.readFileSync(inventoryPath, 'utf8'), inventoryBefore, 'rollback restores expected inventory with the files');
+  } finally {
+    fs.rmSync(temp, { recursive: true, force: true });
+  }
+}
+
 async function run() {
+  await runRecoveryRegressions();
   const requiredSources = requiredManagedSources();
   const managedSources = allManagedSources();
   const freshHomeSources = managedSources;

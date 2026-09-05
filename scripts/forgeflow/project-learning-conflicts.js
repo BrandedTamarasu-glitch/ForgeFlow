@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { safeReadTextFile } = require('./file-safety');
 const { cleanText, projectLearningId } = require('./record-project-learning');
 
 function usage() {
@@ -90,9 +91,49 @@ function conflictedLearningIds(candidates) {
   return new Set(findProjectLearningConflicts(candidates).flatMap((conflict) => conflict.ids));
 }
 
-function activeUnconflictedLearningCandidates(candidates) {
+function incorrectOutcomeLearningIds(projectDir) {
+  const file = path.join(projectDir, 'command-interface-learning-outcomes.jsonl');
+  if (!fs.existsSync(file)) return new Set();
+  const latest = new Map();
+  for (const line of safeReadTextFile(file, projectDir).content.split(/\r?\n/).filter(Boolean)) {
+    try {
+      const parsed = JSON.parse(line);
+      if (parsed && /^plc_[a-f0-9]{16}$/.test(parsed.learning_id || '') && ['useful', 'ignored', 'incorrect', 'blocked'].includes(parsed.outcome)) latest.set(parsed.learning_id, parsed.outcome);
+    } catch (_err) { /* Ignore malformed feedback records. */ }
+  }
+  return new Set([...latest].filter(([, outcome]) => outcome === 'incorrect').map(([id]) => id));
+}
+
+// Reapply current controls when consuming a saved index, including indexes
+// created before a correction or outcome was recorded. Legacy rollup bullets
+// cannot establish learning identity, so use the structured authority instead.
+function applyCurrentLearningControls(records, projectDir) {
+  const file = path.join(projectDir, 'project-learning-candidates.jsonl');
+  const incorrectIds = incorrectOutcomeLearningIds(projectDir);
+  const hasCandidates = fs.existsSync(file);
+  const candidates = hasCandidates ? safeReadTextFile(file, projectDir).content.split(/\r?\n/).flatMap((line) => {
+    try { return [JSON.parse(line)]; } catch (_err) { return []; }
+  }) : [];
+  const resolved = new Map(resolvedCandidates(candidates).map((entry) => [projectLearningId(entry), entry]));
+  const conflicts = conflictedLearningIds(candidates);
+  return (Array.isArray(records) ? records : [])
+    .filter((entry) => entry && typeof entry === 'object')
+    .filter((entry) => !(path.basename(entry.source || '') === 'project-learnings.md' && (hasCandidates || incorrectIds.size)))
+    .map((entry) => {
+      if (!entry.learning_id) return entry;
+      const current = resolved.get(entry.learning_id);
+      return {
+        ...entry,
+        lifecycle: current ? candidateStatus(current) : 'invalid',
+        conflict_withheld: conflicts.has(entry.learning_id),
+        outcome_withheld: incorrectIds.has(entry.learning_id),
+      };
+    });
+}
+
+function activeUnconflictedLearningCandidates(candidates, incorrectIds = new Set()) {
   const withheld = conflictedLearningIds(candidates);
-  return resolvedCandidates(candidates).filter((entry) => candidateStatus(entry) === 'active' && !withheld.has(projectLearningId(entry)));
+  return resolvedCandidates(candidates).filter((entry) => candidateStatus(entry) === 'active' && !withheld.has(projectLearningId(entry)) && !incorrectIds.has(projectLearningId(entry)));
 }
 
 function conflictSummary(candidates) {
@@ -126,6 +167,8 @@ if (require.main === module) {
 }
 
 module.exports = {
+  applyCurrentLearningControls,
+  incorrectOutcomeLearningIds,
   activeUnconflictedLearningCandidates,
   candidateStatus,
   conflictMetadata,

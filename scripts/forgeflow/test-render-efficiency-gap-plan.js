@@ -3,6 +3,23 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const assert = require('node:assert/strict');
+
+function runGit(args, cwd) {
+  const result = spawnSync('git', ['-c', 'commit.gpgsign=false', ...args], {
+    cwd,
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      GIT_AUTHOR_NAME: 'ForgeFlow Test',
+      GIT_AUTHOR_EMAIL: 'test@example.invalid',
+      GIT_COMMITTER_NAME: 'ForgeFlow Test',
+      GIT_COMMITTER_EMAIL: 'test@example.invalid',
+    },
+  });
+  assert.equal(result.status, 0, `git ${args.join(' ')} failed: ${result.error || result.stderr}`);
+  return result.stdout.trim();
+}
 const { buildEfficiencyGapPlan, parseArgs, renderMarkdown } = require('./render-efficiency-gap-plan');
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-efficiency-gap-plan-'));
@@ -15,11 +32,11 @@ fs.mkdirSync(path.join(metricsRoot, 'demo', 'memory'), { recursive: true });
 fs.mkdirSync(patternsDir, { recursive: true });
 fs.mkdirSync(path.join(contextDir, 'latest'), { recursive: true });
 
-spawnSync('git', ['init'], { cwd: root, encoding: 'utf8' });
+runGit(['init'], root);
 fs.writeFileSync(path.join(root, 'README.md'), '# Demo\n');
-spawnSync('git', ['add', 'README.md'], { cwd: root, encoding: 'utf8' });
-spawnSync('git', ['commit', '-m', 'init'], { cwd: root, encoding: 'utf8' });
-const commitShort = spawnSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8' }).stdout.trim();
+runGit(['add', 'README.md'], root);
+runGit(['commit', '-m', 'init'], root);
+const commitShort = runGit(['rev-parse', '--short', 'HEAD'], root);
 
 fs.writeFileSync(path.join(contextDir, 'project-intelligence-rollup.json'), JSON.stringify({
   readiness: { state: 'ready', evidence: { context_budget: 'pass' } },
@@ -111,7 +128,7 @@ const checks = [
   ['includes runtime inventory hotspot', hasGap('runtime-inventory') && markdown.includes('runtime-inventory.js')],
   ['keeps top five when budget is more urgent than failure digest', result.candidate_count > result.gap_count && !hasGap('failure-digest')],
   ['includes telemetry thin signal', hasGap('forgeflow-telemetry') && result.gaps.find((item) => item.id === 'forgeflow-telemetry').evidence.verdict_reviewers === 0],
-  ['uses advisor budget over stale readiness', result.context_advisor.budget_status === 'warn' && result.gaps[0].id === 'context-budget' && result.gaps[0].evidence.over_by_tokens === 2000],
+  ['uses advisor budget over stale readiness', result.context_advisor.budget_status === 'fail' && result.gaps[0].id === 'context-budget' && result.gaps[0].evidence.over_by_tokens === 2000],
   ['renders evidence and validation', markdown.includes('Evidence:') && markdown.includes('- Validate:')],
   ['renders read-only boundary', markdown.includes('does not record outcomes') && markdown.includes('automates local gap discovery') && markdown.includes('execute failed commands')],
   ['parses args', opts.root === root && opts.projectDir === projectDir && opts.metricsRoot === metricsRoot && opts.patternsDir === patternsDir && opts.failedCommand === 'npm test' && opts.json === true],

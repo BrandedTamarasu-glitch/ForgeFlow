@@ -3,6 +3,8 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const {
+  CODEX_INVENTORY_SOURCE,
+  codexInventoryContent,
   assertSafeDestination,
   destinationForTarget,
   isManagedSource,
@@ -149,6 +151,11 @@ function installCodex({ home, dryRun = false } = {}) {
       executable: entry.executable,
       dryRun,
     }));
+  }
+  const inventoryPath = codexDestination(CODEX_INVENTORY_SOURCE, home);
+  if (!dryRun) {
+    assertSafeDestination(inventoryPath, home);
+    fs.writeFileSync(inventoryPath, codexInventoryContent(sources));
   }
   return {
     target: 'codex',

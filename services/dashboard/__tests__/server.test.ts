@@ -72,8 +72,7 @@ function makeReadinessFixture(): { projectRoot: string; projectDir: string } {
   return { projectRoot, projectDir };
 }
 
-// Node's built-in fetch (undici) rewrites the Host header, ignoring caller overrides.
-// Use http.request so we can spoof Host: 127.0.0.1:4003 to satisfy the DNS-rebinding guard.
+// Match the Host header to the ephemeral listener used by each test.
 interface SimpleResponse {
   status: number;
   headers: { get(name: string): string | null };
@@ -90,7 +89,7 @@ function get(baseUrl: string, urlPath: string, method = 'GET'): Promise<SimpleRe
         port: Number(parsed.port),
         path: urlPath,
         method,
-        headers: { host: '127.0.0.1:4003' }
+        headers: { host: parsed.host }
       },
       (res) => {
         const chunks: Buffer[] = [];
@@ -273,7 +272,10 @@ test('GET /api/readiness returns local project readiness cards', async () => {
       boundary: string;
     };
     assert.equal(body.schema_version, '1');
-    assert.equal(body.status, 'ready');
+    assert.equal(body.status, 'attention');
+    assert.ok(body.cards.some((card) => card.id === 'lean-prime' && card.status === 'blocked'));
+    assert.ok(body.cards.some((card) => card.id === 'lean-guidance' && card.status === 'blocked'));
+    assert.ok(body.cards.some((card) => card.id === 'benchmark-evidence' && card.status === 'missing'));
     assert.equal(body.project, path.basename(fixture.projectRoot));
     assert.ok(body.cards.some((card) => card.id === 'release-readiness' && card.status === 'ready'));
     assert.ok(body.cards.some((card) => card.id === 'dogfood-refresh-plan' && card.next === '/forgeflow-dogfood-report --write'));

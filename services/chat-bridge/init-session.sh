@@ -23,7 +23,7 @@ fi
 # PID / ready file paths (namespaced by repo root)
 # ---------------------------------------------------------------------------
 
-REPO_HASH="$(echo "$SUBAGENTS_ROOT" | sha256sum | cut -c1-8)"
+REPO_HASH="$(printf '%s' "$SUBAGENTS_ROOT" | sha256sum | cut -c1-8)"
 PID_FILE="/tmp/chat-bridge-${REPO_HASH}.pid"
 READY_FILE="/tmp/chat-bridge-${REPO_HASH}.ready"
 TOKEN_FILE="/tmp/chat-bridge-${REPO_HASH}.token"
@@ -65,7 +65,7 @@ fi
 if [ "$BRIDGE_ALIVE" = false ]; then
   BRIDGE_JS="$SUBAGENTS_ROOT/services/chat-bridge/dist/bridge.js"
   if [ -f "$BRIDGE_JS" ]; then
-    node "$BRIDGE_JS" &
+    (cd "$SUBAGENTS_ROOT" && exec node "$BRIDGE_JS") &
     BRIDGE_PID=$!
 
     # 4. Write PID file and root companion
@@ -114,10 +114,9 @@ if [ "$CHAT_AVAILABLE" = true ]; then
   fi
 
   # Create room
-  curl -s --max-time 1 \
+  printf 'X-Forgeflow-Token: %s\n' "$CHAT_BRIDGE_TOKEN" | curl -s --max-time 1 --header @- \
     -X POST \
     -H "Content-Type: application/json" \
-    -H "X-Forgeflow-Token: ${CHAT_BRIDGE_TOKEN}" \
     -d "$(jq -n --arg name "$ROOM_NAME" '{name: $name}')" \
     "http://127.0.0.1:${CHAT_BRIDGE_PORT}/room" \
     > /dev/null 2>&1 || true
@@ -126,10 +125,9 @@ if [ "$CHAT_AVAILABLE" = true ]; then
   SESSION_MARKER="/tmp/chat-session-${REPO_HASH}-${BRIDGE_PID}.started"
   if [ ! -f "$SESSION_MARKER" ]; then
     touch "$SESSION_MARKER"
-    curl -s --max-time 1 \
+    printf 'X-Forgeflow-Token: %s\n' "$CHAT_BRIDGE_TOKEN" | curl -s --max-time 1 --header @- \
       -X POST \
       -H "Content-Type: application/json" \
-      -H "X-Forgeflow-Token: ${CHAT_BRIDGE_TOKEN}" \
       -d "$(jq -n --arg event "phase_start" --arg data "$COMMAND_NAME" '{event: $event, data: $data}')" \
       "http://127.0.0.1:${CHAT_BRIDGE_PORT}/lifecycle" \
       > /dev/null 2>&1 || true

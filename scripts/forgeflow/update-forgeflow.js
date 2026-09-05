@@ -5,7 +5,9 @@ const https = require('https');
 const os = require('os');
 const path = require('path');
 const {
-  isManagedSource,
+  CODEX_INVENTORY_SOURCE,
+  codexInventoryContent,
+  readCodexInventory,
   manifestEntry,
   assertSafeDestination,
   managedSources,
@@ -150,8 +152,13 @@ function shouldSyncSource(source, target = 'claude') {
   return Boolean(entry && !entry.preserve);
 }
 
-function requiredManagedSources(target = 'claude') {
-  if (normalizeTarget(target) === 'codex') return managedSources(path.resolve(__dirname, '..', '..'), 'codex');
+function requiredManagedSources(target = 'claude', home) {
+  if (normalizeTarget(target) === 'codex') {
+    if (home) return readCodexInventory(home) || [...RUNTIME_HELPERS, CODEX_INVENTORY_SOURCE];
+    const root = path.resolve(__dirname, '..', '..');
+    if (fs.existsSync(path.join(root, '.codex', 'agents'))) return managedSources(root, 'codex');
+    return readCodexInventory(path.dirname(root)) || [...RUNTIME_HELPERS, CODEX_INVENTORY_SOURCE];
+  }
   return [
     ...Array.from(STATIC_FILES),
     ...RUNTIME_HELPERS,
@@ -159,7 +166,7 @@ function requiredManagedSources(target = 'claude') {
 }
 
 function missingRequiredManagedFiles(home, target = 'claude') {
-  return requiredManagedSources(target)
+  return requiredManagedSources(target, home)
     .map((source) => manifestEntry(source, home, target))
     .filter(Boolean)
     .filter((entry) => !entry.preserve && !fs.existsSync(entry.destination))
@@ -224,70 +231,84 @@ function writeAtomic(file, content, executable, home) {
   assertSafeDestination(file, home);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   assertSafeDestination(file, home);
-  const tmp = path.join(path.dirname(file), `.${path.basename(file)}.${process.pid}.tmp`);
-  fs.writeFileSync(tmp, content);
-  fs.chmodSync(tmp, executable ? 0o755 : 0o644);
-  fs.renameSync(tmp, file);
+  const tmp = path.join(path.dirname(file), `.${path.basename(file)}.${crypto.randomUUID()}.tmp`);
+  try {
+    fs.writeFileSync(tmp, content, { flag: 'wx', mode: executable ? 0o755 : 0o644 });
+    fs.chmodSync(tmp, executable ? 0o755 : 0o644);
+    assertSafeDestination(file, home);
+    fs.renameSync(tmp, file);
+  } finally {
+    if (fs.existsSync(tmp)) fs.unlinkSync(tmp);
+  }
 }
 
 function snapshotPathForSource(root, source) {
   return path.join(root, 'files', source);
 }
 
-function createBackup({ home, target = 'claude', files, current, dryRun = false }) {
-  if (dryRun || files.length === 0) {
-    return {
-      path: backupRoot(home),
-      files: [],
-      version: current || '',
-      created: false,
-    };
-  }
-
+function createBackup({ home, target = 'claude', files, current, latest, dryRun = false }) {
   const root = backupRoot(home);
-  assertSafeDestination(path.join(root, 'manifest.json'), home);
-  fs.rmSync(root, { recursive: true, force: true });
-  fs.mkdirSync(path.join(root, 'files'), { recursive: true });
-
-  const manifest = {
-    schema_version: '1',
-    created_at: new Date().toISOString(),
-    version: current || '',
+  if (dryRun) return { path: root, files: [], version: current || '', created: false };
+  assertSafeDestination(backupManifestPath(home), home);
+  const previous = fs.existsSync(backupManifestPath(home))
+    ? JSON.parse(fs.readFileSync(backupManifestPath(home), 'utf8')) : null;
+  // A retry of the same target SHA must retain every original byte.
+  // A completed same-SHA repair is a new operation, so version equality alone
+  // must never decide whether to reuse the snapshot.
+  const reuse = previous?.pending === true;
+  if (reuse && (previous.version !== (current || '') || previous.target !== target)) {
+    throw new Error('Pending update belongs to a different version or runtime; roll it back before updating.');
+  }
+  assertSafeDestination(versionPath(home), home);
+  const versionStat = fs.lstatSync(versionPath(home), { throwIfNoEntry: false });
+  const inventory = [...new Set(files)].sort();
+  fs.mkdirSync(path.dirname(root), { recursive: true });
+  const stage = reuse ? root : fs.mkdtempSync(path.join(path.dirname(root), '.snapshot-'));
+  const manifest = reuse ? previous : {
+    schema_version: '2', target, pending: true, to_version: latest,
+    created_at: new Date().toISOString(), version: current || '',
+    version_file: versionStat ? {
+      content: fs.readFileSync(versionPath(home)).toString('base64'), mode: versionStat.mode & 0o777,
+    } : null,
     files: [],
   };
-
-  const uniqueFiles = [...new Set(files)].sort();
-  for (const source of uniqueFiles) {
-    const entry = manifestEntry(source, home, target);
-    if (!entry || entry.preserve) continue;
-
-    const item = {
-      source,
-      destination: entry.destination,
-      existed: fs.existsSync(entry.destination),
-      mode: null,
-      backup: null,
-    };
-
-    if (item.existed) {
+  try {
+    for (const source of inventory) {
+      if (manifest.files.some((item) => item.source === source)) continue;
+      const entry = manifestEntry(source, home, target);
+      if (!entry || entry.preserve) continue;
       assertSafeDestination(entry.destination, home);
-      const stat = fs.statSync(entry.destination);
-      item.mode = stat.mode & 0o777;
-      item.backup = snapshotPathForSource(root, source);
-      fs.mkdirSync(path.dirname(item.backup), { recursive: true });
-      fs.copyFileSync(entry.destination, item.backup);
+      const stat = fs.lstatSync(entry.destination, { throwIfNoEntry: false });
+      const item = { source, destination: entry.destination, existed: Boolean(stat), mode: null, backup: null };
+      if (stat) {
+        if (!stat.isFile()) throw new Error(`Refusing non-regular runtime file: ${entry.destination}`);
+        item.mode = stat.mode & 0o777;
+        item.backup = snapshotPathForSource(root, source);
+        const copy = snapshotPathForSource(stage, source);
+        assertSafeDestination(copy, home);
+        fs.mkdirSync(path.dirname(copy), { recursive: true });
+        fs.copyFileSync(entry.destination, copy);
+      }
+      manifest.files.push(item);
     }
-
-    manifest.files.push(item);
+    writeAtomic(path.join(stage, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`, false, home);
+    if (!reuse) {
+      const displaced = `${stage}-previous`;
+      const hadPrevious = fs.existsSync(root);
+      if (hadPrevious) fs.renameSync(root, displaced);
+      try {
+        fs.renameSync(stage, root);
+      } catch (err) {
+        if (hadPrevious) fs.renameSync(displaced, root);
+        throw err;
+      }
+      if (hadPrevious) fs.rmSync(displaced, { recursive: true, force: true });
+    }
+  } catch (err) {
+    if (!reuse) fs.rmSync(stage, { recursive: true, force: true });
+    throw err;
   }
-
-  fs.writeFileSync(backupManifestPath(home), `${JSON.stringify(manifest, null, 2)}\n`);
-  return {
-    path: root,
-    files: manifest.files,
-    version: manifest.version,
-    created: true,
-  };
+  return { path: root, files: manifest.files, version: manifest.version, created: !reuse, reused: reuse };
 }
 
 async function installFiles({ repo, sha, home, target = 'claude', files, fetcher = fetchRaw, dryRun = false }) {
@@ -354,22 +375,31 @@ function rollbackForgeflow(opts = {}) {
     };
   }
 
+  assertSafeDestination(manifestPath, home);
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  if (manifest.target && manifest.target !== target) throw new Error('Rollback snapshot belongs to a different runtime.');
+  const dryRun = Boolean(opts.dryRun);
   const restored = [];
   const removed = [];
   const failed = [];
 
   for (const item of manifest.files || []) {
     try {
+      const entry = manifestEntry(item.source, home, target);
+      if (!entry || entry.preserve || entry.destination !== item.destination) throw new Error('Invalid rollback destination');
+      assertSafeDestination(item.destination, home);
       if (item.existed) {
-        assertSafeDestination(item.destination, home);
-        fs.mkdirSync(path.dirname(item.destination), { recursive: true });
-        fs.copyFileSync(item.backup, item.destination);
-        if (item.mode !== null && item.mode !== undefined) fs.chmodSync(item.destination, item.mode);
+        if (item.backup !== snapshotPathForSource(backupRoot(home), item.source)) throw new Error('Invalid rollback source');
+        assertSafeDestination(item.backup, home);
+        if (!fs.statSync(item.backup).isFile()) throw new Error('Invalid rollback snapshot file');
+        if (!dryRun) {
+          writeAtomic(item.destination, fs.readFileSync(item.backup), Boolean(item.mode & 0o111), home);
+          if (item.mode !== null && item.mode !== undefined) fs.chmodSync(item.destination, item.mode);
+        }
         restored.push({ source: item.source, destination: item.destination });
       } else if (fs.existsSync(item.destination)) {
         assertSafeDestination(item.destination, home);
-        fs.unlinkSync(item.destination);
+        if (!dryRun) fs.unlinkSync(item.destination);
         removed.push({ source: item.source, destination: item.destination });
       }
     } catch (err) {
@@ -378,15 +408,30 @@ function rollbackForgeflow(opts = {}) {
   }
 
   let versionWritten = false;
-  if (failed.length === 0 && manifest.version) {
-    assertSafeDestination(versionPath(home), home);
-    fs.writeFileSync(versionPath(home), `${manifest.version}\n`);
-    versionWritten = true;
+  if (failed.length === 0 && !dryRun) {
+    try {
+      assertSafeDestination(versionPath(home), home);
+      if (manifest.version_file) {
+        writeAtomic(versionPath(home), Buffer.from(manifest.version_file.content, 'base64'), false, home);
+        fs.chmodSync(versionPath(home), manifest.version_file.mode);
+        versionWritten = true;
+      } else if (manifest.schema_version === '2') {
+        if (fs.existsSync(versionPath(home))) fs.unlinkSync(versionPath(home));
+      } else if (manifest.version) {
+        writeAtomic(versionPath(home), `${manifest.version}\n`, false, home);
+        versionWritten = true;
+      }
+      manifest.pending = false;
+      writeAtomic(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, false, home);
+    } catch (err) {
+      failed.push({ source: 'forgeflow-version', error: err.message });
+    }
   }
 
   return {
     schema_version: '1',
-    status: failed.length === 0 ? 'rolled-back' : 'rollback-partial',
+    status: failed.length === 0 ? (dryRun ? 'rollback-preview' : 'rolled-back') : 'rollback-partial',
+    dry_run: dryRun,
     restored,
     removed,
     failed,
@@ -400,15 +445,27 @@ async function updateForgeflow(opts = {}) {
   const target = normalizeTarget(opts.target || 'claude');
   const home = opts.home || (target === 'codex' ? (process.env.CODEX_HOME || path.join(os.homedir(), '.codex')) : path.join(os.homedir(), '.claude'));
   const repo = opts.repo || DEFAULT_REPO;
-  if (opts.rollback) return rollbackForgeflow({ home, target });
+  if (opts.rollback) return rollbackForgeflow({ home, target, dryRun: opts.dryRun });
 
-  const current = opts.current !== undefined ? opts.current : readCurrentVersion(home);
+  assertSafeDestination(backupManifestPath(home), home);
+  const pending = fs.existsSync(backupManifestPath(home))
+    ? JSON.parse(fs.readFileSync(backupManifestPath(home), 'utf8')) : null;
+  // The version marker may already have been written when completion was
+  // interrupted. The pending snapshot remains the authority until committed.
+  const current = pending?.pending ? pending.version
+    : (opts.current !== undefined ? opts.current : readCurrentVersion(home));
   const latest = opts.latest || await latestSha(repo);
+  if (pending?.pending && pending.to_version !== latest) {
+    const expected = pending.to_version || 'an unknown target SHA';
+    throw new Error(`Pending update targets ${expected}; cannot resume at ${latest}. Run --rollback with the same --target and --home, then rerun the update to install the latest version.`);
+  }
   const missingRequired = opts.missingRequired !== undefined
     ? opts.missingRequired
     : missingRequiredManagedFiles(home, target);
-  const repairNeeded = current === latest && !opts.repair && missingRequired.length > 0;
-  const effectiveRepair = Boolean(opts.repair || repairNeeded);
+  const inventory = target === 'codex' ? readCodexInventory(home) : null;
+  const inventoryMissing = target === 'codex' && !inventory;
+  const repairNeeded = !opts.repair && ((current === latest && missingRequired.length > 0) || (Boolean(current) && inventoryMissing));
+  const effectiveRepair = Boolean(opts.repair || repairNeeded || (pending?.pending && current === latest));
   if (current === latest && !effectiveRepair) {
     return {
       schema_version: '1',
@@ -432,8 +489,9 @@ async function updateForgeflow(opts = {}) {
   const backup = createBackup({
     home,
     target,
-    files: [...plan.files, ...plan.deleted],
+    files: [...plan.files, ...plan.deleted, ...(target === 'codex' ? [CODEX_INVENTORY_SOURCE] : [])],
     current,
+    latest,
     dryRun: opts.dryRun,
   });
   const installed = await installFiles({
@@ -449,11 +507,22 @@ async function updateForgeflow(opts = {}) {
     ? deleteFiles({ home, target, files: plan.deleted, dryRun: opts.dryRun })
     : { removed: [], failed: [] };
   const failures = [...installed.failed, ...removed.failed];
-  const versionWritten = failures.length === 0 && !opts.dryRun;
-  if (versionWritten) {
-    assertSafeDestination(versionPath(home), home);
-    fs.mkdirSync(home, { recursive: true });
-    fs.writeFileSync(versionPath(home), `${latest}\n`);
+  let versionWritten = false;
+  if (failures.length === 0 && !opts.dryRun) {
+    try {
+      if (target === 'codex') {
+        const sources = [...(effectiveRepair ? [] : inventory || []), ...plan.files]
+          .filter((source) => !plan.deleted.includes(source) && manifestEntry(source, home, target));
+        writeAtomic(manifestEntry(CODEX_INVENTORY_SOURCE, home, target).destination, codexInventoryContent(sources), false, home);
+      }
+      writeAtomic(versionPath(home), `${latest}\n`, false, home);
+      const manifest = JSON.parse(fs.readFileSync(backupManifestPath(home), 'utf8'));
+      manifest.pending = false;
+      writeAtomic(backupManifestPath(home), `${JSON.stringify(manifest, null, 2)}\n`, false, home);
+      versionWritten = true;
+    } catch (err) {
+      failures.push({ source: 'forgeflow-version', error: err.message });
+    }
   }
   const affectedSources = repairNeeded && missingRequired.length > 0
     ? missingRequired
@@ -469,6 +538,7 @@ async function updateForgeflow(opts = {}) {
     repair: effectiveRepair,
     repair_needed: repairNeeded,
     missing_required: missingRequired,
+    inventory_missing: inventoryMissing,
     affected_commands: affectedCommandsForSources(affectedSources, { root: path.resolve(__dirname, '..', '..') }),
     files: plan.files,
     synced: installed.synced,
@@ -484,9 +554,10 @@ function renderMarkdown(result) {
   if (result.status === 'no-backup') {
     return `No Forgeflow rollback snapshot found at ${result.backup}.`;
   }
-  if (result.status === 'rolled-back' || result.status === 'rollback-partial') {
+  if (['rolled-back', 'rollback-partial', 'rollback-preview'].includes(result.status)) {
     const lines = [
-      result.status === 'rolled-back' ? 'Forgeflow rolled back.' : 'Forgeflow rollback partially completed.',
+      result.status === 'rollback-preview' ? 'Forgeflow rollback preview (no files changed).'
+        : (result.status === 'rolled-back' ? 'Forgeflow rolled back.' : 'Forgeflow rollback partially completed.'),
       '',
       `Files restored (${result.restored.length}):`,
     ];
@@ -545,7 +616,7 @@ async function main() {
   const result = await updateForgeflow(opts);
   if (opts.json) console.log(JSON.stringify(result, null, 2));
   else console.log(renderMarkdown(result));
-  if (result.status === 'partial') process.exit(1);
+  if (result.status === 'partial' || result.status === 'rollback-partial') process.exit(1);
 }
 
 if (require.main === module) {

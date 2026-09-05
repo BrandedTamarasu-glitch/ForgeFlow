@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="data:," />
   <title>Forgeflow — Dashboard</title>
   <style>
     /* ── Reset & Variables ─────────────────────────────────────── */
@@ -1606,7 +1607,7 @@
         setStatus('connecting', 'Connecting…');
 
         const wsProto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-        ws = new WebSocket(`${wsProto}//${location.hostname}:4001`);
+        ws = new WebSocket(`${wsProto}//${location.host}/api/chat`);
 
         const connectTimeout = setTimeout(() => {
           if (ws.readyState === WebSocket.CONNECTING) {
@@ -1665,7 +1666,7 @@
           clearTimeout(connectTimeout);
           const jitter = Math.round(Math.random() * 1000) - 500;
           const wait = Math.max(0, reconnectDelay + jitter);
-          setStatus('error', `Disconnected — retrying in ${Math.round(wait / 1000)} s`);
+          setStatus('error', `Disconnected. Reload if the dashboard restarted. Retrying in ${Math.round(wait / 1000)} s`);
           setTimeout(connect, wait);
           reconnectDelay = Math.min(reconnectDelay * 2, RECONNECT_MAX_MS);
         });

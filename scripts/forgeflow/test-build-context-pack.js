@@ -2,7 +2,13 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { spawnSync } = require('child_process');
+const { spawnSync: runSync } = require('child_process');
+const assert = require('assert');
+function spawnSync(command, args, options) {
+  const result = runSync(command, args, options);
+  if (command === 'git') assert.strictEqual(result.status, 0, result.stderr || result.error?.message);
+  return result;
+}
 const {
   buildContextPack,
   buildLatestInsights,
@@ -11,7 +17,34 @@ const {
   jsonSummary,
 } = require('./build-context-pack');
 
-const repoRoot = path.resolve(__dirname, '..', '..');
+// All generated context and learning artifacts belong to a disposable checkout.
+const sourceRoot = path.resolve(__dirname, '..', '..');
+const fixtureHome = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-fixture-'));
+const repoRoot = path.join(fixtureHome, 'ForgeFlow');
+const initialCwd = process.cwd();
+const previousConfigHome = process.env.FORGEFLOW_CONFIG_HOME;
+process.env.FORGEFLOW_CONFIG_HOME = path.join(fixtureHome, 'config');
+process.on('exit', () => {
+  process.chdir(initialCwd);
+  if (previousConfigHome === undefined) delete process.env.FORGEFLOW_CONFIG_HOME;
+  else process.env.FORGEFLOW_CONFIG_HOME = previousConfigHome;
+  fs.rmSync(fixtureHome, { recursive: true, force: true });
+});
+const tracked = spawnSync('git', ['ls-files', '-z'], { cwd: sourceRoot, encoding: 'utf8' }).stdout.split('\0').filter(Boolean);
+for (const file of tracked) {
+  if (file.startsWith('.forgeflow/')) continue;
+  const source = path.join(sourceRoot, file);
+  if (!fs.existsSync(source) || !fs.statSync(source).isFile()) continue;
+  const target = path.join(repoRoot, file);
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.copyFileSync(source, target);
+}
+spawnSync('git', ['init'], { cwd: repoRoot, encoding: 'utf8' });
+spawnSync('git', ['config', 'user.email', 'forgeflow@example.invalid'], { cwd: repoRoot, encoding: 'utf8' });
+spawnSync('git', ['config', 'user.name', 'Forgeflow Test'], { cwd: repoRoot, encoding: 'utf8' });
+spawnSync('git', ['add', '--', ...tracked.filter((file) => fs.existsSync(path.join(repoRoot, file)))], { cwd: repoRoot, encoding: 'utf8' });
+spawnSync('git', ['commit', '-m', 'fixture'], { cwd: repoRoot, encoding: 'utf8' });
+process.chdir(repoRoot);
 const repoProjectContextDir = path.join(repoRoot, '.forgeflow', path.basename(repoRoot), 'context');
 fs.mkdirSync(repoProjectContextDir, { recursive: true });
 const seededProjectCodeMapPath = path.join(repoProjectContextDir, 'project-code-map.md');
@@ -22,30 +55,6 @@ const seededInvocationPath = path.join(repoProjectContextDir, 'invocation-hints.
 const seededLeanDecisionPath = path.join(repoProjectContextDir, 'lean-decision.json');
 const seededLeanPolicyPath = path.join(repoProjectContextDir, 'lean-policy.json');
 const seededLeanReportPath = path.join(repoProjectContextDir, 'lean-report.json');
-const previousProjectCodeMap = fs.existsSync(seededProjectCodeMapPath)
-  ? fs.readFileSync(seededProjectCodeMapPath, 'utf8')
-  : null;
-const previousTopology = fs.existsSync(seededTopologyPath)
-  ? fs.readFileSync(seededTopologyPath, 'utf8')
-  : null;
-const previousArchitecture = fs.existsSync(seededArchitecturePath)
-  ? fs.readFileSync(seededArchitecturePath, 'utf8')
-  : null;
-const previousOwnership = fs.existsSync(seededOwnershipPath)
-  ? fs.readFileSync(seededOwnershipPath, 'utf8')
-  : null;
-const previousInvocation = fs.existsSync(seededInvocationPath)
-  ? fs.readFileSync(seededInvocationPath, 'utf8')
-  : null;
-const previousLeanDecision = fs.existsSync(seededLeanDecisionPath)
-  ? fs.readFileSync(seededLeanDecisionPath, 'utf8')
-  : null;
-const previousLeanPolicy = fs.existsSync(seededLeanPolicyPath)
-  ? fs.readFileSync(seededLeanPolicyPath, 'utf8')
-  : null;
-const previousLeanReport = fs.existsSync(seededLeanReportPath)
-  ? fs.readFileSync(seededLeanReportPath, 'utf8')
-  : null;
 fs.writeFileSync(seededProjectCodeMapPath, [
   '# Forgeflow Project Code Map',
   '',
@@ -146,6 +155,12 @@ fs.writeFileSync(seededLeanReportPath, JSON.stringify({
     },
   },
 }, null, 2));
+fs.writeFileSync(path.join(repoProjectContextDir, 'project-operating-model.json'), JSON.stringify({
+  status: 'ready', confidence: { band: 'medium', reason: 'Fixture evidence' },
+  high_care_files: [{ path: 'src/auth/session.ts', reason: 'Authentication', confidence: 'medium' }],
+  agent_guidance: { read_first: ['src/auth/session.ts'], validate_first: ['npm test'], proof_boundary: ['Verify current evidence.'] },
+}));
+fs.cpSync(path.join(sourceRoot, 'fixtures/memory-index'), path.dirname(repoProjectContextDir), { recursive: true });
 const compactMap = compactProjectCodeMap(repoRoot);
 const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-'));
 fs.writeFileSync(path.join(outDir, 'failure-digest.md'), [
@@ -642,47 +657,6 @@ const topologyGuidancePacket = Object.values(topologyGuidanceSynthesis.agent_pac
 const codeMapHistoryPath = path.join(outDir, 'code-map-history.jsonl');
 const noisyManifest = JSON.parse(fs.readFileSync(path.join(noisyOutDir, 'file-manifest.json'), 'utf8'));
 const wardenPacket = fs.readFileSync(path.join(repoRoot, synthesis.agent_packets.warden_reviewer), 'utf8');
-if (previousProjectCodeMap === null) {
-  fs.unlinkSync(seededProjectCodeMapPath);
-} else {
-  fs.writeFileSync(seededProjectCodeMapPath, previousProjectCodeMap);
-}
-if (previousTopology === null) {
-  fs.unlinkSync(seededTopologyPath);
-} else {
-  fs.writeFileSync(seededTopologyPath, previousTopology);
-}
-if (previousArchitecture === null) {
-  fs.unlinkSync(seededArchitecturePath);
-} else {
-  fs.writeFileSync(seededArchitecturePath, previousArchitecture);
-}
-if (previousOwnership === null) {
-  fs.unlinkSync(seededOwnershipPath);
-} else {
-  fs.writeFileSync(seededOwnershipPath, previousOwnership);
-}
-if (previousInvocation === null) {
-  fs.unlinkSync(seededInvocationPath);
-} else {
-  fs.writeFileSync(seededInvocationPath, previousInvocation);
-}
-if (previousLeanDecision === null) {
-  fs.unlinkSync(seededLeanDecisionPath);
-} else {
-  fs.writeFileSync(seededLeanDecisionPath, previousLeanDecision);
-}
-if (previousLeanPolicy === null) {
-  fs.unlinkSync(seededLeanPolicyPath);
-} else {
-  fs.writeFileSync(seededLeanPolicyPath, previousLeanPolicy);
-}
-if (previousLeanReport === null) {
-  fs.unlinkSync(seededLeanReportPath);
-} else {
-  fs.writeFileSync(seededLeanReportPath, previousLeanReport);
-}
-
 const checks = [
   ['result out dir', result.out_dir === outDir],
   ['deep mode for auth path', route.mode === 'deep-mode'],
