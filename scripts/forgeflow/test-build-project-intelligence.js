@@ -2,6 +2,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { execFileSync } = require('child_process');
 const {
   buildProjectIntelligence,
   collectRiskSignals,
@@ -428,8 +429,11 @@ const firstRunDigestItems = nextWorkItems({
   top_risks: [{ severity: 'info', source: 'failure-digest', summary: 'No failure digest yet.', first_run: true, next_action: 'forgeflow-failure-digest' }],
   agent_feedback: { by_signal: {} },
 });
+const checkoutRoot = path.resolve(__dirname, '..', '..');
+const checkoutBranch = execFileSync('git', ['branch', '--show-current'], { cwd: checkoutRoot, encoding: 'utf8' }).trim();
+const checkoutCommit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: checkoutRoot, encoding: 'utf8' }).trim();
 const checkoutResult = buildProjectIntelligence({
-  root: path.resolve(__dirname, '..', '..'),
+  root: checkoutRoot,
   projectDir,
   out: path.join(projectDir, 'context', 'checkout-provenance.json'),
 });
@@ -441,7 +445,8 @@ const checks = [
   ['trust state attention with nonblocking risks', result.trust_state === 'attention'],
   ['includes readiness object', result.readiness && result.readiness.state === 'needs-triage' && result.readiness.evidence && result.readiness.clearing_commands.includes('forgeflow-code-map')],
   ['includes git provenance', result.provenance && result.provenance.git && result.provenance.git.available === false],
-  ['includes checkout git provenance', checkoutResult.provenance.git.available === true && checkoutResult.provenance.git.branch && checkoutResult.provenance.git.commit_short && checkoutResult.provenance.git.dirty_available === false],
+  ['includes checkout git provenance', checkoutResult.provenance.git.available === true && checkoutResult.provenance.git.branch === checkoutBranch && checkoutResult.provenance.git.commit_short === checkoutCommit && checkoutResult.provenance.git.dirty_available === false],
+  ['renders attached or detached checkout provenance', renderMarkdown(checkoutResult).includes(`Git: ${checkoutBranch || '(detached)'} ${checkoutCommit}`)],
   ['includes freshness summary', result.freshness.project && result.freshness.latest_insights],
   ['includes learning gate status', result.guidance.project_learnings_gate],
   ['latest insights read after learning check refresh', latestReport && result.artifacts.latest_insights_report && result.artifacts.latest_insights_report.endsWith('latest-insights-report.json') && result.guidance.latest_insights_status === latestReport.status],
