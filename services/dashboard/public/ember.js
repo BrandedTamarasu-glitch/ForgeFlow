@@ -102,8 +102,8 @@
       <div class="ember-topline"><span class="ember-eyebrow">YOUR FORGE COMPANION</span><span class="ember-source">OFFLINE</span></div>
       <h2></h2><p class="ember-description"></p><div class="ember-readout" role="status" aria-live="polite" aria-atomic="true"></div>
       <div class="ember-mode-row"><button type="button" class="ember-pause" aria-pressed="false">Pause motion</button><button type="button" class="ember-live-button ember-hidden">Return to live</button></div>
-      <span class="ember-preview-label" id="ember-preview-label">Try an animation</span><div class="ember-preview" role="group" aria-labelledby="ember-preview-label"></div>
-      <p class="ember-preview-note">Previews only change Ember’s pose. Live activity continues to arrive.</p>
+      <details class="ember-preview-disclosure"><summary>Animation studio</summary><span class="ember-preview-label" id="ember-preview-label">Try an animation</span><div class="ember-preview" role="group" aria-labelledby="ember-preview-label"></div>
+      <p class="ember-preview-note">Previews only change Ember’s pose. Live activity continues to arrive.</p></details>
       <details><summary>Live activity details</summary><ul class="ember-agents"></ul></details>
     </div>`;
   let snapshot = null, connected = false, preview = null, idleSince = Date.now(), lastState = null;

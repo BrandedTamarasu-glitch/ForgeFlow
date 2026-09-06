@@ -66,7 +66,11 @@ test('dashboard proxy preserves authenticated history/live updates and never for
   assert.match(f.index.headers['set-cookie'][0], /HttpOnly; SameSite=Strict/);
   assert.equal(f.index.headers['cache-control'], 'no-store');
   assert.ok(!f.index.body.includes(token));
-  assert.match(f.index.body, /location\.host\}\/api\/chat/);
+  assert.match(f.index.body, /src="\/dashboard\.js"/);
+  const script = await get(f.port, '/dashboard.js');
+  assert.equal(script.status, 200);
+  assert.match(script.body, /location\.host\}\/api\/chat/);
+  assert.ok(!script.body.includes(token));
   const browser = f.connect();
   const [init] = await once(browser, 'message');
   assert.deepEqual(JSON.parse(init).history, []);

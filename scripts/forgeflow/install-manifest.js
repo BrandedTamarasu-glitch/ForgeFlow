@@ -17,9 +17,11 @@ const STATIC_FILES = new Set([
 ]);
 const DASHBOARD_RUNTIME = new Set([
   'services/dashboard/server.js', 'services/dashboard/metrics.js', 'services/dashboard/readiness.js',
+  'services/dashboard/public/dashboard.js', 'services/dashboard/public/dashboard.css',
   'services/dashboard/public/index.html', 'services/dashboard/public/ember.js', 'services/dashboard/public/ember.css',
   'services/dashboard/package.json', 'services/dashboard/package-lock.json',
-  'services/agent-chat/session-auth.js',
+  'services/agent-chat/session-auth.js', 'services/agent-chat/server.js', 'services/agent-chat/client.js',
+  'services/agent-chat/public/index.html', 'services/agent-chat/package.json', 'services/agent-chat/package-lock.json',
 ]);
 const RUNTIME_HELPERS = [
   'scripts/forgeflow/advise-context.js',
@@ -224,7 +226,7 @@ function walk(root, dir, files = []) {
 
 function codexSourceAllowed(source) {
   if (hasUnsafePathSegment(source)) return false;
-  return DASHBOARD_RUNTIME.has(source) || /^\.codex\/agents\/[^/]+\.toml$/.test(source)
+  return source === 'hooks/forgeflow-telemetry.js' || DASHBOARD_RUNTIME.has(source) || /^\.codex\/agents\/[^/]+\.toml$/.test(source)
     || /^\.agents\/skills\/[^/]+\/.+/.test(source)
     || (/^(scripts\/forgeflow|templates|forgeflow-patterns|services\/agent-chat)\//.test(source)
       && !source.includes('/node_modules/')
@@ -236,6 +238,7 @@ function managedSources(root, target = 'claude') {
   const dirs = normalizedTarget === 'codex' ? CODEX_SOURCE_DIRS : CLAUDE_SOURCE_DIRS;
   const files = dirs.flatMap((dir) => walk(root, dir));
   if (normalizedTarget === 'codex') {
+    if (fs.existsSync(path.join(root, 'hooks', 'forgeflow-telemetry.js'))) files.push('hooks/forgeflow-telemetry.js');
     if (fs.existsSync(path.join(root, '.codex', 'agent-canonical-map.json'))) files.push('.codex/agent-canonical-map.json');
     return [...new Set(files.filter((source) => codexSourceAllowed(source) || source === '.codex/agent-canonical-map.json'))].sort();
   }

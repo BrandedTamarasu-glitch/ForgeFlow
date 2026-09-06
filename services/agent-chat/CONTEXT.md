@@ -77,3 +77,7 @@ node services/agent-chat/client.js activity complete "Feature checks passed"
 ```
 
 The optional `sendActivity(state, label, {agent, port, tokenFile})` export returns a delivery boolean and fails quietly when the local credential/service is absent. It uses a 400ms socket timeout. `FORGEFLOW_ACTIVITY=off` disables this reporter, including the test runner's automatic reports; nested test processes have it disabled by default. CLI activity reports use the normal agent token file and port 4001. Running Forgeflow does not require this service.
+
+## Workflow startup health
+
+`GET /health` identifies the live service with `{service:"forgeflow-agent-chat",pid:<process id>}` after the normal loopback Host/Origin/Fetch Metadata checks. It exposes no credential, room, history, or project path. The workflow-entry launcher checks this identity before reuse; the process id lets it publish the correct PID for `/agent-chat:off` even if concurrent entries race to start the service.

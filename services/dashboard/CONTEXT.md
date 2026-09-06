@@ -11,7 +11,7 @@ Read-only local dashboard. Reads Forgeflow metrics from the JSONL telemetry file
 | Access | `127.0.0.1` only |
 | Data source | `~/.claude/projects/<sanitized-cwd>/memory/forgeflow-metrics.jsonl` and `~/.codex/projects/<sanitized-cwd>/memory/forgeflow-metrics.jsonl` |
 
-The chat panel connects to `/api/chat` on this same origin. The server relays the read-only agent-chat stream from port 4001 using its private session credential, which never reaches browser JavaScript, URLs, or logs. The agent-chat service must be started separately.
+The chat panel connects to `/api/chat` on this same origin. The server relays the read-only agent-chat stream from port 4001 using its private session credential, which never reaches browser JavaScript, URLs, or logs. Workflow entry starts or reuses agent-chat; a dashboard started directly can still use `/agent-chat:on` for its live feed.
 
 ---
 
@@ -23,7 +23,9 @@ The chat panel connects to `/api/chat` on this same origin. The server relays th
 | `metrics.js` | Reads and aggregates JSONL telemetry files from one or more runtime roots into the `/api/metrics` response shape |
 | `readiness.js` | Reads existing local Forgeflow artifacts into the `/api/readiness` project-readiness response shape |
 | `team.js` | Stub — reserved for `/forgeflow-sync` team aggregation in Phase 4C. Currently exports a `readTeamSync` that returns `[]`; not yet imported by `server.js`. |
-| `public/index.html` | Dashboard UI — single-page, no build step required. Renders `/api/metrics` trends and the read-only `/api/readiness` Project Readiness panel. |
+| `public/index.html` | Semantic dashboard shell; no build step. |
+| `public/dashboard.css` | Responsive workshop layout, visual styles, and compact Ember integration. |
+| `public/dashboard.js` | Independent metrics/readiness snapshots, scoped summaries/trends, refresh/copy controls, and structured live feed. |
 
 ---
 
@@ -189,13 +191,13 @@ Controls in this panel must stay read-only. Copying a command to the clipboard i
 
 ## Ember, the forge companion
 
-`public/ember.js` and `ember.css` render a native SVG robot and forge above the dashboard panels. No image assets, animation packages, external requests, or build step are required. Both assets use exact allowlisted GET routes under the existing local-origin guard.
+`public/ember.js` and `ember.css` render a native SVG robot and forge alongside the project health and next-action panel. Preview controls are disclosed in Animation studio. No image assets, animation packages, external requests, or build step are required. Both assets use exact allowlisted GET routes under the existing local-origin guard.
 
 The chat proxy forwards `init.activity` and `activity` snapshots. Each agent has one latest explicit state in the current chat room. Fresh failures and waiting states take precedence over active work; active work takes precedence over completion. New reports replace an agent's previous state. Reports older than 90 seconds yield to fresh reports. If only old active work remains, Ember says “Waiting for an update”; elapsed time never implies success. Completion/failure stays visible until superseded. Disconnection shows Offline; an empty connected snapshot shows Idle.
 
 Preview buttons affect only the local pose and are visibly labeled PREVIEW. Returning to live uses the latest snapshot. Pause motion persists locally and does not pause activity reception. The SVG is decorative, with a separate text status, polite live region, keyboard controls, and per-agent details. CSS honors `prefers-reduced-motion`; hidden tabs pause animations. Idle rotates through watching, polishing, and dozing.
 
-The panel follows the chat service's current room, independently of the metrics project filter. `npm test` reports testing and its actual final result when the local activity service is available. Bridge-based workflow initialization reports known planning, research, implementation, and review phases. Other integrations must explicitly report their phase and result using the agent-chat client or bridge lifecycle API. Ordinary chat messages never infer activity.
+The panel follows the chat service's current room, independently of the metrics project filter. `npm test` reports testing and its actual final result when the local activity service is available. Workflow entry reports known planning, research, implementation, and review phases through the shared launcher, including Codex skills and bridge-based initialization. Other integrations must explicitly report their phase and result using the agent-chat client or bridge lifecycle API. Ordinary chat messages never infer activity.
 
 Validation: `__tests__/ember.test.js` checks state selection; `tests/e2e/ember.spec.ts` checks preview/live separation, stale/disconnected status, pause, keyboard operation, idle variations, mobile sizing, and reduced motion.
 
@@ -203,10 +205,25 @@ Validation: `__tests__/ember.test.js` checks state selection; `tests/e2e/ember.s
 
 `scripts/forgeflow/open-session-dashboard.js` starts or reuses the local dashboard and invokes the OS browser opener once per host session. The existing UserPromptSubmit hook recognizes explicit workflow commands; bridge initialization and Codex workflow skills call the same helper. Starting a host session alone does not open a tab.
 
-The helper uses `FORGEFLOW_SESSION_ID`, `CODEX_THREAD_ID`, or `CLAUDE_SESSION_ID`, or an explicit `--session`. Without a stable id it skips opening. A private, atomic marker under the OS temporary directory deduplicates concurrent calls and aliases across project directories. It records one attempt per session, including failures, to avoid repeated browser prompts; a new session permits another attempt. It does not reopen a tab that the user closes in the same session.
+The helper uses `FORGEFLOW_SESSION_ID`, `CODEX_THREAD_ID`, or `CLAUDE_SESSION_ID`, or an explicit `--session`. Without a stable id it skips opening. A private, atomic marker under the OS temporary directory deduplicates browser opening across concurrent calls, aliases, and project directories. Each eligible workflow entry independently ensures both services and publishes its known phase, even after the tab has already opened. It records one attempt per session, including failures, to avoid repeated browser prompts; a new session permits another attempt. It does not reopen a tab that the user closes in the same session.
 
-`FORGEFLOW_DASHBOARD_AUTO_OPEN=off` disables both automatic startup and opening. CI, SSH, and Linux without DISPLAY/WAYLAND_DISPLAY skip automatic opening. Browser launch uses `xdg-open` on Linux, `open` on macOS, and `rundll32.exe` on Windows, with argument arrays and a bounded timeout. Startup errors do not block the workflow; manually open http://127.0.0.1:4003/ or start the server to troubleshoot. This helper starts only the metrics/Ember dashboard; live activity still uses the separate agent-chat service.
+`FORGEFLOW_DASHBOARD_AUTO_OPEN=off` disables both automatic startup and opening. CI, SSH, and Linux without DISPLAY/WAYLAND_DISPLAY skip automatic opening. Browser launch uses `xdg-open` on Linux, `open` on macOS, and `rundll32.exe` on Windows, with argument arrays and a bounded timeout. Startup errors do not block the workflow; manually open http://127.0.0.1:4003/ or start the server to troubleshoot. The helper ensures both the dashboard and agent-chat, checks each service identity, and never reuses an unrecognized listener. Activity startup failure is reported as a warning and does not prevent opening the dashboard. It never reports success just because the browser opened.
 
 `GET /api/health` identifies a healthy dashboard as `{service:"forgeflow-dashboard"}` under the normal local-origin checks. The launcher refuses to launch against an occupied, unrecognized port and never kills an existing listener. An already-running dashboard retains its original project readiness scope; global metrics and chat remain available across projects.
 
-The installer includes the dashboard source, Ember assets, dependency manifests, and shared agent-chat auth reader in both runtimes. Dependencies must already be installed: `npm install --prefix <runtime-root>/services/dashboard --ignore-scripts`. Auto-open never installs packages or accesses a package registry.
+The installer includes the dashboard and agent-chat sources, Ember assets, and dependency manifests in both runtimes. Dependencies must already be installed: run `npm install --prefix <runtime-root>/services/dashboard --ignore-scripts` and `npm install --prefix <runtime-root>/services/agent-chat --ignore-scripts`. Auto-open never installs packages or accesses a package registry.
+
+
+## Balanced workshop overview
+
+The first view balances compact live Ember and the launched project's health/next action with all-time review outcomes and global weekly trends. The old Drift placeholder is removed. Detailed readiness cards and the Lean Prime checklist remain available through progressive disclosure.
+
+The summary project selector changes only all-time totals, including a separate CONDITIONAL APPROVE total. Readiness stays scoped to the project that launched the server. Trend windows select the latest 4, 12, or all recorded ISO weeks across all projects; they do not promise per-project or exact calendar-day filtering. The chart legend and accessible data table include all four verdict categories.
+
+Refresh data fetches metrics and readiness independently with a 10-second timeout and prevents duplicate in-flight calls. Successful snapshots have separate update times. Failed refresh retains previous data and explicitly marks it stale; an initial failure displays Unavailable. A slow or failed API request does not delay the live WebSocket. No high-frequency file scanning is introduced.
+
+The live feed renders message prose, agent, level, and source timestamp using textContent. It retains at most 100 messages, replaces init history on reconnect, avoids announcing history as new, supports valid message-level filters, and only follows new content when already near the bottom. Browser controls only filter, refresh, expand, copy, or scroll. `/dashboard.js` and `/dashboard.css` join the exact static asset allowlist and installer inventory.
+
+Readiness cards include `severity` (`attention`, `info`, or `ok`) independently of their original evidence status. Optional Lean, host, benchmark, release, failure, and dogfood evidence remains visible without implying an installation failure. Actual error/invalid/fail states still require attention. Context budget uses `estimated_compact_tokens` and `.forgeflow-budget.json` kind limits (default 16,000).
+
+The feed includes current activity on connection and changed activity snapshots as phase rows. Repeated snapshots are deduplicated, history stays bounded, and original frames still drive Ember. Review counts require recorded verdicts; the explicit Codex recorder references saved decisions and deduplicates event IDs.

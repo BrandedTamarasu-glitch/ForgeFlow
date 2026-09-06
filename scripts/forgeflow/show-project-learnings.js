@@ -5,6 +5,7 @@ const { spawnSync } = require('child_process');
 const { checkProjectLearnings } = require('./check-project-learnings');
 const { rollupProjectLearnings } = require('./rollup-project-learnings');
 const { showCodeMap } = require('./show-code-map');
+const { assertSafeDirectory, writeFileSafe } = require('./file-safety');
 
 const SECTION_ORDER = [
   'Recommended Approach For Next Work',
@@ -142,9 +143,19 @@ function contextPackSmoke(root, projectDir) {
       stderr: '',
     };
   }
-  const out = path.join(projectDir, 'context', 'latest');
+  // Smoke checks exercise insight injection, not the user's current change set.
+  // An empty explicit scope avoids another topology/history refresh, and a
+  // separate output preserves the focused packet currently used by agents.
+  const latest = path.join(projectDir, 'context', 'latest');
+  assertSafeDirectory(latest);
+  const initializeLatest = !fs.existsSync(latest) || fs.readdirSync(latest).length === 0;
+  // A first-run project needs an initial insight packet for downstream readers.
+  // Never replace a pre-existing packet, even if its report is missing or stale.
+  const out = initializeLatest ? latest : path.join(projectDir, 'context', 'learnings-smoke');
+  const filesPath = path.join(out, 'smoke-files.txt');
+  writeFileSafe(filesPath, '');
   const helper = path.join(__dirname, 'build-context-pack.js');
-  const result = spawnSync(process.execPath, [helper, '--out', out, '--mode', 'thin', '--lines', '80', '--json'], {
+  const result = spawnSync(process.execPath, [helper, '--out', out, '--files', filesPath, '--no-memory-index', '--mode', 'thin', '--lines', '80', '--json'], {
     cwd: root,
     encoding: 'utf8',
   });
@@ -153,6 +164,8 @@ function contextPackSmoke(root, projectDir) {
   const report = readJson(reportPath);
   return {
     status: result.status === 0 ? 'pass' : 'fail',
+    scope: initializeLatest ? 'initial-insight-packet' : 'isolated-injection-check',
+    latest_context_updated: initializeLatest && result.status === 0,
     exit_code: result.status,
     out_dir: out,
     packet_count: parsed ? parsed.packet_count : 0,
@@ -181,7 +194,7 @@ function renderCheckSummary(result) {
   ];
   if (result.context_smoke) {
     lines.push(`- Context-pack smoke: ${result.context_smoke.status}`);
-    lines.push(`- Latest-insights injection: ${result.context_smoke.latest_insights_status || 'unknown'}`);
+    lines.push(`- Smoke insights injection: ${result.context_smoke.latest_insights_status || 'unknown'} (${result.context_smoke.latest_context_updated ? 'initial latest context created' : 'current latest context unchanged'})`);
     lines.push(`- Agent packets: ${result.context_smoke.packet_count}`);
   }
   if (result.check.issues.length > 0) {
@@ -200,7 +213,8 @@ function showProjectLearnings(opts = {}) {
     showCodeMap({ root, projectDir });
   }
   const rollupOpts = { projectDir };
-  if (Object.prototype.hasOwnProperty.call(opts, 'codeMap')) rollupOpts.codeMap = opts.codeMap;
+  // Undefined means no supplied topology; retain the saved project code map.
+  if (opts.codeMap !== undefined) rollupOpts.codeMap = opts.codeMap;
   const rollup = rollupProjectLearnings(rollupOpts);
   const markdown = fs.readFileSync(rollup.out, 'utf8');
   const result = {
@@ -212,6 +226,8 @@ function showProjectLearnings(opts = {}) {
     result.context_smoke = result.check.status === 'pass'
       ? contextPackSmoke(root, projectDir)
       : null;
+    // Eligibility demonstrated by the isolated smoke, not a refreshed latest packet.
+    result.latest_insights_ready_scope = result.context_smoke?.latest_context_updated ? 'latest-bootstrap' : 'smoke-only';
     result.latest_insights_ready = Boolean(
       result.context_smoke
       && result.context_smoke.status === 'pass'

@@ -37,7 +37,7 @@ async function main() {
     ownedFiles.push(files[1]);
     await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
     const script = path.resolve(__dirname, '../../services/chat-bridge/init-session.sh');
-    for (const command of ['plan', 'implement', 'custom-command']) {
+    for (const command of ['plan', 'implement', 'quick', 'aegis-verify', 'custom-command']) {
       await new Promise((resolve, reject) => {
         const child = spawn('bash', ['-c', 'source "$1" "$2" ""', 'ember-test', script, command], {
           cwd: root, env: { ...process.env, FORGEFLOW_DASHBOARD_AUTO_OPEN: 'off', CHAT_BRIDGE_PORT: String(server.address().port) }, stdio: 'pipe', timeout: 5000,
@@ -49,6 +49,8 @@ async function main() {
     assert.deepEqual(events, [
       { event: 'phase_start', data: 'plan', state: 'planning' },
       { event: 'phase_start', data: 'implement', state: 'implementing' },
+      { event: 'phase_start', data: 'quick', state: 'planning' },
+      { event: 'phase_start', data: 'aegis-verify', state: 'reviewing' },
       { event: 'phase_start', data: 'custom-command' },
     ]);
     console.log('Bridge reuse reports each known phase and leaves unknown commands without an activity state.');

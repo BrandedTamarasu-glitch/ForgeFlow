@@ -60,7 +60,8 @@ const checks = [
   ['claude helper installed', fs.existsSync(claudeHelper)],
   ['both runtimes include the dashboard and its auth helper', [claudeHome, codexHome].every(home =>
     ['services/dashboard/server.js', 'services/dashboard/public/ember.js', 'services/dashboard/public/ember.css',
-      'services/dashboard/package.json', 'services/agent-chat/session-auth.js', 'scripts/forgeflow/open-session-dashboard.js']
+      'services/dashboard/package.json', 'services/dashboard/public/dashboard.js', 'services/dashboard/public/dashboard.css',
+      'services/agent-chat/server.js', 'services/agent-chat/client.js', 'services/agent-chat/package.json', 'services/agent-chat/session-auth.js', 'scripts/forgeflow/open-session-dashboard.js']
       .every(file => fs.existsSync(path.join(home, 'forgeflow', file))))],
 
   ['codex agent installed', fs.existsSync(codexAgent)],

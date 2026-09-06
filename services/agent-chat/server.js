@@ -335,6 +335,11 @@ const dashServer = http.createServer((req, res) => {
     res.writeHead(403).end('Forbidden');
     return;
   }
+  if (req.method === 'GET' && req.url === '/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ service: 'forgeflow-agent-chat', pid: process.pid }));
+    return;
+  }
   const isIndex = req.method === 'GET' && (req.url === '/' || req.url === '/index.html');
   // Only direct navigation or same-origin fetches may bootstrap a browser session.
   const mode = req.headers['sec-fetch-mode'];

@@ -99,10 +99,10 @@ test('scanReadiness summarizes local readiness without leaking absolute root', a
   assert.equal(body.cards.length, 12);
   assert.deepEqual(body.cards.map((item) => item.id), READINESS_CARD_ORDER);
   for (const card of body.cards) {
-    assert.deepEqual(Object.keys(card), ['id', 'label', 'status', 'summary', 'next', 'details']);
+    assert.deepEqual(Object.keys(card), ['id', 'label', 'status', 'summary', 'next', 'details', 'severity']);
     assert.ok(Array.isArray(card.details));
   }
-  assert.equal(body.next, '/forgeflow-lean-prime --prime-task "<work item>" --write-report');
+  assert.ok(!body.next.includes('lean-prime'));
   assert.ok(body.cards.some((item) => item.id === 'lean-prime' && item.status === 'blocked'));
   assert.ok(body.cards.some((item) => item.id === 'lean-prime' && item.next === '/forgeflow-lean-prime --prime-task "<work item>" --write-report'));
   assert.ok(body.cards.some((item) => item.id === 'lean-guidance' && item.status === 'blocked'));
@@ -152,7 +152,68 @@ test('dashboard HTML includes read-only project readiness panel contract', () =>
   assert.match(html, /id="readiness-lean-prime"/);
   assert.match(html, /id="readiness-lean-prime-list"/);
   assert.match(html, /id="readiness-copy-command"/);
-  assert.match(html, /item\.details/);
-  assert.match(html, /fetch\('\/api\/readiness'/);
-  assert.doesNotMatch(html, /\/api\/readiness[^]*method:\s*'POST'/);
+  assert.match(html, /src="\/dashboard\.js"/);
+  assert.match(html, /id="readiness-next-command"/);
+  assert.match(html, /id="readiness-refresh-status"/);
+});
+
+
+test('readiness reads generated context telemetry and the project budget, without treating optional evidence as failures', async () => {
+  const fixture = makeReadinessFixture();
+  const telemetry = path.join(fixture.projectDir, 'context/latest/context-telemetry.json');
+  writeJson(telemetry, { schema_version: '1', kind: 'context-pack', estimated_compact_tokens: 17000, estimated_saved_tokens: 22000 });
+  let body = await scanReadiness(fixture);
+  let budget = body.cards.find(item => item.id === 'context-budget');
+  assert.equal(budget.status, 'warn');
+  assert.equal(budget.severity, 'attention');
+  assert.match(budget.summary, /17000; budget 16000/);
+  for (const id of ['benchmark-evidence', 'host-verification', 'failure-digest', 'lean-prime']) {
+    assert.equal(body.cards.find(item => item.id === id).severity, 'info');
+  }
+  writeJson(path.join(fixture.projectRoot, '.forgeflow-budget.json'), { kind_limits: { 'context-pack': 18000 } });
+  body = await scanReadiness(fixture);
+  budget = body.cards.find(item => item.id === 'context-budget');
+  assert.equal(budget.status, 'pass');
+  assert.match(budget.summary, /budget 18000/);
+  writeJson(telemetry, { schema_version: '1', kind: 'context-pack' });
+  budget = (await scanReadiness(fixture)).cards.find(item => item.id === 'context-budget');
+  assert.equal(budget.status, 'unknown');
+  assert.match(budget.summary, /tokens unknown/);
+});
+
+
+test('optional release evidence distinguishes not recorded from a saved blocker', async () => {
+  const fixture = makeReadinessFixture();
+  const file = path.join(fixture.projectDir, 'release-readiness/last.json');
+  fs.unlinkSync(file);
+  let result = await scanReadiness(fixture);
+  assert.equal(result.cards.find(item => item.id === 'release-readiness').severity, 'info');
+  writeJson(file, { status: 'blocked', blockers: ['Validation failed'] });
+  result = await scanReadiness(fixture);
+  const release = result.cards.find(item => item.id === 'release-readiness');
+  assert.equal(release.severity, 'attention');
+  assert.match(release.summary, /1 blocker/);
+  assert.equal(result.status, 'attention');
+});
+
+
+test('unreadable saved optional evidence requires attention', async () => {
+  const fixture = makeReadinessFixture();
+  const files = {
+    'release-readiness': 'release-readiness/last.json',
+    'dogfood-report': 'context/dogfood-report.json',
+    'benchmark-evidence': 'context/lean-benchmark-runner/normalized-results.json',
+  };
+  for (const relative of Object.values(files)) {
+    const file = path.join(fixture.projectDir, relative);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, '{broken');
+  }
+  const result = await scanReadiness(fixture);
+  for (const id of Object.keys(files)) {
+    const item = result.cards.find(item => item.id === id);
+    assert.equal(item.status, 'invalid');
+    assert.equal(item.severity, 'attention');
+    assert.match(item.summary, /could not be read/);
+  }
 });

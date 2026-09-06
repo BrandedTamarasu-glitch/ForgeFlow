@@ -11,10 +11,11 @@ const { scanReadiness } = require('./readiness');
 
 const INDEX_HTML = path.join(__dirname, 'public', 'index.html');
 
-function defaultMetricsRoots(home = os.homedir()) {
+function defaultMetricsRoots(home = os.homedir(), env = process.env) {
+  if (env.FORGEFLOW_METRICS_ROOT) return [path.resolve(env.FORGEFLOW_METRICS_ROOT)];
   return [
-    path.resolve(home, '.claude', 'projects'),
-    path.resolve(home, '.codex', 'projects')
+    path.resolve(env.CLAUDE_HOME || path.join(home, '.claude'), 'projects'),
+    path.resolve(env.CODEX_HOME || path.join(home, '.codex'), 'projects')
   ];
 }
 
@@ -66,7 +67,8 @@ function createServer(opts = {}) {
       return;
     }
 
-    const avatarAssets = { '/ember.js': 'text/javascript; charset=utf-8', '/ember.css': 'text/css; charset=utf-8' };
+    const avatarAssets = { '/ember.js': 'text/javascript; charset=utf-8', '/ember.css': 'text/css; charset=utf-8',
+      '/dashboard.js': 'text/javascript; charset=utf-8', '/dashboard.css': 'text/css; charset=utf-8' };
     if (Object.hasOwn(avatarAssets, req.url)) {
       try {
         const body = await fs.promises.readFile(path.join(__dirname, 'public', req.url.slice(1)));

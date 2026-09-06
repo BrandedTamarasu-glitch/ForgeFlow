@@ -457,18 +457,18 @@ scripts/forgeflow/check-project-learnings.js --json
 
 ## Dashboard
 
-**Ember is Forgeflow’s animated forge companion:** a small copper robot that hammers, inspects, polishes, and dozes while showing reported workflow activity.
+**The workshop dashboard balances live work, project health, and review trends. Ember is Forgeflow’s animated forge companion:** a small copper robot that hammers, inspects, polishes, and dozes while showing reported workflow activity.
 
-![Ember tending a glowing forge beside live implementation status, animation previews, and pause controls](docs/images/ember-workshop.png)
+![ForgeFlow workshop with Ember, project health, recorded review outcomes, weekly trends, and live workflow activity](docs/images/forgeflow-workshop.png)
 
-The local dashboard runs at **http://127.0.0.1:4003/**. On the first Forgeflow workflow invocation in a desktop session, Forgeflow starts or reuses it and opens your default browser. Later invocations in the same host session do not open more tabs, even if you close the first one. This uses the command hook, bridge startup, or Codex workflow skill, depending on your host.
+The local dashboard runs at **http://127.0.0.1:4003/**. On the first Forgeflow workflow invocation in a desktop session, Forgeflow starts or reuses the dashboard and its live activity service, reports the workflow phase, and opens your default browser. Later invocations in the same host session do not open more tabs, even if you close the first one. This uses the command hook, bridge startup, or Codex workflow skill, depending on your host.
 
 - **Live poses:** planning, research, implementation, review, testing, waiting, failure, and completion.
 - **Idle animations:** blinking, polishing, and dozing when the connected service reports no work.
 - **Preview controls:** try any pose without changing incoming live activity. Pause motion or use your system’s reduced-motion preference.
 - **Honest status:** disconnections show Offline; active reports older than 90 seconds show Waiting for an update. Success requires an explicit completion report.
 
-Start live activity with `/agent-chat:on`; stop it with `/agent-chat:off`. That service also provides the agent-message dashboard on port `4001`. `npm test` reports progress and its actual final result when agent-chat is running. Bridge-based workflows report their starting phase; callers should send progress and result updates during longer work:
+Workflow entry connects live activity automatically. For a manually started dashboard, use `/agent-chat:on`; stop the activity service with `/agent-chat:off`. That service also provides the agent-message dashboard on port `4001`. `npm test` reports progress and its actual final result when agent-chat is running. Workflow skills and bridge-based workflows report known starting phases; callers should send progress and result updates during longer work:
 
 ```bash
 node services/agent-chat/client.js activity implementing "Building the feature"
@@ -483,9 +483,15 @@ To disable automatic startup and opening, set `FORGEFLOW_DASHBOARD_AUTO_OPEN=off
 node services/dashboard/server.js
 ```
 
-Installed runtimes include the dashboard source and assets. If its dependency is missing, install it once with `npm install --prefix <runtime-root>/services/dashboard --ignore-scripts`, where `<runtime-root>` is `~/.codex/forgeflow` or `~/.claude/forgeflow`. Automatic opening never installs packages.
+Installed runtimes include the dashboard source and assets. If dependencies are missing, run `npm install --prefix <runtime-root>/services/dashboard --ignore-scripts` and `npm install --prefix <runtime-root>/services/agent-chat --ignore-scripts`, where `<runtime-root>` is `~/.codex/forgeflow` or `~/.claude/forgeflow`. Automatic opening never installs packages.
+
+Review outcomes show all-time totals for the selected project; the trend chart shows the latest 4, 12, or all recorded weeks across all projects. Refresh data updates metrics and readiness independently, retaining prior snapshots with a stale label if an update fails. The activity feed shows reported workflow phases alongside structured agent messages, with filtering and history; detailed readiness evidence and animation previews expand when needed.
 
 The dashboard also reads telemetry from `~/.claude/projects/` and `~/.codex/projects/`, and shows a Project Readiness panel with health, guidance, release, and aftercare signals. Its panels are read-only: they display existing artifacts and offer a copy-only next action without executing commands or calling GitHub. A reused dashboard retains the project readiness scope it had when started.
+
+Review charts count saved verdicts, not activity updates. Codex review and implementation skills record actual Arbiter and Compass decisions with `hooks/forgeflow-telemetry.js record-verdict`; each outcome references saved evidence and a stable event ID to avoid duplicate counts. Older unrecorded reviews are not inferred or backfilled.
+
+Dashboard readiness distinguishes actionable warnings from optional workflow evidence. Missing cross-host probes, benchmark runs, release snapshots, or failure digests remain visible as informational items. Context usage reads generated token estimates against the project budget. Saved blockers and unreadable evidence still require attention.
 
 ## Team, CI, And Meta-Work
 

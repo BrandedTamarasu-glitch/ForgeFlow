@@ -133,3 +133,19 @@ test('credential rotates per session and safe reader rejects exposed files and s
   fs.symlinkSync(f.tokenFile, `${f.tokenFile}.link`);
   assert.throws(() => readToken(`${f.tokenFile}.link`));
 });
+
+
+test('health identifies the local activity service without exposing credentials', { timeout: 10000 }, async t => {
+  const f = await fixture(t);
+  const result = await request(f.port, '/health');
+  assert.equal(result.status, 200);
+  assert.deepEqual(JSON.parse(result.body), { service: 'forgeflow-agent-chat', pid: process.pid });
+  assert.equal(result.headers['cache-control'], 'no-store');
+  assert.equal(result.headers['x-content-type-options'], 'nosniff');
+  assert.ok(!result.body.includes(f.token));
+  assert.equal(result.headers['set-cookie'], undefined);
+  for (const headers of [{ host: `foreign.invalid:${f.port}` }, { origin: 'https://foreign.invalid' }, { 'sec-fetch-site': 'cross-site' }]) {
+    assert.equal((await request(f.port, '/health', headers)).status, 403);
+  }
+  assert.equal((await request(f.port, '/health', {}, 'POST')).status, 401);
+});

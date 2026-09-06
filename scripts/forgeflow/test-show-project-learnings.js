@@ -52,8 +52,20 @@ fs.writeFileSync(path.join(smokeProjectDir, 'project-learning-candidates.jsonl')
 ].join('\n'));
 
 const result = showProjectLearnings({ projectDir });
+const initialSmoke = showProjectLearnings({ root: smokeRoot, check: true });
+const initialHistory = fs.readFileSync(path.join(smokeProjectDir, 'context', 'code-map-history.jsonl'), 'utf8');
 const defaultProjectDir = path.join(repoRoot, '.forgeflow', path.basename(repoRoot));
+const latestDir = path.join(smokeProjectDir, 'context', 'latest');
+fs.mkdirSync(latestDir, { recursive: true });
+const focusedPacket = 'Focused packet for the active work item\n';
+fs.writeFileSync(path.join(latestDir, 'focused-packet.md'), focusedPacket);
+fs.writeFileSync(path.join(latestDir, 'route.json'), '{"task":"active work"}\n');
+const latestBefore = fs.readdirSync(latestDir, { recursive: true }).filter(name => fs.statSync(path.join(latestDir, name)).isFile()).sort().map(name => [name, fs.readFileSync(path.join(latestDir, name), 'utf8')]);
 const checkedDefaultSmoke = showProjectLearnings({ root: smokeRoot, check: true });
+const historyPath = path.join(smokeProjectDir, 'context', 'code-map-history.jsonl');
+const historyAfter = fs.readFileSync(historyPath, 'utf8');
+const smokeLearnings = fs.readFileSync(checkedDefaultSmoke.out, 'utf8');
+const latestAfter = fs.readdirSync(latestDir, { recursive: true }).filter(name => fs.statSync(path.join(latestDir, name)).isFile()).sort().map(name => [name, fs.readFileSync(path.join(latestDir, name), 'utf8')]);
 const refreshedExternal = showProjectLearnings({ projectDir, refreshCodeMap: true });
 const checkedExternal = showProjectLearnings({ projectDir, check: true });
 const externalTopologyPath = path.join(projectDir, 'context', 'code-topology.json');
@@ -96,6 +108,13 @@ const checks = [
   ['explicit refresh writes external code map', refreshedExternal.sources.code_map === true && fs.existsSync(externalTopologyPath)],
   ['check runs quality gate', checkedExternal.check.status === 'pass' && checkedExternal.context_smoke.status === 'skipped' && checkedExternal.latest_insights_ready === false],
   ['default context smoke stays budget-safe', checkedDefaultSmoke.check.status === 'pass' && checkedDefaultSmoke.context_smoke.status === 'pass' && checkedDefaultSmoke.context_smoke.agents.length <= 2 && checkedDefaultSmoke.context_smoke.packet_count <= 2],
+  ['first-run smoke bootstraps an insight packet without extra history', initialSmoke.latest_insights_ready === true && initialSmoke.latest_insights_ready_scope === 'latest-bootstrap' && initialSmoke.context_smoke.latest_context_updated === true && initialHistory.trim().split('\n').length === 1],
+  ['smoke preserves focused latest context byte for byte', JSON.stringify(latestBefore) === JSON.stringify(latestAfter)],
+  ['smoke uses isolated output', checkedDefaultSmoke.context_smoke.out_dir === path.join(smokeProjectDir, 'context', 'learnings-smoke')],
+  ['smoke injects saved insights with explicit isolated semantics', checkedDefaultSmoke.latest_insights_ready === true && checkedDefaultSmoke.latest_insights_ready_scope === 'smoke-only' && checkedDefaultSmoke.context_smoke.latest_context_updated === false && checkedDefaultSmoke.markdown.includes('current latest context unchanged')],
+  ['smoke does not append an extra code-map snapshot', historyAfter.trim().split('\n').length === initialHistory.trim().split('\n').length + 1],
+  ['smoke retains saved code-map guidance', /Code map: [1-9]\d* sections/.test(smokeLearnings) && smokeLearnings.includes('Code map history: 2 snapshot(s)')],
+  ['smoke does not build topology from unrelated changes', !fs.existsSync(path.join(checkedDefaultSmoke.context_smoke.out_dir, 'code-map-history.jsonl'))],
   ['refreshes code map for default project dir', shouldRefreshProjectCodeMap(repoRoot, defaultProjectDir) === true],
   ['does not refresh code map for explicit external project dir', shouldRefreshProjectCodeMap(repoRoot, projectDir) === false],
   ['allows explicit refresh override', shouldRefreshProjectCodeMap(repoRoot, projectDir, { refreshCodeMap: true }) === true],

@@ -26,14 +26,18 @@ function desktopAvailable(env = process.env, platform = process.platform) {
   return platform === 'darwin' || platform === 'win32' || Boolean(env.DISPLAY || env.WAYLAND_DISPLAY);
 }
 
-function probe(port, endpoint, service) {
+function probe(port, endpoint, service, onIdentity) {
   return new Promise(resolve => {
     const req = http.get({ hostname: '127.0.0.1', port, path: endpoint, agent: false }, res => {
       let body = '';
       res.on('data', chunk => { if (body.length < 65536) body += chunk; });
       res.on('end', () => {
         let matches = false;
-        try { matches = JSON.parse(body).service === service; } catch (_) { /* Not our service. */ }
+        try {
+          const identity = JSON.parse(body);
+          matches = identity.service === service;
+          if (matches && onIdentity) onIdentity(identity);
+        } catch (_) { /* Not our service. */ }
         resolve(res.statusCode === 200 && matches ? 'ready' : 'occupied');
       });
       res.on('error', () => resolve('occupied'));
@@ -44,13 +48,23 @@ function probe(port, endpoint, service) {
   });
 }
 
-async function ensureDashboard(root, runtimeRoot = path.resolve(__dirname, '../..')) {
-  const status = await probe(4003, '/api/health', 'forgeflow-dashboard');
+function workflowState(workflow) {
+  if (['discuss', 'consult', 'forgeflow-consult', 'plan', 'quick'].includes(workflow)) return 'planning';
+  if (workflow === 'research') return 'researching';
+  if (['implement', 'forgeflow-implement'].includes(workflow)) return 'implementing';
+  if (['review', 'forge-review', 'forgeflow-review', 'audit', 'debate', 'aegis-verify'].includes(workflow)) return 'reviewing';
+  return '';
+}
+
+async function ensureService(root, config, runtimeRoot = path.resolve(__dirname, '../..')) {
+  const status = await probe(config.port, config.endpoint, config.service);
   if (status === 'ready') return;
-  if (status !== 'free') throw new Error('Port 4003 is occupied by an unrecognized service');
-  const script = path.join(runtimeRoot, 'services/dashboard/server.js');
-  if (!fs.existsSync(script)) throw new Error('Dashboard runtime is missing; update the Forgeflow installation');
-  // Resolve before spawning so missing dependencies do not leave a silent background crash.
+  if (status !== 'free') throw new Error(`Port ${config.port} is occupied by an unrecognized service`);
+  if (config.extraPort && await probe(config.extraPort, '/', config.service) !== 'free') {
+    throw new Error(`Port ${config.extraPort} is occupied; activity service cannot start`);
+  }
+  const script = path.join(runtimeRoot, config.script);
+  if (!fs.existsSync(script)) throw new Error(`${config.service} runtime is missing; update the Forgeflow installation`);
   require.resolve('ws', { paths: [path.dirname(script)] });
   const child = spawn(process.execPath, [script], { cwd: root, detached: true, stdio: 'ignore' });
   let startupError;
@@ -58,12 +72,33 @@ async function ensureDashboard(root, runtimeRoot = path.resolve(__dirname, '../.
   child.unref();
   const deadline = Date.now() + 4000;
   while (Date.now() < deadline && !startupError) {
-    if (await probe(4003, '/api/health', 'forgeflow-dashboard') === 'ready') return;
+    let listenerPid;
+    if (await probe(config.port, config.endpoint, config.service, identity => { listenerPid = identity.pid; }) === 'ready') {
+      // Keep the existing /agent-chat:off helper able to stop a service we started.
+      if (config.pidFile && child.exitCode === null && child.pid && listenerPid === child.pid) {
+        const temporary = `${config.pidFile}.${child.pid}.${crypto.randomBytes(8).toString('hex')}`;
+        try {
+          fs.writeFileSync(temporary, String(child.pid), { flag: 'wx', mode: 0o600 });
+          fs.renameSync(temporary, config.pidFile);
+        } finally { try { fs.unlinkSync(temporary); } catch (error) { if (error.code !== 'ENOENT') throw error; } }
+      }
+      return;
+    }
     if (child.exitCode !== null) break;
     await new Promise(resolve => setTimeout(resolve, 100));
   }
   if (child.pid && child.exitCode === null) child.kill();
-  throw startupError || new Error('Dashboard did not become ready; check its dependencies and port 4003');
+  throw startupError || new Error(`${config.service} did not become ready; check its dependencies and ports`);
+}
+
+function ensureDashboard(root, runtimeRoot) {
+  return ensureService(root, { port: 4003, endpoint: '/api/health', service: 'forgeflow-dashboard',
+    script: 'services/dashboard/server.js' }, runtimeRoot);
+}
+
+function ensureAgentChat(root, runtimeRoot) {
+  return ensureService(root, { port: 4001, extraPort: 4000, endpoint: '/health', service: 'forgeflow-agent-chat',
+    script: 'services/agent-chat/server.js', pidFile: path.join(process.platform === 'win32' ? os.tmpdir() : '/tmp', 'agent-chat.pid') }, runtimeRoot);
 }
 
 function openBrowser(url, platform = process.platform) {
@@ -91,17 +126,31 @@ async function openSessionDashboard(options = {}) {
   const marker = path.join(stateDir, crypto.createHash('sha256').update(session).digest('hex') + '.json');
   let fd;
   try { fd = fs.openSync(marker, 'wx', 0o600); }
-  catch (error) { if (error.code === 'EEXIST') return { status: 'already-attempted', url: URL }; throw error; }
+  catch (error) { if (error.code !== 'EEXIST') throw error; }
+  const warnings = [];
   let result;
   try {
+    try {
+      await (options.ensureActivity || ensureAgentChat)(root);
+      const state = workflowState(options.workflow);
+      if (state) {
+        const report = options.report || require('../../services/agent-chat/client').sendActivity;
+        if (!await report(state, `ForgeFlow ${options.workflow}: ${path.basename(root)}`.slice(0, 160))) {
+          warnings.push('The activity service did not accept the workflow report');
+        }
+      }
+    } catch (error) { warnings.push(`Live activity unavailable: ${error.message}`); }
     await (options.ensure || ensureDashboard)(root);
-    const opened = await (options.open || openBrowser)(URL);
-    result = { status: opened ? 'opened' : 'browser-unavailable', url: URL };
+    const opened = fd === undefined ? false : await (options.open || openBrowser)(URL);
+    result = { status: fd === undefined ? 'already-attempted' : opened ? 'opened' : 'browser-unavailable', url: URL };
   } catch (error) {
     result = { status: 'unavailable', url: URL, reason: error.message };
   }
-  try { fs.writeFileSync(fd, JSON.stringify({ ...result, attempted_at: new Date().toISOString() })); }
-  finally { fs.closeSync(fd); }
+  if (warnings.length) result.warnings = warnings;
+  if (fd !== undefined) {
+    try { fs.writeFileSync(fd, JSON.stringify({ ...result, attempted_at: new Date().toISOString() })); }
+    finally { fs.closeSync(fd); }
+  }
   return result;
 }
 
@@ -110,7 +159,8 @@ function launchForPrompt(payload) {
   const session = payload.session_id || payload.sessionId || sessionId();
   if (!session) return;
   const root = payload.cwd || payload.workspace?.current_dir || payload.workspace?.project_dir || process.cwd();
-  const child = spawn(process.execPath, [__filename, '--session', session, '--root', root], { detached: true, stdio: 'ignore' });
+  const workflow = workflowFromPrompt(payload.prompt || payload.message || payload.text);
+  const child = spawn(process.execPath, [__filename, '--session', session, '--root', root, '--workflow', workflow], { detached: true, stdio: 'ignore' });
   child.on('error', () => {});
   child.unref();
 }
@@ -121,12 +171,14 @@ async function main() {
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--session' && args[i + 1]) options.session = args[++i];
     else if (args[i] === '--root' && args[i + 1]) options.root = args[++i];
-    else throw new Error('Usage: open-session-dashboard.js [--session <host-session-id>] [--root <project-root>]');
+    else if (args[i] === '--workflow' && args[i + 1]) options.workflow = args[++i];
+    else throw new Error('Usage: open-session-dashboard.js [--session <host-session-id>] [--root <project-root>] [--workflow <name>]');
   }
   const result = await openSessionDashboard(options);
+  if (result.warnings) process.stderr.write(`${result.warnings.join('; ')}\n`);
   if (!['skipped', 'already-attempted'].includes(result.status)) {
     process.stdout.write(`Forgeflow dashboard: ${result.status}. ${result.url}${result.reason ? ` (${result.reason})` : ''}\n`);
   }
 }
 if (require.main === module) main().catch(error => { process.stderr.write(`Dashboard auto-open skipped: ${error.message}\n`); });
-module.exports = { openSessionDashboard, desktopAvailable, workflowFromPrompt, sessionId, launchForPrompt, ensureDashboard, probe };
+module.exports = { openSessionDashboard, desktopAvailable, workflowFromPrompt, sessionId, launchForPrompt, ensureDashboard, ensureAgentChat, workflowState, probe };

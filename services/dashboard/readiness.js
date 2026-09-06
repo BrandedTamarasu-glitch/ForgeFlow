@@ -7,6 +7,7 @@ const { buildLeanHostCliProbes } = require('../../scripts/forgeflow/render-lean-
 const { buildLeanPrime } = require('../../scripts/forgeflow/render-lean-prime');
 const { buildLeanStatus } = require('../../scripts/forgeflow/render-lean-status');
 const { buildStaleArtifactPlan } = require('../../scripts/forgeflow/render-stale-artifact-plan');
+const { applyConfig, limitFor } = require('../../scripts/forgeflow/check-context-budget');
 const { latestFailureDigest } = require('../../scripts/forgeflow/show-project-trends');
 
 function defaultProjectDir(projectRoot) {
@@ -50,23 +51,26 @@ function card(id, label, status, summary, next, details = []) {
 }
 
 function statusFromRead(read, fallback = 'missing') {
-  if (read.status !== 'present') return fallback;
+  if (read.status !== 'present') return read.status === 'invalid' ? 'invalid' : fallback;
   return read.value.status || read.value.readiness?.status || 'present';
 }
 
-function contextBudgetCard(contextTelemetry) {
+function contextBudgetCard(contextTelemetry, budgetConfig) {
   if (contextTelemetry.status !== 'present') {
     return card('context-budget', 'Context Budget', 'missing', 'No latest context telemetry artifact found.', '/forgeflow-review');
   }
   const value = contextTelemetry.value;
-  const budgetStatus = value.budget_status || value.context_budget_status || value.summary?.budget_status || 'unknown';
-  const compact = Number(value.compact_tokens || value.total_compact_tokens || value.summary?.compact_tokens || 0);
+  const rawCompact = value.estimated_compact_tokens ?? value.compact_tokens ?? value.total_compact_tokens ?? value.summary?.compact_tokens;
+  const compact = Number(rawCompact);
+  const config = applyConfig({ maxCompactTokens: 16000, kindLimits: {} }, budgetConfig.value || {});
+  const limit = limitFor(config, value.kind || 'context-pack');
+  const budgetStatus = budgetConfig.status === 'invalid' ? 'invalid' : value.budget_status || value.context_budget_status || value.summary?.budget_status || (rawCompact === undefined || !Number.isFinite(compact) || compact < 0 ? 'unknown' : compact > limit ? 'warn' : 'pass');
   const saved = Number(value.estimated_saved_tokens || value.saved_tokens || value.summary?.estimated_saved_tokens || 0);
   return card(
     'context-budget',
     'Context Budget',
     budgetStatus,
-    `Compact tokens ${compact}; estimated saved tokens ${saved}.`,
+    `Compact tokens ${Number.isFinite(compact) ? compact : "unknown"}; budget ${limit}; estimated saved tokens ${saved}.`,
     budgetStatus === 'pass' ? '' : '/forgeflow-context-advisor',
   );
 }
@@ -246,11 +250,19 @@ function failureDigestCard(failureDigest) {
   );
 }
 
+// Optional workflow evidence is not an installation health failure. Preserve the
+// underlying status while making its operational significance explicit.
+function readinessSeverity(item) {
+  if (['fail', 'failed', 'error', 'invalid', 'attention'].includes(item.status)) return 'attention';
+  if (item.status === 'blocked' && !['lean-prime', 'lean-guidance'].includes(item.id)) return 'attention';
+  if (['ready', 'pass', 'current', 'injected', 'present'].includes(item.status)) return 'ok';
+  if (['host-verification', 'benchmark-evidence', 'failure-digest', 'release-readiness', 'dogfood-report', 'dogfood-refresh-plan', 'lean-prime', 'lean-guidance'].includes(item.id)) return 'info';
+  return 'attention';
+}
+
 function overallStatus(cards) {
-  const statuses = cards.map((item) => item.status);
-  if (statuses.some((item) => ['fail', 'failed', 'error', 'invalid', 'blocked'].includes(item))) return 'attention';
-  if (statuses.some((item) => ['missing', 'warn', 'warning', 'watch', 'refresh-needed', 'attention'].includes(item))) return 'watch';
-  return 'ready';
+  if (cards.some(item => item.severity === 'attention')) return 'attention';
+  return cards.some(item => item.severity === 'info') ? 'watch' : 'ready';
 }
 
 async function scanReadiness(opts = {}) {
@@ -267,6 +279,7 @@ async function scanReadiness(opts = {}) {
     projectModel,
     benchmarkResults,
     benchmarkLedger,
+    budgetConfig,
   ] = await Promise.all([
     readJson(path.join(latestDir, 'latest-insights-report.json'), projectDir),
     readJson(path.join(latestDir, 'context-telemetry.json'), projectDir),
@@ -275,6 +288,7 @@ async function scanReadiness(opts = {}) {
     readJson(path.join(contextDir, 'project-operating-model.json'), projectDir),
     readJson(path.join(contextDir, 'lean-benchmark-runner', 'normalized-results.json'), projectDir),
     readJson(path.join(contextDir, 'lean-benchmark-runner', 'run-ledger.json'), projectDir),
+    readJson(path.join(projectRoot, '.forgeflow-budget.json'), projectRoot),
   ]);
 
   let refreshPlan;
@@ -320,6 +334,14 @@ async function scanReadiness(opts = {}) {
     failureDigest = { status: 'invalid', reason: err.message, present: false };
   }
 
+  const savedEvidence = {
+    'project-health': [projectModel],
+    'learning-status': [latestInsights],
+    'context-budget': [contextTelemetry, budgetConfig],
+    'release-readiness': [releaseReadiness],
+    'dogfood-report': [dogfoodReport],
+    'benchmark-evidence': [benchmarkResults, benchmarkLedger],
+  };
   const cards = [
     card(
       'project-health',
@@ -329,7 +351,7 @@ async function scanReadiness(opts = {}) {
       projectModel.status === 'present' ? '' : '/forgeflow-project-model',
     ),
     learningCard(latestInsights),
-    contextBudgetCard(contextTelemetry),
+    contextBudgetCard(contextTelemetry, budgetConfig),
     leanPrimeCard(leanPrime),
     leanCard(leanStatus),
     hostVerificationCard(hostProbes),
@@ -339,7 +361,13 @@ async function scanReadiness(opts = {}) {
     releaseReadinessCard(releaseReadiness),
     dogfoodCard(dogfoodReport),
     dogfoodRefreshCard(refreshPlan),
-  ];
+  ].map(item => {
+    if (savedEvidence[item.id]?.some(read => read.status === 'invalid')) {
+      item.status = 'invalid';
+      item.summary = `Saved ${item.label.toLowerCase()} evidence could not be read. Repair or regenerate the artifact.`;
+    }
+    return { ...item, severity: readinessSeverity(item) };
+  });
 
   return {
     schema_version: '1',
@@ -368,7 +396,7 @@ async function scanReadiness(opts = {}) {
       reason: item.reason,
       label: item.label,
     })),
-    next: cards.find((item) => item.next)?.next || '',
+    next: cards.find((item) => item.severity === 'attention' && item.next)?.next || '',
     boundary: 'Dashboard readiness is read-only. It reads local artifacts and does not refresh, write, spawn agents, call GitHub, export telemetry, commit, push, or promote automation.',
   };
 }

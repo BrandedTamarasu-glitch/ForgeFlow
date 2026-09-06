@@ -123,6 +123,23 @@ test('GET / returns 200', async () => {
   }
 });
 
+test('dashboard serves only the exact public asset allowlist with correct media types', async () => {
+  const { baseUrl, close } = await startServer(FIXTURES_ROOT);
+  try {
+    for (const [asset, media] of [['dashboard.js', 'text/javascript'], ['dashboard.css', 'text/css'], ['ember.js', 'text/javascript'], ['ember.css', 'text/css']]) {
+      const res = await get(baseUrl, `/${asset}`);
+      assert.equal(res.status, 200, asset);
+      assert.ok(res.headers.get('content-type')?.includes(media), asset);
+      assert.equal(res.headers.get('x-content-type-options'), 'nosniff');
+      assert.ok((await res.text()).length > 0);
+      assert.equal((await get(baseUrl, `/${asset}`, 'POST')).status, 405);
+    }
+    for (const endpoint of ['/server.js', '/dashboard.js?source=1', '/public/dashboard.js', '/%2e%2e/server.js']) {
+      assert.equal((await get(baseUrl, endpoint)).status, 404, endpoint);
+    }
+  } finally { await close(); }
+});
+
 test('GET /api/metrics returns 200 with schema_version', async () => {
   const { baseUrl, close } = await startServer(FIXTURES_ROOT);
   try {

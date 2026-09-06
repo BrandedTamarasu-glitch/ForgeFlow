@@ -329,6 +329,8 @@ function refreshProjectGuidance(projectDir, root) {
     context_smoke_status: result.context_smoke ? result.context_smoke.status : '',
     latest_insights_status: result.context_smoke ? result.context_smoke.latest_insights_status : '',
     latest_insights_ready: Boolean(result.latest_insights_ready),
+    latest_insights_ready_scope: result.latest_insights_ready_scope || '',
+    latest_context_updated: result.context_smoke?.latest_context_updated === true,
   };
 }
 

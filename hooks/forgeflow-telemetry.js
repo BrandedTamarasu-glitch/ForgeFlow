@@ -25,7 +25,8 @@
 //   - verdict: detected in Agent tool outputs matching APPROVE/REVISE/BLOCK/CONFIRM/CHALLENGE
 //   - auto-fix-round: detected in Agent tool outputs matching "chore(auto-fix): round N"
 //
-// Never fails or blocks — all I/O wrapped in try/catch, exits 0 on any error.
+// Hook input remains fail-open. The explicit record-verdict CLI validates saved
+// outcomes and exits nonzero on invalid input or recording failure.
 
 const fs = require('fs');
 const path = require('path');
@@ -88,6 +89,63 @@ function recordEvents(data, env = process.env) {
   }
 }
 
+// Explicit Codex outcomes share the hook's schema and metrics location. Unlike
+// inferred hook events, invalid explicit input is reported to the caller.
+async function recordVerdict(data, env = process.env) {
+  const allowed = { arbiter: ['APPROVE', 'CONDITIONAL APPROVE', 'REVISE', 'BLOCK'], compass: ['CONFIRM', 'CHALLENGE'] };
+  if (!Object.hasOwn(allowed, data.reviewer) || !allowed[data.reviewer].includes(data.verdict)) throw new Error('Invalid reviewer/verdict pair');
+  if (typeof data.event_id !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,159}$/.test(data.event_id)) throw new Error('A stable event-id is required');
+  if (typeof data.session_id !== 'string' || !data.session_id.trim() || data.session_id.length > 200) throw new Error('A real session id is required');
+  if (typeof data.command !== 'string' || !/^\/[a-z][a-z-]{0,63}$/.test(data.command)) throw new Error('A workflow command such as /review is required');
+  const cwd = path.resolve(data.cwd || process.cwd());
+  if (typeof data.evidence !== 'string' || !data.evidence.trim()) throw new Error('A saved evidence file is required');
+  const evidenceFile = fs.realpathSync(path.resolve(cwd, data.evidence));
+  const evidence = path.relative(fs.realpathSync(cwd), evidenceFile);
+  if (evidence === '..' || evidence.startsWith(`..${path.sep}`) || path.isAbsolute(evidence) || !fs.statSync(evidenceFile).isFile()) throw new Error('Evidence must be a saved file inside the project');
+  const metricsFile = metricsFileForCwd(cwd, 'codex', env);
+  if (!metricsFile) throw new Error('Metrics root is unavailable');
+  fs.mkdirSync(path.dirname(metricsFile), { recursive: true });
+  const lock = `${metricsFile}.verdict-lock`;
+  let descriptor;
+  for (let attempt = 0; attempt < 50; attempt++) {
+    try { descriptor = fs.openSync(lock, 'wx', 0o600); break; }
+    catch (error) {
+      if (error.code !== 'EEXIST') throw error;
+      if (attempt === 49) throw new Error('Verdict recording is busy; retry with the same event-id');
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+  }
+  try {
+    let prior = '';
+    try { prior = fs.readFileSync(metricsFile, 'utf8'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    const detail = { reviewer: data.reviewer, verdict: data.verdict, evidence };
+    for (const line of prior.split('\n')) {
+      let event;
+      try { event = JSON.parse(line); } catch (_) { continue; }
+      if (event.event_id !== data.event_id) continue;
+      if (event.session_id !== data.session_id || event.command !== data.command || JSON.stringify(event.detail) !== JSON.stringify(detail)) throw new Error('Event-id already records a different outcome');
+      return { recorded: 0, duplicate: true, event_id: data.event_id };
+    }
+    const event = { schema_version: '1', ts: new Date().toISOString(), session_id: data.session_id,
+      project: path.basename(cwd), cwd, runtime: 'codex', event: 'verdict', event_id: data.event_id, command: data.command, detail };
+    fs.appendFileSync(metricsFile, `${prior && !prior.endsWith('\n') ? '\n' : ''}${JSON.stringify(event)}\n`);
+    return { recorded: 1, duplicate: false, event_id: data.event_id };
+  } finally {
+    fs.closeSync(descriptor);
+    fs.unlinkSync(lock);
+  }
+}
+
+async function verdictCli(args) {
+  const names = { '--reviewer': 'reviewer', '--verdict': 'verdict', '--evidence': 'evidence', '--event-id': 'event_id', '--session': 'session_id', '--cwd': 'cwd', '--command': 'command' };
+  const data = { session_id: process.env.FORGEFLOW_SESSION_ID || process.env.CODEX_THREAD_ID };
+  for (let i = 0; i < args.length; i += 2) {
+    if (!Object.hasOwn(names, args[i]) || !args[i + 1]) throw new Error('Usage: record-verdict --reviewer <arbiter|compass> --verdict <decision> --evidence <saved-file> --event-id <stable-outcome-id> --command </workflow> [--session <host-session-id>] [--cwd <project-root>]');
+    data[names[args[i]]] = args[i + 1];
+  }
+  process.stdout.write(`${JSON.stringify(await recordVerdict(data))}\n`);
+}
+
 function main() {
   let input = '';
   const stdinTimeout = setTimeout(() => process.exit(0), 1500);
@@ -104,7 +162,8 @@ function main() {
 }
 
 if (require.main === module) {
-  main();
+  if (process.argv[2] === 'record-verdict') verdictCli(process.argv.slice(3)).catch(error => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
+  else main();
 }
 
 function detectEvents(toolName, toolInput, toolOutput) {
@@ -234,5 +293,6 @@ module.exports = {
   metricsFileForCwd,
   metricsRootForRuntime,
   normalizeRuntime,
-  recordEvents
+  recordEvents,
+  recordVerdict
 };

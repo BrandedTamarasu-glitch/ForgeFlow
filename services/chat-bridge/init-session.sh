@@ -9,7 +9,7 @@ ARGUMENTS="${2:-}"
 # The shared launcher deduplicates by the host session id and skips headless runs.
 FORGEFLOW_DASHBOARD_LAUNCHER="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/forgeflow/open-session-dashboard.js"
 if [ -f "$FORGEFLOW_DASHBOARD_LAUNCHER" ]; then
-  node "$FORGEFLOW_DASHBOARD_LAUNCHER" --root "$PWD" || true
+  node "$FORGEFLOW_DASHBOARD_LAUNCHER" --root "$PWD" --workflow "$COMMAND_NAME" || true
 fi
 
 # ---------------------------------------------------------------------------
@@ -131,10 +131,10 @@ if [ "$CHAT_AVAILABLE" = true ]; then
   # Only known workflow names declare activity; unknown commands remain chat-only.
   EMBER_STATE=""
   case "$COMMAND_NAME" in
-    discuss|consult|forgeflow-consult|plan) EMBER_STATE=planning ;;
+    discuss|consult|forgeflow-consult|plan|quick) EMBER_STATE=planning ;;
     research) EMBER_STATE=researching ;;
     implement|forgeflow-implement) EMBER_STATE=implementing ;;
-    review|forge-review|forgeflow-review|audit|debate) EMBER_STATE=reviewing ;;
+    review|forge-review|forgeflow-review|audit|debate|aegis-verify) EMBER_STATE=reviewing ;;
   esac
   printf 'X-Forgeflow-Token: %s\n' "$CHAT_BRIDGE_TOKEN" | curl -s --max-time 1 --header @- \
     -X POST \

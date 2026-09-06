@@ -6,6 +6,7 @@ test('every preview is labeled, keyboard accessible, and returns to disconnected
   await page.routeWebSocket('**/api/chat', ws => ws.close());
   await page.goto('/');
   const ember = page.locator('#ember');
+  await ember.locator('.ember-preview-disclosure > summary').click();
   await expect(ember).toHaveAttribute('data-state', 'offline');
   for (const state of states) {
     const button = ember.locator(`[data-preview-state="${state}"]`);
@@ -28,6 +29,7 @@ test('live reports continue during preview and pause; stale work waits and disco
   });
   await page.goto('/');
   const ember = page.locator('#ember');
+  await ember.locator('.ember-preview-disclosure > summary').click();
   await expect(ember).toHaveAttribute('data-state', 'idle');
   const report = async (state: string, label: string) => {
     const now = await page.evaluate(() => Date.now());
@@ -60,6 +62,7 @@ test('idle alternates polishing and dozing without inventing activity', async ({
   await page.routeWebSocket('**/api/chat', ws => ws.send(JSON.stringify({ type: 'init', activity: { agents: [] } })));
   await page.goto('/');
   const ember = page.locator('#ember');
+  await ember.locator('.ember-preview-disclosure > summary').click();
   await expect(ember).toHaveAttribute('data-idle', 'watching');
   await page.clock.fastForward(15000);
   await expect(ember).toHaveAttribute('data-idle', 'polishing');
@@ -73,6 +76,7 @@ test('mobile layout respects reduced motion while preserving poses and status', 
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   const ember = page.locator('#ember');
+  await ember.locator('.ember-preview-disclosure > summary').click();
   await ember.locator('[data-preview-state="implementing"]').click();
   await expect(ember.locator('.ember-arm')).toHaveCSS('animation-name', 'none');
   await expect(ember.getByRole('button', { name: 'Reduced motion enabled' })).toBeDisabled();
