@@ -15,11 +15,18 @@ const STATIC_FILES = new Set([
   'hooks/forgeflow-statusline.js',
   'hooks/forgeflow-telemetry.js',
 ]);
+const DASHBOARD_RUNTIME = new Set([
+  'services/dashboard/server.js', 'services/dashboard/metrics.js', 'services/dashboard/readiness.js',
+  'services/dashboard/public/index.html', 'services/dashboard/public/ember.js', 'services/dashboard/public/ember.css',
+  'services/dashboard/package.json', 'services/dashboard/package-lock.json',
+  'services/agent-chat/session-auth.js',
+]);
 const RUNTIME_HELPERS = [
   'scripts/forgeflow/advise-context.js',
   'scripts/forgeflow/advise-noisy-command.js',
   'scripts/forgeflow/agent-chat-off.sh',
   'scripts/forgeflow/agent-chat-on.sh',
+  'scripts/forgeflow/open-session-dashboard.js',
   'scripts/forgeflow/apply-review-autofix-proposal.js',
   'scripts/forgeflow/build-failure-digest.js',
   'scripts/forgeflow/build-code-topology.js',
@@ -196,8 +203,8 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/user-profile.js',
 ];
 
-const CLAUDE_SOURCE_DIRS = ['agents', 'commands', 'forgeflow-patterns', 'hooks', 'project-rules', 'scripts/forgeflow', 'templates'];
-const CODEX_SOURCE_DIRS = ['.codex/agents', '.agents/skills', 'scripts/forgeflow', 'templates', 'forgeflow-patterns', 'services/agent-chat'];
+const CLAUDE_SOURCE_DIRS = ['agents', 'commands', 'forgeflow-patterns', 'hooks', 'project-rules', 'scripts/forgeflow', 'templates', 'services/dashboard', 'services/agent-chat'];
+const CODEX_SOURCE_DIRS = ['.codex/agents', '.agents/skills', 'scripts/forgeflow', 'templates', 'forgeflow-patterns', 'services/agent-chat', 'services/dashboard'];
 
 function normalizeTarget(target = 'claude') {
   if (!['claude', 'codex'].includes(target)) throw new Error(`Unsupported runtime target: ${target}`);
@@ -217,7 +224,7 @@ function walk(root, dir, files = []) {
 
 function codexSourceAllowed(source) {
   if (hasUnsafePathSegment(source)) return false;
-  return /^\.codex\/agents\/[^/]+\.toml$/.test(source)
+  return DASHBOARD_RUNTIME.has(source) || /^\.codex\/agents\/[^/]+\.toml$/.test(source)
     || /^\.agents\/skills\/[^/]+\/.+/.test(source)
     || (/^(scripts\/forgeflow|templates|forgeflow-patterns|services\/agent-chat)\//.test(source)
       && !source.includes('/node_modules/')
@@ -289,6 +296,7 @@ function categoryFor(source) {
   if (/^skills\/[^/]+\/SKILL\.md$/.test(file)) return 'skill';
   if (/^project-rules\/[^/]+\.md$/.test(file)) return 'project-rule';
   if (/^forgeflow-patterns\/[^/]+\.md$/.test(file)) return 'pattern';
+  if (DASHBOARD_RUNTIME.has(file)) return 'runtime-service';
   if (STATIC_FILES.has(file)) return file.split('/')[0].slice(0, -1);
   if (/^scripts\/forgeflow\/(?!test-)[^/]+\.(?:js|sh)$/.test(file)) return 'runtime-script';
   if (RUNTIME_HELPERS.includes(file) && SCRIPT_EXTENSIONS.has(path.extname(file))) return 'runtime-script';
@@ -315,6 +323,7 @@ function destinationFor(source, home = '~/.claude') {
   if (/^forgeflow-patterns\/[^/]+\.md$/.test(file)) return path.posix.join(home, file);
   if (/^templates\/[^/]+$/.test(file)) return path.posix.join(home, file);
   if (/^hooks\/[^/]+$/.test(file)) return path.posix.join(home, file);
+  if (DASHBOARD_RUNTIME.has(file)) return path.posix.join(home, 'forgeflow', file);
   if (/^scripts\/forgeflow\/[^/]+$/.test(file)) {
     return path.posix.join(home, 'forgeflow', file);
   }

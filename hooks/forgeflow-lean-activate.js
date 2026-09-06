@@ -97,6 +97,8 @@ function handleSessionStart(payload) {
 }
 
 function handlePrompt(payload) {
+  // Open only on an explicit workflow invocation, never merely on SessionStart.
+  try { require(path.join(helperDir(), 'open-session-dashboard.js')).launchForPrompt(payload); } catch (_) { /* Optional UI. */ }
   const mode = profileFromPrompt(payload.prompt || payload.message || payload.text || '');
   if (!mode) return;
   if (mode === 'off') {

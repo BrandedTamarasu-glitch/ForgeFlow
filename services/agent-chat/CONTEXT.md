@@ -61,3 +61,19 @@ No build step. Requires `ws` npm package.
 
 ## Validation
 `node --test services/agent-chat/__tests__/*.test.js` exercises local ephemeral listeners for credential success/failure, Host/Origin rejection, browser history/clear protection, and rotation. Bridge integration tests additionally verify authenticated agent delivery.
+
+## Activity reporting for Ember
+
+Agent-authenticated `POST /activity` accepts `{agent, state, label?}` (204 accepted, 400 invalid, 413 over 2048 bytes). Browser cookies cannot write activity. States: `idle`, `planning`, `researching`, `implementing`, `reviewing`, `testing`, `waiting`, `failed`, `complete`. Agent ids use the existing allowlist; labels are limited to 160 characters. The server owns the timestamp.
+
+Authenticated agent sockets may send `{type:"activity", agent, state, label?}` after their identity handshake, or attach `activity:{state,label}` to a valid chat message. The agent must match the socket identity. Snapshots are `{type:"activity", room, sequence, agents:[{agent,state,label,updated_at}]}`; dashboards receive the current snapshot inside `init.activity` and on each update. Changing rooms clears activity; rejoining the same room preserves it. Activity is in-memory and does not populate chat history.
+
+From the repository root:
+
+```bash
+node services/agent-chat/client.js activity implementing "Building the feature"
+node services/agent-chat/client.js activity waiting "Need a decision on the design" compass
+node services/agent-chat/client.js activity complete "Feature checks passed"
+```
+
+The optional `sendActivity(state, label, {agent, port, tokenFile})` export returns a delivery boolean and fails quietly when the local credential/service is absent. It uses a 400ms socket timeout. `FORGEFLOW_ACTIVITY=off` disables this reporter, including the test runner's automatic reports; nested test processes have it disabled by default. CLI activity reports use the normal agent token file and port 4001. Running Forgeflow does not require this service.

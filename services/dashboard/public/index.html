@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="data:," />
   <title>Forgeflow — Dashboard</title>
+  <link rel="stylesheet" href="/ember.css" />
+  <script src="/ember.js" defer></script>
   <style>
     /* ── Reset & Variables ─────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -763,6 +765,7 @@
   </header>
 
   <!-- ── Main ────────────────────────────────────────────────── -->
+  <section id="ember" aria-label="Ember, your forge companion"></section>
   <main>
 
     <!-- Left column: project list -->
@@ -1599,6 +1602,7 @@
       function setStatus(state, text) {
         dot.className = `ws-dot ${state}`;
         label.textContent = text;
+        window.dispatchEvent(new CustomEvent('forgeflow:connection', { detail: state === 'connected' }));
       }
 
       let ws;
@@ -1623,6 +1627,11 @@
         });
 
         ws.addEventListener('message', e => {
+          try {
+            const event = JSON.parse(e.data);
+            window.dispatchEvent(new CustomEvent('forgeflow:chat', { detail: event }));
+            if (event.type === 'activity') return;
+          } catch { /* Legacy plain-text chat remains displayable. */ }
           // Remove empty state placeholder
           if (emptyEl && emptyEl.parentNode === messages) {
             messages.removeChild(emptyEl);

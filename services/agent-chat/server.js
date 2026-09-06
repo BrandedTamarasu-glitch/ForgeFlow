@@ -37,6 +37,9 @@ const DASH_PORT  = options.dashboardPort ?? 4001;   // browser → server (dashb
 
 const VALID_AGENTS = new Set(['compass', 'fc', 'warden', 'lumen', 'atlas', 'arbiter']);
 const VALID_LEVELS = new Set(['phase', 'decision', 'conversation']);
+const ACTIVITY_STATES = new Set(['idle', 'planning', 'researching', 'implementing', 'reviewing', 'testing', 'waiting', 'failed', 'complete']);
+const activities = new Map();
+let activitySequence = 0;
 
 const RATE_LIMIT_MAX       = 60;      // messages per window
 const RATE_LIMIT_WINDOW_MS = 10_000;  // 10 seconds
@@ -184,6 +187,20 @@ function broadcastLifecycle(event, extra) {
   });
 }
 
+function activitySnapshot() {
+  return { type: 'activity', room: currentRoom, sequence: activitySequence, agents: [...activities.values()] };
+}
+
+function recordActivity(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)
+    || !VALID_AGENTS.has(value.agent) || !ACTIVITY_STATES.has(value.state)
+    || (value.label !== undefined && (typeof value.label !== 'string' || value.label.length > 160))) return false;
+  activities.set(value.agent, { agent: value.agent, state: value.state, label: value.label || '', updated_at: Date.now() });
+  activitySequence += 1;
+  broadcastToDashboard(activitySnapshot());
+  return true;
+}
+
 // ---------------------------------------------------------------------------
 // Port 4000 — Agent WebSocket server (bridge → here)
 // ---------------------------------------------------------------------------
@@ -238,7 +255,12 @@ wssAgents.on('connection', (ws) => {
     if (text.startsWith('/join ')) {
       const room = text.slice(6).trim();
       if (!/^[a-z0-9-]{1,100}$/.test(room)) return;
+      if (room !== currentRoom) {
+        activities.clear();
+        activitySequence += 1;
+      }
       currentRoom = room;
+      broadcastToDashboard(activitySnapshot());
       log(`Room changed to: ${room}`);
       broadcastLifecycle('room-changed', { room });
       return;
@@ -262,6 +284,11 @@ wssAgents.on('connection', (ws) => {
       return;
     }
 
+    if (parsed?.type === 'activity') {
+      if (parsed.agent === state.agentId) recordActivity(parsed);
+      return;
+    }
+
     // Validate shape
     if (
       typeof parsed !== 'object' ||
@@ -277,6 +304,7 @@ wssAgents.on('connection', (ws) => {
       return;
     }
 
+    if (parsed.activity) recordActivity({ agent: parsed.agent, state: parsed.activity.state, label: parsed.activity.label });
     recordAndBroadcast(parsed);
   });
 
@@ -320,6 +348,27 @@ const dashServer = http.createServer((req, res) => {
   }
   if (req.method === 'POST' && !agentAuthorized(req) && req.headers.origin !== `http://${req.headers.host}`) {
     res.writeHead(403).end('Forbidden');
+    return;
+  }
+
+  if (req.method === 'POST' && req.url === '/activity') {
+    // A browser session is read-only; only the private agent credential may report work.
+    if (!agentAuthorized(req)) { res.writeHead(403).end('Forbidden'); return; }
+    const chunks = [];
+    let size = 0;
+    req.setTimeout(2_000, () => req.destroy());
+    req.on('data', chunk => {
+      if (res.writableEnded) return;
+      size += chunk.length;
+      if (size > 2048) { res.writeHead(413, { Connection: 'close' }).end('Too large'); return; }
+      chunks.push(chunk);
+    });
+    req.on('end', () => {
+      if (res.writableEnded) return;
+      let value;
+      try { value = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { res.writeHead(400).end('Invalid activity'); return; }
+      res.writeHead(recordActivity(value) ? 204 : 400).end();
+    });
     return;
   }
 
@@ -383,6 +432,7 @@ wssDash.on('connection', (ws) => {
     type: 'init',
     room: currentRoom,
     history: messageHistory,
+    activity: activitySnapshot(),
   }));
 
   ws.on('close', () => {

@@ -186,3 +186,27 @@ Controls in this panel must stay read-only. Copying a command to the clipboard i
 
 ## Chat Proxy Validation
 `node --test services/dashboard/__tests__/chat-proxy.test.js` covers authenticated history and live delivery, foreign/missing credential rejection, protected bootstrap, ignored browser commands, and missing upstream credentials on ephemeral loopback ports.
+
+## Ember, the forge companion
+
+`public/ember.js` and `ember.css` render a native SVG robot and forge above the dashboard panels. No image assets, animation packages, external requests, or build step are required. Both assets use exact allowlisted GET routes under the existing local-origin guard.
+
+The chat proxy forwards `init.activity` and `activity` snapshots. Each agent has one latest explicit state in the current chat room. Fresh failures and waiting states take precedence over active work; active work takes precedence over completion. New reports replace an agent's previous state. Reports older than 90 seconds yield to fresh reports. If only old active work remains, Ember says “Waiting for an update”; elapsed time never implies success. Completion/failure stays visible until superseded. Disconnection shows Offline; an empty connected snapshot shows Idle.
+
+Preview buttons affect only the local pose and are visibly labeled PREVIEW. Returning to live uses the latest snapshot. Pause motion persists locally and does not pause activity reception. The SVG is decorative, with a separate text status, polite live region, keyboard controls, and per-agent details. CSS honors `prefers-reduced-motion`; hidden tabs pause animations. Idle rotates through watching, polishing, and dozing.
+
+The panel follows the chat service's current room, independently of the metrics project filter. `npm test` reports testing and its actual final result when the local activity service is available. Bridge-based workflow initialization reports known planning, research, implementation, and review phases. Other integrations must explicitly report their phase and result using the agent-chat client or bridge lifecycle API. Ordinary chat messages never infer activity.
+
+Validation: `__tests__/ember.test.js` checks state selection; `tests/e2e/ember.spec.ts` checks preview/live separation, stale/disconnected status, pause, keyboard operation, idle variations, mobile sizing, and reduced motion.
+
+## Automatic opening at workflow entry
+
+`scripts/forgeflow/open-session-dashboard.js` starts or reuses the local dashboard and invokes the OS browser opener once per host session. The existing UserPromptSubmit hook recognizes explicit workflow commands; bridge initialization and Codex workflow skills call the same helper. Starting a host session alone does not open a tab.
+
+The helper uses `FORGEFLOW_SESSION_ID`, `CODEX_THREAD_ID`, or `CLAUDE_SESSION_ID`, or an explicit `--session`. Without a stable id it skips opening. A private, atomic marker under the OS temporary directory deduplicates concurrent calls and aliases across project directories. It records one attempt per session, including failures, to avoid repeated browser prompts; a new session permits another attempt. It does not reopen a tab that the user closes in the same session.
+
+`FORGEFLOW_DASHBOARD_AUTO_OPEN=off` disables both automatic startup and opening. CI, SSH, and Linux without DISPLAY/WAYLAND_DISPLAY skip automatic opening. Browser launch uses `xdg-open` on Linux, `open` on macOS, and `rundll32.exe` on Windows, with argument arrays and a bounded timeout. Startup errors do not block the workflow; manually open http://127.0.0.1:4003/ or start the server to troubleshoot. This helper starts only the metrics/Ember dashboard; live activity still uses the separate agent-chat service.
+
+`GET /api/health` identifies a healthy dashboard as `{service:"forgeflow-dashboard"}` under the normal local-origin checks. The launcher refuses to launch against an occupied, unrecognized port and never kills an existing listener. An already-running dashboard retains its original project readiness scope; global metrics and chat remain available across projects.
+
+The installer includes the dashboard source, Ember assets, dependency manifests, and shared agent-chat auth reader in both runtimes. Dependencies must already be installed: `npm install --prefix <runtime-root>/services/dashboard --ignore-scripts`. Auto-open never installs packages or accesses a package registry.

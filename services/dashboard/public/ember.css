@@ -1,0 +1,91 @@
+#ember { --ember-copper:#c88050; --ember-hot:#ffcd73; --ember-ink:#b4ac9e; margin:20px 24px 0; border:1px solid #493b30; border-radius:18px; overflow:hidden; background:#151918; color:#f5ecd9; display:grid; grid-template-columns:minmax(300px,1.25fr) minmax(300px,1fr); box-shadow:0 14px 42px #0002; }
+#ember * { box-sizing:border-box; }
+.ember-workshop { position:relative; min-width:0; background:radial-gradient(ellipse at 60% 75%,#44301f 0%,#1c2421 46%,#151d1b 80%); padding:12px 16px 0; }
+.ember-workshop svg { width:100%; height:310px; display:block; overflow:visible; }
+.ember-plaque { position:absolute; top:20px; left:24px; font:10px ui-monospace,monospace; letter-spacing:2px; color:#958e7e; }
+.ember-coordinate { position:absolute; bottom:13px; left:24px; font:9px ui-monospace,monospace; letter-spacing:1.5px; color:#877f70; }
+.ember-controls { padding:25px 28px 22px; border-left:1px solid #ffffff0c; display:flex; flex-direction:column; justify-content:center; gap:13px; }
+.ember-topline { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.ember-eyebrow { font:10px ui-monospace,monospace; letter-spacing:2px; color:#d6a878; }
+.ember-source { border:1px solid #6a5b44; background:#c7a77e0a; border-radius:20px; padding:4px 9px; font:10px ui-monospace,monospace; letter-spacing:1px; color:#cab899; }
+#ember h2 { margin:0; font:600 32px/1.1 system-ui,sans-serif; letter-spacing:-1.2px; color:#fff3dd; }
+.ember-description { margin:0; font:13px/1.6 system-ui,sans-serif; color:var(--ember-ink); max-width:420px; min-height:42px; }
+.ember-readout { font:11px/1.5 ui-monospace,monospace; color:#dfb986; display:flex; gap:9px; align-items:center; min-height:18px; }
+.ember-readout::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; flex-shrink:0; }
+.ember-mode-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+#ember button { font:11px system-ui,sans-serif; color:#d9d0be; background:#242b26; border:1px solid #485047; border-radius:7px; padding:7px 11px; cursor:pointer; line-height:1.3; }
+#ember button:hover { background:#354035; border-color:#948467; }
+#ember button:focus-visible, #ember summary:focus-visible { outline:2px solid #ffd18b; outline-offset:4px; }
+#ember button[aria-pressed=true] { background:#cfaa7622; color:#ffdaa0; border-color:#b28b57; }
+#ember .ember-live-button { color:#f8d19a; }
+.ember-preview-label { font:10px ui-monospace,monospace; text-transform:uppercase; letter-spacing:1.3px; color:#9c9c88; }
+.ember-preview { display:flex; flex-wrap:wrap; gap:6px; }
+#ember .ember-preview button { padding:5px 9px; font-size:10px; background:#1b211e; }
+.ember-preview-note { margin:0; font:10px/1.4 system-ui,sans-serif; color:#8e9689; }
+#ember details { font:11px/1.5 system-ui,sans-serif; color:#b4b8a9; }
+#ember summary { cursor:pointer; width:fit-content; }
+#ember ul { list-style:none; margin:8px 0 0; padding:0; }
+#ember li { padding:3px 0; overflow-wrap:anywhere; }
+#ember .ember-hidden { display:none; }
+/* Each moving SVG group has an explicit pivot, including the hammer's shoulder. */
+.ember-body { transform-origin:210px 227px; animation:ember-breathe 4.5s ease-in-out infinite; }
+.ember-head { transform-origin:213px 122px; animation:ember-look 13s ease-in-out infinite; }
+.ember-eyes { transform-box:fill-box; transform-origin:center; animation:ember-blink 6.8s infinite; }
+.ember-arm { transform-origin:246px 169px; }
+.ember-left-arm { transform-origin:180px 166px; }
+.ember-flame { transform-origin:397px 221px; animation:ember-fire 1.8s ease-in-out infinite alternate; }
+.ember-core { animation:ember-glow 3s ease-in-out infinite; }
+.ember-spark { animation:ember-spark 2.2s ease-out infinite; transform-origin:330px 208px; }
+.ember-spark:nth-child(2) { animation-delay:.6s; }
+.ember-spark:nth-child(3) { animation-delay:1.3s; }
+.ember-prop { opacity:0; }
+.ember-tool-hammer { opacity:1; }
+.ember-sleep { opacity:0; }
+#ember[data-state=implementing] .ember-arm { animation:ember-hammer 1.2s ease-in-out infinite; }
+#ember[data-state=implementing] .ember-spark { animation-duration:1.2s; }
+#ember[data-state=implementing] .ember-head { animation:ember-focus 1.2s ease-in-out infinite; }
+#ember[data-state=planning] .ember-blueprint { opacity:1; }
+#ember[data-state=planning] .ember-arm { animation:ember-draw 2.5s ease-in-out infinite; }
+#ember[data-state=planning] .ember-tool-hammer { opacity:0; }
+#ember[data-state=planning] .ember-pencil { opacity:1; }
+#ember[data-state=researching] .ember-lens, #ember[data-state=reviewing] .ember-lens { opacity:1; }
+#ember[data-state=researching] .ember-tool-hammer, #ember[data-state=reviewing] .ember-tool-hammer { opacity:0; }
+#ember[data-state=researching] .ember-arm, #ember[data-state=reviewing] .ember-arm { animation:ember-inspect 3s ease-in-out infinite; }
+#ember[data-state=testing] .ember-test-rig { opacity:1; }
+#ember[data-state=testing] .ember-tool-hammer { opacity:0; }
+#ember[data-state=testing] .ember-indicator { animation:ember-test 1.5s steps(2) infinite; }
+#ember[data-state=waiting] .ember-arm { animation:ember-wave 3s ease-in-out infinite; }
+#ember[data-state=waiting] .ember-tool-hammer { opacity:0; }
+#ember[data-state=complete] .ember-trophy { opacity:1; }
+#ember[data-state=complete] .ember-tool-hammer { opacity:0; }
+#ember[data-state=complete] .ember-body { animation:ember-proud 2.5s ease-in-out 2; }
+#ember[data-state=failed] .ember-crack { opacity:1; }
+#ember[data-state=failed] .ember-head { transform:rotate(9deg); animation:none; }
+#ember[data-state=failed] .ember-eyes { fill:#ffb28a; }
+#ember[data-state=offline] .ember-flame, #ember[data-state=offline] .ember-sparks { opacity:.12; animation:none; }
+#ember[data-state=offline] .ember-core { opacity:.35; animation:none; }
+#ember[data-state=offline] .ember-body, #ember[data-state=offline] .ember-head { animation:none; }
+#ember[data-state=offline] .ember-eyes { fill:#949e95; }
+#ember[data-idle=dozing] .ember-head { animation:ember-nod 6s ease-in-out infinite; }
+#ember[data-idle=dozing] .ember-eyes { transform:scaleY(.15); animation:none; }
+#ember[data-idle=dozing] .ember-sleep { opacity:.8; animation:ember-dream 5s ease-in-out infinite; }
+#ember[data-idle=polishing] .ember-arm { animation:ember-polish 1.5s ease-in-out infinite; }
+#ember[data-paused=true] *, #ember[data-hidden=true] * { animation-play-state:paused !important; }
+@keyframes ember-breathe { 50% { transform:translateY(-2px) rotate(-.5deg); } }
+@keyframes ember-look { 0%,30%,65%,100%{transform:rotate(0)} 36%,47%{transform:rotate(-5deg)} 72%,83%{transform:rotate(4deg)} }
+@keyframes ember-blink { 0%,44%,48%,100%{transform:scaleY(1)} 46%{transform:scaleY(.08)} }
+@keyframes ember-fire { to { transform:scale(.94,1.08); opacity:.8; } }
+@keyframes ember-glow { 50% { opacity:.65; } }
+@keyframes ember-spark { 0%{transform:translate(0,0);opacity:0} 15%{opacity:.9} 100%{transform:translate(-14px,-48px);opacity:0} }
+@keyframes ember-hammer { 0%,100%{transform:rotate(-23deg)} 47%{transform:rotate(-55deg)} 60%,70%{transform:rotate(25deg)} }
+@keyframes ember-focus { 50% { transform:rotate(5deg) translateY(2px); } }
+@keyframes ember-draw { 50% { transform:rotate(13deg); } }
+@keyframes ember-inspect { 50% { transform:rotate(-26deg); } }
+@keyframes ember-wave { 0%,100%{transform:rotate(-75deg)} 40%{transform:rotate(-110deg)} 65%{transform:rotate(-90deg)} }
+@keyframes ember-test { 50% { fill:#b7de99; opacity:.3; } }
+@keyframes ember-proud { 50% { transform:translateY(-5px) rotate(-2deg); } }
+@keyframes ember-polish { 50% { transform:rotate(-17deg); } }
+@keyframes ember-nod { 50% { transform:rotate(9deg) translateY(3px); } }
+@keyframes ember-dream { 50% { transform:translateY(-8px); opacity:.3; } }
+@media(prefers-reduced-motion:reduce) { #ember * { animation:none !important; } }
+@media(max-width:850px) { #ember { grid-template-columns:1fr; margin:14px 12px 0; } .ember-controls { border-left:0; border-top:1px solid #ffffff0c; padding:20px; } .ember-workshop svg { height:275px; } }

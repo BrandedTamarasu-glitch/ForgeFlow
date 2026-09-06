@@ -6,6 +6,12 @@
 COMMAND_NAME="${1:-session}"
 ARGUMENTS="${2:-}"
 
+# The shared launcher deduplicates by the host session id and skips headless runs.
+FORGEFLOW_DASHBOARD_LAUNCHER="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/forgeflow/open-session-dashboard.js"
+if [ -f "$FORGEFLOW_DASHBOARD_LAUNCHER" ]; then
+  node "$FORGEFLOW_DASHBOARD_LAUNCHER" --root "$PWD" || true
+fi
+
 # ---------------------------------------------------------------------------
 # Resolve project root
 # ---------------------------------------------------------------------------
@@ -121,15 +127,19 @@ if [ "$CHAT_AVAILABLE" = true ]; then
     "http://127.0.0.1:${CHAT_BRIDGE_PORT}/room" \
     > /dev/null 2>&1 || true
 
-  # Lifecycle: phase_start — only fire once per bridge process
-  SESSION_MARKER="/tmp/chat-session-${REPO_HASH}-${BRIDGE_PID}.started"
-  if [ ! -f "$SESSION_MARKER" ]; then
-    touch "$SESSION_MARKER"
-    printf 'X-Forgeflow-Token: %s\n' "$CHAT_BRIDGE_TOKEN" | curl -s --max-time 1 --header @- \
-      -X POST \
-      -H "Content-Type: application/json" \
-      -d "$(jq -n --arg event "phase_start" --arg data "$COMMAND_NAME" '{event: $event, data: $data}')" \
-      "http://127.0.0.1:${CHAT_BRIDGE_PORT}/lifecycle" \
-      > /dev/null 2>&1 || true
-  fi
+  # Each invocation starts a phase, even when reusing an existing bridge.
+  # Only known workflow names declare activity; unknown commands remain chat-only.
+  EMBER_STATE=""
+  case "$COMMAND_NAME" in
+    discuss|consult|forgeflow-consult|plan) EMBER_STATE=planning ;;
+    research) EMBER_STATE=researching ;;
+    implement|forgeflow-implement) EMBER_STATE=implementing ;;
+    review|forge-review|forgeflow-review|audit|debate) EMBER_STATE=reviewing ;;
+  esac
+  printf 'X-Forgeflow-Token: %s\n' "$CHAT_BRIDGE_TOKEN" | curl -s --max-time 1 --header @- \
+    -X POST \
+    -H "Content-Type: application/json" \
+    -d "$(jq -n --arg event "phase_start" --arg data "$COMMAND_NAME" --arg state "$EMBER_STATE" '{event: $event, data: $data} + (if $state == "" then {} else {state: $state} end)')" \
+    "http://127.0.0.1:${CHAT_BRIDGE_PORT}/lifecycle" \
+    > /dev/null 2>&1 || true
 fi

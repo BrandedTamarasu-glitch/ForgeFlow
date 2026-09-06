@@ -21,6 +21,8 @@ const CLAUDE_SOURCE_DIRS = [
   'project-rules',
   'scripts/forgeflow',
   'templates',
+  'services/dashboard',
+  'services/agent-chat',
 ];
 
 function usage() {

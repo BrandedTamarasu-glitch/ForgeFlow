@@ -9,6 +9,8 @@ import type { WebSocket } from 'ws';
 
 export type AgentId = 'compass' | 'fc' | 'warden' | 'lumen' | 'atlas' | 'arbiter';
 export type VerbosityLevel = 'phase' | 'decision' | 'conversation';
+export const ACTIVITY_STATES = ['idle', 'planning', 'researching', 'implementing', 'reviewing', 'testing', 'waiting', 'failed', 'complete'] as const;
+export type ActivityState = typeof ACTIVITY_STATES[number];
 
 export interface ChatMessage {
   readonly agent: AgentId;
@@ -16,6 +18,7 @@ export interface ChatMessage {
   readonly message: string;
   readonly timestamp: number;
   readonly room: string;
+  readonly activity?: { state: ActivityState; label: string };
 }
 
 // ---------------------------------------------------------------------------
@@ -26,7 +29,7 @@ export interface SendRequest { agent: AgentId; message: string; level: Verbosity
 export interface SendResponse { ok: boolean; filtered?: boolean; error?: string; }
 export interface RoomRequest { name: string; }
 export interface RoomResponse { ok: boolean; room: string; error?: string; }
-export interface LifecycleRequest { event: string; agent?: AgentId; data?: string; }
+export interface LifecycleRequest { event: string; agent?: AgentId; data?: string; state?: ActivityState; }
 export interface LifecycleResponse { ok: boolean; error?: string; }
 
 export interface StatusResponse {
@@ -150,16 +153,18 @@ export function parseRoomRequest(body: unknown): RoomRequest | null {
 export function parseLifecycleRequest(body: unknown): LifecycleRequest | null {
   if (!isObject(body)) return null;
 
-  const { event, agent, data } = body;
+  const { event, agent, data, state } = body;
 
   if (typeof event !== 'string' || event.length === 0) return null;
 
   if (agent !== undefined && !isAgentId(agent)) return null;
   if (data !== undefined && typeof data !== 'string') return null;
+  if (state !== undefined && !ACTIVITY_STATES.some(value => value === state)) return null;
 
   const result: LifecycleRequest = { event };
   if (isAgentId(agent)) result.agent = agent;
   if (typeof data === 'string') result.data = data;
+  if (state !== undefined) result.state = state as ActivityState;
 
   return result;
 }

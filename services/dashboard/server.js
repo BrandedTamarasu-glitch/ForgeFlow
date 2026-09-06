@@ -60,6 +60,22 @@ function createServer(opts = {}) {
       return;
     }
 
+    if (req.url === '/api/health') {
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+      res.end(JSON.stringify({ service: 'forgeflow-dashboard' }));
+      return;
+    }
+
+    const avatarAssets = { '/ember.js': 'text/javascript; charset=utf-8', '/ember.css': 'text/css; charset=utf-8' };
+    if (Object.hasOwn(avatarAssets, req.url)) {
+      try {
+        const body = await fs.promises.readFile(path.join(__dirname, 'public', req.url.slice(1)));
+        res.writeHead(200, { 'Content-Type': avatarAssets[req.url], 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff' });
+        res.end(body);
+      } catch { res.writeHead(500).end('Avatar asset unavailable'); }
+      return;
+    }
+
     if (req.url === '/api/metrics' || req.url.startsWith('/api/metrics?')) {
       try {
         const result = await scanMetricsRoots(metricsRoots);

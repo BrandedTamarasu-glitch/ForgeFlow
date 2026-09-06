@@ -457,15 +457,35 @@ scripts/forgeflow/check-project-learnings.js --json
 
 ## Dashboard
 
-The metrics dashboard is an optional local read-only HTTP server:
+**Ember is Forgeflow’s animated forge companion:** a small copper robot that hammers, inspects, polishes, and dozes while showing reported workflow activity.
 
-```text
-/dashboard
+![Ember tending a glowing forge beside live implementation status, animation previews, and pause controls](docs/images/ember-workshop.png)
+
+The local dashboard runs at **http://127.0.0.1:4003/**. On the first Forgeflow workflow invocation in a desktop session, Forgeflow starts or reuses it and opens your default browser. Later invocations in the same host session do not open more tabs, even if you close the first one. This uses the command hook, bridge startup, or Codex workflow skill, depending on your host.
+
+- **Live poses:** planning, research, implementation, review, testing, waiting, failure, and completion.
+- **Idle animations:** blinking, polishing, and dozing when the connected service reports no work.
+- **Preview controls:** try any pose without changing incoming live activity. Pause motion or use your system’s reduced-motion preference.
+- **Honest status:** disconnections show Offline; active reports older than 90 seconds show Waiting for an update. Success requires an explicit completion report.
+
+Start live activity with `/agent-chat:on`; stop it with `/agent-chat:off`. That service also provides the agent-message dashboard on port `4001`. `npm test` reports progress and its actual final result when agent-chat is running. Bridge-based workflows report their starting phase; callers should send progress and result updates during longer work:
+
+```bash
+node services/agent-chat/client.js activity implementing "Building the feature"
+node services/agent-chat/client.js activity complete "Feature checks passed"
 ```
 
-It runs on `http://127.0.0.1:4003` and reads local telemetry files from both `~/.claude/projects/` and `~/.codex/projects/`. The dashboard also shows a Project Readiness panel backed by `GET /api/readiness`, with text-labeled status cards for the current health, guidance, release, and aftercare signals. Cards include compact details such as evidence grade, bootstrap command, verified-host counts, and latest snapshot size when available. The panel provides one copy-only next action and does not run commands, refresh artifacts, write files, spawn agents, call GitHub, or export telemetry.
+See [activity reporting](services/agent-chat/CONTEXT.md#activity-reporting-for-ember) for supported states and the bridge API. Ember follows the current chat room independently of the metrics project filter. Forgeflow works without either dashboard.
 
-For live agent-message observability, use `/agent-chat:on`, which runs a separate local dashboard on port `4001`. Stop it with `/agent-chat:off`. Forgeflow works without either dashboard.
+To disable automatic startup and opening, set `FORGEFLOW_DASHBOARD_AUTO_OPEN=off`. CI, SSH, headless Linux, and hosts without a stable session id skip it automatically. You can still start the dashboard manually with `/dashboard` or, from a checkout:
+
+```bash
+node services/dashboard/server.js
+```
+
+Installed runtimes include the dashboard source and assets. If its dependency is missing, install it once with `npm install --prefix <runtime-root>/services/dashboard --ignore-scripts`, where `<runtime-root>` is `~/.codex/forgeflow` or `~/.claude/forgeflow`. Automatic opening never installs packages.
+
+The dashboard also reads telemetry from `~/.claude/projects/` and `~/.codex/projects/`, and shows a Project Readiness panel with health, guidance, release, and aftercare signals. Its panels are read-only: they display existing artifacts and offer a copy-only next action without executing commands or calling GitHub. A reused dashboard retains the project readiness scope it had when started.
 
 ## Team, CI, And Meta-Work
 

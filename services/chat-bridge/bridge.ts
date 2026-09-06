@@ -30,6 +30,7 @@ import type {
   StatusResponse,
   VerbosityResponse,
   BridgeConfig,
+  ActivityState,
 } from './types.js';
 import { shouldPass } from './verbosity.js';
 import { createConnectionPool } from './connections.js';
@@ -124,8 +125,8 @@ function unauthorized(res: ServerResponse): void {
 
 // ---------------------------------------------------------------------------
 // Lifecycle broadcast
-// Uses the system-level "fc" agent slot as sender for system events,
-// but broadcasts to ALL agents so every channel receives the event.
+// Uses the requested agent, or the system-level "fc" slot, as sender.
+// Structured activity travels with the lifecycle message to dashboard listeners.
 // ---------------------------------------------------------------------------
 
 function broadcastLifecycle(
@@ -133,10 +134,13 @@ function broadcastLifecycle(
   room: string,
   event: string,
   data?: string,
+  activityState?: ActivityState,
+  agent: AgentId = 'fc',
 ): void {
   const message = data ? `[lifecycle] ${event} — ${data}` : `[lifecycle] ${event}`;
 
-  pool.send({ agent: 'fc', level: 'phase', message, timestamp: Date.now(), room });
+  pool.send({ agent, level: 'phase', message, timestamp: Date.now(), room,
+    ...(activityState ? { activity: { state: activityState, label: (data || event).slice(0, 160) } } : {}) });
 }
 
 // ---------------------------------------------------------------------------
@@ -329,7 +333,7 @@ async function handleRequest(
     }
 
     try {
-      broadcastLifecycle(pool, state.currentRoom, parsed.event, parsed.data);
+      broadcastLifecycle(pool, state.currentRoom, parsed.event, parsed.data, parsed.state, parsed.agent);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       log(`lifecycle broadcast error: ${message}`);

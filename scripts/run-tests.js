@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const { sendActivity } = require('../services/agent-chat/client');
 
 const root = path.resolve(__dirname, '..');
 const mode = process.argv[2] || '--all';
@@ -14,6 +15,8 @@ if (!['--all', '--helpers', '--services'].includes(mode) || process.argv.length 
 const config = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-test-config-'));
 const env = {
   ...process.env,
+  FORGEFLOW_ACTIVITY: 'off',
+  FORGEFLOW_DASHBOARD_AUTO_OPEN: 'off',
   FORGEFLOW_CONFIG_HOME: config,
   GIT_AUTHOR_NAME: 'Forgeflow Test',
   GIT_AUTHOR_EMAIL: 'forgeflow-test@example.invalid',
@@ -37,23 +40,28 @@ if (mode !== '--helpers') {
   checks.push(['node_modules/typescript/bin/tsc', '-p', 'services/chat-bridge/tsconfig.json', '--noEmit']);
 }
 
-let failed = 0;
-try {
-  // Helpers may seed local artifact fixtures; keep them sequential.
-  for (const args of checks) {
-    const label = args.join(' ').replaceAll(`${root}${path.sep}`, '');
-    const result = spawnSync(process.execPath, args, {
-      cwd: root, env, encoding: 'utf8', timeout: 180000, maxBuffer: 8 * 1024 * 1024,
-    });
-    if (result.status !== 0 || result.error) {
-      failed += 1;
-      console.error(`FAIL ${label}\n${result.stdout || ''}${result.stderr || ''}${result.error?.message || ''}`);
-    } else {
-      console.log(`PASS ${label}`);
+async function run() {
+  let failed = 0;
+  try {
+    // Helpers may seed local artifact fixtures; keep them sequential.
+    for (const [index, args] of checks.entries()) {
+      await sendActivity('testing', `Running checks · ${index + 1}/${checks.length}`);
+      const label = args.join(' ').replaceAll(`${root}${path.sep}`, '');
+      const result = spawnSync(process.execPath, args, {
+        cwd: root, env, encoding: 'utf8', timeout: 180000, maxBuffer: 8 * 1024 * 1024,
+      });
+      if (result.status !== 0 || result.error) {
+        failed += 1;
+        console.error(`FAIL ${label}\n${result.stdout || ''}${result.stderr || ''}${result.error?.message || ''}`);
+      } else {
+        console.log(`PASS ${label}`);
+      }
     }
+  } finally {
+    fs.rmSync(config, { recursive: true, force: true });
   }
-} finally {
-  fs.rmSync(config, { recursive: true, force: true });
+  console.log(`${checks.length - failed}/${checks.length} test commands passed`);
+  await sendActivity(failed ? 'failed' : 'complete', `${checks.length - failed}/${checks.length} checks passed`);
+  process.exitCode = failed ? 1 : 0;
 }
-console.log(`${checks.length - failed}/${checks.length} test commands passed`);
-process.exitCode = failed ? 1 : 0;
+run().catch(err => { console.error(err); process.exitCode = 1; });
