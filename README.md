@@ -198,6 +198,8 @@ ForgeFlow stores plans, briefs, implementation notes, review evidence, and compa
 - **Project learnings:** repeated patterns and observed outcomes inform the next task, subject to current code and instructions.
 - **Explicit preferences:** local advisory profiles capture how you want the assistant to work; they do not override your current request.
 
+Lean guidance keeps the implementation proportional to the task: prefer the stdlib, native platform capabilities, and installed dependencies before adding new machinery, and run at least one focused check that demonstrates the intended behavior. Smaller scope must preserve trust-boundary validation, data-loss prevention, security, accessibility, and explicit requirements. Calibration and tuning remain evidence-driven; sparse telemetry is a reason to collect real outcomes, not to weaken those checks.
+
 For Claude workflows, `/forgeflow-trends --refresh` refreshes project guidance, and `/forgeflow-learnings --project --check` inspects the learning quality gate. Existing focused context packets are preserved during learning smoke checks. From a ForgeFlow checkout, `node scripts/forgeflow/smoke-check.js --json` checks downstream readiness; use the installed helper path when working in another repository.
 
 See [context intelligence](docs/wiki/Context-Intelligence.md), [project learnings](docs/wiki/Project-Learnings.md), [implementation notes](docs/wiki/Implementation-Notes.md), and [user profile guidance](docs/wiki/User-Profile-Guidance.md).
