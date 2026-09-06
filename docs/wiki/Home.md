@@ -10,6 +10,9 @@ Discuss -> Research -> Plan -> Consult -> Implement -> Review -> Ship
 
 ## Start Here
 
+- [Visual User Guide](../user-guide.html)
+- [Printable User Guide](../ForgeFlow-User-Guide.pdf)
+
 - [Hosted Docs Entry](../index.html)
 - [Why Forgeflow](Why-Forgeflow)
 - [Quick Start](Quick-Start)
