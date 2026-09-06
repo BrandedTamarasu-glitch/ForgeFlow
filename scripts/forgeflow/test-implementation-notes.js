@@ -233,7 +233,7 @@ const checks = [
   ['codex skills mention lean decision', files.skillConsult.includes('render-lean-decision.js') && files.skillConsult.includes('Lean Decision') && files.skillImplement.includes('render-lean-decision.js') && files.skillImplement.includes('known ceiling and upgrade trigger')],
   ['implementers emit candidates', ['smith', 'warden', 'lumen', 'compass'].every((name) => files[name].includes('Implementation Notes Candidates'))],
   ['docs page exists', files.docs.includes('# Implementation Notes') && files.docs.includes('.forgeflow/<project-name>/implementation-notes.md')],
-  ['docs linked from home', files.home.includes('[Implementation Notes](Implementation-Notes)')],
+  ['docs linked from home', files.home.includes('[Implementation Notes](Implementation-Notes.md)')],
   ['docs linked from index', files.index.includes('./wiki/Implementation-Notes.md')],
   ['privacy docs mention notes', files.privacy.includes('implementation notes')],
   ['release check runs notes test', files.releaseCheck.includes('test-implementation-notes.js')],

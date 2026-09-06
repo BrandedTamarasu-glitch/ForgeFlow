@@ -1,5 +1,7 @@
 # Support Triage
 
+Shell examples run from the target project root. For `scripts/forgeflow/` commands, use the helper path from your ForgeFlow checkout, or replace that prefix with `"${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow/"` for Codex and `"$HOME/.claude/forgeflow/scripts/forgeflow/"` for Claude Code. Run JavaScript helpers with `node` and shell helpers with `bash`. Replace `<project>` with the actual project folder name before running a placeholder example.
+
 Use this during team trials when a maintainer reports an install, health, routing, context, or review-quality issue. The goal is to classify the issue quickly, collect only safe evidence, and choose the smallest fix layer.
 
 ## First Response
@@ -27,7 +29,7 @@ Do not ask for raw `.forgeflow/` state, full `settings.json`, secrets, private U
 | command missing in Claude Code | restart Claude Code, then run `/forgeflow-health` | settings, install, docs |
 | hook or statusline not running | `/forgeflow-health` settings output | settings, health |
 | Codex skill missing | restart Codex, then check `$CODEX_HOME/skills/` | codex-discovery, template-installer |
-| managed file missing | `/update-forgeflow --repair` | install, repair |
+| managed file missing | Claude: `/update-forgeflow --repair`; Codex: rerun the template installer for the same home | install, repair |
 | review mode obviously wrong | capture route explanation and changed-file shape | agent-routing |
 | findings lack file evidence | capture sanitized finding class and reviewer | review-quality |
 | context packet too large | run context budget and advisor helpers | context-budget |
@@ -54,7 +56,7 @@ If the last update caused the issue:
 /update-forgeflow --rollback
 ```
 
-Use [Settings And Recovery](Settings-And-Recovery) when the failure involves `settings.json`, restart requirements, repair, or rollback.
+Use [Settings And Recovery](Settings-And-Recovery.md) when the failure involves `settings.json`, restart requirements, repair, or rollback.
 
 ## Codex Discovery
 
@@ -76,6 +78,10 @@ $ship
 
 If discovery still fails, capture the install path, `$CODEX_HOME`, and whether files exist under agents and skills. Do not share unrelated Codex config.
 
+## Dashboard And Activity
+
+Use [Dashboard](Dashboard.md) when the workshop does not open or its panels look empty. Check runtime dependencies, the current project, service reachability, browser opt-out/headless settings, and whether real review evidence exists. Optional evidence marked informational is not an install failure. Ember reflects reported activity; a preview pose does not prove agents are running. Capture only sanitized status and error text.
+
 ## Routing And Review Quality
 
 For routing issues, capture:
@@ -92,7 +98,7 @@ For review-quality issues, capture:
 - whether the maintainer confirmed, rejected, or deferred it
 - whether the issue repeats across more than one branch
 
-Repeated routing or review-quality issues should go through [Friction To Fix](Friction-To-Fix).
+Repeated routing or review-quality issues should go through [Friction To Fix](Friction-To-Fix.md).
 
 ## Context Issues
 
@@ -103,7 +109,7 @@ scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json
 scripts/forgeflow/advise-context.js --root .forgeflow --record --json
 ```
 
-Use [Context Budget Examples](Context-Budget-Examples) when packets are over budget or savings are low. Share aggregate context totals, not raw context packets.
+Use [Context Budget Examples](Context-Budget-Examples.md) when packets are over budget or savings are low. Share aggregate context totals, not raw context packets.
 
 ## Support Bundle Privacy
 
@@ -122,4 +128,4 @@ repeat_issue: yes | no
 follow_up:
 ```
 
-Create a fix when the same category repeats across two trials or one issue blocks first review entirely. Use [Pilot Support Rollup](Pilot-Support-Rollup) to compare categories across pilots.
+Create a fix when the same category repeats across two trials or one issue blocks first review entirely. Use [Pilot Support Rollup](Pilot-Support-Rollup.md) to compare categories across pilots.

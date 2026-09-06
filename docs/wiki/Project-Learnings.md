@@ -1,5 +1,7 @@
 # Project Learnings
 
+The lifecycle names below use Claude Code slash commands. Codex uses the corresponding core skills and [runtime helpers](Workflow-Commands.md#choose-your-host); advanced `/forgeflow-*` commands are not automatically Codex skills.
+
 Forgeflow project learnings are durable local guidance about how work tends to go in one repository.
 
 They answer a different question than pilot evidence:

@@ -1,5 +1,7 @@
 # Branch Trial
 
+Shell examples run from the target project root. For `scripts/forgeflow/` commands, use the helper path from your ForgeFlow checkout, or replace that prefix with `"${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow/"` for Codex and `"$HOME/.claude/forgeflow/scripts/forgeflow/"` for Claude Code. Run JavaScript helpers with `node` and shell helpers with `bash`. Replace `<project>` with the actual project folder name before running a placeholder example.
+
 Use this flow to try Forgeflow on one real branch without committing generated local state. It is meant for adoption trials, demos, and side-by-side comparisons against no-agent or single-agent review.
 
 ## Setup
@@ -14,7 +16,7 @@ git branch --show-current
 If the project does not already ignore Forgeflow local state, add these patterns to a local exclude file instead of changing the repo:
 
 ```bash
-printf ".forgeflow/\n.forgeflow-budget.json\n" >> .git/info/exclude
+printf ".forgeflow/\n.forgeflow-budget.json\n" >> "$(git rev-parse --git-path info/exclude)"
 ```
 
 This keeps trial artifacts local while avoiding a repository change.
@@ -43,13 +45,15 @@ If you installed without a checkout, replace `scripts/forgeflow/` with:
 
 ## Run The Trial
 
-Run one review on the branch:
+For Claude Code, run one review on the branch:
 
 ```text
 /review
 ```
 
-For a narrower trial, pass a commit range or paths:
+For Codex use `$forge-review review the current changes`; `/review` is a Codex built-in.
+
+For a narrower Claude trial, pass a commit range or paths:
 
 ```text
 /review HEAD~3..HEAD
@@ -96,11 +100,11 @@ Record the outcome after human triage. Use `review.workflow` to compare workflow
 Append and summarize locally:
 
 ```bash
-scripts/forgeflow/record-review-outcome.js --input outcome.json --out .forgeflow/$(basename "$PWD")/review-outcomes.jsonl --json
-scripts/forgeflow/render-evaluation-report.js --outcomes .forgeflow/$(basename "$PWD")/review-outcomes.jsonl --context-root .forgeflow --public
+scripts/forgeflow/record-review-outcome.js --input outcome.json --out ".forgeflow/$(basename "$PWD")/review-outcomes.jsonl" --json
+scripts/forgeflow/render-evaluation-report.js --outcomes ".forgeflow/$(basename "$PWD")/review-outcomes.jsonl" --context-root .forgeflow --public
 ```
 
-For a side-by-side comparison, repeat the same change with `review.workflow` set to `no-agent`, `single-agent`, and `forgeflow`. See [Workflow Comparison](Workflow-Comparison) for the full comparison flow.
+For a side-by-side comparison, repeat the same change with `review.workflow` set to `no-agent`, `single-agent`, and `forgeflow`. See [Workflow Comparison](Workflow-Comparison.md) for the full comparison flow.
 
 ## Clean Up
 
@@ -111,10 +115,6 @@ git status --short
 find .forgeflow -maxdepth 3 -type f | sort
 ```
 
-Leave `.forgeflow/` in place if you want local memory and trend history. Remove it if the trial is done:
-
-```bash
-rm -rf .forgeflow .forgeflow-budget.json
-```
+Leave `.forgeflow/` in place to preserve memory and trend history. If the trial is done, identify the files created by this trial and remove only those after reviewing them. Do not delete the entire state directory or budget configuration in an existing project: they can predate the trial. A disposable clone is the simplest place to test a complete clean-state lifecycle.
 
 Do not commit trial output unless the project explicitly wants those local records in version control.

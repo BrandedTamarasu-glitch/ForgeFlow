@@ -2,7 +2,7 @@
 
 Forgeflow now includes local-only context helpers that reduce token load before agents are spawned. The goal is to give each agent the smallest useful packet of current files, project memory, and scope constraints.
 
-In a repo checkout, examples use `scripts/forgeflow/`. A Claude install from `/update-forgeflow` places the same runtime helpers under:
+Examples using `scripts/forgeflow/` run from the ForgeFlow source checkout. In an application repository, resolve the installed helper path and keep the application as the working directory. Codex installs helpers under `${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow/`; Claude Code uses:
 
 ```text
 ~/.claude/forgeflow/scripts/forgeflow/
@@ -55,7 +55,7 @@ In a repo checkout, examples use `scripts/forgeflow/`. A Claude install from `/u
 | Lean mode | `scripts/forgeflow/render-lean-mode.js` | Shows or persists the lean guidance profile. Profiles are `off`, `lite`, `balanced`, `strict`, and `ultra`; `--write` saves project policy under `.forgeflow/<project>/context/lean-policy.{md,json}`, and `--user --write` saves a user-level default. Context packs default to balanced after project, env, and user config are checked. |
 | Lean OpenClaw skill | `scripts/forgeflow/render-lean-openclaw-skill.js` | Checks or regenerates the committed OpenClaw lean skill from the canonical lean rule text. It is read-only unless `--write` is supplied. |
 | Lean portability pack | `scripts/forgeflow/render-lean-portability-pack.js` | Generates or checks portable lean rule copies for generic agents, Cursor, Windsurf, Cline, Copilot, Copilot CLI, Kiro, OpenCode, Gemini/Antigravity, OpenClaw-style skills, and skill-style adapters. It is read-only by default and writes only `.forgeflow/<project>/lean-portability/` with `--write`. |
-| Lean prime | `scripts/forgeflow/render-lean-prime.js` | Composes lean mode, status, report, and telemetry quality into one first-run checklist with the next command needed to make lean context injection ready. It is read-only. |
+| Lean prime | `scripts/forgeflow/render-lean-prime.js` | Composes lean mode, status, report, and telemetry quality into one first-run checklist with the next command needed to make lean context injection ready. It is read-only by default. `--prime-task` writes decision and plan artifacts; `--write-plan` saves a plan, and `--write-report` saves the local report. |
 | Lean rule builder | `scripts/forgeflow/lean-rule-builder.js` | Provides the canonical compact lean rule text used by session guidance and portability targets so adapter copies can be drift-checked against one source. |
 | Lean review | `scripts/forgeflow/render-lean-review.js` | Reports read-only over-engineering-only findings from a diff with explicit `delete`, `stdlib`, `native`, `reuse`, `yagni`, `shrink`, and `prose-bloat` tags. Findings include static project evidence, confidence, replacement guidance, estimated net lines, why-safe/why-not-safe evidence, and proof steps. It suppresses obvious semantic false positives into skipped-boundary records, skips hard-boundary scopes, and emits schema-compatible findings for evidence checks without applying fixes. Static evidence is advisory and does not prove runtime behavior. |
 | Lean session | `scripts/forgeflow/render-lean-session.js` | Renders compact always-on lean session guidance plus a `LEAN:<profile>` statusline string for hooks or adapters. It is display-only and does not edit settings, install hooks, mutate context, change routing, commit, push, or call the network. |
@@ -163,24 +163,15 @@ When present, `.forgeflow/<project-name>/project-learnings.md` should be treated
 
 ## Recommended Flow
 
-For review:
+For normal review, start with `/review` in Claude Code or `$forge-review` in Codex. The workflow prepares context when helpers are available. To inspect or prepare packets explicitly:
 
 ```bash
-scripts/forgeflow/build-context-pack.js --root . --json
-scripts/forgeflow/check-agent-drift.js --json
-scripts/forgeflow/build-code-topology.js --json
-scripts/forgeflow/show-code-map.js --json
-scripts/forgeflow/render-forgeflow-report.js --no-drift --json
-scripts/forgeflow/render-efficiency-gap-plan.js --root . --json
-scripts/forgeflow/smoke-check.js --json
-scripts/forgeflow/smoke-check.js --mode source --json
-scripts/forgeflow/render-pilot-script.js --runtime codex
-scripts/forgeflow/render-first-run-simulator.js --runtime codex --json
-scripts/forgeflow/rollup-pattern-learnings.js --dry-run --json
-scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json
-scripts/forgeflow/advise-context.js --root .forgeflow --record --json
-scripts/forgeflow/render-learning-action-router.js --root . --json
+node scripts/forgeflow/build-context-pack.js --root . --json
+node scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json
+node scripts/forgeflow/advise-context.js --root .forgeflow --record --json
 ```
+
+If a packet is too large, use the focused-wave path in [Context Budget Examples](Context-Budget-Examples.md). Refresh stale project guidance before relying on it, while preserving a deliberately focused packet. Source-release smoke (`--mode source`), pilot simulation, and cross-project pattern analysis are separate maintainer or adoption operations; they are not a prerequisite for reviewing an application.
 
 For implementation:
 
@@ -224,7 +215,7 @@ The default template supports global and per-kind limits:
 }
 ```
 
-See [Context Budget Examples](Context-Budget-Examples) for review, implementation, strict release-gate, large-diff, low-savings, and trend workflows.
+See [Context Budget Examples](Context-Budget-Examples.md) for review, implementation, strict release-gate, large-diff, low-savings, and trend workflows.
 
 ## Health Repair
 

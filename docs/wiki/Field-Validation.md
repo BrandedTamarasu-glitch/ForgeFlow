@@ -1,5 +1,7 @@
 # Field Validation
 
+Shell examples run from the target project root. For `scripts/forgeflow/` commands, use the helper path from your ForgeFlow checkout, or replace that prefix with `"${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow/"` for Codex and `"$HOME/.claude/forgeflow/scripts/forgeflow/"` for Claude Code. Run JavaScript helpers with `node` and shell helpers with `bash`. Replace `<project>` with the actual project folder name before running a placeholder example.
+
 Use this plan to validate Forgeflow on real branches across representative project types. The goal is to collect comparable local evidence, not to publish raw project data.
 
 ## Trial Matrix
@@ -18,9 +20,9 @@ Run at least one branch trial in each project type:
 
 For each branch:
 
-1. Run [Branch Trial](Branch-Trial).
+1. Run [Branch Trial](Branch-Trial.md).
 2. Save a local outcome record with `review.workflow` set to `forgeflow`.
-3. If possible, record comparable `no-agent` and `single-agent` outcomes for the same change using [Workflow Comparison](Workflow-Comparison).
+3. If possible, record comparable `no-agent` and `single-agent` outcomes for the same change using [Workflow Comparison](Workflow-Comparison.md).
 4. Generate a public-safe evaluation summary:
 
 ```bash
@@ -32,13 +34,13 @@ scripts/forgeflow/render-evaluation-report.js \
   --out .forgeflow/<project>/evaluation-summary.md
 ```
 
-5. Review the summary using [Evaluation Sharing](Evaluation-Sharing).
-6. Store the summary using [Evaluation Summary Collection](Evaluation-Summary-Collection).
-7. Record first-run friction separately from review quality using [First-Run Friction](First-Run-Friction).
+5. Review the summary using [Evaluation Sharing](Evaluation-Sharing.md).
+6. Store the summary using [Evaluation Summary Collection](Evaluation-Summary-Collection.md).
+7. Record first-run friction separately from review quality using [First-Run Friction](First-Run-Friction.md).
 
 ## Friction Log
 
-Track friction in a local note, issue, or spreadsheet. Use the fuller template in [First-Run Friction](First-Run-Friction), or start with these fields:
+Track friction in a local note, issue, or spreadsheet. Use the fuller template in [First-Run Friction](First-Run-Friction.md), or start with these fields:
 
 ```text
 project_type:
@@ -70,7 +72,7 @@ For each project type, keep only aggregate values in shareable notes:
 
 Raw `review-outcomes.jsonl`, context packets, and telemetry rows should stay local unless the receiving audience is allowed to see the underlying project context.
 
-Use [Evaluation Summary Collection](Evaluation-Summary-Collection) to keep summaries organized during field validation.
+Use [Evaluation Summary Collection](Evaluation-Summary-Collection.md) to keep summaries organized during field validation.
 
 ## Exit Criteria
 
@@ -82,4 +84,4 @@ Field validation is ready to turn into product fixes when repeated friction appe
 - public summaries need manual cleanup every time
 - routing misses a class of files in more than one project
 
-When that happens, create a targeted fix in the relevant install, health, docs, routing, or context helper. Use [Friction To Fix](Friction-To-Fix) to classify the issue and choose the smallest fix layer.
+When that happens, create a targeted fix in the relevant install, health, docs, routing, or context helper. Use [Friction To Fix](Friction-To-Fix.md) to classify the issue and choose the smallest fix layer.

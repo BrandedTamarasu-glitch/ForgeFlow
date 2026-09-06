@@ -1,5 +1,7 @@
 # Common Stack Examples
 
+Examples use Claude Code slash commands. In Codex use `$discuss`, `$research`, `$plan`, `$consult`, `$implement`, `$forge-review`, `$quick`, and `$ship` as appropriate. `/fleet` is a Claude workflow, not a promised Codex skill. See [Workflow Commands](Workflow-Commands.md#choose-your-host) for helper paths.
+
 Use these as starting points for choosing the right Forgeflow entry command and validation checks. Adjust package manager commands to match the repo.
 
 ## Next.js Or React App
@@ -172,6 +174,6 @@ Before tagging Forgeflow itself:
 /forgeflow-release-check
 ```
 
-Or run the equivalent terminal checks listed in [Demos](Demos).
+Or run the equivalent terminal checks listed in [Demos](Demos.md).
 
 For product repositories using Forgeflow, run the project’s normal tests first, then use `/review` and `/ship`.

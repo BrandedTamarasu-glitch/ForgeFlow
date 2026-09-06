@@ -1,5 +1,7 @@
 # User Profile Guidance
 
+The slash commands below are Claude Code entrypoints. Codex users can invoke the corresponding helpers using the [runtime path guidance](Workflow-Commands.md#choose-your-host). The profile helper currently defaults to the Claude home even when invoked from another runtime; do not assume installing Codex moves existing preferences into `.codex`.
+
 Forgeflow user profiles are local advisory preferences about how the user wants Forgeflow to operate and how a specific project should look, feel, and speak.
 
 They are separate from project learnings:

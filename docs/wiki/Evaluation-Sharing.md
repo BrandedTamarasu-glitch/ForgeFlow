@@ -1,5 +1,7 @@
 # Evaluation Sharing
 
+Shell examples run from the target project root. For `scripts/forgeflow/` commands, use the helper path from your ForgeFlow checkout, or replace that prefix with `"${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow/"` for Codex and `"$HOME/.claude/forgeflow/scripts/forgeflow/"` for Claude Code. Run JavaScript helpers with `node` and shell helpers with `bash`. Replace `<project>` with the actual project folder name before running a placeholder example.
+
 Forgeflow evaluation records are local-first. Share aggregate summaries, not raw records, unless the project is public and the team explicitly wants richer attribution.
 
 ## Keep Local
@@ -66,6 +68,6 @@ For private team review, prefer sharing:
 - `evaluation-summary.md`
 - screenshots of the public summary
 - copied aggregate tables
-- sanitized examples from [Public-Safe Examples](Public-Examples)
+- sanitized examples from [Public-Safe Examples](Public-Examples.md)
 
 Share raw JSONL only when the receiving audience is allowed to see the underlying project context.

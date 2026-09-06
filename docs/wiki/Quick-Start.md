@@ -1,157 +1,96 @@
 # Quick Start
 
-For common outcomes such as install/update, refresh, failure investigation, review prep, ship, and release prep, use [User Paths](User-Paths). This page keeps the first-run setup steps compact.
+Install ForgeFlow into Claude Code or Codex, then use it inside the application repository you want to improve. For screenshots and a complete walkthrough, use the [visual guide](../user-guide.html) or [PDF](../ForgeFlow-User-Guide.pdf).
 
-## Clone
+## Prerequisites
+
+Use a working host installation, Git, Node.js, npm, and Bash in the same environment. The repository's CI validates Node 24. With WSL, keep the host and runtime paths in the same WSL environment. Check that the models named by the installed agents are available to your account; a file being installed does not prove the host can run its model.
+
+## Clone The Source
 
 ```bash
 git clone https://github.com/BrandedTamarasu-glitch/ForgeFlow.git
 cd ForgeFlow
 ```
 
-## Claude Install
+## Install Into Your Host
 
-From Claude Code, run:
+Run the matching commands from the ForgeFlow checkout.
 
-```text
-/update-forgeflow
-```
-
-This syncs Claude agents, commands, hooks, templates, project rules, patterns, and runtime helpers into `~/.claude/`.
-The updater is script-backed and pins downloads to the fetched commit SHA so the installed version file describes the files that were actually installed.
-
-After installing or updating, restart Claude Code, then verify:
-
-```text
-/forgeflow-version
-/forgeflow-health
-```
-
-For an existing local install, see [Migration Guide](Migration-Guide).
-
-Claude runtime helpers are installed at:
-
-```text
-~/.claude/forgeflow/scripts/forgeflow/
-```
-
-Set a helper root before running project-local helpers:
-
-```bash
-HELPER_ROOT="scripts/forgeflow"
-if [ ! -x "${HELPER_ROOT}/ensure-forgeflow-state.sh" ]; then
-  if [ -x "$HOME/.claude/forgeflow/scripts/forgeflow/ensure-forgeflow-state.sh" ]; then
-    HELPER_ROOT="$HOME/.claude/forgeflow/scripts/forgeflow"
-  else
-    HELPER_ROOT="${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow"
-  fi
-fi
-```
-
-## Bootstrap State
-
-```bash
-${HELPER_ROOT}/ensure-forgeflow-state.sh
-```
-
-This creates local workflow state under:
-
-```text
-.forgeflow/<project-name>/
-```
-
-The state directory is ignored by git.
-
-Audit and repair missing project-local state:
-
-```bash
-${HELPER_ROOT}/health-check.js --fix --json
-```
-
-Seed context budget config without overwriting an existing file:
-
-```bash
-${HELPER_ROOT}/seed-budget-config.js --json
-```
-
-## Claude Code
-
-Start with a review:
-
-```text
-/review
-```
-
-Or run the full workflow:
-
-```text
-/discuss -> /research -> /plan -> /consult -> /implement -> /review -> /ship
-```
-
-## Codex
-
-For first-time local installation, use the template installer, then run the first-run guide. For deeper Codex setup detail, see [Codex First Run](Codex-First-Run):
+### Codex
 
 ```bash
 node scripts/forgeflow/install-template.js --target codex --dry-run --json
 node scripts/forgeflow/install-template.js --target codex
 ```
 
-Restart Codex after installing so agents and skills are discovered, then run:
+The installer respects `CODEX_HOME` and preserves unrelated configuration. Restart Codex, then confirm it discovers `$quick` or `$consult`. See [Codex First Run](Codex-First-Run.md) for custom home directories and model troubleshooting.
+
+### Claude Code
 
 ```bash
-scripts/forgeflow/render-first-run-guide.js --runtime codex
+node scripts/forgeflow/install-template.js --target claude --dry-run --json
+node scripts/forgeflow/install-template.js --target claude
 ```
 
-Use the repo skills:
+Restart Claude Code. Follow [Settings and Recovery](Settings-And-Recovery.md) to merge hooks and the status line into your existing settings without overwriting unrelated entries. The installer does not perform that settings merge.
 
-```text
-$consult design the approach
-$implement execute the brief
-$forge-review review the current changes
-$ship prepare the branch
-```
+Once the Claude commands are installed, `/update-forgeflow` is the normal updater. `--repair` restores managed files; `--rollback` uses a previous updater snapshot when one exists. Those are Claude updater capabilities. For other installer options, including `--target both`, see [Template Installer](Template-Installer.md).
 
-Use `$forge-review` instead of `/review`; `/review` is a Codex built-in.
+## Set The Runtime Path
 
-## Useful Helpers
+Choose the runtime for the host you installed, and keep this shell open for the following steps:
 
 ```bash
-scripts/forgeflow/explain-review-route.js --json
-scripts/forgeflow/summarize-calibration.js --json
-scripts/forgeflow/record-review-outcome.js --summary .forgeflow/<project>/review-outcomes.jsonl --json
-scripts/forgeflow/build-context-pack.js --json
-scripts/forgeflow/build-project-intelligence.js --json
-scripts/forgeflow/build-memory-context.js --json
-scripts/forgeflow/build-scope-manifest.js --json
-scripts/forgeflow/summarize-context-telemetry.js --root .forgeflow --json
-scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json
-scripts/forgeflow/advise-context.js --root .forgeflow --record --json
-scripts/forgeflow/render-release-readiness.js --plan-only --json
+# Codex:
+FF_RUNTIME="${CODEX_HOME:-$HOME/.codex}/forgeflow"
+
+# Or Claude Code:
+# FF_RUNTIME="$HOME/.claude/forgeflow"
 ```
 
-## Evidence Readiness
+For a custom Claude home, use that directory's `forgeflow` subdirectory.
 
-After the first real task or before making release claims, check the local evidence surfaces:
+## Enable The Dashboard
 
 ```bash
-scripts/forgeflow/render-lean-prime.js --json
-scripts/forgeflow/render-lean-benchmark-runner.js --json
-scripts/forgeflow/render-lean-host-cli-probes.js --json
-scripts/forgeflow/render-command-capability-matrix.js --json
-scripts/forgeflow/render-release-readiness.js --plan-only --json
+npm install --prefix "$FF_RUNTIME/services/dashboard" --ignore-scripts
+npm install --prefix "$FF_RUNTIME/services/agent-chat" --ignore-scripts
 ```
 
-Use [Lean Evidence](Lean-Evidence) for the model-backed benchmark, host verification, failure-digest, and release advisory workflow.
+On the first eligible ForgeFlow workflow invocation in a desktop session, the workflow helper starts or reuses the services, reports the phase, and opens **http://127.0.0.1:4003/**. Later invocations reuse the session without opening more tabs. Startup never installs dependencies automatically. Headless sessions and `FORGEFLOW_DASHBOARD_AUTO_OPEN=off` skip automatic launch.
 
-If you installed through `/update-forgeflow` and do not have a local checkout, replace `scripts/forgeflow/` with:
+[Dashboard and Ember](Dashboard.md) covers manual startup, animation states, empty panels, and stopping the services.
 
-```text
-~/.claude/forgeflow/scripts/forgeflow/
+## Open Your Application Project
+
+Replace the example path with the project you want to work on:
+
+```bash
+cd /path/to/your-project
+git status --short
+bash "$FF_RUNTIME/scripts/forgeflow/ensure-forgeflow-state.sh"
+node "$FF_RUNTIME/scripts/forgeflow/seed-budget-config.js" --json
+node "$FF_RUNTIME/scripts/forgeflow/health-check.js" --json
 ```
 
-If you installed through the Codex template installer and do not have a local checkout, use:
+The bootstrap creates local `.forgeflow/<project-name>/` state and git-ignore entries; the budget helper preserves an existing config. Inspect the resulting changes and choose a suitable working branch. If health reports missing project state, inspect its proposed action; `health-check.js --fix --json` repairs supported local-state gaps. Optional profiles, benchmarks, and outcome history can be absent in a new project.
 
-```text
-${CODEX_HOME:-~/.codex}/forgeflow/scripts/forgeflow/
-```
+## Run One Small Task
+
+| Step | Claude Code | Codex |
+|---|---|---|
+| Design a bounded improvement | `/consult` | `$consult` |
+| Execute the brief | `/implement` | `$implement` |
+| Review the changes | `/review` | `$forge-review` |
+| Prepare the handoff | `/ship` | `$ship` |
+
+Add your task after the command. For example: `design a helpful empty state for the task list, reuse the existing Create task action, and include keyboard behavior`. Run each phase separately, inspect its result, and steer the assistant before continuing. Request any commit, push, PR, or deployment explicitly.
+
+Use `$forge-review` in Codex; its built-in `/review` is a different command. The extended Claude catalog is larger than the Codex skill set. [Workflow Commands](Workflow-Commands.md) distinguishes those surfaces.
+
+## Understand The First Results
+
+Ember shows reported activity. Project Readiness identifies actionable checks separately from optional evidence. Review Outcomes and Review Trends need real verdict records; Live Activity needs the activity service and emitted events. Empty panels are explained in [Dashboard](Dashboard.md).
+
+For deeper context, memory, failures, or release work, choose a path in [User Paths](User-Paths.md). [Lean Evidence](Lean-Evidence.md) and [Release Gate](Release-Gate.md) are advanced validation references, not prerequisites for trying a first task.

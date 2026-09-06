@@ -1,5 +1,7 @@
 # Lean Evidence
 
+The examples use Claude Code command syntax. Other hosts can use the corresponding [runtime helpers](Workflow-Commands.md#choose-your-host). Keep observed task results separate from fixtures and empty benchmark scaffolds.
+
 Forgeflow treats lean guidance as advisory until there is local evidence.
 
 Use this path when you want proof instead of intuition:

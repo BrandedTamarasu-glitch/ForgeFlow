@@ -1,53 +1,40 @@
-# Why Forgeflow
+# Why ForgeFlow
 
-Forgeflow is for teams that have outgrown one-shot AI review and want a local-first workflow that can plan, implement, review, verify, and ship with measurable outcomes.
+ForgeFlow is a software delivery workshop for Claude Code and Codex. It helps an individual developer or a team move from an uncertain idea to an implementation brief, working changes, an evidence-backed review, and a clear shipping handoff.
 
-## From Review Squad
+## What You Get
 
-Review Squad proved that specialist agents are useful, but it focused mostly on review. Forgeflow keeps the specialist model and adds the operating system around it:
+- **Specialist judgment:** agents cover backend craft, security, UX, coordination, architecture, and validation. Routing keeps the team proportional to the task.
+- **A repeatable workflow:** enter at quick, consult, review, or an earlier discovery phase according to what the work needs.
+- **Useful project context:** local notes, learnings, context packs, and budget guidance help later work start with relevant evidence. Current code and tests still decide correctness.
+- **A visible workshop:** the local dashboard combines reported activity, project readiness, review outcomes, and trends. Ember tends the forge as phases change and settles into idle animation between tasks.
+- **Reviewable results:** findings need evidence, validation is reported explicitly, and remote shipping actions require your instruction.
 
-- lifecycle commands from discussion through ship
-- deterministic review routing with skip, thin, full, and deep modes
-- Aegis verification for high-risk or noisy findings
-- local context packs, memory summaries, scope manifests, and budget checks
-- install, health, repair, rollback, release, and evaluation helpers
-- Codex-native agents and skills alongside Claude Code commands
+![ForgeFlow's local workshop dashboard](../images/forgeflow-workshop.png)
 
-## From Ad Hoc Agent Review
+## How It Fits Your Host
 
-Ad hoc agent review is quick, but it is hard to compare runs, recover from install drift, or tell whether quality is improving. Forgeflow gives those reviews structure:
+| Surface | Claude Code | Codex |
+|---|---|---|
+| Main workflows | Slash commands such as `/consult` and `/review` | Skills such as `$consult` and `$forge-review` |
+| Specialist agents | Claude agent definitions | Codex custom-agent definitions |
+| Helpers and dashboard | Local runtime | Local runtime |
+| Extended catalog | Larger slash-command reference | Installed skills plus explicitly invoked runtime helpers |
 
-- agents have clear roles and evidence standards
-- routing records why each agent was included or skipped
-- context helpers reduce prompt load before agents read files directly
-- outcome records track accepted findings, false positives, review time, auto-fix results, and regressions
-- public summaries can share aggregate results without raw code or private telemetry
+The hosts share the core delivery flow, but command names, settings, hooks, and available models differ. Start with [Quick Start](Quick-Start.md) and use [Workflow Commands](Workflow-Commands.md) as a reference when needed.
 
-## What Changed For Codex
+## Try It On One Real Task
 
-Forgeflow now ships with Codex agent definitions, Codex skills, and a local template installer. A checkout can seed Claude Code, Codex, or both:
+Pick something small enough to judge: a missing empty state, a reproducible bug, or a bounded refactor. Run consult, implement, review, and ship one step at a time. Inspect the brief, the resulting diff, and the validation evidence. Use the [visual guide](../user-guide.html) or [PDF](../ForgeFlow-User-Guide.pdf) for the complete walkthrough.
 
-```bash
-node scripts/forgeflow/install-template.js --target both
-```
+The dashboard becomes more informative as actual work is recorded. A new installation can have no review history, no trends, and no optional benchmark evidence. Do not create sample outcomes to make those panels look complete.
 
-Codex users can run the same lifecycle through skills:
+## Boundaries
 
-```text
-$discuss -> $research -> $plan -> $consult -> $implement -> $forge-review -> $ship
-```
+ForgeFlow keeps its workflow artifacts locally by default. Your coding host and model provider still have their own data handling and network behavior; see [Local Data and Privacy](Local-Data-And-Privacy.md). A dashboard status or animation represents reported state, not independent proof of success. Multiple agents do not guarantee better results, and context savings estimates are not provider billing measurements.
 
-## Why Try It Now
+For a structured comparison, [Workflow Comparison](Workflow-Comparison.md) explains how to compare actual reviews on the same change. [Branch Trial](Branch-Trial.md) and the [Adoption Pack](Adoption-Pack.md) are optional tools for a broader evaluation.
 
-The current build is no longer only a multi-agent review experiment. It includes:
+## Where It Came From
 
-- `/forgeflow-version` for install status and upstream drift
-- `/forgeflow-health` for install and project-local diagnostics
-- `/update-forgeflow --repair` and `--rollback` for recovery
-- `/forgeflow-release-check` and `/forgeflow-release-readiness` for pre-release validation and release-to-install preflight checks
-- context savings and budget reports
-- project intelligence with readiness, review-prep, next-work briefs, and advisory next-work candidates
-- pilot evidence with normalized state-aware fields and public-safe adoption summaries
-- evaluation reports with workflow comparison, quality rates, and public-safe summaries
-
-Run it on one real branch and compare the result against no-agent or single-agent review. Forgeflow is designed to make that comparison visible instead of relying on vibe.
+ForgeFlow grew from Review Squad's specialist-review approach. Review remains central, while the current product also supports planning, implementation, validation, project memory, and the local workshop. The [historical 4.3.0 release brief](Forgeflow-4.3-Release-Brief.md) records an earlier milestone; the [README](../../README.md) describes the current product.

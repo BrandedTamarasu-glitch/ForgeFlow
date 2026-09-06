@@ -1,5 +1,7 @@
 # Context Budget Examples
 
+Use `/review` in Claude Code or `$forge-review` in Codex for the normal workflow. Terminal examples below assume the ForgeFlow source checkout; in an application repository use the [installed runtime helper paths](Workflow-Commands.md#choose-your-host). Token totals are estimates for the generated artifacts, not a measurement of your host model's complete session context.
+
 Forgeflow context helpers keep agent prompts smaller by building compact packets before agents read files directly. The budget tools help decide when a packet is small enough to use as-is and when to trim or split work.
 
 ## Starter Config
@@ -39,7 +41,7 @@ scripts/forgeflow/advise-context.js --root .forgeflow --record --json
 
 If the advisor reports `context-healthy`, use the generated packet as the primary review context.
 
-If it reports `trim-budget-violation`, trim before spawning agents:
+If it reports `trim-budget-violation`, use `/forgeflow-review-wave-prep --write-wave-files` (Claude Code) or the `render-review-wave-prep.js --write-wave-files` runtime helper to prepare a focused wave. Inspect its recommended build and verification commands before spawning agents. Other scope choices include:
 
 - pass fewer paths to `/review`
 - split broad changes into directory-focused reviews
@@ -58,7 +60,7 @@ scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json
 scripts/forgeflow/advise-context.js --root .forgeflow --record
 ```
 
-If `memory-context` exceeds budget, trim old handoffs, stale design notes, and duplicated plans before asking implementation agents to proceed.
+If `memory-context` exceeds budget, narrow memory selection and remove duplicated context from the packet before asking implementation agents to proceed. Preserve source records and required proof; archive or edit historical handoffs only deliberately.
 
 If `scope-manifest` exceeds budget, split the brief into smaller implementation waves and assign narrower file ownership.
 

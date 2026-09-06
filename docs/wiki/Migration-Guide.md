@@ -39,7 +39,7 @@ If `/forgeflow-version` is unavailable, run from a repo checkout:
 scripts/forgeflow/forgeflow-version.js --offline
 ```
 
-Optional backup:
+Optional backup (the archive may contain private configuration or custom prompts; keep it local):
 
 ```bash
 tar -czf ~/forgeflow-claude-backup.tgz \
@@ -49,7 +49,7 @@ tar -czf ~/forgeflow-claude-backup.tgz \
   ~/.claude/templates \
   ~/.claude/project-rules \
   ~/.claude/forgeflow-patterns \
-  ~/.claude/forgeflow-version 2>/dev/null
+  ~/.claude/forgeflow-version
 ```
 
 ## Standard Migration

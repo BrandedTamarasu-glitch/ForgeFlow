@@ -1,8 +1,10 @@
 # Evaluation Summary Collection
 
+Shell examples run from the target project root. For `scripts/forgeflow/` commands, use the helper path from your ForgeFlow checkout, or replace that prefix with `"${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow/"` for Codex and `"$HOME/.claude/forgeflow/scripts/forgeflow/"` for Claude Code. Run JavaScript helpers with `node` and shell helpers with `bash`. Replace `<project>` with the actual project folder name before running a placeholder example.
+
 Use this workflow to collect public-safe evaluation summaries from real reviews during field validation. It keeps raw records local while making aggregate evidence easy to compare.
 
-For maintainer pilot trials, use [Pilot Public Summary](Pilot-Public-Summary) before adding summaries to a broader collection.
+For maintainer pilot trials, use [Pilot Public Summary](Pilot-Public-Summary.md) before adding summaries to a broader collection.
 
 ## Collection Folder
 
@@ -15,13 +17,13 @@ Store shareable summaries outside source control by default:
 Create the folder locally:
 
 ```bash
-mkdir -p .forgeflow/$(basename "$PWD")/public-summaries
+mkdir -p ".forgeflow/$(basename "$PWD")/public-summaries"
 ```
 
 If the project does not already ignore `.forgeflow/`, add it to local exclude:
 
 ```bash
-printf ".forgeflow/\n.forgeflow-budget.json\n" >> .git/info/exclude
+printf ".forgeflow/\n.forgeflow-budget.json\n" >> "$(git rev-parse --git-path info/exclude)"
 ```
 
 ## Generate A Summary
@@ -71,7 +73,7 @@ Share one of these:
 - the generated `evaluation-summary.md`
 - copied aggregate tables from the summary
 - screenshots of the summary
-- a short written note using the suggested language in [Evaluation Sharing](Evaluation-Sharing)
+- a short written note using the suggested language in [Evaluation Sharing](Evaluation-Sharing.md)
 
 Do not share raw `review-outcomes.jsonl`, context packets, memory summaries, or telemetry rows unless the receiving audience is allowed to see the underlying project context.
 

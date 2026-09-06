@@ -1,15 +1,17 @@
 # Pilot Support Rollup
 
+Shell examples run from the target project root. For `scripts/forgeflow/` commands, use the helper path from your ForgeFlow checkout, or replace that prefix with `"${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow/"` for Codex and `"$HOME/.claude/forgeflow/scripts/forgeflow/"` for Claude Code. Run JavaScript helpers with `node` and shell helpers with `bash`. Replace `<project>` with the actual project folder name before running a placeholder example.
+
 Use this after two or more maintainer pilots to find repeated support blockers. Keep raw pilot notes local and roll up only categories, counts, and sanitized observations.
 
 ## Inputs
 
 Use local notes from:
 
-- [Pilot Evidence Log](Pilot-Evidence-Log)
-- [Support Triage](Support-Triage)
-- [First-Run Friction](First-Run-Friction)
-- [Friction To Fix](Friction-To-Fix)
+- [Pilot Evidence Log](Pilot-Evidence-Log.md)
+- [Support Triage](Support-Triage.md)
+- [First-Run Friction](First-Run-Friction.md)
+- [Friction To Fix](Friction-To-Fix.md)
 
 Do not copy raw `.forgeflow/` artifacts, full settings files, source snippets, or private branch names into the rollup.
 
@@ -102,4 +104,4 @@ linked_categories:
 validation_needed:
 ```
 
-Use [Pilot Adoption Comparison](Pilot-Adoption-Comparison) and [Team Adoption Criteria](Team-Adoption-Criteria) to decide whether the rollup supports expansion.
+Use [Pilot Adoption Comparison](Pilot-Adoption-Comparison.md) and [Team Adoption Criteria](Team-Adoption-Criteria.md) to decide whether the rollup supports expansion.

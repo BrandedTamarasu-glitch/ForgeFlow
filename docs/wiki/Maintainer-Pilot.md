@@ -1,5 +1,7 @@
 # Maintainer Pilot
 
+Shell examples run from the target project root. For `scripts/forgeflow/` commands, use the helper path from your ForgeFlow checkout, or replace that prefix with `"${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow/"` for Codex and `"$HOME/.claude/forgeflow/scripts/forgeflow/"` for Claude Code. Run JavaScript helpers with `node` and shell helpers with `bash`. Replace `<project>` with the actual project folder name before running a placeholder example.
+
 Use this for the first small-team trial of Forgeflow on a real branch. The maintainer stays in control of what is installed, what is shared, and whether the workflow is ready for a broader team rollout.
 
 ## Pilot Scope
@@ -16,8 +18,8 @@ Use one runtime first: Claude Code or Codex. Add the second runtime only after t
 
 ## Before The Review
 
-1. Install and verify Forgeflow with [Package And Release Onboarding](Package-Release-Onboarding).
-2. Confirm manual settings and restart requirements with [Settings And Recovery](Settings-And-Recovery).
+1. Install and verify Forgeflow with [Package And Release Onboarding](Package-Release-Onboarding.md).
+2. Confirm manual settings and restart requirements with [Settings And Recovery](Settings-And-Recovery.md).
 3. Run a clean health check:
 
 ```text
@@ -35,7 +37,7 @@ $ship
 
 4. Make sure `.forgeflow/` and `.forgeflow-budget.json` are ignored or intentionally local.
 5. Tell the branch owner that the pilot is evaluating review quality, friction, and time, not replacing maintainer judgment.
-6. Choose a sharing level with [Team Privacy Boundaries](Team-Privacy-Boundaries).
+6. Choose a sharing level with [Team Privacy Boundaries](Team-Privacy-Boundaries.md).
 
 ## Run The Pilot
 
@@ -91,15 +93,15 @@ From Codex:
 $forge-review review the current changes
 ```
 
-Record the review outcome after human triage:
+First record a real outcome using the JSON example and `--input`/`--out` command in [Branch Trial](Branch-Trial.md). Then summarize the existing records (this command does not append an outcome):
 
 ```bash
-scripts/forgeflow/record-review-outcome.js --summary .forgeflow/$(basename "$PWD")/review-outcomes.jsonl --json
+scripts/forgeflow/record-review-outcome.js --summary ".forgeflow/$(basename "$PWD")/review-outcomes.jsonl" --json
 ```
 
 Use optional `outcome.learning_signals` only for signals that are not already derivable from the review counts, such as `stale_guidance` or `manual_promotion_candidate`.
 
-Create the local pilot evidence note:
+Create the local pilot evidence note, replacing example status values with what you actually observed:
 
 ```bash
 scripts/forgeflow/record-pilot-evidence.js --runtime codex --health-result pass --json
@@ -109,10 +111,10 @@ If context telemetry is available, generate a public-safe summary:
 
 ```bash
 scripts/forgeflow/render-evaluation-report.js \
-  --outcomes .forgeflow/$(basename "$PWD")/review-outcomes.jsonl \
+  --outcomes ".forgeflow/$(basename "$PWD")/review-outcomes.jsonl" \
   --context-root .forgeflow \
   --public \
-  --out .forgeflow/$(basename "$PWD")/evaluation-summary.md
+  --out ".forgeflow/$(basename "$PWD")/evaluation-summary.md"
 ```
 
 ## What To Judge
@@ -135,9 +137,9 @@ A maintainer pilot is successful enough to repeat when:
 - the maintainer accepts at least one material finding or validates that skip/thin routing was appropriate
 - false positives are low enough that the maintainer would run Forgeflow again
 - no private raw records need to be shared to explain the result
-- setup friction is captured in [First-Run Friction](First-Run-Friction) or [Friction To Fix](Friction-To-Fix)
-- support issues are classified with [Support Triage](Support-Triage)
-- expansion is decided with [Team Adoption Criteria](Team-Adoption-Criteria)
+- setup friction is captured in [First-Run Friction](First-Run-Friction.md) or [Friction To Fix](Friction-To-Fix.md)
+- support issues are classified with [Support Triage](Support-Triage.md)
+- expansion is decided with [Team Adoption Criteria](Team-Adoption-Criteria.md)
 
 ## Stop Criteria
 
@@ -148,7 +150,7 @@ Stop and fix before expanding the trial when:
 - findings repeatedly lack file evidence
 - routing is obviously wrong for the branch risk
 - raw local records would need to be shared outside the project to explain the outcome
-- [Team Adoption Criteria](Team-Adoption-Criteria) would classify the pilot as `stop-and-fix`
+- [Team Adoption Criteria](Team-Adoption-Criteria.md) would classify the pilot as `stop-and-fix`
 
 ## Pilot Summary
 
@@ -170,4 +172,4 @@ repeat_trial: yes | no
 next_fix:
 ```
 
-For repeatable local evidence capture, use [Pilot Evidence Log](Pilot-Evidence-Log).
+For repeatable local evidence capture, use [Pilot Evidence Log](Pilot-Evidence-Log.md).

@@ -47,7 +47,7 @@ Common fix categories:
 For Codex installs, capture:
 
 - `install-template.js --target codex --dry-run --json` result
-- whether files landed under `~/.codex/agents/` and `~/.codex/skills/`
+- whether files landed under `${CODEX_HOME:-$HOME/.codex}/agents/` and `${CODEX_HOME:-$HOME/.codex}/skills/`
 - whether Codex was restarted after install
 - whether `$consult`, `$implement`, or `$forge-review` appeared or worked
 - whether `/review` confusion occurred because it is a Codex built-in
@@ -80,7 +80,7 @@ Use repeated categories to drive the next change. For example:
 - repeated `context-budget` issues should become better defaults, examples, or advisor recommendations
 - repeated `failure-digest` first-run confusion should become clearer `/forgeflow-failure-digest` examples or trends/report wording
 
-Use [Friction To Fix](Friction-To-Fix) when a repeated category is ready to become an install, health, docs, routing, context, or template-installer change.
+Use [Friction To Fix](Friction-To-Fix.md) when a repeated category is ready to become an install, health, docs, routing, context, or template-installer change.
 
 ## Sharing
 

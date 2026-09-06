@@ -1,6 +1,6 @@
 # Pilot Next Action Decision
 
-Use this after [Pilot Adoption Comparison](Pilot-Adoption-Comparison) to choose the next action from the pilot evidence. The decision should be based on observed trial evidence, not roadmap preference.
+Use this after [Pilot Adoption Comparison](Pilot-Adoption-Comparison.md) to choose the next action from the pilot evidence. The decision should be based on observed trial evidence, not roadmap preference.
 
 ## Allowed Decisions
 
@@ -11,17 +11,17 @@ Use this after [Pilot Adoption Comparison](Pilot-Adoption-Comparison) to choose 
 | small-team-expansion | setup, privacy, support, and review quality are ready for one or two more maintainers | expand with the same privacy boundaries and local evidence rules |
 | continue-deferral | Forgeflow works locally, but team rollout or CI/headless demand is absent | keep Forgeflow opt-in and revisit later |
 
-Do not choose CI or headless automation as the next action unless [CI And Headless Deferrals](CI-Headless-Deferrals) shows explicit maintainer demand.
+Do not choose CI or headless automation as the next action unless [CI And Headless Deferrals](CI-Headless-Deferrals.md) shows explicit maintainer demand.
 
 ## Decision Inputs
 
 Use:
 
-- the decision from [Pilot Adoption Comparison](Pilot-Adoption-Comparison)
-- repeated blockers from [Pilot Support Rollup](Pilot-Support-Rollup)
-- sharing level from [Team Privacy Boundaries](Team-Privacy-Boundaries)
-- summary availability from [Pilot Public Summary](Pilot-Public-Summary)
-- maintainer rerun signal from [Pilot Evidence Log](Pilot-Evidence-Log)
+- the decision from [Pilot Adoption Comparison](Pilot-Adoption-Comparison.md)
+- repeated blockers from [Pilot Support Rollup](Pilot-Support-Rollup.md)
+- sharing level from [Team Privacy Boundaries](Team-Privacy-Boundaries.md)
+- summary availability from [Pilot Public Summary](Pilot-Public-Summary.md)
+- maintainer rerun signal from [Pilot Evidence Log](Pilot-Evidence-Log.md)
 
 Keep the input links local unless the team approves sharing them.
 
@@ -73,4 +73,4 @@ Choose `continue-deferral` when:
 
 ## Closeout
 
-Update the local pilot evidence note with the decision. If the decision is `product-fix`, use [Friction To Fix](Friction-To-Fix) to choose the fix layer. If the decision is `small-team-expansion`, reuse [Maintainer Pilot](Maintainer-Pilot) for each added maintainer.
+Update the local pilot evidence note with the decision. If the decision is `product-fix`, use [Friction To Fix](Friction-To-Fix.md) to choose the fix layer. If the decision is `small-team-expansion`, reuse [Maintainer Pilot](Maintainer-Pilot.md) for each added maintainer.

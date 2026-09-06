@@ -1,16 +1,25 @@
 # User Paths
 
-Use this page when you know what outcome you want but not which Forgeflow command to start with. The detailed command reference is still [Workflow Commands](Workflow-Commands).
+Use this page when you know what outcome you want but not which Forgeflow command to start with. The detailed command reference is still [Workflow Commands](Workflow-Commands.md).
 
 ## Install Or Update
 
-1. Run `/update-forgeflow`.
-2. Restart Claude Code so new commands and hooks are discovered.
-3. Run `/forgeflow-version`. Add `--snapshot` when you want a local support artifact for installed version, helper inventory, and repair guidance.
-4. Run `/forgeflow-update-verify`.
-5. Run `/forgeflow-health`.
+For a new installation, follow [Quick Start](Quick-Start.md). The [visual guide](../user-guide.html) and [PDF](../ForgeFlow-User-Guide.pdf) cover the complete first session.
 
-If health reports missing managed files, run `/update-forgeflow --repair`. If the latest update caused a managed-file problem, run `/update-forgeflow --rollback`.
+For an existing Claude Code installation, use `/update-forgeflow`, restart the host, then run `/forgeflow-version`, `/forgeflow-update-verify`, and `/forgeflow-health`. Claude's `--repair` restores managed files; `--rollback` restores the previous managed snapshot.
+
+For Codex, use `$update-forgeflow` and follow [Codex First Run](Codex-First-Run.md) and [Template Installer](Template-Installer.md). Do not assume Claude's rollback or hook configuration applies to Codex.
+
+The slash commands below are Claude Code entrypoints. Codex users should use the core skill equivalents or the corresponding runtime helpers in [Workflow Commands](Workflow-Commands.md#choose-your-host). The longer evidence and pilot routes are optional adoption tools, not prerequisites for a first useful task.
+
+## Build A Bounded Change
+
+1. Use `/consult <task>` or `$consult <task>` to agree on scope and validation.
+2. Use `/implement` or `$implement` to carry out the brief.
+3. Use `/review` or `$forge-review` and resolve confirmed findings.
+4. Use `/ship` or `$ship` for a reviewable handoff. Request commit, push, or publication explicitly when desired.
+
+The [dashboard](Dashboard.md) opens automatically on supported desktop sessions when dependencies are ready. Ember shows reported workflow activity; an idle robot or an empty review chart is not evidence that work failed.
 
 ## Try Forgeflow For The First Time
 
@@ -40,10 +49,10 @@ Use `/forgeflow-learning-action` when you want Forgeflow to turn the weakest lea
 
 1. Run `/forgeflow-smoke`.
 2. Read the health, trends refresh, report refresh, and code-map checks.
-3. Follow the first failing or warning recommendation before starting a review.
+3. Resolve actionable failures and stale or invalid required evidence. Missing optional history on a new install is informational; collect it through real work instead of inventing records.
 
 Use `/forgeflow-smoke --mode source` from a Forgeflow checkout when you want source-tree release guards instead of downstream project readiness checks.
-Use `/dashboard` when you want the same project-readiness signals in a local UI. The Project Readiness panel reads `GET /api/readiness`, shows status cards and one copy-only next action, and does not run commands or mutate local state.
+Use `/dashboard` when you want the same project-readiness signals in a local UI. The Project Readiness panel reads `GET /api/readiness`, shows project-health cards, optional evidence information, and copy-only next actions, and does not run commands or mutate local state.
 
 ## Build Project Architecture Intelligence
 
@@ -101,7 +110,7 @@ Use `/forgeflow-review-auto-evidence --findings <json>` when you want a saved lo
 21. Run `/forgeflow-lean-host-packages --write` when you want a local manifest describing where each generated adapter belongs.
 22. Run `/forgeflow-lean-lab --task-pack <json> --results <json>` when you want to compare baseline, balanced, strict, and ultra guidance modes across repeatable local task results. Treat descriptive output as evidence gathering only until every mode has visible sample size and passing validation.
 23. Run `/forgeflow-lean-demo-report --write` when you need a compact local demo readiness report across Lean Prime, host coverage, skills, and benchmark setup.
-24. Run `/forgeflow-lean-benchmark-runner --write` to generate an opt-in benchmark scaffold, or `FORGEFLOW_BENCHMARK_ALLOW_NETWORK=1 /forgeflow-lean-benchmark-runner --run` when a local promptfoo executable and provider credentials are intentionally available. Successful runs write `run-ledger.json` and normalized results when raw output is available. Use `/forgeflow-lean-benchmark-results --promptfoo raw-results.json --out normalized-results.json` when you need to import runner output, then `/forgeflow-lean-benchmark-results --results <json>` and `/forgeflow-lean-benchmark --baseline <json> --current <json>` when you have comparable aggregate baseline and lean-guided metrics.
+24. Run `/forgeflow-lean-benchmark-runner --write` to generate an opt-in benchmark scaffold, or `FORGEFLOW_BENCHMARK_ALLOW_NETWORK=1 node "$FF_RUNTIME/scripts/forgeflow/render-lean-benchmark-runner.js" --run` from a shell with `FF_RUNTIME` set as described above when a local promptfoo executable and provider credentials are intentionally available. Successful runs write `run-ledger.json` and normalized results when raw output is available. Use `/forgeflow-lean-benchmark-results --promptfoo raw-results.json --out normalized-results.json` when you need to import runner output, then `/forgeflow-lean-benchmark-results --results <json>` and `/forgeflow-lean-benchmark --baseline <json> --current <json>` when you have comparable aggregate baseline and lean-guided metrics.
 25. Defer or ask the user when the decision says the task is speculative or lacks a concrete requirement.
 
 ## Ship A Change

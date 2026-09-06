@@ -1,5 +1,7 @@
 # Workflow Comparison
 
+Run helper examples from the target project root, using the installed runtime path described in [Workflow Commands](Workflow-Commands.md#choose-your-host). Source-relative `scripts/forgeflow/` paths require a ForgeFlow checkout; use `node` for JavaScript helpers in an installed runtime.
+
 Use this workflow to compare `no-agent`, `single-agent`, and `forgeflow` reviews on the same change. The goal is comparable evidence, not a perfect lab benchmark.
 
 ## Workflow Labels

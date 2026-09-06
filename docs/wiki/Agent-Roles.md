@@ -23,3 +23,11 @@ Separate agents make responsibilities easier to audit:
 - Arbiter resolves conflicts and turns parallel findings into a coherent verdict.
 - Compass checks that the work still matches the intended product outcome.
 - Aegis verifies high-risk claims from visible evidence only.
+
+## How Roles Appear In A Session
+
+A workflow selects the roles needed for its scope. Quick tasks and routed reviews can use a smaller team; audit uses deeper Smith and Warden passes. Arbiter synthesizes specialist evidence, and Compass checks the final outcome when the workflow calls for it. The role names describe responsibilities, not a fixed model or a guarantee that every agent runs.
+
+Claude Code loads its agent definitions; Codex uses its installed agent configuration and skills. Available models and permissions depend on the host. If a configured role cannot run, report the limitation and any fallback instead of presenting a review as completed by that unavailable agent.
+
+[Ember in the dashboard](Dashboard.md) is the visual representation of reported workflow activity. Ember does not add an independent reviewer or establish that a check passed.

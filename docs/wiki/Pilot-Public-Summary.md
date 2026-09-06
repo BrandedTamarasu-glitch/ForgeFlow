@@ -1,13 +1,15 @@
 # Pilot Public Summary
 
+Shell examples run from the target project root. For `scripts/forgeflow/` commands, use the helper path from your ForgeFlow checkout, or replace that prefix with `"${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow/"` for Codex and `"$HOME/.claude/forgeflow/scripts/forgeflow/"` for Claude Code. Run JavaScript helpers with `node` and shell helpers with `bash`. Replace `<project>` with the actual project folder name before running a placeholder example.
+
 Use this after a real maintainer pilot when the selected sharing level allows a public-safe summary. The summary should provide aggregate evidence without exposing raw review records, context packets, source snippets, or private project details.
 
 ## Precheck
 
 Before generating a summary, confirm:
 
-- the pilot has a [Pilot Evidence Log](Pilot-Evidence-Log) entry
-- the sharing level in [Team Privacy Boundaries](Team-Privacy-Boundaries) allows public or private-team summary sharing
+- the pilot has a [Pilot Evidence Log](Pilot-Evidence-Log.md) entry
+- the sharing level in [Team Privacy Boundaries](Team-Privacy-Boundaries.md) allows public or private-team summary sharing
 - human triage has marked findings as confirmed, rejected, or deferred
 - `.forgeflow/` is ignored or intentionally local
 - raw records will not be committed
@@ -73,6 +75,6 @@ Prefer one of these formats:
 - the generated summary file after review
 - copied aggregate tables
 - a screenshot of the aggregate summary
-- a short note using the language from [Evaluation Sharing](Evaluation-Sharing)
+- a short note using the language from [Evaluation Sharing](Evaluation-Sharing.md)
 
 Do not share `review-outcomes.jsonl`, raw context packets, memory summaries, or telemetry rows unless the receiving audience is allowed to see the underlying project context.

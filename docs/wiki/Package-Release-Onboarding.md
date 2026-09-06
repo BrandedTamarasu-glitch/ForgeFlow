@@ -6,19 +6,22 @@ Use this when you arrive at Forgeflow from a package listing, release page, mark
 
 | You are using | Start here | What it installs |
 |---|---|---|
-| Claude Code | `/update-forgeflow` | Claude agents, commands, hooks, templates, project rules, patterns, and runtime helpers |
+| Claude Code | `install-template.js --target claude` from a checkout | Claude agents, commands, hooks, templates, project rules, patterns, and runtime helpers |
 | Codex | `install-template.js --target codex` | Codex agents, skills, and Forgeflow command metadata |
 | Both | `install-template.js --target both` | Claude Code and Codex files from one local checkout |
 
-For a clean release verification pass, use [Clean Checkout Install Verification](Clean-Checkout-Install-Verification).
+For a clean release verification pass, use [Clean Checkout Install Verification](Clean-Checkout-Install-Verification.md).
 
 ## Claude Code First Run
 
-From Claude Code:
+From the ForgeFlow checkout (see [Quick Start](Quick-Start.md) for cloning and prerequisites):
 
-```text
-/update-forgeflow
+```bash
+node scripts/forgeflow/install-template.js --target claude --dry-run --json
+node scripts/forgeflow/install-template.js --target claude
 ```
+
+Once installed, `/update-forgeflow` updates the Claude managed runtime. It is not a bootstrap command on a clean host.
 
 Restart Claude Code after the installer finishes. Then verify:
 
@@ -27,7 +30,7 @@ Restart Claude Code after the installer finishes. Then verify:
 /forgeflow-health
 ```
 
-If `/forgeflow-health` reports a manual settings issue, edit `~/.claude/settings.json` and rerun the health check. Forgeflow intentionally does not auto-edit `settings.json`. See [Settings And Recovery](Settings-And-Recovery) for statusline, hook, restart, repair, and rollback guidance.
+If `/forgeflow-health` reports a manual settings issue, edit `~/.claude/settings.json` and rerun the health check. Forgeflow intentionally does not auto-edit `settings.json`. See [Settings And Recovery](Settings-And-Recovery.md) for statusline, hook, restart, repair, and rollback guidance.
 
 The installed runtime helpers live at:
 
@@ -81,9 +84,9 @@ Pass criteria:
 
 ## Where To Go Next
 
-- [Quick Start](Quick-Start) for the normal install and workflow path.
-- [Codex First Run](Codex-First-Run) for Codex-specific discovery checks.
-- [Workflow Commands](Workflow-Commands) for the full command list.
-- [Public-Safe Examples](Public-Examples) for example install, health, review, and evaluation output.
-- [Migration Guide](Migration-Guide) for existing Claude installs.
-- [Settings And Recovery](Settings-And-Recovery) for manual settings, restarts, repair, and rollback.
+- [Quick Start](Quick-Start.md) for the normal install and workflow path.
+- [Codex First Run](Codex-First-Run.md) for Codex-specific discovery checks.
+- [Workflow Commands](Workflow-Commands.md) for the full command list.
+- [Public-Safe Examples](Public-Examples.md) for example install, health, review, and evaluation output.
+- [Migration Guide](Migration-Guide.md) for existing Claude installs.
+- [Settings And Recovery](Settings-And-Recovery.md) for manual settings, restarts, repair, and rollback.

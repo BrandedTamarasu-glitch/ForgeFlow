@@ -1,6 +1,8 @@
 # Public-Safe Examples
 
-These examples show the shape of Forgeflow output without exposing source code, private paths, customer data, tokens, or raw telemetry rows. Use them in adoption notes, demos, or screenshots when the real project output is sensitive.
+Shell examples run from the target project root. For `scripts/forgeflow/` commands, use the helper path from your ForgeFlow checkout, or replace that prefix with `"${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow/"` for Codex and `"$HOME/.claude/forgeflow/scripts/forgeflow/"` for Claude Code. Run JavaScript helpers with `node` and shell helpers with `bash`. Replace `<project>` with the actual project folder name before running a placeholder example.
+
+These are illustrative fixtures, not current installation counts, measured performance, or release validation evidence. Generate fresh output to substantiate a claim. These examples show the shape of Forgeflow output without exposing source code, private paths, customer data, tokens, or raw telemetry rows. Use them in adoption notes, demos, or screenshots when the real project output is sensitive.
 
 ## Install
 

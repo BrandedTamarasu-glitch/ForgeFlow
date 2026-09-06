@@ -2,7 +2,7 @@
 
 Use this after one or more maintainer pilots to decide whether Forgeflow is ready to expand beyond one maintainer.
 
-For a decision worksheet that compares pilot evidence against these criteria, use [Pilot Adoption Comparison](Pilot-Adoption-Comparison).
+For a decision worksheet that compares pilot evidence against these criteria, use [Pilot Adoption Comparison](Pilot-Adoption-Comparison.md).
 
 ## Decision States
 
@@ -18,9 +18,9 @@ For a decision worksheet that compares pilot evidence against these criteria, us
 Before expanding, collect:
 
 - at least two real branch reviews, or one review with a clear material finding
-- one completed [Maintainer Pilot](Maintainer-Pilot) summary
-- one selected sharing level from [Team Privacy Boundaries](Team-Privacy-Boundaries)
-- support issues classified with [Support Triage](Support-Triage)
+- one completed [Maintainer Pilot](Maintainer-Pilot.md) summary
+- one selected sharing level from [Team Privacy Boundaries](Team-Privacy-Boundaries.md)
+- support issues classified with [Support Triage](Support-Triage.md)
 - local evidence of install and health status
 
 Use public summaries when possible, but do not require public sharing for private teams.
@@ -73,8 +73,8 @@ next_review_date:
 If the decision is `expand-small-team`:
 
 1. Pick one additional maintainer and one bounded branch.
-2. Reuse [Maintainer Pilot](Maintainer-Pilot).
-3. Keep [Team Privacy Boundaries](Team-Privacy-Boundaries) unchanged unless the team explicitly revises them.
-4. Track support with [Support Triage](Support-Triage).
-5. Keep CI and headless review deferred with [CI And Headless Deferrals](CI-Headless-Deferrals) until maintainers ask for automation.
+2. Reuse [Maintainer Pilot](Maintainer-Pilot.md).
+3. Keep [Team Privacy Boundaries](Team-Privacy-Boundaries.md) unchanged unless the team explicitly revises them.
+4. Track support with [Support Triage](Support-Triage.md).
+5. Keep CI and headless review deferred with [CI And Headless Deferrals](CI-Headless-Deferrals.md) until maintainers ask for automation.
 6. Revisit this decision after the next two reviews.

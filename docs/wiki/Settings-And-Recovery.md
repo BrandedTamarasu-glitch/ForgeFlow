@@ -1,5 +1,7 @@
 # Settings And Recovery
 
+Shell examples run from the target project root. For `scripts/forgeflow/` commands, use the helper path from your ForgeFlow checkout, or replace that prefix with `"${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow/"` for Codex and `"$HOME/.claude/forgeflow/scripts/forgeflow/"` for Claude Code. Run JavaScript helpers with `node` and shell helpers with `bash`. Replace `<project>` with the actual project folder name before running a placeholder example.
+
 Use this when a new install passes file checks but Claude Code or Codex has not loaded the new commands, hooks, statusline, agents, or skills yet.
 
 ## Manual Settings Boundary
@@ -14,6 +16,8 @@ Statusline command:
   "command": "node \"$HOME/.claude/hooks/forgeflow-statusline.js\""
 }
 ```
+
+These are individual PostToolUse hook entries, not a complete settings document. Merge them into the host’s existing `hooks.PostToolUse` structure; do not replace unrelated settings. See [Quick Start](Quick-Start.md) and the repository settings example for the full wiring.
 
 PostToolUse hook commands:
 
@@ -67,7 +71,11 @@ Restart Codex after:
 
 If a command, agent, or skill exists on disk but is not visible, restart first, then rerun the relevant health or discovery check.
 
-## Repair
+## Codex Repair
+
+From a verified ForgeFlow checkout, rerun `node scripts/forgeflow/install-template.js --target codex --dry-run --json`, inspect its destinations, then rerun without `--dry-run --json` and restart Codex. Use the same `CODEX_HOME` or `--codex-home` as the original installation. The Claude commands below do not provide a general Codex rollback; retain any manual backup or known-good checkout you need before replacing managed files. See [Quick Start](Quick-Start.md) for service dependencies if the dashboard fails to start.
+
+## Claude Repair
 
 Use repair when managed Forgeflow files are missing or corrupted:
 

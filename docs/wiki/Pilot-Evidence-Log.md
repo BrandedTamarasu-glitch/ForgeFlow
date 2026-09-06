@@ -1,5 +1,7 @@
 # Pilot Evidence Log
 
+Shell examples run from the target project root. For `scripts/forgeflow/` commands, use the helper path from your ForgeFlow checkout, or replace that prefix with `"${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow/"` for Codex and `"$HOME/.claude/forgeflow/scripts/forgeflow/"` for Claude Code. Run JavaScript helpers with `node` and shell helpers with `bash`. Replace `<project>` with the actual project folder name before running a placeholder example.
+
 Use this after a maintainer pilot to capture local evidence from one real branch. Keep the log local unless the project explicitly approves sharing it.
 
 ## Create The Local Folder
@@ -49,16 +51,16 @@ Attach or reference only local-safe artifacts:
 - `/forgeflow-health` status, summarized as pass, warn, or fail
 - selected review mode
 - human triage counts
-- support categories from [Support Triage](Support-Triage)
-- sharing level from [Team Privacy Boundaries](Team-Privacy-Boundaries)
-- adoption decision from [Team Adoption Criteria](Team-Adoption-Criteria)
+- support categories from [Support Triage](Support-Triage.md)
+- sharing level from [Team Privacy Boundaries](Team-Privacy-Boundaries.md)
+- adoption decision from [Team Adoption Criteria](Team-Adoption-Criteria.md)
 - project-intelligence readiness, living project-map status, and agent-feedback signal when available
 
 Do not paste raw `settings.json`, source snippets, full reviewer comments, secrets, customer names, private URLs, or raw `.forgeflow/` artifacts into a shareable note.
 
 ## Commands
 
-Create a local pilot evidence note:
+Create a local pilot evidence note, replacing example status values with what you actually observed:
 
 ```bash
 scripts/forgeflow/record-pilot-evidence.js \
@@ -78,7 +80,7 @@ After writing a note, the recorder refreshes `.forgeflow/<project-name>/pilot-ev
 
 The rollup explains repeat, expand, stop-and-fix, or defer decisions using setup friction, project-intelligence readiness, living project-map status, and agent-feedback signal. These are aggregate local signals only; keep raw notes private unless the project explicitly approves sharing.
 
-Record the review outcome after triage:
+First record a real outcome using the JSON example and `--input`/`--out` command in [Branch Trial](Branch-Trial.md). Then summarize the existing records (this command does not append an outcome):
 
 ```bash
 scripts/forgeflow/record-review-outcome.js \
@@ -98,7 +100,7 @@ scripts/forgeflow/render-evaluation-report.js \
   --out ".forgeflow/$(basename "$PWD")/evaluation-summary.md"
 ```
 
-For timestamped summary storage and inspection steps, use [Pilot Public Summary](Pilot-Public-Summary).
+For timestamped summary storage and inspection steps, use [Pilot Public Summary](Pilot-Public-Summary.md).
 
 ## Closeout
 
@@ -111,4 +113,4 @@ Classify the pilot result:
 | stop-and-fix | setup, privacy, routing, context, or quality blocked trust | create a targeted fix |
 | defer | useful locally, but no team rollout demand yet | keep Forgeflow opt-in |
 
-Move repeated issues into [Friction To Fix](Friction-To-Fix) and use [Pilot Support Rollup](Pilot-Support-Rollup) once there is more than one pilot. Keep CI and headless review deferred unless [CI And Headless Deferrals](CI-Headless-Deferrals) says there is enough demand.
+Move repeated issues into [Friction To Fix](Friction-To-Fix.md) and use [Pilot Support Rollup](Pilot-Support-Rollup.md) once there is more than one pilot. Keep CI and headless review deferred unless [CI And Headless Deferrals](CI-Headless-Deferrals.md) says there is enough demand.

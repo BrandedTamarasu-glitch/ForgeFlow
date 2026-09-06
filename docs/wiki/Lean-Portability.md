@@ -1,5 +1,7 @@
 # Lean Portability
 
+These are Claude Code command names. For terminal use or a host without that command, invoke the corresponding helper from the source checkout or [installed runtime](Workflow-Commands.md#choose-your-host). A generated adapter or passing local contract does not prove that a host application has loaded it.
+
 Forgeflow lean guidance is generated from canonical rule text and checked across committed host surfaces.
 
 Useful checks:

@@ -2,7 +2,7 @@
 
 Use this during team trials to decide which CI or headless-review ideas should stay deferred until maintainers show they need them.
 
-Forgeflow already has CI and headless review references, but team trials should begin with maintainer-controlled local reviews. Automation should follow evidence, not lead it.
+This page is an adoption policy for a team’s use of model review. ForgeFlow’s own repository already runs deterministic CI on pushes and pull requests and has a separate optional model review job for same-repository pull requests. See [Release Gate](Release-Gate.md) for the implemented checks and opt-in autofix controls. These trial deferrals do not disable the repository test gate.
 
 ## Defer By Default
 
@@ -28,7 +28,7 @@ Revisit CI or headless review when all of these are true:
 - routing quality is stable across the branch types the team cares about
 - the team wants Forgeflow comments or gates on PRs, not just local guidance
 
-Use [Team Adoption Criteria](Team-Adoption-Criteria) before moving from local trials to CI.
+Use [Team Adoption Criteria](Team-Adoption-Criteria.md) before moving from local trials to CI.
 
 ## Evidence To Collect First
 

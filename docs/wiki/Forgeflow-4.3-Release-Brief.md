@@ -1,6 +1,6 @@
 # Forgeflow 4.3.0 Release Brief
 
-> Historical release brief for `v4.3.0`. It is not a statement of the current release, inventory, or install surface. Use the README, [Quick Start](Quick-Start), and [Release Process](Release-Process) for current guidance.
+> Historical release brief for `v4.3.0`. It is not a statement of the current release, inventory, or install surface. Use the README, [Quick Start](Quick-Start.md), and [Release Process](Release-Process.md) for current guidance.
 
 Forgeflow 4.3.0 turns the last few weeks of learning, topology, smoke, and pilot work into a release that is much easier to install, verify, and trust on real projects.
 

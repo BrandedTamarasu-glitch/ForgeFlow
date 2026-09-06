@@ -52,4 +52,4 @@ After the fix:
 
 Do not commit raw field-validation logs unless the project explicitly wants them versioned.
 
-Use [Support Triage](Support-Triage) for the first response path during team trials.
+Use [Support Triage](Support-Triage.md) for the first response path during team trials.

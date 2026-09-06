@@ -1,13 +1,13 @@
 # Review Routing
 
-Forgeflow classifies changes before spawning review agents.
+ForgeFlow classifies changes before spawning review agents. Start with `/review` in Claude Code or `$forge-review` in Codex. The route determines specialist coverage; every review does not need the full team.
 
 ## Modes
 
 | Mode | Use Case |
 |---|---|
-| skip-mode | Docs-only or no meaningful code surface. |
-| thin-mode | Small, low-risk, or test-only changes. |
+| skip-mode | No changed files, or documentation-only changes of at most 200 changed lines outside source paths. |
+| thin-mode | Test-only changes, or at most two low-risk non-frontend files and 50 changed lines. |
 | full-mode | Standard multi-agent review. |
 | deep-mode | Auth, security, migrations, schemas, permissions, crypto, or broad high-risk changes. |
 
@@ -60,3 +60,9 @@ scripts/forgeflow/advise-context.js --root .forgeflow --record --json
 ```
 
 The generated reviewer packets give specialists a focused view of the change. The context advisor reports low-savings packets, budget violations, and trend deltas from previous runs so the workflow can trim context before spending tokens.
+
+## Interpret The Result
+
+High-risk non-test paths take precedence over documentation and small-change rules. A large documentation change can receive a full review. Explicit mode overrides and CI policy can change the route; read the helper's reasons rather than assuming a file extension guarantees a skip.
+
+A routing skip is not an approval from specialists. Review history records the final workflow verdict for shipping; dashboard verdict events and triaged `review-outcomes.jsonl` records serve different purposes. Save real review evidence before recording verdicts, and record confirmed/rejected outcomes only after triage. Empty charts on a fresh installation are expected. See [Dashboard](Dashboard.md) and [Telemetry Readiness](Telemetry-Readiness.md).

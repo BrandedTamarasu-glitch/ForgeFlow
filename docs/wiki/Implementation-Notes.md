@@ -1,5 +1,7 @@
 # Implementation Notes
 
+The same artifact contract applies to `/implement` in Claude Code and `$implement` in Codex. Source-relative helper examples below require the ForgeFlow checkout; use the [installed runtime path](Workflow-Commands.md#choose-your-host) when working in another repository.
+
 Forgeflow keeps a running implementation notes file while `/implement` executes a brief.
 
 ## Artifact

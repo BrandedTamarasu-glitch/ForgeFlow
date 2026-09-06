@@ -1,6 +1,10 @@
 # Roadmap
 
-Forgeflow is a local-first workflow for Claude Code and Codex. This page tracks current product direction, not one maintainer session or one release cut.
+ForgeFlow is a software delivery workshop for Claude Code and Codex. This page records product direction; it does not promise dates or imply that deferred work is implemented.
+
+## Available Today
+
+The core delivery phases, specialist agents, local project memory, and evidence-based review are joined by the [workshop dashboard and Ember](Dashboard.md). The dashboard balances reported activity, project readiness, context budget, and recorded review outcomes. Supported workflow entrypoints open it once per eligible desktop session. The [visual guide](../user-guide.html) and [Quick Start](Quick-Start.md) cover first use.
 
 ## Current Priorities
 
@@ -15,7 +19,7 @@ Forgeflow is a local-first workflow for Claude Code and Codex. This page tracks 
 
 - Keep `/update-forgeflow`, `/forgeflow-version`, `/forgeflow-health`, `/forgeflow-update-verify`, and runtime-drift checks aligned.
 - Preserve explicit manual boundaries for host settings and rollback.
-- Treat Claude and Codex helper parity as a release requirement.
+- Verify shared helper behavior in both runtimes while documenting host-specific commands, configuration, and model availability.
 
 ### Review And Context Quality
 

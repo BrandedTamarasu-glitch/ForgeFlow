@@ -21,14 +21,14 @@ Both files must use the same semver value. For example, a package version of `4.
 4. Add or update the release notes under `docs/changelogs/`.
 5. If the latest packaged changelog changed, update the Release Notes link in `docs/index.html`.
 6. Confirm the marketplace entry description still names both Claude Code and Codex.
-7. Confirm the README current status still reflects the active distribution-readiness work.
+7. Confirm the README, visual guide links, wiki entry points, and package description reflect the current workshop, both supported hosts, and any release-specific limitations.
 8. Run `/forgeflow-release-check` from Claude Code.
-9. Render the public summary example with `render-evaluation-report.js --public`, or follow [Release Gate](Release-Gate).
+9. Render the public summary example with `render-evaluation-report.js --public`, or follow [Release Gate](Release-Gate.md).
 10. Fix any failed check before tagging.
 
 ## Command-Line Checks
 
-When running from a checkout instead of Claude Code, run the same release checks from the repository root:
+Start with `npm ci --ignore-scripts` and `npm test` from the repository root. This is the maintained deterministic test entry point and includes service checks beyond the helper list below. Follow [Release Gate](Release-Gate.md) for CI semantics and release evidence. The detailed helper commands below are useful for targeted diagnosis; they do not replace the complete runner:
 
 ```bash
 node scripts/forgeflow/test-command-coverage.js

@@ -1,6 +1,8 @@
 # Local Data And Privacy
 
-Forgeflow is local-first.
+Shell examples run from the target project root. For `scripts/forgeflow/` commands, use the helper path from your ForgeFlow checkout, or replace that prefix with `"${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow/"` for Codex and `"$HOME/.claude/forgeflow/scripts/forgeflow/"` for Claude Code. Run JavaScript helpers with `node` and shell helpers with `bash`. Replace `<project>` with the actual project folder name before running a placeholder example.
+
+Forgeflow stores its workflow artifacts locally. Agent prompts and selected project context are still processed by the Claude Code or Codex host and its configured model provider. Local storage does not mean offline model execution. Explicit update, GitHub shipping, and optional team-sync actions can use the network.
 
 ## Local State
 
@@ -93,13 +95,19 @@ For evaluation output, share aggregate summaries by default:
 scripts/forgeflow/render-evaluation-report.js --outcomes .forgeflow/<project>/review-outcomes.jsonl --context-root .forgeflow --public --out .forgeflow/<project>/evaluation-summary.md
 ```
 
-Keep raw `review-outcomes.jsonl`, user/profile records, context packets, memory summaries, implementation notes, and telemetry rows local unless the receiving audience is allowed to see the underlying project context. For team trials, use [Team Privacy Boundaries](Team-Privacy-Boundaries) to choose between local-maintainer, private-team, and public sharing levels. See [Evaluation Sharing](Evaluation-Sharing) and [Public-Safe Examples](Public-Examples).
+Keep raw `review-outcomes.jsonl`, user/profile records, context packets, memory summaries, implementation notes, and telemetry rows local unless the receiving audience is allowed to see the underlying project context. For team trials, use [Team Privacy Boundaries](Team-Privacy-Boundaries.md) to choose between local-maintainer, private-team, and public sharing levels. See [Evaluation Sharing](Evaluation-Sharing.md) and [Public-Safe Examples](Public-Examples.md).
 
 Support bundles include a snippet-free redaction preview that reports sensitive categories and counts without showing the matched values. Use it as a starting point, not as proof that the bundle is public-safe.
 
 Implementation notes live at `.forgeflow/<project-name>/implementation-notes.md`. They are local handoff context for decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes discovered during `/implement`. Keep them out of commits and do not paste secrets, raw settings JSON, tokens, private URLs, customer names, or large source snippets into the file.
 
 The local dashboard reads metrics from `~/.claude/projects/<project>/memory/forgeflow-metrics.jsonl` and `~/.codex/projects/<project>/memory/forgeflow-metrics.jsonl`, then reads project readiness from `.forgeflow/<project-name>/context/` and `.forgeflow/<project-name>/release-readiness/`. The dashboard server is local-only, serves API responses with `Cache-Control: no-store`, and the Project Readiness panel copies suggested commands instead of executing them.
+
+## Live Workshop Data
+
+The dashboard also displays reported activity and a read-only relay of agent messages. The activity service saves its chat log by default to the operating system temporary directory as `agent-chat-log.md`; this log can contain task and project details. Its session credential is stored in a separate restricted token file (`AGENT_CHAT_TOKEN_FILE` can override its location). Keep both out of commits and support uploads. Browser session credentials and same-origin checks protect the local relay; they do not make copied logs safe to publish.
+
+Codex metrics discovery honors `CODEX_HOME`; the default paths above describe a standard installation. The dashboard is a local tool, not a hosted multi-user service.
 
 ## Sensitive Files
 

@@ -1,5 +1,7 @@
 # Lean Quick Path
 
+The commands below use Claude Code syntax. Codex users should use the corresponding [runtime helpers](Workflow-Commands.md#choose-your-host) or a lean skill only if it is installed. This path supplements the normal consult, implement, and review workflows.
+
 Use this when you want lean guidance active without reading the full command catalog.
 
 1. Run `/forgeflow-lean-prime --prime-task "<work item>" --write-report`.

@@ -17,6 +17,8 @@ Forgeflow automatically routes focused research tasks to normal research or dive
 - `/forgeflow-research-divergence-advice <task>` previews the recommendation without invoking research.
 - An unfocused `/research` invocation uses normal research because there is no task text to classify.
 
+In Codex, use `$research` with the same routing flags and `$forgeflow-research-divergence-advice <task>` to preview a recommendation. Neither host requires divergence for every research task.
+
 ## What divergence changes
 
 Divergent research generates isolated alternatives through fixed frames, then uses a separate critic and independent codebase evidence lane to converge on a recommendation. The route is read-only: it does not initialize Forgeflow state, add project memory, emit telemetry, or save raw divergent outputs.

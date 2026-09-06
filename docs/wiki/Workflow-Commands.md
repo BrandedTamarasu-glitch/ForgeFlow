@@ -1,6 +1,30 @@
 # Workflow Commands
 
-Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-based routing, start with [User Paths](User-Paths). This command reference lists what each command does after you know the path.
+Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-based routing, start with [User Paths](User-Paths.md). This command reference lists what each command does after you know the path.
+
+## Choose your host
+
+Core workflows use Claude Code slash commands or Codex skills:
+
+| Work | Claude Code | Codex |
+|---|---|---|
+| Frame, research, plan | `/discuss`, `/research`, `/plan` | `$discuss`, `$research`, `$plan` |
+| Prepare and implement | `/consult`, `/implement` | `$consult`, `$implement` |
+| Review | `/review` | `$forge-review` |
+| Audit or quick task | `/audit`, `/quick` | `$audit`, `$quick` |
+| Ship | `/ship` | `$ship` |
+
+The command catalog below describes Claude Code commands. It is not a promise that every slash command has a Codex skill. For advanced operations in Codex, use the corresponding source helper or installed runtime helper; check its `--help` before supplying inputs. See [Quick Start](Quick-Start.md) for installation and [User Paths](User-Paths.md) for a short route to an outcome.
+
+Terminal examples beginning with `scripts/forgeflow/` run from the ForgeFlow source checkout. In another project, run the installed helper while keeping that project as the working directory:
+
+```bash
+# Codex runtime; for Claude Code use "$HOME/.claude/forgeflow" instead.
+FF_RUNTIME="${CODEX_HOME:-$HOME/.codex}/forgeflow"
+node "$FF_RUNTIME/scripts/forgeflow/explain-review-route.js" --json
+```
+
+Use the runtime for the host you installed. Do not copy state paths for another project or record example outcomes as real evidence.
 
 ## Lifecycle
 
@@ -8,7 +32,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 /discuss -> /research -> /plan -> /consult -> /implement -> /review -> /ship
 ```
 
-## Common Commands
+## Claude Code command catalog
 
 | Command | Purpose |
 |---|---|
@@ -25,7 +49,7 @@ Forgeflow can be used as a full lifecycle or as targeted commands. For scenario-
 | `/agent-chat:on` | Start the agent-chat WebSocket and dashboard server on local ports 4000 and 4001 for live workflow visibility. |
 | `/agent-chat:off` | Stop agent-chat and preserve the auto-saved chat log when messages were captured. |
 | `/create-agent` | Interactively create a local custom Claude Code agent under `~/.claude/agents/custom-*.md`; managed updates do not overwrite these files. |
-| `/dashboard` | Start the optional local metrics dashboard on port 4003, including the Project Readiness panel backed by `GET /api/readiness`. |
+| `/dashboard` | Open the local workshop on port 4003: Ember, Live Activity, project health, context budget, review outcomes, and trends. Supported workflow entrypoints start or reuse it automatically when the runtime is ready; see [Dashboard](Dashboard.md). |
 | `/debate` | Run a structured false-positive stress test against a code sample and sealed answer key. |
 | `/fleet` | Decompose a phased spec into isolated worktree shards, run parallel Forgeflow implementers, then merge sequentially with validation. |
 | `/handoff` | Write a rolling `.claude/handoff.md` so a future session can resume with current branch, PR, validation, pending work, and next action context. |
@@ -189,13 +213,13 @@ For an open-ended, consequential decision with several plausible approaches, opt
 $research --diverge choose a durable background-job architecture
 ```
 
-The three fixed frames run without project memory or access to one another. A separate Compass critic checks their candidates against normal codebase evidence, clusters them, records attractive traps and disconfirming tests, and recommends a falsification experiment. Failed lanes are retried once and remain visible if the result must degrade. The divergent route is read-only, including its converged findings; raw branch output is ephemeral. Ordinary `/research` behavior is unchanged.
+The three fixed frames run without project memory or access to one another. A separate Compass critic checks their candidates against normal codebase evidence, clusters them, records attractive traps and disconfirming tests, and recommends a falsification experiment. Failed lanes are retried once and remain visible if the result must degrade. The divergent route is read-only, including its converged findings; raw branch output is ephemeral. Focused research uses the automatic routing policy described below; `--no-diverge` selects normal research.
 
 Use `/forgeflow-research-divergence-eval` or `$forgeflow-research-divergence-eval` to preview the deterministic eight-task evaluation pack. Pass `--results <repository-relative-json>` to summarize captured evidence. Both modes are read-only and call no models or network services. A summary does not prove execution, human validation, general superiority, or transfer beyond the sample; claims must disclose sample size, scorer provenance, failures, and limitations.
 
 Use `/forgeflow-research-divergence-advice <task>` or `$forgeflow-research-divergence-advice` for a deterministic recommendation between `$research` and `$research --diverge`. It never invokes either workflow. Its latency and token figures are benchmark evidence, not a general quality claim.
 
-Focused `/research <task>` now uses this classifier as an overrideable default policy. `--no-diverge` forces normal research, while `--diverge` forces isolated divergent research. An unfocused `/research` invocation remains normal because it has no task text to classify. See [Research Divergence](Research-Divergence) for evaluation boundaries and current behavior.
+Focused `/research <task>` now uses this classifier as an overrideable default policy. `--no-diverge` forces normal research, while `--diverge` forces isolated divergent research. An unfocused `/research` invocation remains normal because it has no task text to classify. See [Research Divergence](Research-Divergence.md) for evaluation boundaries and current behavior.
 
 ## Context Helpers
 
@@ -256,7 +280,7 @@ These helpers produce bounded context packets, compact memory summaries, file ow
 
 ## Implementation Notes
 
-During `/implement`, Forgeflow keeps a local Markdown log at `.forgeflow/<project-name>/implementation-notes.md`. It captures decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes that arise while building. See [Implementation Notes](Implementation-Notes) for the artifact contract and privacy rules.
+During `/implement`, Forgeflow keeps a local Markdown log at `.forgeflow/<project-name>/implementation-notes.md`. It captures decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes that arise while building. See [Implementation Notes](Implementation-Notes.md) for the artifact contract and privacy rules.
 
 For a Claude install created by `/update-forgeflow`, the helper root is:
 

@@ -1,6 +1,8 @@
 # Demos
 
-These short sessions show the expected shape of a working Forgeflow install.
+These short sessions show the expected shape of a working ForgeFlow install. Example output is illustrative, not recorded validation. For the complete illustrated journey, use the [visual guide](../user-guide.html) or [PDF](../ForgeFlow-User-Guide.pdf).
+
+The installation and recovery examples here use Claude Code. Codex users should follow [Codex First Run](Codex-First-Run.md); workflow equivalents and runtime helper paths are in [Workflow Commands](Workflow-Commands.md#choose-your-host).
 
 ## Install Verification
 
@@ -50,8 +52,8 @@ From a git project with local changes:
 Expected flow:
 
 ```text
-Review route: thin-mode | full-mode | deep-mode
-Agents: Smith, Warden, Lumen, Atlas
+Review route: skip-mode | thin-mode | full-mode | deep-mode
+Agents: selected by the route; a skipped review spawns none
 Arbiter verdict: APPROVE | CONDITIONAL_APPROVE | REVISE | BLOCK
 Compass validation: CONFIRM | CHALLENGE
 ```
@@ -120,27 +122,10 @@ Before tagging a Forgeflow release:
 /forgeflow-release-check
 ```
 
-Equivalent terminal checks:
+The authoritative checklist is [the release-check command](../../commands/forgeflow-release-check.md). Run its current checks or use the source checkout's release-readiness helper:
 
 ```bash
-node scripts/forgeflow/test-command-coverage.js
-node scripts/forgeflow/test-doc-links.js
-node scripts/forgeflow/test-plugin-manifest.js
-node scripts/forgeflow/test-release-version.js
-node scripts/forgeflow/test-install-template.js
-node scripts/forgeflow/test-install-manifest.js
-node scripts/forgeflow/test-install-smoke.js
-node scripts/forgeflow/test-update-forgeflow.js
-node scripts/forgeflow/test-health-check.js
-node scripts/forgeflow/test-forgeflow-version.js
-node scripts/forgeflow/test-seed-budget-config.js
-node scripts/forgeflow/test-check-context-budget.js
-node scripts/forgeflow/test-advise-context.js
-git diff --check
+node scripts/forgeflow/render-release-readiness.js
 ```
 
-Expected result:
-
-```text
-Forgeflow release checks passed.
-```
+This runs local readiness checks; it does not publish a release. A short selection of historical tests is not equivalent to the complete release gate. Report the actual result and any environment-blocked checks, then follow [Release Process](Release-Process.md).

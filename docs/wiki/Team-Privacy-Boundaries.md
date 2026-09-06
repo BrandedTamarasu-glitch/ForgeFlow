@@ -27,7 +27,7 @@ Use this for the first pilot.
 - Keep `.forgeflow/` uncommitted.
 - Keep raw records on the maintainer machine.
 - Record only a short pilot summary in notes or an issue.
-- Use [Maintainer Pilot](Maintainer-Pilot) for pass and stop criteria.
+- Use [Maintainer Pilot](Maintainer-Pilot.md) for pass and stop criteria.
 
 ### Private Team
 
@@ -36,7 +36,7 @@ Use this after the maintainer wants one or two teammates to evaluate the result.
 - Share `evaluation-summary.md` or screenshots.
 - Share confirmed findings only when normal project review policy allows it.
 - Keep raw JSONL, context packets, and memory summaries local unless the team explicitly agrees.
-- Track friction using [First-Run Friction](First-Run-Friction) or [Friction To Fix](Friction-To-Fix).
+- Track friction using [First-Run Friction](First-Run-Friction.md) or [Friction To Fix](Friction-To-Fix.md).
 
 ### Public Or External
 
@@ -45,7 +45,7 @@ Use this for release notes, examples, marketplace copy, or outside feedback.
 - Share only aggregate tables, screenshots, or sanitized examples.
 - Remove private project names, customer names, branch names, internal URLs, and proprietary feature names.
 - Do not share raw records, context packets, memory summaries, or telemetry rows.
-- Use [Evaluation Sharing](Evaluation-Sharing) and [Public-Safe Examples](Public-Examples) before posting.
+- Use [Evaluation Sharing](Evaluation-Sharing.md) and [Public-Safe Examples](Public-Examples.md) before posting.
 
 ## Before Sharing Checklist
 
