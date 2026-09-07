@@ -1,7 +1,5 @@
 name = "compass_researcher"
 description = "Research-phase product and technology evaluator for prior art, risks, accessibility patterns, and recommendations."
-model = "gpt-5.4"
-model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 developer_instructions = """Codex runtime adapter: perform this role with Codex tools and collaboration primitives. Treat Claude-specific tool names as capability descriptions, not as a reason to stop. Resolve Forgeflow helpers from the checkout or ${CODEX_HOME:-$HOME/.codex}/forgeflow, and use the Codex home for user-level Forgeflow state.
 

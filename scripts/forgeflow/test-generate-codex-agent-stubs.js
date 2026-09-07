@@ -15,8 +15,17 @@ const fallbackStub = buildStub('.codex/agents/fallback-reviewer.toml', {
   canonical: map.agents[agent].canonical,
   sections: [],
 });
+const explicitStub = buildStub(agent, {
+  ...map.agents[agent],
+  model: 'account-supported-model',
+  model_reasoning_effort: 'high',
+});
 
 const checks = [
+  ['default inherits model', !/^model\s*=/m.test(stub)],
+  ['default inherits reasoning', !/^model_reasoning_effort\s*=/m.test(stub)],
+  ['explicit model retained', explicitStub.includes('model = "account-supported-model"')],
+  ['explicit reasoning retained', explicitStub.includes('model_reasoning_effort = "high"')],
   ['role selected', selected.includes('<role>')],
   ['review section selected', selected.includes('## Mode: Review')],
   ['manual summary included', stub.includes('Review concrete correctness and accessibility evidence.')],

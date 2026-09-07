@@ -36,21 +36,13 @@ Claude-style Forgeflow pieces map to Codex like this:
 
 ## Codex Agent Model Policy
 
-Reviewed on 2026-05-15 against current OpenAI model guidance.
+Forgeflow ships all Codex roles without `model` or `model_reasoning_effort` overrides. They inherit the parent session settings unless a spawn request or Codex subagent default overrides them. This avoids selecting models unavailable to the signed-in account while retaining each role's specialist instructions and sandbox settings.
 
-| Role class | Agents | Model | Reasoning | Sandbox | Rationale |
-|------------|--------|-------|-----------|---------|-----------|
-| Leaf backend/craft consultants and reviewers | `smith_consultant`, `smith_reviewer` | `gpt-5.4-mini` | `medium` | `read-only` | High-volume subagent work where latency/cost matters and final synthesis still catches priority calls. |
-| Leaf security and accessibility consultants/reviewers | `warden_consultant`, `warden_reviewer`, `lumen_consultant`, `lumen_reviewer` | `gpt-5.4-mini` | `high` | `read-only` | Mini-class subagent model, but high reasoning retained for security, UX, and accessibility risk. |
-| Code-writing implementers | `smith_implementer`, `warden_implementer`, `lumen_implementer`, `arbiter_implementer` | `gpt-5.3-codex` | `medium` or `high` | `workspace-write` | Codex model is optimized for agentic coding and patch application. Arbiter stays high for integration judgment. |
-| Synthesis and final gates | `arbiter_consultant`, `arbiter_reviewer`, `compass_reviewer`, `compass_validator` | `gpt-5.4` | `high` | read-only or validation write access | Final verdict quality matters more than leaf-agent latency. Pilot `gpt-5.5` here first if testing frontier upgrades. |
-| Neutral verification | `aegis` | `gpt-5.4` | `high` | `read-only` | Evidence-only pass for high-risk findings. No persona lens, no unrelated fixes, no scope expansion. |
-| Research, planning, audit, debate | Compass lead roles, auditors, debate judge/validator | `gpt-5.4` | `high` | mostly `read-only` | These roles need deeper judgment and are not spawned as frequently as leaf specialists. |
-| PM and memory roles | `atlas_*` | `gpt-5.4-mini` | `medium` | `workspace-write` where memory writes are expected | Coordination and memory work should be fast and inexpensive unless quality misses become measurable. |
+The stub generator leaves these fields absent by default. Explicit overrides in an agent file or canonical map remain supported for accounts that have verified access to those models. Agent-file overrides take precedence over parent and spawn settings.
+
+Keep both the project `.codex/agents/` files and installed `~/.codex/agents/` files in sync. Start a fresh Codex session after updating them, then verify the roles can launch. See [OpenAI subagent configuration](https://learn.chatgpt.com/docs/agent-configuration/subagents).
 
 `max_threads = 6` and `max_depth = 1` in `.codex/config.toml` are intentional. Six threads cover the largest normal Forgeflow fan-out, while depth one prevents recursive delegation and keeps orchestration in the parent Codex session.
-
-Do not blanket-upgrade all agents to the newest frontier model. The Forgeflow workflows fan out, so model cost and latency multiply quickly. Test frontier upgrades first on final decision roles such as `arbiter_reviewer` and `compass_reviewer`.
 
 ## Codex Agent Drift Check
 

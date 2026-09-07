@@ -63,7 +63,7 @@ node scripts/forgeflow/install-template.js --target codex
 
 Restart Codex so it discovers the agents and skills. The installer respects `CODEX_HOME`, copies runtime helpers into its `forgeflow/` directory, and preserves unrelated host configuration. It does not merge the repository’s sample config into yours.
 
-Use `$quick` or `$consult` in your project to confirm discovery. If an agent names a model unavailable to your host or account, resolve that model choice explicitly before treating its work as complete. See [Codex first run](docs/wiki/Codex-First-Run.md).
+Use `$quick` or `$consult` in your project to confirm discovery. All ForgeFlow agents inherit your Codex session's model and reasoning settings by default. If an older installation reports a model unsupported by your account, update the checkout, rerun the Codex installer, and start a fresh session. Custom model overrides must use models available to your account. See [Codex first run](docs/wiki/Codex-First-Run.md).
 
 ### Install into Claude Code
 

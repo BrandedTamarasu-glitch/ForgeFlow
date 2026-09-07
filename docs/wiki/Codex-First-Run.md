@@ -107,6 +107,7 @@ This is a maintainer check of source prompt parity. Users should update or reins
 
 ## Troubleshooting
 
+- If an agent reports that its model is unsupported by your account, update the checkout, rerun `node scripts/forgeflow/install-template.js --target codex`, and start a fresh Codex session. All shipped Forgeflow roles now omit `model` and `model_reasoning_effort`, allowing them to inherit the working parent session settings. Check project `.codex/agents/` files too: older project copies or custom overrides can still pin unavailable models. Explicit spawn settings and Codex subagent defaults can also override inheritance. See [the model policy](../../CODEX_MIGRATION.md#codex-agent-model-policy).
 - If a skill is missing, rerun `install-template.js --target codex --dry-run --json` and confirm the destination path.
 - If an agent is missing, check `${CODEX_HOME:-$HOME/.codex}/agents/` in the same environment used to launch Codex and restart the host.
 - If `/review` does not run Forgeflow, use `$forge-review`; `/review` is reserved by Codex.

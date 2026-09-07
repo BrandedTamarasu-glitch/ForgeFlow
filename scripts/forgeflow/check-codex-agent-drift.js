@@ -71,7 +71,7 @@ function main() {
     }
 
     const fields = readModelFields(tomlPath);
-    for (const required of ['name', 'description', 'model', 'model_reasoning_effort', 'sandbox_mode']) {
+    for (const required of ['name', 'description', 'sandbox_mode']) {
       if (!fields[required]) {
         errors.push(`${agent} missing ${required}`);
       }

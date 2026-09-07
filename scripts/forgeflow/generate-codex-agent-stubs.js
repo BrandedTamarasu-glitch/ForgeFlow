@@ -172,16 +172,17 @@ function buildStub(agent, entry, opts = {}) {
   const existing = readExistingFields(path.resolve(repoRoot, agent));
   const name = existing.name || path.basename(agent, '.toml').replace(/-/g, '_');
   const description = existing.description || frontmatter.description || `Codex port of ${frontmatter.name || entry.canonical}.`;
-  const model = entry.model || existing.model || opts.model || 'gpt-5.4-mini';
-  const reasoning = entry.model_reasoning_effort || existing.model_reasoning_effort || opts.reasoning || 'medium';
+  // Omit unconfigured overrides so Codex can inherit the parent session settings.
+  const model = entry.model || existing.model || opts.model;
+  const reasoning = entry.model_reasoning_effort || existing.model_reasoning_effort || opts.reasoning;
   const sandbox = entry.sandbox_mode || existing.sandbox_mode || opts.sandbox || 'read-only';
   const instructions = buildInstructions(markdown, entry);
 
   return [
     `name = ${tomlString(name)}`,
     `description = ${tomlString(description)}`,
-    `model = ${tomlString(model)}`,
-    `model_reasoning_effort = ${tomlString(reasoning)}`,
+    ...(model ? [`model = ${tomlString(model)}`] : []),
+    ...(reasoning ? [`model_reasoning_effort = ${tomlString(reasoning)}`] : []),
     `sandbox_mode = ${tomlString(sandbox)}`,
     `developer_instructions = ${multilineToml(instructions)}`,
     '',
