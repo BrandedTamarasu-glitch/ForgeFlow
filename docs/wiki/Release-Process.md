@@ -1,5 +1,16 @@
 # Release Process
 
+## Task evidence and recovery checks
+
+```bash
+node scripts/forgeflow/test-task-store.js
+node scripts/forgeflow/test-task.js
+node scripts/forgeflow/test-task-evaluation.js
+node scripts/forgeflow/test-task-memory.js
+node scripts/forgeflow/test-fleet-environment.js
+node scripts/forgeflow/test-task-maintenance.js
+```
+
 Use this checklist before tagging or publishing a Forgeflow release. It keeps the Claude plugin manifest, marketplace metadata, changelog, release checks, and installed-version command in sync.
 
 ## Version Source
@@ -11,7 +22,7 @@ The packaged Forgeflow version lives in two files:
 .claude-plugin/marketplace.json
 ```
 
-Both files must use the same semver value. For example, a package version of `4.2.0` can use a changelog file named `docs/changelogs/v4.2.html`; non-zero patch releases should use the full version, such as `docs/changelogs/v4.2.1.html`.
+Both files must use the same semver value. Keep the adapter mirrors in `.codex-plugin/plugin.json`, `.github/plugin/plugin.json`, and `.github/plugin/marketplace.json` synchronized with that packaged version. For example, a package version of `4.2.0` can use a changelog file named `docs/changelogs/v4.2.html`; non-zero patch releases should use the full version, such as `docs/changelogs/v4.2.1.html`.
 
 ## Before Tagging
 

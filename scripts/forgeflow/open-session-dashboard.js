@@ -9,7 +9,7 @@ const { spawn } = require('node:child_process');
 
 const URL = 'http://127.0.0.1:4003/';
 const WORKFLOWS = new Set(['discuss', 'research', 'plan', 'consult', 'forgeflow-consult', 'implement',
-  'forgeflow-implement', 'review', 'forge-review', 'forgeflow-review', 'audit', 'quick', 'ship', 'debate', 'aegis-verify']);
+  'forgeflow-implement', 'review', 'forge-review', 'forgeflow-review', 'audit', 'quick', 'ship', 'debate', 'aegis-verify', 'task']);
 
 function workflowFromPrompt(prompt) {
   const match = String(prompt || '').trim().match(/^[/$@](?:forgeflow:)?([a-z][a-z-]*)(?=\s|$)/i);

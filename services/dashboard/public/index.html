@@ -33,6 +33,34 @@
         <a class="text-link" href="#activity-heading">View activity <span aria-hidden="true">↗</span>
         </a>
       </div>
+      <section class="panel task-panel" id="task-panel" aria-labelledby="task-heading">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">CURRENT WORK</p>
+            <h2 id="task-heading">Task evidence</h2>
+          </div>
+          <label class="select-label" id="task-select-label" hidden>Task in this project
+            <select id="task-select"></select>
+          </label>
+        </div>
+        <p id="task-scope" class="scope">Tasks belong to the project that launched this dashboard.</p>
+        <p id="tasks-status" class="resource-status" role="status">Loading tasks…</p>
+        <p id="task-empty" class="empty-state">Reading saved tasks and their evidence.</p>
+        <div id="task-content" hidden>
+          <div class="task-title-row"><h3 id="task-objective"></h3><span id="task-status" class="status-pill"></span></div>
+          <p id="task-phase" class="scope"></p>
+          <p id="task-counts" class="task-counts"></p>
+          <div class="task-work-grid">
+            <div><h4>Acceptance criteria</h4><ul id="task-criteria" class="task-criteria"></ul></div>
+            <aside class="next-action" aria-labelledby="task-next-heading">
+              <p class="eyebrow" id="task-next-heading">NEXT ACTION</p>
+              <p id="task-next"></p>
+              <p class="microcopy">Continue in your ForgeFlow session. This view is read-only.</p>
+            </aside>
+          </div>
+          <details id="task-history" class="task-history"><summary>Task history</summary><ol id="task-history-list"></ol></details>
+        </div>
+      </section>
       <div class="overview-grid">
         <section id="ember" aria-label="Ember, your forge companion"></section>
         <section class="panel health-panel" id="readiness-panel" aria-labelledby="readiness-heading">

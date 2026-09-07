@@ -894,7 +894,7 @@ th {
   .health-panel>.section-heading,.health-panel>.scope,.health-panel>.resource-status,.health-summary,.health-details-link {
     grid-column: 1;
   }
-  .next-action {
+  .health-panel > .next-action {
     grid-column: 2;
     grid-row: 1/6;
     margin: 0;
@@ -1095,4 +1095,32 @@ th {
   .stat strong {
     font-size: 27px;
   }
+}
+
+/* Task evidence extends the workshop's copper and evergreen palette. */
+.task-panel { margin-bottom: 24px; border-top: 2px solid var(--copper); }
+.task-title-row, .task-criterion-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.task-title-row h3 { font-size: clamp(22px, 3vw, 32px); letter-spacing: -.025em; line-height: 1.2; margin: 16px 0 8px; overflow-wrap: anywhere; }
+.task-panel .status-pill { flex-shrink: 0; }
+.task-counts { color: var(--green); line-height: 1.6; }
+.task-work-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 32px; }
+.task-work-grid h4 { margin: 12px 0; }
+.task-work-grid .next-action { align-self: start; }
+.task-criteria { margin: 0; padding: 0; list-style: none; }
+.task-criteria > li { border-top: 1px solid var(--line); padding: 16px 0; }
+.task-criterion-heading strong { font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.task-proof { font-size: 12px; color: var(--muted); line-height: 1.6; margin: 8px 0 0; overflow-wrap: anywhere; }
+.task-proof code { color: var(--text); }
+#task-scope, #task-next, .task-history li { overflow-wrap: anywhere; }
+#task-select { max-width: 320px; width: 100%; }
+.task-history { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 16px; font-size: 13px; }
+.task-history summary { cursor: pointer; }
+.task-history li { margin: 8px 0; color: var(--muted); }
+.status-pill.verified, .status-pill.complete { color: var(--green); border-color: #54785e; }
+.status-pill.needs-attention, .status-pill.interrupted { color: var(--yellow); border-color: #786a42; }
+@media (max-width: 700px) {
+  .task-work-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .task-title-row, .task-criterion-heading { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .task-panel > .section-heading { align-items: flex-start; flex-direction: column; }
+  #task-select-label { max-width: 100%; }
 }

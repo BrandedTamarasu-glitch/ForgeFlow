@@ -8,6 +8,7 @@ Core workflows use Claude Code slash commands or Codex skills:
 
 | Work | Claude Code | Codex |
 |---|---|---|
+| Task evidence and recovery | `/task` | `$task` |
 | Frame, research, plan | `/discuss`, `/research`, `/plan` | `$discuss`, `$research`, `$plan` |
 | Prepare and implement | `/consult`, `/implement` | `$consult`, `$implement` |
 | Review | `/review` | `$forge-review` |

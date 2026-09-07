@@ -1,7 +1,7 @@
 ---
 name: fleet
 description: Orchestrate a parallel worktree fleet — decompose a phased spec into shards, run each in an isolated worktree with its own DB, merge sequentially with validation
-argument-hint: "--spec <file.md> [--shards N (default 3, max 10)] [--base-branch main] [--branch-prefix fleet] [--dry-run]"
+argument-hint: "--spec <file.md> [--shards N (default 3, max 10)] [--base-branch main] [--branch-prefix fleet] [--dry-run] [--environment <contract.json>]"
 allowed-tools:
   - Read
   - Write
@@ -13,7 +13,7 @@ allowed-tools:
   - AskUserQuestion
 ---
 <objective>
-Collapse multi-phase refactors from weeks to hours by running independent phase-shards in parallel worktrees. Each worktree has its own DB (isolated via Postgres DB name per worktree). Standard ports — only one worktree runs dev services at a time; fleet enables parallel AGENT work (editing, unit tests), not parallel SERVICE operation.
+Collapse multi-phase refactors from weeks to hours by running independent phase-shards in parallel worktrees. Each worktree has its own DB (isolated via Postgres DB name per worktree). Legacy standard ports allow only one worktree to run dev services at a time. The optional environment contract lane supports explicitly isolated local services after their ports and resources are verified.
 
 **Forgeflow integration:** Workers dispatched to each worktree are Forgeflow implement agents (smith-implement, arbiter-implement, etc.) per the spec's phase-to-domain mapping. After parallel completion, the main worktree sequentially rebase-merges each shard with validation (typecheck/lint/tests) between merges. Atlas persistent context (.forgeflow/<project>/) is shared across worktrees.
 </objective>
@@ -26,18 +26,57 @@ $ARGUMENTS:
 - `--branch-prefix <name>` — optional, default: `fleet` (worktree branches become `fleet-wt1`, `fleet-wt2`, etc.)
 - `--dry-run` — plan the decomposition, print shard assignments, do not create worktrees
 
+- `--environment <contract.json>` — optional stack-neutral environment and ownership contract. Use the contract lane below instead of the legacy pnpm/Postgres setup.
+
 Safety flags:
 - `--skip-db-isolation` — use the main DB for all worktrees (NOT recommended — kept for SQLite projects or single-DB setups)
 - `--keep-on-failure` — leave worktrees intact if merge/validation fails (for debugging)
 </context>
 
 ## Gotchas
-- **Only ONE worktree can run dev services at a time.** Ports are NOT offset — each worktree uses the same port numbers. If a shard's phase requires a running service (e.g., integration tests hitting localhost:3000), the phase cannot run in parallel with other shards that also need services. Either declare the service-needing phases sequentially in the spec, or run them in separate fleet invocations.
+- **Legacy mode allows ONE service-running worktree.** Its ports are shared. Serialize service-needing phases, or use the optional environment contract lane with verified distinct ports and resources.
 - **Isolated DB requires Postgres admin.** The psql `CREATE DATABASE` call runs as the user's default psql account. If that account lacks CREATEDB privilege, fleet aborts at Step 3. Verify with `psql -c "SELECT current_user, has_database_privilege(current_user, 'postgres', 'CREATE')"`.
-- **Phase independence is checked via Files: metadata, not content.** If a phase body mentions "also touches src/shared/util.ts" but Files: doesn't list it, the independence check passes. Spec accuracy matters — list every file a phase edits, even incidentally.
+- **Legacy independence uses Files: metadata.** List every file a phase edits. The environment contract lane additionally checks actual changed paths against declared ownership before shard acceptance.
 - **Non-trivial merge conflicts STOP the chain.** Remaining shards stay unmerged in their worktrees. The main branch is left at the last successful merge. Resolve the conflict manually, commit, then re-run `/fleet --shards 1 --spec <remaining-phase.md>` OR do the remaining shards as normal work outside fleet.
-- **`git worktree remove --force` is destructive.** Intentional — fleet creates worktrees on fresh branches with no prior work. But if you manually committed unrelated work in a fleet worktree, teardown loses it. Use `--keep-on-failure` and inspect before re-running.
+- **Failures preserve worktrees and resources.** Inspect the recorded run state before resuming. Successful cleanup uses ordinary worktree removal and merged-branch deletion; dirty or unmerged work is retained.
 - **Auto-review at Step 6.5 scopes to merged commits only.** It runs `/review <base>..HEAD`. Previous unreviewed commits on the branch are outside scope. If you want to review everything, run `/review` manually without the range after fleet completes.
+
+## Optional environment contract lane
+
+For `--environment <contract.json>`, use a versioned local contract:
+
+```json
+{
+  "schema_version": "1",
+  "cleanup": "preserve-on-failure",
+  "shards": [
+    {
+      "id": "api",
+      "worktree": ".worktrees/api",
+      "base": "<starting-commit-sha>",
+      "files": ["src/api", "tests/api"],
+      "ports": [4101],
+      "resources": ["fleet_api_data"],
+      "setup": [["npm", "ci", "--ignore-scripts"]],
+      "validation": [["npm", "test"]]
+    }
+  ]
+}
+```
+
+Paths are literal repository-relative paths; directory ownership includes descendants. Declare every changed file. Before dispatching work, record each shard's starting commit using `git rev-parse HEAD` and freeze that full commit SHA in its required `base` field. Preserve this baseline throughout the run so committed shard changes remain in the ownership check. Missing bases, abbreviated hashes, and moving refs such as `HEAD` or branch names are rejected; they cannot establish complete ownership evidence.
+
+Validate after worktrees exist and again before accepting each shard:
+
+```bash
+node scripts/forgeflow/fleet-environment.js --contract <contract.json> --root <repository>
+```
+
+The helper is read-only: it checks separate worktree roots in the same repository, overlapping ownership, distinct port/resource declarations, argv structure, and actual git changes including untracked files. It never executes commands or reserves resources. An `attention` result exits nonzero and lists unowned files. Missing/unsafe worktrees are errors.
+
+For this lane, replace the legacy tool/database preflight and setup with the contract's requirements. Create fresh isolated worktrees, then review setup/validation argv against the task authorization before running them through the host in the assigned worktree. Pass argv directly without shell interpolation. Service-dependent shards may overlap only when each live service has its own checked port and disposable data resource; declarations alone do not establish isolation. Start services through host-managed sessions, verify their responses, record exactly which resources/processes this run created, and stop only those processes. Do not kill an occupied listener. Setup and validation failures preserve the worktree, outputs, and resource ownership record for inspection. External writes still require the user's existing authorization.
+
+The local regression fixture proves two loopback services and separate file resources can operate concurrently. It does not establish arbitrary database/container isolation. Legacy fleet invocations retain the single-service restriction below.
 
 <process>
 
@@ -118,41 +157,11 @@ If `--dry-run`: print the decomposition table and exit:
 | 1     | 2     | ...   | ...          | ...   |
 ```
 
-## Step 2: Port pre-flight (kill-before-start)
+## Step 2: Port pre-flight
 
-### 2a. Identify required ports
-Default standard ports for this stack:
-```bash
-PORTS=(5173 5174 3000 3001 3002 3003 3004 3005 3006 5432)
-```
-Adjust if the project's `docker-compose.yml` or `package.json` uses different ports.
+Inspect the ports required by the project or environment contract before starting services. Identify any occupied listener and retain it; choose an unused declared port or serialize the service work. A prior fleet-looking path is not permission to terminate its process.
 
-### 2b. Check each port
-```bash
-for port in "${PORTS[@]}"; do
-  PID=$(lsof -i :$port -t 2>/dev/null | head -1)
-  if [ -n "$PID" ]; then
-    CWD=$(readlink /proc/$PID/cwd 2>/dev/null || echo "unknown")
-    CMD=$(ps -p $PID -o comm= 2>/dev/null || echo "unknown")
-    echo "Port $port occupied by PID $PID ($CMD) in $CWD"
-
-    # If the process's cwd is inside a fleet worktree from a prior run, auto-kill
-    if [[ "$CWD" == *.worktrees/${BRANCH_PREFIX}-wt* ]]; then
-      echo "  → auto-killing (prior fleet leftover)"
-      kill $PID
-      sleep 2
-      kill -9 $PID 2>/dev/null || true
-    else
-      # Otherwise prompt user via AskUserQuestion
-      # Options: "kill" / "skip port" / "cancel fleet"
-      echo "  → user-gated; prompting"
-    fi
-  fi
-done
-```
-
-### 2c. Note for user
-Since ports are not offset per worktree, only ONE worktree can run dev services at a time. The fleet's parallelism is in agent work (file edits, unit tests that don't bind ports), not service operation. If a worker needs a running service for its phase work, it must explicitly request the service baton — surface this as a warning in Step 4's per-worker prompt.
+Legacy mode uses shared standard ports and permits only one service-running worktree at a time. The optional environment contract lane permits concurrent services only after distinct ports and disposable resources have been provisioned and verified. Keep the service ownership/session identifiers with the run so cleanup can target only resources created by this run.
 
 ## Step 3: Create worktree fleet
 
@@ -218,7 +227,7 @@ Your phase:
 
 Hard constraints:
 1. cd to {WT_PATH} before any file operation. Do NOT edit files outside this worktree.
-2. Do NOT run `pnpm dev` or any service-starting command — the fleet uses standard ports and only one worktree may run services at a time. Other shards are working in parallel.
+2. Legacy mode: do NOT start services because standard ports are shared. Environment contract mode: only start the assigned service through a host-managed session after its declared port and disposable resource isolation have been verified; record the session and resource ownership for cleanup.
 3. You MAY run: unit tests that don't bind ports, typecheck, lint, file edits, migrations against the isolated DB, `git add`, `git commit`.
 4. You MAY NOT run: `git push`, `git merge`, `git rebase`. The main worktree handles merging.
 5. If you hit an unresolvable blocker (e.g., need a running service, phase scope ambiguous), commit any partial work with a WIP: prefix and return "BLOCKED: <one-line reason>".
@@ -289,8 +298,8 @@ for i in $(seq 1 $SHARDS); do
   LINT_EXIT=${PIPESTATUS[0]}
 
   if [ $TC_EXIT -ne 0 ] || [ $LINT_EXIT -ne 0 ]; then
-    echo "wt${i}: validation failed after merge. Reverting."
-    git reset --hard ORIG_HEAD
+    echo "wt${i}: validation failed after merge. Preserving the merge and worktree for inspection."
+    # Record the failed validation and reconcile before continuing. Do not reset history.
     break
   fi
 
@@ -299,37 +308,24 @@ done
 ```
 
 ### 5b. Stop-on-failure behavior
-If any merge fails validation, the chain stops. The main branch is left at the last successful merge state. Remaining shards stay in their worktrees for user inspection.
+If any merge fails validation, stop the chain and preserve the failed merge plus validation output for inspection. Do not report the main branch as validated. Reconcile by fixing forward or by an explicitly authorized revert before continuing; remaining shards stay in their worktrees.
 
 ## Step 6: Teardown
 
-### 6a. Conditional teardown
-- If `--keep-on-failure` flag was set AND any shard failed: leave everything in place, print the shard state summary
-- Otherwise: teardown successful shards
+### 6a. Preserve failures
 
-### 6b. For each DONE + merged shard
+Any failed setup, merge, ownership check, or validation preserves the affected worktree and resource record. `--keep-on-failure` remains accepted for compatibility; failure preservation is always enabled. Do not delete data resources or branches to make a rerun pass.
+
+### 6b. Successful cleanup
+
+Only clean a shard recorded as successfully merged and validated in this run. Check its worktree status and use ordinary removal, which refuses dirty work:
+
 ```bash
-for i in $(seq 1 $SHARDS); do
-  [ "${STATUS[$i]}" != "DONE+MERGED" ] && continue
-
-  WT_PATH="${WORKTREES_DIR}/${BRANCH_PREFIX}-wt${i}"
-  WT_BRANCH="${BRANCH_PREFIX}/wt${i}"
-  DB_NAME="${DB_NAME_BASE}_wt${i}"
-
-  # Remove worktree
-  git worktree remove --force "$WT_PATH" 2>&1 || true
-
-  # Delete the shard branch (now merged into base)
-  git branch -D "$WT_BRANCH" 2>&1 || true
-
-  # Drop isolated DB
-  if [ ! "$SKIP_DB_ISOLATION" = "true" ]; then
-    psql -h "$DB_HOST" -U "$DB_USER" -c "DROP DATABASE IF EXISTS ${DB_NAME};" 2>&1 || true
-  fi
-
-  echo "Torn down wt${i}"
-done
+git worktree remove "$WT_PATH"
+git branch -d "$WT_BRANCH"
 ```
+
+If either refuses, preserve the shard and report the next inspection step. Drop disposable databases or remove other resources only when the run's ownership record confirms they were created by this run and the configured cleanup policy permits it. Never infer ownership from a name alone. Stop only the service sessions started by this run; do not terminate unrelated listeners.
 
 ## Step 6.5: Auto-review merged state (Forgeflow integration)
 
@@ -387,7 +383,7 @@ If any shards blocked or failed, leave the failing worktrees in place and the us
 <success_criteria>
 - [ ] Pre-flight validated (tools, repo clean, base branch detected)
 - [ ] Spec parsed into N phases, independence verified, target agents assigned
-- [ ] Port pre-flight completed (fleet leftovers auto-killed, other processes user-gated)
+- [ ] Port pre-flight completed (occupied listeners preserved; service ownership recorded)
 - [ ] N worktrees created with isolated DBs (`gsd_wt1` pattern) and linked `.forgeflow/`
 - [ ] Agents dispatched in parallel, one per worktree, scoped to one phase
 - [ ] Sequential merge executed with per-shard typecheck+lint validation

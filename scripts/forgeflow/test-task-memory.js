@@ -1,0 +1,72 @@
+#!/usr/bin/env node
+const assert = require('node:assert/strict');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const { execFileSync } = require('child_process');
+const { captureProvenance, inspectProvenance, recordTaskMemoryFeedback } = require('./task-memory');
+const { recordProjectLearning, projectLearningId } = require('./record-project-learning');
+const { buildMemoryIndex } = require('./index-memory');
+const { selectMemoryRecords } = require('./memory-retrieval');
+const { createTask } = require('./task-store');
+
+const root = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-task-memory-'));
+const projectDir = path.join(root, '.forgeflow', path.basename(root));
+const previousCwd = process.cwd();
+function git(args) { return execFileSync('git', args, { cwd: root, stdio: 'pipe' }); }
+try {
+  git(['init']);
+  fs.writeFileSync(path.join(root, 'source.js'), 'module.exports = 1;\n');
+  fs.writeFileSync(path.join(root, 'unrelated.js'), 'module.exports = 2;\n');
+  git(['add', 'source.js', 'unrelated.js']);
+  git(['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-m', 'fixture']);
+  fs.mkdirSync(projectDir, { recursive: true });
+  fs.writeFileSync(path.join(projectDir, 'evidence.txt'), 'checked\n');
+  process.chdir(root);
+  const evidencePath = path.relative(root, path.join(projectDir, 'evidence.txt'));
+  const provenance = captureProvenance(root, { dependencies: ['source.js'], evidence: [evidencePath] });
+  assert.equal(inspectProvenance(root, provenance), 'current');
+  fs.writeFileSync(path.join(root, 'unrelated.js'), 'changed\n');
+  assert.equal(inspectProvenance(root, provenance), 'current', 'unrelated edits must not invalidate scoped memory');
+  git(['add', 'unrelated.js']);
+  git(['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-m', 'unrelated fixture change']);
+  assert.equal(inspectProvenance(root, provenance), 'current', 'unrelated commits must not invalidate scoped memory');
+  assert.equal(inspectProvenance(root, null), 'unknown');
+  assert.equal(inspectProvenance(null, provenance), 'unverified');
+  assert.throws(() => captureProvenance(root, { dependencies: ['../outside'] }));
+  assert.throws(() => captureProvenance(root, { dependencies: ['missing.js'] }), /does not identify/);
+  const original = { category: 'validation-pattern', learning: 'Validate source exports before publishing.', source: 'fixture', dependencies: ['source.js'], evidence_refs: [evidencePath] };
+  const legacy = { category: 'stable-decision', learning: 'Legacy source guidance requires verification.', source: 'fixture' };
+  recordProjectLearning({ root, projectDir, inputEntries: [original, legacy] });
+  const learningId = projectLearningId(original);
+  const records = buildMemoryIndex({ projectDir }).index.records;
+  const select = () => selectMemoryRecords(records, 'source', { root, projectDir });
+  assert.equal(select().selected.length, 2);
+  assert.equal(select().selected.find((entry) => entry.learning_id === projectLearningId(legacy)).provenance_status, 'unknown');
+  fs.writeFileSync(path.join(root, 'source.js'), 'module.exports = 3;\n');
+  assert.equal(inspectProvenance(root, provenance), 'stale');
+  assert.equal(select().diagnostics.excluded_provenance, 1, 'saved index must recheck dependency content');
+  fs.writeFileSync(path.join(root, 'source.js'), 'module.exports = 1;\n');
+  fs.writeFileSync(path.join(projectDir, 'evidence.txt'), 'changed evidence\n');
+  assert.equal(select().diagnostics.excluded_provenance, 1, 'changed evidence must suppress memory');
+  fs.writeFileSync(path.join(projectDir, 'evidence.txt'), 'checked\n');
+  const feedbackOptions = { root, projectDir, taskId: 'fixture-task', learningId };
+  assert.throws(() => recordTaskMemoryFeedback({ ...feedbackOptions, outcome: 'used' }), /ENOENT/);
+  createTask(root, { id: 'fixture-task', objective: 'Fixture memory task', criteria: [{ id: 'memory', description: 'Memory remains accountable' }] });
+  const used = recordTaskMemoryFeedback({ ...feedbackOptions, outcome: 'used' });
+  assert.equal(used.causal_usefulness, null);
+  assert.equal(select().selected.length, 2);
+  recordTaskMemoryFeedback({ ...feedbackOptions, outcome: 'contradicted' });
+  recordTaskMemoryFeedback({ ...feedbackOptions, outcome: 'used' });
+  assert.equal(select().diagnostics.excluded_feedback, 1, 'later use does not silently erase a contradiction');
+  assert.throws(() => recordTaskMemoryFeedback({ ...feedbackOptions, outcome: 'corrected' }), /replacement/);
+  assert.throws(() => recordTaskMemoryFeedback({ ...feedbackOptions, learningId: 'missing', outcome: 'used' }), /not found/);
+  const replacement = { category: 'validation-pattern', learning: 'Validate source through the focused test.', source: 'fixture' };
+  recordProjectLearning({ root, projectDir, inputEntries: [replacement] });
+  recordTaskMemoryFeedback({ ...feedbackOptions, outcome: 'corrected', correctionId: projectLearningId(replacement) });
+  assert.equal(select().diagnostics.excluded_feedback, 1);
+  console.log('task memory: scoped provenance, stale evidence, legacy unknowns, and explicit feedback passed');
+} finally {
+  process.chdir(previousCwd);
+  fs.rmSync(root, { recursive: true, force: true });
+}

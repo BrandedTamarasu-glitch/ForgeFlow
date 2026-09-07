@@ -185,6 +185,10 @@ function normalizeEntry(entry) {
     ...conflict,
   };
   normalized.id = projectLearningId(normalized);
+  if (entry.provenance) normalized.provenance = entry.provenance;
+  if (entry.dependencies || entry.evidence_refs) {
+    normalized.provenance_request = { dependencies: entry.dependencies || [], evidence: entry.evidence_refs || [] };
+  }
   if (!VALID_CATEGORIES.has(normalized.category)) {
     throw new Error('Invalid project learning category');
   }
@@ -219,11 +223,15 @@ function loadEntries(opts) {
 }
 
 function recordProjectLearning(opts = {}) {
-  const root = repoRoot();
+  const root = opts.root || repoRoot();
   const projectDir = opts.projectDir || defaultProjectDir(root);
   const out = path.join(projectDir, 'project-learning-candidates.jsonl');
   const entries = Array.isArray(opts.inputEntries) ? opts.inputEntries.map(normalizeEntry) : loadEntries(opts);
   for (const entry of entries) {
+    if (entry.provenance_request) {
+      entry.provenance = require('./task-memory').captureProvenance(root, entry.provenance_request);
+      delete entry.provenance_request;
+    }
     appendFileSafe(out, `${JSON.stringify(entry)}\n`);
   }
   return { file: out, entries: entries.length };

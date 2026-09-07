@@ -6,9 +6,10 @@
   const COLORS = ['#9ccead', '#a5bbdc', '#dfc783', '#ec9b90'];
   const resources = {
     metrics: { data: null, pending: false, updated: null },
+    tasks: { data: null, pending: false, updated: null },
     readiness: { data: null, pending: false, updated: null }
   };
-  let selectedProject = '', selectedWindow = '12';
+  let selectedProject = '', selectedWindow = '12', selectedTask = '';
   const count = value => Number.isFinite(value) && value >= 0 ? value : 0;
   const formatTime = value => {
     const date = new Date(value);
@@ -27,7 +28,7 @@
     const resource = resources[name];
     if (resource.pending) return;
     resource.pending = true;
-    const status = $(name === 'metrics' ? 'metrics-status' : 'readiness-refresh-status');
+    const status = $(name === 'readiness' ? 'readiness-refresh-status' : `${name}-status`);
     status.textContent = resource.data ? `Refreshing · last updated ${formatTime(resource.updated)}` : 'Loading…';
     status.className = 'resource-status';
     $('refresh-dashboard').disabled = true;
@@ -37,16 +38,18 @@
       const response = await fetch(`/api/${name}`, { signal: controller.signal });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
-      if (!data || (name === 'metrics' ? !Array.isArray(data.projects) || !Array.isArray(data.verdicts) : !Array.isArray(data.cards))) throw new Error('Invalid response');
+      if (!data || (name === 'metrics' ? !Array.isArray(data.projects) || !Array.isArray(data.verdicts) : name === 'tasks' ? !Array.isArray(data.tasks) || !Array.isArray(data.warnings) : !Array.isArray(data.cards))) throw new Error('Invalid response');
       resource.data = data;
       resource.updated = Date.now();
-      if (name === 'metrics') renderMetrics(); else renderReadiness(data);
+      if (name === 'metrics') renderMetrics(); else if (name === 'tasks') renderTasks(); else renderReadiness(data);
       status.textContent = `Updated ${formatTime(resource.updated)}`;
     } catch (error) {
       const reason = error.name === 'AbortError' ? 'Request timed out' : error.message;
       status.className = `resource-status ${resource.data ? 'stale' : 'error'}`;
       status.textContent = resource.data ? `Stale · last updated ${formatTime(resource.updated)}. Refresh failed: ${reason}.` : `Unavailable · ${reason}. Use Refresh data to retry.`;
-      if (!resource.data && name === 'readiness') {
+      if (!resource.data && name === 'tasks') {
+        $('task-empty').textContent = 'Task evidence could not be read. Refresh data to try again. Other dashboard sections load independently.';
+      } else if (!resource.data && name === 'readiness') {
         $('readiness-status').replaceWith(Object.assign(statusPill('unavailable'), { id: 'readiness-status' }));
         $('readiness-state').textContent = 'Launched-project readiness unavailable';
         $('health-summary').textContent = 'Saved project evidence could not be read. Live activity and metrics load independently.';
@@ -58,6 +61,52 @@
       resource.pending = false;
       $('refresh-dashboard').disabled = Object.values(resources).some(item => item.pending);
     }
+  }
+  function renderTasks() {
+    const data = resources.tasks.data;
+    if (!data) return;
+    const tasks = data.tasks;
+    if (!tasks.some(task => task.id === selectedTask)) selectedTask = (tasks.find(task => task.status !== 'complete') || tasks[0])?.id || '';
+    const select = $('task-select');
+    select.replaceChildren(...tasks.map(task => {
+      const option = node('option', task.objective || task.id); option.value = task.id; return option;
+    }));
+    select.value = selectedTask;
+    $('task-select-label').hidden = tasks.length < 2;
+    $('task-scope').textContent = `${data.project_root || 'Launched project'} · launched-project tasks only. The summary project filter does not change this view.`;
+    $('task-empty').hidden = tasks.length > 0;
+    $('task-content').hidden = !tasks.length;
+    $('task-empty').textContent = data.warnings.length
+      ? 'Some saved tasks could not be read. Check task records in your ForgeFlow session, then refresh.'
+      : 'No task recorded yet. Start a task in your ForgeFlow session to track its acceptance criteria and evidence here.';
+    if (!tasks.length) return;
+    const task = tasks.find(item => item.id === selectedTask);
+    $('task-objective').textContent = task.objective;
+    $('task-status').replaceWith(Object.assign(statusPill(task.status), { id: 'task-status' }));
+    $('task-phase').textContent = `Phase: ${task.phase || 'Not started'} · Saved ${task.updated_at || 'time unavailable'}`;
+    const counts = task.counts || {};
+    $('task-counts').textContent = `${count(counts.verified)} of ${count(counts.total)} criteria verified · ${count(counts.failed)} failed · ${count(counts.stale)} stale · ${count(counts.missing)} missing · ${count(counts.waived)} waived${data.warnings.length ? ' · Some task records could not be read' : ''}`;
+    $('task-next').textContent = task.next_action || 'Review the saved task in your ForgeFlow session.';
+    const evidence = Array.isArray(task.evidence) ? task.evidence : [];
+    const criteria = Array.isArray(task.criteria) ? task.criteria : [];
+    $('task-criteria').replaceChildren(...criteria.map(criterion => {
+      const item = node('li');
+      const heading = node('div', undefined, 'task-criterion-heading');
+      heading.append(node('strong', criterion.description || criterion.id), statusPill(criterion.status));
+      item.append(heading);
+      const proofs = evidence.filter(proof => Array.isArray(proof.criterion_ids) && proof.criterion_ids.includes(criterion.id));
+      proofs.forEach(proof => {
+        const pointer = node('p', undefined, 'task-proof');
+        pointer.append(node('span', `${proof.kind || 'Evidence'} · ${proof.status || 'unknown'} · `), node('code', typeof proof.artifact === 'string' ? proof.artifact : proof.artifact?.path || proof.id));
+        item.append(pointer);
+      });
+      if (!proofs.length) item.append(node('p', criterion.status === 'waived' ? 'Explicitly waived; this criterion has no verification evidence.' : 'No linked evidence. Record a check in your ForgeFlow session.', 'scope'));
+      return item;
+    }));
+    if (!criteria.length) $('task-criteria').append(node('li', 'No acceptance criteria recorded yet. Define what completion means in your ForgeFlow session.'));
+    const history = Array.isArray(task.history) ? task.history : [];
+    $('task-history-list').replaceChildren(...history.slice(-20).reverse().map(event => node('li', `${event.at || event.timestamp || ''} · ${event.action || event.type || event.event || 'Task updated'}${event.phase ? ` · ${event.phase}` : ''}`)));
+    $('task-history').hidden = !history.length;
   }
   function renderMetrics() {
     const data = resources.metrics.data;
@@ -249,9 +298,10 @@
     window.addEventListener('pagehide', () => { stopped = true; clearTimeout(retryTimer); if (ws) ws.close(); }, { once: true });
     connect();
   }
+  $('task-select').addEventListener('change', event => { selectedTask = event.target.value; renderTasks(); });
   $('project-select').addEventListener('change', event => { selectedProject = event.target.value; renderMetrics(); });
   document.querySelectorAll('[data-window]').forEach(button => button.addEventListener('click', () => { selectedWindow = button.dataset.window; renderTrend(); }));
-  $('refresh-dashboard').addEventListener('click', () => { void refreshResource('metrics'); void refreshResource('readiness'); });
+  $('refresh-dashboard').addEventListener('click', () => { void refreshResource('metrics'); void refreshResource('readiness'); void refreshResource('tasks'); });
   $('readiness-copy-command').addEventListener('click', async () => {
     try { await navigator.clipboard.writeText($('readiness-next-command').textContent); $('readiness-copy-status').textContent = 'Copied'; }
     catch { $('readiness-copy-status').textContent = 'Copy unavailable. Select the command and copy manually.'; }
@@ -260,4 +310,5 @@
   initChat(); // Live work starts immediately, independently of API latency or failure.
   void refreshResource('metrics');
   void refreshResource('readiness');
+  void refreshResource('tasks');
 })();

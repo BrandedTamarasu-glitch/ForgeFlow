@@ -1,6 +1,6 @@
 # The ForgeFlow Workshop
 
-The workshop at **http://127.0.0.1:4003/** combines Ember, project readiness, review outcomes, trends, and live activity. It is optional; the main workflows work without it.
+The workshop at **http://127.0.0.1:4003/** combines task evidence, Ember, project readiness, review outcomes, trends, and live activity. It is optional; the main workflows work without it.
 
 Start with the [annotated visual guide](../user-guide.html#dashboard) or [printable PDF](../ForgeFlow-User-Guide.pdf).
 
@@ -27,6 +27,7 @@ Claude Code also provides `/dashboard`. Start the activity service with `$agent-
 
 | Panel | Scope |
 |---|---|
+| Task evidence | Saved tasks in the repository that launched the dashboard |
 | Ember and Live Activity | The activity service's current room |
 | Project health and saved evidence | The repository that launched the dashboard |
 | Review outcomes | All-time totals for the selected summary project |
@@ -34,7 +35,15 @@ Claude Code also provides `/dashboard`. Start the activity service with `$agent-
 
 The summary project selector does not change readiness or the current activity room. A reused dashboard retains its launched project. To change that readiness scope, identify the existing service and deliberately restart it from the intended repository.
 
-Refresh data fetches metrics and readiness independently. Failed refreshes retain an existing snapshot and label it stale; an initial failure displays Unavailable. The live connection is independent of those fetches.
+Refresh data fetches tasks, metrics, and readiness independently. Failed refreshes retain an existing snapshot and label it stale; an initial failure displays Unavailable. The live connection is independent of those fetches.
+
+## Task evidence and next action
+
+Start with `/task` in Claude Code or `$task` in Codex. Select a saved task to inspect acceptance criteria, verified/failed/stale/missing/waived proof, phase history, and the next action. Source or artifact changes invalidate current proof while retaining the historical result. See [Task Evidence and Recovery](Task-Evidence.md) for the command and input contracts.
+
+Task verification runs in a background worker, sharing repeated checks within each scan. Other dashboard requests remain responsive; overlapping refreshes share one active scan. A scan exceeding eight seconds reports an error and retains the last displayed snapshot. No new worker starts until the previous one finishes cleanup. The list supports up to 500 saved task records.
+
+The task API is read-only and bound to the launched repository. Evidence paths are informational pointers; the dashboard does not serve arbitrary files or execute checks.
 
 ## Ember and live activity
 

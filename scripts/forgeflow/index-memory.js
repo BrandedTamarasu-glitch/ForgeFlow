@@ -6,6 +6,7 @@ const { safeReadTextFile, writeJsonSafe } = require('./file-safety');
 const { sourceClass } = require('./memory-retrieval');
 const { candidateStatus, conflictedLearningIds, resolvedCandidates, incorrectOutcomeLearningIds } = require('./project-learning-conflicts');
 const { projectLearningId } = require('./record-project-learning');
+const { applyTaskMemoryControls } = require('./task-memory');
 
 const DEFAULT_MAX_TEXT_CHARS = 320;
 
@@ -106,6 +107,7 @@ function record(source, line, kind, text, maxTextChars, metadata = {}) {
   };
   if (metadata.lifecycle) result.lifecycle = metadata.lifecycle;
   if (metadata.learningId) result.learning_id = metadata.learningId;
+  if (metadata.provenance) result.provenance = metadata.provenance;
   if (metadata.conflictKey) result.conflict_key = metadata.conflictKey;
   if (metadata.conflictValue) result.conflict_value = metadata.conflictValue;
   if (metadata.conflictWithheld) result.conflict_withheld = true;
@@ -170,6 +172,7 @@ function indexJsonl(source, content, maxTextChars, metadata = {}) {
       ...metadata,
       lifecycle,
       learningId,
+      provenance: controllingRecord.provenance,
       conflictKey: isProjectLearningCandidates ? parsed.conflict_key : '',
       conflictValue: isProjectLearningCandidates ? parsed.conflict_value : '',
       conflictWithheld: isProjectLearningCandidates && withheld.has(learningId),
@@ -215,7 +218,7 @@ function buildMemoryIndex(opts = {}) {
     generated_at: new Date().toISOString(),
     project_dir: path.relative(root, projectDir),
     sources,
-    records,
+    records: applyTaskMemoryControls(records, { root, projectDir }),
   };
 
   fs.mkdirSync(path.dirname(out), { recursive: true });

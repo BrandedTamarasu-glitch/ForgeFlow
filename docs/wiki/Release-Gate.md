@@ -1,5 +1,16 @@
 # Release Gate
 
+## Task evidence and recovery checks
+
+```bash
+node scripts/forgeflow/test-task-store.js
+node scripts/forgeflow/test-task.js
+node scripts/forgeflow/test-task-evaluation.js
+node scripts/forgeflow/test-task-memory.js
+node scripts/forgeflow/test-fleet-environment.js
+node scripts/forgeflow/test-task-maintenance.js
+```
+
 ## Deterministic validation
 
 Run `npm ci --ignore-scripts` followed by `npm test` from a checkout. The runner discovers all helper tests, service tests, the Pi extension suite, and the strict bridge typecheck; it runs sequentially and exits nonzero on any failure. Use `npm run test:helpers` or `npm run test:services` for a focused pass. CI uses Node 24 LTS and runs this gate on every PR (including forks), pushes to main, and manual workflow runs, without model credentials or repository write permissions. The existing release checks below remain required for release-specific evidence.

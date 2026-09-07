@@ -8,7 +8,15 @@ Turn an idea into a scoped brief, working code, an evidence-backed review, and a
 
 ![ForgeFlow workshop showing Ember, project readiness, recorded review outcomes, weekly trends, and live workflow activity](docs/images/forgeflow-workshop.png)
 
+## New in 4.4.0
+
+Keep an objective, acceptance criteria, code-bound evidence, and resumable phase history together with **`/task` in Claude Code or `$task` in Codex**. The workshop shows current proof and the next action, and remains responsive while checking saved tasks.
+
+This release also adds balanced workflow comparison schedules, dependency-aware memory feedback, fleet ownership checks across every Git state, and bounded local CI repair with draft handoffs. Evaluation records distinguish real observations from fixtures and unknowns; maintenance publishes nothing remotely. See the [4.4.0 release notes](docs/changelogs/v4.4.0.html) and [task guide](docs/wiki/Task-Evidence.md).
+
 ## Your first ForgeFlow session
+
+For a change you want to carry across sessions, use **`/task` in Claude Code or `$task` in Codex**. Tasks connect acceptance criteria to the code that was checked, preserve interrupted phase history, and appear at the top of the workshop. Changed source or evidence makes earlier proof stale while preserving the historical result. See [task evidence and recovery](docs/wiki/Task-Evidence.md) for check commands, resume, evaluation, memory feedback, fleet contracts, and local maintenance drafts.
 
 You do not need the whole command catalog to start. Pick one small, observable improvement, such as a clearer empty state or a focused bug fix.
 
@@ -158,6 +166,7 @@ The workshop balances **what is happening now**, **what needs attention**, and *
 
 | Area | What it shows |
 |---|---|
+| **Task evidence** | Acceptance criteria, current or stale proof, phase history, and next action for tasks in the launched repository |
 | **Ember** | Explicit activity in the current chat room, including planning, research, implementation, review, testing, waiting, failure, and completion |
 | **Project health** | Saved readiness evidence for the repository that launched the dashboard, with a copy-only next action |
 | **Review outcomes** | All-time verdict totals for the selected summary project; conditional approvals have their own total |
@@ -170,7 +179,7 @@ Readiness separates actionable problems from informational evidence. Missing opt
 
 **Empty charts can be normal:** they require recorded verdicts. Codex review and implementation skills explicitly save real Arbiter and Compass decisions with evidence and a stable event ID to prevent duplicates. Planning or test activity does not create approvals, and older unrecorded reviews are not inferred or backfilled.
 
-**Refresh data** updates metrics and readiness independently, preserving a previous snapshot with a stale label if a refresh fails. The summary project selector does not change the launched readiness scope or Ember’s current room.
+**Refresh data** updates tasks, metrics, and readiness independently, preserving a previous snapshot with a stale label if a refresh fails. The summary project selector does not change the launched readiness scope or Ember’s current room.
 
 Set `FORGEFLOW_DASHBOARD_AUTO_OPEN=off` to disable automatic startup and opening. CI, SSH, headless Linux, and sessions without a stable host session ID skip it automatically. To run the dashboard manually from the intended project:
 

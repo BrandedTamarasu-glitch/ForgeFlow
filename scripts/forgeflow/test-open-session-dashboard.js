@@ -53,7 +53,7 @@ async function main() {
     assert.equal(sessionId({ CODEX_THREAD_ID: 'thread' }), 'thread');
     assert.equal(sessionId({ CLAUDE_SESSION_ID: 'session' }), 'session');
     assert.equal(sessionId({ FORGEFLOW_SESSION_ID: 'override', CODEX_THREAD_ID: 'thread' }), 'override');
-    for (const prompt of ['/plan feature', '$forgeflow-review', '/Forgeflow:discuss an idea', '@quick fix']) assert.ok(workflowFromPrompt(prompt));
+    for (const prompt of ['/plan feature', '$forgeflow-review', '/Forgeflow:discuss an idea', '@quick fix', '/task status example', '$task start feature']) assert.ok(workflowFromPrompt(prompt));
     for (const prompt of ['please explain forgeflow', 'review this later', '/planet', '/agent-chat:off', 'echo /plan', '/plan; rm']) assert.equal(workflowFromPrompt(prompt), '');
     assert.ok(fs.readdirSync(options.stateDir).length >= 3);
     assert.equal(workflowState('plan'), 'planning');

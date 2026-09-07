@@ -2,6 +2,7 @@
 // Deterministic, advisory-only selection for the local memory index.
 
 const { applyCurrentLearningControls } = require('./project-learning-conflicts');
+const { applyTaskMemoryControls } = require('./task-memory');
 
 const MEMORY_RANKING_POLICY = Object.freeze({
   source_class_priority: Object.freeze([
@@ -103,6 +104,8 @@ function selectMemoryRecords(records, query, options = {}) {
     excluded_invalid: 0,
     excluded_conflicted: 0,
     excluded_outcome_incorrect: 0,
+    excluded_provenance: 0,
+    excluded_feedback: 0,
     excluded_no_match: 0,
     query_matches: 0,
     suppressed_duplicate: 0,
@@ -113,9 +116,18 @@ function selectMemoryRecords(records, query, options = {}) {
   };
   const candidates = [];
 
-  const controlled = options.projectDir ? applyCurrentLearningControls(records, options.projectDir) : records;
+  const lifecycleControlled = options.projectDir ? applyCurrentLearningControls(records, options.projectDir) : records;
+  const controlled = applyTaskMemoryControls(lifecycleControlled, options);
   for (const value of Array.isArray(controlled) ? controlled : []) {
     if (!value || typeof value !== 'object') continue;
+    if (value.provenance_withheld) {
+      diagnostics.excluded_provenance += 1;
+      continue;
+    }
+    if (value.feedback_withheld) {
+      diagnostics.excluded_feedback += 1;
+      continue;
+    }
     if (conflicted(value)) {
       diagnostics.excluded_conflicted += 1;
       continue;
@@ -206,6 +218,10 @@ function renderMemorySelection(selection, options = {}) {
   if (incorrect > 0) {
     lines.push(`${incorrect} command-interface learning record${incorrect === 1 ? ' was' : 's were'} withheld after explicit incorrect-outcome feedback. Correct the exact learning with /forgeflow-memory-correct before relying on replacement guidance.`);
   }
+  const provenance = Number(selection?.diagnostics?.excluded_provenance || 0);
+  if (provenance) lines.push(`${provenance} memory record(s) withheld because supporting files or evidence changed or could not be verified.`);
+  const feedback = Number(selection?.diagnostics?.excluded_feedback || 0);
+  if (feedback) lines.push(`${feedback} memory record(s) withheld after explicit contradiction or correction feedback.`);
   return lines.join('\n');
 }
 

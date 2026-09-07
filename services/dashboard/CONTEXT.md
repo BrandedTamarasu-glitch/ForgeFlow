@@ -1,5 +1,9 @@
 # dashboard — Service Context
 
+## Task evidence
+
+The primary task panel reads `/api/tasks` independently of readiness and metrics. `tasks.js` projects task-store records into objective, scoped criteria, evidence freshness, phase history and next action; it omits absolute workspace paths, session identifiers, command arguments and raw event payloads. The selector scopes tasks within the launched repository; readiness retains that same repository scope and historical metrics keep their existing explicit scope labels. Refresh failures preserve and label a stale task snapshot. Artifact pointers are text only; no file-serving or command execution endpoint is added. Runtime inventory includes `tasks.js` and shared task-store dependencies.
+
 ## Architecture
 
 Read-only local dashboard. Reads Forgeflow metrics from the JSONL telemetry file and exposes them via a single HTTP server. Uses Node.js built-ins and `ws` for the authenticated live chat relay.

@@ -141,8 +141,8 @@ function splitMemoryBudget(maxChars, userProfileBlock) {
   };
 }
 
-function renderMemoryContext(root, indexPath, records, keys, maxHits, maxChars) {
-  const selection = selectMemoryRecords(records, keys.join(' '), { maxHits });
+function renderMemoryContext(root, indexPath, records, keys, maxHits, maxChars, projectDir = defaultProjectDir(root)) {
+  const selection = selectMemoryRecords(records, keys.join(' '), { maxHits, root, projectDir });
   const lines = renderMemorySelection(selection, {
     title: '# Forgeflow Memory Context',
     indexLabel: `Index: ${path.relative(root, indexPath)}`,
@@ -181,6 +181,7 @@ function buildMemoryContext(opts = {}) {
     keys,
     Number.isFinite(opts.maxHits) ? opts.maxHits : DEFAULT_MAX_HITS,
     budget.memoryChars,
+    projectDir,
   );
   const profileMarkdown = truncate(userProfileBlock, budget.profileChars);
   const markdown = [rendered.markdown, profileMarkdown].filter((section) => section.trim()).join('\n\n');

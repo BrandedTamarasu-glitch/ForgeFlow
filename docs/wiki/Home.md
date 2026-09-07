@@ -13,9 +13,15 @@ ForgeFlow helps turn an idea into a scoped brief, working code, an evidence-back
 3. **[User Paths](User-Paths.md)**: choose a workflow for the outcome you need.
 4. **[Dashboard and Ember](Dashboard.md)**: understand current activity, readiness, evidence, and empty states.
 
-[Why ForgeFlow](Why-Forgeflow.md) explains the approach. [Latest tagged release notes](../changelogs/v4.3.72.html) describe the last tagged release; this wiki follows the current source and may include changes delivered afterward. The visual guide identifies its own source edition.
+[Why ForgeFlow](Why-Forgeflow.md) explains the approach. [Latest tagged release notes](../changelogs/v4.4.0.html) describe the last tagged release; this wiki follows the current source and may include changes delivered afterward. The visual guide identifies its own source edition.
+
+## New in 4.4.0
+
+[Task Evidence and Recovery](Task-Evidence.md) adds code-bound acceptance checks, resumable phase history, a responsive task panel, accountable memory, workflow comparison records, fleet ownership checks, and local maintenance drafts. The release also includes the refreshed workshop, Ember, visual guides, and runtime hardening delivered since 4.3.72.
 
 ## A First Useful Task
+
+Use [Task Evidence and Recovery](Task-Evidence.md) to connect acceptance criteria, current proof, and resumable phase history across Claude Code and Codex.
 
 | Step | Claude Code | Codex | Result |
 |---|---|---|---|

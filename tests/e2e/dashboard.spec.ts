@@ -132,11 +132,12 @@ test('next action copies by keyboard without navigation or command execution', a
 test('keyboard navigation exposes a visible focus ring on dashboard controls', async ({ page }) => {
   await fixture(page);
   await page.goto('/');
+  const refresh = page.locator('#refresh-dashboard');
+  await expect(refresh).toBeEnabled();
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link', { name: 'Skip to overview' })).toBeFocused();
   await page.keyboard.press('Tab');
   await page.keyboard.press('Tab');
-  const refresh = page.locator('#refresh-dashboard');
   await expect(refresh).toBeFocused();
   await expect(refresh).toHaveCSS('outline-style', 'solid');
   await expect(refresh).toHaveCSS('outline-width', '2px');

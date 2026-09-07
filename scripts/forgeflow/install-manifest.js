@@ -17,6 +17,7 @@ const STATIC_FILES = new Set([
 ]);
 const DASHBOARD_RUNTIME = new Set([
   'services/dashboard/server.js', 'services/dashboard/metrics.js', 'services/dashboard/readiness.js',
+  'services/dashboard/tasks.js',
   'services/dashboard/public/dashboard.js', 'services/dashboard/public/dashboard.css',
   'services/dashboard/public/index.html', 'services/dashboard/public/ember.js', 'services/dashboard/public/ember.css',
   'services/dashboard/package.json', 'services/dashboard/package-lock.json',
@@ -24,6 +25,12 @@ const DASHBOARD_RUNTIME = new Set([
   'services/agent-chat/public/index.html', 'services/agent-chat/package.json', 'services/agent-chat/package-lock.json',
 ]);
 const RUNTIME_HELPERS = [
+  'scripts/forgeflow/task-store.js',
+  'scripts/forgeflow/task.js',
+  'scripts/forgeflow/task-evaluation.js',
+  'scripts/forgeflow/task-memory.js',
+  'scripts/forgeflow/task-maintenance.js',
+  'scripts/forgeflow/fleet-environment.js',
   'scripts/forgeflow/advise-context.js',
   'scripts/forgeflow/advise-noisy-command.js',
   'scripts/forgeflow/agent-chat-off.sh',

@@ -8,6 +8,7 @@ const { WebSocketServer, WebSocket } = require('ws');
 const { readToken } = require('../agent-chat/session-auth');
 const { scanMetricsRoots } = require('./metrics');
 const { scanReadiness } = require('./readiness');
+const { createTaskScanner } = require('./tasks');
 
 const INDEX_HTML = path.join(__dirname, 'public', 'index.html');
 
@@ -49,6 +50,7 @@ function createServer(opts = {}) {
   const metricsRoots = metricsRootsFromOptions(opts);
   const projectRoot = opts.projectRoot || process.cwd();
   const projectDir = opts.projectDir;
+  const taskScanner = createTaskScanner(projectRoot);
 
   const server = http.createServer(async (req, res) => {
     if (!isLocalRequest(req)) {
@@ -99,6 +101,21 @@ function createServer(opts = {}) {
         console.error('metrics error:', err);
         res.writeHead(500);
         res.end('Internal Server Error');
+      }
+      return;
+    }
+
+    if (req.url === '/api/tasks') {
+      try {
+        const body = await taskScanner.scan();
+        res.writeHead(200, {
+          'Content-Type': 'application/json; charset=utf-8',
+          'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-store'
+        });
+        res.end(body);
+      } catch {
+        res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+        res.end(JSON.stringify({ error: 'Task evidence could not be read. Check the launched project and refresh.' }));
       }
       return;
     }
@@ -204,9 +221,18 @@ function createServer(opts = {}) {
     });
   });
   server.on('close', () => {
+    void taskScanner.close();
     for (const ws of chat.clients) ws.terminate();
     for (const ws of chatSockets) ws.terminate();
   });
+
+  // Stop task work when shutdown begins, not only after pending HTTP requests
+  // finish (the close event). In-flight task responses take their error path.
+  const closeServer = server.close;
+  server.close = function (...args) {
+    void taskScanner.close();
+    return closeServer.apply(this, args);
+  };
 
   server.on('error', (err) => {
     if (onError) {

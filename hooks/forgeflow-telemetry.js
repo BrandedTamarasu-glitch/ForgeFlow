@@ -119,15 +119,24 @@ async function recordVerdict(data, env = process.env) {
     let prior = '';
     try { prior = fs.readFileSync(metricsFile, 'utf8'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
     const detail = { reviewer: data.reviewer, verdict: data.verdict, evidence };
+    const artifactHash = require('crypto').createHash('sha256').update(fs.readFileSync(evidenceFile)).digest('hex');
+    let source = null;
+    try {
+      const helper = [path.join(__dirname, '../scripts/forgeflow/task-store.js'), path.join(__dirname, '../forgeflow/scripts/forgeflow/task-store.js')].find(file => fs.existsSync(file));
+      if (helper) source = require(helper).sourceSnapshot(cwd);
+    } catch { /* Non-Git or incomplete captures remain explicitly unknown. */ }
+    const provenance = { schema_version: '1', status: source ? 'captured' : 'unknown', source,
+      artifact: { path: evidence, sha256: artifactHash } };
     for (const line of prior.split('\n')) {
       let event;
       try { event = JSON.parse(line); } catch (_) { continue; }
       if (event.event_id !== data.event_id) continue;
       if (event.session_id !== data.session_id || event.command !== data.command || JSON.stringify(event.detail) !== JSON.stringify(detail)) throw new Error('Event-id already records a different outcome');
+      if (event.provenance?.artifact?.sha256 && event.provenance.artifact.sha256 !== artifactHash) throw new Error('Event-id already records different evidence content');
       return { recorded: 0, duplicate: true, event_id: data.event_id };
     }
     const event = { schema_version: '1', ts: new Date().toISOString(), session_id: data.session_id,
-      project: path.basename(cwd), cwd, runtime: 'codex', event: 'verdict', event_id: data.event_id, command: data.command, detail };
+      project: path.basename(cwd), cwd, runtime: 'codex', event: 'verdict', event_id: data.event_id, command: data.command, detail, provenance };
     fs.appendFileSync(metricsFile, `${prior && !prior.endsWith('\n') ? '\n' : ''}${JSON.stringify(event)}\n`);
     return { recorded: 1, duplicate: false, event_id: data.event_id };
   } finally {

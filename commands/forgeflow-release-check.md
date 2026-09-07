@@ -196,6 +196,18 @@ If any command fails, stop and report the failed command plus its output. Do not
 
 </process>
 
+
+## Task evidence and recovery checks
+
+```bash
+node scripts/forgeflow/test-task-store.js
+node scripts/forgeflow/test-task.js
+node scripts/forgeflow/test-task-evaluation.js
+node scripts/forgeflow/test-task-memory.js
+node scripts/forgeflow/test-fleet-environment.js
+node scripts/forgeflow/test-task-maintenance.js
+```
+
 <success_criteria>
 - [ ] Command coverage test passes
 - [ ] Command argument safety test passes
