@@ -12,6 +12,8 @@ const {
   managedSources,
 } = require('./install-manifest');
 
+const { setupEmber } = require('./ember-setup');
+
 const repoRoot = path.resolve(__dirname, '..', '..');
 const CLAUDE_SOURCE_DIRS = [
   'agents',
@@ -127,7 +129,7 @@ function installClaude({ home, dryRun = false } = {}) {
     copied,
     manual_steps: [
       'Restart Claude Code after installing commands, agents, hooks, and templates.',
-      'Wire ~/.claude/settings.json hooks and statusLine manually, then run /forgeflow-health.',
+      'The Ember prompt hook is configured automatically; other hooks and statusLine remain under your control.',
     ],
   };
 }
@@ -187,6 +189,9 @@ function installTemplate(opts = {}) {
   if (target === 'codex' || target === 'both') {
     results.push(installCodex({ home: opts.codexHome || process.env.CODEX_HOME || path.join(os.homedir(), '.codex'), dryRun: opts.dryRun }));
   }
+  for (const result of results) {
+    result.ember = (opts.emberSetup || setupEmber)({ home: result.home, target: result.target, dryRun: Boolean(opts.dryRun) });
+  }
   return {
     schema_version: '1',
     status: 'ok',
@@ -206,6 +211,8 @@ function renderMarkdown(result) {
       lines.push(`- skills: ${item.skill_names.length}`);
       lines.push(`- canonical entrypoints: ${item.canonical_entrypoints.join(', ')}`);
     }
+    lines.push(`- Ember: ${item.ember.status}. ${item.ember.action || ''}`);
+    for (const check of item.ember.checks || []) if (check.action && check.status !== 'ready') lines.push(`  ${check.name}: ${check.status}. ${check.action}`);
     for (const step of item.manual_steps) lines.push(`- ${step}`);
   }
   return lines.join('\n');

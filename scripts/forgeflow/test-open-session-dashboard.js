@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const http = require('node:http');
+const crypto = require('node:crypto');
 const { openSessionDashboard, desktopAvailable, workflowFromPrompt, sessionId, probe, workflowState } = require('./open-session-dashboard');
 const { createServer } = require('../../services/dashboard/server');
 
@@ -32,7 +33,16 @@ async function main() {
     const failure = { ...options, session: 'failed-session', ensure: async () => { throw new Error('occupied port'); } };
     assert.equal((await openSessionDashboard(failure)).status, 'unavailable');
     assert.equal((await openSessionDashboard(failure)).status, 'unavailable');
+    assert.equal((await openSessionDashboard({ ...options, session: 'failed-session' })).status, 'opened');
+    assert.equal((await openSessionDashboard({ ...options, session: 'failed-session' })).status, 'already-attempted');
     assert.equal((await openSessionDashboard({ ...options, session: 'no-browser', open: async () => false })).status, 'browser-unavailable');
+    assert.equal((await openSessionDashboard({ ...options, session: 'no-browser' })).status, 'opened');
+    const legacySession = 'legacy-failed-session';
+    const legacyMarker = path.join(options.stateDir, crypto.createHash('sha256').update(legacySession).digest('hex') + '.json');
+    fs.writeFileSync(legacyMarker, JSON.stringify({ status: 'unavailable' }), { mode: 0o600 });
+    const recovered = await Promise.all(Array.from({ length: 8 }, () => openSessionDashboard({ ...options, session: legacySession })));
+    assert.equal(recovered.filter(r => r.status === 'opened').length, 1);
+    assert.equal((await openSessionDashboard({ ...options, session: legacySession })).status, 'already-attempted');
     const unavailableActivity = await openSessionDashboard({ ...options, session: 'activity-failed',
       ensureActivity: async () => { throw new Error('foreign listener'); } });
     assert.equal(unavailableActivity.status, 'opened');

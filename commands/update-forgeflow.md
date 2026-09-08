@@ -21,6 +21,15 @@ $ARGUMENTS:
 
 ## Preferred Engine
 
+The preferred updater also prepares optional Ember dependencies and adds the Claude
+UserPromptSubmit dashboard hook without replacing existing hooks. It preserves a
+separate settings backup and respects dashboard opt-out. Setup problems are reported
+without blocking the core update; even an already-current installation is checked.
+Other settings and hook wiring remain user-managed. Use the installed
+`ember-setup.js --target claude --check` for live readiness diagnostics.
+After upgrading through an older updater that predates this setup, run the newly
+installed `ember-setup.js --target claude` once to prepare Ember.
+
 When the installed or repo-local runtime helper exists, prefer the script-backed installer because it enforces the same manifest used by health checks:
 
 ```bash
@@ -269,7 +278,7 @@ Note: the following files were removed from the repo but NOT deleted from ~/.cla
 If `HOOK_CHANGED=true`, append:
 ```
 NOTICE: hooks/forgeflow-gate.js was updated. Verify the hook wiring in settings.json
-still points to the correct path. Hook wiring is NOT auto-updated by /update-forgeflow.
+still points to the correct path. Only the Ember UserPromptSubmit hook is configured automatically; other hook wiring is not changed.
 Check: cat ~/.claude/settings.json | grep forgeflow
 ```
 

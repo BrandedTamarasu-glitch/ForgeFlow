@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const crypto = require('crypto');
 const fs = require('fs');
+const { setupEmber } = require('./ember-setup');
 const https = require('https');
 const os = require('os');
 const path = require('path');
@@ -470,6 +471,7 @@ async function updateForgeflow(opts = {}) {
     return {
       schema_version: '1',
       status: 'up-to-date',
+      ember: (opts.emberSetup || setupEmber)({ home, target, dryRun: Boolean(opts.dryRun) }),
       current,
       latest,
       repair_needed: false,
@@ -531,6 +533,7 @@ async function updateForgeflow(opts = {}) {
   return {
     schema_version: '1',
     target,
+    ember: failures.length === 0 ? (opts.emberSetup || setupEmber)({ home, target, dryRun: Boolean(opts.dryRun) }) : { status: 'deferred', checks: [], action: 'Finish the core update before setting up Ember.' },
     status: failures.length === 0 ? (effectiveRepair ? 'repaired' : 'updated') : 'partial',
     current,
     latest,
@@ -576,12 +579,14 @@ function renderMarkdown(result) {
 
   const latestShort = result.latest.slice(0, 7);
   const currentShort = result.current ? result.current.slice(0, 7) : 'none';
-  if (result.status === 'up-to-date') return `Already up to date (${latestShort}).`;
+  const emberLines = result.ember ? [`Ember: ${result.ember.status}. ${result.ember.action || ''}`, ...(result.ember.checks || []).filter(c => c.action && c.status !== 'ready').map(c => `${c.name}: ${c.status}. ${c.action}`)] : [];
+  if (result.status === 'up-to-date') return [`Already up to date (${latestShort}).`, ...emberLines].join('\n');
   const lines = [
     result.repair
       ? `Forgeflow repaired (${latestShort})`
       : (result.first_run ? `Forgeflow installed (${latestShort})` : `Forgeflow updated (${currentShort} -> ${latestShort})`),
     '',
+    ...emberLines,
     `Files synced (${result.synced.length}):`,
   ];
   if (result.repair_needed && result.missing_required?.length > 0) {

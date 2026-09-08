@@ -114,7 +114,9 @@ function openBrowser(url, platform = process.platform) {
 async function openSessionDashboard(options = {}) {
   const env = options.env || process.env;
   const session = options.session || sessionId(env);
-  if (!desktopAvailable(env, options.platform) || !session) return { status: 'skipped', url: URL };
+  if (!desktopAvailable(env, options.platform) || !session) return { status: 'skipped', url: URL,
+    reason: !session ? 'No host session ID was supplied' : env.FORGEFLOW_DASHBOARD_AUTO_OPEN === 'off'
+      ? 'Dashboard auto-open is disabled' : 'No local desktop session is available (headless, CI, or SSH)' };
   const root = path.resolve(options.root || process.cwd());
   const stateDir = options.stateDir || path.join(os.tmpdir(), `forgeflow-dashboard-${process.getuid?.() ?? os.userInfo().username}`);
   fs.mkdirSync(stateDir, { recursive: true, mode: 0o700 });
@@ -123,7 +125,14 @@ async function openSessionDashboard(options = {}) {
     throw new Error('Unsafe dashboard session directory');
   }
   // A stable session hash is global across workflow aliases and working directories.
-  const marker = path.join(stateDir, crypto.createHash('sha256').update(session).digest('hex') + '.json');
+  let marker = path.join(stateDir, crypto.createHash('sha256').update(session).digest('hex') + '.json');
+  // Older runtimes kept failed attempts permanently. Use a separate exclusive
+  // retry marker, preserving the old record without racing to delete it.
+  try {
+    if (fs.lstatSync(marker).size > 65536) throw new Error('Oversized session marker');
+    const previous = JSON.parse(require('./file-safety').safeReadTextFile(marker, stateDir).content);
+    if (['unavailable', 'browser-unavailable'].includes(previous.status)) marker += '.retry';
+  } catch (_) { /* Missing or still-in-progress marker. */ }
   let fd;
   try { fd = fs.openSync(marker, 'wx', 0o600); }
   catch (error) { if (error.code !== 'EEXIST') throw error; }
@@ -148,8 +157,13 @@ async function openSessionDashboard(options = {}) {
   }
   if (warnings.length) result.warnings = warnings;
   if (fd !== undefined) {
-    try { fs.writeFileSync(fd, JSON.stringify({ ...result, attempted_at: new Date().toISOString() })); }
-    finally { fs.closeSync(fd); }
+    try { if (result.status === 'opened') fs.writeFileSync(fd, JSON.stringify({ ...result, attempted_at: new Date().toISOString() })); }
+    finally {
+      fs.closeSync(fd);
+      // A failed attempt must not consume this session's one successful opening.
+      // Only this exclusive marker owner removes its marker.
+      if (result.status !== 'opened') fs.unlinkSync(marker);
+    }
   }
   return result;
 }

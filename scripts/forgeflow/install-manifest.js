@@ -28,6 +28,7 @@ const DASHBOARD_RUNTIME = new Set([
   'services/agent-chat/public/index.html', 'services/agent-chat/package.json', 'services/agent-chat/package-lock.json',
 ]);
 const RUNTIME_HELPERS = [
+  'scripts/forgeflow/ember-setup.js',
   'scripts/forgeflow/task-store.js',
   'scripts/forgeflow/task.js',
   'scripts/forgeflow/task-evaluation.js',

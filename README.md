@@ -162,6 +162,8 @@ ForgeFlow chooses agents according to the task. A small change need not invoke t
 
 ## Dashboard
 
+Installers now prepare Ember dependencies and Claude’s prompt hook automatically, preserving existing settings. Setup failures are non-blocking and include repair instructions. Use the [dashboard readiness check](docs/wiki/Dashboard.md#installation-and-startup-checks) when moving to another computer.
+
 The workshop balances **what is happening now**, **what needs attention**, and **how recorded review outcomes change over time**.
 
 | Area | What it shows |

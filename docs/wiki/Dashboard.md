@@ -6,6 +6,50 @@ Start with the [annotated visual guide](../user-guide.html#dashboard) or [printa
 
 ![ForgeFlow workshop with Ember, project health, review totals, trends, and live activity](../images/forgeflow-workshop.png)
 
+
+## Installation and startup checks
+
+The template installer and updater prepare Ember for both Claude and Codex. They
+install the services' locked dependencies using `npm ci --ignore-scripts` and
+report setup problems without failing the core Forgeflow installation. Updates
+also repair Ember setup when the managed source version is already current.
+When upgrading with an older updater that predates Ember setup, run the newly
+installed setup helper below without `--check` after the upgrade.
+
+Claude setup adds the installed lean activation hook to `UserPromptSubmit` while
+preserving existing hooks and settings. Changed settings are backed up under the
+runtime home's `forgeflow/backups/settings-before-ember-<hash>.json`. Other hooks
+and status-line settings remain user-managed. Codex setup checks the installed
+workflow entry point; it does not change Codex configuration. Restart the host to
+load changed hooks or skills. Managed-file rollback does not restore settings;
+the separate settings backup is available for manual recovery.
+
+Run a read-only readiness check using the installed runtime path:
+
+```sh
+node ~/.claude/forgeflow/scripts/forgeflow/ember-setup.js --target claude --check
+node ~/.codex/forgeflow/scripts/forgeflow/ember-setup.js --target codex --check
+```
+
+Omit `--check` to repair dependencies and the Claude prompt hook. Use `--home` for
+a nonstandard runtime home and `--dry-run` for a setup preview without writes or
+package installation. Core workflows and local memory remain usable when npm,
+the network, a desktop session, or the dashboard is unavailable.
+
+The check reports missing dependencies/hooks, desktop availability, and ports
+4000, 4001 and 4003. When available, OS diagnostics identify an occupying process
+and PID. Ports stay consistent across services and clients; Ember never kills
+another application or silently selects a different port. Inspect the owner and
+obtain permission before stopping it, then retry the workflow. If browser opening
+fails, use http://127.0.0.1:4003/ directly.
+
+Set `FORGEFLOW_DASHBOARD_AUTO_OPEN=off` in the host environment to opt out. Claude's
+settings environment and `disableAllHooks` are also respected during setup.
+Headless, CI and SSH sessions skip browser opening. Failed service/browser attempts
+can retry in the same session; only a successful opening consumes the automatic
+opening for that session. A hook invocation requires an explicit supported workflow
+command and a host session ID.
+
 ## Opening the workshop
 
 The first eligible ForgeFlow workflow invocation in a desktop session starts or reuses the dashboard and activity service, reports the phase, and opens your browser once. Later invocations ensure the services and update activity without opening another tab, even if you closed the first one.
