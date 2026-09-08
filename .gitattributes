@@ -1,0 +1,2 @@
+# Preserve the pinned upstream distribution's mixed indentation verbatim.
+scripts/forgeflow/vendor/js-yaml/js-yaml.js whitespace=-space-before-tab
