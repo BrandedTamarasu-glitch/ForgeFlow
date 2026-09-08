@@ -301,6 +301,7 @@ function ensureMemoryIndex(root, enabled) {
   try {
     assertSafeDirectory(projectDir);
     const result = buildMemoryIndex({
+      root,
       projectDir,
       out: defaultMemoryIndexPath(root),
     });

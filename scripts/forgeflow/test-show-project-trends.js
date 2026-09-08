@@ -179,7 +179,15 @@ fs.writeFileSync(path.join(latestDir, 'failure-digest.md'), [
   '',
 ].join('\n'));
 
-const result = showProjectTrends({ root, projectDir });
+// Budget discovery for this fixture must not use the developer's checkout policy.
+const originalDirectory = process.cwd();
+let result;
+try {
+  process.chdir(root);
+  result = showProjectTrends({ root, projectDir });
+} finally {
+  process.chdir(originalDirectory);
+}
 const markdown = renderMarkdown(result);
 const splitIndex = markdown.indexOf('Split: Run a narrower context pack');
 const budgetIndex = markdown.indexOf('Rebuild context with a smaller --files list');

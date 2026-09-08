@@ -46,6 +46,7 @@ For a small task, start with `/quick` or `$quick`. For an uncertain direction, s
 - [User Paths](User-Paths.md), [Workflow Commands](Workflow-Commands.md), [Agent Roles](Agent-Roles.md)
 - [Review Routing](Review-Routing.md), [Research Divergence](Research-Divergence.md)
 - [Context Intelligence](Context-Intelligence.md), [Context Budget Examples](Context-Budget-Examples.md)
+- [Optional Obsidian Vault Memory](Vault-Memory.md)
 - [Implementation Notes](Implementation-Notes.md), [Project Learnings](Project-Learnings.md), [User Profile Guidance](User-Profile-Guidance.md)
 - [Lean Quick Path](Lean-Quick-Path.md), [Lean Evidence](Lean-Evidence.md), [Lean Portability](Lean-Portability.md), [Telemetry Readiness](Telemetry-Readiness.md)
 

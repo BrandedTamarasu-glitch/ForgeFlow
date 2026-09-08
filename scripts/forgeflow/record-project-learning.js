@@ -223,18 +223,24 @@ function loadEntries(opts) {
 }
 
 function recordProjectLearning(opts = {}) {
-  const root = opts.root || repoRoot();
+  const inferredRoot = opts.projectDir && path.basename(path.dirname(opts.projectDir)) === '.forgeflow'
+    ? path.dirname(path.dirname(opts.projectDir)) : repoRoot();
+  const root = path.resolve(opts.root || inferredRoot);
   const projectDir = opts.projectDir || defaultProjectDir(root);
   const out = path.join(projectDir, 'project-learning-candidates.jsonl');
   const entries = Array.isArray(opts.inputEntries) ? opts.inputEntries.map(normalizeEntry) : loadEntries(opts);
+  const vault = [];
   for (const entry of entries) {
     if (entry.provenance_request) {
       entry.provenance = require('./task-memory').captureProvenance(root, entry.provenance_request);
       delete entry.provenance_request;
     }
     appendFileSafe(out, `${JSON.stringify(entry)}\n`);
+    const published = path.resolve(projectDir) === defaultProjectDir(root)
+      ? require('./vault-memory').publishLearning(root, entry) : { status: 'disabled' };
+    if (published.status !== 'disabled') vault.push(published);
   }
-  return { file: out, entries: entries.length };
+  return { file: out, entries: entries.length, ...(vault.length ? { vault } : {}) };
 }
 
 function main() {
@@ -249,6 +255,7 @@ function main() {
   } else {
     console.log(`Project learning candidates updated: ${result.file}`);
     console.log(`Entries appended: ${result.entries}`);
+    for (const item of result.vault || []) console.log(`Vault: ${item.status}${item.warning ? ` (${item.warning})` : ''}`);
   }
 }
 

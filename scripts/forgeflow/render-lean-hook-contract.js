@@ -68,7 +68,9 @@ function buildLeanHookContract(opts = {}) {
     USERPROFILE: path.join(temp, 'home'),
   };
   const checks = [];
-  const session = runHook(root, { hook_event_name: 'SessionStart', cwd: root }, env);
+  // Probe the hook in an isolated project so a real project's policy cannot
+  // override the fixture's expected default profile.
+  const session = runHook(root, { hook_event_name: 'SessionStart', cwd: temp }, env);
   const sessionStatus = classifySpawn(session);
   const sessionOutput = parseOutput(session.stdout);
   checks.push({
@@ -76,7 +78,7 @@ function buildLeanHookContract(opts = {}) {
     status: sessionStatus === 'environment-blocked' ? 'warn' : (sessionStatus === 'pass' && sessionOutput && sessionOutput.systemMessage === 'LEAN:lite' ? 'pass' : 'fail'),
     detail: sessionStatus === 'environment-blocked' ? 'process spawn blocked by local sandbox' : (session.stderr || session.stdout || 'no output'),
   });
-  const prompt = runHook(root, { hook_event_name: 'UserPromptSubmit', prompt: '/forgeflow-lean-mode --profile ultra' }, env);
+  const prompt = runHook(root, { hook_event_name: 'UserPromptSubmit', cwd: temp, prompt: '/forgeflow-lean-mode --profile ultra' }, env);
   const promptStatus = classifySpawn(prompt);
   const promptOutput = parseOutput(prompt.stdout);
   checks.push({

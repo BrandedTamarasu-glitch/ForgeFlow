@@ -213,6 +213,25 @@ For Claude workflows, `/forgeflow-trends --refresh` refreshes project guidance, 
 
 See [context intelligence](docs/wiki/Context-Intelligence.md), [project learnings](docs/wiki/Project-Learnings.md), [implementation notes](docs/wiki/Implementation-Notes.md), and [user profile guidance](docs/wiki/User-Profile-Guidance.md).
 
+Forgeflow stores memory locally by default; Obsidian is not required. For the same project on multiple computers, optionally [connect an Obsidian vault](docs/wiki/Vault-Memory.md) to share curated notes. Local memory continues working if the vault is unavailable. Forgeflow retrieves relevant shared notes and checks referenced source files; your vault sync service handles device transfer.
+
+### Optional Obsidian memory sharing
+
+- Edit ordinary YAML properties, rename notes, and keep personal annotations separate from shared guidance.
+- Retain failed memory publications in a local queue and retry them without duplicating revisions.
+- Generate a project home page and curated handoffs for continuing on another computer.
+- Withhold stale or conflicting shared guidance; transferred notes never count as current test evidence.
+
+Opt in separately for each checkout, using the same project ID on both computers:
+
+```bash
+node scripts/forgeflow/vault-memory.js connect --vault /path/to/vault --project-id my-project --publish-learnings
+node scripts/forgeflow/vault-memory.js status
+node scripts/forgeflow/vault-memory.js home
+```
+
+Use the installed helper path when working outside the ForgeFlow source checkout. No Obsidian plugin or account integration is required. See the [vault guide](docs/wiki/Vault-Memory.md) for note and handoff inputs, explicit retry, disconnect, and recovery limits.
+
 ## Local data and sharing
 
 The dashboard and saved workflow evidence are local. Metrics use `~/.claude/projects/` and `~/.codex/projects/` by default; configured runtime-home and metrics-root overrides are respected. Dashboard controls inspect, filter, refresh, expand, or copy commands. They do not execute the suggested fixes.

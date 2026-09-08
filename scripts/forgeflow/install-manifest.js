@@ -6,6 +6,9 @@ const CODEX_INVENTORY_SOURCE = 'scripts/forgeflow/installed-codex-inventory.json
 
 const SCRIPT_EXTENSIONS = new Set(['.js', '.sh']);
 const STATIC_FILES = new Set([
+  'scripts/forgeflow/vendor/js-yaml/js-yaml.js',
+  'scripts/forgeflow/vendor/js-yaml/LICENSE',
+  'scripts/forgeflow/vendor/js-yaml/README.md',
   'templates/ship-presentation.html',
   'templates/forgeflow-budget.json',
   'hooks/forgeflow-gate.js',
@@ -29,6 +32,10 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/task.js',
   'scripts/forgeflow/task-evaluation.js',
   'scripts/forgeflow/task-memory.js',
+  'scripts/forgeflow/vault-memory.js',
+  'scripts/forgeflow/vault-format.js',
+  'scripts/forgeflow/vault-outbox.js',
+  'scripts/forgeflow/vault-project.js',
   'scripts/forgeflow/task-maintenance.js',
   'scripts/forgeflow/fleet-environment.js',
   'scripts/forgeflow/advise-context.js',
@@ -334,6 +341,7 @@ function destinationFor(source, home = '~/.claude') {
   if (/^templates\/[^/]+$/.test(file)) return path.posix.join(home, file);
   if (/^hooks\/[^/]+$/.test(file)) return path.posix.join(home, file);
   if (DASHBOARD_RUNTIME.has(file)) return path.posix.join(home, 'forgeflow', file);
+  if (file.startsWith('scripts/forgeflow/vendor/js-yaml/')) return path.posix.join(home, 'forgeflow', file);
   if (/^scripts\/forgeflow\/[^/]+$/.test(file)) {
     return path.posix.join(home, 'forgeflow', file);
   }

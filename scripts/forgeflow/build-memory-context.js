@@ -162,6 +162,7 @@ function buildMemoryContext(opts = {}) {
   const files = readFileList(opts.filesPath);
   const keys = keywordList(opts.query || '', files);
   const indexResult = buildMemoryIndex({
+    root,
     projectDir,
     out: opts.indexOut || path.join(projectDir, 'index', 'memory-index.json'),
   });

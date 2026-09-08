@@ -9,6 +9,7 @@ const { recordProjectLearning, projectLearningId } = require('./record-project-l
 const { buildMemoryIndex } = require('./index-memory');
 const { selectMemoryRecords } = require('./memory-retrieval');
 const { createTask } = require('./task-store');
+const { connect, readVaultMemory } = require('./vault-memory');
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-task-memory-'));
 const projectDir = path.join(root, '.forgeflow', path.basename(root));
@@ -65,6 +66,14 @@ try {
   recordProjectLearning({ root, projectDir, inputEntries: [replacement] });
   recordTaskMemoryFeedback({ ...feedbackOptions, outcome: 'corrected', correctionId: projectLearningId(replacement) });
   assert.equal(select().diagnostics.excluded_feedback, 1);
+  const vault = path.join(root, 'vault');
+  fs.mkdirSync(vault);
+  connect({ root, vault, projectId: 'feedback-test', publishLearnings: true });
+  recordProjectLearning({ root, projectDir, inputEntries: [legacy] });
+  assert.equal(readVaultMemory(root).records[0].lifecycle, 'verify');
+  const sharedFeedback = recordTaskMemoryFeedback({ ...feedbackOptions, learningId: projectLearningId(legacy), outcome: 'contradicted' });
+  assert.equal(sharedFeedback.vault.status, 'published');
+  assert.equal(readVaultMemory(root).records[0].lifecycle, 'stale', 'explicit contradiction retires the shared learning too');
   console.log('task memory: scoped provenance, stale evidence, legacy unknowns, and explicit feedback passed');
 } finally {
   process.chdir(previousCwd);

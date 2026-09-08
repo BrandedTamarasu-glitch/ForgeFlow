@@ -7,6 +7,7 @@ const { sourceClass } = require('./memory-retrieval');
 const { candidateStatus, conflictedLearningIds, resolvedCandidates, incorrectOutcomeLearningIds } = require('./project-learning-conflicts');
 const { projectLearningId } = require('./record-project-learning');
 const { applyTaskMemoryControls } = require('./task-memory');
+const { readVaultMemory } = require('./vault-memory');
 
 const DEFAULT_MAX_TEXT_CHARS = 320;
 
@@ -183,7 +184,7 @@ function indexJsonl(source, content, maxTextChars, metadata = {}) {
 }
 
 function buildMemoryIndex(opts = {}) {
-  const root = repoRoot();
+  const root = opts.root || repoRoot();
   const projectDir = opts.projectDir || defaultProjectDir(root);
   const out = opts.out || defaultOut(projectDir);
   const records = [];
@@ -213,11 +214,16 @@ function buildMemoryIndex(opts = {}) {
     records.push(...indexed);
   }
 
+  const vault = path.resolve(projectDir) === defaultProjectDir(root)
+    ? readVaultMemory(root) : { status: 'disconnected', records: [] };
+  records.push(...vault.records);
+  for (const record of vault.records) sources.push({ path: record.source, bytes: Buffer.byteLength(record.text), mtime_ms: record.source_mtime_ms, source_class: record.source_class });
   const index = {
     schema_version: '2',
     generated_at: new Date().toISOString(),
     project_dir: path.relative(root, projectDir),
     sources,
+    vault: { status: vault.status, warning: vault.warning || null },
     records: applyTaskMemoryControls(records, { root, projectDir }),
   };
 

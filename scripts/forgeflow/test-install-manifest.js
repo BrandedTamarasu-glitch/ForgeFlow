@@ -46,6 +46,14 @@ assert.throws(() => assertSafeDestination(path.join(dangling, 'child'), safeHome
 assert.equal(manifestEntry('.agents/skills/audit/../../outside', safeHome, 'codex'), null);
 
 const checks = [
+  ...['js-yaml.js', 'LICENSE', 'README.md'].flatMap(name => {
+    const source = `scripts/forgeflow/vendor/js-yaml/${name}`;
+    return [
+      [`vendored YAML ${name} is managed`, isManagedSource(source)],
+      [`vendored YAML ${name} Claude destination`, destinationFor(source, home) === `${home}/forgeflow/${source}`],
+      [`vendored YAML ${name} Codex destination`, manifestEntry(source, home, 'codex').destination === `${home}/forgeflow/${source}`],
+    ];
+  }),
   ['agent managed', isManagedSource('agents/smith-review.md')],
   ['custom agent preserve', shouldPreserveDestination('agents/custom-local.md')],
   ['command subdir destination', destinationFor('commands/agent-chat/on.md', home) === '/tmp/claude-home/commands/agent-chat/on.md'],

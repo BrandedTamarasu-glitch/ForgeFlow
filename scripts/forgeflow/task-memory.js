@@ -90,6 +90,10 @@ function recordTaskMemoryFeedback(options) {
   if (outcome === 'corrected' && (!correctionId || correctionId === learningId || !candidates.has(correctionId))) throw new Error('Corrected feedback requires an existing distinct replacement learning id');
   const record = { schema_version: '1', ts: new Date().toISOString(), task_id: taskId, learning_id: learningId, outcome, correction_id: correctionId || null, causal_usefulness: null };
   appendFileSafe(path.join(projectDir, 'task-memory-feedback.jsonl'), `${JSON.stringify(record)}\n`);
+  if (outcome === 'contradicted' || outcome === 'corrected') {
+    const vault = require('./vault-memory').publishLearning(root, { ...candidate, id: learningId, status: 'stale', provenance: null });
+    if (vault.status !== 'disabled') record.vault = vault;
+  }
   return record;
 }
 

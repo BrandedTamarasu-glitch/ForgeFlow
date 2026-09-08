@@ -23,6 +23,8 @@ function runGit(args, cwd) {
 const { buildEfficiencyGapPlan, parseArgs, renderMarkdown } = require('./render-efficiency-gap-plan');
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-efficiency-gap-plan-'));
+// Budget discovery must use this fixture, not the developer's checkout policy.
+process.chdir(root);
 const home = path.join(root, 'home');
 const metricsRoot = path.join(home, '.claude', 'projects');
 const patternsDir = path.join(root, 'forgeflow-patterns');

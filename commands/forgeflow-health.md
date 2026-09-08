@@ -59,6 +59,7 @@ EXPECTED_HOOKS=(forgeflow-gate forgeflow-context-monitor forgeflow-lean-activate
 EXPECTED_TEMPLATES=(ship-presentation.html)
 EXPECTED_RUNTIME_HELPERS=(
   task-store.js task.js task-evaluation.js task-memory.js task-maintenance.js fleet-environment.js
+  vault-memory.js vault-format.js vault-outbox.js vault-project.js
   advise-context.js advise-noisy-command.js agent-chat-off.sh agent-chat-on.sh open-session-dashboard.js apply-review-autofix-proposal.js build-code-topology.js build-context-pack.js build-context-wave.js build-failure-digest.js build-memory-context.js build-project-intelligence.js build-project-operating-model.js build-review-autofix-proposal.js
   build-scope-manifest.js capture-command-output.js check-agent-drift.js check-codex-agent-drift.js check-context-contract.js check-context-budget.js check-implementation-notes.js check-profile-compliance.js check-project-learnings.js check-review-evidence-schema.js check-user-profile.js classify-review-auto.js command-args.js command-interface-evidence.js command-wrapper-contract.js context-telemetry.js learning-signal-policy.js lean-markers.js
   compact-command-output.js command-interface-learning.js correct-project-learning.js record-command-interface-observation.js record-command-interface-learning-outcome.js render-command-interface-learning-status.js
