@@ -80,7 +80,12 @@ const opts = parseArgs(['--root', '.', '--project-dir', '.forgeflow/Demo', '--ta
 
 const checks = [
   ['detects native date candidate', dateDecision.reuse_candidates.some((item) => item.kind === 'native' && item.candidate.includes('date'))],
-  ['detects installed dependencies', reuseCandidates('validate schema', pkg, {}).some((item) => item.candidate.includes('zod'))],
+  ['detects task-named installed dependencies', reuseCandidates('Validate the schema with zod.', pkg, {}).some((item) => item.candidate === 'zod')],
+  ['does not recommend unrelated installed packages or invocations', reuseCandidates('Reject missing CLI option values', { ...pkg, dependencies: ['ws'] }, artifacts).length === 0],
+  ['does not infer a dependency from a substring', reuseCandidates('Update news rendering', { ...pkg, dependencies: ['ws'] }, {}).length === 0],
+  ['does not infer an invocation from a substring', reuseCandidates('Run npm testing diagnostics', pkg, { invocation: { hints: [{ command: 'npm test' }] } }).length === 0],
+  ['preserves scoped package names', reuseCandidates('Use @scope/parser for this task.', { ...pkg, dependencies: ['@scope/parser'] }, {}).some((item) => item.candidate === '@scope/parser')],
+  ['filters invocation hints before limiting', reuseCandidates('Run node scripts/check-cli.js', pkg, { invocation: { invocation_hints: ['a', 'b', 'c', 'node scripts/check-cli.js'].map((suggested_invocation) => ({ suggested_invocation })) } }).some((item) => item.candidate === 'node scripts/check-cli.js')],
   ['uses simplify-first decision', dateDecision.decision === 'simplify-first' && dateDecision.next_command === '/consult'],
   ['emits implementation note candidate', dateDecision.implementation_note_candidate && dateDecision.implementation_note_candidate.category === 'tradeoff' && dateDecision.implementation_note_candidate.note.includes('Known ceiling') && dateDecision.implementation_note_candidate.why.includes('Upgrade trigger')],
   ['keeps safety boundaries', authDecision.do_not_simplify.includes('authentication and authorization behavior') && forbiddenSimplifications('money ledger').includes('money correctness and concurrency')],

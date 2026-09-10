@@ -11,6 +11,7 @@ function spawnSync(command, args, options) {
 }
 const {
   buildContextPack,
+  buildMemoryHits,
   buildLatestInsights,
   buildLatestInsightsResult,
   compactProjectCodeMap,
@@ -30,6 +31,22 @@ process.on('exit', () => {
   else process.env.FORGEFLOW_CONFIG_HOME = previousConfigHome;
   fs.rmSync(fixtureHome, { recursive: true, force: true });
 });
+const focusedRoot = path.join(fixtureHome, 'Focused');
+const focusedProject = path.join(focusedRoot, '.forgeflow', 'Focused');
+fs.mkdirSync(focusedProject, { recursive: true });
+const focusedMemory = '# Notes\n- scripts forgeflow override selected unrelated deployment history.\n- Missing values in unrelated deployment history need repair.\n- parser must reject missing values before writing output.\n';
+fs.writeFileSync(path.join(focusedProject, 'current-plan.md'), focusedMemory);
+const focusedIndex = path.join(focusedProject, 'memory-index.json');
+fs.writeFileSync(focusedIndex, JSON.stringify({ records: [
+  { source: 'current-plan.md', line: 2, text: 'scripts forgeflow override selected unrelated deployment history.' },
+  { source: 'current-plan.md', line: 3, text: 'Missing values in unrelated deployment history need repair.' },
+  { source: 'current-plan.md', line: 4, text: 'parser must reject missing values before writing output.' },
+] }));
+for (const index of [null, focusedIndex]) {
+  const hits = buildMemoryHits(focusedRoot, ['scripts/forgeflow/parser.js'], { reasons: ['override selected'] }, 'Reject missing CLI values', 8000, index);
+  assert(hits.includes('parser must reject missing values before writing output.'), 'task-relevant memory must remain');
+  assert(!hits.includes('unrelated deployment history'), 'directory names and route boilerplate must not select unrelated memory');
+}
 const tracked = spawnSync('git', ['ls-files', '-z'], { cwd: sourceRoot, encoding: 'utf8' }).stdout.split('\0').filter(Boolean);
 for (const file of tracked) {
   if (file.startsWith('.forgeflow/')) continue;
@@ -721,7 +738,7 @@ const checks = [
   ['code topology summary has section count', Number.isInteger(synthesis.code_topology_summary.summary.sections)],
   ['code topology summary has changed section count', Number.isInteger(synthesis.code_topology_summary.summary.changed_sections)],
   ['code topology summary has section ranges', synthesis.code_topology_summary.changed_file_neighbors.every((item) => (item.sections || []).every((section) => Number.isInteger(section.end_line)))],
-  ['agent packet includes latest insights', wardenPacket.includes('## Latest Insights')],
+  ['focused packet references broad insights without duplicating history', wardenPacket.includes('## Latest Insights') && wardenPacket.includes(synthesis.latest_insights_path) && wardenPacket.includes('task-matching records are in Memory Hits')],
   ['agent packet includes user profile guidance', wardenPacket.includes('## User Profile Guidance') && userProfile.includes('Forgeflow User Profile')],
   ['agent packet includes operating model guidance', wardenPacket.includes('## Project Operating Model') && projectOperatingModel.includes('High-care files:') && projectOperatingModel.includes('Proof boundary:') && wardenPacket.includes('project-operating-model')],
   ['agent packet includes architecture intelligence', wardenPacket.includes('## Architecture Intelligence') && wardenPacket.includes('Proof boundary: Advisory static architecture') && wardenPacket.includes('src/auth/session.ts') && wardenPacket.includes('run hint: npm test')],

@@ -252,22 +252,26 @@ function md(value) {
   return String(value || '').replace(/([\\`*_{}\[\]()#+\-.!|>])/g, '\\$1');
 }
 
-function keywords(files, route, task) {
+function keywords(files, task) {
   const words = new Set();
   for (const file of files) {
-    for (const part of file.split(/[^A-Za-z0-9]+/)) {
+    for (const part of path.parse(file).name.split(/[^A-Za-z0-9]+/)) {
       if (part.length >= 4) words.add(part.toLowerCase());
-    }
-  }
-  for (const reason of route.reasons || []) {
-    for (const part of reason.split(/[^A-Za-z0-9]+/)) {
-      if (part.length >= 5) words.add(part.toLowerCase());
     }
   }
   for (const part of String(task || '').split(/[^A-Za-z0-9]+/)) {
     if (part.length >= 4) words.add(part.toLowerCase());
   }
   return [...words].slice(0, 80);
+}
+
+function memorySelectionOptions(root, files) {
+  return {
+    projectDir: defaultProjectDir(root),
+    // A generic task word alone does not connect history to the scoped code.
+    // Preserve compound module names; strip only the test companion prefix.
+    scopeTerms: files.map((file) => path.parse(file).name.replace(/^test[-_.]/, '')),
+  };
 }
 
 function memoryFiles(root) {
@@ -320,8 +324,8 @@ function buildMemoryHitsFromIndex(root, indexPath, files, route, task, maxChars)
     return null;
   }
   if (!index || !Array.isArray(index.records)) return null;
-  const keys = keywords(files, route, task);
-  const selection = selectMemoryRecords(index.records, keys.join(' '), { projectDir: defaultProjectDir(root) });
+  const keys = keywords(files, task);
+  const selection = selectMemoryRecords(index.records, keys.join(' '), memorySelectionOptions(root, files));
   return truncate(renderMemorySelection(selection, {
     title: '# Memory Hits',
     indexLabel: `Index: ${path.relative(root, indexPath)}`,
@@ -334,7 +338,7 @@ function memoryRetrievalDiagnostics(root, indexPath, files, route, task) {
     try {
       const index = readJson(indexPath, defaultProjectDir(root));
       if (index && Array.isArray(index.records)) {
-        return selectMemoryRecords(index.records, keywords(files, route, task).join(' '), { projectDir: defaultProjectDir(root) }).diagnostics;
+        return selectMemoryRecords(index.records, keywords(files, task).join(' '), memorySelectionOptions(root, files)).diagnostics;
       }
     } catch (_err) {
       // Fall through to the safe direct-read fallback.
@@ -358,7 +362,7 @@ function buildFallbackMemorySelection(root, files, route, task) {
   } catch (_err) {
     return null;
   }
-  const keys = keywords(files, route, task);
+  const keys = keywords(files, task);
   const records = [];
   for (const file of memoryFiles(root)) {
     if (!fs.existsSync(file)) continue;
@@ -377,7 +381,7 @@ function buildFallbackMemorySelection(root, files, route, task) {
       ? indexJsonl(rel, source.content, 0, metadata)
       : indexMarkdown(rel, source.content, 0, metadata)));
   }
-  return { keys, selection: selectMemoryRecords(records, keys.join(' '), { projectDir }) };
+  return { keys, selection: selectMemoryRecords(records, keys.join(' '), memorySelectionOptions(root, files)) };
 }
 
 function buildMemoryHits(root, files, route, task, maxChars, indexPath = null) {
@@ -1324,6 +1328,11 @@ function buildContextPack(opts) {
   const topologyContext = buildTopologyContext(root, outDir, route.files);
   const latestInsightsResult = buildLatestInsightsResult(root, 5000, { codeMap: topologyContext ? topologyContext.topology : undefined });
   const latestInsights = latestInsightsResult.markdown;
+  // The rollup is project-wide. Focused packets already retrieve matching memory;
+  // retain the full rollup as an artifact instead of injecting unrelated history.
+  const packetInsights = effectiveOpts.task && latestInsightsResult.report.status === 'injected'
+    ? `Project-wide history: ${path.relative(root, path.join(outDir, 'latest-insights.md'))}. Read it if the task needs broader context; task-matching records are in Memory Hits.`
+    : latestInsights;
   const userProfileResult = compactUserProfile({ root, projectDir: defaultProjectDir(root) }, 3500);
   const userProfile = userProfileResult.markdown;
   const projectOperatingModel = readProjectOperatingModel(root);
@@ -1362,7 +1371,7 @@ function buildContextPack(opts) {
   const contextContracts = Object.fromEntries(agents.map((agent) => [agent, contextContractForAgent(agent)]));
 
   for (const agent of agents) {
-    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, userProfile, projectOperatingModelMarkdown, architectureIntelligenceMarkdown, leanGuidanceMarkdown, latestFailure.markdown, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, contextContracts[agent], effectiveOpts.task);
+    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, packetInsights, userProfile, projectOperatingModelMarkdown, architectureIntelligenceMarkdown, leanGuidanceMarkdown, latestFailure.markdown, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, contextContracts[agent], effectiveOpts.task);
     const file = path.join(packetDir, `${agent}.md`);
     writeFileSafe(file, content);
     packets[agent] = path.relative(root, file);

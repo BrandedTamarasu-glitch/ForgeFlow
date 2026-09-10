@@ -16,6 +16,16 @@ function ids(selection) {
   return selection.selected.map((record) => record.id);
 }
 
+const scopedRecords = [
+  { id: 'relevant', text: 'Session cache must reject missing values.', lifecycle: 'active' },
+  { id: 'unrelated', text: 'Dashboard must reject missing values.', lifecycle: 'active' },
+  { id: 'stale', text: 'Session cache missing values old guidance.', lifecycle: 'superseded' },
+];
+const scopedSelection = selectMemoryRecords(scopedRecords, 'missing values', { scopeTerms: ['session-cache'] });
+assert.deepStrictEqual(ids(scopedSelection), ['relevant'], 'scope preserves module guidance and rejects generic task overlap');
+assert.strictEqual(scopedSelection.diagnostics.excluded_inactive, 1, 'scope must retain lifecycle controls');
+assert.strictEqual(selectMemoryRecords(scopedRecords, 'missing values').selected.length, 2, 'scope is opt-in for other memory consumers');
+
 function metricReport(selection, rendered) {
   const selected = selection.selected;
   const normalized = selected.map((record) => record.normalized_text);

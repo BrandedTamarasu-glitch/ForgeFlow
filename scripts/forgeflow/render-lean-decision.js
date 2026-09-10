@@ -84,6 +84,11 @@ function includesAny(text, words) {
   return words.some((word) => lower.includes(word));
 }
 
+function mentionsReference(text, reference) {
+  const escaped = reference.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(^|[^a-z0-9@/_-])${escaped}($|[^a-z0-9@/_-])`, 'i').test(text);
+}
+
 function reuseCandidates(text, pkg, artifacts) {
   const candidates = [];
   const add = (kind, candidate, reason) => candidates.push({ kind, candidate, reason });
@@ -93,11 +98,17 @@ function reuseCandidates(text, pkg, artifacts) {
   if (includesAny(text, ['cache', 'memoize'])) add('stdlib', 'language cache/memoization helper', 'Prefer stdlib memoization or existing infrastructure before a custom cache class.');
   if (includesAny(text, ['rate limit', 'throttle'])) add('installed-dependency', 'existing web framework or gateway middleware', 'Prefer platform/framework rate limiting before custom request accounting.');
   if (includesAny(text, ['schema', 'validate', 'validation'])) add('project-pattern', 'existing schema or validation helper', 'Reuse project validation helpers before adding a new validator abstraction.');
-  if (pkg.dependencies.length) add('installed-dependency', pkg.dependencies.slice(0, 8).join(', '), 'Check installed dependencies before adding a new package.');
-  const hints = artifacts.invocation && Array.isArray(artifacts.invocation.hints) ? artifacts.invocation.hints : [];
-  for (const hint of hints.slice(0, 3)) {
-    const label = hint.command || hint.suggested_invocation || hint.file || hint.path;
-    if (label) add('project-pattern', label, 'Existing invocation hint may show how this project already solves adjacent work.');
+  for (const dependency of pkg.dependencies) {
+    if (mentionsReference(text, dependency)) {
+      add('installed-dependency', dependency, 'The task names this installed dependency; check its existing use before adding a package.');
+    }
+  }
+  const hints = artifacts.invocation?.invocation_hints || artifacts.invocation?.hints || [];
+  const labels = (Array.isArray(hints) ? hints : [])
+    .map((hint) => hint.command || hint.suggested_invocation || hint.file || hint.path)
+    .filter((label) => label && mentionsReference(text, label));
+  for (const label of labels.slice(0, 3)) {
+    add('project-pattern', label, 'The task references this existing invocation.');
   }
   return candidates.slice(0, 8);
 }

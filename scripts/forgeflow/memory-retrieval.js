@@ -84,8 +84,10 @@ function recordLabel(record) {
   return 'verify';
 }
 
-function matches(record, keys) {
+function matches(record, keys, scopeTerms = []) {
   const haystack = `${record.text || ''} ${(record.keywords || []).join(' ')}`.toLowerCase();
+  const scopeText = ` ${haystack.replace(/[^a-z0-9]+/g, ' ')} `;
+  if (scopeTerms.length && !scopeTerms.some((term) => scopeText.includes(` ${term.toLowerCase().replace(/[^a-z0-9]+/g, ' ')} `))) return [];
   return keys.filter((key) => haystack.includes(key));
 }
 
@@ -146,7 +148,7 @@ function selectMemoryRecords(records, query, options = {}) {
       continue;
     }
     diagnostics.eligible += 1;
-    const queryMatches = matches(value, keys);
+    const queryMatches = matches(value, keys, options.scopeTerms);
     if (queryMatches.length === 0) {
       diagnostics.excluded_no_match += 1;
       continue;
@@ -193,7 +195,7 @@ function selectMemoryRecords(records, query, options = {}) {
   const selected = retained.slice(0, maxHits);
   diagnostics.suppressed_max_hits = retained.length - selected.length;
   diagnostics.selected_count = selected.length;
-  return { selected, diagnostics, keywords: keys, ranking_policy: MEMORY_RANKING_POLICY };
+  return { selected, diagnostics, keywords: keys, scope_terms: options.scopeTerms || [], ranking_policy: MEMORY_RANKING_POLICY };
 }
 
 function renderMemorySelection(selection, options = {}) {
@@ -206,6 +208,9 @@ function renderMemorySelection(selection, options = {}) {
   if (options.indexLabel) lines.push(`Index: ${options.indexLabel}`);
   const keys = selection && Array.isArray(selection.keywords) ? selection.keywords : [];
   lines.push(`Keywords: ${keys.join(', ') || '(none)'}`, '');
+  if (selection?.scope_terms?.length) {
+    lines.push(`Module scope: ${selection.scope_terms.join(', ')}. Notes without a scoped module reference are omitted; broader history remains in the project memory artifacts.`, '');
+  }
   const selected = selection && Array.isArray(selection.selected) ? selection.selected : [];
   for (const record of selected) {
     lines.push(`- ${record.source}:${record.line || 1} [${record.label || 'verify'}] [${record.kind || 'memory'}] [selected: ${record.selection_reason || 'ranked match'}] ${record.text || ''}`);
