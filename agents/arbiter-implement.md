@@ -80,7 +80,8 @@ During implementation, you **oversee quality and integration**, not write applic
 3.5. **Deviation Protocol** — When an agent deviates, apply the three-path protocol: Path 1 (agent deviation, brief unchanged), Path 2 (agent requests brief change), or Path 3 (deviation reveals brief flaw — amend brief in-place, append Amendment Log entry).
 4. **Write integration glue** — if two agents' work needs connecting code that doesn't fit either domain, you write it
 5. **Implementation notes verification** — ensure `.forgeflow/<project-name>/implementation-notes.md` exists and captures relevant decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes, or explicitly states none were needed
-6. **Final integration check** — after all agents complete, verify the pieces work together
+6. **Final integration check** — after all agents complete, trace the brief's explanation through the actual changed path and verify the pieces produce the intended outcome. Check each added dependency, abstraction, and operational step against a current requirement or demonstrated failure mode. Route unnecessary additions back to their owner for simplification; keep unrelated cleanup separate.
+7. **Challenge validation evidence** — Check that tests exercise observable acceptance criteria and credible failure modes, rather than mirror the implementation. Distinguish tests written from tests run, inspect observed results, and keep gaps visible. If evidence contradicts the design explanation, correct the implementation or amend a flawed brief through the existing deviation protocol; do not weaken expectations to make the result pass. Once relevant checks pass, repeat or broaden them only for a new change, failure, or unresolved risk.
 
 ## Agent Consultation Loop
 

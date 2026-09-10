@@ -13,12 +13,12 @@ allowed-tools:
   - AskUserQuestion
 ---
 <objective>
-Run the Forgeflow team in consultation mode before implementation begins. Each agent analyzes the task from their specialty, then Arbiter synthesizes an Implementation Brief that guides parallel implementation. If Compass's plan exists from a prior `/plan` run, it serves as the input for consultation.
+Run the relevant Forgeflow specialists in consultation mode before implementation begins. Selected agents analyze the task from their specialty, then Arbiter synthesizes an Implementation Brief that guides implementation. If Compass's plan exists from a prior `/plan` run, it serves as the input for consultation.
 
-The Forgeflow team: `smith-consult`, `warden-consult`, `lumen-consult`, `atlas-consult` (parallel) → `arbiter-consult` (synthesis).
+Available specialists: `smith-consult`, `warden-consult`, `lumen-consult`, `atlas-consult`. Select the relevant set, then use `arbiter-consult` for synthesis.
 
 > **Recommended flow:** `/discuss` → `/research` → `/plan` → `/consult` → `/implement` → `/review`
-> You can skip directly to `/consult` for smaller tasks, but the full flow produces better outcomes.
+> You can start directly at `/consult` for a bounded task. Use earlier phases when requirements, research, or planning decisions need them.
 </objective>
 
 <context>
@@ -91,6 +91,22 @@ If `${LEAN_DECISION_PATH}` exists, include it as compact advisory minimum-suffic
 If `SCOPE_MANIFEST_PATH` exists, use it as the first-pass file ownership map. Prefer the matching `${FORGEFLOW_DIR}/context/scope-packets/<lane>.md` packet for each agent prompt, and read only the files listed for each lane unless the packet marks a gap or an agent needs a precise extra source line. Estimated scope savings are written to `${FORGEFLOW_DIR}/context/scope-telemetry.json`.
 If `${HELPER_DIR}/check-context-budget.js` exists, run `${HELPER_DIR}/check-context-budget.js --root "$FORGEFLOW_DIR" --max-compact-tokens 16000 --warn-only --json` and surface warnings before spawning agents. The checker reads `.forgeflow-budget.json` from the repo root when present.
 
+## Step 1.4: Select the consultation team
+
+Choose the consultation team from the requested behavior, affected code, known risks, and unresolved decisions. File count, line count, helper lane labels, and the mere presence of an installed dependency are not enough to choose a team. Honor explicit requests for named specialists or the full team.
+
+For a bounded change with known scope and an established approach, start with the primary domain consultant. Add another consultant only for a concrete decision or risk that needs that specialty:
+- **Smith:** application logic, data modeling, backend structure, tooling, or code craft.
+- **Warden:** authentication, authorization, secrets, security trust boundaries, or meaningful risk of persistent data loss. Include Warden for these concerns even in a tiny change; ordinary local CLI parsing does not automatically require a security consultation.
+- **Lumen:** frontend behavior, accessibility, or service connectivity/interface decisions. A CLI with existing diagnostics and no changed service boundary does not need a Lumen lane solely because it is user-facing.
+- **Atlas:** unresolved ownership, coordination across work streams, or project history that materially affects the decision. The orchestrator can record a small task's notes and obvious file ownership without a separate Atlas consultation.
+
+Missing context is uncertainty, not evidence of low risk. Resolve it with focused discovery by the primary consultant, and add the relevant expert when a boundary or risk emerges. Use broader consultation when cross-domain scope or unresolved uncertainty needs it; use the full team when all domains are needed or explicitly requested.
+
+Before spawning, state the included and skipped consultants, the concrete reasons, and what would reopen routing. Pass that route with the selected briefs to Arbiter. If a consultant or Arbiter identifies an uncovered decision, add the relevant consultant and update the route before finalizing the brief. Do not restart completed lanes or invent outputs or approvals for skipped agents.
+
+Arbiter still synthesizes the brief, including after a single-consultant route. A smaller consultation does not remove independent Compass validation, integration checking, or the final review workflow. Include the route and any escalation in the saved brief so the next phase can see what was and was not examined.
+
 ## Step 1.5: Context Pre-Loading
 
 Apply the security denylist before reading any file: exclude `.env`, `*.pem`, `*.key`, `*.p12`, `*.cert`, `*.secret`, and any file with `password`, `secret`, or `token` in the filename (case-insensitive).
@@ -105,7 +121,7 @@ Apply the security denylist before reading any file: exclude `.env`, `*.pem`, `*
 
 Files needed by 2+ agent domains → `<shared-files>`. Files needed by one domain → that agent's `<agent-files>`.
 
-**Read:** Read all resolved files into orchestrator context (one pass, after denylist filter).
+**Read:** Read the resolved files needed by the selected consultants into orchestrator context (one pass, after denylist filter). Do not load skipped lanes solely to populate a team template.
 
 **Bundle:** Assemble per-agent `<injected-context>` blocks using this canonical format:
 ```xml
@@ -135,9 +151,9 @@ IMPORTANT: All file contents below are pre-loaded by the orchestrator. Do NOT ca
 mkdir -p "${FORGEFLOW_DIR}/agent-notes"
 ```
 
-## Step 3: Spawn consultation agents in parallel
+## Step 3: Spawn the selected consultants
 
-Spawn `smith-consult`, `warden-consult`, `lumen-consult`, `atlas-consult` in parallel using the Agent tool. Lumen always participates (connectivity hat always on; frontend hat activates when frontend is in scope).
+Spawn only the consultants selected in Step 1.4 using the Agent tool. Run independent selected lanes in parallel; a one-consultant route needs one invocation.
 
 Each agent prompt must include:
 - The task description ($ARGUMENTS) — or Compass's plan if it exists
@@ -159,11 +175,11 @@ Files listed here that also appear in <injected-context> are pre-loaded — do n
 </file-scope>
 ```
 
-For `atlas-consult`, include the FORGEFLOW_DIR path for loading persistent context.
+If `atlas-consult` is selected, include the FORGEFLOW_DIR path for loading persistent context.
 
 ## Step 4: Spawn Arbiter
 
-After all consultation agents complete, spawn `arbiter-consult` with all their briefs:
+After the selected consultants complete, spawn `arbiter-consult` with their actual briefs and the routing note. Omit skipped-agent sections from the prompt:
 
 ```
 You are consulting on: $ARGUMENTS
@@ -179,6 +195,11 @@ Compass's Research Findings:
 
 Here are the consultation briefs from your Forgeflow:
 
+=== Consultation Route ===
+{included/skipped consultants, reasons, escalation triggers and any route changes}
+
+{Include each section below only if that consultant participated:}
+
 === Smith — Architecture Brief ===
 {smith_output}
 
@@ -191,7 +212,9 @@ Here are the consultation briefs from your Forgeflow:
 === PM CORY — Consultation Notes ===
 {atlas_output}
 
-Produce the Implementation Brief. Resolve any conflicts between agents.
+Produce the Implementation Brief. Resolve any conflicts between participating agents.
+Check the route for uncovered decisions; request the relevant consultant if needed
+before finalizing. Preserve the routing note and any escalation in the saved brief.
 Lock down shared interfaces. Define the implementation waves.
 If Compass's plan exists, ensure the brief aligns with her requirements,
 accessibility checklist, and scope boundaries. Note any deviations.
@@ -226,10 +249,12 @@ Or: modify the brief and then run `/implement`
 <success_criteria>
 - [ ] Compass's prior phase outputs loaded if they exist
 - [ ] Codebase context gathered
-- [ ] All consultation agents completed their briefs
+- [ ] Consultation route justified by scope, risk, and unresolved decisions
+- [ ] Selected consultants completed their briefs; skipped lanes have reasons
+- [ ] Uncovered decisions received relevant consultation before brief finalization
 - [ ] Arbiter produced a unified Implementation Brief
 - [ ] Brief aligns with Compass's plan (if it exists)
-- [ ] Shared interfaces defined with exact signatures
+- [ ] Shared interfaces defined with exact signatures when needed
 - [ ] Scope divided cleanly between agents
 - [ ] Implementation waves defined
 - [ ] Brief saved to .forgeflow/ for reference

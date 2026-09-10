@@ -655,6 +655,16 @@ Do not broaden scope. `CONFIRMED` requires concrete cited evidence. `REJECTED` a
 
 ## Step 5: Spawn Arbiter
 
+Give Arbiter and Compass the author's change reflection when available and the five questions below. Independently assess each answer against the diff and validation evidence; do not rubber-stamp the author's claims. If answers are missing, provide a reviewer assessment and identify unknowns. Include the assessment after findings in the saved review report and interactive summary; preserve the existing CI JSON schema.
+
+1. **Is this the simplest change that solves the problem?** Explain the chosen approach and any smaller alternative considered.
+2. **Is the complexity proportional to this project's scale and risk?** Use known users, operations, and maintenance needs; state assumptions when unknown. A 100-user internal app is an example, not a default or a reason to drop required safeguards.
+3. **One PR = one concern: did anything unrelated sneak in?** State the concern and connect the changed files to it. Flag unrelated work for a separate change.
+4. **In your own words, why does this change work?** Explain how the changes produce the intended outcome. For process-only changes, explain the workflow effect.
+5. **How did you verify it, and what did you see?** Give actual commands or manual steps, observed results, and untested limits. For documentation or process changes, describe the instruction or command checks performed and why application tests are inapplicable when that is the case.
+
+Keep answers brief and specific to the current diff. AI collaboration alone is not verification evidence. Label agent-written answers as an agent assessment; never imply a human inspected, understood, or approved the change without their input. These prompts guide reflection and do not add hooks, hard gates, or mandatory confirmation pauses.
+
 After all parallel agents complete, spawn `arbiter-review` with all their outputs concatenated.
 
 Arbiter receives:

@@ -19,10 +19,8 @@ Before other work, run:
 ```
 
 Workflow:
-1. Build compact local memory context with `scripts/forgeflow/build-memory-context.js` when available, build first-pass file ownership packets with `scripts/forgeflow/build-scope-manifest.js` when available, and run `scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json` when available.
-2. Spawn `smith_consultant`, `warden_consultant`, `lumen_consultant`, and `atlas_consultant` in parallel.
-3. Synthesize with `arbiter_consultant`.
-4. Save the resulting brief to `.forgeflow/<project-name>/current-brief.md` when appropriate.
+1. Read the [canonical consultation skill](../forgeflow-consult/SKILL.md) and follow its complete workflow, including consultation routing. If the canonical skill is unavailable, report the missing instructions instead of inventing a separate route.
+2. Use its smallest relevant specialist set, risk/uncertainty escalation, and Arbiter synthesis. This alias does not require all four consultants or skip independent validation and final review.
 
 If both this alias and `forgeflow-consult` are available, treat them as equivalent.
 

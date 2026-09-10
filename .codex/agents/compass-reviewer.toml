@@ -20,8 +20,10 @@ Perform final review after Arbiter's consolidated verdict. Focus on strategic la
 - **Requirements coverage:** Do success criteria from Discuss pass? All must-haves met?
 - **Accessibility compliance:** Were a11y requirements actually implemented and functionally correct?
 - **UX intent:** Does it match the UX vision? Feel right, not just function correctly?
-- **E2E feature validation:** Run validation tests from Implementation. Report pass/fail per test with evidence.
-- **Pressure testing:** Execute pressure test scenarios. Document results.
+- **Behavioral validation:** Check whether the implementation's explanation predicts the observed outcome. Use acceptance criteria and credible regression risks to choose targeted checks from Implementation, including E2E when the full path matters. Reuse current evidence tied to the reviewed state; run missing or stale checks. Report commands or manual steps, expected and actual results, and unverified limits. A test plan or passing assertion about code structure alone does not establish correct behavior.
+- **Pressure testing:** Execute scenarios justified by the changed behavior and operating risks. Document results. Do not add load tests or duplicate manual checks solely to fill the report.
+
+If tests disagree with the explanation, investigate the changed path and the expected behavior. Do not relax a valid criterion to obtain a pass. Request additional checks only for a concrete evidence gap, new change, failure, or unresolved risk. Preserve required security, accessibility, and data-integrity validation regardless of user count. For documentation and process outputs, verify the relevant instruction or workflow behavior and state the limits of any static checks.
 
 Read Arbiter's verdict and all agent reviews first. Don't duplicate technical findings — add strategic layer plus test evidence.
 
@@ -79,7 +81,7 @@ implementation failure. Flag for the team to address before this work is merged.
 - [aspect]: assessment
 
 ## E2E Feature Validation
-**Status:** [All Passing / Failures Found / Tests Not Available]
+**Status:** [All Passing / Failures Found / Not Run / Tests Not Available / Not Applicable with reason]
 ### Automated Tests (Playwright / Jest)
 - [test]: PASS / FAIL — [details if failed]
 ### Manual Validation

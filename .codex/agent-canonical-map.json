@@ -4,7 +4,7 @@
   "agents": {
     ".codex/agents/compass-debate-validator.toml": {
       "canonical": "agents/compass-review.md",
-      "sha256": "4d50d4c188447955f783212292c3ef5bd1230f39e92e7745a5a9141344436299"
+      "sha256": "a6e0de987cfc05592b738b0b1c21f29cf6974a9b9ce9c4b8f40dc5452198dd14"
     },
     ".codex/agents/compass-discusser.toml": {
       "canonical": "agents/compass-discuss.md",
@@ -12,7 +12,7 @@
     },
     ".codex/agents/compass-planner.toml": {
       "canonical": "agents/compass-plan.md",
-      "sha256": "46193a40acd6e9a88bd314bfc7a163768e2242b83e298b3820986c7b180b1da1"
+      "sha256": "5646fbe96b07f485a8f7b880cf5a3e47f03003f677f2f3e7272aced7aed90ff4"
     },
     ".codex/agents/compass-researcher.toml": {
       "canonical": "agents/compass-research.md",
@@ -20,11 +20,11 @@
     },
     ".codex/agents/compass-reviewer.toml": {
       "canonical": "agents/compass-review.md",
-      "sha256": "4d50d4c188447955f783212292c3ef5bd1230f39e92e7745a5a9141344436299"
+      "sha256": "a6e0de987cfc05592b738b0b1c21f29cf6974a9b9ce9c4b8f40dc5452198dd14"
     },
     ".codex/agents/compass-validator.toml": {
       "canonical": "agents/compass-implement.md",
-      "sha256": "b086ea23b3d7b192e28be5db24725f07796caa4c3414fac55b0348356fbfb501"
+      "sha256": "9ab37cf0450045d6393ab79a9b473311b87ade8ef0e983d5f1633b3f57870897"
     },
     ".codex/agents/smith-auditor.toml": {
       "canonical": "agents/smith-audit.md",
@@ -36,7 +36,7 @@
     },
     ".codex/agents/smith-implementer.toml": {
       "canonical": "agents/smith-implement.md",
-      "sha256": "e34b4dfbd0689080528611a8091584578ef27f7d355d7cffaf6844e1a507d97e"
+      "sha256": "d953676b7408a0b903d0c6a517ab0db4d2e1b97bae8580a41d2ce05851426b3f"
     },
     ".codex/agents/smith-reviewer.toml": {
       "canonical": "agents/smith-review.md",
@@ -52,7 +52,7 @@
     },
     ".codex/agents/warden-implementer.toml": {
       "canonical": "agents/warden-implement.md",
-      "sha256": "e4eca780f7dc3f36f8a1f03c067fa9b9a0b1755da733df45f3dca484b04096b8"
+      "sha256": "21feb5bfe0900d5eb685237ea30a15d815e2349d8af0501bf7c9377b341484e0"
     },
     ".codex/agents/warden-reviewer.toml": {
       "canonical": "agents/warden-review.md",
@@ -60,19 +60,19 @@
     },
     ".codex/agents/arbiter-consultant.toml": {
       "canonical": "agents/arbiter-consult.md",
-      "sha256": "885277f0e328d2f2e7cf88a0208cdd71d7f2bcb869bcc4bde817f28bda2fd02b"
+      "sha256": "e66a2bc875ad7e4210e932f4efc170d4ab4155f40ea1eab20005afe4d512f0a5"
     },
     ".codex/agents/arbiter-debate-judge.toml": {
       "canonical": "agents/arbiter-review.md",
-      "sha256": "206e7d54a500ee560336c3bc8c3c626745754742f69d8623036e71da4d489ba7"
+      "sha256": "b84b9d85c3c6e97f85a0eaabee5a915c0bf8a78335bfe9047684234696780f60"
     },
     ".codex/agents/arbiter-implementer.toml": {
       "canonical": "agents/arbiter-implement.md",
-      "sha256": "b6c3ed9f9d8fd0162012a908c5efb154a266f3e4ad0222bcf1fc7bd9dc595343"
+      "sha256": "9cbdc7a3a982edece013e252f9d3eb04b0d6090fa8f8f29534ae6960a45c3cea"
     },
     ".codex/agents/arbiter-reviewer.toml": {
       "canonical": "agents/arbiter-review.md",
-      "sha256": "206e7d54a500ee560336c3bc8c3c626745754742f69d8623036e71da4d489ba7"
+      "sha256": "b84b9d85c3c6e97f85a0eaabee5a915c0bf8a78335bfe9047684234696780f60"
     },
     ".codex/agents/aegis.toml": {
       "codex_native": true,
@@ -109,7 +109,7 @@
     },
     ".codex/agents/lumen-implementer.toml": {
       "canonical": "agents/lumen-implement.md",
-      "sha256": "1436164d736817c3c54ccd995d89291412d74e22efacf75d42e3ae0f49d0a6f0"
+      "sha256": "6de74fa96e2cb08ac8e7e0d1152390fee2e40b7ca034ffbbfe1720e3b9d42ff2"
     },
     ".codex/agents/lumen-reviewer.toml": {
       "canonical": "agents/lumen-review.md",

@@ -38,6 +38,18 @@ Suggested prompts:
 - `$forgeflow-implement execute the current brief`
 - `$forgeflow-implement implement the brief in docs/briefs/login.md`
 
+## Change reflection
+
+Before presenting results, answer the five change-reflection questions below from the implementation and validation evidence. Include the answers in the implementation report and save them in the existing implementation notes for review.
+
+1. **Is this the simplest change that solves the problem?** Explain the chosen approach and any smaller alternative considered.
+2. **Is the complexity proportional to this project's scale and risk?** Use known users, operations, and maintenance needs; state assumptions when unknown. A 100-user internal app is an example, not a default or a reason to drop required safeguards.
+3. **One PR = one concern: did anything unrelated sneak in?** State the concern and connect the changed files to it. Flag unrelated work for a separate change.
+4. **In your own words, why does this change work?** Explain how the changes produce the intended outcome. For process-only changes, explain the workflow effect.
+5. **How did you verify it, and what did you see?** Give actual commands or manual steps, observed results, and untested limits. For documentation or process changes, describe the instruction or command checks performed and why application tests are inapplicable when that is the case.
+
+Keep answers brief and specific to the current diff. AI collaboration alone is not verification evidence. Label agent-written answers as an agent assessment; never imply a human inspected, understood, or approved the change without their input. These prompts guide reflection and do not add hooks, hard gates, or mandatory confirmation pauses.
+
 ## Record explicit review outcomes
 
 After Arbiter or Compass issues an actual final decision, save that decision and its supporting evidence in a project-local report, then record it once with the shared telemetry helper:

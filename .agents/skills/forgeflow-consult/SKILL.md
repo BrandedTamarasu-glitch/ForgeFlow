@@ -17,13 +17,9 @@ Workflow:
 4. Run `scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json` when available and surface any warnings.
 5. Gather focused context for the requested feature.
 6. Prefer existing `CONTEXT.md` files, the lane scope packet, and the compact memory context before reading full `.forgeflow/current-*.md` artifacts.
-7. Spawn in parallel:
-   - `smith_consultant`
-   - `warden_consultant`
-   - `lumen_consultant`
-   - `atlas_consultant`
-8. Wait for their briefs.
-9. Spawn `arbiter_consultant` with the task, gathered context, all four outputs, and the lean decision.
+7. Select and explain the consultation route using the criteria below. Available specialists are `smith_consultant`, `warden_consultant`, `lumen_consultant`, and `atlas_consultant`. Pass only relevant context to the selected lanes.
+8. Spawn the selected consultants, in parallel when their work is independent, and wait for their briefs.
+9. Spawn `arbiter_consultant` with the task, gathered context, selected outputs, routing note, and the lean decision. Resolve any uncovered decision with the relevant consultant before finalizing.
 10. Save the result to `.forgeflow/<project-name>/current-brief.md` when appropriate.
 11. Present the implementation brief with ownership, sequencing, interfaces, lean decision, and open questions.
 
@@ -33,6 +29,22 @@ Rules:
 - Include a compact `## Lean Decision` section with do-first, avoid-first, validate-with, do-not-simplify, and upgrade-when guidance when available.
 - Lean guidance is advisory only. It cannot override explicit requirements, security, accessibility, validation, or data-loss safeguards.
 - Do not start implementation inside this skill unless the user explicitly asks for it.
+
+## Consultation routing
+
+Choose the consultation team from the requested behavior, affected code, known risks, and unresolved decisions. File count, line count, helper lane labels, and the mere presence of an installed dependency are not enough to choose a team. Honor explicit requests for named specialists or the full team.
+
+For a bounded change with known scope and an established approach, start with the primary domain consultant. Add another consultant only for a concrete decision or risk that needs that specialty:
+- **Smith:** application logic, data modeling, backend structure, tooling, or code craft.
+- **Warden:** authentication, authorization, secrets, security trust boundaries, or meaningful risk of persistent data loss. Include Warden for these concerns even in a tiny change; ordinary local CLI parsing does not automatically require a security consultation.
+- **Lumen:** frontend behavior, accessibility, or service connectivity/interface decisions. A CLI with existing diagnostics and no changed service boundary does not need a Lumen lane solely because it is user-facing.
+- **Atlas:** unresolved ownership, coordination across work streams, or project history that materially affects the decision. The orchestrator can record a small task's notes and obvious file ownership without a separate Atlas consultation.
+
+Missing context is uncertainty, not evidence of low risk. Resolve it with focused discovery by the primary consultant, and add the relevant expert when a boundary or risk emerges. Use broader consultation when cross-domain scope or unresolved uncertainty needs it; use the full team when all domains are needed or explicitly requested.
+
+Before spawning, state the included and skipped consultants, the concrete reasons, and what would reopen routing. Pass that route with the selected briefs to Arbiter. If a consultant or Arbiter identifies an uncovered decision, add the relevant consultant and update the route before finalizing the brief. Do not restart completed lanes or invent outputs or approvals for skipped agents.
+
+Arbiter still synthesizes the brief, including after a single-consultant route. A smaller consultation does not remove independent Compass validation, integration checking, or the final review workflow. Include the route and any escalation in the saved brief so the next phase can see what was and was not examined.
 
 Suggested prompts:
 - `$forgeflow-consult design the approach for adding OAuth login`

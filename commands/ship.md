@@ -575,11 +575,24 @@ gh pr view --json number,url 2>/dev/null
 
 ### 4d. Create or update PR
 
+Before creating or updating the PR, answer the five questions below using the current diff, implementation notes, and review evidence. Reuse current answers and correct stale claims. Include a concise Change reflection section in the PR body for both creation and updates, avoiding duplicate validation prose.
+
+1. **Is this the simplest change that solves the problem?** Explain the chosen approach and any smaller alternative considered.
+2. **Is the complexity proportional to this project's scale and risk?** Use known users, operations, and maintenance needs; state assumptions when unknown. A 100-user internal app is an example, not a default or a reason to drop required safeguards.
+3. **One PR = one concern: did anything unrelated sneak in?** State the concern and connect the changed files to it. Flag unrelated work for a separate change.
+4. **In your own words, why does this change work?** Explain how the changes produce the intended outcome. For process-only changes, explain the workflow effect.
+5. **How did you verify it, and what did you see?** Give actual commands or manual steps, observed results, and untested limits. For documentation or process changes, describe the instruction or command checks performed and why application tests are inapplicable when that is the case.
+
+Keep answers brief and specific to the current diff. AI collaboration alone is not verification evidence. Label agent-written answers as an agent assessment; never imply a human inspected, understood, or approved the change without their input. These prompts guide reflection and do not add hooks, hard gates, or mandatory confirmation pauses.
+
 **If no existing PR:** Create one.
 ```bash
 gh pr create --title "{compass_headline}" --body "$(cat <<'EOF'
 ## Summary
 {compass_summary}
+
+## Change reflection
+{Brief answers to the five questions above, labeled as an agent assessment}
 
 ## Capabilities
 {capabilities_as_bullet_list}

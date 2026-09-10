@@ -48,6 +48,18 @@ Rules:
 - Prefer updating the generated artifacts instead of discarding them.
 
 
+## Change reflection
+
+When refining the generated ship artifacts, answer the five questions below using the current diff, implementation notes, and review evidence. Reuse current answers and correct stale claims. Include a concise Change reflection section in pr-body.md for both PR creation and updates, avoiding duplicate validation prose.
+
+1. **Is this the simplest change that solves the problem?** Explain the chosen approach and any smaller alternative considered.
+2. **Is the complexity proportional to this project's scale and risk?** Use known users, operations, and maintenance needs; state assumptions when unknown. A 100-user internal app is an example, not a default or a reason to drop required safeguards.
+3. **One PR = one concern: did anything unrelated sneak in?** State the concern and connect the changed files to it. Flag unrelated work for a separate change.
+4. **In your own words, why does this change work?** Explain how the changes produce the intended outcome. For process-only changes, explain the workflow effect.
+5. **How did you verify it, and what did you see?** Give actual commands or manual steps, observed results, and untested limits. For documentation or process changes, describe the instruction or command checks performed and why application tests are inapplicable when that is the case.
+
+Keep answers brief and specific to the current diff. AI collaboration alone is not verification evidence. Label agent-written answers as an agent assessment; never imply a human inspected, understood, or approved the change without their input. These prompts guide reflection and do not add hooks, hard gates, or mandatory confirmation pauses.
+
 ## Task evidence continuity
 
 Use the shared task workflow for a bounded change with an accepted objective or brief. Resolve `task.js` from the same runtime helper directory used above. Run `list --root <project-root>` and reuse only the task explicitly selected by the user or matching the current objective and scope. Do not attach an unrelated task based only on recency. If this is a new accepted change, create a task using its objective and behavioral acceptance criteria; the task workflow describes the JSON contract.
