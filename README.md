@@ -51,7 +51,7 @@ The guide identifies the source commit it describes. For the latest implementati
 
 ## Quick start
 
-You need Git, Node.js with npm, Bash for the shell helpers, and a working Claude Code or Codex setup with access to the models you intend to use. This repository’s CI runs on **Node.js 24**. The examples below use Bash; keep the host, installation, and project in the same shell environment.
+You need Git, Node.js with npm, Bash for the shell helpers, and a working Claude Code or Codex setup with access to the models you intend to use. Use **Node.js 24** for this repository's local validation. The examples below use Bash; keep the host, installation, and project in the same shell environment.
 
 RTK is optional. The installer checks `rtk --version` and `rtk gain`; ordinary installation does not download RTK. Use direct commands when it is unavailable. To opt in to a Cargo-based RTK installation, add `--install-rtk` (preview with `--install-rtk --dry-run`). See [optional RTK setup](docs/wiki/Template-Installer.md#optional-rtk).
 
@@ -257,7 +257,7 @@ npm ci --ignore-scripts
 npm test
 ```
 
-The GitHub workflow runs deterministic tests and a clean-diff check on pushes to `main` and pull requests. Its model-backed team review is a separate, conditional same-repository PR job. Your application needs its own CI and deployment configuration.
+ForgeFlow runs tests, builds, and agent reviews locally. GitHub Actions is disabled for this repository, which uses GitHub only for release pushes and release artifacts. Keep development changes and shipping evidence local until an explicitly requested release. Downstream projects choose their own CI and deployment policy.
 
 Use the [release process](docs/wiki/Release-Process.md) and [release gate](docs/wiki/Release-Gate.md) before tagging or publishing ForgeFlow itself. A commit on `main` and a packaged release version describe different things; the visual guide identifies the source revision it documents.
 

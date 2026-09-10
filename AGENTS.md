@@ -7,6 +7,7 @@ These instructions translate the durable project rules from the Claude setup int
 - Use `rtk` for supported commands when `rtk --version` and `rtk gain` succeed. If it is missing or unverified, run commands directly. RTK is optional; do not retry a failed wrapped command automatically when it may already have performed a write.
 - Use direct commands or `rtk proxy <command>` when raw output is needed for debugging or validation.
 - Keep changes local unless the user explicitly asks for `git commit`, `git push`, PR creation, or GitHub CLI write actions.
+- For this repository, run tests, builds, and agent reviews locally. GitHub is for release pushes and release artifacts only. Keep GitHub Actions disabled; do not add workflows, open development PRs, or push development branches. Prepare shipping evidence locally and publish only as part of an explicitly requested release.
 - Run `git status` before staging or committing.
 - Stage files by name. Do not use `git add .` or `git add -A`.
 - Prefer `git revert` over destructive history rewrites. Do not run `git reset --hard` unless explicitly requested.

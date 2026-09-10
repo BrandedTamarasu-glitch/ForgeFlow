@@ -34,6 +34,6 @@ The exporter writes local Markdown only. It preserves `.git` and unrelated asset
 
 Publish only when a maintainer has authorized the repository and wiki changes. Commit and push the source documentation first so exported links resolve to the corresponding files on `main`. Then stage the reviewed Markdown files by name in the wiki checkout, commit them, and push that separate repository. Do not stage private audit notes or local workflow state.
 
-After publishing, verify the GitHub wiki Home page, sidebar, a setup page, the dashboard image, and both guide links. Compare the published wiki HEAD with the local commit and rerun the exporter with `--check`. GitHub Actions on the product repository validates source changes; it does not publish the wiki or prove its rendered links work.
+After publishing as part of an authorized release, verify the GitHub wiki Home page, sidebar, a setup page, the dashboard image, and both guide links. Compare the published wiki HEAD with the local commit and rerun the exporter with `--check`. Run source validation locally; GitHub Actions is disabled for the product repository. Local checks do not prove the published wiki's rendered links work.
 
 If someone has edited the wiki directly, bring useful changes back into `docs/wiki/` before the next export. Do not overwrite an unexplained remote edit. Keep [Release Process](Release-Process.md), the README, the documentation entry, and the wiki consistent when the product changes.

@@ -39,7 +39,7 @@ Both files must use the same semver value. Keep the adapter mirrors in `.codex-p
 
 ## Command-Line Checks
 
-Start with `npm ci --ignore-scripts` and `npm test` from the repository root. This is the maintained deterministic test entry point and includes service checks beyond the helper list below. Follow [Release Gate](Release-Gate.md) for CI semantics and release evidence. The detailed helper commands below are useful for targeted diagnosis; they do not replace the complete runner:
+Start with `npm ci --ignore-scripts` and `npm test` locally from the repository root. This is the maintained deterministic test entry point and includes service checks beyond the helper list below. Follow [Release Gate](Release-Gate.md) for local validation and release evidence. GitHub Actions stays disabled; publish to GitHub only as part of an explicitly requested release. The detailed helper commands below are useful for targeted diagnosis; they do not replace the complete runner:
 
 ```bash
 node scripts/forgeflow/test-command-coverage.js

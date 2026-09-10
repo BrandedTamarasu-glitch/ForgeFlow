@@ -2,7 +2,7 @@
 
 Use this during team trials to decide which CI or headless-review ideas should stay deferred until maintainers show they need them.
 
-This page is an adoption policy for a team’s use of model review. ForgeFlow’s own repository already runs deterministic CI on pushes and pull requests and has a separate optional model review job for same-repository pull requests. See [Release Gate](Release-Gate.md) for the implemented checks and opt-in autofix controls. These trial deferrals do not disable the repository test gate.
+This page is an adoption policy for downstream teams considering model review in CI. ForgeFlow's own repository keeps GitHub Actions disabled and runs tests, builds, and reviews locally. GitHub is used only for release pushes and release artifacts. See [Release Gate](Release-Gate.md) for local validation requirements; the optional downstream policies below do not change this repository's release-only policy.
 
 ## Defer By Default
 

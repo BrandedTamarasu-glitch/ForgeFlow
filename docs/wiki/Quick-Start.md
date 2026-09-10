@@ -4,7 +4,7 @@ Install ForgeFlow into Claude Code or Codex, then use it inside the application 
 
 ## Prerequisites
 
-Use a working host installation, Git, Node.js, npm, and Bash in the same environment. The repository's CI validates Node 24. With WSL, keep the host and runtime paths in the same WSL environment. Check that the models named by the installed agents are available to your account; a file being installed does not prove the host can run its model.
+Use a working host installation, Git, Node.js, npm, and Bash in the same environment. Use Node 24 for this repository's local validation. With WSL, keep the host and runtime paths in the same WSL environment. Check that the models named by the installed agents are available to your account; a file being installed does not prove the host can run its model.
 
 ## Clone The Source
 

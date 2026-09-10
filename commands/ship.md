@@ -29,7 +29,9 @@ Ship the current branch. This is the final command in the lifecycle: `/discuss` 
 
 **Prerequisite:** The Forgeflow must have passed this branch. `/ship` checks `review-history.md` for a passing review verdict (`APPROVE + CONFIRM` or an allowed `CONDITIONAL APPROVE`) and refuses to proceed without it.
 
-**Permission grant:** The user invoked /ship, which grants permission to push, create PRs, and auto-fix CI failures. This overrides the global CLAUDE.md restriction on git push and gh commands for the scope of this execution.
+**Repository policy:** Resolve the user's shipping intent and repository instructions before remote steps. If GitHub is reserved for releases or hosted jobs are disabled, prepare the presentation and validation evidence locally, skip PR creation and CI monitoring/fixes, and publish only the explicitly authorized release. Do not enable hosted jobs or request model credentials to satisfy a skipped CI step. A local shipping handoff does not authorize remote publication.
+
+**Permission grant:** An explicit request to publish authorizes only the remote actions within that request and repository policy. Generic /ship invocation does not override a local-only or release-only policy.
 </objective>
 
 <context>

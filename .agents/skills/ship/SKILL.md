@@ -8,6 +8,8 @@ At workflow entry, run `node <helper-dir>/open-session-dashboard.js --root <proj
 
 Use this skill when the user explicitly wants to ship the branch.
 
+Resolve the user's shipping intent and repository instructions before remote steps. If GitHub is reserved for releases or hosted jobs are disabled, prepare the presentation and validation evidence locally, skip PR creation and CI monitoring/fixes, and publish only the explicitly authorized release. Do not enable hosted jobs or request model credentials to satisfy a skipped CI step. A local shipping handoff does not authorize remote publication.
+
 Resolve helpers before running them: set `FORGEFLOW_HELPER_DIR` to `scripts/forgeflow` when that directory exists, otherwise to `${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow`. A missing helper means the Codex runtime installation needs repair; it does not mean shipping is unsupported in Codex.
 
 Start by running:
