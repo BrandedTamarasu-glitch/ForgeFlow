@@ -13,6 +13,15 @@ function usage() {
   console.error('Usage: generate-codex-agent-stubs.js (--agent <.codex/agents/name.toml> | --all) [--map <path>] [--out <path>] [--stdout]');
 }
 
+function requireOptionValue(option, value) {
+  if (value === undefined || value === '' || value.startsWith('--') || value === '-h') {
+    console.error(`Missing value for ${option}`);
+    usage();
+    process.exit(2);
+  }
+  return value;
+}
+
 function parseArgs(argv) {
   const opts = {
     agent: '',
@@ -25,11 +34,11 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--agent') {
-      opts.agent = argv[++i] || '';
+      opts.agent = requireOptionValue(arg, argv[++i]);
     } else if (arg === '--map') {
-      opts.mapPath = path.resolve(argv[++i] || '');
+      opts.mapPath = path.resolve(requireOptionValue(arg, argv[++i]));
     } else if (arg === '--out') {
-      opts.out = argv[++i] || '';
+      opts.out = requireOptionValue(arg, argv[++i]);
     } else if (arg === '--stdout') {
       opts.stdout = true;
     } else if (arg === '--all') {
