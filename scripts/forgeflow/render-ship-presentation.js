@@ -213,6 +213,17 @@ const html = `<!DOCTYPE html>
             <ul>${renderList(summary.tests, 'No test results recorded.')}</ul>
           </div>
         </section>
+        ${summary.validationSummary ? `<section>
+          <h2>Task Validation</h2>
+          <div class="card">
+            <p>${escapeHtml(summary.validationSummary)}</p>
+            <ul>${renderList(summary.validationDetails, 'No task criteria available.')}</ul>
+            <h3>Manual Checks</h3>
+            <ul>${renderList(summary.manualChecks, 'No current manual evidence.')}</ul>
+            <h3>Review Evidence</h3>
+            <ul>${renderList(summary.reviewEvidence, 'No current task review evidence.')}</ul>
+          </div>
+        </section>` : ''}
         <section>
           <h2>Risks Mitigated</h2>
           <div class="card">

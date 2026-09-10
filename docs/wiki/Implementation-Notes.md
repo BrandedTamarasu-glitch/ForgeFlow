@@ -41,7 +41,9 @@ The file is append-oriented during a run. Existing entries should not be rewritt
 
 Do not record secrets, raw settings JSON, tokens, keys, certificates, private URLs, customer names, or large source snippets. If sensitive context influenced a decision, record the decision class and point to the relevant safe documentation instead of pasting private values.
 
-`/review` may use implementation notes as context for spec drift and tradeoffs, but notes are not proof that the code is correct. `/ship` summarizes the notes for handoff and presentation; it does not dump the raw log.
+`/review` may use implementation notes as context for spec drift and tradeoffs, but notes are not proof that the code is correct. During `/ship`, curate relevant notes for the handoff using current evidence; the preparation helper does not import the historical log.
+
+Use `scripts/forgeflow/ship-prepare.sh --task <id> "Title"` with the task selected for the current objective. It verifies source and artifact freshness using the task store and separates the latest automated, manual and review evidence for each criterion. Failed, stale, missing, waived and pending outcomes remain visible. Without `--task`, current validation is explicitly missing; the helper does not infer a task from recency or search Markdown for passing results. An invalid task fails without replacing the previous summary. Historical project notes remain available as references for manual curation, and task readiness never implies reviewer approval.
 
 ## Quality Check
 

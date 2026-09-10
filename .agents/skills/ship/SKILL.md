@@ -16,13 +16,15 @@ Start by running:
 
 ```bash
 "$FORGEFLOW_HELPER_DIR/ensure-forgeflow-state.sh"
-"$FORGEFLOW_HELPER_DIR/ship-prepare.sh" "<optional title>"
+"$FORGEFLOW_HELPER_DIR/ship-prepare.sh" --task "<selected task id>" "<optional title>"
 ```
 
 `ship-prepare.sh` creates:
 - `.forgeflow/<project-name>/ship/ship-summary.json`
 - `.forgeflow/<project-name>/ship/ship-presentation.html`
 - `.forgeflow/<project-name>/ship/pr-body.md`
+
+Select the task matching the user's current objective; never select by recency alone. The helper uses the task store to verify source and artifact freshness and includes only each criterion's latest evidence. It separates automated tests, manual checks, and review evidence, while showing failed, stale, missing, waived, and pending outcomes. Legacy work may omit `--task`, but then validation stays missing. Unknown tasks fail with a corrective message. Historical project notes are references only; curate relevant decisions and follow-ups into the final artifacts using current evidence. Verify explicit reviewer verdicts separately: task readiness is not review approval, and the generated review gate stays `unknown` until that verification.
 
 Workflow:
 1. Verify recent review state and confirm the branch is ready to ship.

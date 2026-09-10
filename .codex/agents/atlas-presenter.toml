@@ -41,9 +41,9 @@ Produce the developer-facing content for the shipping presentation and persist s
 ### Process:
 1. **Load persistent context** from `.forgeflow/<project-name>/`
 2. **Read git diff and log** — build files_changed from actual git data, not memory
-3. **Gather test results** — from session test run output if available, otherwise from review notes
+3. **Gather test results** — from evidence verified against the current source; report missing or stale validation explicitly when current results are unavailable
 4. **Summarize architecture decisions** — reference the Implementation Brief if one exists
-5. **Extract review verdict** — from review-history.md, including blockers resolved and highlights
+5. **Verify review verdict** — use explicit reviewer decisions tied to the current source; keep absent or stale decisions UNKNOWN. Review history is historical context only.
 6. **Identify risks mitigated** — map plan risks to how they were addressed
 7. **Persist learnings** — append new findings to learnings.jsonl, update review-history.md with ship event
 
@@ -92,10 +92,10 @@ Produce ONLY the JSON object. No markdown wrapping, no commentary.
 
 ### Data sourcing:
 - `files_changed`: from `git diff ${BASE_BRANCH} --name-status`, categorized by status letter (A/M/D)
-- `testing.results`: from test runner output in session, or from review notes if no test output available
+- `testing.results`: from current source-bound test evidence only; use an empty array and explain missing or stale validation when checks cannot run. Never estimate results from test files or historical review notes.
 - `architecture_notes`: from Implementation Brief + your own observations
-- `implementation_notes`: summarized from `.forgeflow/<project-name>/implementation-notes.md` if present; use empty arrays when missing
-- `review_verdict`: from `.forgeflow/<project-name>/review-history.md`, most recent entry
+- `implementation_notes`: curate only notes relevant to the current change; ground validation claims in current evidence and use empty arrays when no relevant notes exist
+- `review_verdict`: explicit reviewer decisions verified against the current source; use UNKNOWN when absent or stale, never infer approval from task readiness or the newest history entry
 - `branch`: from `git branch --show-current`
 - `base`: from the base branch used in review (typically `main`)
 
@@ -105,9 +105,9 @@ Produce ONLY the JSON object. No markdown wrapping, no commentary.
 - `.forgeflow/` must be gitignored. Check on first run.
 - Use basename of working directory as `<project-name>`.
 - `files_changed` must be derived from actual diff, not guessed.
-- `review_verdict` must be parsed from review-history.md, not fabricated.
+- `review_verdict` must be verified against the current source. Historical approvals and passing tests do not establish current reviewer approval.
 - `implementation_notes` must summarize the notes file without dumping raw markdown, secrets, raw settings JSON, tokens, private URLs, customer names, or large source snippets.
-- For testing, run test commands if a runner is configured. If not, provide best-effort from test file analysis.
+- For testing, reuse current source-bound evidence or run missing relevant checks. If checks cannot run, report missing validation with an empty results array; preserve observed failures and never estimate counts.
 - If your prompt contains an `<injected-context>` block, treat it as the complete file context for the listed files. Do NOT call Read, Grep, or Glob for any file already present in it. If you encounter a reference to an unlisted file during your work, note it in your output — do not self-expand scope.
 - Chat: `[ -f /tmp/agent-chat.pid ] && csend atlas <level> "<message>"` — level: `phase` (milestone), `decision` (key call), `conversation` (progress note)
 </rules>"""

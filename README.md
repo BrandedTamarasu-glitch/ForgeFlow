@@ -8,11 +8,11 @@ Turn an idea into a scoped brief, working code, an evidence-backed review, and a
 
 ![ForgeFlow workshop showing Ember, project readiness, recorded review outcomes, weekly trends, and live workflow activity](docs/images/forgeflow-workshop.png)
 
-## New in 4.4.0
+## New in 4.5.0
 
-Keep an objective, acceptance criteria, code-bound evidence, and resumable phase history together with **`/task` in Claude Code or `$task` in Codex**. The workshop shows current proof and the next action, and remains responsive while checking saved tasks.
+Shipping summaries use the explicitly selected task's current validation evidence. Historical notes no longer become passing tests or approval, and missing or stale proof stays visible. Implementation, review and shipping also assess workaround durability, unrelated bugs, user impact and actionable errors.
 
-This release also adds balanced workflow comparison schedules, dependency-aware memory feedback, fleet ownership checks across every Git state, and bounded local CI repair with draft handoffs. Evaluation records distinguish real observations from fixtures and unknowns; maintenance publishes nothing remotely. See the [4.4.0 release notes](docs/changelogs/v4.4.0.html) and [task guide](docs/wiki/Task-Evidence.md).
+This version includes optional Obsidian vault memory, task-focused advice and memory selection, proportional workflows, optional RTK installation, and dashboard startup fixes since 4.4.0. ForgeFlow's own repository runs validation locally and uses GitHub only for authorized release pushes. See the [4.5.0 release notes](docs/changelogs/v4.5.0.html) and [task guide](docs/wiki/Task-Evidence.md).
 
 ## Your first ForgeFlow session
 

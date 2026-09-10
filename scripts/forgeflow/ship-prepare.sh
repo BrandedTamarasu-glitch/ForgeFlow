@@ -2,14 +2,43 @@
 set -euo pipefail
 
 HELPER_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-"$HELPER_ROOT/scripts/forgeflow/ensure-forgeflow-state.sh" > /tmp/forgeflow-state.env
-# shellcheck disable=SC1091
-source /tmp/forgeflow-state.env
+TASK_ID=""
+TITLE_PARTS=()
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --task)
+      if [ "$#" -lt 2 ] || [[ "$2" == --* ]] || [ -z "$2" ]; then
+        echo "Missing task id. Use ship-prepare.sh --task <id> [title]." >&2
+        exit 2
+      fi
+      if [ -n "$TASK_ID" ]; then
+        echo "Select one task with --task <id>." >&2
+        exit 2
+      fi
+      TASK_ID="$2"
+      shift 2
+      ;;
+    --help|-h)
+      echo "Usage: ship-prepare.sh [--task <id>] [title]"
+      exit 0
+      ;;
+    --) shift; TITLE_PARTS+=("$@"); break ;;
+    --*) echo "Unknown option: $1. Use --task <id> or -- before the title." >&2; exit 2 ;;
+    *) TITLE_PARTS+=("$1"); shift ;;
+  esac
+done
+TITLE="${TITLE_PARTS[*]}"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+"$HELPER_ROOT/scripts/forgeflow/ensure-forgeflow-state.sh" >/dev/null
+PROJECT_NAME="$(basename "$REPO_ROOT")"
+FORGEFLOW_DIR="$REPO_ROOT/.forgeflow/$PROJECT_NAME"
+SHIP_DIR="$FORGEFLOW_DIR/ship"
 
-TITLE="${*:-}"
 DATE_ISO="$(date -Iseconds)"
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-BASE_BRANCH="$(git remote show origin 2>/dev/null | awk '/HEAD branch/ {print $NF}' || true)"
+BASE_BRANCH="$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null || true)"
+BASE_BRANCH="${BASE_BRANCH#origin/}"
 if [ -z "${BASE_BRANCH:-}" ]; then
   BASE_BRANCH="main"
 fi
@@ -21,7 +50,8 @@ fi
 
 MERGE_BASE="$(git merge-base HEAD "$BASE_REF" 2>/dev/null || true)"
 if [ -z "${MERGE_BASE:-}" ]; then
-  MERGE_BASE="HEAD~1"
+  MERGE_BASE="$(git rev-parse --verify HEAD^ 2>/dev/null || git rev-parse HEAD)"
+  BASE_REF="$MERGE_BASE"
 fi
 
 SUMMARY_TITLE="$TITLE"
@@ -46,114 +76,70 @@ for line in sys.stdin:
 print(json.dumps(items))
 ')"
 
-TEST_LINES="$(rg -n "PASS|FAIL|passed|failed" "$FORGEFLOW_DIR" -g "*.md" 2>/dev/null | head -n 8 || true)"
-TESTS_JSON="$(printf '%s\n' "$TEST_LINES" | python3 -c '
-import json,sys
-lines=[line.strip() for line in sys.stdin if line.strip()]
-print(json.dumps(lines))
-')"
-
-REVIEW_TAIL="$(tail -n 80 "$FORGEFLOW_DIR/review-history.md" 2>/dev/null || true)"
-if printf '%s' "$REVIEW_TAIL" | grep -Eq "Final Verdict: (APPROVE|CONDITIONAL APPROVE)"; then
-  if printf '%s' "$REVIEW_TAIL" | grep -Eq "Compass.s Verdict: CONFIRM|Compass Verdict: CONFIRM"; then
-    REVIEW_GATE="passed"
-    REVIEW_GATE_NOTE="Recent review history contains an APPROVE/CONDITIONAL APPROVE verdict and an Compass CONFIRM."
-  else
-    REVIEW_GATE="partial"
-    REVIEW_GATE_NOTE="Recent review history contains a Arbiter approval signal, but Compass CONFIRM was not found in the scanned tail."
-  fi
-else
-  REVIEW_GATE="unknown"
-  REVIEW_GATE_NOTE="No recent APPROVE verdict was found in the scanned review history tail."
-fi
-
 SUMMARY_TEXT="Prepared from the current branch diff against $BASE_REF."
 IMPACT_TEXT="This branch changes $(git diff --name-only "$MERGE_BASE"..HEAD | wc -l | tr -d ' ') file(s) and is staged for shipping review."
 IMPLEMENTATION_NOTES_PATH="$FORGEFLOW_DIR/implementation-notes.md"
 
-python3 - <<'PY' "$SHIP_DIR/ship-summary.json" "$SUMMARY_TITLE" "$SUMMARY_TEXT" "$IMPACT_TEXT" "$BRANCH" "$BASE_BRANCH" "$DATE_ISO" "$FILE_LIST_JSON" "$TESTS_JSON" "$REVIEW_GATE" "$REVIEW_GATE_NOTE" "$IMPLEMENTATION_NOTES_PATH"
-import json, pathlib, sys
-(
-  out_path,
-  title,
-  summary,
-  impact,
-  branch,
-  base_branch,
-  generated_at,
-  files_json,
-  tests_json,
-  review_gate,
-  review_gate_note,
-  implementation_notes_path,
-) = sys.argv[1:]
-
-def implementation_notes(path):
-  sections = {
-    "decisions": [],
-    "spec_gaps": [],
-    "tradeoffs": [],
-    "deviations": [],
-    "follow_ups": [],
-    "validation_notes": [],
+node - "$HELPER_ROOT" "$REPO_ROOT" "$SHIP_DIR" "$TASK_ID" "$SUMMARY_TITLE" "$SUMMARY_TEXT" "$IMPACT_TEXT" "$BRANCH" "$BASE_BRANCH" "$DATE_ISO" "$FILE_LIST_JSON" <<'JS'
+const fs = require('node:fs');
+const path = require('node:path');
+const [helperRoot, root, shipDir, taskId, title, summary, impact, branch, baseBranch, generatedAt, filesJson] = process.argv.slice(2);
+let task = null;
+try {
+  if (taskId) {
+    const store = require(path.join(helperRoot, 'scripts/forgeflow/task-store.js'));
+    task = store.taskView(root, store.readTask(root, taskId));
   }
-  headings = {
-    "decisions": "decisions",
-    "spec gaps": "spec_gaps",
-    "tradeoffs": "tradeoffs",
-    "deviations": "deviations",
-    "follow-ups": "follow_ups",
-    "follow ups": "follow_ups",
-    "validation notes": "validation_notes",
-  }
-  notes_file = pathlib.Path(path)
-  if not notes_file.exists():
-    return sections
-  def summarize_note(line):
-    text = line[2:].strip()
-    parts = [part.strip() for part in text.split("|")]
-    if len(parts) >= 4:
-      text = " | ".join(parts[3:]).strip()
-    text = text.replace(" Why: ", " - ")
-    return text
-  current = ""
-  for raw in notes_file.read_text(encoding="utf8").splitlines():
-    line = raw.strip()
-    if line.startswith("## "):
-      current = headings.get(line[3:].strip().lower(), "")
-      continue
-    if current and line.startswith("- "):
-      sections[current].append(summarize_note(line))
-  return sections
-
-payload = {
-  "title": title,
-  "summary": summary,
-  "impact": impact,
-  "branch": branch,
-  "baseBranch": base_branch,
-  "generatedAt": generated_at,
-  "files": json.loads(files_json),
-  "tests": json.loads(tests_json),
-  "reviewGate": review_gate,
-  "reviewGateNote": review_gate_note,
-  "capabilities": [
-    "Branch summary generated from git history and diff metadata.",
-    "Presentation artifact prepared for stakeholder or PR use.",
-  ],
-  "risksMitigated": [
-    "Shipping summary tied to current diff rather than hand-written release notes.",
-  ],
-  "implementation_notes": implementation_notes(implementation_notes_path),
-  "notes": [
-    f"Base ref: {base_branch}",
-    "Run the review workflow before pushing if the gate is not clearly passed.",
-  ],
+} catch (error) {
+  console.error(`Cannot prepare task ${taskId}: ${error.message}. Select an existing task from task.js list and rerun ship-prepare.sh --task <id>. No new shipping summary was written.`);
+  process.exit(1);
 }
-path = pathlib.Path(out_path)
-path.parent.mkdir(parents=True, exist_ok=True)
-path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf8")
-PY
+// Only each criterion's latest evidence can support its current outcome.
+// taskView checks the source snapshot and evidence artifact hash; never infer
+// freshness from a timestamp, an old approval, or words in project Markdown.
+const selected = new Set(task?.criteria.map(item => item.evidence_id).filter(Boolean) || []);
+const evidence = (task?.evidence || []).filter(item => selected.has(item.id)).map(item => ({
+  id: item.id, kind: item.kind, status: item.status, freshness: item.freshness,
+  criteria: task.criteria.filter(criterion => criterion.evidence_id === item.id).map(criterion => criterion.id),
+  artifact: item.artifact?.path || null, exitCode: item.exit_code,
+}));
+const current = evidence.filter(item => item.freshness === 'current');
+const describe = item => `${item.id}: ${item.status}${item.exitCode === null ? '' : ` (exit ${item.exitCode})`}; criteria: ${item.criteria.join(', ')}; evidence: ${item.artifact || 'explicit waiver, no artifact'}`;
+const validationSummary = task
+  ? `Task ${task.id}: ${task.status}. ${task.counts.verified}/${task.counts.total} criteria verified; ${task.counts.failed} failed, ${task.counts.stale} stale, ${task.counts.missing} missing, ${task.counts.waived} waived. ${task.next_action}`
+  : 'No task selected. Validation is missing. Use ship-prepare.sh --task <id> to include current task evidence; legacy project notes are not validation.';
+const validationDetails = task ? [
+  ...task.criteria.map(item => `${item.id}: ${item.status} (${item.description})`),
+  ...task.actions.filter(item => ['pending', 'unknown'].includes(item.status)).map(item => `Action ${item.id}: ${item.status}. ${item.description}`),
+] : [];
+const payload = {
+  title, summary, impact, branch, baseBranch, generatedAt, files: JSON.parse(filesJson),
+  task: task ? { id: task.id, scope: task.workspace.scope, status: task.status, ready: task.ready, counts: task.counts } : null,
+  validationSummary, validationDetails, validationEvidence: evidence,
+  tests: current.filter(item => item.kind === 'test').map(describe),
+  manualChecks: current.filter(item => item.kind === 'manual').map(describe),
+  reviewEvidence: current.filter(item => item.kind === 'review').map(describe),
+  reviewGate: 'unknown',
+  reviewGateNote: 'Verify explicit reviewer verdicts against the current task and source before publishing. Task readiness and passing checks are not review approval; project review history is not used as a gate.',
+  capabilities: [], risksMitigated: [],
+  implementation_notes: { decisions: [], spec_gaps: [], tradeoffs: [], deviations: [], follow_ups: [], validation_notes: [] },
+  notes: [
+    `Base ref: ${baseBranch}`,
+    'Historical context only: implementation-notes.md, review-history.md and project-learnings.md. Their content is not imported into current validation or approval. Curate relevant notes with current evidence before publishing.',
+  ],
+};
+fs.writeFileSync(path.join(shipDir, 'ship-summary.json'), JSON.stringify(payload, null, 2) + '\n');
+const list = (items, empty) => items.length ? items.map(item => `- ${item}`).join('\n') : empty;
+fs.writeFileSync(path.join(shipDir, 'pr-body.md'), [
+  '## Summary', title, summary,
+  '## Review Gate', payload.reviewGate, payload.reviewGateNote,
+  '## Task Validation', validationSummary, list(validationDetails, 'No task criteria available.'),
+  '## Tests', list(payload.tests, 'No current automated test evidence.'),
+  '## Manual Checks', list(payload.manualChecks, 'No current manual evidence.'),
+  '## Review Evidence', list(payload.reviewEvidence, 'No current task review evidence. Explicit verdict verification is still required.'),
+  '## Historical Context', payload.notes[1], '',
+].join('\n\n'));
+JS
 
 node "$HELPER_ROOT/scripts/forgeflow/render-ship-presentation.js" \
   "$SHIP_DIR/ship-summary.json" \
@@ -219,18 +205,7 @@ node "$HELPER_ROOT/scripts/forgeflow/show-project-learnings.js" \
 PROJECT_LEARNINGS_PATH="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("out", ""))' "$PROJECT_LEARNINGS_JSON")"
 
 BODY_FILE="$SHIP_DIR/pr-body.md"
-cat > "$BODY_FILE" <<EOF
-## Summary
-
-$SUMMARY_TITLE
-
-$SUMMARY_TEXT
-
-## Review Gate
-
-- Status: $REVIEW_GATE
-- Note: $REVIEW_GATE_NOTE
-
+cat >> "$BODY_FILE" <<EOF
 ## Implementation Notes Check
 
 - Status: $NOTES_CHECK_STATUS

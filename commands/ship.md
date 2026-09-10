@@ -144,6 +144,8 @@ env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/check-implementation-notes.
 
 Treat `warn` as a visible ship note, not a blocker. Treat `fail` as a hard stop because it means sensitive content or another release-blocking notes problem was detected. Include the checker status in the PR body and ship artifacts when using `ship-prepare.sh`.
 
+When using `ship-prepare.sh`, pass `--task <selected-task-id>` for the task matching the current objective, never merely the newest task. The helper checks source and artifact freshness through the task store and uses each criterion's latest evidence. Automated tests, manual checks and review evidence stay separate; failed, stale, missing, waived and pending outcomes remain visible. Without a selected task, validation is missing. Historical notes are references only, so curate relevant decisions and follow-ups with current evidence. Task readiness is not approval: independently verify explicit reviewer verdicts against the current source before replacing the generated `unknown` review gate. Do not use old review-history text as proof.
+
 ### 1d.2 Project learnings refresh
 If `${HELPER_DIR}/show-project-learnings.js` is available, run it before preparing the PR body:
 
@@ -313,6 +315,8 @@ Context:
 - Full diff: {git_diff}
 - File summary: {git_diff_stat}
 - FORGEFLOW_DIR: {forgeflow_dir}
+- Selected task and current validation evidence: {selected_task_and_current_evidence_or_missing}
+- Explicit reviewer verdicts verified against the current source: {current_review_verdicts_or_unknown}
 {If plan exists:}
 - Implementation plan: {plan_content}
 {If discussion exists:}
@@ -324,7 +328,7 @@ Context:
 {If implementation notes exist:}
 - Implementation notes: {implementation_notes_content}
 
-Also read ${FORGEFLOW_DIR}/review-history.md to extract the review verdict details. Summarize implementation notes into decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes; do not dump raw notes or include secrets.
+Treat ${FORGEFLOW_DIR}/review-history.md and implementation notes as historical context only. Curate decisions, spec gaps, tradeoffs, deviations and follow-ups relevant to this change; use current task evidence for validation notes; do not dump raw notes or include secrets. Historical review entries are not current approval.
 
 Produce ONLY valid JSON matching this exact schema. No markdown, no explanation, no preamble.
 Just the JSON object:
@@ -354,8 +358,8 @@ Just the JSON object:
   "risks_mitigated": ["Each risk as a complete sentence describing the risk and how it was addressed."],
   "learnings": ["Noteworthy things the team should remember from this implementation."],
   "review_verdict": {
-    "arbiter": "APPROVE|REVISE|BLOCK",
-    "compass": "CONFIRM|CHALLENGE",
+    "arbiter": "APPROVE|CONDITIONAL APPROVE|REVISE|BLOCK|UNKNOWN",
+    "compass": "CONFIRM|CHALLENGE|UNKNOWN",
     "blockers_resolved": 0,
     "highlights": ["Key positive callouts from the review."]
   },
@@ -365,13 +369,13 @@ Just the JSON object:
 
 Rules:
 - "files_changed" must be derived from the actual diff, not guessed.
-- For "testing", run test commands if a test runner is configured (check package.json scripts).
-  If tests cannot be run, provide best-effort estimates from test file analysis. Set counts to 0
-  if unknown, and note this in "summary".
+- For "testing", reuse current source-bound evidence or run the missing relevant checks.
+  Never estimate results from test files. If evidence is missing or stale and checks cannot run,
+  use an empty "results" array and explain the missing validation in "summary". Preserve observed failures.
 - "branch" must come from: git branch --show-current
 - "base" should match `${BASE_BRANCH}` -- verify with: git rev-parse --verify ${BASE_BRANCH} 2>/dev/null
-- "review_verdict" must be parsed from review-history.md, not fabricated.
-- "implementation_notes" must be summarized from `${NOTES_PATH}` when present. Use empty arrays when no notes exist.
+- "review_verdict" must use explicit reviewer decisions verified against the current source. Use UNKNOWN when absent or stale; task readiness and historical approvals are not reviewer verdicts.
+- "implementation_notes" must include only notes relevant to the current change with validation claims grounded in current evidence. Use empty arrays when no relevant notes exist.
 ```
 
 ### Agent 3 -- Screenshot Agent (conditional -- only if HAS_FRONTEND is true)
