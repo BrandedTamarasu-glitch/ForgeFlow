@@ -195,6 +195,10 @@ Start the activity service with `$agent-chat-on` in Codex or `/agent-chat:on` in
 
 ## Review routing and evidence
 
+ForgeFlow's workflow instructions carry five questions through design, implementation, validation, review, and shipping: Is this the simplest effective change? Is its complexity proportional to the app and its risks? Does it serve one concern? Why does it work? What was checked, and what happened? Agents must connect their answers to the actual change and observed evidence; their assessment does not substitute for human approval.
+
+Consultation starts with the primary domain specialist and adds specialists for concrete risks or uncertainty. An explicit full-team request still selects the full team. Arbiter synthesizes the brief, and downstream validation and review remain separate checks.
+
 Review routing chooses skip, thin, full, or deep mode based on the change and explains the decision. High-risk findings can pass through Aegis before they become blockers.
 
 Arbiter returns **APPROVE**, **CONDITIONAL APPROVE**, **REVISE**, or **BLOCK**. Compass can **CONFIRM** or **CHALLENGE** the verdict. Read the scope, conditions, and validation behind those labels; a verdict is not a substitute for the checks your project requires.
@@ -205,7 +209,7 @@ Claude’s `/review-auto` provides conservative repair paths with additional con
 
 ForgeFlow stores plans, briefs, implementation notes, review evidence, and compact context under **`.forgeflow/<project-name>/`**, ignored by Git by default.
 
-- **Focused context:** file scope, memory selection, ownership packets, and context budgets help keep agent inputs relevant.
+- **Focused context:** file scope, memory selection, ownership packets, and context budgets help keep agent inputs relevant. Dependency advice requires a task reference; focused memory uses module references and links broader history instead of repeating it.
 - **Project intelligence:** code maps, operating models, architecture, ownership, and invocation hints guide unfamiliar work.
 - **Implementation notes:** decisions, tradeoffs, deviations, follow-ups, and validation stay available for review and handoff.
 - **Project learnings:** repeated patterns and observed outcomes inform the next task, subject to current code and instructions.
