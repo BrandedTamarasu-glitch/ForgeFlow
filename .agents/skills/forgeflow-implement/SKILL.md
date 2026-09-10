@@ -33,6 +33,7 @@ Rules:
 - When implementation takes a smaller path, record the known ceiling and upgrade trigger in implementation notes.
 - Compass focuses on tests and validation artifacts, not product code.
 - Atlas owns coordination and memory, not implementation churn.
+- Pass these requirements to every implementer: record bugs discovered outside the assigned scope as `follow-up` note candidates when found, including evidence or reproduction steps and user impact. Atlas consolidates them into local implementation notes and carries pending issue filing into the handoff. For a temporary workaround, also record its limitations, long-term solution, associated GitHub issue (or pending draft), and agreed timeline or unresolved timeline decision. Preserve file ownership and remote-write authorization.
 
 Suggested prompts:
 - `$forgeflow-implement execute the current brief`
@@ -40,13 +41,20 @@ Suggested prompts:
 
 ## Change reflection
 
-Before presenting results, answer the five change-reflection questions below from the implementation and validation evidence. Include the answers in the implementation report and save them in the existing implementation notes for review.
+Before presenting results, answer the change-reflection questions below from the implementation and validation evidence. Include the answers in the implementation report and save them in the existing implementation notes for review.
 
 1. **Is this the simplest change that solves the problem?** Explain the chosen approach and any smaller alternative considered.
 2. **Is the complexity proportional to this project's scale and risk?** Use known users, operations, and maintenance needs; state assumptions when unknown. A 100-user internal app is an example, not a default or a reason to drop required safeguards.
 3. **One PR = one concern: did anything unrelated sneak in?** State the concern and connect the changed files to it. Flag unrelated work for a separate change.
 4. **In your own words, why does this change work?** Explain how the changes produce the intended outcome. For process-only changes, explain the workflow effect.
 5. **How did you verify it, and what did you see?** Give actual commands or manual steps, observed results, and untested limits. For documentation or process changes, describe the instruction or command checks performed and why application tests are inapplicable when that is the case.
+
+6. **Does this resolve the issue long-term, or is it a band-aid?** Explain whether the underlying cause is addressed. A temporary workaround is viable, but the PR must explain its limitations and the long-term solution, link an associated GitHub issue, and state the agreed timeline. If the issue or timeline is missing, report the gap explicitly; never invent an issue link or commitment.
+7. **Were bugs found outside this PR's scope?** Capture each discovered bug as a follow-up with evidence or reproduction steps, user impact, and an existing issue link or a local tracking entry awaiting filing. Keep unrelated fixes in separate work; do not discard bugs because they are out of scope.
+8. **How does this change affect users, and is training needed?** Describe the affected users and workflow changes. Identify required documentation, onboarding, release notes, or training and their readiness, or explain why none is needed.
+9. **Do user-facing errors explain what happened and what to do next?** Check changed failure paths for clear, accurate messages and actionable recovery steps without exposing sensitive details. Cite observed behavior and untested paths, or state why this is not applicable.
+
+Reuse existing issues where possible. Create or update GitHub issues only within current remote-write authorization. Otherwise save an actionable issue draft in local implementation notes and surface the pending filing and timeline decisions in the handoff and PR assessment; a draft does not satisfy the associated GitHub issue requirement. Missing follow-up details remain visible without introducing an automatic approval pause.
 
 Keep answers brief and specific to the current diff. AI collaboration alone is not verification evidence. Label agent-written answers as an agent assessment; never imply a human inspected, understood, or approved the change without their input. These prompts guide reflection and do not add hooks, hard gates, or mandatory confirmation pauses.
 
