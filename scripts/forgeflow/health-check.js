@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { inspectRtk } = require('./rtk-setup');
 const { seedBudgetConfig } = require('./seed-budget-config');
 const { checkProjectLearnings } = require('./check-project-learnings');
 const { assertSafeDirectory, safeReadTextFile, writeFileSafe } = require('./file-safety');
@@ -163,30 +164,19 @@ function safeMkdir(dir) {
   fs.mkdirSync(dir, { recursive: true });
 }
 
-function executableOnPath(name, pathValue = process.env.PATH || '') {
-  for (const dir of String(pathValue).split(path.delimiter).filter(Boolean)) {
-    const file = path.join(dir, name);
-    try {
-      fs.accessSync(file, fs.constants.X_OK);
-      return file;
-    } catch (_err) {
-      // Continue scanning PATH.
-    }
-  }
-  return '';
-}
-
 function addSessionToolChecks(checks) {
-  const rtk = executableOnPath('rtk');
-  checks.push(rtk
-    ? check('rtk command wrapper on PATH', true, '', { path: rtk })
-    : warn('rtk command wrapper on PATH', 'install or expose rtk on PATH before Codex sessions that follow this repo command policy', {
-      reason: 'rtk is not required by Forgeflow runtime helpers, but this repository asks shell sessions to prefix commands with it.',
-      verify: 'command -v rtk',
-      repair: 'Install rtk or add its install directory to PATH for non-interactive shells.',
-      policy_alignment: 'repo-command-policy',
-      impact: 'Codex sessions may be unable to follow AGENTS.md command-prefix guidance until rtk is available.',
-    }));
+  const rtk = inspectRtk();
+  const detail = {
+    optional: true,
+    reason: rtk.action,
+    verify: 'rtk --version && rtk gain',
+    repair: 'Use direct commands, or explicitly install RTK with install-template.js --install-rtk.',
+    policy_alignment: 'optional-command-wrapper',
+  };
+  const name = 'rtk command wrapper on PATH';
+  checks.push(rtk.status === 'ready'
+    ? check(name, true, '', { ...detail, version: rtk.version })
+    : rtk.status === 'missing' ? skip(name, detail) : warn(name, rtk.action, detail));
 }
 
 function addInstallChecks(checks, installRoot) {

@@ -29,6 +29,7 @@ const DASHBOARD_RUNTIME = new Set([
 ]);
 const RUNTIME_HELPERS = [
   'scripts/forgeflow/ember-setup.js',
+  'scripts/forgeflow/rtk-setup.js',
   'scripts/forgeflow/task-store.js',
   'scripts/forgeflow/task.js',
   'scripts/forgeflow/task-evaluation.js',

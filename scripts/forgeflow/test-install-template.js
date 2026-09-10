@@ -2,12 +2,69 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const assert = require('assert');
+const { inspectRtk, setupRtk } = require('./rtk-setup');
 const {
   codexDestination,
   codexSources,
   installTemplate,
   isRegularSourceFile,
+  parseArgs,
 } = require('./install-template');
+
+function rtkRunner(initial, installStatus = 0) {
+  let state = initial;
+  const calls = [];
+  const run = (command, args, options) => {
+    calls.push({ command, args, options });
+    if (command === 'cargo') {
+      if (installStatus === 0) state = 'ready';
+      return { status: installStatus, stdout: '', stderr: '' };
+    }
+    if (state === 'missing') return { status: null, error: { code: 'ENOENT' } };
+    if (state === 'timeout') return { status: null, error: { code: 'ETIMEDOUT' } };
+    if (args[0] === '--version') return { status: 0, stdout: 'rtk 0.48.0\n' };
+    return { status: state === 'wrong' ? 2 : 0, stdout: 'private savings history' };
+  };
+  return { run, calls };
+}
+
+const readyRtk = rtkRunner('ready');
+assert.strictEqual(setupRtk({ install: true, run: readyRtk.run }).status, 'ready');
+assert.deepStrictEqual(readyRtk.calls.map((call) => call.args), [['--version'], ['gain']]);
+assert(readyRtk.calls.every((call) => call.options.timeout === 5000));
+const missingRtk = rtkRunner('missing');
+assert.strictEqual(setupRtk({ run: missingRtk.run }).status, 'missing');
+assert(!missingRtk.calls.some((call) => call.command === 'cargo'), 'ordinary setup must not install RTK');
+const previewRtk = rtkRunner('missing');
+const rtkPlan = setupRtk({ install: true, dryRun: true, run: previewRtk.run });
+assert.strictEqual(rtkPlan.status, 'planned');
+assert(!previewRtk.calls.some((call) => call.command === 'cargo'), 'dry run must not install RTK');
+const installRtk = rtkRunner('missing');
+const installedRtk = setupRtk({ install: true, run: installRtk.run });
+assert.strictEqual(installedRtk.status, 'ready');
+assert.strictEqual(installedRtk.installed, true);
+assert.deepStrictEqual(installRtk.calls.find((call) => call.command === 'cargo').args, rtkPlan.command.slice(1));
+assert(rtkPlan.command.includes('https://github.com/rtk-ai/rtk') && rtkPlan.command.includes('--locked'));
+const wrongRtk = rtkRunner('wrong');
+assert.strictEqual(setupRtk({ install: true, run: wrongRtk.run }).status, 'unverified');
+assert(!wrongRtk.calls.some((call) => call.command === 'cargo'), 'unverified binaries must not be overwritten');
+assert.strictEqual(inspectRtk({ run: rtkRunner('timeout').run }).status, 'unverified');
+assert.strictEqual(setupRtk({ install: true, run: rtkRunner('missing', 1).run }).status, 'failed');
+const offPathCalls = [];
+const offPath = setupRtk({ install: true, run: (command, args) => {
+  offPathCalls.push(command);
+  if (command === 'rtk') return { error: { code: 'ENOENT' } };
+  return { status: 0, stdout: args[0] === '--version' ? 'rtk 0.48.0' : '' };
+} });
+assert.strictEqual(offPath.status, 'path-required');
+assert(!offPathCalls.includes('cargo'), 'an existing Cargo installation needs PATH guidance, not reinstallation');
+const unverifiableInstall = setupRtk({ install: true, run: (command) => command === 'cargo'
+  ? { status: 0 } : { error: { code: 'ENOENT' } } });
+assert.strictEqual(unverifiableInstall.status, 'failed', 'Cargo success alone cannot claim a working RTK');
+assert.strictEqual(inspectRtk({ run: () => ({ status: 0, stdout: 'Some Other Tool 1.2.3' }) }).status, 'unverified');
+assert(!JSON.stringify(installedRtk).includes('private savings history'));
+assert.strictEqual(parseArgs(['--target', 'codex', '--install-rtk', '--dry-run']).installRtk, true);
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-template-install-'));
 const claudeHome = path.join(root, 'claude');
@@ -22,7 +79,12 @@ const dryRun = installTemplate({
   claudeHome: dryClaudeHome,
   codexHome: dryCodexHome,
   dryRun: true,
+  installRtk: true,
+  rtkRun: rtkRunner('missing').run,
 });
+assert.strictEqual(dryRun.rtk.status, 'planned');
+const incompleteRtk = installTemplate({ target: 'codex', codexHome: dryCodexHome, dryRun: true, installRtk: true, rtkRun: rtkRunner('wrong').run });
+assert.strictEqual(incompleteRtk.status, 'attention');
 
 const codexAgent = path.join(codexHome, 'agents', 'smith-reviewer.toml');
 const codexSkill = path.join(codexHome, 'skills', 'forgeflow-review', 'SKILL.md');
@@ -68,6 +130,7 @@ const checks = [
   ['codex skill installed', fs.existsSync(codexSkill)],
   ['codex map installed', fs.existsSync(codexMap)],
   ['codex runtime helper installed', fs.existsSync(codexHelper)],
+  ['both runtimes include RTK setup', [claudeHome, codexHome].every((home) => fs.existsSync(path.join(home, 'forgeflow/scripts/forgeflow/rtk-setup.js')))],
   ['codex shell helper is executable', (fs.statSync(codexShellHelper).mode & 0o111) !== 0],
   ['codex template installed', fs.existsSync(codexTemplate)],
   ['codex pattern installed', fs.existsSync(codexPattern)],

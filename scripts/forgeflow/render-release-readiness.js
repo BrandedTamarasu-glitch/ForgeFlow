@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const { inspectRtk } = require('./rtk-setup');
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
@@ -447,26 +448,13 @@ function advisoryCheck(command, status, stdout, clears) {
   };
 }
 
-function executableOnPath(name, pathValue = process.env.PATH || '') {
-  for (const dir of String(pathValue).split(path.delimiter).filter(Boolean)) {
-    const file = path.join(dir, name);
-    try {
-      fs.accessSync(file, fs.constants.X_OK);
-      return file;
-    } catch (_err) {
-      // Continue scanning PATH.
-    }
-  }
-  return '';
-}
-
 function evidenceReadinessChecks(root, planOnly = false) {
   if (planOnly) {
     return [
       advisoryCheck('lean benchmark evidence advisory', 'planned', '', '/forgeflow-lean-benchmark-runner --run --runner <promptfoo>'),
       advisoryCheck('host probe evidence advisory', 'planned', '', '/forgeflow-lean-host-cli-probes --write-template'),
       advisoryCheck('failure digest aftercare advisory', 'planned', '', '/forgeflow-failure-digest after the next failed validation command'),
-      advisoryCheck('rtk policy alignment advisory', 'planned', '', 'Install rtk or expose it on PATH for sessions that follow this repository command policy.'),
+      advisoryCheck('rtk policy alignment advisory', 'planned', '', 'RTK is optional. Use direct commands, or opt in with install-template.js --install-rtk.'),
     ];
   }
   const projectDir = defaultProjectDir(root);
@@ -477,7 +465,7 @@ function evidenceReadinessChecks(root, planOnly = false) {
   const hostProbes = Array.isArray(hostEvidence?.probes) ? hostEvidence.probes : [];
   const verifiedHosts = hostProbes.filter((item) => ['pass', 'verified'].includes(String(item.status || '').toLowerCase())).length;
   const failureDigest = path.join(projectDir, 'context', 'latest', 'failure-digest.md');
-  const rtk = executableOnPath('rtk');
+  const rtk = inspectRtk();
   return [
     advisoryCheck(
       'lean benchmark evidence advisory',
@@ -499,9 +487,9 @@ function evidenceReadinessChecks(root, planOnly = false) {
     ),
     advisoryCheck(
       'rtk policy alignment advisory',
-      rtk ? 'pass' : 'warn',
-      rtk ? 'rtk command wrapper is on PATH.' : 'rtk command wrapper is not on PATH for this session.',
-      'Install rtk or expose it on PATH for sessions that follow this repository command policy.',
+      ['ready', 'missing'].includes(rtk.status) ? 'pass' : 'warn',
+      rtk.status === 'ready' ? 'Rust Token Killer verified with --version and gain.' : rtk.action,
+      'RTK is optional. Use direct commands, or opt in with install-template.js --install-rtk.',
     ),
   ];
 }

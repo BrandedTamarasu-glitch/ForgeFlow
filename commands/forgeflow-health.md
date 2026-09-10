@@ -59,6 +59,7 @@ EXPECTED_HOOKS=(forgeflow-gate forgeflow-context-monitor forgeflow-lean-activate
 EXPECTED_TEMPLATES=(ship-presentation.html)
 EXPECTED_RUNTIME_HELPERS=(
   ember-setup.js
+  rtk-setup.js
   task-store.js task.js task-evaluation.js task-memory.js task-maintenance.js fleet-environment.js
   vault-memory.js vault-format.js vault-outbox.js vault-project.js
   advise-context.js advise-noisy-command.js agent-chat-off.sh agent-chat-on.sh open-session-dashboard.js apply-review-autofix-proposal.js build-code-topology.js build-context-pack.js build-context-wave.js build-failure-digest.js build-memory-context.js build-project-intelligence.js build-project-operating-model.js build-review-autofix-proposal.js

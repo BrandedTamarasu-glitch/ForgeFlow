@@ -39,6 +39,23 @@ node scripts/forgeflow/install-template.js --target both --claude-home /tmp/clau
 
 The installer copies managed files; it does not install npm dependencies. Follow [Quick Start](Quick-Start.md) for the dashboard and activity service dependency commands before expecting the workshop to open. Keep Node, npm, and the host in the same shell environment.
 
+## Optional RTK
+
+Forgeflow works without Rust Token Killer. Setup checks both `rtk --version` and `rtk gain`, since another tool shares the RTK name. Missing RTK is optional; an unverified executable gets direct-command fallback guidance. The checks have timeouts and do not include savings-history output in installation reports.
+
+To request installation explicitly:
+
+```bash
+node scripts/forgeflow/install-template.js --target codex --install-rtk --dry-run
+node scripts/forgeflow/install-template.js --target codex --install-rtk
+```
+
+This requires Cargo and a working Rust toolchain. The opt-in runs `cargo install --git https://github.com/rtk-ai/rtk --tag v0.48.0 --locked rtk`, using the official repository and a pinned release. It can download and compile dependencies and writes to the normal Cargo installation directory. Existing verified RTK versions are reused. Default setup and dry runs do not download or install RTK. Other installation methods are in the [upstream guide](https://www.rtk-ai.app/docs/getting-started/installation/).
+
+Forgeflow does not overwrite an unverified RTK executable, run `rtk init`, or modify shell profiles or global hooks. If Cargo's binary directory is outside PATH, setup reports the path to expose. An incomplete explicitly requested RTK setup returns exit 1 with `status: attention`; the Forgeflow files already copied remain installed.
+
+Use RTK for supported commands after verification. Run commands directly when it is unavailable, and use direct execution or `rtk proxy <command>` when raw output is needed for validation or debugging. Do not automatically rerun a failed wrapped write, since it may already have taken effect.
+
 ## After Installing
 
 Restart the target tool so agents, commands, and skills are reloaded.

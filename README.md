@@ -53,6 +53,8 @@ The guide identifies the source commit it describes. For the latest implementati
 
 You need Git, Node.js with npm, Bash for the shell helpers, and a working Claude Code or Codex setup with access to the models you intend to use. This repository’s CI runs on **Node.js 24**. The examples below use Bash; keep the host, installation, and project in the same shell environment.
 
+RTK is optional. The installer checks `rtk --version` and `rtk gain`; ordinary installation does not download RTK. Use direct commands when it is unavailable. To opt in to a Cargo-based RTK installation, add `--install-rtk` (preview with `--install-rtk --dry-run`). See [optional RTK setup](docs/wiki/Template-Installer.md#optional-rtk).
+
 Clone the source:
 
 ```bash

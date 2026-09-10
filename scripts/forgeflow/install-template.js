@@ -13,6 +13,7 @@ const {
 } = require('./install-manifest');
 
 const { setupEmber } = require('./ember-setup');
+const { setupRtk } = require('./rtk-setup');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 const CLAUDE_SOURCE_DIRS = [
@@ -28,7 +29,7 @@ const CLAUDE_SOURCE_DIRS = [
 ];
 
 function usage() {
-  console.error('Usage: install-template.js [--target claude|codex|both] [--claude-home <dir>] [--codex-home <dir>] [--dry-run] [--json]');
+  console.error('Usage: install-template.js [--target claude|codex|both] [--claude-home <dir>] [--codex-home <dir>] [--install-rtk] [--dry-run] [--json]');
 }
 
 function parseArgs(argv) {
@@ -37,6 +38,7 @@ function parseArgs(argv) {
     claudeHome: path.join(os.homedir(), '.claude'),
     codexHome: process.env.CODEX_HOME || path.join(os.homedir(), '.codex'),
     dryRun: false,
+    installRtk: false,
     json: false,
   };
 
@@ -48,6 +50,8 @@ function parseArgs(argv) {
       opts.claudeHome = path.resolve(argv[++i] || '');
     } else if (arg === '--codex-home') {
       opts.codexHome = path.resolve(argv[++i] || '');
+    } else if (arg === '--install-rtk') {
+      opts.installRtk = true;
     } else if (arg === '--dry-run') {
       opts.dryRun = true;
     } else if (arg === '--json') {
@@ -192,9 +196,11 @@ function installTemplate(opts = {}) {
   for (const result of results) {
     result.ember = (opts.emberSetup || setupEmber)({ home: result.home, target: result.target, dryRun: Boolean(opts.dryRun) });
   }
+  const rtk = setupRtk({ install: Boolean(opts.installRtk), dryRun: Boolean(opts.dryRun), run: opts.rtkRun });
   return {
     schema_version: '1',
-    status: 'ok',
+    status: opts.installRtk && !['ready', 'planned'].includes(rtk.status) ? 'attention' : 'ok',
+    rtk,
     dry_run: Boolean(opts.dryRun),
     results,
   };
@@ -202,8 +208,11 @@ function installTemplate(opts = {}) {
 
 function renderMarkdown(result) {
   const lines = [
-    result.dry_run ? 'Forgeflow template install plan.' : 'Forgeflow template install complete.',
+    result.dry_run ? 'Forgeflow template install plan.' : result.status === 'ok' ? 'Forgeflow template install complete.' : 'Forgeflow files installed; optional RTK setup needs attention.',
   ];
+  lines.push(`RTK (optional): ${result.rtk.status}. ${result.rtk.action}`);
+  if (result.rtk.command) lines.push(`RTK install command: ${result.rtk.command.join(' ')}`);
+  if (result.rtk.status === 'missing') lines.push('To install RTK with Cargo, rerun with --install-rtk; preview with --install-rtk --dry-run.');
   for (const item of result.results) {
     lines.push('', `${item.target}: ${item.copied.length} files -> ${item.home}`);
     if (item.target === 'codex') {
@@ -223,6 +232,7 @@ function main() {
   const result = installTemplate(opts);
   if (opts.json) console.log(JSON.stringify(result, null, 2));
   else console.log(renderMarkdown(result));
+  if (result.status !== 'ok') process.exitCode = 1;
 }
 
 if (require.main === module) {
@@ -236,5 +246,6 @@ module.exports = {
   installCodex,
   installTemplate,
   isRegularSourceFile,
+  parseArgs,
   renderMarkdown,
 };
