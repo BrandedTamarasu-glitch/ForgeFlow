@@ -1,5 +1,7 @@
 # Quick Start
 
+**Upgrading from legacy agent names:** follow the [source-checkout migration procedure](../role-migration-upgrade.md) before using an old installed updater. It explains how to preserve edited legacy agents and recover the previous installation.
+
 Install ForgeFlow into Claude Code or Codex, then use it inside the application repository you want to improve. For screenshots and a complete walkthrough, use the [visual guide](../user-guide.html) or [PDF](../ForgeFlow-User-Guide.pdf).
 
 ## Prerequisites
@@ -33,9 +35,9 @@ node scripts/forgeflow/install-template.js --target claude --dry-run --json
 node scripts/forgeflow/install-template.js --target claude
 ```
 
-Restart Claude Code. Follow [Settings and Recovery](Settings-And-Recovery.md) to merge hooks and the status line into your existing settings without overwriting unrelated entries. The installer does not perform that settings merge.
+Restart Claude Code. The installer registers Ember's `UserPromptSubmit` hook and backs up changed settings while preserving unrelated entries. Follow [Settings and Recovery](Settings-And-Recovery.md) to merge the other hooks and the status line manually.
 
-Once the Claude commands are installed, `/update-forgeflow` is the normal updater. `--repair` restores managed files; `--rollback` uses a previous updater snapshot when one exists. Those are Claude updater capabilities. For other installer options, including `--target both`, see [Template Installer](Template-Installer.md).
+After the legacy-name migration, `/update-forgeflow` is the normal Claude updater. `--repair` restores managed files; `--rollback` uses a previous managed-file snapshot when one exists. The source updater supports both host targets; see [Settings and Recovery](Settings-And-Recovery.md) for Codex recovery and [Template Installer](Template-Installer.md) for other installer options, including `--target both`.
 
 ## Set The Runtime Path
 
@@ -53,9 +55,11 @@ For a custom Claude home, use that directory's `forgeflow` subdirectory.
 
 ## Enable The Dashboard
 
+The installer prepares locked service dependencies automatically. If it reports a setup warning, repair missing dependencies with:
+
 ```bash
-npm install --prefix "$FF_RUNTIME/services/dashboard" --ignore-scripts
-npm install --prefix "$FF_RUNTIME/services/agent-chat" --ignore-scripts
+npm ci --prefix "$FF_RUNTIME/services/dashboard" --ignore-scripts --no-audit --no-fund
+npm ci --prefix "$FF_RUNTIME/services/agent-chat" --ignore-scripts --no-audit --no-fund
 ```
 
 On the first eligible ForgeFlow workflow invocation in a desktop session, the workflow helper starts or reuses the services, reports the phase, and opens **http://127.0.0.1:4003/**. Later invocations reuse the session without opening more tabs. Startup never installs dependencies automatically. Headless sessions and `FORGEFLOW_DASHBOARD_AUTO_OPEN=off` skip automatic launch.

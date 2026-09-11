@@ -13,6 +13,8 @@ Core workflows use Claude Code slash commands or Codex skills:
 | Prepare and implement | `/consult`, `/implement` | `$consult`, `$implement` |
 | Review | `/review` | `$forge-review` |
 | Audit or quick task | `/audit`, `/quick` | `$audit`, `$quick` |
+| Verify a finding | Verifier pass within `/review` | `$verifier-verify` |
+| Calibrate review with an answer key | `/debate` | `$debate` |
 | Ship | `/ship` | `$ship` |
 
 The command catalog below describes Claude Code commands. It is not a promise that every slash command has a Codex skill. For advanced operations in Codex, use the corresponding source helper or installed runtime helper; check its `--help` before supplying inputs. See [Quick Start](Quick-Start.md) for installation and [User Paths](User-Paths.md) for a short route to an outcome.

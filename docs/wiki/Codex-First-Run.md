@@ -1,5 +1,7 @@
 # Codex First Run
 
+**Upgrading from legacy agent names:** follow the [source-checkout migration procedure](../role-migration-upgrade.md) before using an old installed updater. It explains how to preserve edited legacy agents and recover the previous installation.
+
 Use this when installing Forgeflow into Codex from a local checkout. The goal is to copy agents and skills into your Codex home without overwriting unrelated local config.
 
 ## Install From Checkout

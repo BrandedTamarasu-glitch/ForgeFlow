@@ -68,11 +68,11 @@ During ship prep, Forgeflow writes the checker result to `.forgeflow/<project-na
 ```markdown
 ## Decisions
 
-- 2026-05-18 | Atlas | decision | Chose Markdown as canonical notes format because it is local, diffable, and easy for agents to append.
+- 2026-05-18 | Coordinator | decision | Chose Markdown as canonical notes format because it is local, diffable, and easy for agents to append.
 
 ## Spec Gaps
 
-- 2026-05-18 | Arbiter | spec-gap | The spec did not define note ownership; Atlas serializes candidates to avoid parallel writes.
+- 2026-05-18 | Architect | spec-gap | The spec did not define note ownership; Coordinator serializes candidates to avoid parallel writes.
 
 ## Tradeoffs
 

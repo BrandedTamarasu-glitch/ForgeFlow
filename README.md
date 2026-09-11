@@ -90,9 +90,9 @@ node scripts/forgeflow/install-template.js --target claude --dry-run --json
 node scripts/forgeflow/install-template.js --target claude
 ```
 
-Restart Claude Code. Merge the documented hooks and status line into your existing `~/.claude/settings.json`, preserving unrelated settings and avoiding duplicate registrations. The installer leaves that settings merge to you. See [Settings and Recovery](docs/wiki/Settings-And-Recovery.md).
+Restart Claude Code. The installer registers Ember's `UserPromptSubmit` hook, preserves existing settings, and backs up settings before changing them. Merge the other documented hooks and status line manually, avoiding duplicate registrations. See [Settings and Recovery](docs/wiki/Settings-And-Recovery.md).
 
-After the canonical-role migration above, `/update-forgeflow` is the regular Claude updater; `--repair` reinstalls missing or damaged managed files. The updater supports rollback to its previous managed-file snapshot when available. These are Claude updater capabilities, not a general Codex rollback mechanism.
+After the canonical-role migration above, `/update-forgeflow` is the regular Claude updater; `--repair` reinstalls missing or damaged managed files. The source updater also supports `--target codex`. Both targets can restore the previous managed-file snapshot with `--rollback` when available. Codex's `$update-forgeflow` skill handles checkout synchronization; use the [recovery instructions](docs/wiki/Settings-And-Recovery.md) for installed-runtime rollback.
 
 To install both hosts from a checkout, use `--target both`. See the [template installer](docs/wiki/Template-Installer.md) for custom home directories.
 
@@ -108,11 +108,11 @@ FF_RUNTIME="${CODEX_HOME:-$HOME/.codex}/forgeflow"
 # FF_RUNTIME="$HOME/.claude/forgeflow"
 ```
 
-Install the local services’ dependencies:
+The installer prepares the local services' locked dependencies automatically. If setup reports missing dependencies, repair them with:
 
 ```bash
-npm install --prefix "$FF_RUNTIME/services/dashboard" --ignore-scripts
-npm install --prefix "$FF_RUNTIME/services/agent-chat" --ignore-scripts
+npm ci --prefix "$FF_RUNTIME/services/dashboard" --ignore-scripts --no-audit --no-fund
+npm ci --prefix "$FF_RUNTIME/services/agent-chat" --ignore-scripts --no-audit --no-fund
 ```
 
 On the first eligible ForgeFlow workflow invocation in a desktop session, ForgeFlow starts or reuses the dashboard and activity service, reports the phase, and opens **http://127.0.0.1:4003/**. Later invocations reuse the services without opening more tabs. Automatic startup never installs dependencies.
@@ -161,12 +161,12 @@ The Claude command catalog is larger than the installed Codex skill set. Do not 
 | **Builder** | Backend craft, data structures, naming, and maintainability |
 | **Guardian** | Security, validation, system boundaries, and reuse |
 | **Designer** | UX, accessibility, frontend quality, and connectivity |
-| **Coordinator** | Scope, coordination, project memory, and handoff context |
-| **Architect** | Architecture synthesis, implementation briefs, and technical verdicts |
-| **Product Lead** | Requirements, validation, plan adherence, and product intent |
+| **Coordinator** | Scope, coordination, project memory, implementation notes, and developer shipping summaries |
+| **Architect** | Architecture synthesis, implementation briefs, integration checks, technical verdicts, and debate judging |
+| **Product Lead** | Problem framing, research, planning, acceptance validation, final review, and stakeholder shipping summaries |
 | **Verifier** | Neutral verification of high-risk findings using visible evidence |
 
-ForgeFlow chooses agents according to the task. A small change need not invoke the full cast. [Meet the agents](docs/wiki/Agent-Roles.md).
+ForgeFlow chooses agents according to the task. A small change need not invoke the full cast. The [agent reference](docs/wiki/Agent-Roles.md) covers phase responsibilities, host identifiers, and the old-to-new name mapping. `/debate` or `$debate` uses a code sample and a withheld answer key to assess false positives and misses; Product Lead validates the final debate against that key.
 
 ## Dashboard
 

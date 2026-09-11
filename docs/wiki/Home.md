@@ -17,7 +17,7 @@ ForgeFlow helps turn an idea into a scoped brief, working code, an evidence-back
 
 ## New in 4.6.0
 
-[Agent Roles](Agent-Roles.md) now describe responsibility in the agent names. CLI and dashboard messages carry explicit task context, and agent prompts include Orwell's six writing rules. History, context rebuild, cleanup and recovery fixes preserve compatibility across the rename.
+[Agent Roles](Agent-Roles.md) covers Builder, Guardian, Designer, Coordinator, Architect, Product Lead, and Verifier, with their phase responsibilities, host identifiers, and legacy-name mapping. CLI and dashboard messages carry explicit task context, and agent prompts include Orwell's six writing rules. History, context rebuild, cleanup and recovery fixes preserve compatibility across the rename.
 
 For the first upgrade from legacy names, follow the [source-checkout procedure](../role-migration-upgrade.md). An old installed updater cannot apply the new preservation rules during its own update. Later releases use the newly installed helper.
 

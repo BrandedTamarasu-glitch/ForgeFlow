@@ -1,5 +1,7 @@
 # Template Installer
 
+**Upgrading from legacy agent names:** follow the [source-checkout migration procedure](../role-migration-upgrade.md) before using an old installed updater. It explains how to preserve edited legacy agents and recover the previous installation.
+
 Use the local template installer when you want to seed Forgeflow into Claude Code, Codex, or both from a checkout. It is separate from `/update-forgeflow`, which is the normal Claude no-clone updater.
 
 ## Install Both Targets
@@ -37,7 +39,7 @@ node scripts/forgeflow/install-template.js --target both --claude-home /tmp/clau
 
 ## Runtime Dependencies
 
-The installer copies managed files; it does not install npm dependencies. Follow [Quick Start](Quick-Start.md) for the dashboard and activity service dependency commands before expecting the workshop to open. Keep Node, npm, and the host in the same shell environment.
+The installer copies managed files and prepares the dashboard and activity services' locked dependencies with `npm ci --ignore-scripts --no-audit --no-fund`. Optional Ember setup failures produce repair guidance without failing the core installation. Dry runs and dashboard opt-out skip dependency installation. Follow [Dashboard](Dashboard.md#installation-and-startup-checks) to inspect or repair setup. Keep Node, npm, and the host in the same shell environment.
 
 ## Optional RTK
 
@@ -60,7 +62,7 @@ Use RTK for supported commands after verification. Run commands directly when it
 
 Restart the target tool so agents, commands, and skills are reloaded.
 
-For Claude Code, wire `~/.claude/settings.json` manually for hooks and statusline, then run:
+For Claude Code, the installer registers Ember's prompt hook automatically. Wire the other hooks and status line in `~/.claude/settings.json` manually, preserving existing entries, then run:
 
 ```text
 /forgeflow-version

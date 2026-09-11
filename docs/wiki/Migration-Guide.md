@@ -1,5 +1,7 @@
 # Migration Guide
 
+**Upgrading from legacy agent names:** follow the [source-checkout migration procedure](../role-migration-upgrade.md) before using an old installed updater. It explains how to preserve edited legacy agents and recover the previous installation.
+
 Use this when moving an existing local Claude install to the current Forgeflow layout.
 
 ## What The Current Layout Uses
@@ -112,7 +114,7 @@ Rollback does not mutate `settings.json`.
 
 ## Settings Wiring
 
-Forgeflow never auto-edits `~/.claude/settings.json`. If `/forgeflow-health` reports hook or statusline drift, edit settings manually.
+The template installer and updater can register Ember's prompt hook, preserving existing entries and a separate settings backup. Other hooks and the status line remain manual. If `/forgeflow-health` reports drift in those settings, follow [Settings and Recovery](Settings-And-Recovery.md).
 
 Statusline:
 

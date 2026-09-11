@@ -1,12 +1,14 @@
 # Settings And Recovery
 
+**Upgrading from legacy agent names:** follow the [source-checkout migration procedure](../role-migration-upgrade.md) before using an old installed updater. It explains how to preserve edited legacy agents and recover the previous installation.
+
 Shell examples run from the target project root. For `scripts/forgeflow/` commands, use the helper path from your ForgeFlow checkout, or replace that prefix with `"${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow/"` for Codex and `"$HOME/.claude/forgeflow/scripts/forgeflow/"` for Claude Code. Run JavaScript helpers with `node` and shell helpers with `bash`. Replace `<project>` with the actual project folder name before running a placeholder example.
 
 Use this when a new install passes file checks but Claude Code or Codex has not loaded the new commands, hooks, statusline, agents, or skills yet.
 
 ## Manual Settings Boundary
 
-Forgeflow never auto-edits `~/.claude/settings.json`. Health checks can report exact hook and statusline fixes, but the user applies them manually.
+The template installer and updater can register Ember's `UserPromptSubmit` hook in `~/.claude/settings.json`. They preserve existing entries and save changed settings under `forgeflow/backups/settings-before-ember-<hash>.json` in the runtime home. Other hooks and the status line remain user-managed. Health checks report their required fixes; see [Dashboard setup](Dashboard.md#installation-and-startup-checks) for the automatic hook and its opt-out.
 
 Statusline command:
 
@@ -73,7 +75,13 @@ If a command, agent, or skill exists on disk but is not visible, restart first, 
 
 ## Codex Repair
 
-From a verified ForgeFlow checkout, rerun `node scripts/forgeflow/install-template.js --target codex --dry-run --json`, inspect its destinations, then rerun without `--dry-run --json` and restart Codex. Use the same `CODEX_HOME` or `--codex-home` as the original installation. The Claude commands below do not provide a general Codex rollback; retain any manual backup or known-good checkout you need before replacing managed files. See [Quick Start](Quick-Start.md) for service dependencies if the dashboard fails to start.
+From a verified ForgeFlow checkout, rerun `node scripts/forgeflow/install-template.js --target codex --dry-run --json`, inspect its destinations, then rerun without `--dry-run --json` and restart Codex. Use the same `CODEX_HOME` or `--codex-home` as the original installation. For rollback of a Codex managed-file installation, use the source helper below with the original runtime home and an available previous snapshot. Codex's `$update-forgeflow` skill synchronizes a checkout; it is separate from this installed-runtime recovery command.
+
+```bash
+node scripts/forgeflow/update-forgeflow.js --target codex --home "${CODEX_HOME:-$HOME/.codex}" --rollback
+```
+
+A byte-identical reinstall preserves the snapshot; a later changed install or repair replaces it. Keep an independent backup of customizations. See [Quick Start](Quick-Start.md) for service dependencies if the dashboard fails to start.
 
 ## Claude Repair
 
@@ -83,7 +91,7 @@ Use repair when managed Forgeflow files are missing or corrupted:
 /update-forgeflow --repair
 ```
 
-Repair reinstalls managed files from upstream and preserves a rollback snapshot before writing. Plain `/update-forgeflow` also runs this repair path automatically when the installed SHA is current but required managed files are missing. Runtime helper discovery accepts any managed non-test helper under `scripts/forgeflow/`, so newly added helpers can be repaired in the same pass instead of requiring a second run after the manifest changes. It does not edit `settings.json`, custom agents, or unrelated local files.
+Repair reinstalls managed files from upstream and preserves a rollback snapshot before writing. Plain `/update-forgeflow` also runs this repair path automatically when the installed SHA is current but required managed files are missing. Runtime helper discovery accepts any managed non-test helper under `scripts/forgeflow/`, so newly added helpers can be repaired in the same pass instead of requiring a second run after the manifest changes. The repair can also prepare Ember dependencies and register its prompt hook with a separate settings backup. It preserves unknown custom files and edited legacy agents; managed current files can be replaced. Merge preserved legacy customizations deliberately.
 
 ## Rollback
 

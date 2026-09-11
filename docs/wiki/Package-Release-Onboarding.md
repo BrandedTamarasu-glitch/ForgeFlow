@@ -1,5 +1,7 @@
 # Package And Release Onboarding
 
+**Upgrading from legacy agent names:** follow the [source-checkout migration procedure](../role-migration-upgrade.md) before using an old installed updater. It explains how to preserve edited legacy agents and recover the previous installation.
+
 Use this when you arrive at Forgeflow from a package listing, release page, marketplace entry, or shared install link. The goal is to get from first install to a verified first review without needing prior project context.
 
 ## Choose Your Entry Point
@@ -30,7 +32,7 @@ Restart Claude Code after the installer finishes. Then verify:
 /forgeflow-health
 ```
 
-If `/forgeflow-health` reports a manual settings issue, edit `~/.claude/settings.json` and rerun the health check. Forgeflow intentionally does not auto-edit `settings.json`. See [Settings And Recovery](Settings-And-Recovery.md) for statusline, hook, restart, repair, and rollback guidance.
+If `/forgeflow-health` reports a manual settings issue, edit `~/.claude/settings.json` and rerun the health check. Ember setup can register its prompt hook with a settings backup; other hooks and the status line remain user-managed. See [Settings And Recovery](Settings-And-Recovery.md) for statusline, hook, restart, repair, and rollback guidance.
 
 The installed runtime helpers live at:
 
