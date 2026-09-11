@@ -62,28 +62,28 @@ if [ -z "$SUMMARY_TITLE" ]; then
   SUMMARY_TITLE="Release Summary for $BRANCH"
 fi
 
-FILE_LIST_JSON="$(git diff --name-status "$MERGE_BASE"..HEAD | python3 -c '
-import json,sys
-items=[]
-for line in sys.stdin:
-    line=line.rstrip("\n")
-    if not line:
-        continue
-    parts=line.split("\t", 1)
-    status=parts[0]
-    path=parts[1] if len(parts) > 1 else ""
-    items.append({"status": status, "path": path})
-print(json.dumps(items))
-')"
-
-SUMMARY_TEXT="Prepared from the current branch diff against $BASE_REF."
-IMPACT_TEXT="This branch changes $(git diff --name-only "$MERGE_BASE"..HEAD | wc -l | tr -d ' ') file(s) and is staged for shipping review."
 IMPLEMENTATION_NOTES_PATH="$FORGEFLOW_DIR/implementation-notes.md"
 
-node - "$HELPER_ROOT" "$REPO_ROOT" "$SHIP_DIR" "$TASK_ID" "$SUMMARY_TITLE" "$SUMMARY_TEXT" "$IMPACT_TEXT" "$BRANCH" "$BASE_BRANCH" "$DATE_ISO" "$FILE_LIST_JSON" <<'JS'
+node - "$HELPER_ROOT" "$REPO_ROOT" "$SHIP_DIR" "$TASK_ID" "$SUMMARY_TITLE" "$BRANCH" "$BASE_BRANCH" "$DATE_ISO" "$MERGE_BASE" "$BASE_REF" <<'JS'
 const fs = require('node:fs');
 const path = require('node:path');
-const [helperRoot, root, shipDir, taskId, title, summary, impact, branch, baseBranch, generatedAt, filesJson] = process.argv.slice(2);
+const { execFileSync } = require('node:child_process');
+const [helperRoot, root, shipDir, taskId, title, branch, baseBranch, generatedAt, mergeBase, baseRef] = process.argv.slice(2);
+// Inspect the index and working tree separately so an unstaged reversal cannot
+// hide a staged change. NUL-delimited paths preserve tabs and newlines. Disable
+// rename detection so both the removed and added paths appear in the inventory.
+const filesByPath = new Map();
+for (const layer of [['--cached'], []]) {
+  const fields = execFileSync('git', ['diff', ...layer, '--no-ext-diff', '--no-renames', '--name-status', '-z', mergeBase, '--'], { cwd: root, encoding: 'utf8' }).split('\0');
+  for (let i = 0; i < fields.length - 1; i += 2) {
+    filesByPath.set(fields[i + 1], { status: fields[i], path: fields[i + 1] });
+  }
+}
+const untracked = execFileSync('git', ['ls-files', '--others', '--exclude-standard', '-z'], { cwd: root, encoding: 'utf8' }).split('\0').filter(Boolean);
+for (const file of untracked) filesByPath.set(file, { status: 'A', path: file });
+const files = [...filesByPath.values()].sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
+const summary = `Prepared from the index and working tree against ${baseRef}, including nonignored untracked files.`;
+const impact = `This shipping preview includes ${files.length} changed file(s).`;
 let task = null;
 try {
   if (taskId) {
@@ -113,7 +113,7 @@ const validationDetails = task ? [
   ...task.actions.filter(item => ['pending', 'unknown'].includes(item.status)).map(item => `Action ${item.id}: ${item.status}. ${item.description}`),
 ] : [];
 const payload = {
-  title, summary, impact, branch, baseBranch, generatedAt, files: JSON.parse(filesJson),
+  title, summary, impact, branch, baseBranch, generatedAt, files,
   task: task ? { id: task.id, scope: task.workspace.scope, status: task.status, ready: task.ready, counts: task.counts } : null,
   validationSummary, validationDetails, validationEvidence: evidence,
   tests: current.filter(item => item.kind === 'test').map(describe),

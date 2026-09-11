@@ -85,6 +85,12 @@ Use `task-memory.js feedback --input <json>` with root, projectDir, taskId, lear
 
 `repair --root . --task <ci-id> --input <proposal-input.json>` accepts proposal_file referring to an existing bounded deterministic replace proposal. Source must still match, embedded validation commands are rejected, and the original event's explicit CI command is run after repair. Attempts are bounded and uncertain effects require reconciliation. `validate` resumes validation of an already applied, reconciled repair; it does not reapply the patch. `prepare` produces local draft Markdown/JSON from current passing evidence. No PR is created. `status`, `reconcile`, and `recover-lock` expose recovery steps.
 
+## Local shipping previews
+
+`ship-prepare.sh --task <id> [title]` includes changed paths from both the index and working tree compared with the branch merge base, plus nonignored untracked files. Each path appears once. Working-tree statuses take precedence over index statuses; untracked paths are shown as additions. A staged change remains visible even if an unstaged edit restores the base content. Renames appear as a deletion and an addition, so the count represents paths, not logical changes. Ignored untracked files are excluded; already tracked files remain eligible even if an ignore rule matches them.
+
+This is a local inventory, not a promise that every listed file belongs in a commit. Inspect it before publishing. The preview does not stage or commit files, and file inclusion does not establish validation or reviewer approval. Task evidence retains its own scope and freshness checks.
+
 ## Validation boundary
 
 Regression fixtures exercise freshness, atomic/idempotent updates, interruption recovery, installed host paths, live concurrent services, memory suppression, and a real local repair/check/draft sequence. Browser tests cover task states, keyboard controls, narrow screens, unsafe text and refresh failures. These demonstrate implementation behavior; they do not establish real-world agent performance or user adoption.

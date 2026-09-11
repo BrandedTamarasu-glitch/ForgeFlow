@@ -8,7 +8,11 @@ Turn an idea into a scoped brief, working code, an evidence-backed review, and a
 
 ![ForgeFlow workshop showing Ember, project readiness, recorded review outcomes, weekly trends, and live workflow activity](docs/images/forgeflow-workshop.png)
 
-## New in 4.6.1
+## New in 4.6.2
+
+Local shipping previews now include staged and unstaged edits and nonignored new files alongside committed branch changes. Each path appears once, and the count matches the file list. Renames appear as a deletion and an addition. Task validation and reviewer approval remain separate from file inclusion. See [shipping preview behavior](docs/wiki/Task-Evidence.md#local-shipping-previews) and the [4.6.2 release notes](docs/changelogs/v4.6.2.html).
+
+## Communication guidance from 4.6.1
 
 ForgeFlow's writing guidance now asks agents to match the reader's background, explain useful findings during progress updates, and describe concrete user outcomes. Final replies summarize relevant checks and keep uncertainty explicit. The update preserves exact technical details and required output formats. See the [communication guide](docs/wiki/Agent-Roles.md#communication-with-the-user) and [4.6.1 release notes](docs/changelogs/v4.6.1.html).
 

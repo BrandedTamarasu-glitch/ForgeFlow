@@ -13,9 +13,13 @@ ForgeFlow helps turn an idea into a scoped brief, working code, an evidence-back
 3. **[User Paths](User-Paths.md)**: choose a workflow for the outcome you need.
 4. **[Dashboard and Ember](Dashboard.md)**: understand current activity, readiness, evidence, and empty states.
 
-[Why ForgeFlow](Why-Forgeflow.md) explains the approach. [4.6.1 release notes](../changelogs/v4.6.1.html) describe the packaged version. This wiki follows the current source. The visual guide identifies its own source edition.
+[Why ForgeFlow](Why-Forgeflow.md) explains the approach. [4.6.2 release notes](../changelogs/v4.6.2.html) describe the packaged version. This wiki follows the current source. The visual guide identifies its own source edition.
 
-## New in 4.6.1
+## New in 4.6.2
+
+[Local shipping previews](Task-Evidence.md#local-shipping-previews) now include staged and unstaged edits and nonignored new files alongside committed changes, with one entry per path. Task validation remains tied to current evidence.
+
+## Communication guidance from 4.6.1
 
 The [communication guide](Agent-Roles.md#communication-with-the-user) explains the updated writing rules: audience-appropriate detail, useful progress updates, concrete examples, and clear validation limits. Exact technical details and structured output remain intact.
 

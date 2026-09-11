@@ -110,14 +110,57 @@ try {
   git('add', 'source.txt'); git('commit', '-qm', 'advance source');
   assert.deepEqual(prepare(['--task', 'selected']).tests, []);
 
+  // Exercise real Git layers, including a staged edit reversed in the worktree.
+  const unusual = 'tab\tand\nnewline.txt';
+  for (const name of ['deleted.txt', 'rename-old.txt', 'staged-only.txt', unusual]) {
+    fs.writeFileSync(path.join(root, name), 'baseline\n');
+  }
+  fs.appendFileSync(path.join(root, '.gitignore'), 'ignored.tmp\n');
+  git('add', '.gitignore', 'deleted.txt', 'rename-old.txt', 'staged-only.txt', unusual);
+  git('commit', '-qm', 'inventory baseline');
+  git('checkout', '-qb', 'inventory-preview');
+  fs.writeFileSync(path.join(root, 'committed.txt'), 'branch addition\n');
+  git('add', 'committed.txt'); git('commit', '-qm', 'branch change');
+  fs.writeFileSync(path.join(root, 'source.txt'), 'staged version\n');
+  fs.writeFileSync(path.join(root, 'staged-only.txt'), 'staged version\n');
+  git('add', 'source.txt', 'staged-only.txt');
+  fs.writeFileSync(path.join(root, 'source.txt'), 'unstaged version\n');
+  fs.writeFileSync(path.join(root, 'staged-only.txt'), 'baseline\n');
+  fs.unlinkSync(path.join(root, 'deleted.txt'));
+  git('mv', 'rename-old.txt', 'rename-new.txt');
+  fs.writeFileSync(path.join(root, unusual), 'edited\n');
+  fs.mkdirSync(path.join(root, 'new folder'));
+  fs.writeFileSync(path.join(root, 'new folder', 'new file.txt'), 'untracked\n');
+  fs.writeFileSync(path.join(root, 'ignored.tmp'), 'excluded\n');
+  const expectedFiles = [
+    { status: 'A', path: 'committed.txt' },
+    { status: 'D', path: 'deleted.txt' },
+    { status: 'A', path: 'new folder/new file.txt' },
+    { status: 'A', path: 'rename-new.txt' },
+    { status: 'D', path: 'rename-old.txt' },
+    { status: 'M', path: 'source.txt' },
+    { status: 'M', path: 'staged-only.txt' },
+    { status: 'M', path: unusual },
+  ];
+  const beforePreview = git('status', '--porcelain=v1', '-z');
+  summary = prepare(['Inventory preview']);
+  assert.deepEqual(summary.files, expectedFiles);
+  assert.match(summary.impact, /8 changed file\(s\)/);
+  assert.match(summary.summary, /index and working tree/);
+  assert.equal(git('status', '--porcelain=v1', '-z'), beforePreview, 'Preview must preserve source and index');
+  assert.deepEqual(prepare().files, expectedFiles, 'Generated state must not enter repeated previews');
+  const inventoryHtml = fs.readFileSync(path.join(ship, 'ship-presentation.html'), 'utf8');
+  for (const file of expectedFiles) assert.ok(inventoryHtml.includes(file.path));
+
   const claudeHome = path.join(base, 'claude'), codexHome = path.join(base, 'codex');
   installTemplate({ target: 'both', claudeHome, codexHome });
   for (const home of [claudeHome, codexHome]) {
     const installed = path.join(home, 'forgeflow/scripts/forgeflow/ship-prepare.sh');
     const result = prepare(['--task', 'selected'], installed);
+    assert.deepEqual(result.files, expectedFiles);
     assert.equal(result.task.id, 'selected');
     assert.deepEqual(result.tests, []);
     assert.equal(result.reviewGate, 'unknown');
   }
-  console.log('Shipping evidence: selection, supersession, source/artifact freshness, missing proof, pending actions, legacy isolation and both installed hosts passed.');
+  console.log('Shipping evidence: selection, supersession, source/artifact freshness, missing proof, pending actions, legacy isolation, working-tree inventory and both installed hosts passed.');
 } finally { fs.rmSync(base, { recursive: true, force: true }); }
