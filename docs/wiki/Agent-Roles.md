@@ -71,4 +71,18 @@ For the first upgrade from legacy names, follow the [source-checkout migration p
 
 Saved logs and evidence keep their original bytes. The v1 verdict fields `arbiter` and `compass` and lifecycle event types remain compatible; their visible labels use the new names. Install and repair remove only verified managed old files after replacements are ready, preserve changed files, and report any old files they keep. Restart the host after updating to load the new agent roster.
 
-All role prompts and core workflows apply Orwell’s six writing rules: use plain, short, active prose; cut filler; keep accurate technical details and required output formats.
+## Communication with the user
+
+All role prompts and core workflows retain Orwell's six writing rules and add guidance for audience, sentence flow, concrete examples, and useful progress updates. The changes draw on [Microsoft's advice on natural AI writing](https://www.microsoft.com/en-us/microsoft-copilot/copilot-101/humanize-ai-text), adapted to software work.
+
+Agents lead with the outcome and its relevance to your task. Progress updates explain what was learned and what the next check will resolve. Final replies include the result, validation, and any remaining action at a level of detail suited to the work. Technical reviews retain exact identifiers and evidence; stakeholder summaries explain observable user behavior.
+
+These are illustrative rewrites, not recorded test results:
+
+| Situation | Vague wording | Useful wording |
+|---|---|---|
+| Progress | "I am continuing the investigation." | "The retry path can submit the same order twice. I'll check where the request ID is lost." |
+| Result | "Enhanced validation for a better experience." | "The form now keeps your entries when validation fails, so you can correct the highlighted field." |
+| Incomplete validation | "Everything should work now." | "The unit tests passed. Browser validation is still pending because the test browser could not start." |
+
+Natural language must preserve facts, uncertainty, failures, and permissions. Agents must not invent measurements, experiences, or approvals to make a report persuasive. Required report sections and JSON schemas remain intact. Readability and evidence guide editing; detector scores are not a quality gate.

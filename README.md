@@ -8,7 +8,11 @@ Turn an idea into a scoped brief, working code, an evidence-backed review, and a
 
 ![ForgeFlow workshop showing Ember, project readiness, recorded review outcomes, weekly trends, and live workflow activity](docs/images/forgeflow-workshop.png)
 
-## New in 4.6.0
+## New in 4.6.1
+
+ForgeFlow's writing guidance now asks agents to match the reader's background, explain useful findings during progress updates, and describe concrete user outcomes. Final replies summarize relevant checks and keep uncertainty explicit. The update preserves exact technical details and required output formats. See the [communication guide](docs/wiki/Agent-Roles.md#communication-with-the-user) and [4.6.1 release notes](docs/changelogs/v4.6.1.html).
+
+## Agent names introduced in 4.6.0
 
 Agents now use names that describe their work: Builder, Guardian, Designer, Coordinator, Architect, Product Lead, and Verifier. Logs and dashboards show explicit task context, and agent prompts apply Orwell's six writing rules for clear CLI output.
 
