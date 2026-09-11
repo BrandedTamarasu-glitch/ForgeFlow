@@ -60,6 +60,8 @@ process.stdin.on('end', () => {
 
     // Check if Forgeflow agents exist (globally or locally)
     const hasForgeflow = fs.existsSync(path.join(cwd, '.forgeflow')) ||
+      fs.existsSync(path.join(cwd, '.claude', 'agents', 'architect-review.md')) ||
+      fs.existsSync(path.join(process.env.HOME || '', '.claude', 'agents', 'architect-review.md')) ||
       fs.existsSync(path.join(cwd, '.claude', 'agents', 'arbiter-review.md')) ||
       fs.existsSync(path.join(process.env.HOME || '', '.claude', 'agents', 'arbiter-review.md'));
 
@@ -99,7 +101,7 @@ process.stdin.on('end', () => {
 
           const message = `PR FAILURE DETECTED: A CI check failed after you left.\n\n` +
             `${failureContent}\n\n` +
-            `Route to Smith + Warden for resolution? (They will read the failure, diagnose, fix, and push.)`;
+            `Route to Builder + Guardian for resolution? (They will read the failure, diagnose, fix, and push.)`;
 
           process.stdout.write(JSON.stringify({
             hookSpecificOutput: {
@@ -196,27 +198,28 @@ process.stdin.on('end', () => {
       process.exit(0);
     }
 
-    // ── Detect review completion (Arbiter's final verdict from a /review run) ──
+    // ── Detect review completion (Architect's final verdict from a /review run) ──
     if (toolName === 'Agent') {
       const outputStr = typeof toolOutput === 'string' ? toolOutput : JSON.stringify(toolOutput);
 
-      // Arbiter verdict detection
+      // Architect verdict detection; accept saved legacy headings.
       const arbiterForgeflowMatch = outputStr.match(/Forgeflow:\s*(APPROVED|REVISE|BLOCK)/i);
-      const arbiterFinalMatch = outputStr.match(/Final Verdict:\s*(APPROVE|REVISE|BLOCK)/i);
+      const arbiterFinalMatch = outputStr.match(/(?:Final|(?:Architect|Arbiter)['’]?s?) Verdict:\s*(CONDITIONAL APPROVE|APPROVE|REVISE|BLOCK)/i);
       if (arbiterForgeflowMatch || arbiterFinalMatch) {
         const verdict = (arbiterForgeflowMatch || arbiterFinalMatch)[1].toUpperCase();
-        postLifecycle('arbiter-verdict', 'arbiter', verdict, cwd);
+        // Keep legacy lifecycle event keys for installed bridge compatibility.
+        postLifecycle('arbiter-verdict', 'architect', verdict, cwd);
         postLifecycle('review-complete', null, verdict, cwd);
         state.reviewRun = true;
         fs.writeFileSync(stateFile, JSON.stringify(state));
         process.exit(0);
       }
 
-      // Compass verdict detection — scoped to Compass's output section
-      const compassMatch = outputStr.match(/Compass['']?s?\s+(?:Final\s+)?Verdict[:\s]*(CONFIRM|CHALLENGE)\b/i);
+      // Product Lead verdict detection; accept saved legacy headings.
+      const compassMatch = outputStr.match(/(?:Product Lead|Compass)['’]?s?\s+(?:Final\s+)?Verdict[:\s]*(CONFIRM|CHALLENGE)\b/i);
       if (compassMatch) {
         const verdict = compassMatch[1].toUpperCase();
-        postLifecycle('compass-verdict', 'compass', verdict, cwd);
+        postLifecycle('compass-verdict', 'product_lead', verdict, cwd);
       }
     }
 
@@ -326,8 +329,8 @@ process.stdin.on('end', () => {
       `${state.editedFiles.length} file(s) changed this session (${fileList}). ` +
       'Consider running the Forgeflow before committing or testing. ' +
       'Ask the user: "Would you like to run the Forgeflow on these changes before proceeding?" ' +
-      'If declined, continue normally. Spawn agents: smith-review, warden-review, ' +
-      'lumen-review, atlas-review in parallel, then arbiter-review to synthesize, then compass-review for final verdict.';
+      'If declined, continue normally. Spawn agents: builder-review (backend), guardian-review (security), ' +
+      'designer-review (UX), coordinator-review (coverage) in parallel, then architect-review to synthesize, then product-lead-review for final validation.';
 
     postLifecycle('review-complete', null, triggerReason, cwd);
 

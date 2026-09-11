@@ -1,28 +1,29 @@
 #!/usr/bin/env node
 const fs = require('fs');
+const { normalizeAgentName } = require('./agent-identity');
 const path = require('path');
 
 const CANONICAL_TARGETS = {
-  'smith-craft': ['smith-consult', 'smith-implement', 'smith-audit', 'smith-review'],
-  'warden-security-intelligence': ['warden-consult', 'warden-implement', 'warden-audit', 'warden-review'],
-  'arbiter-intelligence': ['arbiter-consult', 'arbiter-implement', 'arbiter-review'],
-  'lumen-design-principles': ['lumen-consult', 'lumen-implement', 'lumen-review'],
+  'builder-craft': ['builder-consult', 'builder-implement', 'builder-audit', 'builder-review'],
+  'guardian-security-intelligence': ['guardian-consult', 'guardian-implement', 'guardian-audit', 'guardian-review'],
+  'architect-intelligence': ['architect-consult', 'architect-implement', 'architect-review'],
+  'designer-design-principles': ['designer-consult', 'designer-implement', 'designer-review'],
 };
 const EXPECTED_SECTIONS = {
-  'arbiter-intelligence': {
-    'arbiter-consult': [
+  'architect-intelligence': {
+    'architect-consult': [
       'Conflict Resolution Hierarchy',
       'Blocked Findings Protocol',
       'Scope Gate',
       'Rejected Alternatives Log',
       'Lead Architect Intelligence',
     ],
-    'arbiter-implement': [
+    'architect-implement': [
       'Blocked Findings Protocol',
       'Deviation Protocol',
       'Lead Architect Intelligence',
     ],
-    'arbiter-review': [
+    'architect-review': [
       'Conflict Resolution Hierarchy',
       'Blocked Findings Protocol',
       'Verdict Scale',
@@ -178,9 +179,10 @@ function expectedSectionSet(canonical, agent) {
 function mappingFor(opts = {}) {
   const entries = [];
   for (const [canonical, agents] of Object.entries(CANONICAL_TARGETS)) {
-    if (opts.canonical && opts.canonical !== canonical) continue;
+    const canonicalAlias = { 'smith-craft': 'builder-craft', 'warden-security-intelligence': 'guardian-security-intelligence', 'lumen-design-principles': 'designer-design-principles', 'arbiter-intelligence': 'architect-intelligence' };
+    if (opts.canonical && (canonicalAlias[opts.canonical] || opts.canonical) !== canonical) continue;
     for (const agent of agents) {
-      if (opts.agent && opts.agent !== agent) continue;
+      if (opts.agent && normalizeAgentName(opts.agent) !== agent) continue;
       entries.push({ canonical, agent });
     }
   }

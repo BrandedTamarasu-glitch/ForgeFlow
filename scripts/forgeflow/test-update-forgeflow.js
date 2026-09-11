@@ -20,37 +20,37 @@ const repoRoot = path.resolve(__dirname, '..', '..');
 const latest = '1111111111111111111111111111111111111111';
 const previous = '0000000000000000000000000000000000000000';
 const CANONICAL_NON_REQUIRED_MANAGED_SOURCES = [
-  'agents/_shared/arbiter-intelligence.md',
-  'agents/_shared/lumen-design-principles.md',
+  'agents/_shared/architect-intelligence.md',
+  'agents/_shared/designer-design-principles.md',
   'agents/_shared/rules.md',
-  'agents/_shared/smith-craft.md',
-  'agents/_shared/warden-security-intelligence.md',
-  'agents/aegis.md',
-  'agents/arbiter-consult.md',
-  'agents/arbiter-implement.md',
-  'agents/arbiter-review.md',
-  'agents/atlas-consult.md',
-  'agents/atlas-early.md',
-  'agents/atlas-implement.md',
-  'agents/atlas-present.md',
-  'agents/atlas-review.md',
-  'agents/compass-discuss.md',
-  'agents/compass-implement.md',
-  'agents/compass-plan.md',
-  'agents/compass-present.md',
-  'agents/compass-research.md',
-  'agents/compass-review.md',
-  'agents/lumen-consult.md',
-  'agents/lumen-implement.md',
-  'agents/lumen-review.md',
-  'agents/smith-audit.md',
-  'agents/smith-consult.md',
-  'agents/smith-implement.md',
-  'agents/smith-review.md',
-  'agents/warden-audit.md',
-  'agents/warden-consult.md',
-  'agents/warden-implement.md',
-  'agents/warden-review.md',
+  'agents/_shared/builder-craft.md',
+  'agents/_shared/guardian-security-intelligence.md',
+  'agents/verifier.md',
+  'agents/architect-consult.md',
+  'agents/architect-implement.md',
+  'agents/architect-review.md',
+  'agents/coordinator-consult.md',
+  'agents/coordinator-early.md',
+  'agents/coordinator-implement.md',
+  'agents/coordinator-present.md',
+  'agents/coordinator-review.md',
+  'agents/product-lead-discuss.md',
+  'agents/product-lead-implement.md',
+  'agents/product-lead-plan.md',
+  'agents/product-lead-present.md',
+  'agents/product-lead-research.md',
+  'agents/product-lead-review.md',
+  'agents/designer-consult.md',
+  'agents/designer-implement.md',
+  'agents/designer-review.md',
+  'agents/builder-audit.md',
+  'agents/builder-consult.md',
+  'agents/builder-implement.md',
+  'agents/builder-review.md',
+  'agents/guardian-audit.md',
+  'agents/guardian-consult.md',
+  'agents/guardian-implement.md',
+  'agents/guardian-review.md',
   'commands/agent-chat/off.md',
   'commands/agent-chat/on.md',
   'commands/audit.md',
@@ -394,7 +394,7 @@ async function runRecoveryRegressions() {
     const sources = codexSources();
     const codexOptions = { target: 'codex', home: codex, latest,
       plan: { files: sources, deleted: [] }, fetcher: localFetcher };
-    for (const source of ['scripts/forgeflow/smoke-check.js', '.codex/agents/smith-reviewer.toml', '.agents/skills/audit/SKILL.md']) {
+    for (const source of ['scripts/forgeflow/smoke-check.js', '.codex/agents/builder-reviewer.toml', '.agents/skills/audit/SKILL.md']) {
       const destination = manifestEntry(source, codex, 'codex').destination;
       fs.unlinkSync(destination);
       assert.ok(installed.requiredManagedSources('codex').includes(source));
@@ -427,7 +427,63 @@ async function runRecoveryRegressions() {
   }
 }
 
+async function runAgentRetirementRegressions() {
+  const assert = require('node:assert/strict');
+  const { codexInventoryContent, CODEX_INVENTORY_SOURCE } = require('./install-manifest');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-agent-retirement-'));
+  try {
+    for (const target of ['claude', 'codex']) {
+      const home = path.join(root, target);
+      const oldSource = target === 'claude' ? 'agents/smith-review.md' : '.codex/agents/smith-reviewer.toml';
+      const newSource = target === 'claude' ? 'agents/builder-review.md' : '.codex/agents/builder-reviewer.toml';
+      const original = 'Verified previous upstream agent\r\n';
+      const oldPath = manifestEntry(oldSource, home, target).destination;
+      fs.mkdirSync(path.dirname(oldPath), { recursive: true });
+      fs.writeFileSync(oldPath, original, { mode: 0o640 });
+      fs.writeFileSync(versionPath(home), previous);
+      if (target === 'codex') {
+        const inventoryPath = manifestEntry(CODEX_INVENTORY_SOURCE, home, target).destination;
+        fs.mkdirSync(path.dirname(inventoryPath), { recursive: true });
+        fs.writeFileSync(inventoryPath, codexInventoryContent([oldSource]));
+      }
+      const options = { home, target, latest, missingRequired: [],
+        plan: { files: [newSource, 'scripts/forgeflow/example.js'], deleted: [oldSource] },
+        fetcher: async (_repo, sha) => sha === previous ? original : 'New agent' };
+      const preview = await updateForgeflow({ ...options, dryRun: true });
+      assert.ok(preview.deleted.includes(oldSource));
+      assert.equal(fs.readFileSync(oldPath, 'utf8'), original);
+      assert.equal(fs.existsSync(path.join(home, 'forgeflow/backups')), false);
+      const partial = await updateForgeflow({ ...options, fetcher: async (_repo, sha, source) => {
+        if (source === 'scripts/forgeflow/example.js') throw new Error('Injected download failure');
+        return sha === previous ? original : 'New agent';
+      } });
+      assert.equal(partial.status, 'partial');
+      assert.equal(fs.readFileSync(oldPath, 'utf8'), original, 'Failed copy must not retire old agents');
+      const completed = await updateForgeflow(options);
+      assert.equal(completed.status, 'updated');
+      assert.equal(completed.backup.reused, true);
+      assert.equal(fs.existsSync(oldPath), false);
+      const backup = JSON.parse(fs.readFileSync(path.join(home, 'forgeflow/backups/previous/manifest.json')));
+      assert.ok(backup.files.some((file) => file.source === oldSource && file.existed));
+      assert.equal(rollbackForgeflow({ home, target }).status, 'rolled-back');
+      assert.equal(fs.readFileSync(oldPath, 'utf8'), original);
+      assert.equal(fs.statSync(oldPath).mode & 0o777, 0o640);
+      fs.writeFileSync(oldPath, 'Local customization');
+      const customized = await updateForgeflow(options);
+      assert.ok(customized.preserved_legacy.includes(oldSource));
+      assert.equal(fs.readFileSync(oldPath, 'utf8'), 'Local customization');
+      if (target === 'codex') {
+        const inventoryPath = manifestEntry(CODEX_INVENTORY_SOURCE, home, target).destination;
+        assert.ok(!JSON.parse(fs.readFileSync(inventoryPath)).sources.includes(oldSource), 'Retired aliases leave managed inventory even when local edits remain');
+      }
+    }
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+}
+
 async function run() {
+  await runAgentRetirementRegressions();
   await runRecoveryRegressions();
   const requiredSources = requiredManagedSources();
   const managedSources = allManagedSources();
@@ -561,7 +617,7 @@ async function run() {
     repo: 'local/repo',
     current: '',
     latest,
-    plan: { firstRun: true, files: ['.codex/agents/smith-reviewer.toml'], deleted: [] },
+    plan: { firstRun: true, files: ['.codex/agents/builder-reviewer.toml'], deleted: [] },
     fetcher: localFetcher,
   });
   const symlinkTarget = path.join(codexHome, 'symlink-target');
@@ -576,7 +632,7 @@ async function run() {
       repo: 'local/repo',
       current: '',
       latest,
-      plan: { firstRun: true, files: ['.codex/agents/smith-reviewer.toml'], deleted: [] },
+      plan: { firstRun: true, files: ['.codex/agents/builder-reviewer.toml'], deleted: [] },
       fetcher: localFetcher,
     });
     updaterSymlinkRejected = symlinkUpdate.status === 'partial';
@@ -648,7 +704,7 @@ async function run() {
     ['future helper repair status', futureHelper.status === 'repaired'],
     ['future helper installed from tree discovery', fs.existsSync(path.join(futureHelperHome, 'forgeflow', 'scripts', 'forgeflow', 'future-helper.js'))],
     ['future helper executable', (fs.statSync(path.join(futureHelperHome, 'forgeflow', 'scripts', 'forgeflow', 'future-helper.js')).mode & 0o111) !== 0],
-    ['codex updater uses codex runtime root', codexUpdate.status === 'updated' && fs.existsSync(path.join(codexHome, 'agents', 'smith-reviewer.toml'))],
+    ['codex updater uses codex runtime root', codexUpdate.status === 'updated' && fs.existsSync(path.join(codexHome, 'agents', 'builder-reviewer.toml'))],
     ['updater rejects symlinked destination home', updaterSymlinkRejected],
     ['rollback update created backup', rollbackUpdate.backup.created === true],
     ['rollback update removed deleted file', rollbackUpdateRemovedOld],

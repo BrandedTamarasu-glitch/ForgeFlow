@@ -293,7 +293,7 @@ const checks = [
   ['symlink runtime fails', symlinkInstalled.status === 'fail'],
   ['runtime check included', installed.checks.some((item) => item.name === 'runtime helper health-check.js')],
   ['template check included', installed.checks.some((item) => item.name === 'template ship-presentation.html')],
-  ['agent install check included', installed.checks.some((item) => item.name === 'agent agents/compass-plan.md')],
+  ['agent install check included', installed.checks.some((item) => item.name === 'agent agents/product-lead-plan.md')],
   ['hook install check included', installed.checks.some((item) => item.name === 'hook forgeflow-gate.js')],
   ['missing template fails', missingTemplate.status === 'fail'],
   ['non git passes with skip', nonGit.status === 'pass'],

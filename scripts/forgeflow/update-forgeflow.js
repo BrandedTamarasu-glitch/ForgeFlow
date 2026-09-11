@@ -6,6 +6,8 @@ const https = require('https');
 const os = require('os');
 const path = require('path');
 const {
+  LEGACY_AGENT_FILES,
+  legacyAgentCandidates,
   CODEX_INVENTORY_SOURCE,
   codexInventoryContent,
   readCodexInventory,
@@ -155,7 +157,7 @@ function shouldSyncSource(source, target = 'claude') {
 
 function requiredManagedSources(target = 'claude', home) {
   if (normalizeTarget(target) === 'codex') {
-    if (home) return readCodexInventory(home) || [...RUNTIME_HELPERS, CODEX_INVENTORY_SOURCE];
+    if (home) return [...new Set([...(readCodexInventory(home) || []), ...RUNTIME_HELPERS, 'scripts/forgeflow/agent-identity.d.ts', CODEX_INVENTORY_SOURCE])];
     const root = path.resolve(__dirname, '..', '..');
     if (fs.existsSync(path.join(root, '.codex', 'agents'))) return managedSources(root, 'codex');
     return readCodexInventory(path.dirname(root)) || [...RUNTIME_HELPERS, CODEX_INVENTORY_SOURCE];
@@ -247,7 +249,7 @@ function snapshotPathForSource(root, source) {
   return path.join(root, 'files', source);
 }
 
-function createBackup({ home, target = 'claude', files, current, latest, dryRun = false }) {
+function createBackup({ home, target = 'claude', files, current, latest, dryRun = false, operation = 'update' }) {
   const root = backupRoot(home);
   if (dryRun) return { path: root, files: [], version: current || '', created: false };
   assertSafeDestination(backupManifestPath(home), home);
@@ -257,6 +259,7 @@ function createBackup({ home, target = 'claude', files, current, latest, dryRun 
   // A completed same-SHA repair is a new operation, so version equality alone
   // must never decide whether to reuse the snapshot.
   const reuse = previous?.pending === true;
+  if (reuse && previous.to_version !== latest) throw new Error('Pending update targets another version; roll it back before installing.');
   if (reuse && (previous.version !== (current || '') || previous.target !== target)) {
     throw new Error('Pending update belongs to a different version or runtime; roll it back before updating.');
   }
@@ -266,7 +269,7 @@ function createBackup({ home, target = 'claude', files, current, latest, dryRun 
   fs.mkdirSync(path.dirname(root), { recursive: true });
   const stage = reuse ? root : fs.mkdtempSync(path.join(path.dirname(root), '.snapshot-'));
   const manifest = reuse ? previous : {
-    schema_version: '2', target, pending: true, to_version: latest,
+    schema_version: '2', target, pending: true, to_version: latest, operation,
     created_at: new Date().toISOString(), version: current || '',
     version_file: versionStat ? {
       content: fs.readFileSync(versionPath(home)).toString('base64'), mode: versionStat.mode & 0o777,
@@ -465,9 +468,14 @@ async function updateForgeflow(opts = {}) {
     : missingRequiredManagedFiles(home, target);
   const inventory = target === 'codex' ? readCodexInventory(home) : null;
   const inventoryMissing = target === 'codex' && !inventory;
+  const installedReplacements = Object.values(LEGACY_AGENT_FILES).map((item) => item.replacement)
+    .filter((source) => { const entry = manifestEntry(source, home, target); return entry && fs.existsSync(entry.destination); });
+  const legacyCleanupNeeded = legacyAgentCandidates(home, target, installedReplacements).some((item) => item.verified);
   const repairNeeded = !opts.repair && ((current === latest && missingRequired.length > 0) || (Boolean(current) && inventoryMissing));
+  const cleanupOnly = !opts.repair && !repairNeeded && current === latest
+    && ((!pending?.pending && legacyCleanupNeeded) || (pending?.pending && pending.operation === 'legacy-cleanup'));
   const effectiveRepair = Boolean(opts.repair || repairNeeded || (pending?.pending && current === latest));
-  if (current === latest && !effectiveRepair) {
+  if (current === latest && !effectiveRepair && !cleanupOnly) {
     return {
       schema_version: '1',
       status: 'up-to-date',
@@ -475,9 +483,9 @@ async function updateForgeflow(opts = {}) {
       current,
       latest,
       repair_needed: false,
-    missing_required: [],
-    affected_commands: [],
-    files: [],
+      missing_required: [],
+      affected_commands: [],
+      files: [],
       synced: [],
       failed: [],
       deleted: [],
@@ -485,12 +493,29 @@ async function updateForgeflow(opts = {}) {
     };
   }
 
-  const plan = opts.plan || (effectiveRepair
+  const initialPlan = cleanupOnly ? { files: [], deleted: [], firstRun: false } : opts.plan || (effectiveRepair
     ? await filesForRepair(repo, latest, target)
     : await filesForInstall(repo, current, latest, target));
+  const candidates = legacyAgentCandidates(home, target, [...initialPlan.files,
+    ...(inventory || []).filter((source) => !LEGACY_AGENT_FILES[source]), ...installedReplacements]);
+  for (const candidate of candidates) {
+    if (candidate.verified || !current || cleanupOnly) continue;
+    try {
+      const original = await (opts.fetcher || fetchRaw)(repo, current, candidate.source);
+      candidate.verified = fs.readFileSync(candidate.destination).equals(Buffer.from(original));
+    } catch (_err) {
+      // Without exact old upstream bytes, preserve the local file.
+    }
+  }
+  const retired = candidates.filter((item) => item.verified).map((item) => item.source);
+  const preservedLegacy = candidates.filter((item) => !item.verified).map((item) => item.source);
+  const plan = { ...initialPlan, deleted: [...new Set([
+    ...initialPlan.deleted.filter((source) => !LEGACY_AGENT_FILES[source] || retired.includes(source)), ...retired,
+  ])] };
   const backup = createBackup({
     home,
     target,
+    operation: cleanupOnly ? 'legacy-cleanup' : 'update',
     files: [...plan.files, ...plan.deleted, ...(target === 'codex' ? [CODEX_INVENTORY_SOURCE] : [])],
     current,
     latest,
@@ -513,8 +538,9 @@ async function updateForgeflow(opts = {}) {
   if (failures.length === 0 && !opts.dryRun) {
     try {
       if (target === 'codex') {
-        const sources = [...(effectiveRepair ? [] : inventory || []), ...plan.files]
-          .filter((source) => !plan.deleted.includes(source) && manifestEntry(source, home, target));
+        const sources = [...(effectiveRepair && !cleanupOnly ? [] : inventory || []), ...plan.files]
+          .filter((source) => !plan.deleted.includes(source) && manifestEntry(source, home, target))
+          .filter((source, _index, allSources) => !LEGACY_AGENT_FILES[source] || !allSources.includes(LEGACY_AGENT_FILES[source].replacement));
         writeAtomic(manifestEntry(CODEX_INVENTORY_SOURCE, home, target).destination, codexInventoryContent(sources), false, home);
       }
       writeAtomic(versionPath(home), `${latest}\n`, false, home);
@@ -534,11 +560,12 @@ async function updateForgeflow(opts = {}) {
     schema_version: '1',
     target,
     ember: failures.length === 0 ? (opts.emberSetup || setupEmber)({ home, target, dryRun: Boolean(opts.dryRun) }) : { status: 'deferred', checks: [], action: 'Finish the core update before setting up Ember.' },
-    status: failures.length === 0 ? (effectiveRepair ? 'repaired' : 'updated') : 'partial',
+    status: failures.length === 0 ? (effectiveRepair && !cleanupOnly ? 'repaired' : 'updated') : 'partial',
     current,
     latest,
     first_run: plan.firstRun,
-    repair: effectiveRepair,
+    repair: effectiveRepair && !cleanupOnly,
+    legacy_cleanup: cleanupOnly,
     repair_needed: repairNeeded,
     missing_required: missingRequired,
     inventory_missing: inventoryMissing,
@@ -547,6 +574,7 @@ async function updateForgeflow(opts = {}) {
     synced: installed.synced,
     failed: failures,
     deleted: plan.deleted,
+    preserved_legacy: preservedLegacy,
     removed: removed.removed,
     version_written: versionWritten,
     backup,
@@ -600,6 +628,7 @@ function renderMarkdown(result) {
     for (const item of result.failed) lines.push(`  ${item.source}: ${item.error}`);
     lines.push('', 'Version was not updated. Re-run /update-forgeflow after fixing the failure.');
   }
+  for (const source of result.preserved_legacy || []) lines.push(`Preserved edited or unverified file: ${source}`);
   if (result.deleted.length > 0) {
     lines.push('', result.removed && result.removed.length > 0 ? 'Files removed:' : 'Removed upstream, not present locally:');
     for (const item of result.deleted) lines.push(`  ${item}`);
@@ -632,6 +661,8 @@ if (require.main === module) {
 }
 
 module.exports = {
+  createBackup,
+  readCurrentVersion,
   filesForInstall,
   filesForRepair,
   installFiles,

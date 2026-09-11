@@ -85,7 +85,7 @@ The workflow triggers on `pull_request` with types `opened`, `synchronize`, `reo
 
 2. **Gate mode (week 2).** Flip `fail_action_on_revise: true`. The Forgeflow team now fails the GitHub check on REVISE or BLOCK verdicts. Merges requiring green checks are blocked until the Forgeflow team clears.
 
-3. **Full cap (week 3+).** Raise `routing_cap: full` once the Forgeflow team has landed 10+ sensible thin-mode verdicts. Full mode adds Lumen + Atlas + Compass to every non-trivial PR; cost roughly 3-4× thin mode.
+3. **Full cap (week 3+).** Raise `routing_cap: full` once the Forgeflow team has landed 10+ sensible thin-mode verdicts. Full mode adds Designer + Coordinator + Product Lead to every non-trivial PR; cost roughly 3-4× thin mode.
 
 4. **Review-and-fix (optional).** Flip `mode: review-and-fix` after 30+ PRs under gate mode with an acceptable false-positive rate (tracked via `/forgeflow-report`). Auto-fix is irreversible without a force-push revert — do not enable until confidence is high.
 
@@ -93,7 +93,7 @@ The workflow triggers on `pull_request` with types `opened`, `synchronize`, `reo
 
 Before advancing past shadow mode (week 1) to gate mode (week 2), the Forgeflow team must meet ALL three criteria across the first 5 consecutive PRs:
 
-1. **Verdict alignment.** Maintainer agrees with Arbiter's verdict within ±1 tier (APPROVE ↔ CONDITIONAL_APPROVE ↔ REVISE ↔ BLOCK) on 5 of 5 consecutive PRs. Measure by comparing the Forgeflow team comment to the maintainer's own merge-or-block decision.
+1. **Verdict alignment.** Maintainer agrees with Architect's verdict within ±1 tier (APPROVE ↔ CONDITIONAL_APPROVE ↔ REVISE ↔ BLOCK) on 5 of 5 consecutive PRs. Measure by comparing the Forgeflow team comment to the maintainer's own merge-or-block decision.
 2. **Cost discipline.** Median `metadata.cost_estimate_usd` across the 5 PRs ≤ 80% of `.github/forgeflow-budget.yml` `max_cost_per_pr_usd`. Covers routine cost behavior without a single cheap PR hiding a blown budget on another.
 3. **Zero silent failures.** No run that exits 0 but actually failed (e.g., claude crashed mid-stream, JSON parse succeeded on a stale block, budget check bypassed). A cost-efficient Forgeflow that hides failures is worse than no Forgeflow. Check via workflow artifact: verdict JSON present, `schema_version: "1"` matches, `reason` field populated when `verdict: SKIPPED | ABORTED`.
 
@@ -110,7 +110,7 @@ sql-injection, auth, secret, token, jwt, permission,
 rbac, crypto, password, csrf, xss, ssrf
 ```
 
-These match the class tag vocabulary Arbiter uses (`agents/arbiter-review.md`). Warden-flagged findings remain excluded at the source-reviewer check in `/review-auto` regardless of class tag — that is the second gate, orthogonal to this one.
+These match the class tag vocabulary Architect uses (`agents/architect-review.md`). Guardian-flagged findings remain excluded at the source-reviewer check in `/review-auto` regardless of class tag — that is the second gate, orthogonal to this one.
 
 Phase 1 Theme B output from `/forgeflow-report` is the primary signal for deciding when to advance. False-positive-heavy reviewers show up before they cause auto-fix regressions.
 
@@ -139,7 +139,7 @@ The Forgeflow team's PR comment contains:
 - **Header** — verdict icon + verdict label + 1-2 sentence summary
 - **Routing table** — mode, cost estimate, duration, files reviewed
 - **Findings sections** — Blockers, Must fix, Recommended (visible) + Nits, Boyscout (collapsed `<details>`)
-- **Overturned findings** — collapsed `<details>` showing findings Arbiter dismissed as false positives (telemetry visibility)
+- **Overturned findings** — collapsed `<details>` showing findings Architect dismissed as false positives (telemetry visibility)
 - **Footer** — schema_version + mode + routing_cap for audit
 
 Findings carry stable IDs (`B1`, `M1`, `R1`, etc.) so PR comments referencing them remain coherent across re-runs.

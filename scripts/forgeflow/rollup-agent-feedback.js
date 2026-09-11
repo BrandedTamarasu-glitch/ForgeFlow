@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const fs = require('fs');
+const { normalizeAgentId } = require('./agent-identity');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { safeReadTextFile, writeFileSafe } = require('./file-safety');
@@ -205,7 +206,7 @@ function readFeedback(projectDir) {
         skipped.push({ line: index + 1, reason: 'privacy-boundary' });
         continue;
       }
-      valid.push(record);
+      valid.push({ ...record, agent: normalizeAgentId(record.agent) || record.agent });
     } catch (_err) {
       skipped.push({ line: index + 1, reason: 'malformed-json' });
     }

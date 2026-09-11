@@ -46,7 +46,7 @@ Reads:
 ## Gotchas
 
 - **Telemetry is passive.** Missing data means the hook didn't fire, not that nothing happened. Report totals alongside any anomalously low counts.
-- **False-positive tracking needs Arbiter's tag.** Overturn events only exist if Arbiter emitted the `- REVIEWER: ... | CLASS: ... | FINDING: ...` tag (added to `arbiter-review.md` in V5.0). Earlier reviews will not have overturn data; surface this explicitly rather than silently showing zeros.
+- **False-positive tracking needs Architect's tag.** Overturn events only exist if Architect emitted the `- REVIEWER: ... | CLASS: ... | FINDING: ...` tag (added to `architect-review.md` in V5.0). Earlier reviews will not have overturn data; surface this explicitly rather than silently showing zeros.
 - **Per-class threshold is 3.** A reviewer getting overturned on the same class 3+ times flags that agent's prompt for review. This matches the false-positive escalation policy.
 - **Drift invocation is best-effort.** If `/forgeflow-drift` errors, the report still produces the other sections.
 
@@ -198,8 +198,8 @@ Markdown (default):
 
 | Reviewer | APPROVE | CONDITIONAL | REVISE | BLOCK |
 |---|---|---|---|---|
-| Arbiter | 28 | 3 | 12 | 4 |
-| Compass | 29 CONFIRM | — | — | 18 CHALLENGE |
+| Architect | 28 | 3 | 12 | 4 |
+| Product Lead | 29 CONFIRM | — | — | 18 CHALLENGE |
 
 ## 3. Auto-fix effectiveness
 
@@ -213,15 +213,15 @@ Markdown (default):
 
 | Reviewer | Class | Overturns | Representative finding |
 |---|---|---|---|
-| smith | n-plus-one | 7 | "batch loop flagged as N+1" (false) |
-| warden | sql-injection | 5 | "interpolated token flagged as injection" (false) |
-| smith | dry-violation | 3 | "INSERT + UPDATE blocks flagged as dupe" (false) |
+| builder | n-plus-one | 7 | "batch loop flagged as N+1" (false) |
+| guardian | sql-injection | 5 | "interpolated token flagged as injection" (false) |
+| builder | dry-violation | 3 | "INSERT + UPDATE blocks flagged as dupe" (false) |
 
 **Recommendation:**
-1. `smith` pre-flights are overtriggering on N+1 and DRY. Review `agents/_shared/smith-craft.md` — are the pre-flight gates strict enough?
-2. `warden` is overturning SQL injection flags. The parameterization pre-flight in `/debate` is strong; consider promoting it into `warden-security-intelligence.md`.
+1. `builder` pre-flights are overtriggering on N+1 and DRY. Review `agents/_shared/builder-craft.md` — are the pre-flight gates strict enough?
+2. `guardian` is overturning SQL injection flags. The parameterization pre-flight in `/debate` is strong; consider promoting it into `guardian-security-intelligence.md`.
 
-(Absence of data means Arbiter has not yet emitted overturn tags — surfaces as: "No overturn data in period. Arbiter's prompt in `arbiter-review.md` now requires the tag; data will accrue.")
+(Absence of data means Architect has not yet emitted overturn tags — surfaces as: "No overturn data in period. Architect's prompt in `architect-review.md` now requires the tag; data will accrue.")
 
 ## 5. Pattern library
 
@@ -250,13 +250,13 @@ If overdue, output the literal instruction: "Run `/forgeflow-learnings` to refre
 
 Auto-derived from the above:
 
-1. Fix smith N+1 false-positive rate — refine pre-flight in `agents/_shared/smith-craft.md`
-2. Resync `arbiter-review.md` — 2 DRIFTED sections from drift report
+1. Fix builder N+1 false-positive rate — refine pre-flight in `agents/_shared/builder-craft.md`
+2. Resync `architect-review.md` — 2 DRIFTED sections from drift report
 3. Promote the 2 learning candidates sitting in the last `/forgeflow-learnings` output — they've been surfaced for >30 days
 
 ## Signals
 - Auto-fix rate >60% 1-round APPROVE → Forgeflow is well-calibrated on mechanical issues
-- False-positive concentration in Smith → prompt-level issue, not reviewer-level
+- False-positive concentration in Builder → prompt-level issue, not reviewer-level
 - Drift at 3 agents → do a resync sprint before next release
 ```
 

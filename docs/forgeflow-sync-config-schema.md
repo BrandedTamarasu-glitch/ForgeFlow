@@ -25,7 +25,7 @@ Running `/forgeflow-sync --init` creates this file interactively. It is project-
   "strategy": "git-v1",
   "sync_branch": "main",
   "team_members": [
-    { "username": "user", "display_name": "Atlas Ebert" }
+    { "username": "user", "display_name": "Coordinator Ebert" }
   ]
 }
 ```

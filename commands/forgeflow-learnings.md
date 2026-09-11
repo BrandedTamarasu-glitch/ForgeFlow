@@ -18,7 +18,7 @@ Cross-project mode reads per-project `.forgeflow/<project>/learnings.jsonl` and 
 
 Answers: "What failure modes are the Forgeflow team catching repeatedly, and which ones have grown into generalizable patterns worth writing into the canonical pattern library?"
 
-Self-improving Forgeflow mechanic: runs monthly. `recurring-blockers.md`, `tooling-patterns.md`, `verdict-trends.md`, `auto-fix-patterns.md` grow organically from telemetry. Atlas and Arbiter read those files during `/plan`, `/consult`, `/review` — so promoting a pattern means every future review session now has it in context.
+Self-improving Forgeflow mechanic: runs monthly. `recurring-blockers.md`, `tooling-patterns.md`, `verdict-trends.md`, `auto-fix-patterns.md` grow organically from telemetry. Coordinator and Architect read those files during `/plan`, `/consult`, `/review` — so promoting a pattern means every future review session now has it in context.
 </objective>
 
 <context>
@@ -38,7 +38,7 @@ Per-project structured learnings (primary):
   ```
   {"date": "YYYY-MM-DD", "source": "<agent>", "type": "quality|efficiency|security|...", "learning": "<text>", "files": ["..."], "severity": "low|medium|high"}
   ```
-- `.forgeflow/<project>/project-learning-candidates.jsonl` — structured Atlas/Arbiter candidates:
+- `.forgeflow/<project>/project-learning-candidates.jsonl` — structured Coordinator/Architect candidates:
   ```
   {"ts": "ISO-8601", "category": "validation-pattern|risk-area|...", "learning": "<text>", "source": "<agent>", "confidence": "low|medium|high"}
   ```
@@ -142,7 +142,7 @@ Filter to files with at least 1 line. If zero files found, exit with:
 No learnings found.
 
 /forgeflow-learnings reads .forgeflow/<project>/learnings.jsonl and project-learning-candidates.jsonl files across your tree.
-Atlas writes to these during /plan, /implement, and /review sessions.
+Coordinator writes to these during /plan, /implement, and /review sessions.
 
 If you've never run /review with the full Forgeflow on a real project, there's nothing
 to learn from yet. Run /review on a real codebase first, then try again.
@@ -280,7 +280,7 @@ Threshold: 2 projects, 7 occurrences, max severity high
 ### Candidate: ...
 
 ## Uninstrumented projects
-- `proj-c` — has review history but no learnings.jsonl. Atlas may not have been dispatched on this project. Re-run /review with --full Forgeflow to populate.
+- `proj-c` — has review history but no learnings.jsonl. Coordinator may not have been dispatched on this project. Re-run /review with --full Forgeflow to populate.
 ```
 
 ## Step 6: Apply updates (if not `--dry-run`)

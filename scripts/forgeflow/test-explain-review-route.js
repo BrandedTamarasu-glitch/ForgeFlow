@@ -28,7 +28,7 @@ const cases = [
     lines: '120',
     mode: 'full-mode',
     verifier: 'not-required',
-    includes: 'lumen_reviewer',
+    includes: 'designer_reviewer',
   },
   {
     name: 'frontend-calibration-noisy',
@@ -37,7 +37,7 @@ const cases = [
     lines: '120',
     mode: 'full-mode',
     verifier: 'required',
-    includes: 'aegis',
+    includes: 'verifier',
     hintType: 'noisy-class',
   },
   {
@@ -47,7 +47,7 @@ const cases = [
     lines: '30',
     mode: 'thin-mode',
     verifier: 'not-required',
-    includes: 'lumen_reviewer',
+    includes: 'designer_reviewer',
     hintType: 'high-value-class',
   },
   {

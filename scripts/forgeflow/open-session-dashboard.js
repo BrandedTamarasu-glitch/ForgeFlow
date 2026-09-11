@@ -9,7 +9,7 @@ const { spawn } = require('node:child_process');
 
 const URL = 'http://127.0.0.1:4003/';
 const WORKFLOWS = new Set(['discuss', 'research', 'plan', 'consult', 'forgeflow-consult', 'implement',
-  'forgeflow-implement', 'review', 'forge-review', 'forgeflow-review', 'audit', 'quick', 'ship', 'debate', 'aegis-verify', 'task']);
+  'forgeflow-implement', 'review', 'forge-review', 'forgeflow-review', 'audit', 'quick', 'ship', 'debate', 'verifier-verify', 'aegis-verify', 'task']);
 
 function workflowFromPrompt(prompt) {
   const match = String(prompt || '').trim().match(/^[/$@](?:forgeflow:)?([a-z][a-z-]*)(?=\s|$)/i);
@@ -52,7 +52,7 @@ function workflowState(workflow) {
   if (['discuss', 'consult', 'forgeflow-consult', 'plan', 'quick'].includes(workflow)) return 'planning';
   if (workflow === 'research') return 'researching';
   if (['implement', 'forgeflow-implement'].includes(workflow)) return 'implementing';
-  if (['review', 'forge-review', 'forgeflow-review', 'audit', 'debate', 'aegis-verify'].includes(workflow)) return 'reviewing';
+  if (['review', 'forge-review', 'forgeflow-review', 'audit', 'debate', 'verifier-verify', 'aegis-verify'].includes(workflow)) return 'reviewing';
   return '';
 }
 

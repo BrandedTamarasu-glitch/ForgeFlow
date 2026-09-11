@@ -220,6 +220,7 @@
       const states = new Set(['idle', 'planning', 'researching', 'implementing', 'reviewing', 'testing', 'waiting', 'failed', 'complete']);
       return snapshot.agents.flatMap(agent => {
         if (!agent || typeof agent.agent !== 'string' || !states.has(agent.state) || !Number.isFinite(agent.updated_at)) return [];
+        agent = { ...agent, agent: ForgeflowAgentIdentity.normalizeAgentId(agent.agent) || agent.agent };
         const label = typeof agent.label === 'string' ? agent.label : '';
         const signature = JSON.stringify([agent.state, label, agent.updated_at]);
         if (activitySeen.get(agent.agent) === signature) return [];
@@ -237,7 +238,7 @@
     function normalize(value) {
       if (typeof value === 'string') return { agent: 'System', level: 'message', message: value, timestamp: null };
       if (!value || typeof value !== 'object' || typeof value.message !== 'string') return null;
-      return { agent: typeof value.agent === 'string' ? value.agent : 'System', level: typeof value.level === 'string' ? value.level : 'message', message: value.message, timestamp: value.timestamp || null };
+      return { activityLabel: typeof value.activityLabel === 'string' ? value.activityLabel : undefined, agent: typeof value.agent === 'string' ? (ForgeflowAgentIdentity.normalizeAgentId(value.agent) || value.agent) : 'System', level: typeof value.level === 'string' ? value.level : 'message', message: value.message, timestamp: value.timestamp || null };
     }
     function renderFeed(follow = false) {
       const previousScroll = messages.scrollTop;
@@ -247,7 +248,7 @@
         const article = node('article', undefined, 'chat-message chat-msg');
         const meta = node('div', undefined, 'chat-meta'); const time = node('time', entry.timestamp ? formatTime(entry.timestamp) : 'Time unavailable');
         if (entry.timestamp && !Number.isNaN(new Date(entry.timestamp).getTime())) time.dateTime = new Date(entry.timestamp).toISOString();
-        meta.append(node('span', entry.agent, 'chat-agent'), node('span', entry.level, 'chat-level'), time);
+        meta.append(node('span', ForgeflowAgentIdentity.formatAgentLabel(entry.agent, entry.activityLabel), 'chat-agent'), node('span', entry.level, 'chat-level'), time);
         article.append(meta, node('p', entry.message, 'chat-msg-body')); return article;
       }));
       if (!filtered.length) messages.append(node('p', entries.length ? 'No messages match this filter.' : 'No activity reported yet. Workflow phases and agent messages will appear here when ForgeFlow reports them.', 'empty-state'));
@@ -278,14 +279,14 @@
           const updates = activityEntries(payload);
           if (!updates.length) return;
           entries = [...entries, ...updates].slice(-100); renderFeed(follow);
-          if (['all', 'phase'].includes($('chat-filter').value)) $('chat-announcement').textContent = updates.map(entry => `${entry.agent}, ${entry.message}`).join('. ');
+          if (['all', 'phase'].includes($('chat-filter').value)) $('chat-announcement').textContent = updates.map(entry => `${ForgeflowAgentIdentity.formatAgentLabel(entry.agent, entry.activityLabel)}, ${entry.message}`).join('. ');
           return;
         }
         if (payload?.type === 'lifecycle' && payload.event === 'history-cleared') { entries = []; renderFeed(); return; }
         const entry = normalize(payload);
         if (!entry) return;
         entries.push(entry); entries = entries.slice(-100); renderFeed(follow);
-        if ($('chat-filter').value === 'all' || $('chat-filter').value === entry.level) $('chat-announcement').textContent = `${entry.agent}, ${entry.level}: ${entry.message}`;
+        if ($('chat-filter').value === 'all' || $('chat-filter').value === entry.level) $('chat-announcement').textContent = `${ForgeflowAgentIdentity.formatAgentLabel(entry.agent, entry.activityLabel)}, ${entry.level}: ${entry.message}`;
       });
       ws.addEventListener('close', () => {
         clearTimeout(timeout);

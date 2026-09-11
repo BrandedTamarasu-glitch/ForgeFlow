@@ -27,9 +27,9 @@ For the current checkout, `show-project-learnings.js` refreshes `.forgeflow/<pro
 
 `/ship` also refreshes the file and writes `.forgeflow/<project-name>/ship/project-learnings-rollup.json` for the shipping handoff. `/forgeflow-health` reports the latest local project-learnings summary plus latest-insights readiness/freshness when those artifacts exist and recommends `/forgeflow-trends --refresh` when latest insights are stale. `/forgeflow-trends` combines code-map freshness, project-learning consumption, and latest-insights freshness into one project guidance health view. Use `/forgeflow-trends --refresh` to refresh project learnings and latest-insights readiness before rendering that view; stale reports recommend that command directly.
 
-During `/implement`, Atlas refreshes project learnings after implementation-note consolidation when the helper is available. This lets the artifact accumulate signal during long work items instead of waiting for the final ship handoff.
+During `/implement`, Coordinator refreshes project learnings after implementation-note consolidation when the helper is available. This lets the artifact accumulate signal during long work items instead of waiting for the final ship handoff.
 
-Atlas can also record structured candidates in:
+Coordinator can also record structured candidates in:
 
 ```text
 .forgeflow/<project-name>/project-learning-candidates.jsonl

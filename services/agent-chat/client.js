@@ -10,7 +10,7 @@ function sendActivity(state, label = '', options = {}) {
   return new Promise(resolve => {
     let token;
     try { token = readToken(options.tokenFile); } catch { resolve(false); return; }
-    const body = JSON.stringify({ agent: options.agent || 'fc', state, label });
+    const body = JSON.stringify({ agent: options.agent || 'system', state, label });
     const req = http.request({ hostname: '127.0.0.1', port: options.port || 4001, path: '/activity', method: 'POST',
       headers: { 'x-forgeflow-token': token, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } }, res => {
       res.resume();
@@ -27,7 +27,7 @@ function main() {
   if (endpoint === 'activity') {
     const state = process.argv[3];
     const label = process.argv[4] || '';
-    const agent = process.argv[5] || 'fc';
+    const agent = process.argv[5] || 'system';
     return sendActivity(state, label, { agent }).then(ok => {
       if (!ok) { process.stderr.write('Activity not delivered; check the state and local chat connection.\n'); process.exitCode = 1; }
     });

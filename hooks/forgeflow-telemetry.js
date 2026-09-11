@@ -17,7 +17,7 @@
 //     "detail": { ... event-specific fields ... }
 //   }
 //
-// finding-overturned detail schema (requires Arbiter emits the structured tag line):
+// finding-overturned detail schema (requires Architect emits the structured tag line):
 //   { overturned_reviewer: "<agent name>", finding_class: "<class label>", finding: "<brief>" }
 //
 // Events emitted from the PostToolUse lane (this hook):
@@ -30,6 +30,14 @@
 
 const fs = require('fs');
 const path = require('path');
+// Hooks run from the checkout or the installed runtime hooks directory.
+const identityFile = [path.join(__dirname, '../scripts/forgeflow/agent-identity.js'), path.join(__dirname, '../forgeflow/scripts/forgeflow/agent-identity.js')].find(file => fs.existsSync(file));
+// Partial installations must still capture unrelated hook events. Preserve raw
+// names until repair; explicit verdicts require the catalog for authorization.
+const { normalizeAgentId, normalizeAgentName } = identityFile ? require(identityFile) : {
+  normalizeAgentId: () => null,
+  normalizeAgentName: value => value,
+};
 
 function normalizeRuntime(value) {
   const normalized = String(value || '').trim().toLowerCase();
@@ -92,8 +100,10 @@ function recordEvents(data, env = process.env) {
 // Explicit Codex outcomes share the hook's schema and metrics location. Unlike
 // inferred hook events, invalid explicit input is reported to the caller.
 async function recordVerdict(data, env = process.env) {
-  const allowed = { arbiter: ['APPROVE', 'CONDITIONAL APPROVE', 'REVISE', 'BLOCK'], compass: ['CONFIRM', 'CHALLENGE'] };
-  if (!Object.hasOwn(allowed, data.reviewer) || !allowed[data.reviewer].includes(data.verdict)) throw new Error('Invalid reviewer/verdict pair');
+  if (!identityFile) throw new Error('Agent identity catalog is missing. Repair the Forgeflow installation before recording a verdict.');
+  const reviewer = normalizeAgentId(data.reviewer);
+  const allowed = { architect: ['APPROVE', 'CONDITIONAL APPROVE', 'REVISE', 'BLOCK'], product_lead: ['CONFIRM', 'CHALLENGE'] };
+  if (!Object.hasOwn(allowed, reviewer) || !allowed[reviewer].includes(data.verdict)) throw new Error('Invalid reviewer/verdict pair');
   if (typeof data.event_id !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,159}$/.test(data.event_id)) throw new Error('A stable event-id is required');
   if (typeof data.session_id !== 'string' || !data.session_id.trim() || data.session_id.length > 200) throw new Error('A real session id is required');
   if (typeof data.command !== 'string' || !/^\/[a-z][a-z-]{0,63}$/.test(data.command)) throw new Error('A workflow command such as /review is required');
@@ -118,7 +128,7 @@ async function recordVerdict(data, env = process.env) {
   try {
     let prior = '';
     try { prior = fs.readFileSync(metricsFile, 'utf8'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
-    const detail = { reviewer: data.reviewer, verdict: data.verdict, evidence };
+    const detail = { reviewer, verdict: data.verdict, evidence };
     const artifactHash = require('crypto').createHash('sha256').update(fs.readFileSync(evidenceFile)).digest('hex');
     let source = null;
     try {
@@ -131,7 +141,7 @@ async function recordVerdict(data, env = process.env) {
       let event;
       try { event = JSON.parse(line); } catch (_) { continue; }
       if (event.event_id !== data.event_id) continue;
-      if (event.session_id !== data.session_id || event.command !== data.command || JSON.stringify(event.detail) !== JSON.stringify(detail)) throw new Error('Event-id already records a different outcome');
+      if (event.session_id !== data.session_id || event.command !== data.command || JSON.stringify({ ...event.detail, reviewer: normalizeAgentId(event.detail?.reviewer) || event.detail?.reviewer }) !== JSON.stringify(detail)) throw new Error('Event-id already records a different outcome');
       if (event.provenance?.artifact?.sha256 && event.provenance.artifact.sha256 !== artifactHash) throw new Error('Event-id already records different evidence content');
       return { recorded: 0, duplicate: true, event_id: data.event_id };
     }
@@ -149,7 +159,7 @@ async function verdictCli(args) {
   const names = { '--reviewer': 'reviewer', '--verdict': 'verdict', '--evidence': 'evidence', '--event-id': 'event_id', '--session': 'session_id', '--cwd': 'cwd', '--command': 'command' };
   const data = { session_id: process.env.FORGEFLOW_SESSION_ID || process.env.CODEX_THREAD_ID };
   for (let i = 0; i < args.length; i += 2) {
-    if (!Object.hasOwn(names, args[i]) || !args[i + 1]) throw new Error('Usage: record-verdict --reviewer <arbiter|compass> --verdict <decision> --evidence <saved-file> --event-id <stable-outcome-id> --command </workflow> [--session <host-session-id>] [--cwd <project-root>]');
+    if (!Object.hasOwn(names, args[i]) || !args[i + 1]) throw new Error('Usage: record-verdict --reviewer <architect|product_lead> --verdict <decision> --evidence <saved-file> --event-id <stable-outcome-id> --command </workflow> [--session <host-session-id>] [--cwd <project-root>]');
     data[names[args[i]]] = args[i + 1];
   }
   process.stdout.write(`${JSON.stringify(await recordVerdict(data))}\n`);
@@ -187,31 +197,31 @@ function detectEvents(toolName, toolInput, toolOutput) {
     // Verdict detection from Agent outputs
     const arbiterVerdict = toolOutput.match(/Forgeflow:\s*(APPROVED|APPROVE|REVISE|BLOCK)/i)
       || toolOutput.match(/Final Verdict:\s*(APPROVE|REVISE|BLOCK)/i)
-      || toolOutput.match(/Arbiter['']?s? Verdict:\s*(APPROVE|CONDITIONAL APPROVE|REVISE|BLOCK)/i);
+      || toolOutput.match(/(?:Architect|Arbiter)['’]?s? Verdict:\s*(APPROVE|CONDITIONAL APPROVE|REVISE|BLOCK)/i);
     if (arbiterVerdict) {
       let rawVerdict = arbiterVerdict[1].toUpperCase();
       if (rawVerdict === 'APPROVED') rawVerdict = 'APPROVE';
       events.push({
         event: 'verdict',
         command: '/review',
-        detail: { reviewer: 'arbiter', verdict: rawVerdict }
+        detail: { reviewer: 'architect', verdict: rawVerdict }
       });
     }
 
-    const compassVerdict = toolOutput.match(/Compass['']?s? (?:Final )?Verdict[:\s]+(CONFIRM|CHALLENGE)/i);
+    const compassVerdict = toolOutput.match(/(?:Product Lead|Compass)['’]?s? (?:Final )?Verdict[:\s]+(CONFIRM|CHALLENGE)/i);
     if (compassVerdict) {
       events.push({
         event: 'verdict',
         command: '/review',
-        detail: { reviewer: 'compass', verdict: compassVerdict[1].toUpperCase() }
+        detail: { reviewer: 'product_lead', verdict: compassVerdict[1].toUpperCase() }
       });
     }
 
-    // Finding overturned detection (Arbiter dismisses a reviewer's finding).
-    // Requires Arbiter's output to contain explicit tag lines in format:
+    // Finding overturned detection (Architect dismisses a reviewer's finding).
+    // Requires Architect's output to contain explicit tag lines in format:
     //   - REVIEWER: <agent> | CLASS: <class> | FINDING: <brief>
     // under a section header like "## Overturned Findings" or similar.
-    // If Arbiter's prompts don't emit this tag, no events fire (fail-open).
+    // If Architect's prompts don't emit this tag, no events fire (fail-open).
     const overturnPattern = /^-\s*REVIEWER:\s*([^|]+?)\s*\|\s*CLASS:\s*([^|]+?)\s*\|\s*FINDING:\s*(.+?)\s*$/gm;
     let overturnMatch;
     while ((overturnMatch = overturnPattern.exec(toolOutput)) !== null) {
@@ -219,7 +229,7 @@ function detectEvents(toolName, toolInput, toolOutput) {
         event: 'finding-overturned',
         command: '/review',
         detail: {
-          overturned_reviewer: overturnMatch[1].trim(),
+          overturned_reviewer: normalizeAgentId(overturnMatch[1].trim()) || overturnMatch[1].trim(),
           finding_class: overturnMatch[2].trim(),
           finding: overturnMatch[3].trim().slice(0, 240)
         }
@@ -227,20 +237,20 @@ function detectEvents(toolName, toolInput, toolOutput) {
     }
 
     // Agent dispatch telemetry — which implement agent was used for an auto-fix
-    if (/-implement$/.test(subagent) && /SUCCESS:/.test(toolOutput)) {
+    if (/(?:-implement|_implementer)$/.test(subagent) && /SUCCESS:/.test(toolOutput)) {
       events.push({
         event: 'auto-fix-applied',
         command: '/review-auto',
-        detail: { agent: subagent, success: true }
+        detail: { agent: normalizeAgentName(subagent), success: true }
       });
-    } else if (/-implement$/.test(subagent)
+    } else if (/(?:-implement|_implementer)$/.test(subagent)
                && (/REQUIRES MULTI-FILE CHANGE/.test(toolOutput)
                    || /EDIT TARGET NOT FOUND/.test(toolOutput)
                    || /UNEXPECTED ERROR/.test(toolOutput))) {
       events.push({
         event: 'auto-fix-applied',
         command: '/review-auto',
-        detail: { agent: subagent, success: false, reason: 'worker-aborted' }
+        detail: { agent: normalizeAgentName(subagent), success: false, reason: 'worker-aborted' }
       });
     }
   }

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const fs = require('fs');
+const { normalizeAgentId, formatAgentLabel } = require('./agent-identity');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const {
@@ -12,7 +13,7 @@ const {
 const { writeFileSafe, writeJsonSafe } = require('./file-safety');
 
 const DEFAULT_MAX_FILES_PER_LANE = 30;
-const LANES = ['shared', 'smith', 'warden', 'lumen', 'compass', 'atlas'];
+const LANES = ['shared', 'builder', 'guardian', 'designer', 'product_lead', 'coordinator'];
 
 function usage() {
   console.error([
@@ -136,13 +137,13 @@ function laneSignals(file, kind) {
   const lower = file.toLowerCase();
   const signals = {};
   if (kind === 'test') {
-    return { compass: ['test/validation'] };
+    return { product_lead: ['test/validation'] };
   }
-  if (['data', 'service', 'code'].includes(kind) || /model|repository|worker|queue|job/.test(lower)) signals.smith = ['backend/data/code'];
-  if (kind === 'security' || /auth|session|oauth|jwt|permission|rbac|crypto|csrf|xss|ssrf|validation|middleware/.test(lower)) signals.warden = ['security/boundary'];
-  if (kind === 'frontend' || /(^|\/)(components?|pages?|views?|ui)\//.test(lower) || /\.(css|scss)$/.test(lower) || /accessibility|a11y/.test(lower)) signals.lumen = ['frontend/ux'];
-  if (/playwright|jest|vitest|cypress|spec|test|validation/.test(lower)) signals.compass = ['test/validation'];
-  if (kind === 'docs' || kind === 'forgeflow' || /^\.forgeflow\//.test(lower)) signals.atlas = ['docs/coordination'];
+  if (['data', 'service', 'code'].includes(kind) || /model|repository|worker|queue|job/.test(lower)) signals.builder = ['backend/data/code'];
+  if (kind === 'security' || /auth|session|oauth|jwt|permission|rbac|crypto|csrf|xss|ssrf|validation|middleware/.test(lower)) signals.guardian = ['security/boundary'];
+  if (kind === 'frontend' || /(^|\/)(components?|pages?|views?|ui)\//.test(lower) || /\.(css|scss)$/.test(lower) || /accessibility|a11y/.test(lower)) signals.designer = ['frontend/ux'];
+  if (/playwright|jest|vitest|cypress|spec|test|validation/.test(lower)) signals.product_lead = ['test/validation'];
+  if (kind === 'docs' || kind === 'forgeflow' || /^\.forgeflow\//.test(lower)) signals.coordinator = ['docs/coordination'];
   return signals;
 }
 
@@ -180,7 +181,7 @@ function addUnique(list, entry) {
 }
 
 function laneList(entry) {
-  return Object.keys(entry.signals).filter((lane) => lane !== 'atlas');
+  return Object.keys(entry.signals).filter((lane) => lane !== 'coordinator');
 }
 
 function entryLine(entry) {
@@ -192,10 +193,14 @@ function entryLine(entry) {
 }
 
 function renderScopePacket(lane, manifest) {
-  const laneFiles = manifest.lanes[lane] || [];
+  const canonicalLane = normalizeAgentId(lane) || lane;
+  const laneFiles = Object.entries(manifest.lanes)
+    .filter(([key]) => (normalizeAgentId(key) || key) === canonicalLane)
+    .flatMap(([, entries]) => entries)
+    .filter((entry, index, entries) => entries.findIndex(item => item.path === entry.path) === index);
   const sharedFiles = lane === 'shared' ? [] : manifest.lanes.shared || [];
   return [
-    `# Forgeflow Scope Packet: ${lane}`,
+    `# Forgeflow Scope Packet: ${formatAgentLabel(lane)}`,
     '',
     `Query: ${manifest.query || '(none)'}`,
     `Query tokens: ${manifest.query_tokens.join(', ') || '(none)'}`,
@@ -212,7 +217,7 @@ function renderScopePacket(lane, manifest) {
     '## Scope Rules',
     '- Treat this packet as the first-pass file ownership map.',
     '- Read listed files before broad discovery.',
-    '- Ask Atlas or Arbiter to resolve gaps before editing unlisted files.',
+    '- Ask Coordinator or Architect to resolve gaps before editing unlisted files.',
   ].join('\n');
 }
 
@@ -248,10 +253,10 @@ function buildScopeManifest(opts = {}) {
       addUnique(lanes.shared, entry);
     } else if (domainLanes.length === 1) {
       addUnique(lanes[domainLanes[0]], entry);
-    } else if (entry.signals.atlas) {
-      addUnique(lanes.atlas, entry);
+    } else if (entry.signals.coordinator) {
+      addUnique(lanes.coordinator, entry);
     } else {
-      addUnique(lanes.smith, entry);
+      addUnique(lanes.builder, entry);
     }
   }
 

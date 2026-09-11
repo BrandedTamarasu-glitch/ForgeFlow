@@ -9,8 +9,8 @@ const projectDir = path.join(root, '.forgeflow', path.basename(root));
 fs.mkdirSync(projectDir, { recursive: true });
 const findings = path.join(root, 'findings.json');
 fs.writeFileSync(findings, JSON.stringify([
-  { id: 'safe-1', source: 'smith', tier: 'NIT', class: 'unused-import', title: 'Unused import.', file: 'src/demo.ts' },
-  { id: 'risk-1', source: 'smith', tier: 'MUST-FIX-SAFE', class: 'needs-judgment', title: 'Behavior needs judgment.', file: 'src/demo.ts' },
+  { id: 'safe-1', source: 'builder', tier: 'NIT', class: 'unused-import', title: 'Unused import.', file: 'src/demo.ts' },
+  { id: 'risk-1', source: 'builder', tier: 'MUST-FIX-SAFE', class: 'needs-judgment', title: 'Behavior needs judgment.', file: 'src/demo.ts' },
 ], null, 2));
 const out = path.join(projectDir, 'evidence.md');
 const result = buildReviewAutoEvidence({ projectDir, findings, out });

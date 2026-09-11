@@ -20,7 +20,7 @@ fs.writeFileSync(path.join(contextDir, 'context-telemetry.json'), JSON.stringify
   kind: 'context-pack',
   estimated_compact_tokens: 12000,
 }, null, 2));
-fs.writeFileSync(path.join(contextDir, 'synthesis-input.json'), JSON.stringify({ agent_packets: { smith: 'smith.md' } }, null, 2));
+fs.writeFileSync(path.join(contextDir, 'synthesis-input.json'), JSON.stringify({ agent_packets: { builder: 'builder.md' } }, null, 2));
 fs.writeFileSync(path.join(contextDir, 'code-topology.json'), JSON.stringify({
   schema_version: '1',
   high_fan_in: [{ path: 'src/service.ts', fan_in: 8, fan_out: 2 }],
@@ -61,7 +61,7 @@ fs.writeFileSync(path.join(skewedContextDir, 'file-manifest.json'), JSON.stringi
   ],
 }, null, 2));
 fs.writeFileSync(path.join(skewedContextDir, 'context-telemetry.json'), JSON.stringify({ estimated_compact_tokens: 5000 }, null, 2));
-fs.writeFileSync(path.join(skewedContextDir, 'synthesis-input.json'), JSON.stringify({ agent_packets: { smith: 'smith.md' } }, null, 2));
+fs.writeFileSync(path.join(skewedContextDir, 'synthesis-input.json'), JSON.stringify({ agent_packets: { builder: 'builder.md' } }, null, 2));
 const skewed = buildContextWavePlan({ root: skewedRoot, contextDir: skewedContextDir, targetTokens: 8000 });
 const oversized = buildContextWavePlan({ root: skewedRoot, contextDir: skewedContextDir, targetTokens: 4000 });
 let unsafeWriteBlocked = false;

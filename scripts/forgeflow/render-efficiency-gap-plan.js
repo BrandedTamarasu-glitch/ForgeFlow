@@ -329,7 +329,7 @@ function buildEfficiencyGapPlan(opts = {}) {
         : 'Telemetry exists, but outcome and pattern evidence should keep accumulating.',
       [
         'Run /forgeflow-report --refresh after meaningful review cycles.',
-        'Use review outcome and agent feedback recorders when Arbiter resolves findings.',
+        'Use review outcome and agent feedback recorders when Architect resolves findings.',
         'Watch false-positive, auto-fix, pattern-candidate, and invocation deltas before changing agent prompts.',
       ],
       'Do not backfill telemetry, mutate hook wiring, export telemetry, or change prompt/routing behavior from sparse telemetry without explicit user consent and enough real history.',

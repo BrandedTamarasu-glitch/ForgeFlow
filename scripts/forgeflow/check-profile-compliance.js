@@ -3,12 +3,12 @@ const fs = require('fs');
 const path = require('path');
 
 const ROLE_EXPECTATIONS = [
-  { role: 'atlas', file: 'agents/atlas-review.md' },
-  { role: 'compass', file: 'agents/compass-review.md' },
-  { role: 'lumen', file: 'agents/lumen-review.md' },
-  { role: 'warden', file: 'agents/warden-review.md' },
-  { role: 'smith', file: 'agents/smith-review.md' },
-  { role: 'arbiter', file: 'agents/arbiter-review.md' },
+  { role: 'coordinator', file: 'agents/coordinator-review.md' },
+  { role: 'product_lead', file: 'agents/product-lead-review.md' },
+  { role: 'designer', file: 'agents/designer-review.md' },
+  { role: 'guardian', file: 'agents/guardian-review.md' },
+  { role: 'builder', file: 'agents/builder-review.md' },
+  { role: 'architect', file: 'agents/architect-review.md' },
 ];
 
 function usage() {

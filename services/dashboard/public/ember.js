@@ -1,6 +1,7 @@
 /* Ember uses explicit activity snapshots. Chat prose never changes its state. */
 (function () {
   'use strict';
+  const identity = typeof module !== 'undefined' && module.exports ? require('../../../scripts/forgeflow/agent-identity') : ForgeflowAgentIdentity;
   const STATES = {
     idle: ['Idle', 'Ready for the next idea.', 'A little polishing. A little daydreaming. The forge is ready.'],
     planning: ['Planning', 'First, a good blueprint.', 'Ember lays out the pieces before the first hammer strike.'],
@@ -24,7 +25,7 @@
     const candidates = fresh.length ? fresh : agents;
     const chosen = [...candidates].sort((a, b) => PRIORITY.indexOf(a.state) - PRIORITY.indexOf(b.state) || b.updated_at - a.updated_at)[0];
     const stale = now - chosen.updated_at > STALE_MS && !['idle', 'complete', 'failed'].includes(chosen.state);
-    return { state: stale ? 'waiting' : chosen.state, stale, label: stale ? `No recent update · last reported ${chosen.state}` : (chosen.label || `${chosen.agent} · ${STATES[chosen.state][0]}`), agents };
+    return { state: stale ? 'waiting' : chosen.state, stale, label: stale ? `No recent update · last reported ${chosen.state}` : (chosen.label || `${identity.formatAgentLabel(chosen.agent)} · ${STATES[chosen.state][0]}`), agents };
   }
   if (typeof module !== 'undefined' && module.exports) module.exports = { deriveActivity, STALE_MS };
   if (typeof document === 'undefined') return;
@@ -137,7 +138,7 @@
     select('.ember-live-button').classList.toggle('ember-hidden', !preview);
     for (const button of buttons) button.setAttribute('aria-pressed', String(button.dataset.previewState === preview));
     const list = select('.ember-agents');
-    const entries = live.agents.map(a => `${a.agent}: ${STATES[a.state][0]}${a.label ? ` · ${a.label}` : ''} · ${new Date(a.updated_at).toLocaleTimeString()}`);
+    const entries = live.agents.map(a => `${identity.formatAgentLabel(a.agent)}: ${STATES[a.state][0]}${a.label ? ` · ${a.label}` : ''} · ${new Date(a.updated_at).toLocaleTimeString()}`);
     if (!entries.length) entries.push(connected ? 'No agent activity reported yet.' : 'Activity service disconnected.');
     const signature = JSON.stringify(entries);
     if (list.dataset.entries !== signature) {

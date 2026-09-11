@@ -41,8 +41,8 @@ Restart Codex so copied agents and skills are discovered.
 Check that the core files exist:
 
 ```bash
-test -f "${CODEX_HOME:-$HOME/.codex}/agents/smith-reviewer.toml"
-test -f "${CODEX_HOME:-$HOME/.codex}/agents/warden-reviewer.toml"
+test -f "${CODEX_HOME:-$HOME/.codex}/agents/builder-reviewer.toml"
+test -f "${CODEX_HOME:-$HOME/.codex}/agents/guardian-reviewer.toml"
 test -f "${CODEX_HOME:-$HOME/.codex}/skills/forge-review/SKILL.md"
 test -f "${CODEX_HOME:-$HOME/.codex}/skills/consult/SKILL.md"
 test -f "${CODEX_HOME:-$HOME/.codex}/skills/implement/SKILL.md"

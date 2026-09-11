@@ -54,8 +54,8 @@ Expected flow:
 ```text
 Review route: skip-mode | thin-mode | full-mode | deep-mode
 Agents: selected by the route; a skipped review spawns none
-Arbiter verdict: APPROVE | CONDITIONAL_APPROVE | REVISE | BLOCK
-Compass validation: CONFIRM | CHALLENGE
+Architect verdict: APPROVE | CONDITIONAL_APPROVE | REVISE | BLOCK
+Product Lead validation: CONFIRM | CHALLENGE
 ```
 
 Use `/review HEAD~3..HEAD` to review a commit range, or pass specific paths:

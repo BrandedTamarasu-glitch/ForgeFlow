@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const fs = require('fs');
+const { normalizeAgentId } = require('./agent-identity');
 const path = require('path');
 const { appendFileSafe, assertSafeDestination, assertSafeDirectory } = require('./file-safety');
 const { containsSensitiveContent } = require('./privacy-boundary');
@@ -116,7 +117,7 @@ function normalizeFeedback(opts = {}) {
     schema_version: '1',
     ts: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
     work_item: cleanText(opts.workItem || 'unspecified'),
-    agent: cleanText(opts.agent),
+    agent: normalizeAgentId(cleanText(opts.agent)) || cleanText(opts.agent),
     signal: cleanText(opts.signal).toLowerCase(),
     summary: cleanText(opts.summary),
     correction: cleanText(opts.correction || ''),
@@ -160,7 +161,8 @@ function rollupFeedback(records) {
   };
   for (const record of records) {
     summary.by_signal[record.signal] = (summary.by_signal[record.signal] || 0) + 1;
-    summary.by_agent[record.agent] = (summary.by_agent[record.agent] || 0) + 1;
+    const agent = normalizeAgentId(record.agent) || record.agent;
+    summary.by_agent[agent] = (summary.by_agent[agent] || 0) + 1;
     if (record.evidence_count >= 2 && ['medium', 'high'].includes(record.confidence)) summary.promotable += 1;
   }
   return summary;

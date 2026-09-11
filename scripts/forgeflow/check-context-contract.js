@@ -59,13 +59,45 @@ function checkContextContract(opts = {}) {
   if (!contract || !contract.agents) {
     issues.push({ severity: 'fail', code: 'contract-missing', message: 'agent-context-contract.json is missing or invalid.' });
   }
-  const packetFiles = fs.existsSync(packetDir)
+  const synthesisPath = path.join(contextDir, 'synthesis-input.json');
+  const synthesis = readJson(synthesisPath, contextDir);
+  const discoveredFiles = fs.existsSync(packetDir)
     ? fs.readdirSync(packetDir).filter((name) => name.endsWith('.md')).sort()
     : [];
+  let packetFiles = discoveredFiles;
+  if (fs.existsSync(synthesisPath)) {
+    // A rebuild may leave historical packets beside current output. Only the
+    // current manifest selects active files; aliases do not authorize old content.
+    const packets = synthesis && synthesis.agent_packets;
+    packetFiles = [];
+    if (!packets || typeof packets !== 'object' || Array.isArray(packets)) {
+      issues.push({ severity: 'fail', code: 'packet-manifest-invalid', message: 'synthesis-input.json must contain an agent_packets object.' });
+    } else {
+      for (const [agent, file] of Object.entries(packets)) {
+        const expected = `${agent}.md`;
+        if (typeof file !== 'string' || path.basename(file) !== expected || path.basename(expected) !== expected || expected.includes('\\')) {
+          issues.push({ severity: 'fail', code: 'packet-manifest-invalid', agent, message: `Invalid packet filename for ${agent}.` });
+          continue;
+        }
+        packetFiles.push(expected);
+      }
+    }
+  }
+  // Missing manifest entries and missing files must not turn a partial pack into
+  // a passing check, even when obsolete packets still exist on disk.
+  for (const agent of Object.keys((contract && contract.agents) || {})) {
+    if (!packetFiles.includes(`${agent}.md`)) {
+      issues.push({ severity: 'fail', code: 'agent-packet-missing', agent, message: `Missing current packet for ${agent}.` });
+    }
+  }
   if (packetFiles.length === 0) issues.push({ severity: 'attention', code: 'packets-missing', message: 'No agent packet files were found.' });
   for (const fileName of packetFiles) {
     const agent = fileName.replace(/\.md$/, '');
     const file = path.join(packetDir, fileName);
+    if (!fs.existsSync(file)) {
+      issues.push({ severity: 'fail', code: 'agent-packet-missing', agent, message: `Missing current packet file for ${agent}.` });
+      continue;
+    }
     const markdown = safeReadTextFile(file, contextDir).content;
     if (contract && contract.agents && !contract.agents[agent]) {
       issues.push({ severity: 'fail', code: 'agent-contract-missing', agent, message: `Missing contract entry for ${agent}.` });

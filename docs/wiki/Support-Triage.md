@@ -89,7 +89,7 @@ For routing issues, capture:
 - review mode selected
 - sanitized changed-file categories, such as docs, tests, API, auth, migrations, UI
 - which specialist was missing or unnecessary
-- whether Aegis should have been used for a high-risk finding
+- whether Verifier should have been used for a high-risk finding
 
 For review-quality issues, capture:
 

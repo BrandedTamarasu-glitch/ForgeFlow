@@ -131,7 +131,7 @@ function isSafeClass(finding) {
 
 function securityClass(finding) {
   const text = `${finding.source} ${finding.title} ${finding.file}`.toLowerCase();
-  return /warden|security|auth|permission|token|secret|crypto|session|tenant|migration|schema|dependency/.test(text);
+  return /guardian|warden|security|auth|permission|token|secret|crypto|session|tenant|migration|schema|dependency/.test(text);
 }
 
 function policyDecision(item) {

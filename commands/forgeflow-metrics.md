@@ -8,7 +8,7 @@ allowed-tools:
   - Glob
 ---
 <objective>
-Read `forgeflow-metrics.jsonl` across the user's projects and produce a summary of Forgeflow usage. Data comes from the `forgeflow-telemetry.js` PostToolUse hook, which records commands, verdicts, Aegis decisions, auto-fix outcomes, and fleet shard completions.
+Read `forgeflow-metrics.jsonl` across the user's projects and produce a summary of Forgeflow usage. Data comes from the `forgeflow-telemetry.js` PostToolUse hook, which records commands, verdicts, Verifier decisions, auto-fix outcomes, and fleet shard completions.
 
 Answers: Are `/review-auto` / `/fleet` / `/ui-iterate` actually being used? What's the verdict distribution? Is `/review-auto` reducing round count? Which projects churn vs. ship clean?
 </objective>
@@ -111,8 +111,8 @@ Otherwise, markdown table:
 ## Verdicts
 | Reviewer | APPROVE | CONDITIONAL APPROVE | REVISE | BLOCK |
 |---|---|---|---|---|
-| Arbiter | 28 | 3 | 12 | 4 |
-| Compass | 29 | - | - | 18 CHALLENGE |
+| Architect | 28 | 3 | 12 | 4 |
+| Product Lead | 29 | - | - | 18 CHALLENGE |
 
 ## /review-auto
 - Total rounds: 38 (across 22 invocations, avg 1.7)

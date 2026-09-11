@@ -37,17 +37,17 @@ const checks = [
   ['result path', result.out === out],
   ['manifest written', fs.existsSync(out)],
   ['packet dir returned', result.packet_dir === packetDir],
-  ['warden packet written', fs.existsSync(path.join(packetDir, 'warden.md'))],
-  ['lumen packet written', fs.existsSync(path.join(packetDir, 'lumen.md'))],
+  ['guardian packet written', fs.existsSync(path.join(packetDir, 'guardian.md'))],
+  ['designer packet written', fs.existsSync(path.join(packetDir, 'designer.md'))],
   ['telemetry written', fs.existsSync(telemetryOut)],
   ['telemetry kind', telemetry.kind === 'scope-manifest'],
   ['telemetry estimates tokens', Number.isInteger(telemetry.estimated_compact_tokens)],
-  ['smith service', manifest.lanes.smith.some((entry) => entry.path === 'src/services/user-service.ts')],
-  ['warden auth', manifest.lanes.warden.some((entry) => entry.path === 'src/auth/session.ts')],
-  ['lumen frontend', manifest.lanes.lumen.some((entry) => entry.path === 'src/components/LoginForm.tsx')],
-  ['compass test', manifest.lanes.compass.some((entry) => entry.path === 'src/components/LoginForm.test.tsx')],
-  ['atlas docs', manifest.lanes.atlas.some((entry) => entry.path === 'docs/login-plan.md')],
-  ['forgeflow docs atlas', manifest.lanes.atlas.some((entry) => entry.path === 'commands/review.md')],
+  ['builder service', manifest.lanes.builder.some((entry) => entry.path === 'src/services/user-service.ts')],
+  ['guardian auth', manifest.lanes.guardian.some((entry) => entry.path === 'src/auth/session.ts')],
+  ['designer frontend', manifest.lanes.designer.some((entry) => entry.path === 'src/components/LoginForm.tsx')],
+  ['product_lead test', manifest.lanes.product_lead.some((entry) => entry.path === 'src/components/LoginForm.test.tsx')],
+  ['coordinator docs', manifest.lanes.coordinator.some((entry) => entry.path === 'docs/login-plan.md')],
+  ['forgeflow docs coordinator', manifest.lanes.coordinator.some((entry) => entry.path === 'commands/review.md')],
   ['deny env', manifest.denied.some((entry) => entry.path === '.env')],
   ['deny token', manifest.denied.some((entry) => entry.path === 'config/api-token.txt')],
   ['shared array present', Array.isArray(sharedPaths)],
@@ -68,3 +68,12 @@ if (failed > 0) {
 }
 
 console.log('scope manifest: ok');
+
+// Old persisted lane names still render current-role scope without losing files.
+{
+  const assert = require('node:assert/strict');
+  const { renderScopePacket } = require('./build-scope-manifest');
+  const oldManifest = { ...manifest, lanes: { shared: [], smith: manifest.lanes.builder } };
+  assert.equal(renderScopePacket('smith', oldManifest), renderScopePacket('builder', oldManifest));
+  assert.ok(renderScopePacket('builder', oldManifest).includes('src/services/user-service.ts'));
+}

@@ -1,4 +1,6 @@
 import { test, expect, type Page, type WebSocketRoute } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 const counts = (approve: number, conditional: number, revise = 0, block = 0) => ({ APPROVE: approve, 'CONDITIONAL APPROVE': conditional, REVISE: revise, BLOCK: block });
 const metrics = {
@@ -250,3 +252,85 @@ test('optional evidence stays informational and empty metrics explain how verdic
   await page.locator('.health-details-link').click();
   await expect(page.locator('.readiness-card').first()).toContainText('Informational evidence');
 });
+
+test('role context stays with each message through activity changes and reconnect', async ({ page }) => {
+  await fixture(page);
+  await page.clock.install();
+  const evidence = 'smith-review.md: Warden reported "Compass: CHALLENGE"; {"arbiter":"REVISE"}';
+  const history = [
+    { agent: 'compass', level: 'decision', message: 'Legacy planning record', timestamp: 1700000000000 },
+    { agent: 'fc', level: 'phase', activityLabel: 'Backend review', message: evidence, timestamp: 1700000000001 },
+  ];
+  let socket: WebSocketRoute;
+  let connections = 0;
+  let activity = { type: 'activity', agents: [{ agent: 'builder', state: 'testing', label: 'New testing task', updated_at: 1700000000002 }] };
+  await page.routeWebSocket('**/api/chat', ws => {
+    socket = ws;
+    connections++;
+    ws.send(JSON.stringify({ type: 'init', history, activity }));
+  });
+  await page.goto('/');
+  const legacy = page.locator('.chat-message').filter({ hasText: 'Legacy planning record' });
+  const saved = page.locator('.chat-message').filter({ hasText: evidence });
+  await expect(legacy.locator('.chat-agent')).toHaveText('Product Lead');
+  await expect(saved.locator('.chat-agent')).toHaveText('Builder · Backend review');
+  await expect(page.locator('#chat-announcement')).toBeEmpty();
+  const label = '<img src=x onerror=alert(1)> Security review';
+  socket!.send(JSON.stringify({ agent: 'warden', level: 'decision', activityLabel: label, message: 'Checked boundary', timestamp: 1700000000003 }));
+  const live = page.locator('.chat-message').filter({ hasText: 'Checked boundary' });
+  await expect(live.locator('.chat-agent')).toHaveText(`Guardian · ${label}`);
+  await expect(page.locator('#chat-messages img')).toHaveCount(0);
+  await expect(page.locator('#chat-announcement')).toHaveAttribute('role', 'status');
+  await expect(page.locator('#chat-announcement')).toHaveAttribute('aria-live', 'polite');
+  await expect(page.locator('#chat-announcement')).toHaveText(`Guardian · ${label}, decision: Checked boundary`);
+  activity = { ...activity, agents: [{ agent: 'builder', state: 'complete', label: 'Later completed task', updated_at: 1700000000004 }] };
+  socket!.send(JSON.stringify(activity));
+  await expect(saved.locator('.chat-agent')).toHaveText('Builder · Backend review');
+  await page.locator('#chat-announcement').evaluate(element => { element.textContent = ''; });
+  socket!.close();
+  await page.clock.fastForward(6000);
+  await expect.poll(() => connections).toBeGreaterThan(1);
+  await expect(saved).toContainText(evidence);
+  await expect(saved.locator('.chat-agent')).toHaveText('Builder · Backend review');
+  await expect(legacy.locator('.chat-agent')).toHaveText('Product Lead');
+  await expect(page.locator('#chat-announcement')).toBeEmpty();
+});
+
+for (const width of [320, 390]) {
+  test(`role context remains readable at ${width}px in both chat views`, async ({ page }) => {
+    await fixture(page);
+    await page.setViewportSize({ width, height: 1000 });
+    const activityLabel = 'Acceptance check for keyboard navigation, saved review evidence, and narrow screen layouts';
+    const history = [
+      { agent: 'compass', activityLabel, level: 'decision', message: 'Checked the saved review results.', timestamp: 1700000000000 },
+      { agent: 'aegis', activityLabel: 'Finding verification', level: 'phase', message: 'Verified the finding.', timestamp: 1700000000001 },
+      { agent: 'smith', level: 'phase', message: 'Legacy entry keeps its role without a task.', timestamp: 1700000000002 },
+      { agent: 'custom-agent', activityLabel: '<img src=x> literal context', level: 'decision', message: 'Custom role remains visible.', timestamp: 1700000000003 },
+    ];
+    await page.routeWebSocket('**/api/chat', ws => ws.send(JSON.stringify({ type: 'init', history, activity: { agents: [] } })));
+    await page.goto('/');
+    await expect(page.locator('.chat-agent').first()).toHaveText(`Product Lead · ${activityLabel}`);
+    await expect(page.locator('.chat-agent').nth(1)).toHaveText('Verifier · Finding verification');
+    await expect(page.locator('.chat-agent').nth(2)).toHaveText('Builder');
+    await expect(page.locator('.chat-agent').nth(3)).toHaveText('custom-agent · <img src=x> literal context');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    expect(await page.locator('#chat-messages').evaluate(element => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(1);
+    await page.locator('#chat-messages').evaluate(element => { element.scrollTop = 0; });
+    await page.screenshot({ path: `/tmp/forgeflow-role-dashboard-${width}.png`, fullPage: true });
+
+    // Load the real standalone HTML against the isolated harness; mock only its transport.
+    await page.route('**/standalone-chat', route => route.fulfill({ contentType: 'text/html', body: readFileSync(resolve('services/agent-chat/public/index.html'), 'utf8') }));
+    await page.routeWebSocket('**/', ws => ws.send(JSON.stringify({ type: 'init', room: 'Review', history })));
+    await page.goto('/standalone-chat');
+    await expect(page.locator('.agent-name').first()).toHaveText(`Product Lead · ${activityLabel}`);
+    await expect(page.locator('.agent-name').nth(1)).toHaveText('Verifier · Finding verification');
+    await expect(page.locator('.agent-name').nth(2)).toHaveText('Builder');
+    await expect(page.locator('.agent-name').nth(3)).toHaveText('custom-agent · <img src=x> literal context');
+    await expect(page.locator('#messages img')).toHaveCount(0);
+    await expect(page.getByRole('log', { name: 'Agent chat messages' })).toHaveAttribute('aria-live', 'polite');
+    await expect(page.getByRole('log', { name: 'Agent chat messages' })).toContainText(`Product Lead · ${activityLabel}`);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    expect(await page.locator('#messages-wrap').evaluate(element => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(1);
+    await page.screenshot({ path: `/tmp/forgeflow-role-standalone-${width}.png`, fullPage: true });
+  });
+}

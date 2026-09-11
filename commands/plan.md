@@ -13,11 +13,11 @@ allowed-tools:
   - AskUserQuestion
 ---
 <objective>
-Run Compass and Atlas in planning mode to create a structured implementation plan that guides the technical consultation phase.
+Run Product Lead and Coordinator in planning mode to create a structured implementation plan that guides the technical consultation phase.
 
 The planning team:
-1. **Compass** (`compass-plan`) — Plan structure, scope definition, accessibility integration, UX milestones, success validation
-2. **Atlas** (`atlas-early`) — Scope validation, coordination risk identification, memory persistence
+1. **Product Lead** (`product-lead-plan`) — Plan structure, scope definition, accessibility integration, UX milestones, success validation
+2. **Coordinator** (`coordinator-early`) — Scope validation, coordination risk identification, memory persistence
 </objective>
 
 <context>
@@ -53,7 +53,7 @@ else
 fi
 ```
 
-If `MEMORY_CONTEXT_PATH` exists, inject it into Compass and Atlas as the memory summary. Read full phase files only when the summary cites a gap or exact source text is needed. Estimated context savings are written to `${FORGEFLOW_DIR}/context/memory-context-telemetry.json`.
+If `MEMORY_CONTEXT_PATH` exists, inject it into Product Lead and Coordinator as the memory summary. Read full phase files only when the summary cites a gap or exact source text is needed. Estimated context savings are written to `${FORGEFLOW_DIR}/context/memory-context-telemetry.json`.
 
 **Discover:**
 ```bash
@@ -95,13 +95,13 @@ DISCUSSION_PATH="${FORGEFLOW_DIR}/current-discussion.md"
 RESEARCH_PATH="${FORGEFLOW_DIR}/current-research.md"
 ```
 
-Also check for a `CONTEXT.md` in the current working directory. If it exists, read it — it contains service-specific architecture context that informs planning scope and agent assignments. Pass the content to both Compass and Atlas.
+Also check for a `CONTEXT.md` in the current working directory. If it exists, read it — it contains service-specific architecture context that informs planning scope and agent assignments. Pass the content to both Product Lead and Coordinator.
 
 Read both files if they exist. If the discussion or research is missing, note this gap — the plan will be less informed.
 
-## Step 2: Spawn Compass and Atlas in parallel
+## Step 2: Spawn Product Lead and Coordinator in parallel
 
-**`compass-plan`** receives:
+**`product-lead-plan`** receives:
 - `Context is pre-loaded in <injected-context> below. Do not re-read those files.`
 - The `<injected-context>` block assembled in Step 0
 - Discussion summary and research findings
@@ -109,7 +109,7 @@ Read both files if they exist. If the discussion or research is missing, note th
 - Any additional constraints from $ARGUMENTS
 - Working directory path
 
-**`atlas-early`** receives:
+**`coordinator-early`** receives:
 - `Context is pre-loaded in <injected-context> below. Do not re-read those files.`
 - The `<injected-context>` block assembled in Step 0
 - Discussion summary and research findings
@@ -121,7 +121,7 @@ Read both files if they exist. If the discussion or research is missing, note th
 
 After both agents complete, combine into a unified Implementation Plan.
 
-Compass's plan structure is the backbone. Atlas's scope validation and coordination risks are integrated.
+Product Lead's plan structure is the backbone. Coordinator's scope validation and coordination risks are integrated.
 
 ## Step 4: Present and save
 
@@ -151,6 +151,21 @@ Or: modify the plan, then run `/consult`
 - [ ] Scope boundaries defined (in/out/deferred)
 - [ ] Dependencies and parallelization identified
 - [ ] Risk mitigations concrete and actionable
-- [ ] Atlas validated scope and flagged coordination risks
+- [ ] Coordinator validated scope and flagged coordination risks
 - [ ] Plan saved to .forgeflow/ for reference
 </success_criteria>
+
+## Writing for CLI output
+
+Apply George Orwell's six rules to progress updates, agent reports, and final summaries:
+
+1. Never use a metaphor, simile, or other figure of speech which you are used to seeing in print.
+2. Never use a long word where a short one will do.
+3. If it is possible to cut a word out, always cut it out.
+4. Never use the passive where you can use the active.
+5. Never use a foreign phrase, a scientific word, or a jargon word if you can think of an everyday English equivalent.
+6. Break any of these rules sooner than say anything outright barbarous.
+
+Lead with the result or action. Use short paragraphs or bullets that scan well in a terminal. Cut stock phrases, repeated summaries, and persona banter. These rules take precedence over persona style and sample prose.
+
+Keep facts, uncertainty, risks, and required evidence intact. Preserve exact commands, code, paths, identifiers, error text, schema keys, and verdict labels. Keep required report sections and machine-readable formats; apply the rules to prose within them. Use a technical term when it is the clearest accurate choice, and explain it when needed. Before sending, cut words that add no meaning without making the result unclear or unnatural.

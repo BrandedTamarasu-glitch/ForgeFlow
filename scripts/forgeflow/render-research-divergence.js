@@ -107,7 +107,7 @@ function buildResearchDivergence(opts) {
     branches,
     critic: {
       phase: 'after-all-branches-complete',
-      input_contract: 'After isolated generation ends, receive the task, immutable constraints, completed branch outputs, and independently gathered discussion, memory, codebase, accessibility, and Atlas evidence. None of that evidence may flow back into a branch.',
+      input_contract: 'After isolated generation ends, receive the task, immutable constraints, completed branch outputs, and independently gathered discussion, memory, codebase, accessibility, and Coordinator evidence. None of that evidence may flow back into a branch.',
       instructions: [
         'Cluster duplicated approaches by underlying mechanism before evaluating them.',
         'Preserve at least one non-obvious viable candidate when the evidence supports it.',

@@ -16,7 +16,7 @@ function makeContext(tokens) {
     ],
   }));
   fs.writeFileSync(path.join(contextDir, 'context-telemetry.json'), JSON.stringify({ estimated_compact_tokens: tokens }));
-  fs.writeFileSync(path.join(contextDir, 'synthesis-input.json'), JSON.stringify({ agent_packets: { smith: 'smith.md' } }));
+  fs.writeFileSync(path.join(contextDir, 'synthesis-input.json'), JSON.stringify({ agent_packets: { builder: 'builder.md' } }));
   return { root, contextDir };
 }
 

@@ -12,12 +12,12 @@ for (const source of [
   'scripts/forgeflow/render-profile-review.js',
   'commands/forgeflow-profile.md',
   'commands/forgeflow-profile-review.md',
-  'agents/atlas-review.md',
-  'agents/compass-review.md',
-  'agents/lumen-review.md',
-  'agents/warden-review.md',
-  'agents/smith-review.md',
-  'agents/arbiter-review.md',
+  'agents/coordinator-review.md',
+  'agents/product-lead-review.md',
+  'agents/designer-review.md',
+  'agents/guardian-review.md',
+  'agents/builder-review.md',
+  'agents/architect-review.md',
 ]) {
   const target = path.join(installedRoot, source);
   fs.mkdirSync(path.dirname(target), { recursive: true });

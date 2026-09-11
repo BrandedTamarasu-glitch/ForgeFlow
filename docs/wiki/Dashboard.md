@@ -109,7 +109,7 @@ The next-action button copies a command. Paste it into your assistant when you w
 
 Charts require saved verdicts. The default inputs are local metrics under `~/.claude/projects/` and `~/.codex/projects/`; runtime-home and metrics-root overrides are respected.
 
-Codex ForgeFlow review and implementation skills explicitly record actual Arbiter and Compass decisions with saved evidence and stable event IDs. Planning and testing activity do not create approvals. Older unrecorded reviews are not inferred or backfilled. Empty charts before the first recorded review are expected.
+Codex ForgeFlow review and implementation skills explicitly record actual Architect and Product Lead decisions with saved evidence and stable event IDs. Planning and testing activity do not create approvals. Older unrecorded reviews are not inferred or backfilled. Empty charts before the first recorded review are expected.
 
 ## Separate chat view and stopping services
 

@@ -1,6 +1,6 @@
 # Recurring Blocker Classes — Tier A
 
-Global pattern library for Atlas and Arbiter to reference during `/plan`, `/consult`, and `/review`. A pattern appears here when it has been flagged as a BLOCKER or high-severity REVISE in 2+ projects.
+Global pattern library for Coordinator and Architect to reference during `/plan`, `/consult`, and `/review`. A pattern appears here when it has been flagged as a BLOCKER or high-severity REVISE in 2+ projects.
 
 Updated by `/forgeflow-learnings` (monthly) or manually from project review histories.
 
@@ -21,11 +21,11 @@ When a plan introduces or modifies an enum, union type, or schema definition:
 - Flag: "Does this type appear in multiple consumers? Search for usages before finalizing the values."
 - Require: a note in the spec identifying all consumers, not just the primary one.
 
-**Implement-time check (Smith):**
+**Implement-time check (Builder):**
 - Grep for the old type name across the tree before removing or renaming
 - If a shared constants file doesn't exist for this domain, create one in Phase 1 — do not inline the enum in the consumer
 
-**Review-time check (Smith, Warden):**
+**Review-time check (Builder, Guardian):**
 - Verify the type signature matches every call site, not just the one in the diff
 - Check migration INSERT / UPDATE statements against the new schema — nullable vs notNull mismatches will fail at runtime
 
@@ -37,7 +37,7 @@ When a plan introduces or modifies an enum, union type, or schema definition:
 
 **Seen in:**
 - `campaign-management` (2026-03-24 through 2026-04-01 learnings) — `extractVariables()` and `warmCache()` promised but not implemented; Phase 5 spec shows Bounced stat but `totalBounced` missing from hook; `CAMPAIGN_SUPPRESSION_REASON` constant existence unconfirmed
-- `SubAgents` (2026-03-25 debate learnings) — Warden wrong-channel gap was not addressed in `warden-review.md` despite being assigned; no output routing rule added
+- `SubAgents` (2026-03-25 debate learnings) — Guardian wrong-channel gap was not addressed in `warden-review.md` despite being assigned; no output routing rule added
 - `llama.cpp` (patterns.md) — functions declared with fallback paths that were never wired up
 
 **Classification:** Typically REVISE. Not data-breaking, but the downstream tests and reviews fail.
@@ -45,13 +45,13 @@ When a plan introduces or modifies an enum, union type, or schema definition:
 **Plan-time preemption:**
 For any plan that declares named functions, stats, or constants:
 - Require an acceptance criterion per named artifact: "<name> exists and is called by <caller>"
-- Atlas pushes back on plans that list N artifacts but only N-1 acceptance criteria.
+- Coordinator pushes back on plans that list N artifacts but only N-1 acceptance criteria.
 
-**Implement-time check (Compass validation tests):**
+**Implement-time check (Product Lead validation tests):**
 - Every spec'd artifact gets at least one automated or manual check
 - Missing implementations fail the validation checklist at `/implement` end, not at `/review`
 
-**Review-time check (Atlas):**
+**Review-time check (Coordinator):**
 - Cross-reference plan artifacts vs implemented artifacts
 - Flag any declared-but-not-implemented as MUST-FIX with spec citation
 
@@ -70,14 +70,14 @@ For any plan that declares named functions, stats, or constants:
 **Plan-time preemption:**
 Any plan touching auth, data writes, external API calls, or user-supplied input:
 - Requires an explicit "Error paths" section listing what can fail and how
-- Atlas pushes back on "happy path only" plans
+- Coordinator pushes back on "happy path only" plans
 
-**Implement-time check (Warden, Smith):**
+**Implement-time check (Guardian, Builder):**
 - Every nullable column → verify every read includes a null branch
 - Every external call → explicit timeout + error path
 - Every boolean-returning "try" function → caller checks return and handles false case
 
-**Review-time check (Warden):**
+**Review-time check (Guardian):**
 - Run the security checklist Tier 1 items on every diff touching auth / data writes / external calls
 - Null-safety gap in production code path → BLOCKER, not REVISE
 

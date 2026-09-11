@@ -163,6 +163,8 @@ function projectLearningId(entry) {
   const identity = [
     cleanText(entry && entry.category),
     cleanText(entry && entry.learning),
+    // Historical source-less records were hashed as Atlas. New entry defaults
+    // belong in normalizeEntry and must not change this persisted identity.
     cleanText((entry && entry.source) || 'Atlas'),
   ].join('\n');
   return `plc_${crypto.createHash('sha256').update(identity).digest('hex').slice(0, 16)}`;
@@ -175,7 +177,7 @@ function normalizeEntry(entry) {
     ts: cleanText(entry.ts || new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')),
     category: cleanText(entry.category),
     learning: cleanText(entry.learning),
-    source: cleanText(entry.source || 'Atlas'),
+    source: cleanText(entry.source || 'Coordinator'),
     evidence: cleanText(entry.evidence || ''),
     confidence: normalizeConfidence(entry.confidence),
     evidence_count: normalizeEvidenceCount(entry.evidence_count ?? entry.evidenceCount),

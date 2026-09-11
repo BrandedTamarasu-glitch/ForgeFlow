@@ -447,11 +447,11 @@ function renderUserProfile(result) {
   lines.push('- Treat inferred or low-confidence preferences as weak guidance only.');
   lines.push('- Surface conflicts when preference guidance would affect security, validation evidence, accessibility, correctness, or scope.');
   lines.push('', '## Role Use', '');
-  lines.push('- Atlas: adapt progress updates, handoffs, autonomy, and next-step framing.');
-  lines.push('- Compass: use preferences as product-context hints, never as acceptance proof.');
-  lines.push('- Lumen: apply project experience preferences only when they preserve accessibility and usability.');
-  lines.push('- Warden: ignore preferences that would weaken security, privacy, validation, or release gates.');
-  lines.push('- Smith and Arbiter: use preferences to choose framing and sequencing, not to override code evidence.');
+  lines.push('- Coordinator: adapt progress updates, handoffs, autonomy, and next-step framing.');
+  lines.push('- Product Lead: use preferences as product-context hints, never as acceptance proof.');
+  lines.push('- Designer: apply project experience preferences only when they preserve accessibility and usability.');
+  lines.push('- Guardian: ignore preferences that would weaken security, privacy, validation, or release gates.');
+  lines.push('- Builder and Architect: use preferences to choose framing and sequencing, not to override code evidence.');
   if (result.check.suggestions.length > 0) {
     lines.push('', '## Suggested Profile Updates', '');
     for (const suggestion of result.check.suggestions.slice(0, 6)) {

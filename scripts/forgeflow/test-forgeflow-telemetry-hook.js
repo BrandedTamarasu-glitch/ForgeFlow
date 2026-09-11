@@ -69,4 +69,56 @@ assert.equal(overrideResult.runtime, 'codex');
 assert.equal(overrideResult.recorded, 1);
 assert.ok(overrideResult.metrics_file.startsWith(overrideRoot + path.sep));
 
+
+const { detectEvents } = require('../../hooks/forgeflow-telemetry');
+for (const name of ['Architect', 'Arbiter']) {
+  assert.equal(detectEvents('Agent', {}, name + ' Verdict: APPROVE')[0].detail.reviewer, 'architect');
+}
+for (const name of ['Product Lead', 'Compass']) {
+  assert.equal(detectEvents('Agent', {}, name + ' Final Verdict: CONFIRM')[0].detail.reviewer, 'product_lead');
+}
+for (const name of ['smith-implement', 'builder-implement', 'smith_implementer', 'builder_implementer']) {
+  const event = detectEvents('Agent', { subagent_type: name }, 'SUCCESS: Fixed')[0];
+  assert.match(event.detail.agent, /^builder[-_]implement/);
+}
+assert.equal(detectEvents('Agent', {}, '- REVIEWER: fc | CLASS: data | FINDING: Safe')[0].detail.overturned_reviewer, 'builder');
+
+// A new-only install must trigger the gate, and old verdict headings still work.
+const { spawnSync } = require('child_process');
+const gateProject = path.join(tmp, 'gate-project');
+fs.mkdirSync(path.join(gateProject, '.claude', 'agents'), { recursive: true });
+fs.writeFileSync(path.join(gateProject, '.claude', 'agents', 'architect-review.md'), 'fixture');
+for (const name of ['Architect', 'Arbiter']) {
+  const session = `rename-gate-${process.pid}-${name}`;
+  const stateFile = path.join(os.tmpdir(), `forgeflow-${session}.json`);
+  try {
+    const gate = spawnSync(process.execPath, [path.resolve(__dirname, '../../hooks/forgeflow-gate.js')], {
+      encoding: 'utf8',
+      env: { ...process.env, HOME: tmp },
+      input: JSON.stringify({ cwd: gateProject, session_id: session, tool_name: 'Agent', tool_output: { content: `${name} Verdict: APPROVE` } }),
+    });
+    assert.equal(gate.status, 0, gate.stderr);
+    assert.equal(JSON.parse(fs.readFileSync(stateFile, 'utf8')).reviewRun, true);
+  } finally {
+    fs.rmSync(stateFile, { force: true });
+  }
+}
+
+// A partial install still records hook events without guessing role aliases.
+const isolatedHook = path.join(tmp, 'isolated', 'forgeflow-telemetry.js');
+fs.mkdirSync(path.dirname(isolatedHook));
+fs.copyFileSync(path.resolve(__dirname, '../../hooks/forgeflow-telemetry.js'), isolatedHook);
+const isolatedMetrics = path.join(tmp, 'isolated-metrics');
+const partial = spawnSync(process.execPath, [isolatedHook], {
+  encoding: 'utf8', env: { ...process.env, FORGEFLOW_METRICS_ROOT: isolatedMetrics },
+  input: JSON.stringify({ cwd: gateProject, session_id: 'partial-install', tool_name: 'Agent',
+    tool_input: { subagent_type: 'smith-implement' }, tool_output: 'SUCCESS: Fixed' }),
+});
+assert.equal(partial.status, 0, partial.stderr);
+const partialFile = metricsFileForCwd(gateProject, 'claude-code', { FORGEFLOW_METRICS_ROOT: isolatedMetrics });
+assert.equal(JSON.parse(fs.readFileSync(partialFile, 'utf8').trim()).detail.agent, 'smith-implement');
+const explicitPartial = spawnSync(process.execPath, [isolatedHook, 'record-verdict'], { encoding: 'utf8' });
+assert.equal(explicitPartial.status, 1);
+assert.match(explicitPartial.stderr, /catalog is missing.*Repair the Forgeflow installation/);
+
 console.log('forgeflow telemetry hook: ok');

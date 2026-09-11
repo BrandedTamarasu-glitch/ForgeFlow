@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const fs = require('fs');
+const { normalizeAgentId } = require('./agent-identity');
 const os = require('os');
 const path = require('path');
 
@@ -142,7 +143,18 @@ function readOutcome(inputPath) {
 
 function appendOutcome(record, outPath) {
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
-  fs.appendFileSync(outPath, `${JSON.stringify(record)}${os.EOL}`);
+  const canonicalRecord = {
+    ...record,
+    review: {
+      ...record.review,
+      agents_used: [...new Set(record.review.agents_used.map(agent => normalizeAgentId(agent) || agent))],
+      verifier_decisions: record.review.verifier_decisions.map(decision => ({
+        ...decision,
+        ...(decision.reviewer !== undefined && { reviewer: normalizeAgentId(decision.reviewer) || decision.reviewer }),
+      })),
+    },
+  };
+  fs.appendFileSync(outPath, `${JSON.stringify(canonicalRecord)}${os.EOL}`);
 }
 
 function emptySummary() {
@@ -185,8 +197,7 @@ function applyOutcome(summary, record) {
   summary.records += 1;
   summary.modes[review.mode] = (summary.modes[review.mode] || 0) + 1;
 
-  for (const agent of asArray(review.agents_used)) {
-    const key = normalize(agent);
+  for (const key of new Set(asArray(review.agents_used).map(agent => normalizeAgentId(agent) || normalize(agent)))) {
     summary.agents[key] = (summary.agents[key] || 0) + 1;
   }
 

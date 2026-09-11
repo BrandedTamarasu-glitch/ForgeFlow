@@ -1,6 +1,6 @@
 #!/bin/bash
 # chat-send.sh — Safe fire-and-forget message sender for agent subprocesses.
-# Usage: chat-send.sh <agent> <level> <message>
+# Usage: chat-send.sh <agent> <level> <message> [activity-label]
 # Uses jq for safe JSON construction — no shell injection possible.
 # Fire-and-forget: failures never break agent execution.
 
@@ -9,6 +9,8 @@ set -euo pipefail
 agent="${1:-}"
 level="${2:-}"
 message="${3:-}"
+activity_label="${4:-}"
+activity_supplied="${4+x}"
 
 if [ -z "$agent" ] || [ -z "$level" ] || [ -z "$message" ]; then
   exit 0
@@ -25,8 +27,8 @@ if [ -z "$token" ]; then
 fi
 
 # jq --arg safely handles all special characters — no injection vector
-body=$(jq -n --arg a "$agent" --arg l "$level" --arg m "$message" \
-  '{agent: $a, level: $l, message: $m}')
+body=$(jq -n --arg a "$agent" --arg l "$level" --arg m "$message" --arg activity "$activity_label" --arg supplied "$activity_supplied" \
+  '{agent: $a, level: $l, message: $m} + (if $supplied == "" then {} else {activityLabel: $activity} end)')
 
 printf 'X-Forgeflow-Token: %s\n' "$token" | curl -s --max-time 1 --header @- \
   -X POST \

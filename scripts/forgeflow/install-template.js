@@ -3,6 +3,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const {
+  legacyAgentCandidates,
   CODEX_INVENTORY_SOURCE,
   codexInventoryContent,
   assertSafeDestination,
@@ -113,24 +114,72 @@ function copyFile({ source, destination, home, executable = false, dryRun = fals
   return { source, destination };
 }
 
+function installSourcePlan({ home, target, sources, dryRun }) {
+  const { createBackup, rollbackForgeflow, readCurrentVersion } = require('./update-forgeflow');
+  const candidates = legacyAgentCandidates(home, target, sources);
+  const retired = candidates.filter((item) => item.verified);
+  const preserved_legacy = candidates.filter((item) => !item.verified).map((item) => item.source);
+  const planned = sources.filter((source) => !manifestEntry(source, home, target)?.preserve);
+  const current = readCurrentVersion(home);
+  const snapshotPath = path.join(home, 'forgeflow/backups/previous/manifest.json');
+  assertSafeDestination(snapshotPath, home);
+  const pending = fs.existsSync(snapshotPath) && JSON.parse(fs.readFileSync(snapshotPath, 'utf8')).pending;
+  // An identical reinstall must not consume the only migration recovery point.
+  const unchanged = planned.every((source) => {
+    const entry = manifestEntry(source, home, target);
+    if (!entry) return true;
+    assertSafeDestination(entry.destination, home);
+    const stat = fs.lstatSync(entry.destination, { throwIfNoEntry: false });
+    const sourcePath = path.join(repoRoot, source);
+    return isRegularSourceFile(sourcePath) && stat?.isFile()
+      && (stat.mode & 0o777) === (entry.executable ? 0o755 : 0o644)
+      && fs.readFileSync(sourcePath).equals(fs.readFileSync(entry.destination));
+  });
+  const inventoryPath = target === 'codex' ? codexDestination(CODEX_INVENTORY_SOURCE, home) : null;
+  if (inventoryPath) assertSafeDestination(inventoryPath, home);
+  const inventoryUnchanged = !inventoryPath || (fs.existsSync(inventoryPath)
+    && fs.readFileSync(inventoryPath, 'utf8') === codexInventoryContent(sources));
+  if (!pending && unchanged && inventoryUnchanged && retired.length === 0) {
+    return { copied: [], retired: [], preserved_legacy };
+  }
+  const backup = createBackup({ home, target, current, latest: current,
+    files: [...planned, ...retired.map((item) => item.source), ...(target === 'codex' ? [CODEX_INVENTORY_SOURCE] : [])], dryRun });
+  const copied = [];
+  try {
+    for (const source of planned) {
+      const entry = manifestEntry(source, home, target);
+      if (entry) copied.push(copyFile({ ...entry, home, dryRun }));
+    }
+    if (!dryRun) {
+      for (const item of retired) {
+        assertSafeDestination(item.destination, home);
+        fs.unlinkSync(item.destination);
+      }
+      if (target === 'codex') {
+        const inventoryPath = codexDestination(CODEX_INVENTORY_SOURCE, home);
+        assertSafeDestination(inventoryPath, home);
+        fs.writeFileSync(inventoryPath, codexInventoryContent(sources));
+      }
+      const snapshotPath = path.join(backup.path, 'manifest.json');
+      const snapshot = JSON.parse(fs.readFileSync(snapshotPath, 'utf8'));
+      snapshot.pending = false;
+      fs.writeFileSync(snapshotPath, `${JSON.stringify(snapshot, null, 2)}\n`);
+    }
+  } catch (err) {
+    const rollback = rollbackForgeflow({ home, target });
+    if (rollback.failed.length) err.message += `; rollback failed: ${JSON.stringify(rollback.failed)}`;
+    throw err;
+  }
+  return { copied, retired: retired.map((item) => item.source), preserved_legacy };
+}
+
 function installClaude({ home, dryRun = false } = {}) {
   const files = managedSources(repoRoot, 'claude');
-  const copied = [];
-  for (const source of files) {
-    const entry = manifestEntry(source, home);
-    if (!entry || entry.preserve) continue;
-    copied.push(copyFile({
-      source,
-      destination: entry.destination,
-      home,
-      executable: entry.executable,
-      dryRun,
-    }));
-  }
+  const { copied, retired, preserved_legacy } = installSourcePlan({ home, target: 'claude', sources: files, dryRun });
   return {
     target: 'claude',
     home,
-    copied,
+    copied, retired, preserved_legacy,
     manual_steps: [
       'Restart Claude Code after installing commands, agents, hooks, and templates.',
       'The Ember prompt hook is configured automatically; other hooks and statusLine remain under your control.',
@@ -147,28 +196,12 @@ function codexDestination(source, home) {
 }
 
 function installCodex({ home, dryRun = false } = {}) {
-  const copied = [];
   const sources = codexSources();
-  for (const source of sources) {
-    const entry = manifestEntry(source, home, 'codex');
-    if (!entry) continue;
-    copied.push(copyFile({
-      source,
-      destination: entry.destination,
-      home,
-      executable: entry.executable,
-      dryRun,
-    }));
-  }
-  const inventoryPath = codexDestination(CODEX_INVENTORY_SOURCE, home);
-  if (!dryRun) {
-    assertSafeDestination(inventoryPath, home);
-    fs.writeFileSync(inventoryPath, codexInventoryContent(sources));
-  }
+  const { copied, retired, preserved_legacy } = installSourcePlan({ home, target: 'codex', sources, dryRun });
   return {
     target: 'codex',
     home,
-    copied,
+    copied, retired, preserved_legacy,
     agent_names: sources
       .filter((source) => /^\.codex\/agents\/[^/]+\.toml$/.test(source))
       .map((source) => path.basename(source, '.toml')),
@@ -215,6 +248,8 @@ function renderMarkdown(result) {
   if (result.rtk.status === 'missing') lines.push('To install RTK with Cargo, rerun with --install-rtk; preview with --install-rtk --dry-run.');
   for (const item of result.results) {
     lines.push('', `${item.target}: ${item.copied.length} files -> ${item.home}`);
+    if (item.retired.length) lines.push(`- Retired old managed files: ${item.retired.length}`);
+    for (const source of item.preserved_legacy) lines.push(`- Preserved edited or unverified file: ${source}`);
     if (item.target === 'codex') {
       lines.push(`- agents: ${item.agent_names.length}`);
       lines.push(`- skills: ${item.skill_names.length}`);

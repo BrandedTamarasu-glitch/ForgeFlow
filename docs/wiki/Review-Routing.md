@@ -37,11 +37,11 @@ With calibration:
 scripts/forgeflow/explain-review-route.js --json --calibration .forgeflow/<project>/calibration-summary.json
 ```
 
-## Aegis Verification
+## Verifier Verification
 
-High-risk or historically noisy findings can be sent through Aegis before they become blockers.
+High-risk or historically noisy findings can be sent through Verifier before they become blockers.
 
-Aegis returns:
+Verifier returns:
 
 - `CONFIRMED`
 - `REJECTED`

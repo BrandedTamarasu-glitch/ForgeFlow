@@ -29,6 +29,11 @@ async function main() {
     assert.equal(starts, 10); assert.equal(activityStarts, 10); assert.equal(opens, 2);
     await openSessionDashboard({ ...options, workflow: 'review' });
     assert.equal(reports.at(-1).state, 'reviewing');
+    for (const workflow of ['verifier-verify', 'aegis-verify']) {
+      await openSessionDashboard({ ...options, workflow });
+      assert.equal(reports.at(-1).state, 'reviewing');
+      assert.ok(reports.at(-1).label.includes(workflow));
+    }
     assert.equal(opens, 2);
     const failure = { ...options, session: 'failed-session', ensure: async () => { throw new Error('occupied port'); } };
     assert.equal((await openSessionDashboard(failure)).status, 'unavailable');
@@ -63,11 +68,13 @@ async function main() {
     assert.equal(sessionId({ CODEX_THREAD_ID: 'thread' }), 'thread');
     assert.equal(sessionId({ CLAUDE_SESSION_ID: 'session' }), 'session');
     assert.equal(sessionId({ FORGEFLOW_SESSION_ID: 'override', CODEX_THREAD_ID: 'thread' }), 'override');
-    for (const prompt of ['/plan feature', '$forgeflow-review', '/Forgeflow:discuss an idea', '@quick fix', '/task status example', '$task start feature']) assert.ok(workflowFromPrompt(prompt));
+    for (const prompt of ['/plan feature', '$forgeflow-review', '/Forgeflow:discuss an idea', '@quick fix', '/task status example', '$task start feature', '$verifier-verify', '/Forgeflow:verifier-verify finding', '/aegis-verify finding']) assert.ok(workflowFromPrompt(prompt));
     for (const prompt of ['please explain forgeflow', 'review this later', '/planet', '/agent-chat:off', 'echo /plan', '/plan; rm']) assert.equal(workflowFromPrompt(prompt), '');
     assert.ok(fs.readdirSync(options.stateDir).length >= 3);
     assert.equal(workflowState('plan'), 'planning');
     assert.equal(workflowState('implement'), 'implementing');
+    assert.equal(workflowState('verifier-verify'), 'reviewing');
+    assert.equal(workflowState('aegis-verify'), 'reviewing');
     assert.equal(workflowState('not-a-workflow'), '');
     if (process.platform !== 'win32') {
       assert.equal(fs.statSync(options.stateDir).mode & 0o777, 0o700);

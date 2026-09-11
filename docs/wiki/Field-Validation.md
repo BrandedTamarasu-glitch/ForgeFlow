@@ -10,9 +10,9 @@ Run at least one branch trial in each project type:
 
 | Project Type | Example Change | Useful Forgeflow Signals |
 |---|---|---|
-| Frontend app | form state, API integration, accessibility fix | Lumen findings, service path checks, accessibility classes |
-| API service | auth boundary, validation, persistence change | Warden findings, Smith data-layer findings, Aegis decisions |
-| Monorepo | package boundary, shared config, generated clients | Atlas coordination notes, scope manifest size, budget warnings |
+| Frontend app | form state, API integration, accessibility fix | Designer findings, service path checks, accessibility classes |
+| API service | auth boundary, validation, persistence change | Guardian findings, Builder data-layer findings, Verifier decisions |
+| Monorepo | package boundary, shared config, generated clients | Coordinator coordination notes, scope manifest size, budget warnings |
 | Docs/config | command docs, release docs, CI config | skip/thin routing, release-check output, low-noise review |
 | Release prep | version bump, changelog, installer docs | release-check pass/fail, health/version guidance, public summary quality |
 

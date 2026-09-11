@@ -90,7 +90,7 @@ Overwrite `.claude/handoff.md` with this exact structure:
 - "Write Playwright test for the new handler at <file-path>">
 
 ## Latest Forgeflow verdict
-<paste from review-history.md if present. Include Arbiter's verdict and Compass's verdict with timestamps.>
+<paste from review-history.md if present. Include Architect's verdict and Product Lead's verdict with timestamps.>
 
 ## Files most recently touched
 <top 10 from `git diff --name-only <base>..HEAD`, plus any uncommitted paths from `git status`>
@@ -118,3 +118,18 @@ Resume in a new session with: load @.claude/handoff.md
 - [ ] Next action is concrete and verb-leading, not vague
 - [ ] `.gitignore` excludes `.claude/handoff.md`
 </success_criteria>
+
+## Writing for CLI output
+
+Apply George Orwell's six rules to progress updates, agent reports, and final summaries:
+
+1. Never use a metaphor, simile, or other figure of speech which you are used to seeing in print.
+2. Never use a long word where a short one will do.
+3. If it is possible to cut a word out, always cut it out.
+4. Never use the passive where you can use the active.
+5. Never use a foreign phrase, a scientific word, or a jargon word if you can think of an everyday English equivalent.
+6. Break any of these rules sooner than say anything outright barbarous.
+
+Lead with the result or action. Use short paragraphs or bullets that scan well in a terminal. Cut stock phrases, repeated summaries, and persona banter. These rules take precedence over persona style and sample prose.
+
+Keep facts, uncertainty, risks, and required evidence intact. Preserve exact commands, code, paths, identifiers, error text, schema keys, and verdict labels. Keep required report sections and machine-readable formats; apply the rules to prose within them. Use a technical term when it is the clearest accurate choice, and explain it when needed. Before sending, cut words that add no meaning without making the result unclear or unnatural.

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const fs = require('fs');
+const { normalizeAgentId } = require('./agent-identity');
 const path = require('path');
 const readline = require('readline');
 
@@ -89,13 +90,13 @@ function applyRecord(summary, record) {
   const detail = record.detail || {};
 
   if (record.event === 'finding-overturned') {
-    const agent = normalize(detail.overturned_reviewer);
+    const agent = normalizeAgentId(detail.overturned_reviewer) || normalize(detail.overturned_reviewer);
     const findingClass = normalize(detail.finding_class);
     bucketFor(summary.agents, agent).overturned++;
     bucketFor(summary.classes, findingClass).overturned++;
     summary.totals.finding_overturned++;
   } else if (record.event === 'finding-verified') {
-    const agent = normalize(detail.reviewer);
+    const agent = normalizeAgentId(detail.reviewer) || normalize(detail.reviewer);
     const findingClass = normalize(detail.finding_class);
     const decision = normalize(detail.decision);
     const agentBucket = bucketFor(summary.agents, agent);
@@ -118,7 +119,7 @@ function applyRecord(summary, record) {
       summary.totals.verifier_blocked++;
     }
   } else if (record.event === 'auto-fix-applied') {
-    const agent = normalize(detail.agent);
+    const agent = normalizeAgentId(detail.agent) || normalize(detail.agent);
     if (detail.success === true) {
       bucketFor(summary.agents, agent).auto_fix_applied++;
       summary.totals.auto_fix_applied++;

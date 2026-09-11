@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const fs = require('fs');
+const { formatAgentLabel, roleActivityLabel } = require('./agent-identity');
 const path = require('path');
 
 function usage() {
@@ -273,7 +274,7 @@ function buildTelemetryHints(files, calibration) {
         type: 'noisy-class',
         class: findingClass,
         evidence: `${noisy} rejected-or-overturned findings across ${total} events`,
-        action: 'require-aegis',
+        action: 'require-verifier',
       });
     } else if (confirmed >= 2) {
       hints.push({
@@ -336,30 +337,30 @@ function classify(files, opts) {
   const noisyClasses = telemetryHints.filter((hint) => hint.type === 'noisy-class');
   if (noisyClasses.length > 0 && mode !== 'skip-mode' && verifier !== 'required') {
     verifier = 'required';
-    reasons.push(`calibration requires Aegis for noisy class: ${noisyClasses.map((hint) => hint.class).join(', ')}`);
+    reasons.push(`calibration requires Verifier for noisy class: ${noisyClasses.map((hint) => hint.class).join(', ')}`);
   }
 
   if (mode === 'skip-mode') {
-    skippedAgents.push('smith_reviewer', 'warden_reviewer', 'lumen_reviewer', 'atlas_reviewer', 'aegis');
+    skippedAgents.push('builder_reviewer', 'guardian_reviewer', 'designer_reviewer', 'coordinator_reviewer', 'verifier');
   } else if (mode === 'thin-mode') {
-    includedAgents.push('smith_reviewer', 'warden_reviewer');
-    skippedAgents.push('lumen_reviewer', 'atlas_reviewer');
+    includedAgents.push('builder_reviewer', 'guardian_reviewer');
+    skippedAgents.push('designer_reviewer', 'coordinator_reviewer');
   } else {
-    includedAgents.push('smith_reviewer', 'warden_reviewer', 'lumen_reviewer', 'atlas_reviewer');
+    includedAgents.push('builder_reviewer', 'guardian_reviewer', 'designer_reviewer', 'coordinator_reviewer');
   }
 
   const serviceBoundaryHint = telemetryHints.find((hint) => hint.type === 'high-value-class' && hint.class === 'ux/connectivity');
-  if (serviceBoundaryHint && mode === 'thin-mode' && !includedAgents.includes('lumen_reviewer')) {
-    includedAgents.push('lumen_reviewer');
-    const skippedIndex = skippedAgents.indexOf('lumen_reviewer');
+  if (serviceBoundaryHint && mode === 'thin-mode' && !includedAgents.includes('designer_reviewer')) {
+    includedAgents.push('designer_reviewer');
+    const skippedIndex = skippedAgents.indexOf('designer_reviewer');
     if (skippedIndex !== -1) skippedAgents.splice(skippedIndex, 1);
-    reasons.push('calibration keeps Lumen on service-boundary diffs with UX/connectivity history');
+    reasons.push('calibration keeps Designer on service-boundary diffs with UX/connectivity history');
   }
 
   if (verifier === 'required' && mode !== 'skip-mode') {
-    includedAgents.push('aegis');
-  } else if (!skippedAgents.includes('aegis')) {
-    skippedAgents.push('aegis');
+    includedAgents.push('verifier');
+  } else if (!skippedAgents.includes('verifier')) {
+    skippedAgents.push('verifier');
   }
 
   const highRiskFiles = uniqueFiles.filter((file) => isHighRisk(file) && !isTest(file));
@@ -411,8 +412,8 @@ function printHuman(route) {
   if (route.tracked_lines !== null || route.untracked_lines !== null) {
     console.log(`Line sources: tracked ${route.tracked_lines ?? 'unknown'}; untracked ${route.untracked_lines ?? 'unknown'}`);
   }
-  console.log(`Agents included: ${route.agents.included.join(', ') || 'none'}`);
-  console.log(`Agents skipped: ${route.agents.skipped.join(', ') || 'none'}`);
+  console.log(`Agents included: ${route.agents.included.map(agent => formatAgentLabel(agent, roleActivityLabel(agent))).join(', ') || 'none'}`);
+  console.log(`Agents skipped: ${route.agents.skipped.map(agent => formatAgentLabel(agent, roleActivityLabel(agent))).join(', ') || 'none'}`);
   console.log(`Verifier: ${route.verifier}`);
   if (route.telemetry_hints.length > 0) {
     console.log(`Telemetry: ${route.telemetry_hints.map((hint) => `${hint.type}:${hint.class}`).join(', ')}`);

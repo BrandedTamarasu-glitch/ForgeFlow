@@ -1,6 +1,6 @@
 {
   "name": "Forgeflow",
-  "description": "Forgeflow — end-to-end AI software delivery workflow for Claude Code and Codex. Full lifecycle from discuss through ship with focused agents.",
+  "description": "Forgeflow \u2014 end-to-end AI software delivery workflow for Claude Code and Codex. Full lifecycle from discuss through ship with focused agents.",
   "owner": {
     "name": "BrandedTamarasu-glitch",
     "url": "https://github.com/BrandedTamarasu-glitch"
@@ -9,7 +9,7 @@
     {
       "name": "Forgeflow",
       "description": "End-to-end AI software delivery workflow for Claude Code and Codex with agents, commands, hooks, project rules, runtime helpers, and local pattern memory.",
-      "version": "4.5.0",
+      "version": "4.6.0",
       "source": {
         "source": "github",
         "repo": "BrandedTamarasu-glitch/ForgeFlow"

@@ -80,7 +80,7 @@ async function main() {
   else throw new Error(`Unsupported experiment/arm: ${request.experiment_id}/${request.arm?.id}`);
   process.stdout.write(`${result.text}\n`);
   const declaredWorkflowAgents = request.experiment_id === 'A-explicit-arm-comparison'
-    ? (request.arm.id === 'diverge' ? ['three divergent branches', 'Atlas evidence lane', 'Compass critic'] : ['Compass researcher', 'Atlas evidence lane'])
+    ? (request.arm.id === 'diverge' ? ['three divergent branches', 'Coordinator evidence lane', 'Product Lead critic'] : ['Product Lead researcher', 'Coordinator evidence lane'])
     : [];
   process.stderr.write(`study_usage=${JSON.stringify({ model: MODEL, outer_codex_exec_count: 1, nested_model_call_count: null, nested_model_call_count_method: 'Codex CLI does not expose a reliable aggregate for nested agent turns', declared_workflow_agents: declaredWorkflowAgents, total_tokens: result.tokens, cost_usd: null, cost_method: 'Codex subscription runner does not expose per-call USD cost' })}\n${result.stderr}`);
 }

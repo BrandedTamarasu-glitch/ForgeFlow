@@ -1259,18 +1259,18 @@ function suggestedReviewLanes(item, brief) {
   ].join(' ').toLowerCase();
   const lanes = [];
   if (/(auth|permission|security|secret|token|session|runtime|install|update|repair|support)/.test(text)) {
-    lanes.push('Warden: security, runtime, install, and integration boundaries.');
+    lanes.push('Guardian: security, runtime, install, and integration boundaries.');
   }
   if (/(schema|database|db|migration|backend|service|helper|contract|artifact|json)/.test(text)) {
-    lanes.push('Smith: helper structure, data contracts, backend/craft quality.');
+    lanes.push('Builder: helper structure, data contracts, backend/craft quality.');
   }
   if (/(ui|ux|frontend|accessibility|screen|display|markdown|docs|copy)/.test(text)) {
-    lanes.push('Lumen: user-facing output, documentation clarity, accessibility.');
+    lanes.push('Designer: user-facing output, documentation clarity, accessibility.');
   }
   if (/(readiness|project-intelligence|review-outcomes|agent-feedback|learning|pilot|coordination|handoff|scope)/.test(text)) {
-    lanes.push('Atlas: scope, sequencing, memory, and handoff completeness.');
+    lanes.push('Coordinator: scope, sequencing, memory, and handoff completeness.');
   }
-  lanes.push('Compass: requirements coverage, validation evidence, and proof boundary.');
+  lanes.push('Product Lead: requirements coverage, validation evidence, and proof boundary.');
   return lanes.filter((value, index, list) => list.indexOf(value) === index);
 }
 

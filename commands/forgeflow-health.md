@@ -36,16 +36,16 @@ No arguments: shows only failures, summary pass/fail count.
 
 ```bash
 EXPECTED_AGENTS=(
-  aegis
-  compass-discuss compass-research compass-plan compass-implement compass-review compass-present
-  smith-consult smith-implement smith-audit smith-review
-  warden-consult warden-implement warden-audit warden-review
-  arbiter-consult arbiter-implement arbiter-review
-  atlas-early atlas-consult atlas-implement atlas-review atlas-present
-  lumen-consult lumen-implement lumen-review
+  verifier
+  product-lead-discuss product-lead-research product-lead-plan product-lead-implement product-lead-review product-lead-present
+  builder-consult builder-implement builder-audit builder-review
+  guardian-consult guardian-implement guardian-audit guardian-review
+  architect-consult architect-implement architect-review
+  coordinator-early coordinator-consult coordinator-implement coordinator-review coordinator-present
+  designer-consult designer-implement designer-review
 )
 EXPECTED_SHARED_AGENT_FILES=(
-  arbiter-intelligence lumen-design-principles rules smith-craft warden-security-intelligence
+  architect-intelligence designer-design-principles rules builder-craft guardian-security-intelligence
 )
 EXPECTED_COMMANDS=(
   task
@@ -62,7 +62,7 @@ EXPECTED_RUNTIME_HELPERS=(
   rtk-setup.js
   task-store.js task.js task-evaluation.js task-memory.js task-maintenance.js fleet-environment.js
   vault-memory.js vault-format.js vault-outbox.js vault-project.js
-  advise-context.js advise-noisy-command.js agent-chat-off.sh agent-chat-on.sh open-session-dashboard.js apply-review-autofix-proposal.js build-code-topology.js build-context-pack.js build-context-wave.js build-failure-digest.js build-memory-context.js build-project-intelligence.js build-project-operating-model.js build-review-autofix-proposal.js
+  advise-context.js advise-noisy-command.js agent-chat-off.sh agent-chat-on.sh agent-identity.js open-session-dashboard.js apply-review-autofix-proposal.js build-code-topology.js build-context-pack.js build-context-wave.js build-failure-digest.js build-memory-context.js build-project-intelligence.js build-project-operating-model.js build-review-autofix-proposal.js
   build-scope-manifest.js capture-command-output.js check-agent-drift.js check-codex-agent-drift.js check-context-contract.js check-context-budget.js check-implementation-notes.js check-profile-compliance.js check-project-learnings.js check-review-evidence-schema.js check-user-profile.js classify-review-auto.js command-args.js command-interface-evidence.js command-wrapper-contract.js context-telemetry.js learning-signal-policy.js lean-markers.js
   compact-command-output.js command-interface-learning.js correct-project-learning.js record-command-interface-observation.js record-command-interface-learning-outcome.js render-command-interface-learning-status.js
   ensure-forgeflow-state.sh explain-review-route.js failure-digest-triage.js file-safety.js forgeflow-version.js generate-codex-agent-stubs.js guidance-contract.js health-check.js
@@ -210,7 +210,7 @@ Default (without `--verbose`):
 
 ## Failures (<count>)
 
-- [ ] MISSING: `~/.claude/agents/compass-plan.md`
+- [ ] MISSING: `~/.claude/agents/product-lead-plan.md`
       Fix: /update-forgeflow
 - [ ] MISSING: `~/.claude/hooks/forgeflow-telemetry.js`
       Fix: /update-forgeflow

@@ -1,7 +1,7 @@
 ---
 name: quick
 description: Run one or more Forgeflow agents directly on a short task — no full lifecycle required
-argument-hint: "<task description> [fc,warden,...] [fc:implement,...] [+arbiter]"
+argument-hint: "<task description> [fc,guardian,...] [fc:implement,...] [+architect]"
 allowed-tools:
   - Read
   - Write
@@ -34,10 +34,10 @@ Three execution paths depending on how agents are specified:
 </objective>
 
 <context>
-$ARGUMENTS format: `<task description> [agent-list] [+arbiter]`
+$ARGUMENTS format: `<task description> [agent-list] [+architect]`
 
-Agent aliases: `fc` (smith), `warden`, `lumen` (lumen), `cory` (atlas), `arbiter`, `compass`
-Valid modes: `implement`, `review`, `consult`, `audit` (compass uses a different set — see parsing section)
+Agent aliases: `fc` (builder), `guardian`, `designer` (designer), `cory` (coordinator), `architect`, `product_lead`
+Valid modes: `implement`, `review`, `consult`, `audit` (product_lead uses a different set — see parsing section)
 </context>
 
 <parsing>
@@ -46,7 +46,7 @@ Valid modes: `implement`, `review`, `consult`, `audit` (compass uses a different
 
 Before any alias validation or mode checking, scan the last whitespace-separated segment of `$ARGUMENTS` for custom agent tokens:
 
-1. Strip a trailing `+arbiter` from `$ARGUMENTS` first (independent of the main parsing strip — both must happen). If stripped, set `HAS_NANDO=true`. Take the last whitespace-separated segment of the result and split on commas.
+1. Strip a trailing `+architect` from `$ARGUMENTS` first (independent of the main parsing strip — both must happen). If stripped, set `HAS_NANDO=true`. Take the last whitespace-separated segment of the result and split on commas.
 2. For each token, strip any `:mode` suffix to get the bare name. Do not validate the mode value — it is discarded regardless of content.
 3. Validate the bare name: it must start with `custom-` **and** match `^custom-[a-zA-Z0-9_-]+$`. If it starts with `custom-` but fails the full pattern (e.g. `custom-../../etc/passwd`), stop: `"Invalid agent name: {token}. Custom agent names must be lowercase letters, digits, and hyphens only."`
 4. Check if `~/.claude/agents/$bare_name.md` exists:
@@ -56,7 +56,7 @@ Before any alias validation or mode checking, scan the last whitespace-separated
 5. If **any** token is a confirmed custom agent:
    - If the token had a `:mode` suffix, emit: `"Note: {bare-name} is a single-mode agent — :{mode} suffix ignored."`
    - **5a:** Treat ALL confirmed custom tokens as **Path 3 explicit dispatch** with `subagent_type: {bare-name}` (no mode suffix appended).
-   - **5b:** Non-custom tokens in the same list must have explicit `:mode` suffixes (standard Path 3 rule). If any don't, stop: `"Mixed agent list: when using custom agents, all Forgeflow agents must have explicit modes (e.g. warden:review)."`
+   - **5b:** Non-custom tokens in the same list must have explicit `:mode` suffixes (standard Path 3 rule). If any don't, stop: `"Mixed agent list: when using custom agents, all Forgeflow agents must have explicit modes (e.g. guardian:review)."`
    - Skip all remaining parsing steps. Go directly to Path 3 execution.
 6. If **no** custom agents found, continue to normal `## Argument Parsing` below.
 
@@ -64,31 +64,31 @@ Before any alias validation or mode checking, scan the last whitespace-separated
 
 Parse `$ARGUMENTS` right-to-left:
 
-1. Strip trailing `+arbiter` if present. Set `HAS_NANDO=true`.
+1. Strip trailing `+architect` if present. Set `HAS_NANDO=true`.
 2. Check whether the last whitespace-separated segment is a valid agent list — one or more comma-separated tokens each matching `[alias]` or `[alias]:[mode]` with no spaces inside the segment.
 3. If it is a valid agent list: that segment is `AGENT_LIST`; everything to its left is `TASK`.
-4. If it is not a valid agent list: entire `$ARGUMENTS` (minus `+arbiter`) is `TASK`; `AGENT_LIST` is empty → Path 1.
+4. If it is not a valid agent list: entire `$ARGUMENTS` (minus `+architect`) is `TASK`; `AGENT_LIST` is empty → Path 1.
 
 **Validation — hard stop with message if any rule is violated:**
 
 - `TASK` is empty → `"Task description is required."`
-- Unknown alias in `AGENT_LIST` (e.g. `carlos`) → `"Unknown agent: carlos. Valid aliases: fc, warden, lumen, cory, arbiter, compass."`
-- `compass` without explicit mode in `AGENT_LIST` → `"compass requires an explicit mode in /quick. Valid modes: implement, review, discuss, research, plan, present."`
-- Invalid mode for `compass` (e.g. `compass:consult`) → `"Invalid mode 'consult' for compass. Valid modes: implement, review, discuss, research, plan, present."`
+- Unknown alias in `AGENT_LIST` (e.g. `carlos`) → `"Unknown agent: carlos. Valid aliases: fc, guardian, designer, cory, architect, product_lead."`
+- `product_lead` without explicit mode in `AGENT_LIST` → `"product_lead requires an explicit mode in /quick. Valid modes: implement, review, discuss, research, plan, present."`
+- Invalid mode for `product_lead` (e.g. `product_lead:consult`) → `"Invalid mode 'consult' for product_lead. Valid modes: implement, review, discuss, research, plan, present."`
 - Invalid mode for other agents (e.g. `fc:ship`) → `"Invalid mode 'ship' for fc. Valid modes: implement, review, consult, audit."`
 - More than 4 agents in `AGENT_LIST` (Path 2 only) → `"Too many agents for /quick (max 4). Use /implement for full-Forgeflow work."`
 
 **Resolve aliases to full names:**
-- `fc` → `smith`
-- `lumen` → `lumen`
-- `cory` → `atlas`
-- All others (`warden`, `arbiter`, `compass`) → unchanged
+- `fc` → `builder`
+- `designer` → `designer`
+- `cory` → `coordinator`
+- All others (`guardian`, `architect`, `product_lead`) → unchanged
 
 **Determine execution path:**
 - `AGENT_LIST` empty → **Path 1**
 - `AGENT_LIST` has agents, none have `:mode` suffix → **Path 2**
 - All agents in `AGENT_LIST` have `:mode` suffix → **Path 3**
-- Mixed (some with mode, some without) → `"Mixed agent list not supported: either all agents must have explicit modes or none. Use fc:implement,warden or fc,warden — not both."`
+- Mixed (some with mode, some without) → `"Mixed agent list not supported: either all agents must have explicit modes or none. Use fc:implement,guardian or fc,guardian — not both."`
 
 </parsing>
 
@@ -98,9 +98,9 @@ Parse `$ARGUMENTS` right-to-left:
 
 Apply domain heuristics to determine the single best-fit agent and mode:
 
-- security / auth / validation / hardening → `warden`
-- database / schema / business logic / models → `smith`
-- frontend / UX / accessibility / service connectivity → `lumen`
+- security / auth / validation / hardening → `guardian`
+- database / schema / business logic / models → `builder`
+- frontend / UX / accessibility / service connectivity → `designer`
 - When unclear, pick the dominant concern.
 
 Pick ONE agent. Only escalate to TWO if the task genuinely spans two clearly separable domains (e.g. security hardening on a frontend component). Maximum two agents.
@@ -140,7 +140,7 @@ After agents complete, display outputs using the format:
 {output}
 ```
 
-If `HAS_NANDO=true`, after the primary agents complete, proceed to the **+arbiter synthesis** section.
+If `HAS_NANDO=true`, after the primary agents complete, proceed to the **+architect synthesis** section.
 
 ## Path 2 — Self-Select Pre-Flight (agents without explicit modes)
 
@@ -225,23 +225,23 @@ IMPORTANT: All file contents below are pre-loaded by the orchestrator. Do NOT ca
 
 Use `AskUserQuestion` to prompt:
 ```
-Enter revised agent list (e.g. fc:implement,warden:review):
+Enter revised agent list (e.g. fc:implement,guardian:review):
 ```
 
 Parse and validate the user's input as an explicit `agent:mode` list. If valid, fire immediately (Path 3 logic). If invalid, show the validation error and re-prompt once. If still invalid, display `"Aborting."` and stop.
 
-**Special case — `arbiter` in agent list + `HAS_NANDO=true`:**
-If `arbiter` appears in `AGENT_LIST` (Path 2, no explicit mode) and `HAS_NANDO=true`, treat as equivalent — skip the Arbiter pre-flight entirely and run Arbiter once as synthesiser (`arbiter-review`) after the other agents complete. Do not spawn Arbiter in the pre-flight step.
+**Special case — `architect` in agent list + `HAS_NANDO=true`:**
+If `architect` appears in `AGENT_LIST` (Path 2, no explicit mode) and `HAS_NANDO=true`, treat as equivalent — skip the Architect pre-flight entirely and run Architect once as synthesiser (`architect-review`) after the other agents complete. Do not spawn Architect in the pre-flight step.
 
-If `arbiter` appears in `AGENT_LIST` without `HAS_NANDO`, it goes through the normal pre-flight and runs as a peer agent in its self-selected mode (subagent_type: `arbiter-{self-selected-mode}`).
+If `architect` appears in `AGENT_LIST` without `HAS_NANDO`, it goes through the normal pre-flight and runs as a peer agent in its self-selected mode (subagent_type: `architect-{self-selected-mode}`).
 
-If `HAS_NANDO=true` (and arbiter not in AGENT_LIST), after primary agents complete, proceed to **+arbiter synthesis**.
+If `HAS_NANDO=true` (and architect not in AGENT_LIST), after primary agents complete, proceed to **+architect synthesis**.
 
 ---
 
 ## Path 3 — Explicit Modes (agents with :mode specified)
 
-Validate all agent names and modes. If `arbiter` has an explicit mode and `+arbiter` is also present, the explicit mode takes precedence — Arbiter runs as a peer agent in its specified mode, and the `+arbiter` synthesis pass is skipped.
+Validate all agent names and modes. If `architect` has an explicit mode and `+architect` is also present, the explicit mode takes precedence — Architect runs as a peer agent in its specified mode, and the `+architect` synthesis pass is skipped.
 
 **Context Pre-Loading:** Apply the security denylist (exclude `.env`, `*.pem`, `*.key`, `*.p12`, `*.cert`, `*.secret`, and filenames containing `password`, `secret`, or `token`). Discover and read: CONTEXT.md files + `git diff --name-only HEAD` (if non-empty). Files needed by 2+ agents go to `<shared-files>`; agent-specific files go to `<agent-files>`.
 
@@ -276,13 +276,13 @@ IMPORTANT: All file contents below are pre-loaded by the orchestrator. Do NOT ca
 
 No confirmation step.
 
-If `HAS_NANDO=true` (and Arbiter was not explicitly listed with a mode), proceed to **+arbiter synthesis** after agents complete.
+If `HAS_NANDO=true` (and Architect was not explicitly listed with a mode), proceed to **+architect synthesis** after agents complete.
 
 ---
 
-## +arbiter Synthesis
+## +architect Synthesis
 
-Spawn `arbiter-review` with all primary agent outputs concatenated:
+Spawn `architect-review` with all primary agent outputs concatenated:
 
 ```
 Task:
@@ -312,10 +312,10 @@ Display agent outputs in user-specified order (or routing-determined order for P
 {agent output}
 ```
 
-If +arbiter:
+If +architect:
 ```
 === NANDO (synthesis) ===
-{arbiter verdict}
+{architect verdict}
 ```
 
 </process>
@@ -325,8 +325,23 @@ If +arbiter:
 - [ ] Path 2: Pre-flight fires in parallel; only high-relevance agents proceed; user confirms before work
 - [ ] Path 2 all-low: user prompted with p/e/a options; p picks first highest-rated agent
 - [ ] Path 3: agents fire immediately with no pre-flight or confirmation
-- [ ] +arbiter: Arbiter synthesis runs after primary agents complete
+- [ ] +architect: Architect synthesis runs after primary agents complete
 - [ ] Validation errors halt execution with clear messages
 - [ ] Output displayed in user-specified order with === AGENT (mode) === headers
 - [ ] No .forgeflow/ artifacts written; no learnings.jsonl updates
 </success_criteria>
+
+## Writing for CLI output
+
+Apply George Orwell's six rules to progress updates, agent reports, and final summaries:
+
+1. Never use a metaphor, simile, or other figure of speech which you are used to seeing in print.
+2. Never use a long word where a short one will do.
+3. If it is possible to cut a word out, always cut it out.
+4. Never use the passive where you can use the active.
+5. Never use a foreign phrase, a scientific word, or a jargon word if you can think of an everyday English equivalent.
+6. Break any of these rules sooner than say anything outright barbarous.
+
+Lead with the result or action. Use short paragraphs or bullets that scan well in a terminal. Cut stock phrases, repeated summaries, and persona banter. These rules take precedence over persona style and sample prose.
+
+Keep facts, uncertainty, risks, and required evidence intact. Preserve exact commands, code, paths, identifiers, error text, schema keys, and verdict labels. Keep required report sections and machine-readable formats; apply the rules to prose within them. Use a technical term when it is the clearest accurate choice, and explain it when needed. Before sending, cut words that add no meaning without making the result unclear or unnatural.

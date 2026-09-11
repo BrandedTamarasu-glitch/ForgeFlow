@@ -2,6 +2,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { normalizeAgentId } = require('./agent-identity');
 const { adviseContext } = require('./advise-context');
 const { checkAgentDrift } = require('./check-agent-drift');
 const {
@@ -163,7 +164,7 @@ function bump(object, key, amount = 1) {
 
 function addVerdict(verdicts, record) {
   const detail = record.detail || {};
-  const reviewer = String(detail.reviewer || 'unknown').toLowerCase();
+  const reviewer = normalizeAgentId(detail.reviewer) || String(detail.reviewer || 'unknown').toLowerCase();
   const verdict = String(detail.verdict || 'unknown').toUpperCase();
   if (!verdicts[reviewer]) verdicts[reviewer] = {};
   bump(verdicts[reviewer], verdict);
@@ -223,7 +224,7 @@ function summarizeMetrics(records) {
     }
     if (record.event === 'finding-overturned') {
       const detail = record.detail || {};
-      const reviewer = String(detail.overturned_reviewer || 'unknown').toLowerCase();
+      const reviewer = normalizeAgentId(detail.overturned_reviewer) || String(detail.overturned_reviewer || 'unknown').toLowerCase();
       const classTag = String(detail.finding_class || 'unknown').toLowerCase();
       const key = `${reviewer}|${classTag}`;
       if (!summary.false_positives.by_reviewer_class[key]) {
@@ -541,7 +542,7 @@ function renderMarkdown(report) {
   if (flagged.length === 0) {
     lines.push(`No reviewer/class pair reached the ${FALSE_POSITIVE_THRESHOLD}-overturn threshold.`);
     if (report.metrics.false_positives.overturned_total === 0) {
-      lines.push('No overturn data in period. Arbiter tags may not have accrued yet.');
+      lines.push('No overturn data in period. Architect tags may not have accrued yet.');
     }
   } else {
     lines.push('| Reviewer | Class | Overturns | Representative Finding |');

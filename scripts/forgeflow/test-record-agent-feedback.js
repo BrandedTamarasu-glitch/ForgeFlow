@@ -127,7 +127,7 @@ const promotedCandidates = fs.readFileSync(path.join(projectDir, 'project-learni
 const rollup = rollupFeedback([result.record, second.record]);
 
 const checks = [
-  ['writes feedback', fs.existsSync(result.file) && fs.readFileSync(result.file, 'utf8').includes('smith_reviewer')],
+  ['writes feedback', fs.existsSync(result.file) && fs.readFileSync(result.file, 'utf8').includes('builder')],
   ['rollup counts signals', result.rollup.by_signal.incorrect === 1 && second.rollup.records === 2],
   ['promotes supported feedback', result.promoted && promotedCandidates.includes('Agent guidance needed correction')],
   ['promotion category', promotionCategory('useful') === 'stable-decision' && promotionCategory('ignored') === 'repeated-follow-up'],
@@ -155,4 +155,10 @@ for (const [name, ok] of checks) {
   }
 }
 if (failed > 0) process.exit(1);
+
+const assert = require('assert/strict');
+assert.equal(result.record.agent, 'builder');
+assert.equal(rollupFeedback([{ ...result.record, agent: 'fc' }, { ...result.record, agent: 'builder_reviewer' }]).by_agent.builder, 2);
+assert.equal(normalizeFeedback({ agent: 'custom-role', signal: 'useful', summary: 'Clear report' }).agent, 'custom-role');
+
 console.log('agent feedback: ok');

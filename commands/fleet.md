@@ -15,7 +15,7 @@ allowed-tools:
 <objective>
 Collapse multi-phase refactors from weeks to hours by running independent phase-shards in parallel worktrees. Each worktree has its own DB (isolated via Postgres DB name per worktree). Legacy standard ports allow only one worktree to run dev services at a time. The optional environment contract lane supports explicitly isolated local services after their ports and resources are verified.
 
-**Forgeflow integration:** Workers dispatched to each worktree are Forgeflow implement agents (smith-implement, arbiter-implement, etc.) per the spec's phase-to-domain mapping. After parallel completion, the main worktree sequentially rebase-merges each shard with validation (typecheck/lint/tests) between merges. Atlas persistent context (.forgeflow/<project>/) is shared across worktrees.
+**Forgeflow integration:** Workers dispatched to each worktree are Forgeflow implement agents (builder-implement, architect-implement, etc.) per the spec's phase-to-domain mapping. After parallel completion, the main worktree sequentially rebase-merges each shard with validation (typecheck/lint/tests) between merges. Coordinator persistent context (.forgeflow/<project>/) is shared across worktrees.
 </objective>
 
 <context>
@@ -144,11 +144,11 @@ Either rewrite the spec to consolidate overlapping work into one phase, or run /
 
 ### 1d. Assign target agents per phase
 For each phase, determine the target Forgeflow implement agent from the phase metadata OR by content heuristic:
-- DB / schema / migrations → `smith-implement` (default)
-- Auth / security / validation → `warden-implement`
-- Frontend / UX / components → `lumen-implement`
-- Cross-cutting architecture → `arbiter-implement`
-- Backend general → `smith-implement`
+- DB / schema / migrations → `builder-implement` (default)
+- Auth / security / validation → `guardian-implement`
+- Frontend / UX / components → `designer-implement`
+- Cross-cutting architecture → `architect-implement`
+- Backend general → `builder-implement`
 
 If `--dry-run`: print the decomposition table and exit:
 ```
@@ -199,7 +199,7 @@ for i in $(seq 1 $SHARDS); do
       || { echo "Migration failed in wt${i}"; exit 1; }
   fi
 
-  # Link .forgeflow/ so Atlas persistent context is shared
+  # Link .forgeflow/ so Coordinator persistent context is shared
   ln -sfn "$(git rev-parse --show-toplevel)/.forgeflow" "$WT_PATH/.forgeflow"
 
   # Link shared node_modules if the setup allows (optional optimization)
@@ -237,7 +237,7 @@ Hard constraints:
    - Return "DONE: <one-line summary>" along with the list of commits made
 7. Do NOT touch .forgeflow/ contents — it is shared via symlink.
 
-Atlas persistent context: .forgeflow/<project>/agent-notes/
+Coordinator persistent context: .forgeflow/<project>/agent-notes/
 ```
 
 ### 4b. Dispatch
@@ -368,7 +368,7 @@ Shards: {N}
 | Shard | Phase | Agent | Status | Commits |
 |-------|-------|-------|--------|---------|
 | 1 | 2 | fc | MERGED | 3 |
-| 2 | 3 | lumen | MERGED | 2 |
+| 2 | 3 | designer | MERGED | 2 |
 | 3 | 4 | fc | BLOCKED: needs running service | 1 (WIP) |
 
 Next actions:
@@ -399,17 +399,17 @@ If any shards blocked or failed, leave the failing worktrees in place and the us
 # Refactor: queue management cleanup
 
 ## Phase 1: Extract queue selector hook
-**Target agent:** smith-implement
+**Target agent:** builder-implement
 **Files:** apps/backoffice/src/hooks/useQueueSelector.ts, apps/backoffice/src/hooks/useQueueSelector.test.ts
 **Acceptance:** Hook exists, unit tests pass, no other files changed.
 
 ## Phase 2: Migrate queue dropdown to new hook
-**Target agent:** lumen-implement
+**Target agent:** designer-implement
 **Files:** apps/backoffice/src/components/QueueDropdown.tsx
 **Acceptance:** Component uses the new hook, visual output unchanged, tsc clean.
 
 ## Phase 3: Add queue persistence to user settings
-**Target agent:** smith-implement
+**Target agent:** builder-implement
 **Files:** packages/database/src/schema/userSettings.ts, packages/database/migrations/*
 **Acceptance:** Migration creates column, schema type updated, unit test confirms default.
 ```

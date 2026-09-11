@@ -50,7 +50,7 @@ Running notes for decisions, spec gaps, tradeoffs, deviations, follow-ups, and v
 
 - Artifact: .forgeflow/$PROJECT_NAME/implementation-notes.md
 - Format: append-only Markdown
-- Owner: Atlas serializes note candidates from implement agents; Arbiter verifies and may add final integration notes
+- Owner: Coordinator serializes note candidates from implement agents; Architect verifies and may add final integration notes
 
 ## Decisions
 

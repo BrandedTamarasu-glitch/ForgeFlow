@@ -18,10 +18,10 @@ Compress the Forgeflow's `/review` → fix → re-review loop. Run `/review`, cl
 This is the closed-loop enhancement proposed in the insights report. It is deliberately conservative — it only automates fixes where the cost of getting it wrong is low and recovery is trivial.
 
 **Forgeflow integration:** This command is a first-class participant in the Forgeflow team lifecycle (`/discuss` → `/research` → `/plan` → `/consult` → `/implement` → `/review` → `/review-auto` → `/ship`). It reuses Forgeflow conventions:
-- Implement agents (smith-implement, warden-implement, lumen-implement, arbiter-implement) are the workers — not generic anonymous subagents
-- Findings are attributed to the source reviewer (Smith, Warden, Lumen, Atlas) so the matching implement agent applies the fix
+- Implement agents (builder-implement, guardian-implement, designer-implement, architect-implement) are the workers — not generic anonymous subagents
+- Findings are attributed to the source reviewer (Builder, Guardian, Designer, Coordinator) so the matching implement agent applies the fix
 - Each iteration is appended to `.forgeflow/<project>/review-history.md` as a round-N entry
-- Atlas's persistent agent-notes receive the auto-fix patterns so recurring NIT classes get surfaced as plan-time warnings next cycle
+- Coordinator's persistent agent-notes receive the auto-fix patterns so recurring NIT classes get surfaced as plan-time warnings next cycle
 - The final re-review uses the normal `/review` flow; `/ship`'s review gate accepts the post-auto-fix verdict because the gate reads `review-history.md` directly
 </objective>
 
@@ -34,7 +34,7 @@ $ARGUMENTS — optional. Same as `/review` (file paths, git ref, `--pr <N>`, `--
 </context>
 
 ## Gotchas
-- **Warden-flagged items are always surfaced, never auto-applied.** Even if a Warden finding is labeled MUST-FIX-SAFE by tier rules, the source-reviewer check forces it to MUST-FIX-RISKY. Do not remove that safeguard — it exists because "security-adjacent safe" is an oxymoron.
+- **Guardian-flagged items are always surfaced, never auto-applied.** Even if a Guardian finding is labeled MUST-FIX-SAFE by tier rules, the source-reviewer check forces it to MUST-FIX-RISKY. Do not remove that safeguard — it exists because "security-adjacent safe" is an oxymoron.
 - **Separate commit per iteration.** Do not rebase or squash between iterations until the loop completes. Each `chore(auto-fix): apply Forgeflow items (round N)` commit is referenced in `review-history.md` — rewriting the commit invalidates the audit trail.
 - **Iteration 2+ does not re-prompt unless new items appear.** This is intentional — the first-iteration approval covers NITs that recur in iteration 2. If you want to stop mid-loop, interrupt via Ctrl+C; partial work remains committed, review-history shows the cut-off round.
 - **Revert mechanism is path-scoped.** Track the exact files touched by workers. Revert only those paths with `git checkout -- <file>` and remove only new untracked files detected in Step 5.1 using path-safe handling. Never run `git checkout -- .`.
@@ -47,9 +47,9 @@ Use this matrix before dispatching any worker. The matrix is intentionally narro
 
 | Finding class | Source reviewer | Auto-fix action |
 |---|---|---|
-| Formatting, typo, missing tiny docs note, obvious unused import | Smith, Lumen, Atlas, or Arbiter | Eligible only when the fix is single-file, non-security, non-dependency, and validated locally. |
-| Test expectation drift caused by the current safe fix | Smith or Compass validation note | Eligible only when the production behavior is already proven correct and the test edit is single-file. |
-| Security, auth, permissions, migrations, dependencies, secrets | Any reviewer, especially Warden | Surface for human judgment; do not auto-apply. |
+| Formatting, typo, missing tiny docs note, obvious unused import | Builder, Designer, Coordinator, or Architect | Eligible only when the fix is single-file, non-security, non-dependency, and validated locally. |
+| Test expectation drift caused by the current safe fix | Builder or Product Lead validation note | Eligible only when the production behavior is already proven correct and the test edit is single-file. |
+| Security, auth, permissions, migrations, dependencies, secrets | Any reviewer, especially Guardian | Surface for human judgment; do not auto-apply. |
 | Multi-file behavior change, schema change, product judgment, unclear acceptance criteria | Any reviewer | Surface for human judgment; do not auto-apply. |
 
 If a finding does not clearly fit an eligible row, classify it as MUST-FIX-RISKY and surface it.
@@ -86,7 +86,7 @@ AGENT_DIR="$HOME/.claude/agents"
 LOCAL_AGENT_DIR="$(pwd)/.claude/agents"
 
 # Expected Forgeflow implement agents
-EXPECTED=(smith-implement warden-implement lumen-implement arbiter-implement)
+EXPECTED=(builder-implement guardian-implement designer-implement architect-implement)
 
 # Missing list
 MISSING=()
@@ -116,8 +116,8 @@ For EACH missing agent, use `AskUserQuestion` with:
 
 Store the response in an agent-substitution map:
 ```
-AGENT_MAP[smith-implement]=<user-chosen-replacement-or-skip>
-AGENT_MAP[warden-implement]=<...>
+AGENT_MAP[builder-implement]=<user-chosen-replacement-or-skip>
+AGENT_MAP[guardian-implement]=<...>
 ...
 ```
 
@@ -129,10 +129,10 @@ If the user picks `"cancel"` at any prompt, exit:
 Before proceeding, show the user the full substitution summary:
 ```
 Agent substitutions for this run:
-- smith-implement → <chosen-agent or SKIP>
-- warden-implement            → <chosen-agent or SKIP>
-- lumen-implement  → <chosen-agent or SKIP>
-- arbiter-implement            → <chosen-agent or SKIP>
+- builder-implement → <chosen-agent or SKIP>
+- guardian-implement            → <chosen-agent or SKIP>
+- designer-implement  → <chosen-agent or SKIP>
+- architect-implement            → <chosen-agent or SKIP>
 ```
 
 ### 1.5e. Apply the map during dispatch
@@ -146,9 +146,9 @@ Record the substitutions in the review-history round entry (Step 6.5) so the aud
 
 ## Step 2: Classify findings (tier + source reviewer + implement agent)
 
-If verdict is REVISE or BLOCK, parse Arbiter's consolidated verdict and the individual agent outputs (Smith, Warden, Lumen, Atlas) into a list of findings. For each finding, record:
+If verdict is REVISE or BLOCK, parse Architect's consolidated verdict and the individual agent outputs (Builder, Guardian, Designer, Coordinator) into a list of findings. For each finding, record:
 - **Tier** (NIT / MUST-FIX-SAFE / MUST-FIX-RISKY / BLOCKER)
-- **Source reviewer** (fc / warden / lumen / atlas / arbiter-synthesized)
+- **Source reviewer** (fc / guardian / designer / coordinator / architect-synthesized)
 - **Target implement agent** (the Forgeflow team member best suited to apply the fix)
 
 **Tier classification rules:**
@@ -169,7 +169,7 @@ If verdict is REVISE or BLOCK, parse Arbiter's consolidated verdict and the indi
 - Anything touching auth, permissions, migrations, or security boundaries
 - Behavioral changes
 - Multi-file changes
-- Anything flagged by `warden-review` as security-adjacent
+- Anything flagged by `guardian-review` as security-adjacent
 - Anything where the reviewer expressed uncertainty ("consider", "might", "perhaps")
 - Type-signature changes that affect callers
 - Database schema changes
@@ -180,23 +180,23 @@ If uncertain, classify as MUST-FIX-RISKY. Default to surfacing, not automating.
 
 | Source reviewer | Target implement agent | Rationale |
 |-----------------|------------------------|-----------|
-| `smith-review` | `smith-implement` | Code quality, naming, design, DRY/SOLID |
-| `warden-review` (NIT only) | `warden-implement` | Security-adjacent NIT like unused imports in auth modules |
-| `lumen-review` | `lumen-implement` | UX/frontend surface and service connectivity |
-| `atlas-review` | `smith-implement` | Atlas does not implement; Smith handles process/doc-level code NITs |
-| `arbiter-review` (synthesized, cross-cutting) | `arbiter-implement` | Architecture-spanning fixes |
+| `builder-review` | `builder-implement` | Code quality, naming, design, DRY/SOLID |
+| `guardian-review` (NIT only) | `guardian-implement` | Security-adjacent NIT like unused imports in auth modules |
+| `designer-review` | `designer-implement` | UX/frontend surface and service connectivity |
+| `coordinator-review` | `builder-implement` | Coordinator does not implement; Builder handles process/doc-level code NITs |
+| `architect-review` (synthesized, cross-cutting) | `architect-implement` | Architecture-spanning fixes |
 
-Do not route MUST-FIX-SAFE items flagged by Warden to auto-apply — force those to MUST-FIX-RISKY regardless of safety heuristics. Security-adjacent "safe" is an oxymoron in this flow.
+Do not route MUST-FIX-SAFE items flagged by Guardian to auto-apply — force those to MUST-FIX-RISKY regardless of safety heuristics. Security-adjacent "safe" is an oxymoron in this flow.
 
 Output a classification table:
 ```
 | # | Finding | Tier | Source | Target agent | File(s) | Auto-fix? |
 |---|---------|------|--------|--------------|---------|-----------|
-| 1 | Missing null check on userId | MUST-FIX-SAFE | fc | smith-implement | src/auth.ts | yes |
+| 1 | Missing null check on userId | MUST-FIX-SAFE | fc | builder-implement | src/auth.ts | yes |
 | 2 | Migration adds NOT NULL without backfill | BLOCKER | fc | — | migrations/0042_... | no |
-| 3 | Unused import `fs` | NIT | fc | smith-implement | src/utils.ts | yes |
-| 4 | Button lacks aria-label | NIT | lumen | lumen-implement | src/components/Btn.tsx | yes |
-| 5 | Token comparison uses === on raw string | MUST-FIX-RISKY | warden | — | src/auth/session.ts | no |
+| 3 | Unused import `fs` | NIT | fc | builder-implement | src/utils.ts | yes |
+| 4 | Button lacks aria-label | NIT | designer | designer-implement | src/components/Btn.tsx | yes |
+| 5 | Token comparison uses === on raw string | MUST-FIX-RISKY | guardian | — | src/auth/session.ts | no |
 ```
 
 ## Step 3: User gate
@@ -295,10 +295,10 @@ Edit ONLY: {target-file}
 </file-scope>
 
 Finding to fix (round {N}, source: {source-reviewer}):
-{finding description verbatim from Arbiter's consolidated verdict}
+{finding description verbatim from Architect's consolidated verdict}
 
-Arbiter's severity: {tier}
-Atlas persistent context: .forgeflow/{project-name}/agent-notes/
+Architect's severity: {tier}
+Coordinator persistent context: .forgeflow/{project-name}/agent-notes/
 ```
 
 ### 4d. Collect results
@@ -395,7 +395,7 @@ git commit -m "chore(auto-fix): apply Forgeflow items (round {N})
 
 Items applied:
 - [fc] Added null guard on userId at line 42 (src/auth.ts)
-- [lumen] Added aria-label to primary button (src/components/Btn.tsx)
+- [designer] Added aria-label to primary button (src/components/Btn.tsx)
 - ...
 
 Auto-applied via /review-auto. Prior verdict: <REVISE|BLOCK>. Re-review follows.
@@ -439,9 +439,9 @@ Append a round entry to `.forgeflow/<project>/review-history.md`:
 **Workers dispatched:** {comma-separated implement agent list}
 **Agent substitutions (if any):** {expected → actual; "none" if all standard Forgeflow agents present}
 **Worker outcomes:**
-- smith-implement: {n} SUCCESS, {m} MULTI-FILE, {k} NOT-FOUND
-- warden-implement: {n} SUCCESS, ...
-- lumen-implement: ...
+- builder-implement: {n} SUCCESS, {m} MULTI-FILE, {k} NOT-FOUND
+- guardian-implement: {n} SUCCESS, ...
+- designer-implement: ...
 **Commit:** {sha} chore(auto-fix): apply Forgeflow items (round {N})
 **Validation:** typecheck PASS, lint PASS, files-changed {n}, untracked-delta 0
 **Next:** re-running /review (iteration {N+1} of {max})
@@ -449,9 +449,9 @@ Append a round entry to `.forgeflow/<project>/review-history.md`:
 
 This ties the auto-fix run into the same history `/ship` reads at its review gate. The gate accepts post-auto-fix verdicts without flagging them as stale.
 
-## Step 6.6: Persist patterns to Atlas's agent-notes (Forgeflow integration)
+## Step 6.6: Persist patterns to Coordinator's agent-notes (Forgeflow integration)
 
-Append to `.forgeflow/<project>/agent-notes/atlas-<user>.md` where `<user>` = `team_members[0].username` from `.forgeflow/<project>/config.json`, defaulting to `local` if config absent (or `learnings.jsonl` if the project uses structured logs):
+Append to `.forgeflow/<project>/agent-notes/coordinator-<user>.md` where `<user>` = `team_members[0].username` from `.forgeflow/<project>/config.json`, defaulting to `local` if config absent (or `learnings.jsonl` if the project uses structured logs):
 
 ```markdown
 ### Auto-fix pattern (round {N}, {date})
@@ -463,7 +463,7 @@ Recurring patterns flagged (appear in 2+ rounds this cycle):
 - {pattern} — suggest adding to plan-time warnings for next cycle
 ```
 
-Next time Atlas participates in `/plan` or `/consult`, these patterns appear in persistent context, letting the Forgeflow team preempt them before code is written.
+Next time Coordinator participates in `/plan` or `/consult`, these patterns appear in persistent context, letting the Forgeflow team preempt them before code is written.
 
 After writing agent notes, refresh and check project learnings so auto-fix patterns can flow into latest insights:
 
@@ -521,7 +521,7 @@ When `CI_MODE=true`, emit a post-fix JSON block per `docs/forgeflow-json-schema.
 
 ### Data sources for the emitted object
 
-- `verdict` / `summary` / `arbiter` / `compass` / `findings` / `files_reviewed` / `chunking` — take from the re-review's verdict JSON parsed in Step 7 when fixes were applied. When no fixes were applied (aborted-unsafe path or dry-run), carry forward the INPUT verdict JSON (either from `--from-verdict-json <path>` or from the Step 1 initial review).
+- `verdict` / `summary` / `architect` / `product_lead` / `findings` / `files_reviewed` / `chunking` — take from the re-review's verdict JSON parsed in Step 7 when fixes were applied. When no fixes were applied (aborted-unsafe path or dry-run), carry forward the INPUT verdict JSON (either from `--from-verdict-json <path>` or from the Step 1 initial review).
 - `routing_mode` / `routing_override` — mirror whatever the most recent `/review --ci` run reported.
 - `auto_fix_*` keys (documented below) — computed locally by `/review-auto` from Steps 4-6 execution records.
 - `metadata.duration_seconds` — sum of initial review + each fix round + re-review durations.
@@ -546,7 +546,7 @@ When `CI_MODE=true`, emit a post-fix JSON block per `docs/forgeflow-json-schema.
 }
 ```
 
-The `verdict`, `arbiter`, `compass`, `findings`, and `files_reviewed` fields reflect the POST-FIX state (Step 7's re-review). If the auto-fix aborted before any changes (every finding was MUST-FIX-RISKY / BLOCKER / unsafe class), `auto_fix_applied` is `false` and `findings` reflects the original unchanged verdict.
+The `verdict`, `architect`, `product_lead`, `findings`, and `files_reviewed` fields reflect the POST-FIX state (Step 7's re-review). If the auto-fix aborted before any changes (every finding was MUST-FIX-RISKY / BLOCKER / unsafe class), `auto_fix_applied` is `false` and `findings` reflects the original unchanged verdict.
 
 Wrap the object in the same `<forgeflow-verdict-json>...</forgeflow-verdict-json>` sentinels the wrapper's Python extractor expects. Nothing may follow.
 
@@ -572,7 +572,7 @@ Exit code after emission:
 - [ ] Forgeflow implement agents verified present; missing agents prompted for user-picked replacements or skip
 - [ ] Agent substitution map (if any) recorded in review-history round entry
 - [ ] Findings classified by tier AND by source reviewer AND mapped to target implement agent
-- [ ] Warden-flagged items never auto-applied (forced to MUST-FIX-RISKY)
+- [ ] Guardian-flagged items never auto-applied (forced to MUST-FIX-RISKY)
 - [ ] Workers dispatched via Forgeflow implement agents (or user-picked replacements) — not generic subagents
 - [ ] Worker prompts use the Forgeflow team's injected-context + file-scope pattern
 - [ ] User confirmed before any auto-apply (unless dry-run)
@@ -581,8 +581,23 @@ Exit code after emission:
 - [ ] Worker non-SUCCESS returns handled (MULTI-FILE, NOT FOUND, UNEXPECTED ERROR all reclassify)
 - [ ] Auto-fix commit separate from user work, references round number + prior verdict
 - [ ] Round appended to `.forgeflow/<project>/review-history.md` so `/ship` gate reads it
-- [ ] Patterns persisted to Atlas agent-notes for next-cycle preemption
+- [ ] Patterns persisted to Coordinator agent-notes for next-cycle preemption
 - [ ] Iteration cap respected (default 2, max 3)
 - [ ] Remaining risky items surfaced with explicit "surfaced for human judgment" framing
 - [ ] Never touched migrations, secrets, or package.json dependencies
 </success_criteria>
+
+## Writing for CLI output
+
+Apply George Orwell's six rules to progress updates, agent reports, and final summaries:
+
+1. Never use a metaphor, simile, or other figure of speech which you are used to seeing in print.
+2. Never use a long word where a short one will do.
+3. If it is possible to cut a word out, always cut it out.
+4. Never use the passive where you can use the active.
+5. Never use a foreign phrase, a scientific word, or a jargon word if you can think of an everyday English equivalent.
+6. Break any of these rules sooner than say anything outright barbarous.
+
+Lead with the result or action. Use short paragraphs or bullets that scan well in a terminal. Cut stock phrases, repeated summaries, and persona banter. These rules take precedence over persona style and sample prose.
+
+Keep facts, uncertainty, risks, and required evidence intact. Preserve exact commands, code, paths, identifiers, error text, schema keys, and verdict labels. Keep required report sections and machine-readable formats; apply the rules to prose within them. Use a technical term when it is the clearest accurate choice, and explain it when needed. Before sending, cut words that add no meaning without making the result unclear or unnatural.

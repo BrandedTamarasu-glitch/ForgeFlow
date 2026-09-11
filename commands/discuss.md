@@ -25,11 +25,11 @@ else
 fi
 ```
 <objective>
-Run Compass and Atlas in discussion mode to explore the problem space, gather requirements, define success criteria, and identify open questions for research.
+Run Product Lead and Coordinator in discussion mode to explore the problem space, gather requirements, define success criteria, and identify open questions for research.
 
 The discussion team:
-1. **Compass** (`compass-discuss`) — Problem framing, requirements, success criteria, accessibility, UX vision
-2. **Atlas** (`atlas-early`) — Prior learnings, fresh perspective challenges, memory retention
+1. **Product Lead** (`product-lead-discuss`) — Problem framing, requirements, success criteria, accessibility, UX vision
+2. **Coordinator** (`coordinator-early`) — Prior learnings, fresh perspective challenges, memory retention
 </objective>
 
 <context>
@@ -91,7 +91,7 @@ If no CONTEXT.md exists, read relevant files to understand the current state:
 - README or documentation for project goals
 - Existing feature patterns
 
-## Step 2: Load Atlas's persistent context
+## Step 2: Load Coordinator's persistent context
 
 ```bash
 PROJECT_NAME=$(basename "$(pwd)")
@@ -99,30 +99,30 @@ FORGEFLOW_DIR=".forgeflow/${PROJECT_NAME}"
 mkdir -p "${FORGEFLOW_DIR}/agent-notes"
 ```
 
-## Step 3: Spawn Compass and Atlas in parallel
+## Step 3: Spawn Product Lead and Coordinator in parallel
 
 Spawn both agents using the Agent tool:
 
-**`compass-discuss`** receives:
+**`product-lead-discuss`** receives:
 - `Context is pre-loaded in <injected-context> below. Do not re-read those files.`
 - The `<injected-context>` block assembled in Step 0
 - The task description ($ARGUMENTS)
 - Instruction to define requirements, success criteria, and accessibility needs
 - Working directory path
 
-**`atlas-early`** receives:
+**`coordinator-early`** receives:
 - `Context is pre-loaded in <injected-context> below. Do not re-read those files.`
 - The `<injected-context>` block assembled in Step 0
 - The task description ($ARGUMENTS)
 - FORGEFLOW_DIR path for loading persistent context
-- Phase instruction: "You are in the **discuss** phase — surface prior learnings, challenge assumptions, bounce ideas with Compass"
+- Phase instruction: "You are in the **discuss** phase — surface prior learnings, challenge assumptions, bounce ideas with Product Lead"
 - Working directory path
 
 ## Step 4: Synthesize discussion
 
 After both agents complete, combine their outputs into a unified Discussion Summary.
 
-Compass's output is the primary structure. Atlas's contributions are woven in where they add value.
+Product Lead's output is the primary structure. Coordinator's contributions are woven in where they add value.
 
 ## Step 5: Present and save
 
@@ -149,6 +149,21 @@ Or: modify the discussion summary, then run `/research`
 - [ ] Accessibility requirements identified
 - [ ] UX vision articulated
 - [ ] Open questions listed for research phase
-- [ ] Atlas surfaced relevant prior learnings
+- [ ] Coordinator surfaced relevant prior learnings
 - [ ] Discussion saved to .forgeflow/ for reference
 </success_criteria>
+
+## Writing for CLI output
+
+Apply George Orwell's six rules to progress updates, agent reports, and final summaries:
+
+1. Never use a metaphor, simile, or other figure of speech which you are used to seeing in print.
+2. Never use a long word where a short one will do.
+3. If it is possible to cut a word out, always cut it out.
+4. Never use the passive where you can use the active.
+5. Never use a foreign phrase, a scientific word, or a jargon word if you can think of an everyday English equivalent.
+6. Break any of these rules sooner than say anything outright barbarous.
+
+Lead with the result or action. Use short paragraphs or bullets that scan well in a terminal. Cut stock phrases, repeated summaries, and persona banter. These rules take precedence over persona style and sample prose.
+
+Keep facts, uncertainty, risks, and required evidence intact. Preserve exact commands, code, paths, identifiers, error text, schema keys, and verdict labels. Keep required report sections and machine-readable formats; apply the rules to prose within them. Use a technical term when it is the clearest accurate choice, and explain it when needed. Before sending, cut words that add no meaning without making the result unclear or unnatural.

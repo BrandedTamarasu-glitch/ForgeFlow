@@ -19,12 +19,12 @@
       --muted:     #7d8590;
       --ts:        #484f58;
 
-      --compass:     #f9a8d4;
-      --fc:        #6ee7b7;
-      --warden:     #fbbf24;
-      --lumen:    #60a5fa;
+      --product_lead:     #f9a8d4;
+      --builder:        #6ee7b7;
+      --guardian:     #fbbf24;
+      --designer:    #60a5fa;
       --pmcory:    #c4b5fd;
-      --arbiter:     #f3f4f6;
+      --architect:     #f3f4f6;
 
       --pill-bg:   #1f2937;
       --pill-text: #60a5fa;
@@ -116,7 +116,7 @@
     /* Agent message */
     .msg {
       display: grid;
-      grid-template-columns: 90px 1fr auto;
+      grid-template-columns: minmax(90px, 24%) minmax(0, 1fr) auto;
       align-items: baseline;
       gap: 0 10px;
       padding: 5px 16px;
@@ -124,15 +124,22 @@
       background: var(--bg-msg);
     }
 
+    @media (max-width: 480px) {
+      .msg { grid-template-columns: minmax(0, 1fr) auto; row-gap: 4px; }
+      .msg .agent-name { grid-column: 1; grid-row: 1; }
+      .msg .ts { grid-column: 2; grid-row: 1; }
+      .msg .body { grid-column: 1 / -1; grid-row: 2; }
+    }
+
     .msg:hover { background: #1c2129; }
 
     .msg .agent-name {
+      overflow-wrap: anywhere;
+      min-width: 0;
       font-weight: 700;
       font-size: 11px;
       letter-spacing: 0.04em;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      white-space: normal;
     }
 
     .msg .body {
@@ -147,20 +154,22 @@
       white-space: nowrap;
     }
 
+    .msg[data-agent="verifier"] { border-left-color: #c4b5fd; }
+    .msg[data-agent="verifier"] .agent-name { color: #c4b5fd; }
     /* Per-agent accent colors */
-    .msg[data-agent="compass"]  { border-left-color: var(--compass); }
-    .msg[data-agent="fc"]     { border-left-color: var(--fc); }
-    .msg[data-agent="warden"]  { border-left-color: var(--warden); }
-    .msg[data-agent="lumen"] { border-left-color: var(--lumen); }
-    .msg[data-agent="atlas"]{ border-left-color: var(--pmcory); }
-    .msg[data-agent="arbiter"]  { border-left-color: var(--arbiter); }
+    .msg[data-agent="product_lead"]  { border-left-color: var(--product_lead); }
+    .msg[data-agent="builder"]     { border-left-color: var(--builder); }
+    .msg[data-agent="guardian"]  { border-left-color: var(--guardian); }
+    .msg[data-agent="designer"] { border-left-color: var(--designer); }
+    .msg[data-agent="coordinator"]{ border-left-color: var(--pmcory); }
+    .msg[data-agent="architect"]  { border-left-color: var(--architect); }
 
-    .msg[data-agent="compass"]   .agent-name { color: var(--compass); }
-    .msg[data-agent="fc"]      .agent-name { color: var(--fc); }
-    .msg[data-agent="warden"]   .agent-name { color: var(--warden); }
-    .msg[data-agent="lumen"]  .agent-name { color: var(--lumen); }
-    .msg[data-agent="atlas"] .agent-name { color: var(--pmcory); }
-    .msg[data-agent="arbiter"]   .agent-name { color: var(--arbiter); }
+    .msg[data-agent="product_lead"]   .agent-name { color: var(--product_lead); }
+    .msg[data-agent="builder"]      .agent-name { color: var(--builder); }
+    .msg[data-agent="guardian"]   .agent-name { color: var(--guardian); }
+    .msg[data-agent="designer"]  .agent-name { color: var(--designer); }
+    .msg[data-agent="coordinator"] .agent-name { color: var(--pmcory); }
+    .msg[data-agent="architect"]   .agent-name { color: var(--architect); }
 
     /* Per-level visual weight */
     .msg[data-level="decision"]     { opacity: 0.85; }
@@ -258,6 +267,7 @@
     >↓ <span id="new-count">0</span> new messages</button>
   </div>
 
+  <script src="/agent-identity.js"></script>
   <script>
     'use strict';
 
@@ -321,15 +331,6 @@
     // ------------------------------------------------------------------
     // Rendering
     // ------------------------------------------------------------------
-    const AGENT_LABELS = {
-      'compass':   'Compass',
-      'fc':      'Smith',
-      'warden':   'Warden',
-      'lumen':  'Lumen',
-      'atlas': 'Atlas',
-      'arbiter':   'Arbiter',
-    };
-
     function formatTime(ts) {
       const d = new Date(ts);
       const hh = String(d.getHours()).padStart(2, '0');
@@ -347,13 +348,13 @@
       hideEmptyState();
       const el = document.createElement('div');
       el.className = 'msg';
-      el.setAttribute('data-agent', msg.agent);
+      el.setAttribute('data-agent', ForgeflowAgentIdentity.normalizeAgentId(msg.agent) || msg.agent);
       el.setAttribute('data-level', msg.level);
 
       const nameEl = document.createElement('span');
       nameEl.className = 'agent-name';
       // Use textContent — safe regardless of message content.
-      nameEl.textContent = AGENT_LABELS[msg.agent] ?? msg.agent;
+      nameEl.textContent = ForgeflowAgentIdentity.formatAgentLabel(msg.agent, msg.activityLabel);
 
       const bodyEl = document.createElement('span');
       bodyEl.className = 'body';

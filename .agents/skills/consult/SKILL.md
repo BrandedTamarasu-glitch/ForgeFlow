@@ -20,7 +20,7 @@ Before other work, run:
 
 Workflow:
 1. Read the [canonical consultation skill](../forgeflow-consult/SKILL.md) and follow its complete workflow, including consultation routing. If the canonical skill is unavailable, report the missing instructions instead of inventing a separate route.
-2. Use its smallest relevant specialist set, risk/uncertainty escalation, and Arbiter synthesis. This alias does not require all four consultants or skip independent validation and final review.
+2. Use its smallest relevant specialist set, risk/uncertainty escalation, and Architect synthesis. This alias does not require all four consultants or skip independent validation and final review.
 
 If both this alias and `forgeflow-consult` are available, treat them as equivalent.
 

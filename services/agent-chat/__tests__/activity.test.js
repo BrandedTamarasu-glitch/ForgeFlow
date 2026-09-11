@@ -52,6 +52,13 @@ test('activity writes require agent credentials and validate bounded data', { ti
   }
   assert.equal((await f.request({ ...value, label: 'a'.repeat(3000) })).status, 413);
   assert.equal((await f.request(value)).status, 204);
+  const beforeInvalid = (await f.dashboard()).init;
+  for (const activityLabel of ['', ' ', 'x'.repeat(121), '\ninvalid', 'invalid\u0085', null, 7]) {
+    assert.equal((await f.request({ agent: 'smith', state: 'failed', activityLabel })).status, 400);
+    const afterInvalid = (await f.dashboard()).init;
+    assert.deepEqual(afterInvalid.activity, beforeInvalid.activity);
+    assert.deepEqual(afterInvalid.history, beforeInvalid.history);
+  }
   const { init } = await f.dashboard();
   assert.equal(init.activity.agents.length, 1);
   assert.equal(init.activity.agents[0].label, value.label);
@@ -86,4 +93,42 @@ test('snapshots reach listeners and reconnects; agent identity and room reset ar
 
 test('optional reporter fails quietly without a credential or when disabled', async () => {
   assert.equal(await sendActivity('testing', 'Check', { tokenFile: '/nonexistent/ember-test.token' }), false);
+});
+
+test('aliases share activity slots and immutable message context survives replay and export', { timeout: 10000 }, async t => {
+  const f = await fixture(t);
+  const { ws } = await f.dashboard();
+  const agent = new WebSocket(`ws://127.0.0.1:${f.service.agentServer.address().port}`, { headers: f.headers });
+  t.after(() => agent.terminate());
+  await once(agent, 'open'); agent.send('smith-review'); await once(agent, 'message');
+  const body = 'Smith failed: <error> Warden\n  exact bytes';
+  const delivered = once(ws, 'message');
+  agent.send(JSON.stringify({ agent: 'fc', level: 'decision', message: body, activityLabel: '  Backend review  ' }));
+  const event = JSON.parse((await delivered)[0]);
+  assert.equal(event.agent, 'builder');
+  assert.equal(event.activityLabel, 'Backend review');
+  assert.equal(event.message, body);
+  for (const alias of ['fc', 'smith', 'builder']) assert.equal((await f.request({ agent: alias, state: 'testing', label: alias })).status, 204);
+  for (const activityLabel of ['', ' ', 'x'.repeat(121), '\ncontext', 'context\u0085', null, 7]) {
+    agent.send(JSON.stringify({ agent: 'builder', level: 'phase', message: 'must not enter history', activityLabel, activity: { state: 'failed', label: 'must not change state' } }));
+  }
+  // A valid event on the same socket is the processing barrier for invalid sends.
+  const barrier = new Promise(resolve => { const onMessage = raw => { const value = JSON.parse(raw); if (value.message === 'barrier') { ws.off('message', onMessage); resolve(value); } }; ws.on('message', onMessage); });
+  agent.send(JSON.stringify({ agent: 'builder', level: 'phase', message: 'barrier' }));
+  await barrier;
+  const { init } = await f.dashboard();
+  assert.equal(init.history.length, 2);
+  assert.equal(init.history[0].activityLabel, 'Backend review');
+  assert.equal(init.history[0].message, body);
+  assert.equal(init.history[1].activityLabel, undefined);
+  assert.equal(init.activity.agents.length, 1);
+  assert.equal(init.activity.agents[0].agent, 'builder');
+  assert.equal(init.activity.agents[0].state, 'testing');
+  const exported = await fetch(`http://127.0.0.1:${f.port}/export`, { headers: f.headers }).then(res => res.text());
+  assert.ok(exported.includes('Builder · Backend review'));
+  assert.ok(exported.includes(body));
+  assert.equal((await f.request(undefined, f.headers, 'GET', '/agent-identity.js')).status, 200);
+  assert.equal((await f.request(undefined, {}, 'GET', '/agent-identity.js')).status, 401);
+  for (const name of ['verifier', 'aegis', 'system']) assert.equal((await f.request({ agent: name, state: 'reviewing' })).status, 204);
+  assert.equal((await f.dashboard()).init.activity.agents.length, 3);
 });

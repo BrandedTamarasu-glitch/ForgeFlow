@@ -7,7 +7,8 @@ const repoRoot = path.resolve(__dirname, '..', '..');
 const fixture = path.join(repoRoot, 'fixtures/calibration/forgeflow-metrics.jsonl');
 
 const summary = createSummary();
-const lines = fs.readFileSync(fixture, 'utf8').split(/\r?\n/).filter(Boolean);
+const originalBytes = fs.readFileSync(fixture);
+const lines = originalBytes.toString('utf8').split(/\r?\n/).filter(Boolean);
 for (const line of lines) {
   applyRecord(summary, JSON.parse(line));
 }
@@ -19,8 +20,8 @@ const checks = [
   ['verifier_blocked', summary.totals.verifier_blocked, 1],
   ['auto_fix_applied', summary.totals.auto_fix_applied, 1],
   ['auto_fix_failed', summary.totals.auto_fix_failed, 1],
-  ['warden confirmed', summary.agents.warden.confirmed, 1],
-  ['fc rejected', summary.agents.fc.rejected, 1],
+  ['warden confirmed', summary.agents.guardian.confirmed, 1],
+  ['fc rejected', summary.agents.builder.rejected, 1],
   ['migration class rejected', summary.classes['migration/schema/data-loss'].rejected, 1],
 ];
 
@@ -31,5 +32,15 @@ if (failures.length) {
   }
   process.exit(1);
 }
+
+
+const assert = require('assert/strict');
+const mixed = createSummary();
+for (const reviewer of ['Warden', 'guardian-review', 'guardian_reviewer']) {
+  applyRecord(mixed, { event: 'finding-verified', detail: { reviewer, decision: 'confirmed', finding_class: 'security' } });
+}
+assert.equal(mixed.agents.guardian.confirmed, 3);
+assert.deepEqual(Object.keys(mixed.agents), ['guardian']);
+assert.deepEqual(fs.readFileSync(fixture), originalBytes);
 
 console.log('calibration summary: ok');

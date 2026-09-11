@@ -147,8 +147,8 @@ LINES_CHANGED=$(git diff --numstat "origin/${GITHUB_BASE_REF:-main}...HEAD" 2>/d
 # Per-mode cost rough ceilings (USD). Rough heuristics, not calibrated.
 # Budget gate is a SAFETY NET (catch runaway cost), not a precise estimate.
 #   thin-mode:   ~2 agents, short diffs           → ~$0.15
-#   full-mode:   4 agents + Arbiter + Compass         → ~$0.60
-#   deep-mode:   full + Warden audit pass          → ~$0.90
+#   full-mode:   4 agents + Architect + Product Lead         → ~$0.60
+#   deep-mode:   full + Guardian audit pass          → ~$0.90
 #   skip-mode:   classifier only                  → ~$0.02
 # Chunking multiplier applies when file count exceeds Step 3.6 threshold (30).
 
@@ -414,7 +414,7 @@ render_findings_section() {
   jq -r --arg tier "$tier" '
     .findings[$tier][] |
     ( .title    | gsub("[\r\n]"; " ") | gsub("</?details[^>]*>"; "[details-tag]") ) as $t |
-    ( .raised_by // "arbiter" )                                                         as $r |
+    ( .raised_by // "architect" )                                                         as $r |
     ( .class     // "unclassified" )                                                  as $c |
     ( if .file then
         (if .line then "`\(.file):\(.line)`" else "`\(.file)`" end)
@@ -447,14 +447,14 @@ esac
   echo "${SUMMARY}"
   echo ""
 
-  # Compass E2E status — surface when tests were skipped in CI.
+  # Product Lead E2E status — surface when tests were skipped in CI.
   EMILY_TESTS_RUN=$(jq -r '.compass.tests_run // empty' "$VERDICT_JSON")
   EMILY_SKIP_REASON=$(jq -r '.compass.ci_skipped_reason // empty' "$VERDICT_JSON")
   if [ "$EMILY_TESTS_RUN" = "false" ] && [ -n "$EMILY_SKIP_REASON" ]; then
     # Strip markdown-breaking chars from the reason string before embedding
     # in a quoted blockquote (future reasons may contain backticks, pipes, etc.).
     EMILY_SKIP_SAFE=$(printf '%s' "$EMILY_SKIP_REASON" | tr -d '`|<>\r\n')
-    echo "> ⚠️ **E2E validation skipped** (${EMILY_SKIP_SAFE}). Compass performed static review only."
+    echo "> ⚠️ **E2E validation skipped** (${EMILY_SKIP_SAFE}). Product Lead performed static review only."
     echo ""
   fi
 
@@ -484,7 +484,7 @@ esac
   if [ "$OVERTURN_COUNT" != "0" ]; then
     echo ""
     echo "<details>"
-    echo "<summary>Arbiter overturned ${OVERTURN_COUNT} finding(s) as false positives</summary>"
+    echo "<summary>Architect overturned ${OVERTURN_COUNT} finding(s) as false positives</summary>"
     echo ""
     jq -r '.overturned_findings[] | "- **\(.reviewer)** flagged `\(.class)`: \(.finding)"' "$VERDICT_JSON"
     echo ""
@@ -512,7 +512,7 @@ if [ "$FORGEFLOW_MODE" = "review-and-fix" ] && { [ "$VERDICT" = "REVISE" ] || [ 
   #
   # HARD-UNSAFE classes: findings with these tags always surface for
   # manual review, never counted toward the auto-fix gate. Aligned with
-  # the canonical tag vocabulary documented in agents/arbiter-review.md.
+  # the canonical tag vocabulary documented in agents/architect-review.md.
   UNSAFE_CLASSES_JQ='["sql-injection", "auth", "secret", "token", "jwt", "permission", "rbac", "crypto", "password", "csrf", "xss", "ssrf"]'
 
   SAFE_COUNT=$(jq -r --argjson unsafe "$UNSAFE_CLASSES_JQ" '

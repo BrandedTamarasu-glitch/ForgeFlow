@@ -25,9 +25,9 @@ Use the notes for information the user should know after implementation:
 
 ## Ownership
 
-Specialist implementers report implementation note candidates in their outputs. Atlas serializes those candidates into `implementation-notes.md` at wave checkpoints so parallel agents do not race on one shared file. When available, Atlas uses `scripts/forgeflow/record-implementation-notes.js` to append entries from a JSON candidate list. Arbiter verifies the file during integration and may add final integration notes when needed.
+Specialist implementers report implementation note candidates in their outputs. Coordinator serializes those candidates into `implementation-notes.md` at wave checkpoints so parallel agents do not race on one shared file. When available, Coordinator uses `scripts/forgeflow/record-implementation-notes.js` to append entries from a JSON candidate list. Architect verifies the file during integration and may add final integration notes when needed.
 
-When lean guidance chooses a smaller path with a known ceiling, `/consult` and `/implement` write `.forgeflow/<project>/context/lean-decision.json`. Atlas can append the ceiling and upgrade trigger with:
+When lean guidance chooses a smaller path with a known ceiling, `/consult` and `/implement` write `.forgeflow/<project>/context/lean-decision.json`. Coordinator can append the ceiling and upgrade trigger with:
 
 ```bash
 scripts/forgeflow/record-implementation-notes.js --project-dir .forgeflow/<project-name> --lean-decision .forgeflow/<project-name>/context/lean-decision.json --json

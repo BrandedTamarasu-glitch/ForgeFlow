@@ -4,6 +4,7 @@ const os = require('os');
 const path = require('path');
 const { spawnSync: runSync } = require('child_process');
 const assert = require('assert');
+const { checkContextContract } = require('./check-context-contract');
 function spawnSync(command, args, options) {
   const result = runSync(command, args, options);
   if (command === 'git') assert.strictEqual(result.status, 0, result.stderr || result.error?.message);
@@ -113,8 +114,8 @@ fs.writeFileSync(seededArchitecturePath, JSON.stringify({
 }, null, 2));
 fs.writeFileSync(seededOwnershipPath, JSON.stringify({
   status: 'ready',
-  high_care_files: [{ path: 'src/auth/session.ts', recommended_lane: 'Warden', owner_surface: 'security', reasons: ['auth high-care'] }],
-  coverage_gaps: [{ path: 'src/auth/session.ts', owner_surface: 'security', recommended_lane: 'Warden', reason: 'no CODEOWNERS coverage' }],
+  high_care_files: [{ path: 'src/auth/session.ts', recommended_lane: 'Guardian', owner_surface: 'security', reasons: ['auth high-care'] }],
+  coverage_gaps: [{ path: 'src/auth/session.ts', owner_surface: 'security', recommended_lane: 'Guardian', reason: 'no CODEOWNERS coverage' }],
 }, null, 2));
 fs.writeFileSync(seededInvocationPath, JSON.stringify({
   status: 'ready',
@@ -205,6 +206,10 @@ fs.writeFileSync(path.join(outDir, 'failure-digest.md'), [
   '```',
   '',
 ].join('\n'));
+const historicalPacketPath = path.join(outDir, 'agent-packets', 'smith_reviewer.md');
+const historicalPacketBytes = '# Smith historical review packet\nPreserve original evidence.\n';
+fs.mkdirSync(path.dirname(historicalPacketPath), { recursive: true });
+fs.writeFileSync(historicalPacketPath, historicalPacketBytes);
 const result = buildContextPack({
   filesPath: path.join(repoRoot, 'fixtures/context-pack/review.files'),
   linesChanged: 80,
@@ -216,6 +221,10 @@ const result = buildContextPack({
   maxMemoryChars: 12000,
   maxDiffChars: 18000,
 });
+const rebuiltContract = checkContextContract({ contextDir: outDir });
+assert.notStrictEqual(rebuiltContract.status, 'fail', JSON.stringify(rebuiltContract.issues));
+assert.strictEqual(rebuiltContract.packet_count, Object.keys(result.synthesis_input.agent_packets).length);
+assert.strictEqual(fs.readFileSync(historicalPacketPath, 'utf8'), historicalPacketBytes);
 const noisyOutDir = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-pack-noisy-'));
 const noisyResult = buildContextPack({
   filesPath: path.join(repoRoot, 'fixtures/review-route/noisy.files'),
@@ -405,8 +414,8 @@ fs.writeFileSync(path.join(fallbackMemoryProject, 'learnings.jsonl'), [
   '',
 ].join('\n'));
 fs.writeFileSync(path.join(fallbackMemoryProject, 'project-learning-candidates.jsonl'), [
-  JSON.stringify({ category: 'stable-decision', learning: 'PRIVATE_FALLBACK_CANARY_GUIDANCE', source: 'Atlas', conflict_key: 'release_channel', conflict_value: 'canary' }),
-  JSON.stringify({ category: 'stable-decision', learning: 'PRIVATE_FALLBACK_DIRECT_GUIDANCE', source: 'Compass', conflict_key: 'release_channel', conflict_value: 'direct' }),
+  JSON.stringify({ category: 'stable-decision', learning: 'PRIVATE_FALLBACK_CANARY_GUIDANCE', source: 'Coordinator', conflict_key: 'release_channel', conflict_value: 'canary' }),
+  JSON.stringify({ category: 'stable-decision', learning: 'PRIVATE_FALLBACK_DIRECT_GUIDANCE', source: 'Product Lead', conflict_key: 'release_channel', conflict_value: 'direct' }),
   '',
 ].join('\n'));
 const fallbackMemoryOut = path.join(fallbackMemoryProject, 'context', 'fallback');
@@ -673,16 +682,16 @@ const topologyGuidancePacket = Object.values(topologyGuidanceSynthesis.agent_pac
   .join('\n');
 const codeMapHistoryPath = path.join(outDir, 'code-map-history.jsonl');
 const noisyManifest = JSON.parse(fs.readFileSync(path.join(noisyOutDir, 'file-manifest.json'), 'utf8'));
-const wardenPacket = fs.readFileSync(path.join(repoRoot, synthesis.agent_packets.warden_reviewer), 'utf8');
+const wardenPacket = fs.readFileSync(path.join(repoRoot, synthesis.agent_packets.guardian_reviewer), 'utf8');
 const checks = [
   ['result out dir', result.out_dir === outDir],
   ['deep mode for auth path', route.mode === 'deep-mode'],
-  ['aegis included', route.agents.included.includes('aegis')],
+  ['verifier included', route.agents.included.includes('verifier')],
   ['manifest has three files', manifest.files.length === 3],
   ['security kind detected', manifest.files.some((file) => file.kind === 'security')],
   ['frontend kind detected', manifest.files.some((file) => file.kind === 'frontend')],
-  ['warden packet exists', Boolean(synthesis.agent_packets.warden_reviewer)],
-  ['aegis packet exists', Boolean(synthesis.agent_packets.aegis)],
+  ['guardian packet exists', Boolean(synthesis.agent_packets.guardian_reviewer)],
+  ['verifier packet exists', Boolean(synthesis.agent_packets.verifier)],
   ['memory hits written', fs.existsSync(path.join(outDir, 'memory-hits.md'))],
   ['latest insights written', fs.existsSync(path.join(outDir, 'latest-insights.md'))],
   ['latest insights report written', fs.existsSync(path.join(outDir, 'latest-insights-report.json'))],
@@ -709,11 +718,11 @@ const checks = [
   ['latest failure digest triage linked', synthesis.latest_failure_digest_triage && synthesis.latest_failure_digest_triage.state === 'stale' && synthesis.latest_failure_digest_triage.usefulness === 'limited'],
   ['packet artifact manifest linked', synthesis.packet_artifact_manifest_path && synthesis.packet_artifact_manifest_path.endsWith('packet-artifacts.json')],
   ['agent context contract linked', synthesis.agent_context_contract_path && synthesis.agent_context_contract_path.endsWith('agent-context-contract.json')],
-  ['agent context contract written', agentContextContract.agents && agentContextContract.agents.warden_reviewer && agentContextContract.agents.warden_reviewer.prohibited_uses.length > 0],
-  ['agent context contracts in synthesis', synthesis.agent_context_contracts && synthesis.agent_context_contracts.warden_reviewer && synthesis.agent_context_contracts.warden_reviewer.allowed_signals.includes('latest-failure-digest')],
-  ['agent context contracts verify operating model', synthesis.agent_context_contracts.warden_reviewer.verify_before_use.includes('project-operating-model')],
-  ['agent context contracts verify architecture intelligence', synthesis.agent_context_contracts.warden_reviewer.verify_before_use.includes('architecture-intelligence') && synthesis.agent_context_contracts.warden_reviewer.advisory_signals.includes('architecture-intelligence')],
-  ['agent context contracts verify lean guidance', synthesis.agent_context_contracts.warden_reviewer.verify_before_use.includes('lean-guidance') && synthesis.agent_context_contracts.warden_reviewer.advisory_signals.includes('lean-guidance')],
+  ['agent context contract written', agentContextContract.agents && agentContextContract.agents.guardian_reviewer && agentContextContract.agents.guardian_reviewer.prohibited_uses.length > 0],
+  ['agent context contracts in synthesis', synthesis.agent_context_contracts && synthesis.agent_context_contracts.guardian_reviewer && synthesis.agent_context_contracts.guardian_reviewer.allowed_signals.includes('latest-failure-digest')],
+  ['agent context contracts verify operating model', synthesis.agent_context_contracts.guardian_reviewer.verify_before_use.includes('project-operating-model')],
+  ['agent context contracts verify architecture intelligence', synthesis.agent_context_contracts.guardian_reviewer.verify_before_use.includes('architecture-intelligence') && synthesis.agent_context_contracts.guardian_reviewer.advisory_signals.includes('architecture-intelligence')],
+  ['agent context contracts verify lean guidance', synthesis.agent_context_contracts.guardian_reviewer.verify_before_use.includes('lean-guidance') && synthesis.agent_context_contracts.guardian_reviewer.advisory_signals.includes('lean-guidance')],
   ['packet artifact manifest written', artifactManifest.artifacts.some((item) => item.name === 'latest-failure-digest' && item.decision === 'metadata-only' && item.reason === 'digest-stale')],
   ['packet artifact manifest markdown written', artifactManifestMarkdown.includes('| latest-failure-digest | metadata-only | digest-stale | forgeflow-failure-digest |')],
   ['packet artifact manifest covers latest insights', artifactManifest.artifacts.some((item) => item.name === 'latest-insights' && item.decision === 'included' && item.status === 'injected')],
@@ -811,3 +820,15 @@ if (failed > 0) {
 }
 
 console.log('context pack: ok');
+
+// Legacy role inputs receive the same scoped rules as current role inputs.
+{
+  const assert = require('node:assert/strict');
+  const { rulePack } = require('./build-context-pack');
+  const route = { mode: 'full-mode', verifier: 'required' };
+  const manifest = [{ path: 'src/auth.ts', kind: 'security' }, { path: 'schema.sql', kind: 'data' }];
+  for (const [oldName, newName] of [['smith_reviewer', 'builder_reviewer'], ['warden-review', 'guardian-review'], ['lumen_reviewer', 'designer_reviewer'], ['atlas_reviewer', 'coordinator_reviewer'], ['aegis', 'verifier']]) {
+    assert.deepEqual(rulePack(oldName, route, manifest), rulePack(newName, route, manifest));
+  }
+  assert.deepEqual(rulePack('builder-custom', route, manifest), []);
+}

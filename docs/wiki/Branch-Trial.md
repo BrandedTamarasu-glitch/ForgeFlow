@@ -79,7 +79,7 @@ Record the outcome after human triage. Use `review.workflow` to compare workflow
   "review": {
     "workflow": "forgeflow",
     "mode": "full-mode",
-    "agents_used": ["smith_reviewer", "warden_reviewer"],
+    "agents_used": ["builder_reviewer", "guardian_reviewer"],
     "verifier_decisions": []
   },
   "outcome": {

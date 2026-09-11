@@ -52,7 +52,7 @@ Emitted when a reviewer agent produces a final verdict.
 
 | Detail Field | Type | Description |
 |---|---|---|
-| `reviewer` | `string` | Agent name that issued the verdict (e.g. `"arbiter"`, `"compass"`). |
+| `reviewer` | `string` | Agent name that issued the verdict (e.g. `"architect"`, `"product_lead"`). |
 | `verdict` | `string` | One of the six verdict strings above. Case-normalised to uppercase. |
 
 ---
@@ -145,20 +145,20 @@ Emitted when a single shard of a `/fleet` run finishes (detected via worktree re
 
 ### 6. `finding-overturned`
 
-Emitted when Arbiter dismisses a reviewer's finding. Requires Arbiter's output to contain the structured tag line:
+Emitted when Architect dismisses a reviewer's finding. Requires Architect's output to contain the structured tag line:
 
 ```
 - REVIEWER: <agent> | CLASS: <class> | FINDING: <brief>
 ```
 
-under a section header such as `## Overturned Findings`. If Arbiter's output does not emit this tag format, no event fires (fail-open).
+under a section header such as `## Overturned Findings`. If Architect's output does not emit this tag format, no event fires (fail-open).
 
 ```json
 {
   "event": "finding-overturned",
   "command": "/review",
   "detail": {
-    "overturned_reviewer": "fc",
+    "overturned_reviewer": "builder",
     "finding_class": "N+1",
     "finding": "orders.map calling db.findUser in a loop"
   }
@@ -182,7 +182,7 @@ Emitted once per individual fix attempt to record whether it succeeded or failed
   "event": "auto-fix-applied",
   "command": "/review-auto",
   "detail": {
-    "agent": "fc",
+    "agent": "builder",
     "success": true,
     "reason": "Applied null-check guard"
   }
@@ -199,15 +199,15 @@ Emitted once per individual fix attempt to record whether it succeeded or failed
 
 ### 8. `finding-verified`
 
-Emitted when a high-risk finding receives a Aegis decision.
+Emitted when a high-risk finding receives a Verifier decision.
 
 ```json
 {
   "event": "finding-verified",
   "command": "/review",
   "detail": {
-    "reviewer": "warden",
-    "verifier": "aegis",
+    "reviewer": "guardian",
+    "verifier": "verifier",
     "finding_class": "auth/session/permissions",
     "decision": "CONFIRMED"
   }
@@ -217,7 +217,7 @@ Emitted when a high-risk finding receives a Aegis decision.
 | Detail Field | Type | Description |
 |---|---|---|
 | `reviewer` | `string` | Agent whose finding was verified. |
-| `verifier` | `string` | Verifier agent name. Current Codex verifier: `"aegis"`. |
+| `verifier` | `string` | Verifier agent name. Current Codex verifier: `"verifier"`; `"aegis"` remains a legacy alias. |
 | `finding_class` | `string` | Short class label for calibration. |
 | `decision` | `string` | One of `"CONFIRMED"`, `"REJECTED"`, or `"BLOCKED"`. |
 
@@ -262,6 +262,6 @@ Emitted when a high-risk finding receives a Aegis decision.
   "cwd": "/home/user/Forgeflow",
   "event": "verdict",
   "command": "/review",
-  "detail": { "reviewer": "arbiter", "verdict": "APPROVE" }
+  "detail": { "reviewer": "architect", "verdict": "APPROVE" }
 }
 ```

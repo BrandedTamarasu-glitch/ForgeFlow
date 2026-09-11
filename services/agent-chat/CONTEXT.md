@@ -15,7 +15,7 @@ Two HTTP/WebSocket servers, both bound to `127.0.0.1` only.
 ## Key State (in-memory)
 | Variable | Type | Purpose |
 |----------|------|---------|
-| `messageHistory` | `Array<{agent,level,message,timestamp,room}>` | Last 500 messages |
+| `messageHistory` | `Array<{agent,level,message,timestamp,room,activityLabel?}>` | Last 500 messages |
 | `agentClients` | `Map<WS, {agentId,msgCount,windowStart}>` | Connected bridge agents |
 | `dashboardClients` | `Set<WS>` | Connected browser dashboards |
 | `currentRoom` | `string` | Active room name (single global) |
@@ -25,12 +25,14 @@ Two HTTP/WebSocket servers, both bound to `127.0.0.1` only.
 2. Send plain-text `agentId` as the first message (identity selection after authentication)
 3. Server replies `{"type":"ack"}` on success, or closes with 1008 on unknown agent
 4. Send `/join <room>` to switch room (pattern: `[a-z0-9-]{1,100}`)
-5. Send JSON `ChatMessage` — `{agent, level, message}` — to broadcast
+5. Send JSON `ChatMessage` — `{agent, level, message, activityLabel?, activity?}` — to broadcast
 
 ## ChatMessage Validation
-- `agent` ∈ `VALID_AGENTS`: `compass`, `fc`, `warden`, `lumen`, `atlas`, `arbiter`
+- `agent` ∈ `VALID_AGENTS`: `product_lead`, `builder`, `guardian`, `designer`, `coordinator`, `architect`, `verifier`, `system`
 - `level` ∈ `VALID_LEVELS`: `phase`, `decision`, `conversation`
-- `message`: non-empty string, max 2000 chars
+- `message`: non-empty string, max 2000 UTF-16 code units
+- `activityLabel`: optional immutable context, trimmed and nonempty, max 120 characters, no control characters. New events retain explicitly supplied context in broadcasts, history, replay, and export. Historical messages without context remain unlabeled; live activity never supplies missing context.
+- Known legacy aliases normalize to these canonical identities. `system` is the generic orchestration sender.
 
 ## Rate Limiting
 60 messages per 10-second window per connection. Excess messages silently dropped.
@@ -38,7 +40,7 @@ Two HTTP/WebSocket servers, both bound to `127.0.0.1` only.
 ## Dashboard Protocol (port 4001)
 - HTTP `GET /` — serves `public/index.html` and sets an HttpOnly, SameSite=Strict session cookie. Cross-origin requests are rejected.
 - Authenticated same-origin WebSocket connect → immediately receives `{type:"init", room, history:[...]}`
-- Receives broadcast `{type:"message", agent, level, message, timestamp, room}` for each new message
+- Receives broadcast `{type:"message", agent, level, message, timestamp, room, activityLabel?}` for each new message
 - Receives broadcast `{type:"lifecycle", event, timestamp, ...extra}` for room changes and lifecycle events
 
 ## Security
@@ -72,7 +74,7 @@ From the repository root:
 
 ```bash
 node services/agent-chat/client.js activity implementing "Building the feature"
-node services/agent-chat/client.js activity waiting "Need a decision on the design" compass
+node services/agent-chat/client.js activity waiting "Need a decision on the design" product_lead
 node services/agent-chat/client.js activity complete "Feature checks passed"
 ```
 
@@ -81,3 +83,5 @@ The optional `sendActivity(state, label, {agent, port, tokenFile})` export retur
 ## Workflow startup health
 
 `GET /health` identifies the live service with `{service:"forgeflow-agent-chat",pid:<process id>}` after the normal loopback Host/Origin/Fetch Metadata checks. It exposes no credential, room, history, or project path. The workflow-entry launcher checks this identity before reuse; the process id lets it publish the correct PID for `/agent-chat:off` even if concurrent entries race to start the service.
+
+Messages accept optional `activityLabel` context: trimmed, nonempty, at most 120 characters, with no control characters. This context belongs to the message and survives history, replay, and export; it is separate from the live `activity` state. Known legacy aliases normalize to canonical roles. Verifier (`verifier`) has the same transport support as other roles. Unknown roles remain rejected; `system` is reserved for generic orchestration.

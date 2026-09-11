@@ -17,8 +17,8 @@ HTTP control plane on `127.0.0.1:4002`. Bridges HTTP callers (shell scripts, age
 | Method | Path | Purpose |
 |--------|------|---------|
 | POST | `/room` | Switch active room — `{name: string}` matching `[a-z0-9-]{1,100}` |
-| POST | `/send` | Route chat message — `{agent, level, message}` |
-| POST | `/lifecycle` | Broadcast lifecycle event — `{event: string, data?: string}` |
+| POST | `/send` | Route chat message — `{agent, level, message, activityLabel?}` |
+| POST | `/lifecycle` | Broadcast lifecycle event — `{event: string, data?: string, agent?, state?, activityLabel?}` |
 | POST | `/verbosity` | Change verbosity threshold — `{level: "phase"|"decision"|"conversation"}` |
 | GET | `/health` | Unauthenticated liveness probe — returns `{ok:true}` |
 | GET | `/status` | Authenticated bridge state — returns connections, room, verbosity, uptime, queued count |
@@ -30,7 +30,7 @@ HTTP control plane on `127.0.0.1:4002`. Bridges HTTP callers (shell scripts, age
 | Field | Limit | Behaviour on exceed |
 |-------|-------|---------------------|
 | `event` (lifecycle) | 500 chars | 400 rejected |
-| `data` (lifecycle) | 2000 chars | 400 rejected |
+| Complete lifecycle message | 2000 UTF-16 code units, including `[lifecycle] `, event, separator, and data | 400 rejected before queueing; evidence is never truncated |
 | `message` (send) | 2000 chars | Silently truncated before validation |
 
 ## Verbosity Filter
@@ -48,7 +48,7 @@ Filtered sends return `{ok:true, filtered:true}` — not an error.
 - `pool.shutdown()` — graceful close, returns Promise
 
 ## Lifecycle Sender
-Lifecycle events always use agent `'fc'` as sender (hardcoded in `broadcastLifecycle()`).
+Lifecycle events without an explicit role use the `system` sender.
 
 ## Startup / Ready File
 - PID file: `/tmp/chat-bridge-<hash>.pid`
@@ -72,8 +72,14 @@ cd services/chat-bridge && node --import=tsx/esm bridge.ts
 
 ## Ember activity
 
-`POST /lifecycle` also accepts optional `agent` and `state`. Valid states are `idle`, `planning`, `researching`, `implementing`, `reviewing`, `testing`, `waiting`, `failed`, and `complete`. For example, `{event:"phase_start",agent:"compass",state:"planning",data:"Planning the feature"}` emits the existing lifecycle chat message plus structured activity. The state is not inferred from prose. The label comes from data (or event), capped at 160 characters. Omitting `agent` uses `fc`; omitting `state` preserves chat-only behavior.
+`POST /lifecycle` also accepts optional `agent` and `state`. Valid states are `idle`, `planning`, `researching`, `implementing`, `reviewing`, `testing`, `waiting`, `failed`, and `complete`. For example, `{event:"phase_start",agent:"product_lead",state:"planning",data:"Planning the feature"}` emits the existing lifecycle chat message plus structured activity. The state is not inferred from prose. The label comes from data (or event), capped at 160 characters. Omitting `agent` uses `system`; omitting `state` preserves chat-only behavior.
 
 `init-session.sh` emits `phase_start` on every workflow invocation, including reuse of a running bridge. Known command names explicitly report planning, researching, implementing, or reviewing. Unknown command names emit chat only. This is a phase-start integration: callers should send progress updates during long work, and explicit waiting/failure/completion when appropriate. Ember marks active reports stale after 90 seconds without updates.
 
 Workflow initialization now calls the shared dashboard launcher with `--workflow <command>`. It ensures the live service and reports a known phase on each entry while deduplicating browser tabs by host session. Unknown workflow names do not invent a phase.
+
+Messages accept optional `activityLabel` context: trimmed, nonempty, at most 120 characters, with no control characters. This context belongs to the message and survives history, replay, and export; it is separate from the live `activity` state. Known legacy aliases normalize to canonical roles. Verifier (`verifier`) has the same transport support as other roles. Unknown roles remain rejected; `system` is reserved for generic orchestration.
+
+## Profile registration
+
+`registerProfiles` is currently unused because the upstream has no profile endpoint. Each concurrent registration uses a five-second abort timeout, logs failure, and settles without throwing.

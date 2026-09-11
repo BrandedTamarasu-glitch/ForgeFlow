@@ -2,6 +2,8 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const assert = require('node:assert/strict');
+const { activeUnconflictedLearningCandidates } = require('./project-learning-conflicts');
 const { correctProjectLearning, parseArgs } = require('./correct-project-learning');
 const { recordProjectLearning, projectLearningId } = require('./record-project-learning');
 const { buildRollup, resolvedLearningCandidates } = require('./rollup-project-learnings');
@@ -9,6 +11,28 @@ const { buildRollup, resolvedLearningCandidates } = require('./rollup-project-le
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-correct-project-learning-'));
 const projectDir = path.join(tmp, '.forgeflow', 'Demo');
 const candidatesFile = path.join(projectDir, 'project-learning-candidates.jsonl');
+// These bytes represent pre-migration history, including the old saved handle.
+const historicalDir = path.join(tmp, '.forgeflow', 'Historical');
+fs.mkdirSync(historicalDir, { recursive: true });
+const historicalFile = path.join(historicalDir, 'project-learning-candidates.jsonl');
+const historical = { category: 'recommended-approach', learning: 'Use bound query parameters.' };
+const historicalId = 'plc_81f93f9e86d51f42';
+assert.equal(projectLearningId(historical), historicalId);
+const oldRetirement = { ...historical, source: 'Atlas', id: historicalId, status: 'retired' };
+assert.deepEqual(activeUnconflictedLearningCandidates([historical, oldRetirement]), []);
+assert.equal(resolvedLearningCandidates([historical, oldRetirement]).length, 1);
+const historicalBytes = `${JSON.stringify(historical)}\n`;
+fs.writeFileSync(historicalFile, historicalBytes);
+const historicalCorrection = correctProjectLearning({ projectDir: historicalDir, id: historicalId, replacement: 'Bind every query parameter.', write: true });
+assert.equal(historicalCorrection.retirement.id, historicalId);
+assert.equal(historicalCorrection.retirement.source, 'Atlas');
+assert.equal(historicalCorrection.replacement.source, 'Coordinator');
+const correctedBytes = fs.readFileSync(historicalFile, 'utf8');
+assert.ok(correctedBytes.startsWith(historicalBytes));
+const correctedHistory = correctedBytes.trim().split('\n').map(JSON.parse);
+assert.deepEqual(activeUnconflictedLearningCandidates(correctedHistory).map((entry) => entry.learning), ['Bind every query parameter.']);
+assert.throws(() => correctProjectLearning({ projectDir: historicalDir, id: historicalId, replacement: 'Another change.', write: true }), /already inactive/);
+assert.equal(fs.readFileSync(historicalFile, 'utf8'), correctedBytes);
 const original = {
   category: 'recommended-approach',
   learning: 'Use the old release path.',

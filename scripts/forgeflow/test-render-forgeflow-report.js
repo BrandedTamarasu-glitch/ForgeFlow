@@ -156,6 +156,23 @@ fs.writeFileSync(path.join(contextDir, 'latest', 'failure-digest.md'), [
 const now = new Date('2026-05-20T00:00:00.000Z');
 const cutoff = cutoffForPeriod('month', now);
 const metrics = collectMetrics(metricsRoot, cutoff);
+const mixedRecords = ['smith', 'Smith', 'builder', 'CustomReviewer'].flatMap((reviewer) => [
+  { ts: '2026-05-10T10:00:00.000Z', event: 'finding-overturned', detail: { overturned_reviewer: reviewer, finding_class: 'data' } },
+  { ts: '2026-05-10T10:00:00.000Z', event: 'verdict', detail: { reviewer, verdict: 'APPROVE' } },
+]);
+const mixedRoot = path.join(root, 'mixed-metrics');
+const mixedFile = path.join(mixedRoot, 'history', 'memory', 'forgeflow-metrics.jsonl');
+fs.mkdirSync(path.dirname(mixedFile), { recursive: true });
+const mixedBytes = `${mixedRecords.map((record) => JSON.stringify(record)).join('\n')}\n`;
+fs.writeFileSync(mixedFile, mixedBytes);
+const mixedSummary = collectMetrics(mixedRoot, cutoff);
+assert.equal(mixedSummary.false_positives.flagged.length, 1);
+assert.equal(mixedSummary.false_positives.flagged[0].reviewer, 'builder');
+assert.equal(mixedSummary.false_positives.flagged[0].count, 3);
+assert.equal(mixedSummary.verdicts.builder.APPROVE, 3);
+assert.equal(mixedSummary.verdicts.customreviewer.APPROVE, 1);
+assert.equal(mixedSummary.false_positives.by_reviewer_class['customreviewer|data'].count, 1);
+assert.equal(fs.readFileSync(mixedFile, 'utf8'), mixedBytes);
 const patterns = summarizePatternLog(patternsDir, cutoff, now);
 const report = buildReport({
   root,
@@ -375,7 +392,7 @@ try {
 
 const checks = [
   ['collects metrics files', metrics.files === 1 && metrics.commands['/review'] === 2 && metrics.commands['/review-auto'] === 2],
-  ['flags false positives', report.metrics.false_positives.flagged.length === 1 && report.metrics.false_positives.flagged[0].reviewer === 'smith'],
+  ['flags false positives', report.metrics.false_positives.flagged.length === 1 && report.metrics.false_positives.flagged[0].reviewer === 'builder'],
   ['summarizes pattern log', patterns.status === 'current' && patterns.totals.updates_applied === 2],
   ['includes context savings', report.context.summary.files === 1 && report.context.summary.percent_saved === 80],
   ['includes project trends', report.project_trends.code_map.trend.status === 'compared' && report.project_trends.freshness.status === 'current'],
@@ -389,7 +406,7 @@ const checks = [
   ['includes live drift when enabled', reportWithDrift.drift.status === 'missing' || reportWithDrift.drift.status === 'fail' || reportWithDrift.drift.status === 'pass'],
   ['records report log', report.report_history.recorded === true && fs.readFileSync(path.join(patternsDir, '.report-log.jsonl'), 'utf8').trim().split(/\r?\n/).length >= 2],
   ['computes report trend', report.report_history.trend.status === 'compared' && report.report_history.trend.invocation_delta === 3],
-  ['derives priorities', report.priorities.some((item) => item.includes('smith')) && report.priorities.some((item) => item.includes('latest failure digest'))],
+  ['derives priorities', report.priorities.some((item) => item.includes('builder')) && report.priorities.some((item) => item.includes('latest failure digest'))],
   ['renders markdown sections', markdown.includes('## 8. Project Trends') && markdown.includes('## 9. Priorities') && markdown.includes('Import gaps: attention') && markdown.includes('Latest insights: injected') && markdown.includes('Latest insights freshness: current') && markdown.includes('Latest failure digest: compact') && markdown.includes('Latest failure digest freshness: current') && markdown.includes('Latest failure digest triage: usable') && markdown.includes('FAIL report fixture')],
   ['cli json works', cliJson.metrics.false_positives.flagged.length === 1 && cliJson.report_history.recorded === true && cliJson.project_trends.refresh.check_status === 'pass' && cliJson.project_trends.failure_digest.status === 'compact' && cliJson.project_trends.import_gaps.status === 'attention'],
   ['invalid period exits usage', badPeriodExitCode === 2 && badPeriodMessage.includes('Invalid --period')],

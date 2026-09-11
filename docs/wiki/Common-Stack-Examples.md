@@ -24,9 +24,9 @@ npm test
 
 Agent emphasis:
 
-- Lumen for UX, accessibility, interaction states, and responsive layout
-- Warden for auth, API calls, client/server boundaries, and validation
-- Smith for data modeling and server-side logic
+- Designer for UX, accessibility, interaction states, and responsive layout
+- Guardian for auth, API calls, client/server boundaries, and validation
+- Builder for data modeling and server-side logic
 
 For UI-heavy changes, ask `/review` to include screenshots or route paths when available.
 
@@ -50,9 +50,9 @@ npm test
 
 Agent emphasis:
 
-- Warden for auth, input validation, rate limits, secrets, and external integrations
-- Smith for service decomposition, database access, error handling, and testability
-- Arbiter for tradeoffs when security and implementation simplicity conflict
+- Guardian for auth, input validation, rate limits, secrets, and external integrations
+- Builder for service decomposition, database access, error handling, and testability
+- Architect for tradeoffs when security and implementation simplicity conflict
 
 For webhook or job processing work, explicitly mention retry behavior and idempotency in `/consult`.
 
@@ -76,9 +76,9 @@ mypy .
 
 Agent emphasis:
 
-- Warden for auth, permissions, request validation, dependency risk, and secret handling
-- Smith for module boundaries, ORM usage, migrations, and test design
-- Compass for requirements coverage when behavior is policy-heavy
+- Guardian for auth, permissions, request validation, dependency risk, and secret handling
+- Builder for module boundaries, ORM usage, migrations, and test design
+- Product Lead for requirements coverage when behavior is policy-heavy
 
 For Django, include migrations and permission classes in the review scope. For FastAPI, include Pydantic models, dependencies, and route handlers together.
 
@@ -102,9 +102,9 @@ bin/rails db:migrate:status
 
 Agent emphasis:
 
-- Smith for ActiveRecord associations, migrations, callbacks, and transaction boundaries
-- Warden for authorization, strong parameters, session handling, and sensitive logs
-- Atlas for rollout sequencing when migrations and backfills are involved
+- Builder for ActiveRecord associations, migrations, callbacks, and transaction boundaries
+- Guardian for authorization, strong parameters, session handling, and sensitive logs
+- Coordinator for rollout sequencing when migrations and backfills are involved
 
 For migrations, ask `/review` to check rollback safety, deploy order, and backfill behavior.
 
@@ -128,9 +128,9 @@ pnpm -r test
 
 Agent emphasis:
 
-- Atlas for shard ownership, sequencing, and cross-package dependencies
-- Arbiter for integration decisions between packages
-- Smith, Warden, and Lumen for their domain-specific slices
+- Coordinator for shard ownership, sequencing, and cross-package dependencies
+- Architect for integration decisions between packages
+- Builder, Guardian, and Designer for their domain-specific slices
 
 For large changes, build context packets first:
 
@@ -160,9 +160,9 @@ git diff --check
 
 Agent emphasis:
 
-- Compass for requirement clarity and user intent
-- Atlas for docs completeness and consistency
-- Lumen only when the change affects user-facing UI or visual docs
+- Product Lead for requirement clarity and user intent
+- Coordinator for docs completeness and consistency
+- Designer only when the change affects user-facing UI or visual docs
 
 Docs-only changes often route to `skip-mode` or `thin-mode`. That is expected.
 

@@ -65,4 +65,16 @@ if (failed.length > 0) {
   process.exit(1);
 }
 
+
+const assert = require('assert/strict');
+const mixed = { ...record, review: { ...record.review, agents_used: ['Smith', 'fc', 'builder_reviewer', 'Compass', 'product_lead'] } };
+const before = JSON.stringify(mixed);
+assert.deepEqual(summarize([mixed]).agents, { builder: 1, product_lead: 1 });
+assert.equal(JSON.stringify(mixed), before);
+const stored = JSON.parse(fs.readFileSync(outFile, 'utf8'));
+assert.ok(stored.review.agents_used.includes('builder'));
+assert.ok(!stored.review.agents_used.includes('smith'));
+
+assert.equal(stored.review.verifier_decisions[0].reviewer, 'guardian');
+
 console.log('review outcome: ok');

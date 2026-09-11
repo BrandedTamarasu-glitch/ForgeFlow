@@ -22,7 +22,7 @@ assert.ok(result.branches.every((branch) => branch.immutable_constraints[0] === 
 assert.ok(result.branches.every((branch) => branch.isolation_contract.some((line) => line.includes('Do not communicate'))));
 assert.ok(result.branches.every((branch) => branch.isolation_contract.some((line) => line.includes('without ranking'))));
 assert.deepStrictEqual(result.critic.required_fields, CRITIC_FIELDS);
-assert.ok(result.critic.input_contract.includes('Atlas evidence'));
+assert.ok(result.critic.input_contract.includes('Coordinator evidence'));
 assert.ok(result.critic.input_contract.includes('may flow back into a branch'));
 assert.ok(CRITIC_FIELDS.every((field) => result.critic.candidate_contract[field]));
 assert.deepStrictEqual(result.critic.overall_required, [

@@ -24,13 +24,13 @@ For the normal workflow only, before other work run:
 scripts/forgeflow/ensure-forgeflow-state.sh
 ```
 
-Route selection must happen before this command. Divergent research is read-only: do not initialize state, build memory context, emit telemetry, or write any project file. Existing context may be read only for the independent Atlas evidence lane and later Compass critic.
+Route selection must happen before this command. Divergent research is read-only: do not initialize state, build memory context, emit telemetry, or write any project file. Existing context may be read only for the independent Coordinator evidence lane and later Product Lead critic.
 
 Default workflow:
 1. Load `.forgeflow/<project-name>/current-discussion.md` if present, plus any focused user questions.
 2. Build compact local memory context with `scripts/forgeflow/build-memory-context.js` when available, then gather `CONTEXT.md` files and other narrowly relevant local context.
-3. Spawn `compass_researcher` and `atlas_early` in parallel.
-4. Synthesize Compass's recommendations with Atlas's codebase and memory findings.
+3. Spawn `product_lead_researcher` and `coordinator_early` in parallel.
+4. Synthesize Product Lead's recommendations with Coordinator's codebase and memory findings.
 5. Save the result to `.forgeflow/<project-name>/current-research.md` when appropriate.
 
 `--diverge` workflow:
@@ -41,7 +41,7 @@ Default workflow:
    - `3am-on-call`: optimize for diagnosis, containment, and safe recovery by a tired on-call engineer.
 3. Give each branch exactly the task, immutable constraints, its single frame, and the required candidate format. Keep lanes isolated. Treat frames as temporary reasoning instructions, not permanent agent roles.
 4. Make missing or failed lanes visible. Retry each failed lane once; if it still fails, continue with the remaining lanes and label the result degraded. Never invent branch output.
-5. Independently gather normal codebase and memory evidence with `atlas_early`; never expose it to the branches. After all lanes settle, give their outputs to a separate `compass_researcher` critic together with the normal discussion, compact memory, Atlas evidence, and accessibility context. The critic must return:
+5. Independently gather normal codebase and memory evidence with `coordinator_early`; never expose it to the branches. After all lanes settle, give their outputs to a separate `product_lead_researcher` critic together with the normal discussion, compact memory, Coordinator evidence, and accessibility context. The critic must return:
    - clusters by underlying approach and duplicated/shared assumptions
    - a shortlist of two to four candidates
    - for every shortlisted candidate: strength, attraction, hidden trap with its concrete mechanism, disconfirming test, salvage condition, and first implementation step
@@ -49,7 +49,7 @@ Default workflow:
    - a load-bearing risk, first falsification experiment, and final recommendation
 6. Raw lane prompts and outputs are ephemeral. Do not write them to `current-research.md`, project memory, memory-context inputs, `CONTEXT.md`, or any indexed artifact. Present the critic's converged decision content to the user without saving it; the entire divergent route is no-write.
 
-On Claude, use the corresponding `compass-research`/`atlas-early` agents; on Codex, use `compass_researcher`/`atlas_early`. Preserve the isolation and critic boundaries on both hosts.
+On Claude, use the corresponding `product-lead-research`/`coordinator-early` agents; on Codex, use `product_lead_researcher`/`coordinator_early`. Preserve the isolation and critic boundaries on both hosts.
 
 Output should include:
 - options considered
@@ -59,3 +59,18 @@ Output should include:
 - clear recommendation
 
 For `--diverge`, also include route rationale, lane status, clusters, the structured trap ledger, the non-obvious viable candidate, and the falsification experiment. Mark degraded results prominently.
+
+## Writing for CLI output
+
+Apply George Orwell's six rules to progress updates, agent reports, and final summaries:
+
+1. Never use a metaphor, simile, or other figure of speech which you are used to seeing in print.
+2. Never use a long word where a short one will do.
+3. If it is possible to cut a word out, always cut it out.
+4. Never use the passive where you can use the active.
+5. Never use a foreign phrase, a scientific word, or a jargon word if you can think of an everyday English equivalent.
+6. Break any of these rules sooner than say anything outright barbarous.
+
+Lead with the result or action. Use short paragraphs or bullets that scan well in a terminal. Cut stock phrases, repeated summaries, and persona banter. These rules take precedence over persona style and sample prose.
+
+Keep facts, uncertainty, risks, and required evidence intact. Preserve exact commands, code, paths, identifiers, error text, schema keys, and verdict labels. Keep required report sections and machine-readable formats; apply the rules to prose within them. Use a technical term when it is the clearest accurate choice, and explain it when needed. Before sending, cut words that add no meaning without making the result unclear or unnatural.

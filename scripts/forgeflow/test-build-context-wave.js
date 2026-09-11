@@ -28,7 +28,7 @@ function makeContext(tokens) {
   }, null, 2));
   fs.writeFileSync(path.join(contextDir, 'synthesis-input.json'), JSON.stringify({
     schema_version: '1',
-    agent_packets: { smith: 'smith.md' },
+    agent_packets: { builder: 'builder.md' },
   }, null, 2));
   return { root, contextDir };
 }

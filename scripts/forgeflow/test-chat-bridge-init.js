@@ -17,6 +17,7 @@ async function main() {
   const files = ['pid', 'token'].map(ext => `/tmp/chat-bridge-${hash}.${ext}`);
   const ownedFiles = [];
   const events = [];
+  const messages = [];
   const server = http.createServer((req, res) => {
     let body = '';
     req.on('data', chunk => { body += chunk; });
@@ -24,6 +25,7 @@ async function main() {
       if (req.url !== '/health') {
         assert.equal(req.headers['x-forgeflow-token'], 'fixture-only');
         if (req.url === '/lifecycle') events.push(JSON.parse(body));
+        if (req.url === '/send') messages.push(JSON.parse(body));
       }
       res.writeHead(200, { 'Content-Type': 'application/json' }).end('{"ok":true}');
     });
@@ -37,7 +39,7 @@ async function main() {
     ownedFiles.push(files[1]);
     await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
     const script = path.resolve(__dirname, '../../services/chat-bridge/init-session.sh');
-    for (const command of ['plan', 'implement', 'quick', 'aegis-verify', 'custom-command']) {
+    for (const command of ['plan', 'implement', 'quick', 'verifier-verify', 'aegis-verify', 'custom-command']) {
       await new Promise((resolve, reject) => {
         const child = spawn('bash', ['-c', 'source "$1" "$2" ""', 'ember-test', script, command], {
           cwd: root, env: { ...process.env, FORGEFLOW_DASHBOARD_AUTO_OPEN: 'off', CHAT_BRIDGE_PORT: String(server.address().port) }, stdio: 'pipe', timeout: 5000,
@@ -50,10 +52,27 @@ async function main() {
       { event: 'phase_start', data: 'plan', state: 'planning' },
       { event: 'phase_start', data: 'implement', state: 'implementing' },
       { event: 'phase_start', data: 'quick', state: 'planning' },
+      { event: 'phase_start', data: 'verifier-verify', state: 'reviewing' },
       { event: 'phase_start', data: 'aegis-verify', state: 'reviewing' },
       { event: 'phase_start', data: 'custom-command' },
     ]);
-    console.log('Bridge reuse reports each known phase and leaves unknown commands without an activity state.');
+    for (const sender of ['csend', 'chat-send.sh']) {
+      for (const context of [[], ['Backend review'], ['']]) {
+        await new Promise((resolve, reject) => {
+          const child = spawn('bash', [path.resolve(__dirname, '../../services/chat-bridge', sender), 'smith', 'decision', 'Smith: <error>\n  exact bytes', ...context], {
+            cwd: root, env: { ...process.env, TOKEN_FILE: files[1], CHAT_BRIDGE_PORT: String(server.address().port) }, stdio: 'pipe', timeout: 5000,
+          });
+          child.on('error', reject); child.on('exit', code => code === 0 ? resolve() : reject(new Error(`sender exit ${code}`)));
+        });
+      }
+    }
+    assert.equal(messages.length, 6);
+    for (let index = 0; index < messages.length; index++) {
+      assert.equal(messages[index].agent, 'smith');
+      assert.equal(messages[index].message, 'Smith: <error>\n  exact bytes');
+      assert.equal(messages[index].activityLabel, [undefined, 'Backend review', ''][index % 3]);
+    }
+    console.log('Bridge reuse and shell senders preserve known phases, message bytes, and explicit context.');
   } finally {
     await new Promise(resolve => server.close(resolve));
     for (const file of ownedFiles) { try { fs.unlinkSync(file); } catch (err) { if (err.code !== 'ENOENT') throw err; } }

@@ -13,9 +13,9 @@ allowed-tools:
   - AskUserQuestion
 ---
 <objective>
-Execute parallel implementation using the Forgeflow team. Each agent writes code in their domain following the Implementation Brief produced by `/consult`. Compass designs validation tests in parallel. Atlas coordinates. Arbiter oversees integration.
+Execute parallel implementation using the Forgeflow team. Each agent writes code in their domain following the Implementation Brief produced by `/consult`. Product Lead designs validation tests in parallel. Coordinator coordinates. Architect oversees integration.
 
-The Forgeflow team: `smith-implement`, `warden-implement`, `lumen-implement` (implementation) + `compass-implement` (validation tests) + `atlas-implement` (coordination) → `arbiter-implement` (integration check).
+The Forgeflow team: `builder-implement`, `guardian-implement`, `designer-implement` (implementation) + `product-lead-implement` (validation tests) + `coordinator-implement` (coordination) → `architect-implement` (integration check).
 </objective>
 
 <context>
@@ -27,9 +27,9 @@ $ARGUMENTS — Optional. Can be:
 
 <process>
 
-## Step 1: Load the Implementation Brief and Compass's context
+## Step 1: Load the Implementation Brief and Product Lead's context
 
-Check for existing brief and Compass's prior phase outputs:
+Check for existing brief and Product Lead's prior phase outputs:
 ```bash
 PROJECT_NAME=$(basename "$(pwd)")
 FORGEFLOW_DIR=".forgeflow/${PROJECT_NAME}"
@@ -61,7 +61,7 @@ Running notes for decisions, spec gaps, tradeoffs, deviations, follow-ups, and v
 
 - Artifact: .forgeflow/<project-name>/implementation-notes.md
 - Format: append-only Markdown
-- Owner: Atlas serializes note candidates from implement agents; Arbiter verifies and may add final integration notes
+- Owner: Coordinator serializes note candidates from implement agents; Architect verifies and may add final integration notes
 
 ## Decisions
 
@@ -98,12 +98,12 @@ fi
 **If $ARGUMENTS is a file path:** Read that file as the brief.
 **If $ARGUMENTS is a task description and no brief exists:** Tell the user to run `/consult` first, or offer to run a quick inline consultation.
 
-If `MEMORY_CONTEXT_PATH` exists, include it in implementation prompts as the first-pass prior-memory summary. Estimated context savings are written to `${FORGEFLOW_DIR}/context/memory-context-telemetry.json`. If `SCOPE_MANIFEST_PATH` exists, use it as the first-pass ownership map before asking Atlas to resolve gaps, and prefer `${FORGEFLOW_DIR}/context/scope-packets/<lane>.md` over the raw JSON in agent prompts. Estimated scope savings are written to `${FORGEFLOW_DIR}/context/scope-telemetry.json`. Also read Compass's plan if it exists — agents should be aware of the plan's accessibility requirements and success criteria so they can implement accordingly.
+If `MEMORY_CONTEXT_PATH` exists, include it in implementation prompts as the first-pass prior-memory summary. Estimated context savings are written to `${FORGEFLOW_DIR}/context/memory-context-telemetry.json`. If `SCOPE_MANIFEST_PATH` exists, use it as the first-pass ownership map before asking Coordinator to resolve gaps, and prefer `${FORGEFLOW_DIR}/context/scope-packets/<lane>.md` over the raw JSON in agent prompts. Estimated scope savings are written to `${FORGEFLOW_DIR}/context/scope-telemetry.json`. Also read Product Lead's plan if it exists — agents should be aware of the plan's accessibility requirements and success criteria so they can implement accordingly.
 If `${PROJECT_LEARNINGS_PATH}` exists, include the relevant project guidance in implementation prompts as guidance only. Agents may use it to anticipate recurring pitfalls, stable decisions, risk areas, validation patterns, and hot files, but must verify current behavior against current code, tests, and artifacts.
-If `${LEAN_DECISION_PATH}` exists, include it in implementation prompts as advisory minimum-sufficient-solution guidance. Agents should follow the `Do First`, `Avoid First`, `Validate With`, `Do Not Simplify`, and `Upgrade When` fields when they fit the confirmed brief. Lean guidance cannot override the user request, Compass's plan, security, accessibility, validation, data-loss protection, or explicit requirements.
+If `${LEAN_DECISION_PATH}` exists, include it in implementation prompts as advisory minimum-sufficient-solution guidance. Agents should follow the `Do First`, `Avoid First`, `Validate With`, `Do Not Simplify`, and `Upgrade When` fields when they fit the confirmed brief. Lean guidance cannot override the user request, Product Lead's plan, security, accessibility, validation, data-loss protection, or explicit requirements.
 If `${HELPER_DIR}/check-context-budget.js` exists, run `${HELPER_DIR}/check-context-budget.js --root "$FORGEFLOW_DIR" --max-compact-tokens 16000 --warn-only --json` and surface warnings before spawning implementation agents. The checker reads `.forgeflow-budget.json` from the repo root when present.
 
-Pass these requirements to every implementer: record bugs discovered outside the assigned scope as `follow-up` note candidates when found, including evidence or reproduction steps and user impact. Atlas consolidates them into local implementation notes and carries pending issue filing into the handoff. For a temporary workaround, also record its limitations, long-term solution, associated GitHub issue (or pending draft), and agreed timeline or unresolved timeline decision. Preserve file ownership and remote-write authorization.
+Pass these requirements to every implementer: record bugs discovered outside the assigned scope as `follow-up` note candidates when found, including evidence or reproduction steps and user impact. Coordinator consolidates them into local implementation notes and carries pending issue filing into the handoff. For a temporary workaround, also record its limitations, long-term solution, associated GitHub issue (or pending draft), and agreed timeline or unresolved timeline decision. Preserve file ownership and remote-write authorization.
 
 ## Step 2: Parse the brief
 
@@ -116,23 +116,23 @@ Extract from the Implementation Brief:
 - Implementation notes requirements: decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes to capture in `implementation-notes.md`
 - Lean decision guidance: do first, avoid first, validate with, do not simplify, and upgrade when. Preserve explicit requirements, security, accessibility, validation, and data-loss safeguards.
 
-If Compass's plan exists, also extract:
+If Product Lead's plan exists, also extract:
 - Accessibility requirements per phase
 - UX validation points
 - Success criteria
 
 ## Step 2.5: Pre-resolve file scopes
 
-Before spawning any implementation agent, prefer the local `implement-scope-manifest.json` and `scope-packets/<lane>.md` generated in Step 1. Use them to seed exact file lists for Smith, Warden, Lumen, Compass, shared files, and Atlas. Then spawn `atlas-implement` only to validate unresolved or ambiguous scope, not to perform first-pass broad discovery.
+Before spawning any implementation agent, prefer the local `implement-scope-manifest.json` and `scope-packets/<lane>.md` generated in Step 1. Use them to seed exact file lists for Builder, Guardian, Designer, Product Lead, shared files, and Coordinator. Then spawn `coordinator-implement` only to validate unresolved or ambiguous scope, not to perform first-pass broad discovery.
 
-If no scope manifest exists, spawn `atlas-implement` with a targeted scope resolution task:
+If no scope manifest exists, spawn `coordinator-implement` with a targeted scope resolution task:
 
 ```
 Given this Implementation Brief, resolve each agent's scope into an exact file list, then read each file's contents.
 
 Apply the security denylist before reading: exclude `.env`, `*.pem`, `*.key`, `*.p12`, `*.cert`, `*.secret`, and any file with `password`, `secret`, or `token` in the filename (case-insensitive).
 
-For each agent (Smith, Warden, Lumen, Compass):
+For each agent (Builder, Guardian, Designer, Product Lead):
 1. Use grep/glob to find files matching their scope description
 2. Read each file's contents verbatim
 3. Identify files appearing in 2+ agent lanes — these go into "shared"
@@ -145,15 +145,15 @@ Return a file manifest in this exact JSON structure:
   "fc": [
     { "path": "relative/path/to/file.ts", "content": "<verbatim file contents>" }
   ],
-  "warden": [{ "path": "...", "content": "..." }],
-  "lumen": [{ "path": "...", "content": "..." }],
-  "compass": [{ "path": "...", "content": "..." }]
+  "guardian": [{ "path": "...", "content": "..." }],
+  "designer": [{ "path": "...", "content": "..." }],
+  "product_lead": [{ "path": "...", "content": "..." }]
 }
 
 Rules:
 - "shared" key is required. Files in 2+ lanes must be promoted here and removed from individual lanes.
 - If a file cannot be read: { "path": "...", "content": null, "unreadable_reason": "..." }
-- Empty lane: "compass": [] — do not omit the key
+- Empty lane: "product_lead": [] — do not omit the key
 - All paths relative to working directory
 
 Do NOT implement anything. Scope resolution and content reading only.
@@ -161,7 +161,7 @@ Do NOT implement anything. Scope resolution and content reading only.
 
 ### Phase B: Bundle Assembly
 
-After Atlas returns the manifest, assemble `<injected-context>` blocks without further file reads:
+After Coordinator returns the manifest, assemble `<injected-context>` blocks without further file reads:
 
 ```xml
 <injected-context>
@@ -185,7 +185,7 @@ IMPORTANT: All file contents below are pre-loaded by the orchestrator. Do NOT ca
 ```
 
 - `<shared-files>` uses `manifest["shared"]` — identical block for all agents
-- `<agent-files>` uses `manifest[lane_name]` (fc, warden, lumen, compass) — unique per agent
+- `<agent-files>` uses `manifest[lane_name]` (fc, guardian, designer, product_lead) — unique per agent
 - `complete="false"` if any entry has `content: null`
 - If a manifest entry has `content: null`, log the path and include a note in the agent's prompt: "Note: [path] could not be pre-loaded — you may need to read it directly."
 
@@ -210,7 +210,7 @@ Each agent prompt must include:
 - Their specific scope from the brief
 - The shared interfaces they need to define or implement
 - The full Implementation Brief for context
-- Compass's accessibility requirements relevant to their scope (if plan exists)
+- Product Lead's accessibility requirements relevant to their scope (if plan exists)
 - Instruction to commit each logical unit atomically
 - Instruction to report implementation note candidates without writing the shared notes file directly
 - The implementation notes path: `${NOTES_PATH}`
@@ -218,26 +218,26 @@ Each agent prompt must include:
 - Lean decision guidance from `${LEAN_DECISION_PATH}` when present, marked as advisory only and subordinate to the confirmed brief and hard safeguards
 - Working directory path
 
-Spawn `atlas-implement` alongside to coordinate and track. Atlas owns serializing note candidates into `${NOTES_PATH}` so parallel implementers do not race on the same file.
+Spawn `coordinator-implement` alongside to coordinate and track. Coordinator owns serializing note candidates into `${NOTES_PATH}` so parallel implementers do not race on the same file.
 
 ## Step 4: Verify Wave 1, spawn Wave 2
 
 After Wave 1 completes:
 1. Read the files created by Wave 1 agents
-2. Hand Smith/Warden/Lumen/Compass/Atlas reports from the completed wave back to `atlas-implement` with this instruction:
+2. Hand Builder/Guardian/Designer/Product Lead/Coordinator reports from the completed wave back to `coordinator-implement` with this instruction:
    "Extract every `Implementation Notes Candidates` item from the completed agent reports. Also add concise note candidates for durable project patterns that surfaced during this wave: repeated pitfalls, stable decisions, validation patterns, hot files/modules, or follow-ups likely to matter in the next work item. When a simpler path is chosen from lean guidance, include the known ceiling and upgrade trigger as a tradeoff note. Prefer `${HELPER_DIR}/record-implementation-notes.js --lean-decision "${LEAN_DECISION_JSON_PATH}" --project-dir "${FORGEFLOW_DIR}" --json` when available, then append any additional entries under the matching category with a temporary JSON input. Do not rewrite existing notes. Then refresh `${PROJECT_LEARNINGS_PATH}` with `${HELPER_DIR}/show-project-learnings.js --project-dir "${FORGEFLOW_DIR}" --json` when the helper is available. Return the entries appended, entries rejected, final notes path, and refreshed project learnings path."
 3. Verify shared interfaces were defined correctly
 4. If issues found, fix before proceeding
 
 Spawn Wave 2 agents **in parallel** — they can work simultaneously now that foundations exist.
 
-Also spawn `compass-implement` in parallel with Wave 2. Compass designs validation tests while the implementation agents write production code. Compass's prompt must include:
+Also spawn `product-lead-implement` in parallel with Wave 2. Product Lead designs validation tests while the implementation agents write production code. Product Lead's prompt must include:
 - The full Implementation Brief
-- Compass's plan (if it exists) — especially success criteria and accessibility requirements
+- Product Lead's plan (if it exists) — especially success criteria and accessibility requirements
 - Wave 1 outputs (file paths and interfaces) so tests can reference real code
 - The project's test infrastructure (Playwright installed? Jest/Vitest? Test directory conventions?)
 
-> **File assignment constraint:** Arbiter's Implementation Brief must guarantee that no two agents are assigned the same file within a single wave. If two agents need to modify the same file, either sequence them across waves or have one agent own the file with the other providing requirements. Compass writes to the test directory only — no conflict with implementation agents. Atlas should verify this constraint before wave execution begins.
+> **File assignment constraint:** Architect's Implementation Brief must guarantee that no two agents are assigned the same file within a single wave. If two agents need to modify the same file, either sequence them across waves or have one agent own the file with the other providing requirements. Product Lead writes to the test directory only — no conflict with implementation agents. Coordinator should verify this constraint before wave execution begins.
 
 Each Wave 2 agent prompt must include:
 - `Context is pre-loaded in <injected-context> below. Do not re-read those files.` at the top of the task description
@@ -249,7 +249,7 @@ Each Wave 2 agent prompt must include:
 
 ## Step 4.5: Consolidate implementation notes
 
-After Wave 2 and Compass complete, hand all Wave 2 agent reports and Compass's validation plan to `atlas-implement` before Arbiter runs:
+After Wave 2 and Product Lead complete, hand all Wave 2 agent reports and Product Lead's validation plan to `coordinator-implement` before Architect runs:
 
 ```
 Implementation note consolidation checkpoint.
@@ -274,46 +274,46 @@ After notes are appended, refresh `{project_learnings_path}` with the project le
 {helper_dir}/show-project-learnings.js --project-dir "{forgeflow_dir}" --json
 ```
 
-=== Smith ===
-{smith_report}
+=== Builder ===
+{builder_report}
 
 === JARED ===
-{warden_report}
+{guardian_report}
 
 === STEVEY ===
-{lumen_report}
+{designer_report}
 
 === EMILY ===
-{compass_test_plan}
+{product_lead_test_plan}
 
 Return the entries appended, entries rejected, final notes path, refreshed project learnings path, and the top recommended next-work guidance if one was produced.
 ```
 
-Read the updated `${NOTES_PATH}` and `${PROJECT_LEARNINGS_PATH}` before spawning Arbiter.
+Read the updated `${NOTES_PATH}` and `${PROJECT_LEARNINGS_PATH}` before spawning Architect.
 
 ## Step 5: Post-implementation integration check
 
-After all waves complete, spawn `arbiter-implement`:
+After all waves complete, spawn `architect-implement`:
 
 ```
 Implementation complete. Here are the agent reports:
 
 Working directory: {cwd}
 
-=== Smith ===
-{smith_report}
+=== Builder ===
+{builder_report}
 
 === JARED ===
-{warden_report}
+{guardian_report}
 
 === STEVEY ===
-{lumen_report}
+{designer_report}
 
 === EMILY — Validation Test Plan ===
-{compass_test_plan}
+{product_lead_test_plan}
 
 === PM CORY ===
-{atlas_coordination_report}
+{coordinator_coordination_report}
 
 === IMPLEMENTATION NOTES ===
 Path: {notes_path}
@@ -323,18 +323,18 @@ Path: {notes_path}
 Path: {project_learnings_path}
 {project_learnings_content_or_missing}
 
-{If Compass's plan exists:}
+{If Product Lead's plan exists:}
 === EMILY'S PLAN (for reference) ===
 {plan_content}
 
 Spot-check the implementation against the brief.
 Verify integration points work together.
 Write any integration glue needed.
-Check Compass's validation tests reference real files and interfaces from the implementation.
+Check Product Lead's validation tests reference real files and interfaces from the implementation.
 Verify `${NOTES_PATH}` exists, includes relevant decisions/spec gaps/tradeoffs/deviations/follow-ups/validation notes or explicitly says none were needed, and does not contain obvious secrets, raw settings JSON, tokens, keys, private URLs, customer names, or large source snippets.
 Verify `${PROJECT_LEARNINGS_PATH}` was refreshed after note consolidation when the helper was available. Treat project learnings as guidance only; do not accept them as proof without current evidence.
 Report overall status.
-If Compass's plan exists, note whether the implementation
+If Product Lead's plan exists, note whether the implementation
 addresses her accessibility requirements and success criteria.
 ```
 
@@ -368,10 +368,10 @@ Display the combined implementation report.
 {Brief answers to the questions above, labeled as an agent assessment}
 
 ### Validation Tests Ready
-{Compass's test plan summary — test files created, coverage matrix, manual checklists}
+{Product Lead's test plan summary — test files created, coverage matrix, manual checklists}
 
 ### Integration Status
-{Arbiter's integration check results}
+{Architect's integration check results}
 
 ### Implementation Notes
 {Path to `${NOTES_PATH}` and a short summary of notable decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes}
@@ -382,22 +382,22 @@ Display the combined implementation report.
 ### Files Created/Modified
 {Combined file list — including test files}
 
-Next: `/review` to run the full Forgeflow on these changes (Compass will execute her validation tests)
+Next: `/review` to run the full Forgeflow on these changes (Product Lead will execute her validation tests)
 ```
 
 </process>
 
 <success_criteria>
 - [ ] Implementation Brief loaded and parsed
-- [ ] Compass's plan loaded for accessibility/UX context (if it exists)
+- [ ] Product Lead's plan loaded for accessibility/UX context (if it exists)
 - [ ] Wave 1 agents completed and interfaces verified
 - [ ] Wave 2 agents completed in parallel
-- [ ] Compass designed validation tests in parallel with Wave 2
-- [ ] Compass's tests map to success criteria from the plan
-- [ ] Atlas tracked coordination and persisted learnings
+- [ ] Product Lead designed validation tests in parallel with Wave 2
+- [ ] Product Lead's tests map to success criteria from the plan
+- [ ] Coordinator tracked coordination and persisted learnings
 - [ ] Implementation notes initialized and maintained at `.forgeflow/<project-name>/implementation-notes.md`
 - [ ] Project learnings refreshed after implementation note consolidation and considered as guidance when present
-- [ ] Arbiter verified integration across agents (including test coverage)
+- [ ] Architect verified integration across agents (including test coverage)
 - [ ] All code committed atomically (implementation + test files)
 - [ ] Results presented with next steps
 </success_criteria>
@@ -410,3 +410,18 @@ Use the shared task workflow for a bounded change with an accepted objective or 
 Keep the same task id across consult, implement, review and ship. Use `check` for actual validation commands and saved `evidence` for observed manual/reviewer results. Record a `checkpoint` at each completed phase and before interruption, including the actual host/session identity when available. A saved plan, successful build, or reviewer verdict alone must not mark every criterion verified. Waivers require explicit user intent and a reason.
 
 Before reporting completion or preparing a shipping handoff, read `status --root <project-root> --task <id>`. Stale/missing/failed criteria and pending actions remain visible. Reconcile interrupted actions from actual evidence, then use `resume`; never silently replay unknown work. Legacy work without task records stays supported but has no source-bound task completion claim. All remote authorization rules above still apply.
+
+## Writing for CLI output
+
+Apply George Orwell's six rules to progress updates, agent reports, and final summaries:
+
+1. Never use a metaphor, simile, or other figure of speech which you are used to seeing in print.
+2. Never use a long word where a short one will do.
+3. If it is possible to cut a word out, always cut it out.
+4. Never use the passive where you can use the active.
+5. Never use a foreign phrase, a scientific word, or a jargon word if you can think of an everyday English equivalent.
+6. Break any of these rules sooner than say anything outright barbarous.
+
+Lead with the result or action. Use short paragraphs or bullets that scan well in a terminal. Cut stock phrases, repeated summaries, and persona banter. These rules take precedence over persona style and sample prose.
+
+Keep facts, uncertainty, risks, and required evidence intact. Preserve exact commands, code, paths, identifiers, error text, schema keys, and verdict labels. Keep required report sections and machine-readable formats; apply the rules to prose within them. Use a technical term when it is the clearest accurate choice, and explain it when needed. Before sending, cut words that add no meaning without making the result unclear or unnatural.

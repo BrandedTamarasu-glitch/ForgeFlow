@@ -13,9 +13,9 @@ allowed-tools:
   - AskUserQuestion
 ---
 <objective>
-Run the relevant Forgeflow specialists in consultation mode before implementation begins. Selected agents analyze the task from their specialty, then Arbiter synthesizes an Implementation Brief that guides implementation. If Compass's plan exists from a prior `/plan` run, it serves as the input for consultation.
+Run the relevant Forgeflow specialists in consultation mode before implementation begins. Selected agents analyze the task from their specialty, then Architect synthesizes an Implementation Brief that guides implementation. If Product Lead's plan exists from a prior `/plan` run, it serves as the input for consultation.
 
-Available specialists: `smith-consult`, `warden-consult`, `lumen-consult`, `atlas-consult`. Select the relevant set, then use `arbiter-consult` for synthesis.
+Available specialists: `builder-consult`, `guardian-consult`, `designer-consult`, `coordinator-consult`. Select the relevant set, then use `architect-consult` for synthesis.
 
 > **Recommended flow:** `/discuss` → `/research` → `/plan` → `/consult` → `/implement` → `/review`
 > You can start directly at `/consult` for a bounded task. Use earlier phases when requirements, research, or planning decisions need them.
@@ -26,7 +26,7 @@ $ARGUMENTS — Description of what to build. Can be:
 - Freeform text: "Add user authentication with OAuth"
 - File reference: "implement the changes described in docs/spec.md"
 - Task reference: "the feature from issue #42"
-- Empty: if Compass's plan exists at `.forgeflow/<project-name>/current-plan.md`, use that as input
+- Empty: if Product Lead's plan exists at `.forgeflow/<project-name>/current-plan.md`, use that as input
 
 $ARGUMENTS is provided by the user after the slash command (e.g., `/consult Add user auth`). The command runner injects it as the argument string.
 </context>
@@ -47,7 +47,7 @@ If no CONTEXT.md exists, read relevant files to understand the current codebase 
 - Database schema if relevant
 - Frontend component structure if relevant
 
-Also check for Compass's prior phase outputs:
+Also check for Product Lead's prior phase outputs:
 ```bash
 PROJECT_NAME=$(basename "$(pwd)")
 FORGEFLOW_DIR=".forgeflow/${PROJECT_NAME}"
@@ -84,10 +84,10 @@ if [ -x "${HELPER_DIR}/render-lean-decision.js" ]; then
 fi
 ```
 
-If `MEMORY_CONTEXT_PATH` exists, use it as the first-pass memory summary for all consultation agents. Estimated context savings are written to `${FORGEFLOW_DIR}/context/memory-context-telemetry.json`. If `current-plan.md` exists, read it — this is Compass's implementation plan and should serve as the primary input for consultation. Read discussion and research files only when the memory summary is insufficient or exact source text is needed.
+If `MEMORY_CONTEXT_PATH` exists, use it as the first-pass memory summary for all consultation agents. Estimated context savings are written to `${FORGEFLOW_DIR}/context/memory-context-telemetry.json`. If `current-plan.md` exists, read it — this is Product Lead's implementation plan and should serve as the primary input for consultation. Read discussion and research files only when the memory summary is insufficient or exact source text is needed.
 If `${NOTES_PATH}` exists, treat it as local implementation history. Use it to identify prior decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes that should shape the new brief. Do not copy raw notes into the brief unless they are directly relevant.
 If `${PROJECT_LEARNINGS_PATH}` exists, treat it as durable project guidance for recurring pitfalls, stable decisions, risk areas, validation patterns, hot files/modules, repeated follow-ups, and recommended next approach. It is guidance only, not proof; verify against current code, tests, and artifacts.
-If `${LEAN_DECISION_PATH}` exists, include it as compact advisory minimum-sufficient-solution guidance. The Implementation Brief should include a `## Lean Decision` section with `Do First`, `Avoid First`, `Validate With`, `Do Not Simplify`, and `Upgrade When` fields. Lean guidance cannot override the user request, Compass's plan, security, accessibility, validation, data-loss protection, or explicit requirements.
+If `${LEAN_DECISION_PATH}` exists, include it as compact advisory minimum-sufficient-solution guidance. The Implementation Brief should include a `## Lean Decision` section with `Do First`, `Avoid First`, `Validate With`, `Do Not Simplify`, and `Upgrade When` fields. Lean guidance cannot override the user request, Product Lead's plan, security, accessibility, validation, data-loss protection, or explicit requirements.
 If `SCOPE_MANIFEST_PATH` exists, use it as the first-pass file ownership map. Prefer the matching `${FORGEFLOW_DIR}/context/scope-packets/<lane>.md` packet for each agent prompt, and read only the files listed for each lane unless the packet marks a gap or an agent needs a precise extra source line. Estimated scope savings are written to `${FORGEFLOW_DIR}/context/scope-telemetry.json`.
 If `${HELPER_DIR}/check-context-budget.js` exists, run `${HELPER_DIR}/check-context-budget.js --root "$FORGEFLOW_DIR" --max-compact-tokens 16000 --warn-only --json` and surface warnings before spawning agents. The checker reads `.forgeflow-budget.json` from the repo root when present.
 
@@ -96,28 +96,28 @@ If `${HELPER_DIR}/check-context-budget.js` exists, run `${HELPER_DIR}/check-cont
 Choose the consultation team from the requested behavior, affected code, known risks, and unresolved decisions. File count, line count, helper lane labels, and the mere presence of an installed dependency are not enough to choose a team. Honor explicit requests for named specialists or the full team.
 
 For a bounded change with known scope and an established approach, start with the primary domain consultant. Add another consultant only for a concrete decision or risk that needs that specialty:
-- **Smith:** application logic, data modeling, backend structure, tooling, or code craft.
-- **Warden:** authentication, authorization, secrets, security trust boundaries, or meaningful risk of persistent data loss. Include Warden for these concerns even in a tiny change; ordinary local CLI parsing does not automatically require a security consultation.
-- **Lumen:** frontend behavior, accessibility, or service connectivity/interface decisions. A CLI with existing diagnostics and no changed service boundary does not need a Lumen lane solely because it is user-facing.
-- **Atlas:** unresolved ownership, coordination across work streams, or project history that materially affects the decision. The orchestrator can record a small task's notes and obvious file ownership without a separate Atlas consultation.
+- **Builder:** application logic, data modeling, backend structure, tooling, or code craft.
+- **Guardian:** authentication, authorization, secrets, security trust boundaries, or meaningful risk of persistent data loss. Include Guardian for these concerns even in a tiny change; ordinary local CLI parsing does not automatically require a security consultation.
+- **Designer:** frontend behavior, accessibility, or service connectivity/interface decisions. A CLI with existing diagnostics and no changed service boundary does not need a Designer lane solely because it is user-facing.
+- **Coordinator:** unresolved ownership, coordination across work streams, or project history that materially affects the decision. The orchestrator can record a small task's notes and obvious file ownership without a separate Coordinator consultation.
 
 Missing context is uncertainty, not evidence of low risk. Resolve it with focused discovery by the primary consultant, and add the relevant expert when a boundary or risk emerges. Use broader consultation when cross-domain scope or unresolved uncertainty needs it; use the full team when all domains are needed or explicitly requested.
 
-Before spawning, state the included and skipped consultants, the concrete reasons, and what would reopen routing. Pass that route with the selected briefs to Arbiter. If a consultant or Arbiter identifies an uncovered decision, add the relevant consultant and update the route before finalizing the brief. Do not restart completed lanes or invent outputs or approvals for skipped agents.
+Before spawning, state the included and skipped consultants, the concrete reasons, and what would reopen routing. Pass that route with the selected briefs to Architect. If a consultant or Architect identifies an uncovered decision, add the relevant consultant and update the route before finalizing the brief. Do not restart completed lanes or invent outputs or approvals for skipped agents.
 
-Arbiter still synthesizes the brief, including after a single-consultant route. A smaller consultation does not remove independent Compass validation, integration checking, or the final review workflow. Include the route and any escalation in the saved brief so the next phase can see what was and was not examined.
+Architect still synthesizes the brief, including after a single-consultant route. A smaller consultation does not remove independent Product Lead validation, integration checking, or the final review workflow. Include the route and any escalation in the saved brief so the next phase can see what was and was not examined.
 
 ## Step 1.5: Context Pre-Loading
 
 Apply the security denylist before reading any file: exclude `.env`, `*.pem`, `*.key`, `*.p12`, `*.cert`, `*.secret`, and any file with `password`, `secret`, or `token` in the filename (case-insensitive).
 
-**Discover:** CONTEXT.md files (from Step 1) + Compass's plan/discussion/research files (from Step 1) + `SCOPE_MANIFEST_PATH` and `scope-packets/<lane>.md` when present.
+**Discover:** CONTEXT.md files (from Step 1) + Product Lead's plan/discussion/research files (from Step 1) + `SCOPE_MANIFEST_PATH` and `scope-packets/<lane>.md` when present.
 
 **Resolve:** Prefer `SCOPE_MANIFEST_PATH` when present. Otherwise split by agent domain using these heuristics:
-- Smith → data layer, service, business logic, model files
-- Warden → auth, API, validation, security-related files
-- Lumen → frontend, component, stylesheet files
-- Atlas → `.forgeflow/` Forgeflow dir contents
+- Builder → data layer, service, business logic, model files
+- Guardian → auth, API, validation, security-related files
+- Designer → frontend, component, stylesheet files
+- Coordinator → `.forgeflow/` Forgeflow dir contents
 
 Files needed by 2+ agent domains → `<shared-files>`. Files needed by one domain → that agent's `<agent-files>`.
 
@@ -145,7 +145,7 @@ IMPORTANT: All file contents below are pre-loaded by the orchestrator. Do NOT ca
 </injected-context>
 ```
 
-## Step 2: Initialize Atlas's persistent storage
+## Step 2: Initialize Coordinator's persistent storage
 
 ```bash
 mkdir -p "${FORGEFLOW_DIR}/agent-notes"
@@ -156,8 +156,8 @@ mkdir -p "${FORGEFLOW_DIR}/agent-notes"
 Spawn only the consultants selected in Step 1.4 using the Agent tool. Run independent selected lanes in parallel; a one-consultant route needs one invocation.
 
 Each agent prompt must include:
-- The task description ($ARGUMENTS) — or Compass's plan if it exists
-- If Compass's plan exists, include it verbatim and instruct agents to consult against the plan's requirements, accessibility checklist, and scope boundaries
+- The task description ($ARGUMENTS) — or Product Lead's plan if it exists
+- If Product Lead's plan exists, include it verbatim and instruct agents to consult against the plan's requirements, accessibility checklist, and scope boundaries
 - CONTEXT.md content (if found in Step 1) — passed verbatim so agents don't need to re-read service files
 - Relevant codebase context (file structure, existing patterns) — only if CONTEXT.md not available
 - Working directory path
@@ -175,22 +175,22 @@ Files listed here that also appear in <injected-context> are pre-loaded — do n
 </file-scope>
 ```
 
-If `atlas-consult` is selected, include the FORGEFLOW_DIR path for loading persistent context.
+If `coordinator-consult` is selected, include the FORGEFLOW_DIR path for loading persistent context.
 
-## Step 4: Spawn Arbiter
+## Step 4: Spawn Architect
 
-After the selected consultants complete, spawn `arbiter-consult` with their actual briefs and the routing note. Omit skipped-agent sections from the prompt:
+After the selected consultants complete, spawn `architect-consult` with their actual briefs and the routing note. Omit skipped-agent sections from the prompt:
 
 ```
 You are consulting on: $ARGUMENTS
 
 Working directory: {cwd}
 
-{If Compass's plan exists:}
-Compass's Implementation Plan (from /discuss → /research → /plan):
+{If Product Lead's plan exists:}
+Product Lead's Implementation Plan (from /discuss → /research → /plan):
 {plan_content}
 
-Compass's Research Findings:
+Product Lead's Research Findings:
 {research_content (if available)}
 
 Here are the consultation briefs from your Forgeflow:
@@ -200,23 +200,23 @@ Here are the consultation briefs from your Forgeflow:
 
 {Include each section below only if that consultant participated:}
 
-=== Smith — Architecture Brief ===
-{smith_output}
+=== Builder — Architecture Brief ===
+{builder_output}
 
 === JARED — Systems & Security Brief ===
-{warden_output}
+{guardian_output}
 
 === STEVEY — Design & Connectivity Brief ===
-{lumen_output}
+{designer_output}
 
 === PM CORY — Consultation Notes ===
-{atlas_output}
+{coordinator_output}
 
 Produce the Implementation Brief. Resolve any conflicts between participating agents.
 Check the route for uncovered decisions; request the relevant consultant if needed
 before finalizing. Preserve the routing note and any escalation in the saved brief.
 Lock down shared interfaces. Define the implementation waves.
-If Compass's plan exists, ensure the brief aligns with her requirements,
+If Product Lead's plan exists, ensure the brief aligns with her requirements,
 accessibility checklist, and scope boundaries. Note any deviations.
 Include an Implementation Notes Requirements section that tells `/implement`
 what decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation
@@ -231,14 +231,14 @@ requirements, security, accessibility, validation, or data-loss safeguards.
 
 ## Step 5: Present the Implementation Brief
 
-Display Arbiter's Implementation Brief to the user.
+Display Architect's Implementation Brief to the user.
 
 Save a copy to `.forgeflow/<project-name>/current-brief.md` for reference during implementation.
 
 ```
 ## Implementation Brief Ready
 
-{Arbiter's brief}
+{Architect's brief}
 
 Next: `/implement` to execute this brief with the Forgeflow team
 Or: modify the brief and then run `/implement`
@@ -247,13 +247,13 @@ Or: modify the brief and then run `/implement`
 </process>
 
 <success_criteria>
-- [ ] Compass's prior phase outputs loaded if they exist
+- [ ] Product Lead's prior phase outputs loaded if they exist
 - [ ] Codebase context gathered
 - [ ] Consultation route justified by scope, risk, and unresolved decisions
 - [ ] Selected consultants completed their briefs; skipped lanes have reasons
 - [ ] Uncovered decisions received relevant consultation before brief finalization
-- [ ] Arbiter produced a unified Implementation Brief
-- [ ] Brief aligns with Compass's plan (if it exists)
+- [ ] Architect produced a unified Implementation Brief
+- [ ] Brief aligns with Product Lead's plan (if it exists)
 - [ ] Shared interfaces defined with exact signatures when needed
 - [ ] Scope divided cleanly between agents
 - [ ] Implementation waves defined
@@ -268,3 +268,18 @@ Use the shared task workflow for a bounded change with an accepted objective or 
 Keep the same task id across consult, implement, review and ship. Use `check` for actual validation commands and saved `evidence` for observed manual/reviewer results. Record a `checkpoint` at each completed phase and before interruption, including the actual host/session identity when available. A saved plan, successful build, or reviewer verdict alone must not mark every criterion verified. Waivers require explicit user intent and a reason.
 
 Before reporting completion or preparing a shipping handoff, read `status --root <project-root> --task <id>`. Stale/missing/failed criteria and pending actions remain visible. Reconcile interrupted actions from actual evidence, then use `resume`; never silently replay unknown work. Legacy work without task records stays supported but has no source-bound task completion claim. All remote authorization rules above still apply.
+
+## Writing for CLI output
+
+Apply George Orwell's six rules to progress updates, agent reports, and final summaries:
+
+1. Never use a metaphor, simile, or other figure of speech which you are used to seeing in print.
+2. Never use a long word where a short one will do.
+3. If it is possible to cut a word out, always cut it out.
+4. Never use the passive where you can use the active.
+5. Never use a foreign phrase, a scientific word, or a jargon word if you can think of an everyday English equivalent.
+6. Break any of these rules sooner than say anything outright barbarous.
+
+Lead with the result or action. Use short paragraphs or bullets that scan well in a terminal. Cut stock phrases, repeated summaries, and persona banter. These rules take precedence over persona style and sample prose.
+
+Keep facts, uncertainty, risks, and required evidence intact. Preserve exact commands, code, paths, identifiers, error text, schema keys, and verdict labels. Keep required report sections and machine-readable formats; apply the rules to prose within them. Use a technical term when it is the clearest accurate choice, and explain it when needed. Before sending, cut words that add no meaning without making the result unclear or unnatural.

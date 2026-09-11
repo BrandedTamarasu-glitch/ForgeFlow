@@ -13,14 +13,11 @@ export interface AgentProfile {
   readonly bio: string;
 }
 
-export const AGENT_PROFILES: readonly AgentProfile[] = [
-  { id: 'compass',   displayName: 'Compass',             role: 'Product Manager',    bio: 'Requirements, validation tests, accessibility, final quality gate' },
-  { id: 'fc',      displayName: 'Smith',  role: 'Backend Architect',  bio: 'Database design, code quality, business logic, SOLID principles' },
-  { id: 'warden',   displayName: 'Warden',             role: 'Security Engineer',  bio: 'Auth, validation, API hardening, efficiency, code reuse' },
-  { id: 'lumen',  displayName: 'Lumen',   role: 'UX/UI Designer',     bio: 'Frontend, accessibility, microservices connectivity' },
-  { id: 'atlas', displayName: 'Atlas',           role: 'Program Manager',    bio: 'Coordination, persistent memory, creative challenge' },
-  { id: 'arbiter',   displayName: 'Arbiter',             role: 'Lead Architect',     bio: 'Forgeflow director, conflict resolution, synthesis, verdicts' },
-] as const;
+import path from 'node:path';
+const identity: typeof import('../../scripts/forgeflow/agent-identity.js') = require(path.resolve(__dirname, path.basename(__dirname) === 'dist' ? '../../..' : '../..', 'scripts/forgeflow/agent-identity.js'));
+export const AGENT_PROFILES: readonly AgentProfile[] = identity.AGENTS.map(agent => ({
+  id: agent.id, displayName: agent.label, role: agent.label, bio: agent.description,
+}));
 
 // ---------------------------------------------------------------------------
 // Upstream registration
@@ -28,7 +25,7 @@ export const AGENT_PROFILES: readonly AgentProfile[] = [
 
 /**
  * Registers all agent profiles with the agent-chat server via PUT requests.
- * Fire-and-forget: logs errors to stderr but never throws.
+ * Waits for bounded concurrent requests; logs failures without throwing.
  */
 export async function registerProfiles(baseUrl: string): Promise<void> {
   const registrations = AGENT_PROFILES.map(async (profile) => {
@@ -44,6 +41,7 @@ export async function registerProfiles(baseUrl: string): Promise<void> {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: payload,
+        signal: AbortSignal.timeout(5000),
       });
 
       if (!response.ok) {

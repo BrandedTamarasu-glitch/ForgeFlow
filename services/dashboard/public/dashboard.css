@@ -588,6 +588,7 @@ th {
 
 .chat-meta {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 9px;
   font-size: 10px;
@@ -596,6 +597,8 @@ th {
 }
 
 .chat-agent {
+  overflow-wrap: anywhere;
+  min-width: 0;
   color: var(--copper);
   font-weight: 600;
 }

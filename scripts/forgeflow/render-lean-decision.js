@@ -188,7 +188,7 @@ function buildLeanDecision(opts = {}) {
   const validation = validationMinimum(text, artifacts);
   const noteCandidate = decision.status === 'ready' && text.trim()
     ? {
-      agent: 'Atlas',
+      agent: 'Coordinator',
       category: 'tradeoff',
       note: `Lean path selected: ${decision.decision}. Known ceiling: ${ceiling.known_ceiling}`,
       why: `Upgrade trigger: ${ceiling.upgrade_trigger}`,

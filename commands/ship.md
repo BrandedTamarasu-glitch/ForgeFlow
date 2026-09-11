@@ -35,7 +35,7 @@ Ship the current branch. This is the final command in the lifecycle: `/discuss` 
 </objective>
 
 <context>
-$ARGUMENTS -- Optional PR title or description. If empty, Compass infers a headline from commit history and changed file context.
+$ARGUMENTS -- Optional PR title or description. If empty, Product Lead infers a headline from commit history and changed file context.
 
 Flags:
 - `--skip-hygiene`: Bypass Step 1g commit hygiene validation (use only when you have a justification)
@@ -94,10 +94,10 @@ Also verify the latest review in `review-history.md` references the same branch 
 # Commit history for the branch
 git log ${BASE_BRANCH}..HEAD --oneline
 
-# Files changed summary (goes to Compass -- compact form)
+# Files changed summary (goes to Product Lead -- compact form)
 git diff ${BASE_BRANCH} --stat
 
-# Full diff (goes to Atlas and screenshot agent ONLY -- NOT Compass)
+# Full diff (goes to Coordinator and screenshot agent ONLY -- NOT Product Lead)
 git diff ${BASE_BRANCH}
 ```
 
@@ -110,7 +110,7 @@ Read each of these if present -- do not fail if missing:
 - `${FORGEFLOW_DIR}/implementation-notes.md`
 - `${FORGEFLOW_DIR}/project-learnings.md`
 
-Also check for `CONTEXT.md` in the working directory. If it exists, read it and pass to Compass and Atlas — it provides service-specific context that improves presentation quality.
+Also check for `CONTEXT.md` in the working directory. If it exists, read it and pass to Product Lead and Coordinator — it provides service-specific context that improves presentation quality.
 
 ### 1d.0 Lean readiness advisory
 
@@ -233,9 +233,9 @@ This step is already covered by 1f. Re-run the scan if any files changed during 
 
 Spawn three agents in parallel using the Agent tool. All three run simultaneously.
 
-### Agent 1 -- Compass (present mode)
+### Agent 1 -- Product Lead (present mode)
 
-- **subagent_type:** `compass-present`
+- **subagent_type:** `product-lead-present`
 - **Prompt includes:**
   - `git log ${BASE_BRANCH}..HEAD --oneline` output
   - `git diff ${BASE_BRANCH} --stat` output (compact file summary ONLY -- do NOT include full diff)
@@ -292,9 +292,9 @@ Rules:
 - Do NOT include file paths, function names, or technical details anywhere.
 ```
 
-### Agent 2 -- Atlas (present mode)
+### Agent 2 -- Coordinator (present mode)
 
-- **subagent_type:** `atlas-present`
+- **subagent_type:** `coordinator-present`
 - **Prompt includes:**
   - `git log ${BASE_BRANCH}..HEAD --oneline` output
   - `git diff ${BASE_BRANCH}` output (FULL diff)
@@ -358,8 +358,8 @@ Just the JSON object:
   "risks_mitigated": ["Each risk as a complete sentence describing the risk and how it was addressed."],
   "learnings": ["Noteworthy things the team should remember from this implementation."],
   "review_verdict": {
-    "arbiter": "APPROVE|CONDITIONAL APPROVE|REVISE|BLOCK|UNKNOWN",
-    "compass": "CONFIRM|CHALLENGE|UNKNOWN",
+    "architect": "APPROVE|CONDITIONAL APPROVE|REVISE|BLOCK|UNKNOWN",
+    "product_lead": "CONFIRM|CHALLENGE|UNKNOWN",
     "blockers_resolved": 0,
     "highlights": ["Key positive callouts from the review."]
   },
@@ -457,9 +457,9 @@ Rules:
 After all agents from Step 2 complete:
 
 ### 3a. Parse agent outputs
-Parse the JSON from Compass (Agent 1) and Atlas (Agent 2). If the screenshot agent ran (Agent 3), parse that too. If any agent returned invalid JSON, attempt to extract the JSON from their response (look for `{...}` blocks). If extraction fails, use sensible defaults:
-- Compass fallback: headline from first commit message, empty summary/capabilities
-- Atlas fallback: files from git diff --stat, empty testing/architecture
+Parse the JSON from Product Lead (Agent 1) and Coordinator (Agent 2). If the screenshot agent ran (Agent 3), parse that too. If any agent returned invalid JSON, attempt to extract the JSON from their response (look for `{...}` blocks). If extraction fails, use sensible defaults:
+- Product Lead fallback: headline from first commit message, empty summary/capabilities
+- Coordinator fallback: files from git diff --stat, empty testing/architecture
 - Screenshots fallback: all placeholders
 
 ### 3b. Read the HTML template
@@ -474,39 +474,39 @@ Use the template's `<style>` block verbatim -- copy every CSS rule exactly as de
 Construct the final HTML file section by section:
 
 1. **DOCTYPE, head, and style:** Copy the template's complete `<head>` including all CSS.
-   Update `<title>` to include Compass's headline.
+   Update `<title>` to include Product Lead's headline.
 
 2. **Header section:**
    - `.release-label`: "Release Summary"
-   - `.headline`: Compass's `headline`
-   - `.meta`: PR placeholder (will be patched in Step 4), today's date, branch flow from Atlas's `branch` + `base`
+   - `.headline`: Product Lead's `headline`
+   - `.meta`: PR placeholder (will be patched in Step 4), today's date, branch flow from Coordinator's `branch` + `base`
 
-3. **Summary section:** Compass's `summary`
+3. **Summary section:** Product Lead's `summary`
 
-4. **Capabilities section:** Map Compass's `capabilities` array to `.capability` items.
+4. **Capabilities section:** Map Product Lead's `capabilities` array to `.capability` items.
    Map `type` to badge class: `new` -> `badge-new`, `enhanced` -> `badge-enhanced`, `fixed` -> `badge-fixed`.
 
-5. **Before/After section:** (OMIT if Compass's `before_after` is empty array)
+5. **Before/After section:** (OMIT if Product Lead's `before_after` is empty array)
    Map each entry to a `.before-after-area` + `.before-after-row`.
 
 6. **Screenshots section:** (OMIT if no screenshots AND no placeholders)
    - Real screenshots: `<img src="data:image/png;base64,{base64}" alt="{label}" style="width:100%;border-radius:8px;">`
    - Placeholders: `<div class="screenshot-placeholder">{label}</div>`
 
-7. **Impact section:** Compass's `impact`
+7. **Impact section:** Product Lead's `impact`
 
-8. **Accessibility section:** (OMIT if Compass's `accessibility_notes` is empty string)
-   Compass's `accessibility_notes`
+8. **Accessibility section:** (OMIT if Product Lead's `accessibility_notes` is empty string)
+   Product Lead's `accessibility_notes`
 
 9. **Developer divider:** The `.divider` section exactly as in template.
 
-10. **Files Changed section:** Map Atlas's `files_changed` to `.file-list` items.
+10. **Files Changed section:** Map Coordinator's `files_changed` to `.file-list` items.
     `added` -> `file-added`, `modified` -> `file-modified`, `deleted` -> `file-deleted`.
 
-11. **Test Results section:** Atlas's `testing.summary` as `.test-summary`, then
+11. **Test Results section:** Coordinator's `testing.summary` as `.test-summary`, then
     `testing.results` as `.test-table` rows.
 
-12. **Architecture Notes section:** Atlas's `architecture_notes`
+12. **Architecture Notes section:** Coordinator's `architecture_notes`
 
 13. **Risks Mitigated section:** (OMIT if `risks_mitigated` is empty)
     Map to `.risk-list` items.
@@ -515,12 +515,12 @@ Construct the final HTML file section by section:
     Render compact grouped lists for decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes. Do not render the raw markdown log.
 
 15. **Learnings section:** (OMIT if `learnings` is empty)
-    Map Atlas's `learnings` array to a `.risk-list` styled list (reuse same styling).
+    Map Coordinator's `learnings` array to a `.risk-list` styled list (reuse same styling).
     Section title: "Session Learnings".
 
-16. **Review Verdict section:** Atlas's `review_verdict` rendered as `.verdict-card`.
-    - Arbiter row with verdict badge
-    - Compass row with verdict badge
+16. **Review Verdict section:** Coordinator's `review_verdict` rendered as `.verdict-card`.
+    - Architect row with verdict badge
+    - Product Lead row with verdict badge
     - Blockers resolved count
     - Highlights as `.verdict-highlights` items
 
@@ -540,7 +540,7 @@ mkdir -p "${FORGEFLOW_DIR}/presentations"
 
 Generate filename: `<date>-<slug>.html`
 - Date: `$(date +%Y-%m-%d)`
-- Slug: Compass's headline, lowercased, spaces to hyphens, non-alphanumeric (except hyphens) removed, truncated to 40 chars
+- Slug: Product Lead's headline, lowercased, spaces to hyphens, non-alphanumeric (except hyphens) removed, truncated to 40 chars
 - Example: `2026-03-19-campaign-email-scheduling-with.html`
 
 Write the assembled HTML to `${FORGEFLOW_DIR}/presentations/<date>-<slug>.html`.
@@ -600,9 +600,9 @@ Keep answers brief and specific to the current diff. AI collaboration alone is n
 
 **If no existing PR:** Create one.
 ```bash
-gh pr create --title "{compass_headline}" --body "$(cat <<'EOF'
+gh pr create --title "{product_lead_headline}" --body "$(cat <<'EOF'
 ## Summary
-{compass_summary}
+{product_lead_summary}
 
 ## Change reflection
 {Brief answers to the questions above, labeled as an agent assessment}
@@ -614,8 +614,8 @@ gh pr create --title "{compass_headline}" --body "$(cat <<'EOF'
 {cory_testing_summary}
 
 ## Review Verdict
-- Arbiter: {verdict}
-- Compass: {verdict}
+- Architect: {verdict}
+- Product Lead: {verdict}
 - Blockers resolved: {count}
 
 ---
@@ -627,7 +627,7 @@ EOF
 
 **If PR exists:** Update the body.
 ```bash
-gh pr edit {pr_number} --title "{compass_headline}" --body "$(cat <<'EOF'
+gh pr edit {pr_number} --title "{product_lead_headline}" --body "$(cat <<'EOF'
 {same body format as above}
 EOF
 )"
@@ -740,10 +740,10 @@ ${FAILED_CHECKS}
 ${DIFF_FILES}
 
 ## Suggested Routing
-- Type/build/lint errors -> smith-implement
-- Test failures -> smith-implement + warden-implement (parallel)
-- CI config/security -> warden-implement
-- Unknown -> smith-implement + warden-implement (parallel)
+- Type/build/lint errors -> builder-implement
+- Test failures -> builder-implement + guardian-implement (parallel)
+- CI config/security -> guardian-implement
+- Unknown -> builder-implement + guardian-implement (parallel)
 
 ## Next Steps
 Run the next Claude session in this directory. It will detect pr-failure.md and route to the appropriate agents for auto-fix.
@@ -797,7 +797,7 @@ Run it in the background:
   bash ${FORGEFLOW_DIR}/pr-watcher.sh &
 
 If checks fail, the next Claude session will detect pr-failure.md
-and route to Smith + Warden for auto-fix.
+and route to Builder + Guardian for auto-fix.
 ```
 
 
@@ -821,20 +821,20 @@ Use this classification table to determine which agent(s) handle each failure:
 
 | Signal Pattern | Route To |
 |---|---|
-| Type errors (`TS\d+`, `tsc`, `type.*error`) | Smith |
-| Build failures (`build failed`, `compilation error`, `esbuild`, `webpack`) | Smith |
-| Lint errors (`eslint`, `prettier`, `lint`) | Smith |
-| Unit test failures (`FAIL`, `AssertionError`, `jest`, `vitest`) | Smith + Warden (parallel) |
-| E2E test failures (`playwright`, `cypress`, `e2e`) | Smith + Warden (parallel) |
-| CI config failures (`workflow`, `pipeline`, `docker`, `Dockerfile`) | Warden |
-| Security scan failures (`snyk`, `dependabot`, `audit`, `vulnerability`) | Warden |
-| Unknown / unclassified | Smith + Warden (parallel) |
+| Type errors (`TS\d+`, `tsc`, `type.*error`) | Builder |
+| Build failures (`build failed`, `compilation error`, `esbuild`, `webpack`) | Builder |
+| Lint errors (`eslint`, `prettier`, `lint`) | Builder |
+| Unit test failures (`FAIL`, `AssertionError`, `jest`, `vitest`) | Builder + Guardian (parallel) |
+| E2E test failures (`playwright`, `cypress`, `e2e`) | Builder + Guardian (parallel) |
+| CI config failures (`workflow`, `pipeline`, `docker`, `Dockerfile`) | Guardian |
+| Security scan failures (`snyk`, `dependabot`, `audit`, `vulnerability`) | Guardian |
+| Unknown / unclassified | Builder + Guardian (parallel) |
 
 ### 6c. Spawn fix agents
 
 For each routed agent, spawn with the Agent tool:
 
-**Smith (`smith-implement`):**
+**Builder (`builder-implement`):**
 ```
 CI check "{check_name}" failed. Fix the failure.
 
@@ -861,7 +861,7 @@ Rules:
   and report back instead of committing. The fix is too large for auto-resolution.
 ```
 
-**Warden (`warden-implement`):**
+**Guardian (`guardian-implement`):**
 ```
 CI check "{check_name}" failed. Fix the failure.
 
@@ -924,8 +924,8 @@ After fix agents complete:
 
 <success_criteria>
 - [ ] Review gate enforced -- /ship refuses without a passing review verdict
-- [ ] Compass produces stakeholder-readable JSON with no jargon
-- [ ] Atlas produces accurate dev JSON from actual git/test data
+- [ ] Product Lead produces stakeholder-readable JSON with no jargon
+- [ ] Coordinator produces accurate dev JSON from actual git/test data
 - [ ] Screenshots captured when possible, graceful fallback when not
 - [ ] HTML is fully self-contained -- opens correctly from filesystem
 - [ ] PR created with meaningful body derived from presentation
@@ -944,3 +944,18 @@ Use the shared task workflow for a bounded change with an accepted objective or 
 Keep the same task id across consult, implement, review and ship. Use `check` for actual validation commands and saved `evidence` for observed manual/reviewer results. Record a `checkpoint` at each completed phase and before interruption, including the actual host/session identity when available. A saved plan, successful build, or reviewer verdict alone must not mark every criterion verified. Waivers require explicit user intent and a reason.
 
 Before reporting completion or preparing a shipping handoff, read `status --root <project-root> --task <id>`. Stale/missing/failed criteria and pending actions remain visible. Reconcile interrupted actions from actual evidence, then use `resume`; never silently replay unknown work. Legacy work without task records stays supported but has no source-bound task completion claim. All remote authorization rules above still apply.
+
+## Writing for CLI output
+
+Apply George Orwell's six rules to progress updates, agent reports, and final summaries:
+
+1. Never use a metaphor, simile, or other figure of speech which you are used to seeing in print.
+2. Never use a long word where a short one will do.
+3. If it is possible to cut a word out, always cut it out.
+4. Never use the passive where you can use the active.
+5. Never use a foreign phrase, a scientific word, or a jargon word if you can think of an everyday English equivalent.
+6. Break any of these rules sooner than say anything outright barbarous.
+
+Lead with the result or action. Use short paragraphs or bullets that scan well in a terminal. Cut stock phrases, repeated summaries, and persona banter. These rules take precedence over persona style and sample prose.
+
+Keep facts, uncertainty, risks, and required evidence intact. Preserve exact commands, code, paths, identifiers, error text, schema keys, and verdict labels. Keep required report sections and machine-readable formats; apply the rules to prose within them. Use a technical term when it is the clearest accurate choice, and explain it when needed. Before sending, cut words that add no meaning without making the result unclear or unnatural.

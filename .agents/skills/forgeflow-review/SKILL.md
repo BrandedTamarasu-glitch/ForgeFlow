@@ -1,6 +1,6 @@
 ---
 name: forgeflow-review
-description: Run the Forgeflow review workflow by spawning specialist reviewers, then synthesizing with Arbiter and final-checking with Compass.
+description: Run the Forgeflow review workflow by spawning specialist reviewers, then synthesizing with Architect and final-checking with Product Lead.
 ---
 
 At workflow entry, run `node <helper-dir>/open-session-dashboard.js --root <project-root> --workflow forgeflow-review` when available. Resolve `<helper-dir>` from the checkout's `scripts/forgeflow` first, then `${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow`. The helper starts or reuses agent-chat and reports known workflow phases on each entry; it uses `CODEX_THREAD_ID`, `CLAUDE_SESSION_ID`, or `FORGEFLOW_SESSION_ID` to open the local dashboard once per session. If the host supplies a session id separately, pass `--session <host-session-id>`; never invent a new id per invocation. Headless runs and `FORGEFLOW_DASHBOARD_AUTO_OPEN=off` skip the launch. A missing helper or unavailable browser must not block the workflow. Report actual phase transitions, significant progress, waiting, and the final result with `node <runtime-root>/services/agent-chat/client.js activity <state> "<short label>"` (`<runtime-root>` is the checkout or installed `forgeflow` directory). Use `complete` only when work and required checks have finished; report `failed` for failures, and never invent progress to keep Ember moving.
@@ -36,25 +36,25 @@ scripts/forgeflow/explain-review-route.js --json --calibration .forgeflow/Forgef
 scripts/forgeflow/build-context-pack.js --json
 ```
 
-   Pass `--files`, `--lines`, `--mode`, and `--calibration` when those values were already resolved. This also refreshes `.forgeflow/<project>/index/memory-index.json` when local memory exists. Use the generated `agent-packets/<agent>.md` as the primary reviewer context and `synthesis-input.json` for Arbiter/Compass.
+   Pass `--files`, `--lines`, `--mode`, and `--calibration` when those values were already resolved. This also refreshes `.forgeflow/<project>/index/memory-index.json` when local memory exists. Use the generated `agent-packets/<agent>.md` as the primary reviewer context and `synthesis-input.json` for Architect/Product Lead.
 4. Run `scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json` and `scripts/forgeflow/advise-context.js --root .forgeflow --record --json` when available. Surface budget warnings, trend deltas, and trim recommendations before spawning reviewers.
 5. Read only the files needed for that scope. Prefer exact files or `git diff --name-only`; avoid re-reading files already covered by the context pack unless exact source lines are needed.
 6. Spawn reviewer agents in parallel according to the route:
-   - `smith_reviewer`
-   - `warden_reviewer`
-   - `lumen_reviewer`
-   - `atlas_reviewer`
-7. If the route is thin-mode, you may skip `lumen_reviewer` and `atlas_reviewer`.
-8. Before Arbiter synthesis, send high-risk findings through `aegis`:
+   - `builder_reviewer`
+   - `guardian_reviewer`
+   - `designer_reviewer`
+   - `coordinator_reviewer`
+7. If the route is thin-mode, you may skip `designer_reviewer` and `coordinator_reviewer`.
+8. Before Architect synthesis, send high-risk findings through `verifier`:
    - security
    - auth, session, permissions, tenant isolation
    - migration, schema, data loss
    - critical correctness
    - broad refactor regression
    - accessibility blocker
-9. Wait for reviewer and verifier outputs, then spawn `arbiter_reviewer` with the collected findings, verifier decisions, routing note, and the file list.
-10. Spawn `compass_reviewer` after Arbiter with:
-   - Arbiter's verdict
+9. Wait for reviewer and verifier outputs, then spawn `architect_reviewer` with the collected findings, verifier decisions, routing note, and the file list.
+10. Spawn `product_lead_reviewer` after Architect with:
+   - Architect's verdict
    - reviewer outputs
    - verifier outputs
    - routing note
@@ -66,7 +66,7 @@ Rules:
 - Review agents should not edit files.
 - Persona confidence is not evidence. High-risk claims need neutral verification before becoming blockers.
 - Include a routing note in the final response: mode, agents included/skipped, verifier used/skipped, telemetry hints, and why.
-- Compass may run targeted tests when that materially improves the review.
+- Product Lead may run targeted tests when that materially improves the review.
 - If the user asks for a "review", default to this skill.
 
 Suggested prompts:
@@ -75,7 +75,7 @@ Suggested prompts:
 
 ## Change reflection
 
-Give Arbiter and Compass the author's change reflection when available and the questions below. Independently assess each answer against the diff and validation evidence; do not rubber-stamp the author's claims. If answers are missing, provide a reviewer assessment and identify unknowns. Include the assessment after findings in the saved review report and final summary.
+Give Architect and Product Lead the author's change reflection when available and the questions below. Independently assess each answer against the diff and validation evidence; do not rubber-stamp the author's claims. If answers are missing, provide a reviewer assessment and identify unknowns. Include the assessment after findings in the saved review report and final summary.
 
 1. **Is this the simplest change that solves the problem?** Explain the chosen approach and any smaller alternative considered.
 2. **Is the complexity proportional to this project's scale and risk?** Use known users, operations, and maintenance needs; state assumptions when unknown. A 100-user internal app is an example, not a default or a reason to drop required safeguards.
@@ -94,13 +94,13 @@ Keep answers brief and specific to the current diff. AI collaboration alone is n
 
 ## Record explicit review outcomes
 
-After Arbiter or Compass issues an actual final decision, save that decision and its supporting evidence in a project-local report, then record it once with the shared telemetry helper:
+After Architect or Product Lead issues an actual final decision, save that decision and its supporting evidence in a project-local report, then record it once with the shared telemetry helper:
 
 ```bash
-node <runtime-root>/hooks/forgeflow-telemetry.js record-verdict --cwd <project-root> --reviewer <arbiter-or-compass> --verdict "<exact-decision>" --evidence <saved-report-relative-path> --event-id <stable-outcome-id> --command /<workflow-name> --session <host-session-id>
+node <runtime-root>/hooks/forgeflow-telemetry.js record-verdict --cwd <project-root> --reviewer <architect-or-product_lead> --verdict "<exact-decision>" --evidence <saved-report-relative-path> --event-id <stable-outcome-id> --command /<workflow-name> --session <host-session-id>
 ```
 
-Resolve `<runtime-root>` from the checkout first, then `${CODEX_HOME:-$HOME/.codex}/forgeflow`. Arbiter decisions are `APPROVE`, `CONDITIONAL APPROVE`, `REVISE`, or `BLOCK`; Compass decisions are `CONFIRM` or `CHALLENGE`. Record only an explicitly issued decision, never infer approval from passing tests, silence, or an implementation summary. If a final decision is absent, ask the reviewer to state it or leave the outcome unrecorded. Reuse the same event id on retries; use a distinct id for each reviewer and review round, such as `<host-session-id>.review-2.arbiter`. The helper rejects conflicting reuse and prevents duplicate counts. Session can be omitted when `CODEX_THREAD_ID` or `FORGEFLOW_SESSION_ID` is present. A recording failure must be reported without changing the review result or fabricating history.
+Resolve `<runtime-root>` from the checkout first, then `${CODEX_HOME:-$HOME/.codex}/forgeflow`. Architect decisions are `APPROVE`, `CONDITIONAL APPROVE`, `REVISE`, or `BLOCK`; Product Lead decisions are `CONFIRM` or `CHALLENGE`. Record only an explicitly issued decision, never infer approval from passing tests, silence, or an implementation summary. If a final decision is absent, ask the reviewer to state it or leave the outcome unrecorded. Reuse the same event id on retries; use a distinct id for each reviewer and review round, such as `<host-session-id>.review-2.architect`. The helper rejects conflicting reuse and prevents duplicate counts. Session can be omitted when `CODEX_THREAD_ID` or `FORGEFLOW_SESSION_ID` is present. A recording failure must be reported without changing the review result or fabricating history.
 
 
 ## Task evidence continuity
@@ -110,3 +110,18 @@ Use the shared task workflow for a bounded change with an accepted objective or 
 Keep the same task id across consult, implement, review and ship. Use `check` for actual validation commands and saved `evidence` for observed manual/reviewer results. Record a `checkpoint` at each completed phase and before interruption, including the actual host/session identity when available. A saved plan, successful build, or reviewer verdict alone must not mark every criterion verified. Waivers require explicit user intent and a reason.
 
 Before reporting completion or preparing a shipping handoff, read `status --root <project-root> --task <id>`. Stale/missing/failed criteria and pending actions remain visible. Reconcile interrupted actions from actual evidence, then use `resume`; never silently replay unknown work. Legacy work without task records stays supported but has no source-bound task completion claim. All remote authorization rules above still apply.
+
+## Writing for CLI output
+
+Apply George Orwell's six rules to progress updates, agent reports, and final summaries:
+
+1. Never use a metaphor, simile, or other figure of speech which you are used to seeing in print.
+2. Never use a long word where a short one will do.
+3. If it is possible to cut a word out, always cut it out.
+4. Never use the passive where you can use the active.
+5. Never use a foreign phrase, a scientific word, or a jargon word if you can think of an everyday English equivalent.
+6. Break any of these rules sooner than say anything outright barbarous.
+
+Lead with the result or action. Use short paragraphs or bullets that scan well in a terminal. Cut stock phrases, repeated summaries, and persona banter. These rules take precedence over persona style and sample prose.
+
+Keep facts, uncertainty, risks, and required evidence intact. Preserve exact commands, code, paths, identifiers, error text, schema keys, and verdict labels. Keep required report sections and machine-readable formats; apply the rules to prose within them. Use a technical term when it is the clearest accurate choice, and explain it when needed. Before sending, cut words that add no meaning without making the result unclear or unnatural.

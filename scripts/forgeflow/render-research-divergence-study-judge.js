@@ -32,7 +32,7 @@ function main() {
 
 function normalize(text) {
   return String(text)
-    .replace(/forgeflow|compass|atlas|inversion|remove-assumption|3am-on-call|--diverge|\$?research/gi, '[method]')
+    .replace(/forgeflow|product[ _-]lead|coordinator|compass|atlas|inversion|remove-assumption|3am-on-call|--diverge|\$?research/gi, '[method]')
     .replace(/^#+\s*/gm, '')
     .trim();
 }

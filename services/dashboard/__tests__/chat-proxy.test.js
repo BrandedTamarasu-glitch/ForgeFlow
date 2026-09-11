@@ -81,15 +81,23 @@ test('dashboard proxy preserves authenticated history/live updates and never for
   await once(agent, 'open');
   agent.send('fc');
   await once(agent, 'message');
-  agent.send(JSON.stringify({ agent: 'fc', level: 'decision', message: 'proxy delivery' }));
+  agent.send(JSON.stringify({ agent: 'fc', level: 'decision', message: 'proxy delivery', activityLabel: 'Backend review' }));
   const [message] = await once(browser, 'message');
   assert.equal(JSON.parse(message).message, 'proxy delivery');
+  assert.equal(JSON.parse(message).agent, 'builder');
+  assert.equal(JSON.parse(message).activityLabel, 'Backend review');
   assert.ok(!message.toString().includes(token));
   browser.send('/clear');
   const exported = await get(f.upstream.dashServer.address().port, '/export', { 'x-forgeflow-token': token });
   assert.match(exported.body, /proxy delivery/);
   const second = f.connect();
-  assert.equal(JSON.parse((await once(second, 'message'))[0]).history[0].message, 'proxy delivery');
+  const replay = JSON.parse((await once(second, 'message'))[0]).history[0];
+  assert.equal(replay.message, 'proxy delivery');
+  assert.equal(replay.activityLabel, 'Backend review');
+  const registry = await get(f.port, '/agent-identity.js');
+  assert.equal(registry.status, 200);
+  assert.match(registry.body, /ForgeflowAgentIdentity/);
+  assert.equal((await get(f.port, '/agent-identity.js?extra')).status, 404);
 });
 
 test('dashboard proxy rejects missing session, foreign origins, rebinding hosts and cross-site bootstrap', { timeout: 10_000 }, async t => {

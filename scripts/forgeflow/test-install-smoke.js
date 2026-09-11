@@ -42,7 +42,7 @@ fs.mkdirSync(path.dirname(customDest), { recursive: true });
 fs.writeFileSync(customDest, 'custom agent\n');
 const customEntry = manifestEntry('agents/custom-local.md', home);
 if (customEntry && !customEntry.preserve) {
-  fs.copyFileSync(path.join(repoRoot, 'agents', 'smith-review.md'), customDest);
+  fs.copyFileSync(path.join(repoRoot, 'agents', 'builder-review.md'), customDest);
 }
 
 const checks = [

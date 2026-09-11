@@ -23,6 +23,7 @@ const path = require('path');
 const { WebSocketServer, WebSocket } = require('ws');
 const os = require('os');
 const crypto = require('crypto');
+const { AGENTS, normalizeAgentId, formatAgentLabel } = require('../../scripts/forgeflow/agent-identity');
 const { defaultTokenFile, readToken } = require('./session-auth');
 
 // ---------------------------------------------------------------------------
@@ -35,7 +36,7 @@ const AGENT_PORT = options.agentPort ?? 4000;   // bridge → server (agent WebS
 const DASH_HOST  = '127.0.0.1';
 const DASH_PORT  = options.dashboardPort ?? 4001;   // browser → server (dashboard HTTP + WS)
 
-const VALID_AGENTS = new Set(['compass', 'fc', 'warden', 'lumen', 'atlas', 'arbiter']);
+const VALID_AGENTS = new Set([...AGENTS.map(agent => agent.id), 'system']);
 const VALID_LEVELS = new Set(['phase', 'decision', 'conversation']);
 const ACTIVITY_STATES = new Set(['idle', 'planning', 'researching', 'implementing', 'reviewing', 'testing', 'waiting', 'failed', 'complete']);
 const activities = new Map();
@@ -138,7 +139,7 @@ function buildMarkdown() {
   ];
   for (const msg of messageHistory) {
     const time = new Date(msg.timestamp).toISOString().slice(11, 19);
-    lines.push('---', '', `**${time}** · ${msg.agent} · ${msg.level}`, '', msg.message, '');
+    lines.push('---', '', `**${time}** · ${formatAgentLabel(msg.agent, msg.activityLabel)} · ${msg.level}`, '', msg.message, '');
   }
   return lines.join('\n');
 }
@@ -157,6 +158,7 @@ function recordAndBroadcast(msg) {
   // Dashboard always renders via textContent — no server-side HTML escaping needed.
   const safe = {
     agent:     String(msg.agent),
+    ...(msg.activityLabel !== undefined ? { activityLabel: msg.activityLabel } : {}),
     level:     String(msg.level),
     message:   String(msg.message),
     timestamp: typeof msg.timestamp === 'number' ? msg.timestamp : Date.now(),
@@ -191,9 +193,17 @@ function activitySnapshot() {
   return { type: 'activity', room: currentRoom, sequence: activitySequence, agents: [...activities.values()] };
 }
 
+function validActivityLabel(value) {
+  return value === undefined || (typeof value === 'string'
+    && !/[\u0000-\u001f\u007f-\u009f]/u.test(value)
+    && value.trim().length > 0 && value.trim().length <= 120);
+}
+
 function recordActivity(value) {
+  if (value && typeof value === 'object') value = { ...value, agent: normalizeAgentId(value.agent) || value.agent };
   if (!value || typeof value !== 'object' || Array.isArray(value)
     || !VALID_AGENTS.has(value.agent) || !ACTIVITY_STATES.has(value.state)
+    || !validActivityLabel(value.activityLabel)
     || (value.label !== undefined && (typeof value.label !== 'string' || value.label.length > 160))) return false;
   activities.set(value.agent, { agent: value.agent, state: value.state, label: value.label || '', updated_at: Date.now() });
   activitySequence += 1;
@@ -238,9 +248,10 @@ wssAgents.on('connection', (ws) => {
     // Identity selection after authenticated upgrade: first message is the agentId
     // -----------------------------------------------------------------------
     if (state.agentId === null) {
-      if (VALID_AGENTS.has(text)) {
-        state.agentId = text;
-        log(`Agent authenticated: ${text}`);
+      const identity = normalizeAgentId(text) || text;
+      if (VALID_AGENTS.has(identity)) {
+        state.agentId = identity;
+        log(`Agent authenticated: ${formatAgentLabel(identity)}`);
         ws.send(JSON.stringify({ type: 'ack' }));
       } else {
         log('Unknown agent identity rejected');
@@ -282,6 +293,12 @@ wssAgents.on('connection', (ws) => {
     } catch {
       log(`Malformed JSON from ${state.agentId}`);
       return;
+    }
+
+    if (parsed && typeof parsed === 'object') parsed.agent = normalizeAgentId(parsed.agent) || parsed.agent;
+    if (parsed?.activityLabel !== undefined) {
+      if (!validActivityLabel(parsed.activityLabel)) return;
+      parsed.activityLabel = parsed.activityLabel.trim();
     }
 
     if (parsed?.type === 'activity') {
@@ -387,6 +404,14 @@ const dashServer = http.createServer((req, res) => {
 
   if (req.method !== 'GET') {
     res.writeHead(405).end('Method Not Allowed');
+    return;
+  }
+
+  if (req.url === '/agent-identity.js') {
+    fs.readFile(path.join(__dirname, '../../scripts/forgeflow/agent-identity.js'), (err, body) => {
+      if (err) { res.writeHead(500).end('Agent catalog unavailable'); return; }
+      res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8' }).end(body);
+    });
     return;
   }
 

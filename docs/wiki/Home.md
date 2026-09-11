@@ -13,11 +13,13 @@ ForgeFlow helps turn an idea into a scoped brief, working code, an evidence-back
 3. **[User Paths](User-Paths.md)**: choose a workflow for the outcome you need.
 4. **[Dashboard and Ember](Dashboard.md)**: understand current activity, readiness, evidence, and empty states.
 
-[Why ForgeFlow](Why-Forgeflow.md) explains the approach. [4.5.0 release notes](../changelogs/v4.5.0.html) describe the packaged version. This wiki follows the current source. The visual guide identifies its own source edition.
+[Why ForgeFlow](Why-Forgeflow.md) explains the approach. [4.6.0 release notes](../changelogs/v4.6.0.html) describe the packaged version. This wiki follows the current source. The visual guide identifies its own source edition.
 
-## New in 4.5.0
+## New in 4.6.0
 
-[Shipping evidence](Implementation-Notes.md) now uses the explicitly selected task's current proof, separates automated and manual checks, and keeps stale or missing evidence visible. This version also includes optional vault memory, task-focused guidance, optional RTK setup, and dashboard startup fixes. [Task Evidence and Recovery](Task-Evidence.md) explains the underlying acceptance checks and resumable phase history.
+[Agent Roles](Agent-Roles.md) now describe responsibility in the agent names. CLI and dashboard messages carry explicit task context, and agent prompts include Orwell's six writing rules. History, context rebuild, cleanup and recovery fixes preserve compatibility across the rename.
+
+For the first upgrade from legacy names, follow the [source-checkout procedure](../role-migration-upgrade.md). An old installed updater cannot apply the new preservation rules during its own update. Later releases use the newly installed helper.
 
 ## A First Useful Task
 

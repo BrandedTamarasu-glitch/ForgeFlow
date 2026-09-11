@@ -19,8 +19,8 @@ Self-improving Forgeflow mechanic: runs monthly alongside `/forgeflow-learnings`
 
 <context>
 $ARGUMENTS:
-- `--agent <name>` — check only one agent file (e.g., `arbiter-review`). Default: all agents.
-- `--canonical <name>` — check only one canonical reference (e.g., `arbiter-intelligence`). Default: all four.
+- `--agent <name>` — check only one agent file (e.g., `architect-review`). Default: all agents.
+- `--canonical <name>` — check only one canonical reference (e.g., `architect-intelligence`). Default: all four.
 - `--threshold N` — section body similarity threshold (0-100) below which a section is classified DRIFTED rather than MODIFIED. Default: 70.
 - `--json` — structured JSON instead of markdown.
 
@@ -30,10 +30,10 @@ Mapping is fixed in this command (not a config file). It reflects the deliberate
 
 | Canonical reference | Target agents |
 |---|---|
-| `agents/_shared/smith-craft.md` | `smith-consult`, `smith-implement`, `smith-audit`, `smith-review` |
-| `agents/_shared/warden-security-intelligence.md` | `warden-consult`, `warden-implement`, `warden-audit`, `warden-review` |
-| `agents/_shared/arbiter-intelligence.md` | `arbiter-consult`, `arbiter-implement`, `arbiter-review` |
-| `agents/_shared/lumen-design-principles.md` | `lumen-consult`, `lumen-implement`, `lumen-review` |
+| `agents/_shared/builder-craft.md` | `builder-consult`, `builder-implement`, `builder-audit`, `builder-review` |
+| `agents/_shared/guardian-security-intelligence.md` | `guardian-consult`, `guardian-implement`, `guardian-audit`, `guardian-review` |
+| `agents/_shared/architect-intelligence.md` | `architect-consult`, `architect-implement`, `architect-review` |
+| `agents/_shared/designer-design-principles.md` | `designer-consult`, `designer-implement`, `designer-review` |
 
 Total mappings: 4 canonicals × avg 3.5 targets = 14 (canonical, agent) pairs per full run.
 </context>
@@ -42,7 +42,7 @@ Total mappings: 4 canonicals × avg 3.5 targets = 14 (canonical, agent) pairs pe
 
 - **Canonical files are reference-only.** They have frontmatter declaring them non-agents (`description: Canonical ... reference. Not an agent...`). Never dispatch a canonical as a subagent.
 - **Partial adaptation is expected.** Agents do not paste the canonical verbatim; they adapt wording for their mode (consult vs review). A MODIFIED section is normal. Only MISSING or fully DRIFTED sections are actionable.
-- **Mode-specific sections are expected.** Arbiter modes only compare sections relevant to that mode. Consult does not need implement-only deviation handling; review does not need consult-only scope logs.
+- **Mode-specific sections are expected.** Architect modes only compare sections relevant to that mode. Consult does not need implement-only deviation handling; review does not need consult-only scope logs.
 - **Adapted sections are informational.** A section preceded by `<!-- adapted from _shared/... -->` is treated as MODIFIED, not DRIFTED, even when line similarity is low.
 - **Frontmatter is not compared.** The agent's frontmatter is its own; only body sections (under `## ` headings) are scored.
 - **Heading text must match exactly.** If the canonical renames a section from "Verdict Scale" to "Verdict Thresholds," every consuming agent will show MISSING for "Verdict Thresholds" until they resync. This is correct behavior — it surfaces the rename as actionable drift.
@@ -88,7 +88,7 @@ else
   AGENT_DIR="$HOME/.claude/agents"
 fi
 
-for canonical in smith-craft warden-security-intelligence arbiter-intelligence lumen-design-principles; do
+for canonical in builder-craft guardian-security-intelligence architect-intelligence designer-design-principles; do
   path="$CANONICAL_DIR/$canonical.md"
   [ -r "$path" ] || echo "MISSING CANONICAL: $path"
 done
@@ -116,11 +116,11 @@ Store as: `agents[agent_name] = [(heading, normalized_lines), ...]`
 
 ## Step 4: Score each (canonical, agent) pair
 
-For each pair, first filter the canonical sections to the sections expected for that agent mode. Most canonicals compare every `##` section; Arbiter has mode-specific section expectations:
+For each pair, first filter the canonical sections to the sections expected for that agent mode. Most canonicals compare every `##` section; Architect has mode-specific section expectations:
 
-- `arbiter-consult`: Conflict Resolution Hierarchy, Blocked Findings Protocol, Scope Gate, Rejected Alternatives Log, Lead Architect Intelligence
-- `arbiter-implement`: Blocked Findings Protocol, Deviation Protocol, Lead Architect Intelligence
-- `arbiter-review`: Conflict Resolution Hierarchy, Blocked Findings Protocol, Verdict Scale, Lead Architect Intelligence
+- `architect-consult`: Conflict Resolution Hierarchy, Blocked Findings Protocol, Scope Gate, Rejected Alternatives Log, Lead Architect Intelligence
+- `architect-implement`: Blocked Findings Protocol, Deviation Protocol, Lead Architect Intelligence
+- `architect-review`: Conflict Resolution Hierarchy, Blocked Findings Protocol, Verdict Scale, Lead Architect Intelligence
 
 Then score each expected section:
 
@@ -192,8 +192,8 @@ If `--json`:
   },
   "per_agent": [
     {
-      "agent": "arbiter-consult",
-      "canonical": "arbiter-intelligence",
+      "agent": "architect-consult",
+      "canonical": "architect-intelligence",
       "drift_score": 0.14,
       "synced": 9,
       "modified": 2,
@@ -214,7 +214,7 @@ If markdown (default):
 # Forgeflow Drift Report
 
 ## Scan
-- Canonicals: 4 (smith-craft, warden-security-intelligence, arbiter-intelligence, lumen-design-principles)
+- Canonicals: 4 (builder-craft, guardian-security-intelligence, architect-intelligence, designer-design-principles)
 - Agents: 14
 - Section comparisons: 112
 - Threshold: 70% similarity
@@ -222,27 +222,27 @@ If markdown (default):
 ## Summary
 | Agent | Canonical | Synced | Modified | Drifted | Missing |
 |---|---|---|---|---|---|
-| arbiter-review | arbiter-intelligence | 8 | 2 | 1 | 1 |
-| smith-audit | smith-craft | 10 | 4 | 0 | 2 |
+| architect-review | architect-intelligence | 8 | 2 | 1 | 1 |
+| builder-audit | builder-craft | 10 | 4 | 0 | 2 |
 | ... | ... | ... | ... | ... | ... |
 
 ## Actionable drift
 
-### arbiter-review (drift_score: 0.21)
+### architect-review (drift_score: 0.21)
 - **MISSING**: `Scope Gate` — section present in canonical, absent in agent
 - **DRIFTED**: `Verdict Scale` — 38% similarity; canonical has added "CONDITIONAL APPROVE" row, agent still uses old 4-verdict scale
 
-  Fix: copy the `## Verdict Scale` section from `agents/_shared/arbiter-intelligence.md` into `agents/arbiter-review.md`.
+  Fix: copy the `## Verdict Scale` section from `agents/_shared/architect-intelligence.md` into `agents/architect-review.md`.
 
-### smith-audit (drift_score: 0.18)
+### builder-audit (drift_score: 0.18)
 - **MISSING**: `Performance Review Checklist`
 - **MISSING**: `Database Pattern Audit`
 
-  Fix: copy both sections from `agents/_shared/smith-craft.md` into `agents/smith-audit.md`.
+  Fix: copy both sections from `agents/_shared/builder-craft.md` into `agents/builder-audit.md`.
 
 ## Informational (not actionable)
 
-### warden-consult
+### guardian-consult
 - 6 sections SYNCED, 3 MODIFIED. No drift above threshold.
 
 ## Recommendation

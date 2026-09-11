@@ -214,7 +214,7 @@ For an open-ended, consequential decision with several plausible approaches, opt
 $research --diverge choose a durable background-job architecture
 ```
 
-The three fixed frames run without project memory or access to one another. A separate Compass critic checks their candidates against normal codebase evidence, clusters them, records attractive traps and disconfirming tests, and recommends a falsification experiment. Failed lanes are retried once and remain visible if the result must degrade. The divergent route is read-only, including its converged findings; raw branch output is ephemeral. Focused research uses the automatic routing policy described below; `--no-diverge` selects normal research.
+The three fixed frames run without project memory or access to one another. A separate Product Lead critic checks their candidates against normal codebase evidence, clusters them, records attractive traps and disconfirming tests, and recommends a falsification experiment. Failed lanes are retried once and remain visible if the result must degrade. The divergent route is read-only, including its converged findings; raw branch output is ephemeral. Focused research uses the automatic routing policy described below; `--no-diverge` selects normal research.
 
 Use `/forgeflow-research-divergence-eval` or `$forgeflow-research-divergence-eval` to preview the deterministic eight-task evaluation pack. Pass `--results <repository-relative-json>` to summarize captured evidence. Both modes are read-only and call no models or network services. A summary does not prove execution, human validation, general superiority, or transfer beyond the sample; claims must disclose sample size, scorer provenance, failures, and limitations.
 

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgeflow - V4.6.0 Changelog</title>
+  <style>
+    body { background: #0d0d0d; color: #ddd8cc; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.65; margin: 0; }
+    main { max-width: 820px; margin: 0 auto; padding: 72px 32px 96px; }
+    .version { color: #7a7670; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
+    h1 { font-size: 40px; font-weight: 400; line-height: 1.15; margin: 14px 0 20px; }
+    h2 { border-top: 1px solid #303030; color: #f0a232; font-size: 18px; font-weight: 600; margin: 42px 0 18px; padding-top: 28px; }
+    p, li { color: #c9c2b6; }
+    code { background: #1c1c1c; border: 1px solid #303030; border-radius: 4px; color: #f0c070; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 1px 5px; }
+    a { color: #f0a232; text-decoration: underline; text-underline-offset: 0.16em; }
+    .nav { display: flex; justify-content: space-between; margin-top: 52px; padding-top: 24px; border-top: 1px solid #303030; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+  </style>
+</head>
+<body><main>
+<div class="version">ForgeFlow V4.6.0 · 11 September 2026</div>
+<h1>Clear agent roles and safer upgrades</h1>
+<h2>First upgrade from legacy names</h2>
+<p>Use the <a href="../role-migration-upgrade.md">source-checkout upgrade procedure</a> for this migration. Do not start it with an old installed updater: downloading new code does not replace the functions already running. The release announcement supplies the reviewed commit SHA. The new installer preserves edited or unverified legacy agents and installs the updater used for later releases.</p>
+<p>A full source install can replace customized current managed files. Preview it and keep an independent copy of customizations you want to merge. Restart the host after installation. A byte-identical reinstall preserves the migration recovery snapshot; a later changed install replaces that single snapshot.</p>
+<h2>Names and output</h2><ul>
+<li>Smith becomes Builder; Warden becomes Guardian; Lumen becomes Designer; Atlas becomes Coordinator; Arbiter becomes Architect; Compass becomes Product Lead; Aegis becomes Verifier.</li>
+<li>CLI and dashboard messages identify the role and explicit task context. Context persists through replay and export without inferring new context for old messages.</li>
+<li>Agent prompts apply Orwell's six writing rules. Generated debate roles now distinguish judging and answer-key validation.</li>
+<li>Legacy identity aliases remain accepted at supported boundaries. Historical evidence bytes and stable v1 envelope keys remain unchanged.</li>
+</ul>
+<h2>Migration and runtime fixes</h2><ul>
+<li>Historical learning IDs stay stable so retired advice remains retired. Mixed legacy/canonical reviewer histories share report thresholds.</li>
+<li>Rebuilt context packs select active packets from their manifest while preserving old packet files.</li>
+<li>Automatic stock-legacy cleanup does not reinstall customized replacements. Repeated unchanged source installs retain the recovery snapshot.</li>
+<li>Lifecycle requests validate the complete upstream message limit before acknowledging the request. Partial hook installs retain unrelated telemetry and explain how to repair explicit verdict recording.</li>
+<li>Profile registration has a bounded timeout. Current service docs, schema examples and presentation labels match the new names.</li>
+</ul>
+<h2>Validation</h2>
+<p>The local regression suite covers the real pre-migration updater as a negative control, both-host source installation, custom-file preservation, recovery, historical identity, context contracts, transport and generated prompts. The release announcement records final test results. GitHub Actions remains disabled; no hosted model run or live host restart is claimed.</p>
+<p><a href="../wiki/Agent-Roles.md">Agent roles</a> · <a href="../wiki/Release-Process.md">Release process</a></p>
+<div class="nav"><a href="./v4.5.0.html">&larr; V4.5.0</a><span>V4.6.0</span></div>
+</main></body></html>

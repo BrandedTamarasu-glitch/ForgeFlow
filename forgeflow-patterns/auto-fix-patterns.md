@@ -12,12 +12,12 @@ These finding classes route to `NIT` tier and auto-apply with ~95% worker succes
 
 | Class | Example | Target agent |
 |---|---|---|
-| **Formatting only** | `prettier --write` equivalent | Smith implement |
-| **Unused imports** | `import { unusedX } from './lib'` | Smith implement |
-| **Missing `const`/`let`** | `var x = 1` → `const x = 1` | Smith implement |
-| **Missing return in void handler** | handler declared `void` but has implicit return | Smith implement |
-| **Missing aria-label on icon-only button** | `<button><Icon /></button>` | Lumen implement |
-| **Missing semicolons (if project uses them)** | lint autofix territory | Smith implement |
+| **Formatting only** | `prettier --write` equivalent | Builder implement |
+| **Unused imports** | `import { unusedX } from './lib'` | Builder implement |
+| **Missing `const`/`let`** | `var x = 1` → `const x = 1` | Builder implement |
+| **Missing return in void handler** | handler declared `void` but has implicit return | Builder implement |
+| **Missing aria-label on icon-only button** | `<button><Icon /></button>` | Designer implement |
+| **Missing semicolons (if project uses them)** | lint autofix territory | Builder implement |
 
 **Why reliable:** Each is single-file, purely textual, no behavior change, validated by lint/typecheck after.
 
@@ -44,7 +44,7 @@ These classes surface to the user even if the tier heuristics say "safe". The do
 
 | Class | Why not auto | Surfaced to |
 |---|---|---|
-| **Anything flagged by Warden** | Security-adjacent "safe" doesn't exist | User |
+| **Anything flagged by Guardian** | Security-adjacent "safe" doesn't exist | User |
 | **Migrations** | Schema changes can lose data | User |
 | **package.json dependencies** | Version changes are load-bearing | User |
 | **Auth / session / permissions** | Silent change to access control | User |
@@ -68,7 +68,7 @@ Blockers always surface with full detail. Additionally include:
 
 ```
 For each finding:
-  1. Source reviewer? If Warden → MUST-FIX-RISKY (hard rule)
+  1. Source reviewer? If Guardian → MUST-FIX-RISKY (hard rule)
   2. Touches migration/secret/package.json? → BLOCKER
   3. Multi-file? → MUST-FIX-RISKY
   4. Reviewer used "consider"/"might"/"perhaps"? → MUST-FIX-RISKY

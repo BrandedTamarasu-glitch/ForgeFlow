@@ -46,6 +46,11 @@ assert.throws(() => assertSafeDestination(path.join(dangling, 'child'), safeHome
 assert.equal(manifestEntry('.agents/skills/audit/../../outside', safeHome, 'codex'), null);
 
 const checks = [
+  ...['claude', 'codex'].flatMap((target) => ['js', 'd.ts'].map((extension) => {
+    const source = `scripts/forgeflow/agent-identity.${extension}`;
+    const entry = manifestEntry(source, home, target);
+    return [`${target} installs identity ${extension}`, entry?.destination === `${home}/forgeflow/${source}`];
+  })),
   ...['js-yaml.js', 'LICENSE', 'README.md'].flatMap(name => {
     const source = `scripts/forgeflow/vendor/js-yaml/${name}`;
     return [

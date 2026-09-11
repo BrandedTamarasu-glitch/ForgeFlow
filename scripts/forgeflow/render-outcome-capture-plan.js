@@ -61,7 +61,7 @@ function evidenceStatus(readerStatus, intelligenceStatus) {
 function afterActionPrompt(name) {
   return {
     'next-work-outcomes': 'After acting on a recommended next item, record whether it was useful, ignored, incorrect, or blocked.',
-    'review-outcomes': 'After Arbiter resolves a review, record the verdict and how many findings were confirmed.',
+    'review-outcomes': 'After Architect resolves a review, record the verdict and how many findings were confirmed.',
     'agent-feedback': 'After a reviewer hint clearly helps or misleads, record a short useful, stale, or incorrect signal.',
   }[name] || 'Record only observed outcomes after real work.';
 }

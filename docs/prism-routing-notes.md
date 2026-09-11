@@ -17,8 +17,8 @@ Forgeflow already has workflow-level analogues for selective persona activation:
 - `/review` routes by diff shape: skip, thin, full, deep.
 - Agents receive bounded file context and file-scope constraints.
 - Specialist findings require concrete evidence and fixes.
-- Arbiter synthesizes, deduplicates, and rejects weak or unconfirmed findings.
-- Compass performs final requirements, UX, accessibility, and validation checks.
+- Architect synthesizes, deduplicates, and rejects weak or unconfirmed findings.
+- Product Lead performs final requirements, UX, accessibility, and validation checks.
 - Telemetry records verdicts, auto-fix events, and overturned findings.
 
 This is a prompt/workflow analogue of PRISM's model-level gate.
@@ -31,14 +31,14 @@ Use existing telemetry to tune which agents run:
 
 - High false-positive rate for an agent/class should trigger stricter pre-checks.
 - Repeated real findings in a path/class should expand routing triggers.
-- Atlas should stay out of thin mode unless feature/spec breadth warrants it.
-- Lumen should route into backend diffs when service-boundary or client-path evidence suggests UX/connectivity risk.
+- Coordinator should stay out of thin mode unless feature/spec breadth warrants it.
+- Designer should route into backend diffs when service-boundary or client-path evidence suggests UX/connectivity risk.
 
 Initial implementation can be heuristic and explainable. It does not need model training.
 
 ### 2. Per-Agent Confidence Calibration
 
-Use Arbiter's overturned findings plus review history to derive trust by agent and finding class:
+Use Architect's overturned findings plus review history to derive trust by agent and finding class:
 
 ```text
 warden/sql-injection: confirmed 2, overturned 0 -> high trust
@@ -62,7 +62,7 @@ For high-risk findings, add a non-persona verifier before surfacing a blocker:
 Verifier prompt shape:
 
 ```text
-You are a Aegis. No persona. Confirm or reject this finding from visible evidence only.
+You are a Verifier. No persona. Confirm or reject this finding from visible evidence only.
 Return: CONFIRMED, REJECTED, or BLOCKED.
 Required evidence: attacker-controlled input, call path, state mutation, failing invariant, or exact schema/data-loss path.
 ```
@@ -88,7 +88,7 @@ Long-term design:
 
 1. Specialist persona generates candidate concerns.
 2. Neutral verifier checks candidates.
-3. Arbiter synthesizes only verified or explicitly blocked claims.
+3. Architect synthesizes only verified or explicitly blocked claims.
 
 That keeps the useful part of personas, while reducing persona-driven overconfidence.
 
@@ -112,7 +112,7 @@ The Codex model retiering now matches this direction:
 
 Codex Sprint 1 adds:
 
-- `.codex/agents/aegis.toml`
+- `.codex/agents/verifier.toml`
 - `.agents/skills/aegis-verify/SKILL.md`
 - high-risk verifier routing guidance in `.agents/skills/forgeflow-review/SKILL.md`
 
@@ -133,7 +133,7 @@ Codex Sprint 4 adds:
 - optional `--calibration <summary.json>` input for `explain-review-route.js`
 - `telemetry_hints` that expose high-value, noisy, or insufficient-history classes
 - conservative verifier escalation for historically noisy classes
-- Lumen expansion for thin-mode service-boundary diffs when UX/connectivity history supports it
+- Designer expansion for thin-mode service-boundary diffs when UX/connectivity history supports it
 
 The routing remains heuristic and auditable. Calibration can explain or tighten a route, but low-count history is surfaced without changing agent selection.
 

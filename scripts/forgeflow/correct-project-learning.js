@@ -81,7 +81,7 @@ function correctProjectLearning(opts = {}) {
   // describe the new guidance only, otherwise the retirement would no longer
   // resolve to the target id.
   const replacementEntry = normalizeEntry({ category, learning: replacement, source, evidence, confidence, evidence_count: target.evidence_count, application_guidance: target.application_guidance, conflict_key: conflictKey, conflict_value: conflictValue, status: 'active' });
-  const retired = normalizeEntry({ ...target, status: 'superseded', superseded_by: replacementEntry.id });
+  const retired = normalizeEntry({ ...target, source: target.source || 'Atlas', status: 'superseded', superseded_by: replacementEntry.id });
   const result = { status: opts.write ? 'written' : 'preview', project_dir: projectDir, candidates_file: file, target: { id, category: target.category, learning: target.learning }, retirement: retired, replacement: replacementEntry, writes: opts.write ? 2 : 0 };
   if (opts.write) recordProjectLearning({ projectDir, inputEntries: [retired, replacementEntry] });
   return result;

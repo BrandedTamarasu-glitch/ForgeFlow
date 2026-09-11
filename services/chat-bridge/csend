@@ -1,7 +1,7 @@
 #!/bin/bash
 # csend — fire-and-forget chat message sender for Forgeflow agents
-# Usage: csend <agent> <level> <message>
-#   agent: compass | fc | warden | lumen | atlas | arbiter
+# Usage: csend <agent> <level> <message> [activity-label]
+#   agent: product_lead | builder | guardian | designer | coordinator | architect | verifier
 #   level: phase | decision | conversation
 # Failures are always silent — never breaks agent execution.
 
@@ -10,6 +10,8 @@ set -euo pipefail
 agent="${1:-}"
 level="${2:-}"
 message="${3:-}"
+activity_label="${4:-}"
+activity_supplied="${4+x}"
 
 if [ -z "$agent" ] || [ -z "$level" ] || [ -z "$message" ]; then
   exit 0
@@ -24,8 +26,8 @@ fi
 if [ -z "$token" ]; then
   exit 0
 fi
-body=$(jq -n --arg a "$agent" --arg l "$level" --arg m "$message" \
-  '{agent: $a, level: $l, message: $m}')
+body=$(jq -n --arg a "$agent" --arg l "$level" --arg m "$message" --arg activity "$activity_label" --arg supplied "$activity_supplied" \
+  '{agent: $a, level: $l, message: $m} + (if $supplied == "" then {} else {activityLabel: $activity} end)')
 
 printf 'X-Forgeflow-Token: %s\n' "$token" | curl -s --max-time 1 --header @- \
   -X POST \

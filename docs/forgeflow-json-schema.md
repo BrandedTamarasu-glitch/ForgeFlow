@@ -33,11 +33,11 @@ If `/review` cannot produce a verdict (classifier skip-mode, pre-flight failure,
   "routing_override": null,
   "arbiter": {
     "verdict": "APPROVE | CONDITIONAL_APPROVE | REVISE | BLOCK",
-    "summary": "Arbiter's 1-sentence verdict summary"
+    "summary": "Architect's 1-sentence verdict summary"
   },
   "compass": {
     "verdict": "CONFIRM | CHALLENGE",
-    "summary": "Compass's 1-sentence verdict summary",
+    "summary": "Product Lead's 1-sentence verdict summary",
     "tests_run": true,
     "tests_passed": 12,
     "tests_failed": 0,
@@ -51,7 +51,7 @@ If `/review` cannot produce a verdict (classifier skip-mode, pre-flight failure,
         "detail": "Full explanation",
         "file": "src/auth/passport.ts",
         "line": 42,
-        "raised_by": "warden | smith | lumen | atlas | arbiter | compass",
+        "raised_by": "guardian | builder | designer | coordinator | architect | product_lead | verifier",
         "class": "null-safety | sql-injection | schema-mismatch | ...",
         "severity": "blocker"
       }
@@ -63,7 +63,7 @@ If `/review` cannot produce a verdict (classifier skip-mode, pre-flight failure,
   },
   "overturned_findings": [
     {
-      "reviewer": "smith",
+      "reviewer": "builder",
       "class": "n-plus-one",
       "finding": "loop iterates fixed batches, not per-record"
     }
@@ -111,10 +111,10 @@ If `/review` cannot produce a verdict (classifier skip-mode, pre-flight failure,
 | `summary` | string | yes | Short synthesis; for PR comment header |
 | `routing_mode` | enum | yes | Which mode the Step 0.5 classifier picked |
 | `routing_override` | string \| null | yes | Populated when `--mode` overrode the classifier, else null |
-| `arbiter` | object | when verdict ≠ SKIPPED | Arbiter's technical verdict |
-| `compass` | object | when verdict ∉ {SKIPPED, ABORTED} | Compass runs in thin, full, and deep modes — she always follows Arbiter. Only a full classifier skip or pre-flight abort omits her |
+| `arbiter` | object | when verdict ≠ SKIPPED | Architect's technical verdict |
+| `compass` | object | when verdict ∉ {SKIPPED, ABORTED} | Product Lead runs in thin, full, and deep modes — she always follows Architect. Only a full classifier skip or pre-flight abort omits her |
 | `findings` | object | yes | Always present; arrays may be empty |
-| `overturned_findings` | array | yes | Empty when Arbiter overturned nothing |
+| `overturned_findings` | array | yes | Empty when Architect overturned nothing |
 | `chunking` | object | yes | `chunked: false` when diff ≤ 30 files |
 | `files_reviewed` | array | yes | Paths relative to repo root |
 | `metadata` | object | yes | Audit + cost tracking |
@@ -124,10 +124,10 @@ If `/review` cannot produce a verdict (classifier skip-mode, pre-flight failure,
 
 | Value | When | CI exit code |
 |---|---|---|
-| `APPROVE` | Arbiter APPROVE + Compass CONFIRM (or Compass not required) | 0 |
-| `CONDITIONAL_APPROVE` | Arbiter CONDITIONAL APPROVE with open blocked findings | 0 |
-| `REVISE` | Arbiter REVISE OR Compass CHALLENGE | 1 |
-| `BLOCK` | Arbiter BLOCK | 1 |
+| `APPROVE` | Architect APPROVE + Product Lead CONFIRM (or Product Lead not required) | 0 |
+| `CONDITIONAL_APPROVE` | Architect CONDITIONAL APPROVE with open blocked findings | 0 |
+| `REVISE` | Architect REVISE OR Product Lead CHALLENGE | 1 |
+| `BLOCK` | Architect BLOCK | 1 |
 | `SKIPPED` | Classifier skip-mode, or no files to review | 0 |
 | `ABORTED` | Pre-flight failed, budget exceeded, or auth failure | 2 |
 
@@ -148,7 +148,7 @@ Each finding entry:
 
 ### `overturned_findings[]`
 
-Emitted only when the routing mode includes Arbiter synthesis (thin / full / deep). Extracted from Arbiter's `## Overturned Findings (telemetry)` section per the tag format in `agents/arbiter-review.md`. Empty when Arbiter overturned nothing.
+Emitted only when the routing mode includes Architect synthesis (thin / full / deep). Extracted from Architect's `## Overturned Findings (telemetry)` section per the tag format in `agents/architect-review.md`. Empty when Architect overturned nothing.
 
 ### `chunking`
 
@@ -179,7 +179,7 @@ Rough estimate from per-mode token projections × current model rates. Not autho
 
 ### `metadata.parse_warnings`
 
-Array of strings. Empty when finding parsing produced no issues. Populated when Arbiter's review output lacked the expected structure (free-form prose instead of bulleted items under a tier section, or a section heading was absent). Consumers should treat a non-empty `parse_warnings` array as a signal that the `findings` data may be incomplete — the verdict field is still authoritative.
+Array of strings. Empty when finding parsing produced no issues. Populated when Architect's review output lacked the expected structure (free-form prose instead of bulleted items under a tier section, or a section heading was absent). Consumers should treat a non-empty `parse_warnings` array as a signal that the `findings` data may be incomplete — the verdict field is still authoritative.
 
 ---
 
@@ -368,3 +368,5 @@ Breaking changes bump to v2:
 - Tightening enum values that were previously open
 
 Consumers pin to `schema_version: "1"` until they explicitly add v2 support.
+
+Agent identity fields use the canonical IDs above. Readers also accept the legacy aliases `warden`, `smith` (or `fc`), `lumen`, `atlas`, `arbiter`, `compass`, and `aegis`, respectively. New records should use canonical IDs. The top-level v1 `arbiter` and `compass` keys remain unchanged.

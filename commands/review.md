@@ -15,7 +15,7 @@ allowed-tools:
 <objective>
 Run the Forgeflow review team on changed files. Works in any project.
 
-The Forgeflow team: `smith_reviewer`, `warden_reviewer`, `lumen_reviewer`, `atlas_reviewer` (parallel) → `arbiter_reviewer` (synthesis) → `compass_reviewer` (final). Hyphenated command/agent names in legacy docs are display aliases only; use the canonical reviewer ids in route output and context packets.
+The Forgeflow team: `builder_reviewer`, `guardian_reviewer`, `designer_reviewer`, `coordinator_reviewer` (parallel) → `architect_reviewer` (synthesis) → `product_lead_reviewer` (final). Hyphenated command/agent names in legacy docs are display aliases only; use the canonical reviewer ids in route output and context packets.
 </objective>
 
 <context>
@@ -194,7 +194,7 @@ else
 fi
 ```
 
-When the helper succeeds, skip Step 0.5b and use its JSON in prompts, Arbiter synthesis, final output, and CI metadata. `telemetry_hints` are explanatory; they must not suppress Lumen on UI/accessibility files.
+When the helper succeeds, skip Step 0.5b and use its JSON in prompts, Architect synthesis, final output, and CI metadata. `telemetry_hints` are explanatory; they must not suppress Designer on UI/accessibility files.
 
 ### 0.5b. Classify
 
@@ -228,7 +228,7 @@ case "$ROUTING_MODE" in
     Exit cleanly with no Forgeflow spawn.
     ;;
   thin-mode)
-    Output: "Diff classified as <test-only|lockfile-bump|trivial> — running thin mode (Smith + Warden only)."
+    Output: "Diff classified as <test-only|lockfile-bump|trivial> — running thin mode (Builder + Guardian only)."
     Continue. Step 4 will use thin roster.
     ;;
   full-mode)
@@ -236,8 +236,8 @@ case "$ROUTING_MODE" in
     Continue.
     ;;
   deep-mode)
-    Output: "Diff classified as HIGH-RISK (<matched rule>) — running deep mode (full Forgeflow + Warden audit pass)."
-    Continue. Step 4 will add Warden audit pass.
+    Output: "Diff classified as HIGH-RISK (<matched rule>) — running deep mode (full Forgeflow + Guardian audit pass)."
+    Continue. Step 4 will add Guardian audit pass.
     ;;
 esac
 ```
@@ -339,9 +339,9 @@ For each commit SHA in order:
 Earlier commits in this incremental review:
 
 Commit <short-sha-1> (<subject line>):
-  - Smith: <top 3 findings, truncated>
-  - Warden: <...>
-  - Arbiter verdict: <verdict>
+  - Builder: <top 3 findings, truncated>
+  - Guardian: <...>
+  - Architect verdict: <verdict>
 
 Commit <short-sha-2> (<subject line>):
   - <...>
@@ -353,8 +353,8 @@ When reviewing the current commit, look for:
 </prior-findings>
 ```
 
-6. Run Step 5 (Arbiter) for this commit with the prior-findings context.
-7. Record Arbiter's verdict keyed by SHA.
+6. Run Step 5 (Architect) for this commit with the prior-findings context.
+7. Record Architect's verdict keyed by SHA.
 8. Append per-commit results to an in-memory log for use in the next iteration.
 
 ### 1.5c. Aggregate verdict
@@ -374,10 +374,10 @@ Aggregate verdict: **REVISE** (weakest verdict wins, per-commit blockers listed 
 
 Cross-commit signals:
 - 2 regressions detected: def456 renamed session token without updating consumer in ghi789-adjacent file
-- 1 repeated pattern: Smith flagged same null-safety gap in abc123 and ghi789
+- 1 repeated pattern: Builder flagged same null-safety gap in abc123 and ghi789
 ```
 
-Skip Step 6 (Compass final review) per-commit. Run Compass ONCE at the end against the aggregate file set — Compass's validation is about the end state, not each intermediate commit.
+Skip Step 6 (Product Lead final review) per-commit. Run Product Lead ONCE at the end against the aggregate file set — Product Lead's validation is about the end state, not each intermediate commit.
 
 Return from Step 1.5 after producing the aggregate report. Do not fall through to Step 2.
 
@@ -386,13 +386,13 @@ If NOT in incremental mode, continue to Step 2.
 ## Step 2: Classify files
 
 Separate into:
-- **Backend/general files** — reviewed by Smith, Warden, Atlas, Lumen (connectivity hat)
-- **Frontend files** — Lumen also applies frontend hat
+- **Backend/general files** — reviewed by Builder, Guardian, Coordinator, Designer (connectivity hat)
+- **Frontend files** — Designer also applies frontend hat
   Frontend detection: files in `frontend/`, `src/components/`, `src/pages/`, `public/`, or with extensions `.tsx`, `.jsx`, `.vue`, `.svelte`, `.css`, `.scss`, `.html`
 
-Note: Lumen always participates. Frontend files activate his frontend hat. His connectivity hat (microservices data pathways, redundant calls, service integration) is always on.
+Note: Designer always participates. Frontend files activate his frontend hat. His connectivity hat (microservices data pathways, redundant calls, service integration) is always on.
 
-## Step 3: Load Atlas's persistent context
+## Step 3: Load Coordinator's persistent context
 
 ```bash
 PROJECT_ROOT="${PROJECT_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
@@ -403,7 +403,7 @@ mkdir -p "${FORGEFLOW_DIR}/agent-notes"
 
 Ensure `.forgeflow/` is in `.gitignore`. If not, add it.
 
-Also check for Compass's prior phase outputs:
+Also check for Product Lead's prior phase outputs:
 ```bash
 PLAN_PATH="${FORGEFLOW_DIR}/current-plan.md"
 DISCUSSION_PATH="${FORGEFLOW_DIR}/current-discussion.md"
@@ -412,7 +412,7 @@ NOTES_PATH="${FORGEFLOW_DIR}/implementation-notes.md"
 PROJECT_LEARNINGS_PATH="${FORGEFLOW_DIR}/project-learnings.md"
 ```
 
-If each path exists, read the file and store its contents as `plan_content`, `discussion_content`, `research_content`, `implementation_notes_content`, and `project_learnings_content` respectively. Pass the file contents (not the paths) to Compass's prompt. Treat implementation notes as context for decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes; they are not proof that the implementation is correct. Treat project learnings as guidance for recurring pitfalls, stable decisions, risk areas, validation patterns, hot files/modules, repeated follow-ups, and recommended next approach; they are not proof and every finding still needs current evidence.
+If each path exists, read the file and store its contents as `plan_content`, `discussion_content`, `research_content`, `implementation_notes_content`, and `project_learnings_content` respectively. Pass the file contents (not the paths) to Product Lead's prompt. Treat implementation notes as context for decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes; they are not proof that the implementation is correct. Treat project learnings as guidance for recurring pitfalls, stable decisions, risk areas, validation patterns, hot files/modules, repeated follow-ups, and recommended next approach; they are not proof and every finding still needs current evidence.
 
 ## Step 3.4: Build local context pack
 
@@ -471,8 +471,8 @@ if [ -x "${HELPER_DIR}/render-lean-review.js" ]; then
 fi
 ```
 
-If the context pack exists, pass the matching `agent-packets/<agent>.md` file contents to each reviewer, `route.json` and `synthesis-input.json` to Arbiter, and `synthesis-input.json` plus Compass's phase artifacts to Compass. The packet includes a **Latest Insights** section from project learnings; agents may use it to anticipate recurring risks and validation patterns, but every finding still needs current evidence. If latest insights are blocked, read `latest-insights-report.json` for the gate status and top check issues. For JS/TS changes, packets also include a **Code Topology** section with static fan-in/fan-out, changed-file neighbor guidance, and code-map trend metadata, while `synthesis-input.json` exposes `code_topology_summary` for Arbiter and Compass. Treat topology as import-graph context, not runtime proof.
-If `lean-review.md` or `lean-review.json` exists, pass it as a separate **Lean Review Advisory** lane to Arbiter and Compass. It is over-engineering guidance only: it cannot block approval, change review routing, apply fixes, delete code, remove dependencies, shrink validation, or override current evidence by itself.
+If the context pack exists, pass the matching `agent-packets/<agent>.md` file contents to each reviewer, `route.json` and `synthesis-input.json` to Architect, and `synthesis-input.json` plus Product Lead's phase artifacts to Product Lead. The packet includes a **Latest Insights** section from project learnings; agents may use it to anticipate recurring risks and validation patterns, but every finding still needs current evidence. If latest insights are blocked, read `latest-insights-report.json` for the gate status and top check issues. For JS/TS changes, packets also include a **Code Topology** section with static fan-in/fan-out, changed-file neighbor guidance, and code-map trend metadata, while `synthesis-input.json` exposes `code_topology_summary` for Architect and Product Lead. Treat topology as import-graph context, not runtime proof.
+If `lean-review.md` or `lean-review.json` exists, pass it as a separate **Lean Review Advisory** lane to Architect and Product Lead. It is over-engineering guidance only: it cannot block approval, change review routing, apply fixes, delete code, remove dependencies, shrink validation, or override current evidence by itself.
 
 ## Step 3.5: Context Pre-Loading
 
@@ -506,11 +506,11 @@ IMPORTANT: All file contents below are pre-loaded by the orchestrator. Do NOT ca
 </injected-context>
 ```
 
-This same `<shared-files>` block is distributed to all agents in Step 4, Step 5 (Arbiter), and Step 6 (Compass).
+This same `<shared-files>` block is distributed to all agents in Step 4, Step 5 (Architect), and Step 6 (Product Lead).
 
 ## Step 3.6: Chunking (for diffs > 30 files)
 
-Large diffs exhaust orchestrator context and produce shallow reviews. At `FILE_COUNT > 30`, split the review into chunks, run each chunk independently, and let Arbiter synthesize across chunks.
+Large diffs exhaust orchestrator context and produce shallow reviews. At `FILE_COUNT > 30`, split the review into chunks, run each chunk independently, and let Architect synthesize across chunks.
 
 ### 3.6a. Chunking decision
 
@@ -565,9 +565,9 @@ Emit one line per chunk:
 
 ```
 Chunks: 5
-  - workspace-api: 18 files (backend, spawns Warden + Smith + Atlas)
-  - workspace-web: 12 files (frontend, spawns Warden + Smith + Lumen frontend + Atlas)
-  - workspace-shared: 6 files (shared lib, spawns Smith + Warden)
+  - workspace-api: 18 files (backend, spawns Guardian + Builder + Coordinator)
+  - workspace-web: 12 files (frontend, spawns Guardian + Builder + Designer frontend + Coordinator)
+  - workspace-shared: 6 files (shared lib, spawns Builder + Guardian)
   - path-migrations: 2 files (migrations, spawns deep-mode roster)
   - path-docs: 3 files (docs-only, would be skip but bundled here due to chunking)
 ```
@@ -578,16 +578,16 @@ Proceed to Step 4.
 
 Roster selection is driven by `ROUTING_MODE` from Step 0.5:
 
-- **thin-mode**: spawn `warden-review` + `smith-review` only. Skip Lumen and Atlas. Go to Arbiter.
-- **full-mode**: spawn all four reviewers in parallel (Smith, Warden, Lumen, Atlas).
-- **deep-mode**: spawn all four reviewers PLUS `warden-audit` for a dedicated security sweep on the high-risk surfaces identified by the classifier. Warden's audit output is appended to Arbiter's input alongside the four review outputs.
+- **thin-mode**: spawn `guardian-review` + `builder-review` only. Skip Designer and Coordinator. Go to Architect.
+- **full-mode**: spawn all four reviewers in parallel (Builder, Guardian, Designer, Coordinator).
+- **deep-mode**: spawn all four reviewers PLUS `guardian-audit` for a dedicated security sweep on the high-risk surfaces identified by the classifier. Guardian's audit output is appended to Architect's input alongside the four review outputs.
 
 Spawned agents receive:
-- `smith-review` — with all changed files
-- `warden-review` — with all changed files
-- `lumen-review` — with all changed files (connectivity hat always on; if frontend files present, note which files activate his frontend hat too)
-- `atlas-review` — with all changed files + FORGEFLOW_DIR path for persistent memory
-- `warden-audit` (deep-mode only) — same file list but with an explicit mandate: "This review was classified as high-risk. Perform a full security audit pass against Tier 1 + Tier 2 checks from `agents/_shared/warden-security-intelligence.md`."
+- `builder-review` — with all changed files
+- `guardian-review` — with all changed files
+- `designer-review` — with all changed files (connectivity hat always on; if frontend files present, note which files activate his frontend hat too)
+- `coordinator-review` — with all changed files + FORGEFLOW_DIR path for persistent memory
+- `guardian-audit` (deep-mode only) — same file list but with an explicit mandate: "This review was classified as high-risk. Perform a full security audit pass against Tier 1 + Tier 2 checks from `agents/_shared/guardian-security-intelligence.md`."
 
 Include the routing note in every reviewer prompt:
 
@@ -604,7 +604,7 @@ If `CHUNKED=true`:
 - Iterate chunks SEQUENTIALLY (not all chunks in parallel — 4 × 8 = 32 concurrent agents is too many).
 - Within each chunk, spawn the chunk's roster in parallel.
 - Roster-per-chunk is determined by the chunk's file set passed through the Step 0.5 classifier rules (e.g., a migrations chunk runs deep-mode even if the overall diff was full-mode).
-- Record each chunk's (Smith / Warden / Lumen / Atlas) output keyed by `chunk-label` so Arbiter can iterate them.
+- Record each chunk's (Builder / Guardian / Designer / Coordinator) output keyed by `chunk-label` so Architect can iterate them.
 - After all chunks complete, proceed to Step 5.
 
 Each agent prompt must include:
@@ -627,7 +627,7 @@ Files listed here that also appear in <injected-context> are pre-loaded — do n
 
 ## Step 4.5: Neutral verification for high-risk findings
 
-Before Arbiter synthesis, send high-risk findings through `aegis` when the agent is available. Trigger verification when any of the following are true:
+Before Architect synthesis, send high-risk findings through `verifier` when the agent is available. Trigger verification when any of the following are true:
 
 - `ROUTING_VERIFIER == required`
 - finding class is security, auth/session/permissions, migration/schema/data loss, critical correctness, broad refactor regression, or accessibility blocker
@@ -651,11 +651,11 @@ Reasoning:
 Required next action:
 ```
 
-Do not broaden scope. `CONFIRMED` requires concrete cited evidence. `REJECTED` and `BLOCKED` findings can still be shown to Arbiter, but they must not become blockers without Arbiter explicitly explaining why the verifier result is insufficient.
+Do not broaden scope. `CONFIRMED` requires concrete cited evidence. `REJECTED` and `BLOCKED` findings can still be shown to Architect, but they must not become blockers without Architect explicitly explaining why the verifier result is insufficient.
 
-## Step 5: Spawn Arbiter
+## Step 5: Spawn Architect
 
-Give Arbiter and Compass the author's change reflection when available and the questions below. Independently assess each answer against the diff and validation evidence; do not rubber-stamp the author's claims. If answers are missing, provide a reviewer assessment and identify unknowns. Include the assessment after findings in the saved review report and interactive summary; preserve the existing CI JSON schema.
+Give Architect and Product Lead the author's change reflection when available and the questions below. Independently assess each answer against the diff and validation evidence; do not rubber-stamp the author's claims. If answers are missing, provide a reviewer assessment and identify unknowns. Include the assessment after findings in the saved review report and interactive summary; preserve the existing CI JSON schema.
 
 1. **Is this the simplest change that solves the problem?** Explain the chosen approach and any smaller alternative considered.
 2. **Is the complexity proportional to this project's scale and risk?** Use known users, operations, and maintenance needs; state assumptions when unknown. A 100-user internal app is an example, not a default or a reason to drop required safeguards.
@@ -672,28 +672,28 @@ Reuse existing issues where possible. Create or update GitHub issues only within
 
 Keep answers brief and specific to the current diff. AI collaboration alone is not verification evidence. Label agent-written answers as an agent assessment; never imply a human inspected, understood, or approved the change without their input. These prompts guide reflection and do not add hooks, hard gates, or mandatory confirmation pauses.
 
-After all parallel agents complete, spawn `arbiter-review` with all their outputs concatenated.
+After all parallel agents complete, spawn `architect-review` with all their outputs concatenated.
 
-Arbiter receives:
+Architect receives:
 - `Use the Forgeflow synthesis packet first. Do not re-read packeted files unless exact source evidence is needed for a final finding.` at the top of the task description
-- `synthesis-input.json`, `route.json`, and `file-manifest.json` from `${CONTEXT_PACK_DIR}` when present; otherwise the assembled `<injected-context>` block from Step 3.5 (with `agent="arbiter-review"`)
+- `synthesis-input.json`, `route.json`, and `file-manifest.json` from `${CONTEXT_PACK_DIR}` when present; otherwise the assembled `<injected-context>` block from Step 3.5 (with `agent="architect-review"`)
 - All agent outputs
-- All Aegis outputs from Step 4.5
+- All Verifier outputs from Step 4.5
 - The routing note from Step 0.5, including telemetry hints when present
 - The file list
 - Working directory: {cwd}
 - Instructions to read any files flagged by multiple reviewers that are NOT already in `<injected-context>`
 
-When `synthesis-input.json` contains `code_topology_summary.available=true`, Arbiter must use `code_topology_summary` as review-context guidance:
+When `synthesis-input.json` contains `code_topology_summary.available=true`, Architect must use `code_topology_summary` as review-context guidance:
 - Check whether reviewer findings touch high fan-in/high fan-out files or changed-file neighbors.
 - Use `changed_file_neighbors[].read_next` to identify focused follow-up reads when exact source evidence is needed.
 - If `code_topology_summary.history.trend.status` is `compared`, use new hotspots and unresolved-import or changed-section deltas to prioritize scrutiny, but verify any concern against current code before reporting it.
 - Do not convert topology hotspots into findings by themselves; topology supports prioritization only.
 - Mention any topology-guided follow-up reads that materially changed the verdict.
 
-### Arbiter under chunking
+### Architect under chunking
 
-If `CHUNKED=true`, Arbiter receives outputs grouped by chunk, with explicit cross-chunk synthesis instructions:
+If `CHUNKED=true`, Architect receives outputs grouped by chunk, with explicit cross-chunk synthesis instructions:
 
 ```
 === CHUNKED REVIEW ===
@@ -711,15 +711,15 @@ Pass 2 — Cross-chunk pattern detection. Look for:
 Output your FINAL verdict based on the cross-chunk view. A single chunk with a BLOCKER blocks the whole review. A systemic pattern across chunks is more severe than an isolated one.
 
 === CHUNK OUTPUTS ===
-<one block per chunk, each containing the chunk's Smith/Warden/Lumen/Atlas outputs>
+<one block per chunk, each containing the chunk's Builder/Guardian/Designer/Coordinator outputs>
 ```
 
-If `CHUNKED=false`, Arbiter's input is the existing non-chunked format.
+If `CHUNKED=false`, Architect's input is the existing non-chunked format.
 
-## Step 6: Spawn Compass (Final Review)
+## Step 6: Spawn Product Lead (Final Review)
 
-After Arbiter completes, spawn `compass-review` with:
-- Arbiter's consolidated verdict
+After Architect completes, spawn `product-lead-review` with:
+- Architect's consolidated verdict
 - All agent review outputs
 - The plan from `.forgeflow/<project-name>/current-plan.md` (if it exists)
 - The discussion from `.forgeflow/<project-name>/current-discussion.md` (if it exists)
@@ -728,25 +728,25 @@ After Arbiter completes, spawn `compass-review` with:
 - The project learnings from `.forgeflow/<project-name>/project-learnings.md` (if it exists, guidance only)
 - Any test files she created during `/implement` (check test directories for her `.spec.ts` files or validation checklists)
 
-Compass's prompt:
+Product Lead's prompt:
 ```
 Use the Forgeflow context packet and synthesis input first. Do not re-read packeted files unless exact source evidence is needed for validation.
 
-{synthesis-input.json + relevant phase artifacts when context pack exists, otherwise injected-context block from Step 3.5 with agent="compass-review"}
+{synthesis-input.json + relevant phase artifacts when context pack exists, otherwise injected-context block from Step 3.5 with agent="product-lead-review"}
 
 If `synthesis-input.json` contains `code_topology_summary.available=true`, use it to prioritize validation around high fan-in/high fan-out files, changed-file neighbors, and compared code-map trend deltas. Treat topology as static import guidance only: it can suggest read-next targets and pressure-test areas, but it is not proof of runtime behavior or a standalone defect.
 
-You are performing your final review after Arbiter's technical verdict.
+You are performing your final review after Architect's technical verdict.
 This includes E2E feature validation and pressure testing — not just code review.
 
 === NANDO — Consolidated Review ===
-{arbiter_output}
+{architect_output}
 
 === AGENT REVIEWS (for reference) ===
-Smith: {smith_output}
-Warden: {warden_output}
-Lumen: {lumen_output}
-Atlas: {atlas_output}
+Builder: {builder_output}
+Guardian: {guardian_output}
+Designer: {designer_output}
+Coordinator: {coordinator_output}
 
 {If plan exists:}
 === EMILY — Implementation Plan (from /plan phase) ===
@@ -762,8 +762,8 @@ Atlas: {atlas_output}
 
 Changed files: {file_list}
 Working directory: {cwd}
-Atlas persistent context: {FORGEFLOW_DIR}/
-Note: read {FORGEFLOW_DIR}/agent-notes/ to surface prior learnings from Atlas's persistent memory.
+Coordinator persistent context: {FORGEFLOW_DIR}/
+Note: read {FORGEFLOW_DIR}/agent-notes/ to surface prior learnings from Coordinator's persistent memory.
 
 Perform your final review:
 1. Run any automated validation tests you created during /implement
@@ -796,43 +796,43 @@ axe-core against live DOM). Perform STATIC validation only:
   — CHALLENGE requires a static issue you can cite.
 ```
 
-Compass runs E2E tests, pressure tests features, checks plan adherence, research alignment, requirements coverage, accessibility compliance, and UX intent. Test failures are findings that factor into her CONFIRM or CHALLENGE verdict.
+Product Lead runs E2E tests, pressure tests features, checks plan adherence, research alignment, requirements coverage, accessibility compliance, and UX intent. Test failures are findings that factor into her CONFIRM or CHALLENGE verdict.
 
 ## Step 7: Present verdict
 
 When `CI_MODE=true`, skip the markdown branches below and jump to Step 7.5.
 
-Display Arbiter's consolidated review followed by Compass's final review.
+Display Architect's consolidated review followed by Product Lead's final review.
 
-Before returning control to the user, append the final review verdict to `${FORGEFLOW_DIR}/review-history.md`. Include timestamp, branch, current HEAD, reviewed files or range, Arbiter verdict, Compass verdict, blocker/must-fix counts, validation summary, and the exact next action. `/ship` reads this file as its approval gate, so do not skip this write for APPROVE, CONDITIONAL_APPROVE, REVISE, or BLOCK outcomes.
+Before returning control to the user, append the final review verdict to `${FORGEFLOW_DIR}/review-history.md`. Include timestamp, branch, current HEAD, reviewed files or range, Architect verdict, Product Lead verdict, blocker/must-fix counts, validation summary, and the exact next action. `/ship` reads this file as its approval gate, so do not skip this write for APPROVE, CONDITIONAL_APPROVE, REVISE, or BLOCK outcomes.
 
-**If Arbiter APPROVE + Compass CONFIRM:**
+**If Architect APPROVE + Product Lead CONFIRM:**
 ```
 ## Forgeflow: APPROVED
 
 {editCount} file(s) passed review.
-Compass confirms plan adherence and accessibility compliance.
+Product Lead confirms plan adherence and accessibility compliance.
 Proceed with confidence.
 ```
 
-**If Arbiter APPROVE + Compass CHALLENGE:**
+**If Architect APPROVE + Product Lead CHALLENGE:**
 ```
 ## Forgeflow: APPROVED (with challenges)
 
-{Arbiter's approval}
+{Architect's approval}
 
-### Compass's Challenges
-{Compass's items for consideration}
+### Product Lead's Challenges
+{Product Lead's items for consideration}
 
-Address Compass's challenges or acknowledge them, then proceed.
+Address Product Lead's challenges or acknowledge them, then proceed.
 ```
 
-**If Arbiter REVISE:**
+**If Architect REVISE:**
 ```
 ## Forgeflow: REVISE
 
-{Arbiter's required changes}
-{Compass's plan adherence notes, if applicable}
+{Architect's required changes}
+{Product Lead's plan adherence notes, if applicable}
 
 Fix the items above, then re-run: /review
 ```
@@ -840,18 +840,18 @@ Fix the items above, then re-run: /review
 **Auto-handoff on REVISE or BLOCK:**
 After presenting a REVISE or BLOCK verdict, if ANY of the following are true, invoke `/handoff "<branch-name> — review REVISE"` before returning control to the user:
 - Session has already burned significant context (subjective self-assessment — if in doubt, write the handoff)
-- Arbiter's verdict includes 3 or more BLOCKER or MUST-FIX items
-- Compass's verdict is CHALLENGE in addition to Arbiter REVISE
+- Architect's verdict includes 3 or more BLOCKER or MUST-FIX items
+- Product Lead's verdict is CHALLENGE in addition to Architect REVISE
 - Any blocker references a file not yet opened in this session (high cost to resume without a handoff)
 
 This prevents the recurring pattern where context exhaustion hits between a REVISE verdict and the next session, forcing the user to reconstruct context from scratch. The Forgeflow team itself captures the blocker list while it is still fresh.
 
-**If Arbiter BLOCK:**
+**If Architect BLOCK:**
 ```
 ## Forgeflow: BLOCKED
 
-{Arbiter's blockers}
-{Compass's accessibility/plan blockers, if applicable}
+{Architect's blockers}
+{Product Lead's accessibility/plan blockers, if applicable}
 
 Resolve blockers before proceeding. Then re-run: /review
 ```
@@ -862,14 +862,14 @@ Executed ONLY when `CI_MODE=true`. Produces a single JSON block wrapped in senti
 
 ### 7.5a. Assemble the object
 
-Build a JSON object with every field from the v1 schema populated. Key derivations:
+Build a JSON object with every field from the v1 schema populated. Preserve the v1 keys `arbiter` (Architect) and `compass` (Product Lead); the role rename does not change those fields. Key derivations:
 
 ```
 verdict = combineVerdicts(arbiter.verdict, compass?.verdict)
-  // APPROVE if Arbiter APPROVE + Compass CONFIRM (or Compass skipped in thin-mode)
-  // CONDITIONAL_APPROVE if Arbiter CONDITIONAL APPROVE with open blocked findings
-  // REVISE if Arbiter REVISE OR Compass CHALLENGE
-  // BLOCK if Arbiter BLOCK
+  // APPROVE if Architect APPROVE + Product Lead CONFIRM (or Product Lead skipped in thin-mode)
+  // CONDITIONAL_APPROVE if Architect CONDITIONAL APPROVE with open blocked findings
+  // REVISE if Architect REVISE OR Product Lead CHALLENGE
+  // BLOCK if Architect BLOCK
   // SKIPPED if Step 0.5 returned skip-mode, or Step 1 had no files
   // ABORTED if any Step 0 gate failed or budget was exceeded
 
@@ -879,13 +879,13 @@ routing_override =
   null         otherwise
 
 compass = null when routing_mode == "skip-mode" OR verdict == "ABORTED"
-  // Compass runs in thin, full, and deep modes — she always follows Arbiter.
+  // Product Lead runs in thin, full, and deep modes — she always follows Architect.
   // Only a full skip or an aborted pre-flight omits her.
 ```
 
 ### 7.5a.1. Findings parsing rules (authoritative)
 
-The orchestrator parses Arbiter's consolidated review (Step 5 output) into the schema's `findings` object. Arbiter's review follows the section template defined in `agents/arbiter-review.md`:
+The orchestrator parses Architect's consolidated review (Step 5 output) into the schema's `findings` object. Architect's review follows the section template defined in `agents/architect-review.md`:
 
 ```
 ## Blockers (must fix before testing)
@@ -902,27 +902,27 @@ Parsing contract:
    - `## Must Fix (before merge)` → `findings.must_fix`
    - `## Recommended Improvements (should do)` → `findings.recommended`
    - `## Boyscout Fixes (pre-existing issues found)` → `findings.boyscout`
-   - There is no "Nits" section in arbiter-review template today; `findings.nits` stays empty unless a future template adds it.
+   - There is no "Nits" section in architect-review template today; `findings.nits` stays empty unless a future template adds it.
 
 2. **Per-finding extraction.** Each top-level bullet under a tier section is one finding. For each bullet:
    - `title` — first line up to 80 chars (truncate at sentence boundary when possible)
    - `detail` — full bullet text (leading `- ` stripped; sub-bullets joined with newlines)
    - `file` + `line` — extracted via regex `([a-zA-Z0-9_./-]+):(\d+)` matching the first occurrence in the bullet. Null when not present.
-   - `raised_by` — `"arbiter"` by default (Arbiter's synthesis). If the bullet contains `"[Smith]"`, `"[Warden]"`, `"[Lumen]"`, `"[Atlas]"` citation, use that reviewer's canonical name.
+   - `raised_by` — `"architect"` by default (Architect's synthesis). If the bullet contains `"[Builder]"`, `"[Guardian]"`, `"[Designer]"`, `"[Coordinator]"` citation, use that reviewer's canonical name.
    - `class` — null unless the bullet text contains a recognizable tag from the overturn class vocabulary (`n-plus-one`, `null-safety`, `sql-injection`, etc.). Pattern recognition is best-effort; null is acceptable.
    - `severity` — matches the tier name.
    - `id` — assigned sequentially by the orchestrator within a run: `B1`, `B2`... for blockers, `M1`... for must-fix, `R1`... for recommended, `BS1`... for boyscout.
 
-3. **Parse warnings.** If a section heading is present but bullet extraction produces zero findings (Arbiter used free-form prose instead of bulleted items), record a parse warning in `metadata.parse_warnings` (array of strings) and emit an empty array for that tier. Never fabricate findings.
+3. **Parse warnings.** If a section heading is present but bullet extraction produces zero findings (Architect used free-form prose instead of bulleted items), record a parse warning in `metadata.parse_warnings` (array of strings) and emit an empty array for that tier. Never fabricate findings.
 
 4. **Schema v1 guarantee.** `findings.<tier>` is always an array (possibly empty). The consumer (CI wrapper, dashboard) can iterate without null checks.
 
 ### 7.5a.2. Remaining fields
 
 ```
-overturned_findings = parsed from Arbiter's "## Overturned Findings (telemetry)" block
+overturned_findings = parsed from Architect's "## Overturned Findings (telemetry)" block
   // Same format contract as the forgeflow-telemetry.js hook regex.
-  // Empty array when Arbiter overturned nothing.
+  // Empty array when Architect overturned nothing.
 
 chunking.chunked = (CHUNKED == true)
 chunking.chunks = [{label, file_count, routing_mode, verdict}, ...]  when chunked
@@ -932,7 +932,7 @@ files_reviewed = Step 1's resolved file list
 metadata.cost_estimate_usd = sum(model_rate_per_mtok * tokens_used_per_agent)
   // Use rough token estimate per routing mode when pre-estimating;
   // use actual dispatch token counts when available post-hoc.
-metadata.parse_warnings = [] | ["Arbiter Blockers section had no bulleted items", ...]
+metadata.parse_warnings = [] | ["Architect Blockers section had no bulleted items", ...]
   // Only populated when parsing could not extract structured findings.
 ```
 
@@ -980,7 +980,7 @@ After emission, exit with the code from the schema's `verdict` → exit code map
 
 ## Step 8: Mark review complete
 
-The auto-fire hook automatically detects review completion. When the hook sees Compass's final verdict (CONFIRM or CHALLENGE), it sets `reviewRun: true` in the session state file, suppressing further advisories for this session.
+The auto-fire hook automatically detects review completion. When the hook sees Product Lead's final verdict (CONFIRM or CHALLENGE), it sets `reviewRun: true` in the session state file, suppressing further advisories for this session.
 
 No manual debounce step is needed -- the hook manages its own state using `data.session_id` from Claude Code's JSON input.
 
@@ -988,14 +988,14 @@ No manual debounce step is needed -- the hook manages its own state using `data.
 
 <success_criteria>
 - [ ] Changed files identified from git or arguments
-- [ ] Smith, Warden, Lumen, Atlas spawned in parallel
+- [ ] Builder, Guardian, Designer, Coordinator spawned in parallel
 - [ ] All agents completed reviews
-- [ ] Arbiter synthesized technical verdict
-- [ ] Compass ran E2E validation tests (automated and/or manual)
-- [ ] Compass executed pressure test scenarios
-- [ ] Compass verified plan adherence, accessibility, and UX intent
-- [ ] Test results included in Compass's verdict
-- [ ] Atlas persisted learnings to .forgeflow/
+- [ ] Architect synthesized technical verdict
+- [ ] Product Lead ran E2E validation tests (automated and/or manual)
+- [ ] Product Lead executed pressure test scenarios
+- [ ] Product Lead verified plan adherence, accessibility, and UX intent
+- [ ] Test results included in Product Lead's verdict
+- [ ] Coordinator persisted learnings to .forgeflow/
 - [ ] Combined verdict presented with clear next steps
 </success_criteria>
 
@@ -1007,3 +1007,18 @@ Use the shared task workflow for a bounded change with an accepted objective or 
 Keep the same task id across consult, implement, review and ship. Use `check` for actual validation commands and saved `evidence` for observed manual/reviewer results. Record a `checkpoint` at each completed phase and before interruption, including the actual host/session identity when available. A saved plan, successful build, or reviewer verdict alone must not mark every criterion verified. Waivers require explicit user intent and a reason.
 
 Before reporting completion or preparing a shipping handoff, read `status --root <project-root> --task <id>`. Stale/missing/failed criteria and pending actions remain visible. Reconcile interrupted actions from actual evidence, then use `resume`; never silently replay unknown work. Legacy work without task records stays supported but has no source-bound task completion claim. All remote authorization rules above still apply.
+
+## Writing for CLI output
+
+Apply George Orwell's six rules to progress updates, agent reports, and final summaries:
+
+1. Never use a metaphor, simile, or other figure of speech which you are used to seeing in print.
+2. Never use a long word where a short one will do.
+3. If it is possible to cut a word out, always cut it out.
+4. Never use the passive where you can use the active.
+5. Never use a foreign phrase, a scientific word, or a jargon word if you can think of an everyday English equivalent.
+6. Break any of these rules sooner than say anything outright barbarous.
+
+Lead with the result or action. Use short paragraphs or bullets that scan well in a terminal. Cut stock phrases, repeated summaries, and persona banter. These rules take precedence over persona style and sample prose.
+
+Keep facts, uncertainty, risks, and required evidence intact. Preserve exact commands, code, paths, identifiers, error text, schema keys, and verdict labels. Keep required report sections and machine-readable formats; apply the rules to prose within them. Use a technical term when it is the clearest accurate choice, and explain it when needed. Before sending, cut words that add no meaning without making the result unclear or unnatural.

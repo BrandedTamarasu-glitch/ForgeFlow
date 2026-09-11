@@ -2,6 +2,13 @@
 
 This repository now includes a Codex-native first pass of the Forgeflow team.
 
+## Existing installations
+
+For the first upgrade from legacy role names, use the
+[source-checkout migration](docs/role-migration-upgrade.md). It executes the new
+installer before the old installed updater can remove customized role files,
+and includes rollback commands for both hosts.
+
 ## What Was Added
 
 - Project-scoped custom agents in `.codex/agents/`
@@ -66,15 +73,15 @@ The PRISM comparison in `docs/prism-routing-notes.md` gives the next design dire
 - Review output should explain why a mode and agent roster were selected.
 - Long-term agent flow should split candidate generation from verdict validation.
 
-This supports the current model policy: cheaper mini-class models for leaf specialists, stronger models for Arbiter/Compass synthesis, and Codex coding models for implementers.
+This supports the current model policy: cheaper mini-class models for leaf specialists, stronger models for Architect/Product Lead synthesis, and Codex coding models for implementers.
 
-Sprint 1 added a Aegis path:
+Sprint 1 added a Verifier path:
 
-- `.codex/agents/aegis.toml`
+- `.codex/agents/verifier.toml`
 - `.agents/skills/aegis-verify/SKILL.md`
-- `forgeflow-review` guidance for verifying high-risk findings before Arbiter synthesis
+- `forgeflow-review` guidance for verifying high-risk findings before Architect synthesis
 
-Verifier results are advisory input to Arbiter. Arbiter still owns final synthesis and verdict integrity.
+Verifier results are advisory input to Architect. Architect still owns final synthesis and verdict integrity.
 
 Sprint 2 adds explainable routing:
 
@@ -91,7 +98,7 @@ Sprint 3 adds calibration summaries:
 - fixture telemetry under `fixtures/calibration/`
 - additive telemetry event `finding-verified`
 
-Calibration summarizes overturned findings, Aegis decisions, and auto-fix outcomes by agent and finding class.
+Calibration summarizes overturned findings, Verifier decisions, and auto-fix outcomes by agent and finding class.
 
 Sprint 4 adds telemetry-informed routing:
 
@@ -99,7 +106,7 @@ Sprint 4 adds telemetry-informed routing:
 - route fixture coverage for noisy classes, high-value service-boundary classes, and insufficient history
 - `telemetry_hints` in route output
 
-Calibration can now require neutral verification for historically noisy finding classes and keep Lumen in thin-mode service-boundary diffs when UX/connectivity history shows value. Low-volume history is reported as a hint but does not alter the route.
+Calibration can now require neutral verification for historically noisy finding classes and keep Designer in thin-mode service-boundary diffs when UX/connectivity history shows value. Low-volume history is reported as a hint but does not alter the route.
 
 Sprint 5 starts review outcome evaluation:
 
@@ -161,7 +168,7 @@ $discuss frame the requirements for adding OAuth login
 $research compare auth implementation options for this stack
 $plan build the implementation plan for the current research
 $audit src/auth
-$aegis-verify verify this security finding against the cited files
+$verifier-verify verify this security finding against the cited files
 $debate
 $quick investigate this bug with the minimum useful Forgeflow
 $ship prepare this branch for merge
@@ -181,7 +188,7 @@ scripts/forgeflow/ship-prepare.sh "Optional PR title"
 scripts/forgeflow/ship-open-pr.sh "<title>" "<body-file>" "<base-branch>"
 scripts/forgeflow/ship-ci-status.sh
 scripts/forgeflow/record-review-outcome.js --input outcome.json
-scripts/forgeflow/generate-codex-agent-stubs.js --agent .codex/agents/smith-reviewer.toml --out /tmp/smith-reviewer.toml
+scripts/forgeflow/generate-codex-agent-stubs.js --agent .codex/agents/builder-reviewer.toml --out /tmp/builder-reviewer.toml
 ```
 
 ## About Slash Commands
@@ -200,7 +207,7 @@ One important exception:
 You can also ask Codex directly to spawn the custom agents by name:
 
 ```text
-Spawn smith_reviewer, warden_reviewer, lumen_reviewer, and atlas_reviewer on this diff. Then have arbiter_reviewer synthesize the result and compass_reviewer do the final check.
+Spawn builder_reviewer, guardian_reviewer, designer_reviewer, and coordinator_reviewer on this diff. Then have architect_reviewer synthesize the result and product_lead_reviewer do the final check.
 ```
 
 ## Notes

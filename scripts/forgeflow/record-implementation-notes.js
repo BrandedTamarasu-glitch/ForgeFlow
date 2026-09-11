@@ -78,7 +78,7 @@ Running notes for decisions, spec gaps, tradeoffs, deviations, follow-ups, and v
 
 - Artifact: .forgeflow/${projectName}/implementation-notes.md
 - Format: append-only Markdown
-- Owner: Atlas serializes note candidates from implement agents; Arbiter verifies and may add final integration notes
+- Owner: Coordinator serializes note candidates from implement agents; Architect verifies and may add final integration notes
 
 ## Decisions
 
@@ -113,7 +113,7 @@ function normalizeEntry(entry) {
     why: String(entry.why || '').trim(),
     ts: String(entry.ts || '').trim(),
   };
-  if (!normalized.agent) normalized.agent = 'Atlas';
+  if (!normalized.agent) normalized.agent = 'Coordinator';
   if (!VALID_CATEGORIES.has(normalized.category)) {
     throw new Error('Invalid implementation note category');
   }

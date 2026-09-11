@@ -5,7 +5,12 @@ const path = require('path');
 const repoRoot = path.resolve(__dirname, '..', '..');
 const docs = [
   'README.md',
+  'CODEX_MIGRATION.md',
+  'commands/update-forgeflow.md',
+  'docs/role-migration-upgrade.md',
   'docs/index.html',
+  ...['builder', 'guardian', 'designer', 'coordinator', 'architect', 'product-lead',
+    'smith', 'warden', 'lumen', 'atlas', 'arbiter', 'compass'].map(role => `docs/${role}.md`),
   ...fs.readdirSync(path.join(repoRoot, 'docs', 'wiki'))
     .filter((file) => file.endsWith('.md'))
     .map((file) => `docs/wiki/${file}`),

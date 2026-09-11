@@ -34,7 +34,7 @@ REAL: None  (or list any genuine issues expected)
 - Parse the user's input: extract the CODE section and the ANSWER KEY section
 - The ANSWER KEY is for your eyes only — never quote it, paraphrase it, or include any of its content in agent prompts
 - Every agent prompt contains: code sample + role description + pre-flight gates only — nothing from the answer key
-- Compass is the only agent who receives the answer key, in the final validation step
+- Product Lead is the only agent who receives the answer key, in the final validation step
 - `[CODE]` in the prompt blocks below means: substitute the full code from the CODE section
 - `[ROUND_N_OUTPUTS]` means: substitute the collected outputs from that round
 
@@ -42,11 +42,11 @@ REAL: None  (or list any genuine issues expected)
 
 ## Round 1 — Openings (run all four in parallel)
 
-Spawn Smith, Warden, Lumen, and Atlas simultaneously. Each receives only the code and its role.
+Spawn Builder, Guardian, Designer, and Coordinator simultaneously. Each receives only the code and its role.
 
 ---
 
-**Smith prompt:**
+**Builder prompt:**
 ```
 Review the following code for quality, design, structure, naming, and correctness.
 State your findings clearly. Be specific — include the exact concern and the line or
@@ -106,7 +106,7 @@ genuinely absent for data that reaches the logic in question.
 
 ---
 
-**Warden prompt:**
+**Guardian prompt:**
 ```
 Review the following code for security vulnerabilities, efficiency concerns, and
 correctness. State your findings clearly. Be specific — include the exact concern
@@ -145,7 +145,7 @@ genuinely absent for data that reaches the logic in question.
 
 ---
 
-**Lumen prompt:**
+**Designer prompt:**
 ```
 Review the following code for connectivity patterns, data pathway efficiency, and
 service integration health. State your findings clearly. Be specific.
@@ -186,7 +186,7 @@ genuinely absent for data that reaches the logic in question.
 
 ---
 
-**Atlas prompt:**
+**Coordinator prompt:**
 ```
 Review the following code from a program management perspective. Is the approach
 sound? Are there hidden complexity risks, coordination concerns, or scope issues?
@@ -231,7 +231,7 @@ finding you most disagree with and explain why it is incorrect or overstated.
 
 ---
 
-**Smith prompt:**
+**Builder prompt:**
 ```
 You are reviewing code. Below are findings from four reviewers (Round 1). Read all
 of them carefully, then identify the finding you most disagree with and explain why
@@ -246,7 +246,7 @@ Round 1 findings:
 
 ---
 
-**Warden prompt:**
+**Guardian prompt:**
 ```
 You are reviewing code through a security and efficiency lens. Below are findings
 from four reviewers (Round 1). Read all of them carefully, then identify the security
@@ -262,7 +262,7 @@ Round 1 findings:
 
 ---
 
-**Lumen prompt:**
+**Designer prompt:**
 ```
 You are reviewing code through a connectivity and data pathway lens. Below are
 findings from four reviewers (Round 1). Read all of them carefully, then identify
@@ -279,7 +279,7 @@ Round 1 findings:
 
 ---
 
-**Atlas prompt:**
+**Coordinator prompt:**
 ```
 Below are findings from four reviewers (Round 1) on a code sample. Read all findings
 carefully. Challenge any that appear disproportionate to actual risk or that conflate
@@ -297,13 +297,13 @@ Collect all four Round 2 outputs before proceeding to Round 3.
 
 ---
 
-## Round 3 — Arbiter's Synthesis
+## Round 3 — Architect's Synthesis
 
-Spawn arbiter-review with the code and all Round 1 + Round 2 outputs.
+Spawn architect-review with the code and all Round 1 + Round 2 outputs.
 
 ---
 
-**Arbiter prompt:**
+**Architect prompt:**
 ```
 You have received a code sample and two rounds of agent review (openings and
 rebuttals). Synthesize all findings. For each concern raised, determine whether
@@ -354,20 +354,20 @@ Round 2 rebuttals:
 [ROUND_2_OUTPUTS]
 ```
 
-Collect Arbiter's output before proceeding to Compass.
+Collect Architect's output before proceeding to Product Lead.
 
 ---
 
-## Validation — Compass
+## Validation — Product Lead
 
-Spawn compass-review with all outputs and the answer key.
+Spawn product-lead-review with all outputs and the answer key.
 
 ---
 
-**Compass prompt:**
+**Product Lead prompt:**
 ```
 You are scoring a structured code review debate. Below is a code sample, two rounds
-of agent debate, and Arbiter's synthesis verdict. Score the debate against the answer key.
+of agent debate, and Architect's synthesis verdict. Score the debate against the answer key.
 
 Code:
 [CODE]
@@ -378,7 +378,7 @@ Round 1 findings:
 Round 2 rebuttals:
 [ROUND_2_OUTPUTS]
 
-Arbiter's synthesis:
+Architect's synthesis:
 [NANDO_OUTPUT]
 
 Answer key — expected false positives (all are correct as written):
@@ -389,10 +389,10 @@ Expected real issues:
 
 For each expected false positive, classify its outcome using this rubric:
 - GATE SUPPRESSED (PASS): Not flagged in Round 1 — pre-flight gate prevented the finding
-- SELF-CORRECTED (PASS): Flagged R1 → challenged R2 → cleared by Arbiter
-- LATE CLEAR (PASS): Flagged R1 → not challenged R2 → cleared by Arbiter
+- SELF-CORRECTED (PASS): Flagged R1 → challenged R2 → cleared by Architect
+- LATE CLEAR (PASS): Flagged R1 → not challenged R2 → cleared by Architect
 - SPLIT: Idempotency/FP aspect cleared; a genuinely different concern correctly preserved
-- UPHELD (FAIL): Raised in R1 and not cleared by Arbiter
+- UPHELD (FAIL): Raised in R1 and not cleared by Architect
 
 Count PHANTOM issues only. A phantom is a finding where the code demonstrably does NOT
 have the problem claimed — i.e., the claim is factually incorrect about what the code
@@ -406,8 +406,8 @@ what agent behaviour should be investigated.
 
 Produce your output in this exact format:
 
-## Compass's Validation
-| Expected False Positive | Outcome | Flagged R1 | Challenged R2 | Cleared by Arbiter | Notes |
+## Product Lead's Validation
+| Expected False Positive | Outcome | Flagged R1 | Challenged R2 | Cleared by Architect | Notes |
 |---|---|---|---|---|---|
 [one row per FP from the answer key — Outcome column uses rubric above]
 
@@ -445,42 +445,57 @@ Use this template:
 
 ## Round 1 — Openings
 
-### Smith
-[Smith Round 1 output]
+### Builder
+[Builder Round 1 output]
 
-### Warden
-[Warden Round 1 output]
+### Guardian
+[Guardian Round 1 output]
 
-### Lumen
-[Lumen Round 1 output]
+### Designer
+[Designer Round 1 output]
 
-### Atlas
-[Atlas Round 1 output]
+### Coordinator
+[Coordinator Round 1 output]
 
 ---
 
 ## Round 2 — Rebuttals
 
-### Smith
-[Smith Round 2 output]
+### Builder
+[Builder Round 2 output]
 
-### Warden
-[Warden Round 2 output]
+### Guardian
+[Guardian Round 2 output]
 
-### Lumen
-[Lumen Round 2 output]
+### Designer
+[Designer Round 2 output]
 
-### Atlas
-[Atlas Round 2 output]
-
----
-
-## Round 3 — Arbiter's Synthesis
-
-[Arbiter output]
+### Coordinator
+[Coordinator Round 2 output]
 
 ---
 
-## Compass's Validation
-[Compass output — scorecard + debrief]
+## Round 3 — Architect's Synthesis
+
+[Architect output]
+
+---
+
+## Product Lead's Validation
+[Product Lead output — scorecard + debrief]
 ```
+
+## Writing for CLI output
+
+Apply George Orwell's six rules to progress updates, agent reports, and final summaries:
+
+1. Never use a metaphor, simile, or other figure of speech which you are used to seeing in print.
+2. Never use a long word where a short one will do.
+3. If it is possible to cut a word out, always cut it out.
+4. Never use the passive where you can use the active.
+5. Never use a foreign phrase, a scientific word, or a jargon word if you can think of an everyday English equivalent.
+6. Break any of these rules sooner than say anything outright barbarous.
+
+Lead with the result or action. Use short paragraphs or bullets that scan well in a terminal. Cut stock phrases, repeated summaries, and persona banter. These rules take precedence over persona style and sample prose.
+
+Keep facts, uncertainty, risks, and required evidence intact. Preserve exact commands, code, paths, identifiers, error text, schema keys, and verdict labels. Keep required report sections and machine-readable formats; apply the rules to prose within them. Use a technical term when it is the clearest accurate choice, and explain it when needed. Before sending, cut words that add no meaning without making the result unclear or unnatural.

@@ -123,7 +123,7 @@ Track these signals:
 
 - Were findings specific, evidenced, and actionable?
 - Did Forgeflow explain why it chose its review mode?
-- Did high-risk findings need Aegis verification?
+- Did high-risk findings need Verifier verification?
 - How many findings were confirmed, rejected, or deferred?
 - How long did the review take compared with the normal maintainer review?
 - Did install, restart, settings, or discovery issues slow the trial?

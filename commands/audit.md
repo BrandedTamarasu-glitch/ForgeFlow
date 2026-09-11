@@ -25,9 +25,9 @@ else
 fi
 ```
 <objective>
-Run Smith and Warden in deep audit mode to surface security vulnerabilities, architectural debt, schema health issues, dead code, and reuse opportunities. Arbiter synthesizes findings into a prioritized action list.
+Run Builder and Guardian in deep audit mode to surface security vulnerabilities, architectural debt, schema health issues, dead code, and reuse opportunities. Architect synthesizes findings into a prioritized action list.
 
-The audit team: `warden-audit` (security + architecture) + `smith-audit` (systems + database) → `arbiter-review` (synthesis).
+The audit team: `guardian-audit` (security + architecture) + `builder-audit` (systems + database) → `architect-review` (synthesis).
 </objective>
 
 <context>
@@ -50,7 +50,7 @@ Check for `CONTEXT.md` in the working directory — if it exists, read it. It pr
 
 If $ARGUMENTS specifies a path, resolve it and confirm it exists before passing to agents.
 
-## Step 2: Spawn Smith and Warden in parallel
+## Step 2: Spawn Builder and Guardian in parallel
 
 Both agents audit independently. Spawn them simultaneously.
 
@@ -60,30 +60,30 @@ Each agent prompt must include:
 - CONTEXT.md contents if available
 - Instruction to read files before forming opinions — no assumptions
 
-**`smith-audit`** — focus on:
+**`builder-audit`** — focus on:
 - Database schema, query patterns, index coverage, migration health
 - Dead code, duplication, established vs deprecated patterns
 - Dependency hygiene
 
-**`warden-audit`** — focus on:
+**`guardian-audit`** — focus on:
 - Auth flows, input validation, injection surfaces, secret handling
 - System boundary coupling, data flow correctness, integration health
 - Reinvented wheels and reuse opportunities
 
-## Step 3: Synthesize with Arbiter
+## Step 3: Synthesize with Architect
 
-After both agents complete, spawn `arbiter-review` with all findings concatenated.
+After both agents complete, spawn `architect-review` with all findings concatenated.
 
-Arbiter's prompt:
+Architect's prompt:
 ```
 You are synthesizing an audit (not a code review of a PR). The following are deep audit
-findings from Smith (systems/database) and Warden (security/architecture).
+findings from Builder (systems/database) and Guardian (security/architecture).
 
-=== Smith — Systems Audit ===
-{smith_output}
+=== Builder — Systems Audit ===
+{builder_output}
 
 === JARED — Security & Architecture Audit ===
-{warden_output}
+{guardian_output}
 
 Focus area: {arguments_or_whole_codebase}
 Working directory: {cwd}
@@ -97,14 +97,14 @@ Produce a consolidated audit report:
 ## Highlights (things that are working well and should be preserved)
 
 For each finding: source agent, file:line if applicable, concrete recommended action.
-Resolve any conflicts between Smith and Warden. If they agree, say so — it strengthens the finding.
+Resolve any conflicts between Builder and Guardian. If they agree, say so — it strengthens the finding.
 ```
 
 ## Step 3.5: Persist findings
 
-After Arbiter completes, spawn `atlas-review` to persist findings to the Forgeflow team's memory.
+After Architect completes, spawn `coordinator-review` to persist findings to the Forgeflow team's memory.
 
-Atlas's prompt:
+Coordinator's prompt:
 ```
 You are persisting audit findings for the Forgeflow's collective memory.
 
@@ -113,14 +113,14 @@ Forgeflow directory: {FORGEFLOW_DIR}
 Audit scope: {arguments_or_whole_codebase}
 
 === NANDO — Consolidated Audit ===
-{arbiter_output}
+{architect_output}
 
 1. Append one JSON line to {FORGEFLOW_DIR}/learnings.jsonl (create file if absent):
    {"date": "<today ISO>", "type": "audit", "scope": "<scope>", "critical_count": <n>, "high_count": <n>, "summary": "<1-2 sentence summary of most important findings>"}
 
-2. Append Arbiter's full report to {FORGEFLOW_DIR}/review-history.md (create file if absent):
+2. Append Architect's full report to {FORGEFLOW_DIR}/review-history.md (create file if absent):
    ## Audit — <today ISO> — <scope>
-   {arbiter_output}
+   {architect_output}
 
 Do not summarise or editorialize beyond the learnings.jsonl summary line.
 ```
@@ -132,7 +132,7 @@ Display the consolidated audit report.
 ```
 ## Audit Complete
 
-{Arbiter's consolidated findings}
+{Architect's consolidated findings}
 
 ### Audit Scope
 {What was audited — full codebase or specific subsystem}
@@ -147,11 +147,26 @@ Save the audit report to `${FORGEFLOW_DIR}/audit-<date>.md` for reference.
 </process>
 
 <success_criteria>
-- [ ] Smith and Warden audited in parallel
+- [ ] Builder and Guardian audited in parallel
 - [ ] Both agents read files before forming opinions
-- [ ] Arbiter synthesized findings with priority tiers
+- [ ] Architect synthesized findings with priority tiers
 - [ ] Conflicts between agents resolved
 - [ ] Audit report saved to .forgeflow/
 - [ ] Audit findings persisted to .forgeflow/learnings.jsonl and review-history.md
 - [ ] Clear next steps presented
 </success_criteria>
+
+## Writing for CLI output
+
+Apply George Orwell's six rules to progress updates, agent reports, and final summaries:
+
+1. Never use a metaphor, simile, or other figure of speech which you are used to seeing in print.
+2. Never use a long word where a short one will do.
+3. If it is possible to cut a word out, always cut it out.
+4. Never use the passive where you can use the active.
+5. Never use a foreign phrase, a scientific word, or a jargon word if you can think of an everyday English equivalent.
+6. Break any of these rules sooner than say anything outright barbarous.
+
+Lead with the result or action. Use short paragraphs or bullets that scan well in a terminal. Cut stock phrases, repeated summaries, and persona banter. These rules take precedence over persona style and sample prose.
+
+Keep facts, uncertainty, risks, and required evidence intact. Preserve exact commands, code, paths, identifiers, error text, schema keys, and verdict labels. Keep required report sections and machine-readable formats; apply the rules to prose within them. Use a technical term when it is the clearest accurate choice, and explain it when needed. Before sending, cut words that add no meaning without making the result unclear or unnatural.

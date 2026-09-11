@@ -98,12 +98,12 @@ function ownerSurface(file) {
 }
 
 function surfaceLane(surface) {
-  if (surface === 'docs') return 'Lumen';
-  if (surface === 'release-shipping' || surface === 'install-update-health') return 'Compass';
-  if (surface === 'agent-workflow' || surface === 'context-intelligence' || surface === 'learning-evidence') return 'Atlas';
-  if (surface === 'review-auto' || surface === 'runtime-core' || surface === 'command-wrapper') return 'Smith';
-  if (surface === 'hooks' || surface === 'privacy-boundary') return 'Warden';
-  return 'Arbiter';
+  if (surface === 'docs') return 'Designer';
+  if (surface === 'release-shipping' || surface === 'install-update-health') return 'Product Lead';
+  if (surface === 'agent-workflow' || surface === 'context-intelligence' || surface === 'learning-evidence') return 'Coordinator';
+  if (surface === 'review-auto' || surface === 'runtime-core' || surface === 'command-wrapper') return 'Builder';
+  if (surface === 'hooks' || surface === 'privacy-boundary') return 'Guardian';
+  return 'Architect';
 }
 
 function surfaceReason(surface) {

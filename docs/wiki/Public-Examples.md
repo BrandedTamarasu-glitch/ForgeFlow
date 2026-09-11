@@ -10,7 +10,7 @@ These are illustrative fixtures, not current installation counts, measured perfo
 Forgeflow installed (abc1234)
 
 Files synced (42):
-  agents/smith-review.md  new -> 91f2a4c0d112
+  agents/builder-review.md  new -> 91f2a4c0d112
   commands/review.md  new -> a3d7e5b9c442
   scripts/forgeflow/health-check.js  new -> 18c0a51bf789
 
@@ -63,16 +63,16 @@ Do not share:
 
 ```text
 Review route: full-mode
-Agents: Smith, Warden, Lumen, Atlas
+Agents: Builder, Guardian, Designer, Coordinator
 Routing reasons:
 - frontend path changed
 - service boundary touched
-- calibration requires Aegis for noisy class: accessibility
+- calibration requires Verifier for noisy class: accessibility
 
-Arbiter verdict: CONDITIONAL_APPROVE
+Architect verdict: CONDITIONAL_APPROVE
 Must fix: 1
 Recommendations: 2
-Compass validation: CONFIRM
+Product Lead validation: CONFIRM
 ```
 
 Safe to share:

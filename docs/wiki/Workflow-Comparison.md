@@ -37,7 +37,7 @@ Write one outcome JSON file per workflow. Use the same `change_id` and `finding_
   "review": {
     "workflow": "single-agent",
     "mode": "thin-mode",
-    "agents_used": ["warden_reviewer"],
+    "agents_used": ["guardian_reviewer"],
     "verifier_decisions": []
   },
   "outcome": {
@@ -90,7 +90,7 @@ The `Workflow Comparison` table reports review count, confirmed findings, reject
 Useful comparison signals:
 
 - Does Forgeflow find confirmed issues missed by baseline or single-agent review?
-- Does Aegis reduce noisy high-risk findings?
+- Does Verifier reduce noisy high-risk findings?
 - Does routing avoid over-reviewing docs-only or config-only changes?
 - Does context packing reduce token load without losing useful findings?
 - Does review time stay acceptable for the project type?

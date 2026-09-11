@@ -134,7 +134,7 @@ if [ "$CHAT_AVAILABLE" = true ]; then
     discuss|consult|forgeflow-consult|plan|quick) EMBER_STATE=planning ;;
     research) EMBER_STATE=researching ;;
     implement|forgeflow-implement) EMBER_STATE=implementing ;;
-    review|forge-review|forgeflow-review|audit|debate|aegis-verify) EMBER_STATE=reviewing ;;
+    review|forge-review|forgeflow-review|audit|debate|verifier-verify|aegis-verify) EMBER_STATE=reviewing ;;
   esac
   printf 'X-Forgeflow-Token: %s\n' "$CHAT_BRIDGE_TOKEN" | curl -s --max-time 1 --header @- \
     -X POST \

@@ -17,7 +17,7 @@ Required fields:
 - `review.mode`: `skip-mode`, `thin-mode`, `full-mode`, or `deep-mode`
 - `review.workflow`: optional comparison label, one of `no-agent`, `single-agent`, or `forgeflow`; omitted records default to `forgeflow`
 - `review.agents_used`: agents that actually ran
-- `review.verifier_decisions`: Aegis decisions, if any
+- `review.verifier_decisions`: Verifier decisions, if any
 - `outcome.findings_total`: total surfaced findings
 - `outcome.findings_confirmed`: findings accepted by the maintainer
 - `outcome.findings_rejected`: findings rejected by the maintainer

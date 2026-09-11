@@ -9,7 +9,7 @@
     {
       "name": "Forgeflow",
       "description": "Lean advisory commands, host adapter checks, and local validation helpers.",
-      "version": "4.5.0",
+      "version": "4.6.0",
       "source": {
         "source": "github",
         "repo": "BrandedTamarasu-glitch/ForgeFlow"

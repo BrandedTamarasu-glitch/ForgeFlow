@@ -202,7 +202,7 @@ function normalizeProjectCandidate(record, file, cutoff) {
   return {
     project: projectFromLearningPath(file),
     date: String(record.date || record.ts || '').slice(0, 10),
-    source: String(record.source || 'Atlas'),
+    source: String(record.source || 'Coordinator'),
     type: String(record.category || 'project-learning'),
     learning,
     files: [],

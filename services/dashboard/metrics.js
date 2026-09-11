@@ -1,6 +1,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const { normalizeAgentId } = require('../../scripts/forgeflow/agent-identity');
 const readline = require('readline');
 
 function rootProjectKey(dirName) {
@@ -39,9 +40,11 @@ function createZeroProjectSummary(key) {
 }
 
 function bumpVerdict(target, reviewer, verdict) {
-  if (reviewer === 'arbiter' && Object.prototype.hasOwnProperty.call(target.arbiter, verdict)) {
+  // Keep the v1 aggregate keys stable while accepting both generations of identity.
+  reviewer = normalizeAgentId(reviewer);
+  if (reviewer === 'architect' && Object.prototype.hasOwnProperty.call(target.arbiter, verdict)) {
     target.arbiter[verdict]++;
-  } else if (reviewer === 'compass' && Object.prototype.hasOwnProperty.call(target.compass, verdict)) {
+  } else if (reviewer === 'product_lead' && Object.prototype.hasOwnProperty.call(target.compass, verdict)) {
     target.compass[verdict]++;
   }
 }

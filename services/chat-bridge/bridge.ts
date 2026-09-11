@@ -125,7 +125,7 @@ function unauthorized(res: ServerResponse): void {
 
 // ---------------------------------------------------------------------------
 // Lifecycle broadcast
-// Uses the requested agent, or the system-level "fc" slot, as sender.
+// Uses the requested agent, or the system slot, as sender.
 // Structured activity travels with the lifecycle message to dashboard listeners.
 // ---------------------------------------------------------------------------
 
@@ -133,13 +133,14 @@ function broadcastLifecycle(
   pool: ConnectionPool,
   room: string,
   event: string,
+  message: string,
   data?: string,
   activityState?: ActivityState,
-  agent: AgentId = 'fc',
+  agent: AgentId = 'system',
+  activityLabel?: string,
 ): void {
-  const message = data ? `[lifecycle] ${event} — ${data}` : `[lifecycle] ${event}`;
-
   pool.send({ agent, level: 'phase', message, timestamp: Date.now(), room,
+    ...(activityLabel !== undefined ? { activityLabel } : {}),
     ...(activityState ? { activity: { state: activityState, label: (data || event).slice(0, 160) } } : {}) });
 }
 
@@ -176,7 +177,7 @@ function createBridgeConfig(): BridgeConfig {
 // Request router
 // ---------------------------------------------------------------------------
 
-async function handleRequest(
+export async function handleRequest(
   req: IncomingMessage,
   res: ServerResponse,
   pool: ConnectionPool,
@@ -295,6 +296,7 @@ async function handleRequest(
 
     const chatMsg: ChatMessage = {
       agent: parsed.agent,
+      ...(parsed.activityLabel !== undefined ? { activityLabel: parsed.activityLabel } : {}),
       level,
       message: parsed.message,
       timestamp: Date.now(),
@@ -327,13 +329,14 @@ async function handleRequest(
       badRequest(res, 'event must be 500 characters or fewer');
       return;
     }
-    if (parsed.data !== undefined && parsed.data.length > 2000) {
-      badRequest(res, 'data must be 2000 characters or fewer');
+    const message = parsed.data ? `[lifecycle] ${parsed.event} — ${parsed.data}` : `[lifecycle] ${parsed.event}`;
+    if (message.length > 2000) {
+      badRequest(res, 'Complete lifecycle message must be 2000 characters or fewer, including prefix, event, and data');
       return;
     }
 
     try {
-      broadcastLifecycle(pool, state.currentRoom, parsed.event, parsed.data, parsed.state, parsed.agent);
+      broadcastLifecycle(pool, state.currentRoom, parsed.event, message, parsed.data, parsed.state, parsed.agent, parsed.activityLabel);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       log(`lifecycle broadcast error: ${message}`);
@@ -471,7 +474,7 @@ async function main(): Promise<void> {
   process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
-main().catch((err: unknown) => {
+if (require.main === module) main().catch((err: unknown) => {
   const message = err instanceof Error ? err.message : String(err);
   process.stderr.write(`${LOG_PREFIX} fatal: ${message}\n`);
   process.exit(1);

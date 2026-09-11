@@ -70,10 +70,13 @@ function createServer(opts = {}) {
     }
 
     const avatarAssets = { '/ember.js': 'text/javascript; charset=utf-8', '/ember.css': 'text/css; charset=utf-8',
+      '/agent-identity.js': 'text/javascript; charset=utf-8',
       '/dashboard.js': 'text/javascript; charset=utf-8', '/dashboard.css': 'text/css; charset=utf-8' };
     if (Object.hasOwn(avatarAssets, req.url)) {
       try {
-        const body = await fs.promises.readFile(path.join(__dirname, 'public', req.url.slice(1)));
+        const body = await fs.promises.readFile(req.url === '/agent-identity.js'
+          ? path.join(__dirname, '../../scripts/forgeflow/agent-identity.js')
+          : path.join(__dirname, 'public', req.url.slice(1)));
         res.writeHead(200, { 'Content-Type': avatarAssets[req.url], 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff' });
         res.end(body);
       } catch { res.writeHead(500).end('Avatar asset unavailable'); }

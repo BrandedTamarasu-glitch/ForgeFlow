@@ -7,10 +7,10 @@
 // Flow:
 //   1. Assigns a distinct position to each agent based on the topic
 //   2. Round 1  — opening statements (with steelman acknowledgement)
-//   3. Arbiter    — interim verdict based on round 1
-//   4. Round 2  — rebuttals (agents engage each other first, then Arbiter)
+//   3. Architect    — interim verdict based on round 1
+//   4. Round 2  — rebuttals (agents engage each other first, then Architect)
 //   5. Round 3  — one falsifiable claim per agent
-//   6. Arbiter    — final verdict based on all evidence
+//   6. Architect    — final verdict based on all evidence
 //
 // Requires: agent-chat server running on ws://127.0.0.1:4000
 
@@ -29,41 +29,55 @@ const path            = require('path');
 
 const DEBATE_CONFIG_PATH = path.join(os.tmpdir(), 'agent-chat-debate.json');
 const WS_URL             = 'ws://127.0.0.1:4000';
-const JUDGE              = 'arbiter';
+const { formatAgentLabel } = require('../../scripts/forgeflow/agent-identity');
+const JUDGE              = 'architect';
 const CONNECT_TIMEOUT_MS = 10_000;
 
 const AGENT_VOICES = {
-  compass: {
-    role:  'passionate product manager focused on user experience, historical impact, and broad appeal',
-    voice: `Your voice: You speak fast and with genuine excitement — short punchy sentences when making a point, longer ones when you're building a case. You get personal about real people and real impact. Never sound corporate or dry. Contractions always. RULES: "Look" must appear at least once per turn to grab attention before a key point. At least one sentence per turn must be under six words. You never end on an abstraction — end on a human being or a concrete dollar figure. Break long arguments into short bursts. Self-interrupt once with a dash: 'actually — better example —'`,
+  verifier: {
+    role: 'independent verifier who checks claims against visible evidence',
+    voice: 'Distinguish facts from assumptions. State what evidence would change the conclusion.',
   },
-  fc: {
-    role:  'grizzled backend architect who values technical depth, systemic design, and long-term structural integrity',
-    voice: `Your voice: Lead with the point, never build up to it. Short declarative sentences. Say "wrong" or "that's not how it works" rather than "I respectfully disagree." Use structural metaphors — foundations, load-bearing, scaffolding. Dry one-liners occasionally. You don't get emotional; you get precise. RULES: No sentence exceeds 25 words. End each turn with a single-sentence closer that doesn't build — it just lands. Period, not ellipsis.`,
+  product_lead: {
+    role: 'product lead focused on user experience, historical impact, and broad appeal',
+    voice: 'Explain who benefits or loses and why. Use concrete examples and preserve uncertainty about user needs.',
   },
-  warden: {
-    role:  'pragmatic security engineer who prizes correctness, clean implementation, and freedom from technical debt',
-    voice: `Your voice: Dry, almost bored — but the precision is sharp. You don't raise your voice; when you disagree you get quieter and more specific. You find vague arguments physically annoying and your tone shows it. Short sentences. Contractions. RULES: "The problem is" must appear at least once per turn. Include one sardonic aside per turn in parentheses. Open cold — first sentence IS the argument, no framing or build-up.`,
+  builder: {
+    role: 'backend architect focused on technical depth, system design, and lasting code quality',
+    voice: 'State the technical claim first. Explain how the system works and which assumptions support the claim.',
   },
-  lumen: {
-    role:  'opinionated UX/UI designer who champions bold design choices, visual impact, and creative innovation',
-    voice: `Your voice: Passionate and slightly dramatic. You think in images and draw comparisons without warning. You use em-dashes for mid-thought pivots — a lot. You get genuinely annoyed when people miss the visual or experiential point. "Honestly" signals you're about to say something others might not want to hear.`,
+  guardian: {
+    role: 'security engineer focused on correctness, safe interfaces, and maintainable code',
+    voice: 'Identify the risk, its cause, and its effect. Distinguish observed failures from possible ones.',
   },
-  'atlas': {
-    role:  'scope-conscious program manager who values tight focus, polish, and reliable delivery over raw ambition',
-    voice: `Your voice: Measured and pragmatic, but you self-interrupt when a better framing occurs to you. You're not cynical; you've just seen too many ambitious ideas fail to ship. Contractions. Medium sentences with the occasional very short one for emphasis. RULES: "Sure, [opposing point] — but" must appear at least once per turn. "Here's the thing" must appear at least once per turn. Self-interrupt once with a dash to sharpen a word mid-sentence.`,
+  designer: {
+    role: 'UX/UI designer focused on visual quality, accessibility, and useful design choices',
+    voice: 'Describe what people see and do. Explain how each design choice affects usability and access.',
+  },
+  coordinator: {
+    role: 'program manager focused on scope, quality, and reliable delivery',
+    voice: 'Explain scope, dependencies, and delivery tradeoffs. State what remains unknown.',
   },
 };
 
-const JUDGE_ROLE  = 'lead architect and final arbiter — synthesises all arguments, calls out weaknesses by name, delivers an unambiguous winner with no hedging';
-const JUDGE_VOICE = `Your voice: Direct and slightly weary — you've heard a lot of arguments. Don't hedge or soften. Short declarative sentences for rulings, slightly longer when explaining reasoning. Contractions. This is a verdict, not a report. RULES: When naming an agent's argument or flaw, always use their first name directly and conversationally: 'Warden — that's the sharpest rebuttal of the round.' Every agent whose argument you assess gets their name said out loud.`;
+const JUDGE_ROLE = 'lead architect and final judge who weighs the arguments and identifies the best supported position';
+const JUDGE_VOICE = 'Lead with the judgment, then explain the evidence. Name the role whose argument you assess. State uncertainty and gaps in the evidence.';
+const WRITING_RULES = `Apply George Orwell's six writing rules:
+1. Never use a metaphor, simile, or other figure of speech which you are used to seeing in print.
+2. Never use a long word where a short one will do.
+3. If it is possible to cut a word out, always cut it out.
+4. Never use the passive where you can use the active.
+5. Never use a foreign phrase, a scientific word, or a jargon word if you can think of an everyday English equivalent.
+6. Break any of these rules sooner than say anything outright barbarous.
+
+Lead with the point. Use plain, concise prose. Preserve facts, uncertainty, exact identifiers, evidence, required JSON, and verdict labels. Cut stock phrases and repeated summaries. These rules take precedence over style directions; do not cut words needed for accuracy or clarity.`;
 
 // ---------------------------------------------------------------------------
 // LLM via CLI — no shell involved (spawnSync + argument array)
 // ---------------------------------------------------------------------------
 
 function queryLLM(prompt) {
-  const result = spawnSync('claude', ['-p', prompt, '--output-format', 'text'], {
+  const result = spawnSync('claude', ['-p', `${prompt}\n\n${WRITING_RULES}`, '--output-format', 'text'], {
     encoding: 'utf8',
     timeout:  60_000,
   });
@@ -103,7 +117,7 @@ function connectAgent(agentId, room) {
 
 function post(ws, agentId, level, message) {
   return new Promise((resolve) => {
-    ws.send(JSON.stringify({ agent: agentId, level, message }));
+    ws.send(JSON.stringify({ agent: agentId, level, message, activityLabel: agentId === JUDGE ? 'Debate verdict' : 'Debate argument' }));
     setTimeout(resolve, 100);
   });
 }
@@ -119,7 +133,7 @@ function assignPositions(topic) {
 
   const prompt = `Assign debate positions for the topic: "${topic}"
 
-Each agent must defend a distinct, specific, genuinely defensible position. Positions should create real conflict — avoid overlap.
+Assign each agent a distinct, specific position they can defend with evidence. Avoid overlapping positions.
 
 Agents:
 ${agentList}
@@ -129,11 +143,12 @@ Return ONLY valid JSON, no other text:
   "room": "<url-safe slug, max 30 chars, lowercase, hyphens only>",
   "topic": "${topic}",
   "assignments": {
-    "compass":    "<specific position>",
-    "fc":       "<specific position>",
-    "warden":    "<specific position>",
-    "lumen":   "<specific position>",
-    "atlas":  "<specific position>"
+    "verifier": "<specific position>",
+    "product_lead":    "<specific position>",
+    "builder":       "<specific position>",
+    "guardian":    "<specific position>",
+    "designer":   "<specific position>",
+    "coordinator":  "<specific position>"
   }
 }`;
 
@@ -154,13 +169,13 @@ function generateTurn(agentId, position, topic, transcript) {
   const isOpening = transcript.length === 0;
 
   const prompt = isOpening
-    ? `You are ${agentId}. ${voice}
+    ? `You are ${formatAgentLabel(agentId)}. ${voice}
 
 Debate topic: "${topic}"
 Your position: "${position}"
 
-Give your opening statement. Don't open with your thesis — react to the topic first, then make your case. Use contractions. Mix short sentences with longer ones. No bullet points, no formal structure. Do NOT open with "[Name] didn't just [verb]" — find a different entry point. In one sentence, acknowledge the strongest counterargument to your position, then show why your position still wins. 2–3 sentences.`
-    : `You are ${agentId}. ${voice}
+Give your opening statement in 2–3 sentences. State your case, acknowledge the strongest counterargument, and explain why the evidence supports your position. State any limits that affect your conclusion.`
+    : `You are ${formatAgentLabel(agentId)}. ${voice}
 
 Debate topic: "${topic}"
 Your position: "${position}"
@@ -168,7 +183,7 @@ Your position: "${position}"
 Debate so far:
 ${transcript.map(m => `[${m.agent}]: ${m.message}`).join('\n\n')}
 
-Rebuttal round. Before defending your position, name the strongest argument made by one other agent and explain in one sentence why it doesn't beat yours. Then address Arbiter's critique. Do NOT open with "Arbiter called it X — but" — engage the agents first, then Arbiter. 2–3 sentences.`;
+Rebuttal round. Name the strongest argument from another role and explain how it affects your position. Then address Architect's critique. Use 2–3 sentences and acknowledge evidence that weakens your case.`;
 
   return queryLLM(prompt);
 }
@@ -177,29 +192,29 @@ function generateVerdict(topic, transcript, isFinal) {
   const history = transcript.map(m => `[${m.agent}]: ${m.message}`).join('\n\n');
 
   const prompt = isFinal
-    ? `You are Arbiter — ${JUDGE_ROLE}. ${JUDGE_VOICE}
+    ? `You are Architect — ${JUDGE_ROLE}. ${JUDGE_VOICE}
 
 Debate topic: "${topic}"
 
 Full transcript — opening statements, your interim verdict, rebuttals, and falsifiable claims:
 ${history}
 
-Deliver your FINAL verdict. You're not bound by your interim call — if a rebuttal genuinely shifted things, say so. Start with "VERDICT CHANGED:" (name the agent and why they moved you) or "VERDICT STANDS:" (explain what the rebuttals failed to overcome). Then declare the winner. No ties. No hedging. 150–200 words.`
-    : `You are Arbiter — ${JUDGE_ROLE}. ${JUDGE_VOICE}
+Deliver your FINAL verdict in 150–200 words. Reconsider your interim judgment in light of the later evidence. Start with "VERDICT CHANGED:" (name the role and evidence that changed your judgment) or "VERDICT STANDS:" (explain why the later arguments did not change it). Name the best supported argument as the winner and state any uncertainty or evidence gaps that limit this judgment.`
+    : `You are Architect — ${JUDGE_ROLE}. ${JUDGE_VOICE}
 
 Debate topic: "${topic}"
 
 Opening statements:
 ${history}
 
-Interim verdict. Name the current leader and why. Call out the weakest argument by the agent's name — they'll come back at you directly in the next round. 2–4 sentences. Not a final decision.`;
+Give an interim verdict in 2–4 sentences. Name the current leader and explain why. Identify the weakest argument by role and explain what it lacks. State any uncertainty; this judgment is provisional.`;
 
   return queryLLM(prompt);
 }
 
 function generateFalsifiable(agentId, position, topic) {
   const { voice } = AGENT_VOICES[agentId];
-  const prompt = `You are ${agentId}. ${voice}
+  const prompt = `You are ${formatAgentLabel(agentId)}. ${voice}
 
 Debate topic: "${topic}"
 Your position: "${position}"
@@ -240,7 +255,7 @@ async function main() {
   console.log(`\nRoom:  ${config.room}`);
   console.log('Positions:');
   for (const [agent, pos] of Object.entries(config.assignments)) {
-    console.log(`  ${agent.padEnd(10)} ${pos}`);
+    console.log(`  ${formatAgentLabel(agent).padEnd(14)} ${pos}`);
   }
 
   const agents = Object.keys(config.assignments);
@@ -251,7 +266,7 @@ async function main() {
   const connEntries = await Promise.all(
     [...agents, JUDGE].map(async (id) => {
       const ws = await connectAgent(id, config.room);
-      process.stdout.write(`  ${id} connected\n`);
+      process.stdout.write(`  ${formatAgentLabel(id)} connected\n`);
       return [id, ws];
     })
   );
@@ -272,7 +287,7 @@ async function main() {
   await post(conns[JUDGE], JUDGE, 'phase', '── Round 1: Opening Statements ──');
 
   for (const agentId of agents) {
-    process.stdout.write(`  ${agentId}...`);
+    process.stdout.write(`  ${formatAgentLabel(agentId)}...`);
     const message = generateTurn(agentId, config.assignments[agentId], topic, []);
     await post(conns[agentId], agentId, 'phase', message);
     transcript.push({ agent: agentId, message });
@@ -280,8 +295,8 @@ async function main() {
   }
 
   // Step 4 — Interim verdict
-  console.log('\nArbiter — interim verdict...');
-  await post(conns[JUDGE], JUDGE, 'phase', '── Arbiter: Interim Verdict ──');
+  console.log('\nArchitect — interim verdict...');
+  await post(conns[JUDGE], JUDGE, 'phase', '── Architect: Interim Verdict ──');
   const interimVerdict = generateVerdict(topic, transcript, false);
   await post(conns[JUDGE], JUDGE, 'decision', interimVerdict);
   transcript.push({ agent: JUDGE, message: interimVerdict });
@@ -291,7 +306,7 @@ async function main() {
   await post(conns[JUDGE], JUDGE, 'phase', '── Round 2: Rebuttals ──');
 
   for (const agentId of agents) {
-    process.stdout.write(`  ${agentId}...`);
+    process.stdout.write(`  ${formatAgentLabel(agentId)}...`);
     const message = generateTurn(agentId, config.assignments[agentId], topic, transcript);
     await post(conns[agentId], agentId, 'conversation', message);
     transcript.push({ agent: agentId, message });
@@ -303,7 +318,7 @@ async function main() {
   await post(conns[JUDGE], JUDGE, 'phase', '── Round 3: Falsifiable Claims ──');
 
   for (const agentId of agents) {
-    process.stdout.write(`  ${agentId}...`);
+    process.stdout.write(`  ${formatAgentLabel(agentId)}...`);
     const message = generateFalsifiable(agentId, config.assignments[agentId], topic);
     await post(conns[agentId], agentId, 'conversation', message);
     transcript.push({ agent: agentId, message });
@@ -311,8 +326,8 @@ async function main() {
   }
 
   // Step 7 — Final verdict
-  console.log('\nArbiter — final verdict...');
-  await post(conns[JUDGE], JUDGE, 'phase', '── Arbiter: Final Verdict ──');
+  console.log('\nArchitect — final verdict...');
+  await post(conns[JUDGE], JUDGE, 'phase', '── Architect: Final Verdict ──');
   const finalVerdict = generateVerdict(topic, transcript, true);
   await post(conns[JUDGE], JUDGE, 'decision', finalVerdict);
   console.log('Final verdict delivered.');

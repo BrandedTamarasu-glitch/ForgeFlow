@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const fs = require('fs');
+const { normalizeAgentId, normalizeAgentName, formatAgentLabel, roleActivityLabel } = require('./agent-identity');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { classify, readFiles } = require('./explain-review-route');
@@ -171,11 +172,12 @@ function fileKind(file) {
 }
 
 function agentFocus(agent) {
-  if (agent.startsWith('smith')) return ['code', 'data', 'test', 'service'];
-  if (agent.startsWith('warden')) return ['security', 'service', 'data', 'code'];
-  if (agent.startsWith('lumen')) return ['frontend', 'service', 'docs'];
-  if (agent.startsWith('atlas')) return ['code', 'service', 'docs', 'test', 'frontend', 'security', 'data'];
-  if (agent === 'aegis') return ['security', 'data', 'service', 'code'];
+  const role = normalizeAgentId(agent);
+  if (role === 'builder') return ['code', 'data', 'test', 'service'];
+  if (role === 'guardian') return ['security', 'service', 'data', 'code'];
+  if (role === 'designer') return ['frontend', 'service', 'docs'];
+  if (role === 'coordinator') return ['code', 'service', 'docs', 'test', 'frontend', 'security', 'data'];
+  if (role === 'verifier') return ['security', 'data', 'service', 'code'];
   return [];
 }
 
@@ -1136,24 +1138,25 @@ function renderArtifactManifest(manifest) {
 }
 
 function rulePack(agent, route, manifest) {
+  const role = normalizeAgentId(agent);
   const kinds = new Set(manifest.map((file) => file.kind));
   const rules = [];
-  if (agent.startsWith('smith')) {
+  if (role === 'builder') {
     rules.push('Check correctness, decomposition, naming, data integrity, migrations, and test fit.');
     if (kinds.has('data')) rules.push('Data rule: treat migrations/schema changes as high-risk and require rollback/data-loss reasoning.');
   }
-  if (agent.startsWith('warden')) {
+  if (role === 'guardian') {
     rules.push('Check auth, validation, permissions, secret handling, command/file/network boundaries, and reuse.');
-    if (route.verifier === 'required') rules.push('Verifier rule: make only evidence-backed high-risk claims; Aegis will verify them.');
+    if (route.verifier === 'required') rules.push('Verifier rule: make only evidence-backed high-risk claims; Verifier will verify them.');
   }
-  if (agent.startsWith('lumen')) {
+  if (role === 'designer') {
     rules.push('Check accessibility, interaction states, responsive layout, user-facing copy, and service connectivity.');
     if (kinds.has('frontend')) rules.push('Frontend rule: include keyboard, focus, contrast, loading/error/empty states, and mobile layout.');
   }
-  if (agent.startsWith('atlas')) {
+  if (role === 'coordinator') {
     rules.push('Check scope drift, handoffs, memory relevance, prior patterns, and cross-agent coverage gaps.');
   }
-  if (agent === 'aegis') {
+  if (role === 'verifier') {
     rules.push('Verify only visible evidence. Reject speculative findings and require file/line grounding.');
   }
   if (route.mode === 'deep-mode') {
@@ -1170,8 +1173,9 @@ function relevantFilesForAgent(agent, manifest) {
 }
 
 function contextContractForAgent(agent) {
+  const role = normalizeAgentId(agent);
   const base = {
-    agent,
+    agent: normalizeAgentName(agent),
     allowed_signals: ['diff-summary', 'packet-artifact-trust'],
     advisory_signals: ['memory-hits'],
     verify_before_use: ['latest-insights', 'user-profile-guidance', 'project-operating-model', 'architecture-intelligence', 'lean-guidance', 'project-code-map', 'living-map-guidance', 'latest-failure-digest'],
@@ -1181,19 +1185,19 @@ function contextContractForAgent(agent) {
       'Do not promote local project learnings into public patterns automatically.',
     ],
   };
-  if (agent.startsWith('smith')) {
+  if (role === 'builder') {
     base.allowed_signals.push('code-topology', 'project-code-map');
     base.advisory_signals.push('latest-insights', 'project-operating-model', 'architecture-intelligence', 'lean-guidance');
     base.primary_use = 'Use topology and learning signals to focus craft, data, service, and test review.';
-  } else if (agent.startsWith('warden') || agent === 'aegis') {
+  } else if (role === 'guardian' || role === 'verifier') {
     base.allowed_signals.push('latest-failure-digest', 'code-topology');
     base.advisory_signals.push('latest-insights', 'project-operating-model', 'architecture-intelligence', 'lean-guidance');
     base.primary_use = 'Use signals to prioritize security and systems checks, then verify every high-risk claim from visible evidence.';
-  } else if (agent.startsWith('lumen')) {
+  } else if (role === 'designer') {
     base.allowed_signals.push('user-profile-guidance');
     base.advisory_signals.push('latest-insights', 'living-map-guidance', 'project-operating-model', 'architecture-intelligence', 'lean-guidance');
     base.primary_use = 'Use profile and project signals to align UX, accessibility, copy, and service-path checks.';
-  } else if (agent.startsWith('atlas')) {
+  } else if (role === 'coordinator') {
     base.allowed_signals.push('latest-insights', 'user-profile-guidance', 'living-map-guidance');
     base.advisory_signals.push('latest-failure-digest', 'project-code-map', 'project-operating-model', 'architecture-intelligence', 'lean-guidance');
     base.primary_use = 'Use signals to check scope, sequencing, stale guidance, and cross-agent coverage.';
@@ -1225,7 +1229,7 @@ function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestI
   const relevant = relevantFilesForAgent(agent, manifest);
   const rules = rulePack(agent, route, manifest);
   return [
-    `# Forgeflow Context Packet: ${agent}`,
+    `# Forgeflow Context Packet: ${formatAgentLabel(agent, roleActivityLabel(agent))}`,
     '',
     '## Task',
     task || '(no explicit task provided)',

@@ -1,13 +1,17 @@
 // chat-bridge/types.ts — Shared types, constants, type guards, and input parsers.
 // Zero external dependencies. All validation is strict and returns null on failure.
 
+import type { CanonicalAgentId } from '../../scripts/forgeflow/agent-identity.js';
+import path from 'node:path';
+const identity: typeof import('../../scripts/forgeflow/agent-identity.js') = require(path.resolve(__dirname, path.basename(__dirname) === 'dist' ? '../../..' : '../..', 'scripts/forgeflow/agent-identity.js'));
+
 import type { WebSocket } from 'ws';
 
 // ---------------------------------------------------------------------------
 // Core domain types
 // ---------------------------------------------------------------------------
 
-export type AgentId = 'compass' | 'fc' | 'warden' | 'lumen' | 'atlas' | 'arbiter';
+export type AgentId = CanonicalAgentId | 'system';
 export type VerbosityLevel = 'phase' | 'decision' | 'conversation';
 export const ACTIVITY_STATES = ['idle', 'planning', 'researching', 'implementing', 'reviewing', 'testing', 'waiting', 'failed', 'complete'] as const;
 export type ActivityState = typeof ACTIVITY_STATES[number];
@@ -18,6 +22,7 @@ export interface ChatMessage {
   readonly message: string;
   readonly timestamp: number;
   readonly room: string;
+  readonly activityLabel?: string;
   readonly activity?: { state: ActivityState; label: string };
 }
 
@@ -25,11 +30,11 @@ export interface ChatMessage {
 // HTTP request / response shapes
 // ---------------------------------------------------------------------------
 
-export interface SendRequest { agent: AgentId; message: string; level: VerbosityLevel; }
+export interface SendRequest { agent: AgentId; message: string; level: VerbosityLevel; activityLabel?: string; }
 export interface SendResponse { ok: boolean; filtered?: boolean; error?: string; }
 export interface RoomRequest { name: string; }
 export interface RoomResponse { ok: boolean; room: string; error?: string; }
-export interface LifecycleRequest { event: string; agent?: AgentId; data?: string; state?: ActivityState; }
+export interface LifecycleRequest { event: string; agent?: AgentId; data?: string; state?: ActivityState; activityLabel?: string; }
 export interface LifecycleResponse { ok: boolean; error?: string; }
 
 export interface StatusResponse {
@@ -76,9 +81,7 @@ export interface BridgeConfig {
 // Constants
 // ---------------------------------------------------------------------------
 
-export const VALID_AGENTS: readonly AgentId[] = [
-  'compass', 'fc', 'warden', 'lumen', 'atlas', 'arbiter',
-] as const;
+export const VALID_AGENTS: readonly AgentId[] = [...identity.AGENTS.map(agent => agent.id), 'system'];
 
 export const VALID_LEVELS: readonly VerbosityLevel[] = [
   'phase', 'decision', 'conversation',
@@ -120,14 +123,17 @@ function isObject(value: unknown): value is Record<string, unknown> {
 export function parseSendRequest(body: unknown): SendRequest | null {
   if (!isObject(body)) return null;
 
-  const { agent, message, level } = body;
+  const { message, level } = body;
+  const agent = identity.normalizeAgentId(body.agent) || body.agent;
+  const activityLabel = parseActivityLabel(body.activityLabel);
+  if (activityLabel === null) return null;
 
   if (!isAgentId(agent)) return null;
   if (!isVerbosityLevel(level)) return null;
   if (typeof message !== 'string') return null;
   if (message.length === 0 || message.length > 2000) return null;
 
-  return { agent, message, level };
+  return { agent, message, level, ...(activityLabel !== undefined ? { activityLabel } : {}) };
 }
 
 /**
@@ -153,7 +159,10 @@ export function parseRoomRequest(body: unknown): RoomRequest | null {
 export function parseLifecycleRequest(body: unknown): LifecycleRequest | null {
   if (!isObject(body)) return null;
 
-  const { event, agent, data, state } = body;
+  const { event, data, state } = body;
+  const agent = identity.normalizeAgentId(body.agent) || body.agent;
+  const activityLabel = parseActivityLabel(body.activityLabel);
+  if (activityLabel === null) return null;
 
   if (typeof event !== 'string' || event.length === 0) return null;
 
@@ -161,7 +170,7 @@ export function parseLifecycleRequest(body: unknown): LifecycleRequest | null {
   if (data !== undefined && typeof data !== 'string') return null;
   if (state !== undefined && !ACTIVITY_STATES.some(value => value === state)) return null;
 
-  const result: LifecycleRequest = { event };
+  const result: LifecycleRequest = { event, ...(activityLabel !== undefined ? { activityLabel } : {}) };
   if (isAgentId(agent)) result.agent = agent;
   if (typeof data === 'string') result.data = data;
   if (state !== undefined) result.state = state as ActivityState;
@@ -181,4 +190,12 @@ export function parseVerbosityRequest(body: unknown): { level: VerbosityLevel } 
   if (!isVerbosityLevel(level)) return null;
 
   return { level };
+}
+
+/** Validate immutable message context before any state changes. */
+function parseActivityLabel(value: unknown): string | undefined | null {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string' || /[\u0000-\u001f\u007f-\u009f]/u.test(value)) return null;
+  const label = value.trim();
+  return label.length > 0 && label.length <= 120 ? label : null;
 }

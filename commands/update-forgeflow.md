@@ -19,6 +19,20 @@ $ARGUMENTS:
 
 <process>
 
+## First canonical-role upgrade
+
+Before upgrading an installation that still uses Smith, Warden, Lumen, Atlas,
+Arbiter, Compass or Aegis role files, follow the
+[source-checkout migration](../docs/role-migration-upgrade.md). Run the new
+checkout's `install-template.js` first. An already-installed old updater can
+remove edited legacy files even while downloading its own replacement. Updating
+this command text does not change an old running executable.
+
+Publish that migration route with the rename release and direct existing users
+to it before they run their installed updater. Ordinary old-updater migration
+is not supported. If it already ran, restore its previous snapshot immediately
+before another install or repair replaces it.
+
 ## Preferred Engine
 
 The preferred updater also prepares optional Ember dependencies and adds the Claude

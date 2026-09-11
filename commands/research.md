@@ -15,11 +15,11 @@ allowed-tools:
   - WebFetch
 ---
 <objective>
-Run Compass and Atlas in research mode to investigate open questions from the discussion phase, evaluate technology options, analyze codebase patterns, and identify risks.
+Run Product Lead and Coordinator in research mode to investigate open questions from the discussion phase, evaluate technology options, analyze codebase patterns, and identify risks.
 
 The research team:
-1. **Compass** (`compass-research`) — Technology evaluation, prior art, accessibility patterns, risk identification, recommendations
-2. **Atlas** (`atlas-early`) — Codebase exploration, existing pattern surfacing, prior session memory
+1. **Product Lead** (`product-lead-research`) — Technology evaluation, prior art, accessibility patterns, risk identification, recommendations
+2. **Coordinator** (`coordinator-early`) — Codebase exploration, existing pattern surfacing, prior session memory
 </objective>
 
 <context>
@@ -50,7 +50,7 @@ For the divergent route, run the preflight now. Divergence is appropriate for op
 
 ## Step 0: Context Pre-Loading
 
-Run this step only for the default route. For `--diverge`, read narrowly relevant existing discussion, memory, `CONTEXT.md`, accessibility, and codebase material only for the independent Atlas evidence lane and later Compass critic. Do not generate or update context artifacts.
+Run this step only for the default route. For `--diverge`, read narrowly relevant existing discussion, memory, `CONTEXT.md`, accessibility, and codebase material only for the independent Coordinator evidence lane and later Product Lead critic. Do not generate or update context artifacts.
 
 Apply the security denylist before reading any file: exclude `.env`, `*.pem`, `*.key`, `*.p12`, `*.cert`, `*.secret`, and any file with `password`, `secret`, or `token` in the filename (case-insensitive).
 
@@ -72,7 +72,7 @@ else
 fi
 ```
 
-If `MEMORY_CONTEXT_PATH` exists, inject it into Compass and Atlas as the memory summary. Read full phase files only when the summary cites a gap or exact source text is needed. Estimated context savings are written to `${FORGEFLOW_DIR}/context/memory-context-telemetry.json`.
+If `MEMORY_CONTEXT_PATH` exists, inject it into Product Lead and Coordinator as the memory summary. Read full phase files only when the summary cites a gap or exact source text is needed. Estimated context savings are written to `${FORGEFLOW_DIR}/context/memory-context-telemetry.json`.
 
 **Discover:**
 ```bash
@@ -118,7 +118,7 @@ DISCUSSION_PATH="${FORGEFLOW_DIR}/current-discussion.md"
 **If $ARGUMENTS provided:** Use as the research focus.
 **If neither:** Tell the user to run `/discuss` first or provide research questions.
 
-## Step 2: Spawn Compass and Atlas in parallel
+## Step 2: Spawn Product Lead and Coordinator in parallel
 
 Check for CONTEXT.md files before spawning:
 ```bash
@@ -126,14 +126,14 @@ find . -name "CONTEXT.md" -not -path "*/node_modules/*" -not -path "*/.planning/
 ```
 If found, include their content in both agent prompts — agents should read these instead of exploring broadly.
 
-**`compass-research`** receives:
+**`product-lead-research`** receives:
 - `Context is pre-loaded in <injected-context> below. Do not re-read those files.`
 - The `<injected-context>` block assembled in Step 0
 - The discussion summary (or research questions)
 - Instruction to evaluate technology options, research accessibility patterns, identify risks
 - Working directory path
 
-**`atlas-early`** receives:
+**`coordinator-early`** receives:
 - `Context is pre-loaded in <injected-context> below. Do not re-read those files.`
 - The `<injected-context>` block assembled in Step 0
 - The discussion summary (or research questions)
@@ -145,7 +145,7 @@ If found, include their content in both agent prompts — agents should read the
 
 After both agents complete, combine outputs into unified Research Findings.
 
-Compass's analysis and recommendations are the primary structure. Atlas's codebase findings and memories are integrated throughout.
+Product Lead's analysis and recommendations are the primary structure. Coordinator's codebase findings and memories are integrated throughout.
 
 ## Divergent route: isolated generation and separate criticism
 
@@ -162,11 +162,11 @@ When `--diverge` is active, replace Steps 2 and 3 with this route:
    - **inversion:** assume the obvious approach fails; derive the opposite design and the conditions that make it work.
    - **remove-assumption:** remove one load-bearing assumption and derive a viable approach from the resulting constraint set.
    - **3am-on-call:** optimize for diagnosis, containment, and safe recovery by a tired on-call engineer.
-3. In parallel with branch generation, run `atlas-early` on Claude or `atlas_early` on Codex with the normal preloaded codebase and memory context. This evidence lane must remain separate and must never message or provide context to a divergent branch.
+3. In parallel with branch generation, run `coordinator-early` on Claude or `coordinator_early` on Codex with the normal preloaded codebase and memory context. This evidence lane must remain separate and must never message or provide context to a divergent branch.
 4. Show the status of every divergent lane. Retry a missing, malformed, or failed lane once with the same packet. If it fails again, label that lane unavailable and the research `DEGRADED`; continue with successful lanes and never synthesize a replacement.
-5. Spawn a separate Compass critic only after lane generation completes. On Claude use `compass-research`; on Codex use `compass_researcher`. Give the critic:
+5. Spawn a separate Product Lead critic only after lane generation completes. On Claude use `product-lead-research`; on Codex use `product_lead_researcher`. Give the critic:
    - all successful lane outputs, labeled by frame
-   - the normal `<injected-context>`, discussion, compact memory, Atlas/codebase evidence, accessibility context, and working directory
+   - the normal `<injected-context>`, discussion, compact memory, Coordinator/codebase evidence, accessibility context, and working directory
    - explicit instruction to criticize and converge, not generate another unconstrained list
 6. Require the critic to emit:
    - clusters by underlying approach, including duplicated ideas and shared assumptions
@@ -189,7 +189,7 @@ For divergent research, include the route rationale, status of all three lanes, 
 {Research Findings}
 
 ### Recommendation
-{Compass's recommended approach}
+{Product Lead's recommended approach}
 
 Next: `/plan` to create the implementation plan
 Or: modify the research, then run `/plan`
@@ -199,7 +199,7 @@ Or: modify the research, then run `/plan`
 
 <success_criteria>
 - [ ] Open questions from discussion answered
-- [ ] Codebase patterns analyzed by Atlas
+- [ ] Codebase patterns analyzed by Coordinator
 - [ ] Technology options evaluated with pros/cons
 - [ ] Accessibility patterns researched
 - [ ] Risks identified with likelihood and impact
@@ -209,3 +209,18 @@ Or: modify the research, then run `/plan`
 - [ ] For `--diverge`: lane failures were retried once and remain visible if unavailable
 - [ ] For `--diverge`: no divergent content was saved or indexed
 </success_criteria>
+
+## Writing for CLI output
+
+Apply George Orwell's six rules to progress updates, agent reports, and final summaries:
+
+1. Never use a metaphor, simile, or other figure of speech which you are used to seeing in print.
+2. Never use a long word where a short one will do.
+3. If it is possible to cut a word out, always cut it out.
+4. Never use the passive where you can use the active.
+5. Never use a foreign phrase, a scientific word, or a jargon word if you can think of an everyday English equivalent.
+6. Break any of these rules sooner than say anything outright barbarous.
+
+Lead with the result or action. Use short paragraphs or bullets that scan well in a terminal. Cut stock phrases, repeated summaries, and persona banter. These rules take precedence over persona style and sample prose.
+
+Keep facts, uncertainty, risks, and required evidence intact. Preserve exact commands, code, paths, identifiers, error text, schema keys, and verdict labels. Keep required report sections and machine-readable formats; apply the rules to prose within them. Use a technical term when it is the clearest accurate choice, and explain it when needed. Before sending, cut words that add no meaning without making the result unclear or unnatural.

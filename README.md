@@ -8,11 +8,13 @@ Turn an idea into a scoped brief, working code, an evidence-backed review, and a
 
 ![ForgeFlow workshop showing Ember, project readiness, recorded review outcomes, weekly trends, and live workflow activity](docs/images/forgeflow-workshop.png)
 
-## New in 4.5.0
+## New in 4.6.0
 
-Shipping summaries use the explicitly selected task's current validation evidence. Historical notes no longer become passing tests or approval, and missing or stale proof stays visible. Implementation, review and shipping also assess workaround durability, unrelated bugs, user impact and actionable errors.
+Agents now use names that describe their work: Builder, Guardian, Designer, Coordinator, Architect, Product Lead, and Verifier. Logs and dashboards show explicit task context, and agent prompts apply Orwell's six writing rules for clear CLI output.
 
-This version includes optional Obsidian vault memory, task-focused advice and memory selection, proportional workflows, optional RTK installation, and dashboard startup fixes since 4.4.0. ForgeFlow's own repository runs validation locally and uses GitHub only for authorized release pushes. See the [4.5.0 release notes](docs/changelogs/v4.5.0.html) and [task guide](docs/wiki/Task-Evidence.md).
+**Upgrading from legacy role names:** use the [source-checkout upgrade procedure](docs/role-migration-upgrade.md) for this first migration. Do not start it with an old installed updater. The new installer preserves edited legacy agents and installs the updater used for later releases.
+
+This release also fixes historical learning IDs, mixed-name report totals, stale context packets, cleanup scope, rollback snapshots, lifecycle limits, and debate instructions. See the [4.6.0 release notes](docs/changelogs/v4.6.0.html). ForgeFlow's repository runs validation locally; GitHub Actions remains disabled.
 
 ## Your first ForgeFlow session
 
@@ -51,6 +53,10 @@ The guide identifies the source commit it describes. For the latest implementati
 
 ## Quick start
 
+**Upgrading an existing installation to the renamed roles:** follow the
+[source-checkout migration](docs/role-migration-upgrade.md) before running an
+installed updater. The old updater cannot preserve edited legacy role files.
+
 You need Git, Node.js with npm, Bash for the shell helpers, and a working Claude Code or Codex setup with access to the models you intend to use. Use **Node.js 24** for this repository's local validation. The examples below use Bash; keep the host, installation, and project in the same shell environment.
 
 RTK is optional. The installer checks `rtk --version` and `rtk gain`; ordinary installation does not download RTK. Use direct commands when it is unavailable. To opt in to a Cargo-based RTK installation, add `--install-rtk` (preview with `--install-rtk --dry-run`). See [optional RTK setup](docs/wiki/Template-Installer.md#optional-rtk).
@@ -86,7 +92,7 @@ node scripts/forgeflow/install-template.js --target claude
 
 Restart Claude Code. Merge the documented hooks and status line into your existing `~/.claude/settings.json`, preserving unrelated settings and avoiding duplicate registrations. The installer leaves that settings merge to you. See [Settings and Recovery](docs/wiki/Settings-And-Recovery.md).
 
-For an existing Claude installation, `/update-forgeflow` is the regular updater; `--repair` reinstalls missing or damaged managed files. The updater supports rollback to its previous managed-file snapshot when available. These are Claude updater capabilities, not a general Codex rollback mechanism.
+After the canonical-role migration above, `/update-forgeflow` is the regular Claude updater; `--repair` reinstalls missing or damaged managed files. The updater supports rollback to its previous managed-file snapshot when available. These are Claude updater capabilities, not a general Codex rollback mechanism.
 
 To install both hosts from a checkout, use `--target both`. See the [template installer](docs/wiki/Template-Installer.md) for custom home directories.
 
@@ -152,13 +158,13 @@ The Claude command catalog is larger than the installed Codex skill set. Do not 
 
 | Agent | Responsibility |
 |---|---|
-| **Smith** | Backend craft, data structures, naming, and maintainability |
-| **Warden** | Security, validation, system boundaries, and reuse |
-| **Lumen** | UX, accessibility, frontend quality, and connectivity |
-| **Atlas** | Scope, coordination, project memory, and handoff context |
-| **Arbiter** | Architecture synthesis, implementation briefs, and technical verdicts |
-| **Compass** | Requirements, validation, plan adherence, and product intent |
-| **Aegis** | Neutral verification of high-risk findings using visible evidence |
+| **Builder** | Backend craft, data structures, naming, and maintainability |
+| **Guardian** | Security, validation, system boundaries, and reuse |
+| **Designer** | UX, accessibility, frontend quality, and connectivity |
+| **Coordinator** | Scope, coordination, project memory, and handoff context |
+| **Architect** | Architecture synthesis, implementation briefs, and technical verdicts |
+| **Product Lead** | Requirements, validation, plan adherence, and product intent |
+| **Verifier** | Neutral verification of high-risk findings using visible evidence |
 
 ForgeFlow chooses agents according to the task. A small change need not invoke the full cast. [Meet the agents](docs/wiki/Agent-Roles.md).
 
@@ -181,7 +187,7 @@ Ember blinks, polishes, and dozes when idle. Animation studio lets you preview p
 
 Readiness separates actionable problems from informational evidence. Missing optional benchmarks, cross-host probes, release snapshots, or failure digests do not imply that the installation is broken. Saved blockers and unreadable evidence still require attention. Expand the details to see the underlying status.
 
-**Empty charts can be normal:** they require recorded verdicts. Codex review and implementation skills explicitly save real Arbiter and Compass decisions with evidence and a stable event ID to prevent duplicates. Planning or test activity does not create approvals, and older unrecorded reviews are not inferred or backfilled.
+**Empty charts can be normal:** they require recorded verdicts. Codex review and implementation skills explicitly save real Architect and Product Lead decisions with evidence and a stable event ID to prevent duplicates. Planning or test activity does not create approvals, and older unrecorded reviews are not inferred or backfilled.
 
 **Refresh data** updates tasks, metrics, and readiness independently, preserving a previous snapshot with a stale label if a refresh fails. The summary project selector does not change the launched readiness scope or Ember’s current room.
 
@@ -197,11 +203,11 @@ Start the activity service with `$agent-chat-on` in Codex or `/agent-chat:on` in
 
 ForgeFlow's workflow instructions carry five questions through design, implementation, validation, review, and shipping: Is this the simplest effective change? Is its complexity proportional to the app and its risks? Does it serve one concern? Why does it work? What was checked, and what happened? Agents must connect their answers to the actual change and observed evidence; their assessment does not substitute for human approval.
 
-Consultation starts with the primary domain specialist and adds specialists for concrete risks or uncertainty. An explicit full-team request still selects the full team. Arbiter synthesizes the brief, and downstream validation and review remain separate checks.
+Consultation starts with the primary domain specialist and adds specialists for concrete risks or uncertainty. An explicit full-team request still selects the full team. Architect synthesizes the brief, and downstream validation and review remain separate checks.
 
-Review routing chooses skip, thin, full, or deep mode based on the change and explains the decision. High-risk findings can pass through Aegis before they become blockers.
+Review routing chooses skip, thin, full, or deep mode based on the change and explains the decision. High-risk findings can pass through Verifier before they become blockers.
 
-Arbiter returns **APPROVE**, **CONDITIONAL APPROVE**, **REVISE**, or **BLOCK**. Compass can **CONFIRM** or **CHALLENGE** the verdict. Read the scope, conditions, and validation behind those labels; a verdict is not a substitute for the checks your project requires.
+Architect returns **APPROVE**, **CONDITIONAL APPROVE**, **REVISE**, or **BLOCK**. Product Lead can **CONFIRM** or **CHALLENGE** the verdict. Read the scope, conditions, and validation behind those labels; a verdict is not a substitute for the checks your project requires.
 
 Claude’s `/review-auto` provides conservative repair paths with additional constraints. `/forgeflow-review-auto-classify` previews finding categories before repair. See [review routing](docs/wiki/Review-Routing.md) for context preparation and verification details.
 

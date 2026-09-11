@@ -19,7 +19,7 @@ Before other work, run:
 Workflow:
 1. Build compact local memory context with `scripts/forgeflow/build-memory-context.js` when available, then load current discussion and research artifacts from `.forgeflow/<project-name>/` when needed.
 2. Gather focused local context such as `CONTEXT.md`.
-3. Spawn `compass_planner` and `atlas_early` in parallel.
+3. Spawn `product_lead_planner` and `coordinator_early` in parallel.
 4. Synthesize the result into a unified implementation plan.
 5. Save it to `.forgeflow/<project-name>/current-plan.md` when appropriate.
 
@@ -29,3 +29,18 @@ Output should include:
 - dependencies and coordination risks
 - accessibility checklist
 - success criteria
+
+## Writing for CLI output
+
+Apply George Orwell's six rules to progress updates, agent reports, and final summaries:
+
+1. Never use a metaphor, simile, or other figure of speech which you are used to seeing in print.
+2. Never use a long word where a short one will do.
+3. If it is possible to cut a word out, always cut it out.
+4. Never use the passive where you can use the active.
+5. Never use a foreign phrase, a scientific word, or a jargon word if you can think of an everyday English equivalent.
+6. Break any of these rules sooner than say anything outright barbarous.
+
+Lead with the result or action. Use short paragraphs or bullets that scan well in a terminal. Cut stock phrases, repeated summaries, and persona banter. These rules take precedence over persona style and sample prose.
+
+Keep facts, uncertainty, risks, and required evidence intact. Preserve exact commands, code, paths, identifiers, error text, schema keys, and verdict labels. Keep required report sections and machine-readable formats; apply the rules to prose within them. Use a technical term when it is the clearest accurate choice, and explain it when needed. Before sending, cut words that add no meaning without making the result unclear or unnatural.

@@ -25,7 +25,7 @@ The core delivery phases, specialist agents, local project memory, and evidence-
 
 - Keep review routing explainable and deterministic.
 - Improve context-pack quality, budget guidance, and review-wave follow-through.
-- Use Aegis verification and release-readiness warnings to keep high-risk claims grounded.
+- Use Verifier verification and release-readiness warnings to keep high-risk claims grounded.
 
 ### Onboarding And Adoption Evidence
 

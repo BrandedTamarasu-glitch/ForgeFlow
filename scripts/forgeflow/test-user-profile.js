@@ -222,7 +222,7 @@ const checks = [
   ['project category preserved', projectRecords[0].category === 'ui' && projectRecords[0].source === 'accepted-workflow'],
   ['check passes active records', check.status === 'pass' && check.records.global === 1 && check.records.project === 1 && check.records.active === 2 && check.records.usable === 2],
   ['show renders both sections', shown.markdown.includes('## User Operating Preferences') && shown.markdown.includes('User prefers autonomous safe-slice execution') && shown.markdown.includes('## Project Experience Preferences') && shown.markdown.includes('quiet, dense, and operational')],
-  ['show renders role use', shown.markdown.includes('## Role Use') && shown.markdown.includes('Atlas:') && shown.markdown.includes('Warden:')],
+  ['show renders role use', shown.markdown.includes('## Role Use') && shown.markdown.includes('Coordinator:') && shown.markdown.includes('Guardian:')],
   ['show can write artifact', shownWithOut.markdown.includes('Forgeflow User Profile') && fs.existsSync(out)],
   ['compact profile injects when safe', compact.injected === true && compact.markdown.includes('This profile is advisory') && compact.result.check.status === 'pass'],
   ['empty profile warns', emptyCheck.status === 'warn' && emptyCheck.records.usable === 0 && emptyCheck.issues.some((item) => item.code === 'profile-empty')],

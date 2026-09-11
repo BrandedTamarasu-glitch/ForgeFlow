@@ -11,11 +11,11 @@ Seeded from `SubAgents` project data (`/home/user/example-project/.forgeflow/Sub
 **Pattern:** Agent files that are shared across multiple modes (consult, implement, review, audit) accumulate instructions that apply to only ONE mode. Downstream mode reads the irrelevant instructions and either misfires or ignores them — either way, the prompt is wasteful.
 
 **Seen in:**
-- `SubAgents` — Atlas memory carve-out fixed in consult and implement modes (V3.7 changelog) because `atlas-early.md` covered discuss/research/plan but mode-specific reads drifted
-- `Forgeflow` meta-work — V4.1.1 applied 8 precision fixes where Arbiter consult prompts mistakenly referenced review-mode concepts (e.g., `file:line` grounding) that don't apply to plan-phase context
+- `SubAgents` — Coordinator memory carve-out fixed in consult and implement modes (V3.7 changelog) because `atlas-early.md` covered discuss/research/plan but mode-specific reads drifted
+- `Forgeflow` meta-work — V4.1.1 applied 8 precision fixes where Architect consult prompts mistakenly referenced review-mode concepts (e.g., `file:line` grounding) that don't apply to plan-phase context
 
 **Rule of thumb:**
-When splitting an agent across modes, every instruction must declare which mode(s) it applies to. Instructions that apply to all modes live in the canonical reference (e.g., `warden-security-intelligence.md`, `smith-craft.md`); mode-specific instructions live in the mode file with an `<!-- adapted from ... -->` comment linking to the canonical source.
+When splitting an agent across modes, every instruction must declare which mode(s) it applies to. Instructions that apply to all modes live in the canonical reference (e.g., `guardian-security-intelligence.md`, `builder-craft.md`); mode-specific instructions live in the mode file with an `<!-- adapted from ... -->` comment linking to the canonical source.
 
 **Review-time check:**
 Flag any agent instruction that uses mode-specific terminology (e.g., "commit atomically" in a review-mode agent, "verdict" in a plan-mode agent) as mode leakage. Recommend moving to a different mode file or adding a mode-gate.
@@ -27,8 +27,8 @@ Flag any agent instruction that uses mode-specific terminology (e.g., "commit at
 **Pattern:** Commands assume prior Forgeflow state exists (`.forgeflow/<project>/` with files, `review-history.md` populated, agent-notes present). First-run in a fresh project hits absent-file errors or empty-state misbehavior.
 
 **Seen in:**
-- `SubAgents` — Atlas receipts rule only fires when `learnings.jsonl` has content; needs first-review fallback
-- `Forgeflow` meta-work — V4.0 Smith Craft Intelligence enhancement flagged "Canonical paste-sync pattern has no auto-sync mechanism" — a first-install cold-start concern
+- `SubAgents` — Coordinator receipts rule only fires when `learnings.jsonl` has content; needs first-review fallback
+- `Forgeflow` meta-work — V4.0 Builder Craft Intelligence enhancement flagged "Canonical paste-sync pattern has no auto-sync mechanism" — a first-install cold-start concern
 
 **Rule of thumb:**
 Every command that reads from `.forgeflow/<project>/` must gracefully handle:
@@ -48,7 +48,7 @@ When reviewing a new Forgeflow command, grep for `readFileSync`, `readFile`, or 
 **Pattern:** Agent writes to an expected location, downstream consumer reads from a different location. Neither agent knows. No error — just no signal passed.
 
 **Seen in:**
-- `SubAgents` — "Warden wrong-channel gap from 2026-03-25 debate was not addressed in `warden-review.md` — no output routing rule added." Warden's output was expected by Atlas at one path but Warden wrote to another.
+- `SubAgents` — "Guardian wrong-channel gap from 2026-03-25 debate was not addressed in `warden-review.md` — no output routing rule added." Guardian's output was expected by Coordinator at one path but Guardian wrote to another.
 - `Forgeflow` meta-work — Various `--sourced from--` comments in canonical references drift when preamble is edited without updating mode files
 
 **Rule of thumb:**
@@ -61,7 +61,7 @@ When an agent file's output location or a consumer's input location changes in t
 
 ## 4. Prompt Scaffolding Enforcement (from /debate calibration)
 
-**Pattern:** Descriptive voice profiles ("Compass uses short sentences") produce average-short output but no hard floor. Model ignores the guideline unless it's a must-appear-once-per-turn RULE.
+**Pattern:** Descriptive voice profiles ("Product Lead uses short sentences") produce average-short output but no hard floor. Model ignores the guideline unless it's a must-appear-once-per-turn RULE.
 
 **Seen in:**
 - `Forgeflow` V4.1.4 changelog — three classes of debate transcript fixes. Voice rules converted from descriptive to prescriptive with per-turn enforcement. Verbal tics that were listed as "occasional" never appeared until mandated.

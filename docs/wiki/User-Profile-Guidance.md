@@ -123,8 +123,8 @@ Do not record secrets, private URLs, raw settings JSON, source snippets, custome
 
 ## Agent Role Use
 
-- Atlas adapts progress updates, handoffs, autonomy, and next-step framing.
-- Compass treats profile guidance as product-context hints, not acceptance proof.
-- Lumen applies project experience preferences only when accessibility and usability remain intact.
-- Warden ignores preferences that would weaken security, privacy, validation, or release gates.
-- Smith and Arbiter use preferences for framing and sequencing, not as code evidence.
+- Coordinator adapts progress updates, handoffs, autonomy, and next-step framing.
+- Product Lead treats profile guidance as product-context hints, not acceptance proof.
+- Designer applies project experience preferences only when accessibility and usability remain intact.
+- Guardian ignores preferences that would weaken security, privacy, validation, or release gates.
+- Builder and Architect use preferences for framing and sequencing, not as code evidence.

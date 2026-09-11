@@ -24,7 +24,7 @@ async function main() {
       for (const runtime of ['codex', 'claude-code']) assert.ok(roots.includes(metricsRootForRuntime(runtime, settings)));
     }
     const outcome = { cwd, reviewer: 'arbiter', verdict: 'CONDITIONAL APPROVE', evidence: 'review.md', event_id: 'review-1-arbiter', session_id: 'real-fixture-session', command: '/review' };
-    const attempts = await Promise.all(Array.from({ length: 5 }, () => recordVerdict(outcome, env)));
+    const attempts = await Promise.all(Array.from({ length: 5 }, (_, index) => recordVerdict({ ...outcome, reviewer: index % 2 ? 'architect' : 'arbiter' }, env)));
     assert.equal(attempts.reduce((total, result) => total + result.recorded, 0), 1);
     assert.equal(attempts.filter(result => result.duplicate).length, 4);
     await assert.rejects(recordVerdict({ ...outcome, verdict: 'BLOCK' }, env), /different outcome/);
@@ -40,6 +40,19 @@ async function main() {
     const lines = fs.readFileSync(file, 'utf8').trim().split('\n').map(JSON.parse);
     assert.equal(lines.length, 2);
     assert.equal(lines[0].runtime, 'codex');
+    assert.equal(lines[0].detail.reviewer, 'architect');
+    assert.equal(lines[1].detail.reviewer, 'product_lead');
+    // Replay a pre-rename event without rewriting any bytes or weakening evidence checks.
+    lines[0].detail.reviewer = 'arbiter';
+    const legacyBytes = Buffer.from(lines.map(line => JSON.stringify(line)).join('\n') + '\n');
+    fs.writeFileSync(file, legacyBytes);
+    const evidenceBytes = fs.readFileSync(path.join(cwd, 'review.md'));
+    assert.equal((await recordVerdict({ ...outcome, reviewer: 'architect' }, env)).duplicate, true);
+    assert.deepEqual(fs.readFileSync(file), legacyBytes);
+    assert.deepEqual(fs.readFileSync(path.join(cwd, 'review.md')), evidenceBytes);
+    fs.appendFileSync(path.join(cwd, 'review.md'), 'Changed evidence\n');
+    await assert.rejects(recordVerdict({ ...outcome, reviewer: 'architect' }, env), /different evidence content/);
+    fs.writeFileSync(path.join(cwd, 'review.md'), evidenceBytes);
     assert.equal(lines[0].detail.evidence, 'review.md');
     const metrics = await scanMetrics(env.FORGEFLOW_METRICS_ROOT);
     assert.equal(metrics.projects.length, 1);

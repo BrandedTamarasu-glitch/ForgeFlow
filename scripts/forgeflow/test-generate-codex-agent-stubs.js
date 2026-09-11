@@ -159,6 +159,23 @@ try {
   fs.rmSync(tmpDir, { recursive: true, force: true });
 }
 
+// Production debate roles must regenerate specialized instructions, not the
+// ordinary review template, while retaining the shared writing rules.
+const productionMap = JSON.parse(fs.readFileSync(path.join(repoRoot, '.codex/agent-canonical-map.json'), 'utf8'));
+for (const [name, label, behavior] of [
+  ['architect-debate-judge', 'Debate judging', 'For an interim verdict'],
+  ['product-lead-debate-validator', 'Debate validation', 'finding-by-finding comparison'],
+]) {
+  const key = `.codex/agents/${name}.toml`;
+  const generated = buildStub(key, productionMap.agents[key]);
+  checks.push([`${name}: debate activity`, generated.includes(label)]);
+  checks.push([`${name}: specialized behavior`, generated.includes(behavior)]);
+  checks.push([`${name}: key isolation`, generated.includes('hidden answer key')]);
+  checks.push([`${name}: writing rules`, generated.includes('Never use a long word where a short one will do.')]);
+  checks.push([`${name}: excludes ordinary template`, !generated.includes('## Pre-Implementation Gate') && !generated.includes('## Mode: Review')]);
+  checks.push([`${name}: committed generation matches`, generated === fs.readFileSync(path.join(repoRoot, key), 'utf8')]);
+}
+
 const failed = checks.filter(([, ok]) => !ok).map(([name]) => name);
 if (failed.length > 0) {
   console.error(`codex agent stub test failed (${failed.length}/${checks.length} checks):\n${failed.join('\n')}`);

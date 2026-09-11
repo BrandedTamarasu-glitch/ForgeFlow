@@ -62,8 +62,8 @@ Telemetry helps summarize:
 
 - review verdicts
 - auto-fix rounds
-- findings overturned by Arbiter
-- Aegis verification decisions
+- findings overturned by Architect
+- Verifier verification decisions
 - accepted and rejected outcome records
 - estimated context savings
 - context budget warnings

@@ -1,6 +1,6 @@
 # Verdict Trends
 
-Observations on how verdict distribution correlates with project characteristics. Used by Atlas during `/plan` and `/consult` to set expectations and by Arbiter during `/review` to calibrate severity.
+Observations on how verdict distribution correlates with project characteristics. Used by Coordinator during `/plan` and `/consult` to set expectations and by Architect during `/review` to calibrate severity.
 
 Seeded from `.forgeflow/` data across campaign-management, llama.cpp, SubAgents, and Forgeflow meta-work on 2026-04-17.
 
@@ -18,16 +18,16 @@ Seeded from `.forgeflow/` data across campaign-management, llama.cpp, SubAgents,
 ## Implications
 
 **For `/plan`:**
-- If Atlas recognizes a project as schema/migration-heavy, surface historic BLOCK rate and require explicit Error Paths section in the plan
+- If Coordinator recognizes a project as schema/migration-heavy, surface historic BLOCK rate and require explicit Error Paths section in the plan
 - If project is low-level systems, require a "what could silently go wrong" section
 - If agent tooling, warn user to expect 2+ review rounds; encourage using `/review-auto`
 
 **For `/consult`:**
-- Calibrate Smith's "data integrity risk" scrutiny to project type — schema-heavy gets highest, UI work gets lowest
-- Calibrate Warden's Tier 2 threat enumeration by project type — auth-adjacent projects get full Tier 2 every time
+- Calibrate Builder's "data integrity risk" scrutiny to project type — schema-heavy gets highest, UI work gets lowest
+- Calibrate Guardian's Tier 2 threat enumeration by project type — auth-adjacent projects get full Tier 2 every time
 
 **For `/review`:**
-- A schema-heavy project with an APPROVE verdict on the first pass is anomalous — Arbiter should double-check for silent gaps the reviewers might have missed
+- A schema-heavy project with an APPROVE verdict on the first pass is anomalous — Architect should double-check for silent gaps the reviewers might have missed
 - An agent-tooling project with a BLOCK verdict is anomalous — usually these surface as REVISE; a BLOCK suggests the work touched something load-bearing that needs extra care
 
 ---
@@ -40,9 +40,9 @@ Seeded from `.forgeflow/` data across campaign-management, llama.cpp, SubAgents,
 
 **Anomaly:** APPROVE on first pass.
 
-**Likely cause:** Reviewer didn't check all consumers. Smith should have grep'd for all call sites; Atlas should have cross-referenced every plan-declared artifact.
+**Likely cause:** Reviewer didn't check all consumers. Builder should have grep'd for all call sites; Coordinator should have cross-referenced every plan-declared artifact.
 
-**Action:** Arbiter flags this for double-check. Does not block APPROVE but notes the anomaly in review-history for next cycle.
+**Action:** Architect flags this for double-check. Does not block APPROVE but notes the anomaly in review-history for next cycle.
 
 ### REVISE loop that doesn't converge
 
@@ -52,7 +52,7 @@ Seeded from `.forgeflow/` data across campaign-management, llama.cpp, SubAgents,
 
 **Likely cause:** Underlying design issue that point-fixes can't resolve. Should escalate to `/consult` or `/discuss` rather than grinding through `/review-auto`.
 
-**Action:** After 2 REVISE rounds with different finding classes, Arbiter recommends de-escalation to consult/discuss instead of another fix round.
+**Action:** After 2 REVISE rounds with different finding classes, Architect recommends de-escalation to consult/discuss instead of another fix round.
 
 ### BLOCK on agent-tooling work
 
