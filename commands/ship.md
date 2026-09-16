@@ -54,6 +54,15 @@ LEAN_REPORT_JSON_PATH="${FORGEFLOW_DIR}/context/lean-report.json"
 
 <process>
 
+## Local-only workflow boundary
+
+- Treat every `.forgeflow/` directory, its contents, and workflow agent identities as local working context only. Never stage, commit, push, attach, upload, or sync this state, including through memory-sync commands. Use Git's local `info/exclude` for generated state; never force-add it. Ignore rules do not protect already tracked files.
+- Never include local artifact paths, agent names, persona names, role labels, agent verdict attribution, or workflow signatures in PR titles, bodies, comments, commit messages, release notes, or published artifacts. Describe the change and observed validation in ordinary engineering language. Keep detailed review attribution and evidence links in local reports.
+- Never insert workflow agent identities or local evidence references into application source, comments, docstrings, tests, fixtures, identifiers, UI text, or shipped documentation. Use domain-based names and explain technical reasons without agent attribution.
+- Before staging or publishing, inspect the actual staged diff, outgoing commits, and public text. A local-state file or workflow attribution leak blocks the action until corrected. Do not silently delete local evidence or rewrite existing history; report already tracked or committed state for cleanup.
+- These rules govern project work produced with Forgeflow. Forgeflow's own maintained agent definitions, integration code, and documentation may name the agents and state paths needed to implement the tool; generated session state is always local. Ordinary domain terms that happen to match a role name are not workflow attribution.
+- Local CLI labels, orchestration messages, and local report schemas may retain identities. This boundary takes precedence over instructions to copy local reports into public output or sync session memory.
+
 ## Step 1: Gather Context + Gate Check
 
 ### 1a. Derive paths
@@ -142,7 +151,7 @@ If `${HELPER_DIR}/check-implementation-notes.js` is available, run:
 env -u NODE_OPTIONS -u NODE_PATH node "${HELPER_DIR}/check-implementation-notes.js" --project-dir "${FORGEFLOW_DIR}" --json
 ```
 
-Treat `warn` as a visible ship note, not a blocker. Treat `fail` as a hard stop because it means sensitive content or another release-blocking notes problem was detected. Include the checker status in the PR body and ship artifacts when using `ship-prepare.sh`.
+Treat `warn` as a visible ship note, not a blocker. Treat `fail` as a hard stop because it means sensitive content or another release-blocking notes problem was detected. Keep checker details in local ship artifacts; include only relevant validation outcomes in public text.
 
 When using `ship-prepare.sh`, pass `--task <selected-task-id>` for the task matching the current objective, never merely the newest task. The helper checks source and artifact freshness through the task store and uses each criterion's latest evidence. Automated tests, manual checks and review evidence stay separate; failed, stale, missing, waived and pending outcomes remain visible. Without a selected task, validation is missing. Historical notes are references only, so curate relevant decisions and follow-ups with current evidence. Task readiness is not approval: independently verify explicit reviewer verdicts against the current source before replacing the generated `unknown` review gate. Do not use old review-history text as proof.
 
@@ -548,6 +557,8 @@ Write the assembled HTML to `${FORGEFLOW_DIR}/presentations/<date>-<slug>.html`.
 
 ## Step 4: PR Creation
 
+Before any push or PR write, inspect the staged diff and outgoing commits for tracked local state and workflow attribution. Inspect the title and body separately. Remove agent labels, signatures, and local evidence paths while retaining observed failures and validation limits. Never attach the local presentation or raw reports. Use `ship-open-pr.sh` with a reviewed body file for publication so its local-state checks run before the push; do not bypass a failed check with direct Git or GitHub commands.
+
 ### 4a. Safety check -- never ship from main/master
 ```bash
 BRANCH=$(git branch --show-current)
@@ -560,19 +571,9 @@ fi
 If on main/master, stop execution entirely with:
 "Cannot /ship from main/master. Create a feature branch first."
 
-### 4b. Ensure branch is pushed
-```bash
-git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null || git push -u origin HEAD
-```
+### 4b. Prepare publication
 
-If the branch has no upstream, push it. If it already has an upstream, ensure latest commits are pushed:
-```bash
-LOCAL=$(git rev-parse HEAD)
-REMOTE=$(git rev-parse @{u} 2>/dev/null)
-if [ "$LOCAL" != "$REMOTE" ]; then
-  git push
-fi
-```
+Keep the branch local until the title, body, and outgoing commits pass the local-only boundary checks. The publication helper pushes after its preflight succeeds.
 
 ### 4c. Check for existing PR
 ```bash
@@ -596,42 +597,34 @@ Before creating or updating the PR, answer the questions below using the current
 
 Reuse existing issues where possible. Create or update GitHub issues only within current remote-write authorization. Otherwise save an actionable issue draft in local implementation notes and surface the pending filing and timeline decisions in the handoff and PR assessment; a draft does not satisfy the associated GitHub issue requirement. Missing follow-up details remain visible without introducing an automatic approval pause.
 
-Keep answers brief and specific to the current diff. AI collaboration alone is not verification evidence. Label agent-written answers as an agent assessment; never imply a human inspected, understood, or approved the change without their input. These prompts guide reflection and do not add hooks, hard gates, or mandatory confirmation pauses.
+Keep answers brief and specific to the current diff. AI collaboration alone is not verification evidence. Label agent-written answers as an automated assessment; never imply a human inspected, understood, or approved the change without their input. These prompts guide reflection and do not add hooks, hard gates, or mandatory confirmation pauses.
 
-**If no existing PR:** Create one.
-```bash
-gh pr create --title "{product_lead_headline}" --body "$(cat <<'EOF'
+Set `PR_TITLE` to the reviewed title and write the body to `${FORGEFLOW_DIR}/ship/pr-body.md` (create the local `ship` directory if needed). Use this body format, replacing every placeholder with current evidence:
+
+```markdown
 ## Summary
-{product_lead_summary}
+{Change and user impact}
 
 ## Change reflection
-{Brief answers to the questions above, labeled as an agent assessment}
+{Brief answers to the questions above, labeled as an automated assessment}
 
 ## Capabilities
-{capabilities_as_bullet_list}
+{Relevant behavior changes}
 
 ## Test Results
-{cory_testing_summary}
+{Actual commands, observed results, and untested limits}
 
-## Review Verdict
-- Architect: {verdict}
-- Product Lead: {verdict}
-- Blockers resolved: {count}
-
----
-*Generated with Claude Code + Forgeflow*
-*Presentation: .forgeflow/{project}/presentations/{filename}*
-EOF
-)"
+## Validation
+{Unresolved findings and limitations without agent attribution or local evidence paths}
 ```
 
-**If PR exists:** Update the body.
+After checking the draft and outgoing diff, create or update through the helper:
+
 ```bash
-gh pr edit {pr_number} --title "{product_lead_headline}" --body "$(cat <<'EOF'
-{same body format as above}
-EOF
-)"
+"${HELPER_DIR}/ship-open-pr.sh" "$PR_TITLE" "$FORGEFLOW_DIR/ship/pr-body.md" "$BASE_BRANCH"
 ```
+
+The helper checks local-state paths before pushing and creating or updating the PR. Agent attribution requires inspection of public text and code using the local-only boundary above.
 
 ### 4e. Capture PR details
 Store the PR number and URL from the create/edit output.

@@ -129,15 +129,21 @@ const payload = {
   ],
 };
 fs.writeFileSync(path.join(shipDir, 'ship-summary.json'), JSON.stringify(payload, null, 2) + '\n');
-const list = (items, empty) => items.length ? items.map(item => `- ${item}`).join('\n') : empty;
+// Public drafts contain aggregate results only. Raw task descriptions, evidence
+// IDs, commands, and artifact paths remain in the local summary for curation.
+const publicEvidence = kind => {
+  const items = current.filter(item => item.kind === kind);
+  return items.length ? items.map(item => `- ${item.status}${item.exitCode === null ? '' : ` (exit ${item.exitCode})`}`).join('\n') : 'No current evidence available.';
+};
 fs.writeFileSync(path.join(shipDir, 'pr-body.md'), [
-  '## Summary', title, summary,
-  '## Review Gate', payload.reviewGate, payload.reviewGateNote,
-  '## Task Validation', validationSummary, list(validationDetails, 'No task criteria available.'),
-  '## Tests', list(payload.tests, 'No current automated test evidence.'),
-  '## Manual Checks', list(payload.manualChecks, 'No current manual evidence.'),
-  '## Review Evidence', list(payload.reviewEvidence, 'No current task review evidence. Explicit verdict verification is still required.'),
-  '## Historical Context', payload.notes[1], '',
+  '## Summary', 'Describe the change and its user impact before publishing.',
+  '## Validation', task
+    ? `${task.counts.verified}/${task.counts.total} criteria verified; ${task.counts.failed} failed, ${task.counts.stale} stale, ${task.counts.missing} missing, ${task.counts.waived} waived.`
+    : 'Validation is missing. Run relevant checks before publishing.',
+  '## Tests', publicEvidence('test'),
+  '## Manual Checks', publicEvidence('manual'),
+  '## Review', 'Review approval has not been verified. Confirm current findings before publishing.',
+  '## Limitations', 'This is a draft. Add observed check details, unresolved actions, and limitations from current evidence before publishing.', '',
 ].join('\n\n'));
 JS
 
@@ -205,30 +211,6 @@ node "$HELPER_ROOT/scripts/forgeflow/show-project-learnings.js" \
 PROJECT_LEARNINGS_PATH="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("out", ""))' "$PROJECT_LEARNINGS_JSON")"
 
 BODY_FILE="$SHIP_DIR/pr-body.md"
-cat >> "$BODY_FILE" <<EOF
-## Implementation Notes Check
-
-- Status: $NOTES_CHECK_STATUS
-- Report: $NOTES_CHECK_JSON
-
-## Lean Readiness
-
-- Status: $LEAN_READINESS_STATUS
-- Report: $LEAN_READINESS_JSON
-
-## Project Learnings
-
-- Refreshed: $PROJECT_LEARNINGS_PATH
-- Report: $PROJECT_LEARNINGS_JSON
-
-## Generated Artifacts
-
-- $SHIP_DIR/ship-summary.json
-- $SHIP_DIR/ship-presentation.html
-- $NOTES_CHECK_JSON
-- $LEAN_READINESS_JSON
-- $PROJECT_LEARNINGS_JSON
-EOF
 
 printf 'SUMMARY_JSON=%s\n' "$SHIP_DIR/ship-summary.json"
 printf 'PRESENTATION_HTML=%s\n' "$SHIP_DIR/ship-presentation.html"

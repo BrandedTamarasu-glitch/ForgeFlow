@@ -7,6 +7,15 @@ FORGEFLOW_DIR="$REPO_ROOT/.forgeflow/$PROJECT_NAME"
 NOTES_DIR="$FORGEFLOW_DIR/agent-notes"
 SHIP_DIR="$FORGEFLOW_DIR/ship"
 
+# Keep generated state out of consuming repositories without editing project files.
+if git -C "$REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+  EXCLUDE_FILE="$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-path info/exclude)"
+  mkdir -p "$(dirname "$EXCLUDE_FILE")"
+  if ! grep -qxF '.forgeflow/' "$EXCLUDE_FILE" 2>/dev/null; then
+    printf '\n# Local workflow state\n.forgeflow/\n' >> "$EXCLUDE_FILE"
+  fi
+fi
+
 mkdir -p "$NOTES_DIR" "$SHIP_DIR"
 
 create_file() {

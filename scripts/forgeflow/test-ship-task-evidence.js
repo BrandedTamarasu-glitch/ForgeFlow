@@ -31,7 +31,7 @@ function check(task, event, code = 0) {
 }
 try {
   git('init', '-qb', 'main');
-  fs.writeFileSync(path.join(root, '.gitignore'), '.forgeflow/\n');
+  fs.writeFileSync(path.join(root, '.gitignore'), '# Project ignores\n');
   fs.writeFileSync(path.join(root, 'source.txt'), 'one\n');
   git('add', '.gitignore', 'source.txt'); git('commit', '-qm', 'fixture');
   fs.mkdirSync(project, { recursive: true });
@@ -39,6 +39,8 @@ try {
   fs.writeFileSync(path.join(project, 'review-history.md'), 'Final Verdict: APPROVE\nCompass Verdict: CONFIRM\n');
   fs.writeFileSync(path.join(project, 'implementation-notes.md'), '# Implementation Notes\n## Decisions\n- OLD-DECISION belongs to another task\n## Validation Notes\n- OLD-VALIDATION passed\n');
   let summary = prepare(['Legacy title']);
+  assert.equal(git('check-ignore', '.forgeflow/private.md', 'nested/.forgeflow/private.md').split('\n').length, 2);
+  assert.equal(fs.readFileSync(path.join(root, '.gitignore'), 'utf8'), '# Project ignores\n');
   assert.equal(summary.title, 'Legacy title');
   assert.equal(summary.task, null);
   assert.deepEqual(summary.tests, []);
@@ -47,10 +49,11 @@ try {
   for (const file of ['ship-summary.json', 'ship-presentation.html', 'pr-body.md']) {
     const text = fs.readFileSync(path.join(ship, file), 'utf8');
     assert.doesNotMatch(text, /OLD-TEST|OLD-DECISION|OLD-VALIDATION/);
-    assert.match(text, /Historical context|Historical Context/);
+    if (file !== 'pr-body.md') assert.match(text, /Historical context|Historical Context/);
+    else assert.doesNotMatch(text, /\.forgeflow|Architect|Product Lead|Forgeflow|Historical Context/);
   }
   store.createTask(root, { id: 'selected', objective: 'Current scope', scope: ['source.txt'], criteria: [
-    { id: 'works', description: 'Expected behavior works' }, { id: 'manual', description: 'Manual <script> check' },
+    { id: 'works', description: 'Guardian checked .forgeflow/private.md' }, { id: 'manual', description: 'Manual <script> check' },
   ] });
   check('selected', 'selected-pass');
   const proof = '.forgeflow/manual.md';
@@ -72,7 +75,9 @@ try {
   const html = fs.readFileSync(path.join(ship, 'ship-presentation.html'), 'utf8');
   assert.match(html, /Manual &lt;script&gt; check/);
   assert.doesNotMatch(html, /Manual <script> check/);
-  assert.match(fs.readFileSync(path.join(ship, 'pr-body.md'), 'utf8'), /selected-pass: passed/);
+  const publicBody = fs.readFileSync(path.join(ship, 'pr-body.md'), 'utf8');
+  assert.match(publicBody, /passed \(exit 0\)/);
+  assert.doesNotMatch(publicBody, /\.forgeflow|Guardian|manual-proof|selected-pass|Manual <script>/);
 
   check('selected', 'selected-fail', 1);
   summary = prepare(['--task', 'selected']);
@@ -152,6 +157,29 @@ try {
   const inventoryHtml = fs.readFileSync(path.join(ship, 'ship-presentation.html'), 'utf8');
   for (const file of expectedFiles) assert.ok(inventoryHtml.includes(file.path));
 
+  const bin = path.join(base, 'bin');
+  fs.mkdirSync(bin);
+  const remoteMarker = path.join(base, 'remote-called');
+  fs.writeFileSync(path.join(bin, 'gh'), '#!/bin/sh\ntouch "$REMOTE_MARKER"\n', { mode: 0o755 });
+  const openPr = path.join(__dirname, 'ship-open-pr.sh');
+  const bodyPath = path.join(ship, 'pr-body.md');
+  function blockedPublication(title, expected) {
+    const result = spawnSync('bash', [openPr, title, bodyPath, 'main'], {
+      cwd: root, env: { ...env, PATH: `${bin}:${env.PATH}`, REMOTE_MARKER: remoteMarker }, encoding: 'utf8',
+    });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, expected);
+    assert.doesNotMatch(result.stderr, /does not appear to be a git repository/);
+    assert.equal(fs.existsSync(remoteMarker), false);
+  }
+  blockedPublication('See .forgeflow/private.md', /Remove local workflow/);
+  fs.appendFileSync(bodyPath, '\nSee .forgeflow/private.md');
+  blockedPublication('Public title', /Remove local workflow/);
+  prepare();
+  git('add', '-f', '.forgeflow/' + path.basename(root) + '/old.md');
+  blockedPublication('Public title', /Local workflow state is tracked/);
+  git('rm', '--cached', '.forgeflow/' + path.basename(root) + '/old.md');
+
   const claudeHome = path.join(base, 'claude'), codexHome = path.join(base, 'codex');
   installTemplate({ target: 'both', claudeHome, codexHome });
   for (const home of [claudeHome, codexHome]) {
@@ -162,5 +190,12 @@ try {
     assert.deepEqual(result.tests, []);
     assert.equal(result.reviewGate, 'unknown');
   }
+  // A state file removed from the final tree still leaks through commit history.
+  git('add', '-f', '.forgeflow/' + path.basename(root) + '/old.md');
+  git('commit', '-qm', 'local state fixture');
+  git('rm', '--cached', '.forgeflow/' + path.basename(root) + '/old.md');
+  git('commit', '-qm', 'remove state from final tree');
+  blockedPublication('Public title', /Local workflow state is tracked or present in outgoing commits/);
+
   console.log('Shipping evidence: selection, supersession, source/artifact freshness, missing proof, pending actions, legacy isolation, working-tree inventory and both installed hosts passed.');
 } finally { fs.rmSync(base, { recursive: true, force: true }); }

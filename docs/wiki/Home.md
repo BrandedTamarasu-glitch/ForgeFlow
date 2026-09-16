@@ -13,7 +13,7 @@ ForgeFlow helps turn an idea into a scoped brief, working code, an evidence-back
 3. **[User Paths](User-Paths.md)**: choose a workflow for the outcome you need.
 4. **[Dashboard and Ember](Dashboard.md)**: understand current activity, readiness, evidence, and empty states.
 
-[Why ForgeFlow](Why-Forgeflow.md) explains the approach. [4.6.2 release notes](../changelogs/v4.6.2.html) describe the packaged version. This wiki follows the current source. The visual guide identifies its own source edition.
+[Why ForgeFlow](Why-Forgeflow.md) explains the approach. [4.6.3 release notes](../changelogs/v4.6.3.html) describe the packaged version. This wiki follows the current source. The visual guide identifies its own source edition.
 
 ## New in 4.6.2
 
