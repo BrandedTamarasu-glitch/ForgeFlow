@@ -17,6 +17,7 @@
     "test": "node scripts/run-tests.js",
     "test:helpers": "node scripts/run-tests.js --helpers",
     "test:visual-capabilities": "playwright test --config playwright.visual.config.ts",
+    "test:web-release": "playwright test --config playwright.release.config.ts",
     "test:services": "node scripts/run-tests.js --services",
     "typecheck": "tsc -p services/chat-bridge/tsconfig.json --noEmit",
     "docs:build": "node scripts/build-docs.mjs",

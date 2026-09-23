@@ -1,0 +1,4 @@
+body { margin: 0; padding: 24px; background: #171717; color: #fafafa; font: 18px/1.5 system-ui, sans-serif; }
+main { max-width: 640px; margin: auto; }
+button { padding: 12px; font: inherit; color: #171717; background: #fed7aa; border: 2px solid #fed7aa; border-radius: 6px; }
+button:focus-visible { outline: 3px solid #fafafa; outline-offset: 4px; }

@@ -1,0 +1,11 @@
+# Web release fixture
+
+Authored synthetic content under the repository MIT license. No captured website or credentials are included. The intended v2 build consists of `site/index.html`, `app.js`, `style.css`, `logo.svg` and `icon.svg`. The harness freezes hashes and media types from those checkout bytes before starting each controlled HTTP deployment. It never learns expected identity from the server, which deliberately claims v2 even when serving old bytes.
+
+Run `npm run test:web-release` with the existing Playwright dependency and an installed compatible Chromium. Set `FORGEFLOW_CHROMIUM_PATH` if using an alternative executable. Nothing is downloaded or deployed. Each test reserves an ephemeral loopback port, closes its page/server in `finally`, and retains screenshots and JSON observations in the temporary directory reported by Playwright.
+
+Ten browser checks cover a current build at 390/1280 pixels and eight narrow-screen negative/gap cases: stale document/script, mixed stylesheet, missing icon, HTML image fallback, wrong icon media type, unexpected redirect, bodyless 304 and an API failure with perfectly matching assets. Passing a negative test means the expected failure or evidence gap was detected. Byte identity and behavior are reported separately; the runtime case must fail interaction qualification despite passing every asset check. A 304 without the cached body remains unverified.
+
+Explicit HTTP probes cover all five artifacts. Separate observations compare the document/script/style bytes consumed by the browser. Keyboard focus, Enter and pointer activation, accessible button/status locators, visible error handling, horizontal overflow and uncaught page errors are checked. Screenshots support later visual inspection; automated output does not claim a human visual review.
+
+Limits: local Chromium simulation only, no public verification, service-worker/returning-cache lifecycle, authenticated state, lazy chunks, complete route crawl, screen reader, contrast audit or model trial. Asset expectations are fixed for each test run, not a frozen benchmark answer key; freeze independently challenged cases before a future model pilot. This checkout-only harness validates the procedure's examples and is not installed as a production deployment checker. Native lifecycle checks remain pending F3.3.

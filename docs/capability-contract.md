@@ -1,6 +1,6 @@
 # Capability contract and integration map
 
-Status: Phase 0 foundation implemented. Change propagation, visual acceptance, persistence recovery, review calibration and provider compatibility have evaluation-cohort procedures; the other four procedure bodies remain planned. Discovery declarations are checked; live client discovery after restart is not claimed. See [the roadmap](../ROADMAP.md).
+Status: Phase 0 foundation implemented. Change propagation, visual acceptance, persistence recovery, review calibration, provider compatibility and web release qualification have evaluation-cohort procedures; native release qualification and the other three procedure bodies remain planned. Discovery declarations are checked; live client discovery after restart is not claimed. See [the roadmap](../ROADMAP.md).
 
 ## Contract version 1
 
@@ -91,6 +91,8 @@ Implemented for evaluation: [canonical procedure](../forgeflow-patterns/capabili
 - **Fallback/cleanup:** fixture-only results do not establish live compatibility; authenticated smoke checks require existing authority; close owned clients and scrub temporary sensitive output.
 
 ### release-qualification
+
+Web branch implemented for evaluation: [canonical procedure](../forgeflow-patterns/capability-release-qualification.md) and [controlled served-artifact/browser cases](../fixtures/web-release/README.md). Native lifecycle implementation remains pending F3.3. Local simulation does not establish public qualification or model benefit.
 
 - **Trigger/exclusion:** packaged, installed or published behavior needs verification; exclude source-only edits without a release-qualification objective.
 - **Phases/owner:** plan, review, ship; Product Lead coordinates, Designer checks interaction/accessibility and Guardian checks environment boundaries.
@@ -195,7 +197,7 @@ The initial selector uses conservative behavioral patterns to shortlist/select c
 
 The output includes one decision per capability, selected IDs, up to three inspection requests and the scope fingerprint. Pass the previous result as `previous` after meaningful discoveries. An unchanged normalized scope consumes no reassessment; changed scope allows three reassessments before further selections are deferred with unresolved gaps. A new independent task starts a new budget. Preserve the previous result to keep the bound effective; do not reset it to work around a deferred result.
 
-The context builder writes `capability-selection.json` beside existing context artifacts, links it from synthesis input and appends scoped guidance to existing role packets. Reviewer lists/modes and task evidence are unchanged. No procedure body is loaded; change propagation, visual acceptance, persistence recovery, review calibration and provider compatibility have `availability: evaluation`, the other four have `availability: planned`, and all have `executable: false` in normal routing pending qualification. This proves selection plumbing, not capability execution or measured agent benefit.
+The context builder writes `capability-selection.json` beside existing context artifacts, links it from synthesis input and appends scoped guidance to existing role packets. Reviewer lists/modes and task evidence are unchanged. No procedure body is loaded; change propagation, visual acceptance, persistence recovery, review calibration, provider compatibility and release qualification (web branch only) have `availability: evaluation`, the other three have `availability: planned`, and all have `executable: false` in normal routing pending qualification. This proves selection plumbing, not capability execution or measured agent benefit.
 
 ## Host entry points and packaging
 
