@@ -8,13 +8,13 @@ Turn an idea into a scoped brief, working code, an evidence-backed review, and a
 
 **Start here:** [Visual user guide](https://coryebert.com/ForgeFlow/user-guide.html) · [19-page PDF](docs/ForgeFlow-User-Guide.pdf) · [Documentation](https://coryebert.com/ForgeFlow/documentation.html) · [Install](#quick-start)
 
-**Development:** [Roadmap and implementation progress](ROADMAP.md)
+**Development:** [Roadmap and implementation progress](ROADMAP.md) · [Current status and next session](STATUS.md)
 
 ![ForgeFlow workshop showing task evidence, Ember, project readiness, review outcomes, and activity](docs/images/forgeflow-workshop.png)
 
 *Workshop screenshot uses illustrative example data.*
 
-## Intelligent capabilities: Phase 0 complete
+## Intelligent capabilities: Phases 0 and 1 complete
 
 The source checkout now includes the foundation for automatically selecting specialized procedures based on task intent, affected code and workflow phase. Selection supports mixed-domain tasks, explicit overrides and bounded reassessment. Managed Claude Code and Codex workflows include the selection entry points.
 

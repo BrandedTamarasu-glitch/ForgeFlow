@@ -12,6 +12,8 @@ Implementation status: **Phases 0 and 1 complete**. Contracts, bounded selection
 
 This file is the portable source of truth for scope, progress and the next action. It is product planning documentation, not a copy of local session records. A checked item means its acceptance criteria were verified; it does not imply the change has been released.
 
+**Session checkpoint:** implementation is complete through F1.3 (`c99cd88`); F2.1 has not started. See [current status and resumption steps](STATUS.md) before continuing on another checkout. The Phase 1 source milestone includes `007b8af`, `d0c5b68` and `c99cd88`; the packaged release version is unchanged.
+
 ## Resume and update rules
 
 1. Read this file and `AGENTS.md`. Check the current branch, working tree and recent commits before continuing; preserve unrelated work.
