@@ -1,0 +1,35 @@
+{
+  "schema_version": "1",
+  "provenance": {
+    "source": "corpus.json",
+    "license": "MIT (repository LICENSE)",
+    "derivation": "New synthetic HTML references and integer schema codecs authored for ForgeFlow; no project or personal data copied.",
+    "source_revision": "fa41f65870b671e9b46c5836778bb341646c5555caea501f11be428b46062c53"
+  },
+  "stale_consumers": [
+    "favicon.html",
+    "guide.html",
+    "screenshot.html",
+    "export.cjs",
+    "import.cjs",
+    "backup.cjs"
+  ],
+  "current_consumers": [
+    "favicon.html",
+    "guide.html",
+    "screenshot.html",
+    "export.cjs",
+    "import.cjs",
+    "backup.cjs"
+  ],
+  "legacy_import": {
+    "input": "{\"version\":1,\"amount\":125}",
+    "expected": {
+      "amountMinor": 125
+    }
+  },
+  "round_trip": {
+    "amountMinor": 125
+  },
+  "limits": "Screenshot reference only, not pixel inspection. No actual browser, deployment, generator or model trials."
+}

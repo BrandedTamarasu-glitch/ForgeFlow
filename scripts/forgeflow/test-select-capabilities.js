@@ -20,7 +20,7 @@ try {
 for (const capability of CAPABILITIES) {
   for (const key of ['id', 'version', 'summary', 'owner', 'handoffs', 'phases', 'triggers', 'exclusions', 'inputs', 'requires', 'procedure', 'prerequisites', 'cost', 'availability']) assert.ok(capability[key], `${capability.id} missing ${key}`);
   assert.deepEqual(capability.requires, []);
-  assert.equal(capability.availability, 'planned');
+  assert.equal(capability.availability, capability.id === 'change-propagation' ? 'evaluation' : 'planned');
 }
 assert.deepEqual(selected({ task: 'Update the logo and palette' }), ['change-propagation', 'visual-acceptance']);
 assert.deepEqual(selected({ task: 'Fix recurring budget calculations', phase: 'plan' }), ['money-calendar-correctness']);

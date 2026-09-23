@@ -1,0 +1,63 @@
+{
+  "schema_version": "1",
+  "sources": {
+    "branding.json": "{\"logo\":\"ember.svg\",\"palette\":\"forge\"}\n",
+    "schema.json": "{\"version\":2,\"amountField\":\"amountMinor\"}\n"
+  },
+  "consumers": [
+    {
+      "path": "favicon.html",
+      "source": "branding.json",
+      "command": "node render-icons.js",
+      "current": "<link rel=\"icon\" href=\"ember.svg\">",
+      "stale": "<link rel=\"icon\" href=\"spark.svg\">",
+      "contains": "ember.svg",
+      "absent": "spark.svg"
+    },
+    {
+      "path": "guide.html",
+      "source": "branding.json",
+      "command": "node render-guide.js",
+      "current": "<img src=\"ember.svg\">",
+      "stale": "<img src=\"spark.svg\">",
+      "contains": "ember.svg",
+      "absent": "spark.svg"
+    },
+    {
+      "path": "screenshot.html",
+      "source": "branding.json",
+      "command": "node capture-workshop.js",
+      "current": "<img src=\"workshop-ember.png\">",
+      "stale": "<img src=\"workshop-spark.png\">",
+      "contains": "workshop-ember.png",
+      "absent": "workshop-spark.png"
+    },
+    {
+      "path": "export.cjs",
+      "source": "schema.json",
+      "command": null,
+      "current": "module.exports = record => JSON.stringify({version:2,amountMinor:record.amountMinor});\n",
+      "stale": "module.exports = record => JSON.stringify({version:1,amount:record.amountMinor});\n",
+      "contains": "amountMinor:record.amountMinor",
+      "absent": "amount:record.amountMinor"
+    },
+    {
+      "path": "import.cjs",
+      "source": "schema.json",
+      "command": null,
+      "current": "module.exports = text => {const row=JSON.parse(text); return {amountMinor:row.version===1 ? row.amount : row.amountMinor};};\n",
+      "stale": "module.exports = text => ({amountMinor:JSON.parse(text).amount});\n",
+      "contains": "row.amountMinor",
+      "absent": "JSON.parse(text).amount"
+    },
+    {
+      "path": "backup.cjs",
+      "source": "schema.json",
+      "command": null,
+      "current": "module.exports = {save: record => JSON.stringify({version:2,amountMinor:record.amountMinor}),restore: text => ({amountMinor:JSON.parse(text).amountMinor})};\n",
+      "stale": "module.exports = {save: record => JSON.stringify({version:2,amount:record.amountMinor}),restore: text => ({amountMinor:JSON.parse(text).amountMinor})};\n",
+      "contains": "amountMinor:record.amountMinor",
+      "absent": "amount:record.amountMinor"
+    }
+  ]
+}

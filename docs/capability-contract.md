@@ -1,6 +1,6 @@
 # Capability contract and integration map
 
-Status: F0.1 contract, F0.2 selector/context integration, F0.3 managed-host packaging and F0.4 atomicity-guidance correction implemented. Procedure bodies remain planned. Discovery declarations are checked; live client discovery after restart is not claimed. See [the roadmap](../ROADMAP.md).
+Status: Phase 0 foundation implemented. F1.1 change propagation has an evaluation-cohort procedure and a read-only text-reference checker; the other eight procedure bodies remain planned. Discovery declarations are checked; live client discovery after restart is not claimed. See [the roadmap](../ROADMAP.md).
 
 ## Contract version 1
 
@@ -21,7 +21,7 @@ The compact catalog exposes the following fields without loading procedure bodie
 | `procedure` | Canonical relative reference, loaded only when selected |
 | `prerequisites` | Tools/environment needed for particular checks |
 | `cost` | Relative execution cost and the expensive operations to bound |
-| `availability` | Whether implemented and qualified for automatic use; a planned entry cannot be reported as executed |
+| `availability` | `planned` means unavailable; `evaluation` means implemented for controlled pilots, pending normal automatic-use qualification |
 
 Each procedure must define ordered steps, scope/termination bounds, expected evidence, acceptance criteria, unavailable-input/tool fallback and cleanup. The individual contracts below inherit these common rules:
 
@@ -33,9 +33,11 @@ Each procedure must define ordered steps, scope/termination bounds, expected evi
 
 ## Canonical inventory
 
-Reserve flat canonical files `forgeflow-patterns/capability-<id>.md`. These are future implementation destinations, not existing runnable files. Flat Markdown fits both current managed-pattern installation paths; nested pattern directories do not currently have equivalent Claude coverage.
+Use flat canonical files `forgeflow-patterns/capability-<id>.md`. Change propagation exists; the remaining paths are future implementation destinations. Flat Markdown fits both current managed-pattern installation paths; nested pattern directories do not currently have equivalent Claude coverage.
 
 ### change-propagation
+
+Implemented for evaluation: [canonical procedure](../forgeflow-patterns/capability-change-propagation.md), [read-only checker](../scripts/forgeflow/check-change-propagation.js), [synthetic cases and limits](../fixtures/change-propagation/README.md). Literal checks cover declared text relationships only; model discovery, image appearance and semantic compatibility need separate observations.
 
 - **Trigger/exclusion:** shared concepts, schemas, identity or generated outputs change; exclude isolated edits with no affected consumers after a bounded check.
 - **Phases/owner:** plan, implement, review, ship; Coordinator coordinates, Builder or Designer validates domain consumers.
@@ -185,7 +187,7 @@ The initial selector uses conservative behavioral patterns to shortlist/select c
 
 The output includes one decision per capability, selected IDs, up to three inspection requests and the scope fingerprint. Pass the previous result as `previous` after meaningful discoveries. An unchanged normalized scope consumes no reassessment; changed scope allows three reassessments before further selections are deferred with unresolved gaps. A new independent task starts a new budget. Preserve the previous result to keep the bound effective; do not reset it to work around a deferred result.
 
-The context builder writes `capability-selection.json` beside existing context artifacts, links it from synthesis input and appends scoped guidance to existing role packets. Reviewer lists/modes and task evidence are unchanged. No procedure body is loaded; all nine procedures currently have `availability: planned` and `executable: false`. This proves selection plumbing, not capability execution or measured agent benefit.
+The context builder writes `capability-selection.json` beside existing context artifacts, links it from synthesis input and appends scoped guidance to existing role packets. Reviewer lists/modes and task evidence are unchanged. No procedure body is loaded; change propagation has `availability: evaluation`, the other eight have `availability: planned`, and all have `executable: false` in normal routing pending qualification. This proves selection plumbing, not capability execution or measured agent benefit.
 
 ## Host entry points and packaging
 

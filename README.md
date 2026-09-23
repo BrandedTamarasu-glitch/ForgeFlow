@@ -20,13 +20,13 @@ The source checkout now includes the foundation for automatically selecting spec
 
 This milestone adds:
 
-- A catalog and contracts for nine planned capabilities, including change propagation, visual acceptance, persistence recovery, provider compatibility, money/calendar correctness and CAD/fabrication acceptance.
+- A catalog and contracts for nine capabilities, including change propagation, visual acceptance, persistence recovery, provider compatibility, money/calendar correctness and CAD/fabrication acceptance.
 - Corrected atomicity guidance backed by six executable synthetic examples covering intermediate visibility, concurrent updates and retry behavior.
 - Skill-enabled/disabled evaluation with frozen inputs, separate answer keys and explicit actual, fixture and unobserved results. Existing workflow comparisons retain their original meaning.
 
-**The nine specialized procedures are still planned.** Selection does not execute an unavailable procedure, and no model trials or measured improvement are claimed. Managed installation and packaging checks pass; live client activation remains unverified, and the lean Codex plugin does not expose the capability entry point. This source milestone does not change the packaged release version.
+**Change propagation is now implemented for controlled evaluation; the other eight procedures remain planned.** Selection does not execute an unavailable procedure, and no model trials or measured improvement are claimed. Managed installation and packaging checks pass; live client activation remains unverified, and the lean Codex plugin does not expose the capability entry point. This source milestone does not change the packaged release version.
 
-Next is **F1.1: change propagation**, mapping changed sources to consumers and checking for stale generated artifacts. Follow the [roadmap](ROADMAP.md), [capability contracts and host support](docs/capability-contract.md), and [evaluation protocol](docs/skill-evaluation.md).
+The [change-propagation procedure](forgeflow-patterns/capability-change-propagation.md) maps sources to consumers, records freshness evidence and includes a read-only text-reference checker. Normal automatic execution awaits qualification. Next is **F1.2: visual acceptance**. Follow the [roadmap](ROADMAP.md), [capability contracts and host support](docs/capability-contract.md), and [evaluation protocol](docs/skill-evaluation.md).
 
 ## New in 4.6.3
 

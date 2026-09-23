@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const crypto = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 const { installClaude, installCodex } = require('./install-template');
 const { manifestEntry, CODEX_INVENTORY_SOURCE } = require('./install-manifest');
@@ -51,6 +52,9 @@ try {
     const entry = source => manifestEntry(source, home, target).destination;
     const selector = entry('scripts/forgeflow/select-capabilities.js');
     const pattern = entry('forgeflow-patterns/capability-selection.md');
+    const procedure = entry('forgeflow-patterns/capability-change-propagation.md');
+    assert.equal(fs.readFileSync(procedure, 'utf8'), fs.readFileSync(path.join(root, 'forgeflow-patterns/capability-change-propagation.md'), 'utf8'));
+    assert.ok(fs.existsSync(entry('scripts/forgeflow/check-change-propagation.js')));
     const wrapperSource = target === 'codex' ? '.agents/skills/forgeflow-capabilities/SKILL.md' : 'skills/forgeflow-capabilities/SKILL.md';
     const wrapper = entry(wrapperSource);
     assert.ok(fs.existsSync(wrapper), `${target} skill discovery file missing`);
@@ -68,6 +72,15 @@ try {
     assert.deepEqual(parsed.selected, ['money-calendar-correctness']);
     assert.ok(parsed.decisions.every(item => !item.executable), 'packaging cannot make planned procedures executable');
     assert.deepEqual(fs.readdirSync(caller), [], 'stdin selection and guide lookup must not write project state');
+    const propagationRoot = path.join(temporary, `propagation-${target}`);
+    fs.mkdirSync(propagationRoot);
+    fs.writeFileSync(path.join(propagationRoot, 'source.txt'), 'current');
+    fs.writeFileSync(path.join(propagationRoot, 'consumer.txt'), 'current');
+    const impactFile = path.join(propagationRoot, 'impact.json');
+    fs.writeFileSync(impactFile, JSON.stringify({ schema_version: '1', sources: [{ path: 'source.txt', sha256: crypto.createHash('sha256').update('current').digest('hex') }], consumers: [{ path: 'consumer.txt', sources: ['source.txt'], command: null, checks: [{ contains: 'current' }] }] }));
+    const propagation = run(entry('scripts/forgeflow/check-change-propagation.js'), ['--root', propagationRoot, '--input', impactFile]);
+    assert.equal(propagation.status, 0, propagation.stderr);
+    assert.equal(JSON.parse(propagation.stdout).status, 'current');
     const oversized = run(selector, ['--stdin'], ' '.repeat(100001));
     assert.equal(oversized.status, 1);
     assert.match(oversized.stderr, /too large/);
@@ -79,7 +92,7 @@ try {
 
     // A simulated older local installation is updated, then restored exactly.
     const originals = new Map();
-    for (const file of [selector, pattern, wrapper]) {
+    for (const file of [selector, pattern, procedure, wrapper]) {
       const suffix = file.endsWith('.js') ? '\n// previous local fixture version\n' : '\nPrevious local fixture version.\n';
       fs.appendFileSync(file, suffix);
       originals.set(file, fs.readFileSync(file));

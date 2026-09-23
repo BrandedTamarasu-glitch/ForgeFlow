@@ -8,6 +8,7 @@ const CODEX_INVENTORY_SOURCE = 'scripts/forgeflow/installed-codex-inventory.json
 const SCRIPT_EXTENSIONS = new Set(['.js', '.sh']);
 const STATIC_FILES = new Set([
   'forgeflow-patterns/capability-selection.md',
+  'forgeflow-patterns/capability-change-propagation.md',
   'commands/forgeflow-capabilities.md',
   'skills/forgeflow-capabilities/SKILL.md',
   'scripts/forgeflow/agent-identity.d.ts',
@@ -33,6 +34,7 @@ const DASHBOARD_RUNTIME = new Set([
   'services/agent-chat/public/index.html', 'services/agent-chat/package.json', 'services/agent-chat/package-lock.json',
 ]);
 const RUNTIME_HELPERS = [
+  'scripts/forgeflow/check-change-propagation.js',
   'scripts/forgeflow/capability-catalog.js',
   'scripts/forgeflow/select-capabilities.js',
   'scripts/forgeflow/render-capability-entrypoints.js',

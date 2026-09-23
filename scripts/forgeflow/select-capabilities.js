@@ -131,7 +131,7 @@ function selectCapabilities(raw = {}) {
     selected: decisions.filter(item => item.decision === 'selected').map(item => item.id),
     inspection_requests: decisions.filter(item => item.decision === 'inspect').map(item => ({ id: item.id, evidence: item.evidence, question: 'Does this task change the capability’s behavior? Inspect the cited scope and supply a reasoned assessment.' })),
     limits: LIMITS,
-    boundary: 'Relevance selection only. Planned procedures are unavailable, not executed. No permission, approval, review verdict or test evidence is created.',
+    boundary: 'Relevance selection only. Planned procedures are unavailable; evaluation procedures are limited to controlled pilots. Selection executes neither. No permission, approval, review verdict or test evidence is created.',
   };
 }
 
