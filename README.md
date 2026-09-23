@@ -14,6 +14,20 @@ Turn an idea into a scoped brief, working code, an evidence-backed review, and a
 
 *Workshop screenshot uses illustrative example data.*
 
+## Intelligent capabilities: Phase 0 complete
+
+The source checkout now includes the foundation for automatically selecting specialized procedures based on task intent, affected code and workflow phase. Selection supports mixed-domain tasks, explicit overrides and bounded reassessment. Managed Claude Code and Codex workflows include the selection entry points.
+
+This milestone adds:
+
+- A catalog and contracts for nine planned capabilities, including change propagation, visual acceptance, persistence recovery, provider compatibility, money/calendar correctness and CAD/fabrication acceptance.
+- Corrected atomicity guidance backed by six executable synthetic examples covering intermediate visibility, concurrent updates and retry behavior.
+- Skill-enabled/disabled evaluation with frozen inputs, separate answer keys and explicit actual, fixture and unobserved results. Existing workflow comparisons retain their original meaning.
+
+**The nine specialized procedures are still planned.** Selection does not execute an unavailable procedure, and no model trials or measured improvement are claimed. Managed installation and packaging checks pass; live client activation remains unverified, and the lean Codex plugin does not expose the capability entry point. This source milestone does not change the packaged release version.
+
+Next is **F1.1: change propagation**, mapping changed sources to consumers and checking for stale generated artifacts. Follow the [roadmap](ROADMAP.md), [capability contracts and host support](docs/capability-contract.md), and [evaluation protocol](docs/skill-evaluation.md).
+
 ## New in 4.6.3
 
 Workflow state and review attribution stay local. Public drafts omit internal evidence links, publication checks block tracked session state, and both host installations receive the same local-only rules. See the [4.6.3 release notes](docs/changelogs/v4.6.3.html).
