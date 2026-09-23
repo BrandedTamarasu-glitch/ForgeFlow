@@ -26,12 +26,14 @@ Six capabilities have evaluation implementations, including both release qualifi
 
 The pilot, legacy evaluation and skill evaluation checks passed. Implementation-specific validation and remaining accessibility/platform gaps are recorded in the roadmap. Raw responses and session evidence remain local; the published protocol, fixtures and aggregate results provide the portable checkpoint.
 
+Publication validation: the full regression sweep initially passed 211 of 214 commands. The three failures identified missing capability entries in the health fallback inventory. After adding the capability command and five runtime helpers, all three failed checks and the related health check passed. Documentation link and whitespace checks also passed.
+
 ## Resume on another computer
 
 1. Fetch `origin`, inspect the current branch and working tree, and preserve any local work. Update a clean `main` checkout with `git pull --ff-only origin main`; resolve any divergence before continuing. For a fresh checkout, clone the repository's default branch.
-2. Read `AGENTS.md`, this file, and `ROADMAP.md`. Confirm the checkout includes completed work through F3.4 and this status file.
+2. Read `AGENTS.md`, this file, and `ROADMAP.md`. Confirm the checkout includes completed work through F3.4 and the four-capability retest.
 3. Preserve all original and revised evaluations. The earlier twelve-review study found complementary discoveries; the completed [24-review retest](docs/capability-retest-results.md) adds limited, repeatable case-specific signals. No trial process is running, and no further model run is scheduled.
 4. Continue **F4.1 benchmark verification**. Do not rerun completed trials merely to resume. Calibration's severity key remains frozen despite unanimous disagreement; independently review it before any future version. F3.4's interrupted attempt remains unsuccessful and its separate 304 diagnostic remains post-freeze evidence. Detailed execution evidence remains local-only.
-5. Validate the item, update roadmap/status and commit locally. Push at explicitly requested milestones. Phase 1 was published through `cebf945`; subsequent work remains local until the next authorized push.
+5. Validate the item, update roadmap/status and commit locally. Push at explicitly requested milestones. This source milestone includes completed work through F3.4 and the four-capability retest. The packaged release version is unchanged.
 
 The requested retest across all four earlier capabilities is complete. Future benefit qualification needs more varied new tasks and independently challenged controls. The observed discovery gains do not establish general superiority, production durability or full calibration-workflow benefit. No preview server is needed for this handoff.

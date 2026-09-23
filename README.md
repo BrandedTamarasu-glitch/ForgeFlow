@@ -14,19 +14,36 @@ Turn an idea into a scoped brief, working code, an evidence-backed review, and a
 
 *Workshop screenshot uses illustrative example data.*
 
-## Intelligent capabilities: Phases 0, 1 and 2 complete
+## Intelligent capabilities: Phases 0 through 3 complete
 
-The source checkout now includes the foundation for automatically selecting specialized procedures based on task intent, affected code and workflow phase. Selection supports mixed-domain tasks, explicit overrides and bounded reassessment. Managed Claude Code and Codex workflows include the selection entry points.
+ForgeFlow can select specialized procedures from task intent, affected code and workflow phase. Selection supports mixed-domain tasks, explicit overrides and bounded reassessment. Managed Claude Code and Codex workflows include the selection entry points.
 
-This milestone adds:
+Six of nine planned capabilities are implemented for controlled evaluation:
 
-- A catalog and contracts for nine capabilities, including change propagation, visual acceptance, persistence recovery, provider compatibility, money/calendar correctness and CAD/fabrication acceptance.
-- Corrected atomicity guidance backed by six executable synthetic examples covering intermediate visibility, concurrent updates and retry behavior.
-- Skill-enabled/disabled evaluation with frozen inputs, separate answer keys and explicit actual, fixture and unobserved results. Existing workflow comparisons retain their original meaning.
+| Capability | What it checks |
+|---|---|
+| [Change propagation](forgeflow-patterns/capability-change-propagation.md) | Sources, consumers, generated artifacts and freshness |
+| [Visual acceptance](forgeflow-patterns/capability-visual-acceptance.md) | Surrounding layout, responsive behavior, typography and accessibility |
+| [Persistence recovery](forgeflow-patterns/capability-persistence-recovery.md) | Interrupted writes, stale readers, concurrent cleanup and reload behavior |
+| [Review calibration](forgeflow-patterns/capability-review-calibration.md) | Verified defects, missed defects, unsupported findings and severity |
+| [Provider compatibility](forgeflow-patterns/capability-provider-compatibility.md) | Response drift, partial failures, cancellation and stale data |
+| [Release qualification](forgeflow-patterns/capability-release-qualification.md) | Served web artifacts and native installation, restart, update and rollback |
 
-**Change propagation, visual acceptance, persistence recovery, review calibration, provider compatibility and web/native release qualification are implemented for controlled evaluation; the other three procedures remain planned.** Selection does not execute an unavailable procedure. A [32-trial supplied-evidence pilot](docs/capability-pilot-results.md) found equal results with and without the change-propagation and visual-acceptance procedures; that pilot established no measured improvement. Managed installation and packaging checks pass; live client activation remains unverified, and the lean Codex plugin does not expose the capability entry point. This source milestone does not change the packaged release version.
+Benchmark verification, money/calendar correctness and CAD/fabrication acceptance remain planned. **Next: F4.1 benchmark verification.** Selection does not execute an unavailable procedure.
 
-The [change-propagation procedure](forgeflow-patterns/capability-change-propagation.md) maps sources to consumers, records freshness evidence and includes a read-only text-reference checker. The [visual-acceptance procedure](forgeflow-patterns/capability-visual-acceptance.md) adds surrounding-page, responsive and accessibility checks to UI iteration. Normal automatic execution awaits qualification. The [persistence-recovery procedure](forgeflow-patterns/capability-persistence-recovery.md) adds 11 synthetic fault/reload schedules; actual backend durability and broad model benefit remain unverified. The [review-calibration procedure](forgeflow-patterns/capability-review-calibration.md) adds defect, false-finding and severity scoring with six executable cases. A [32-trial recovery/review pilot](docs/recovery-review-pilot-results.md) found equal perfect scores in both arms, with no measured accuracy benefit. An [18-trial repository-repair follow-up](docs/recovery-workbench-results.md) also found no gain over baseline and exposed an incomplete clean control. Implemented capabilities remain in evaluation. The [provider-compatibility procedure](forgeflow-patterns/capability-provider-compatibility.md) adds versioned synthetic response, freshness and failure-isolation checks; live service qualification remains unverified. The [web release procedure](forgeflow-patterns/capability-release-qualification.md) adds controlled served-artifact and browser checks for stale/mixed builds, missing assets and failed interactions; public qualification remains unverified. The [native release fixture](fixtures/native-release/README.md) exercises compiled Linux processes and profile lifecycle, with simulated installation and explicit platform/UI limits. The [F3.4 provider/release pilot](fixtures/provider-release-pilot/README.md) has independently reviewed frozen tasks and [trial results](docs/provider-release-pilot-results.md): 35 completed responses and one preserved usage-limit interruption. No measured gain is established; a web contract ambiguity is documented. A [12-review comparison on real projects](docs/real-project-review-results.md) found three distinct verified defects per arm, including one unique to each; this shows case-specific added value without a net or replicated advantage. A subsequent [24-review retest](docs/capability-retest-results.md) produced 21 verified discovery occurrences with added procedures versus 17 baseline, including a repeated enhanced-only recovery finding and higher visual counts across three repetitions on one redesign. Baseline retained complementary strengths; calibration tied, and normal activation remains gated. Follow the [roadmap](ROADMAP.md), [capability contracts and host support](docs/capability-contract.md), and [evaluation protocol](docs/skill-evaluation.md).
+### What the evaluations show
+
+The latest [24-review real-project retest](docs/capability-retest-results.md) found limited, concrete discovery gains:
+
+- Added procedures produced **21 verified finding occurrences versus 17 baseline**, covering **10 distinct defects versus 9** across three selected changes.
+- Visual acceptance found more verified issues in all three paired runs on one portfolio redesign. Recovery caught a second-migration failure in **3/3 enhanced runs versus 0/3 baseline**.
+- Baseline caught other recovery defects that enhanced missed. Calibration judgments tied, including equal disagreement with the frozen severity key. These results do not establish general accuracy or rollout readiness.
+
+Earlier [Phase 1](docs/capability-pilot-results.md), [Phase 2](docs/recovery-review-pilot-results.md), [repository-repair](docs/recovery-workbench-results.md) and [provider/release](docs/provider-release-pilot-results.md) pilots established no measured accuracy gain. The initial [12-review real-project comparison](docs/real-project-review-results.md) found complementary discoveries without a net advantage. All earlier results and their limitations remain preserved.
+
+**Normal automatic execution remains gated on qualification.** Managed installation and packaging checks pass; live client activation remains unverified, and the lean Codex plugin does not expose the capability entry point. Native qualification covers a disposable Linux CLI fixture with simulated installation; production packages, desktop accessibility and other operating systems remain unverified. Public web delivery and live provider qualification also remain unverified. This source milestone does not change the packaged release version.
+
+The foundation includes nine capability contracts, corrected atomicity guidance with executable examples, and evaluations that distinguish actual model results from fixture checks and unobserved outcomes. Follow the [roadmap](ROADMAP.md), [current status](STATUS.md), [capability contracts and host support](docs/capability-contract.md), and [evaluation protocol](docs/skill-evaluation.md).
 
 ## New in 4.6.3
 
