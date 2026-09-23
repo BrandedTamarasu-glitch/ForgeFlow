@@ -1,12 +1,12 @@
 # Capability contract and integration map
 
-Status: F0.1 design contract. Selection, procedures and host wiring are planned, not implemented by this document. See [the roadmap](../ROADMAP.md).
+Status: F0.1 contract with F0.2 selector and context-pack integration implemented. Procedures remain planned and full host discovery/installation verification is F0.3 work. See [the roadmap](../ROADMAP.md).
 
 ## Contract version 1
 
 A capability is a bounded procedure available to existing agents. It does not create an agent, workflow, task store or authority to act. All nine capabilities use automatic relevance selection, including the domain-specific capabilities.
 
-The future compact catalog must expose the following fields without loading procedure bodies:
+The compact catalog exposes the following fields without loading procedure bodies:
 
 | Field | Meaning |
 |---|---|
@@ -141,7 +141,7 @@ Existing task evidence accepts `test`, `manual`, `review` kinds and `passed`, `f
 | [render-forgeflow-skills.js](../scripts/forgeflow/render-forgeflow-skills.js) | Generates five workflow wrappers | Not a generic capability catalog; extend intentionally only where discovery requires it |
 | [Claude plugin](../.claude-plugin/plugin.json) and [Codex plugin](../.codex-plugin/plugin.json) | Different plugin component declarations | Managed install success does not establish plugin discovery parity; test separately in F0.3 |
 
-Canonical procedures will use flat `forgeflow-patterns/capability-<id>.md`; the compact catalog will be a code-owned definition alongside routing helpers, containing only metadata and relative references. In F0.2 choose a small pure selector callable by existing context construction and workflow entry points; it must not spawn agents, access networks or mutate task state. Workflows without diffs supply intent and intended scope instead of being forced through review-only classification.
+Canonical procedures will use flat `forgeflow-patterns/capability-<id>.md`. The compact [catalog](../scripts/forgeflow/capability-catalog.js) contains only metadata and relative references. The pure [selector](../scripts/forgeflow/select-capabilities.js) is called by existing context construction and is also available through a JSON CLI for workflows without diffs. It does not spawn agents, read procedure bodies, access networks or mutate task state.
 
 Codex entry points belong under `.agents/skills/`; Claude entry points use existing command/agent references. These wrappers should delegate to canonical procedures, not copy their bodies. Agent selection and skill selection remain independent. Canonical maps and drift checks must cover any changed agent definitions.
 
@@ -152,3 +152,37 @@ The Claude manifest currently recognizes flat pattern Markdown; Codex source fil
 F0.1 completes when the nine identifiers, homes, inherited and specific contract fields, evidence mapping and integration decisions above are checked against current source. This document does not establish automatic activation or installation success.
 
 F0.2 implements selection and its relevant/irrelevant/ambiguous/mixed-domain/scope-change tests. F0.3 verifies packaging and discovery. Procedure implementation and model-benefit evidence follow their roadmap phases. F0.4 corrects atomicity guidance independently; this contract does not itself change active review instructions.
+
+## Selector usage and limits
+
+For a quick pre-diff selection:
+
+```bash
+node scripts/forgeflow/select-capabilities.js --task 'Fix recurring budget calculations'
+```
+
+For explicit criteria, phase, overrides or a reasoned assessment, supply JSON:
+
+```json
+{
+  "task": "Fix partial responses in the job-source adapter",
+  "phase": "implement",
+  "files": ["src/providers/jobs.js"],
+  "criteria": ["A failed provider must not hide healthy results"],
+  "assessments": [{
+    "id": "provider-compatibility",
+    "relevance": "relevant",
+    "reason": "The changed normalizer handles partial external responses.",
+    "evidence": "src/providers/jobs.js:12"
+  }],
+  "overrides": {"include": [], "exclude": []}
+}
+```
+
+Run `node scripts/forgeflow/select-capabilities.js --input <file>` or pass the same file to `build-context-pack.js --capability-input <file>`. The context builder uses its explicit `--task` when supplied; otherwise it uses the JSON task for selection. Without explicit JSON files, selection uses up to 200 changed paths and reports any omitted count. Explicit `files` means caller-supplied intended scope and is labeled as such, not claimed to cover all changed files. Task input is capped at 12,000 characters; at most 30 criteria of 1,000 characters each and nine reasoned assessments are accepted. Oversized or malformed explicit inputs fail clearly.
+
+The initial selector uses conservative behavioral patterns to shortlist/select clear task requests. It is not a general natural-language model: negation, nuanced requirements and unfamiliar terminology may need a workflow assessment. File names or a domain noun alone request inspection, not activation. Agents inspect relevant source within the budget and return `relevant`, `irrelevant` or `uncertain` with reason and evidence; users do not need to choose a skill. A workflow assessment is advisory and cannot grant authority or mark a procedure executed. Catalog phase applicability is checked before explicit include/exclude overrides; a conflicting include and exclude is rejected rather than resolved silently. Unknown IDs/versions fail explicitly.
+
+The output includes one decision per capability, selected IDs, up to three inspection requests and the scope fingerprint. Pass the previous result as `previous` after meaningful discoveries. An unchanged normalized scope consumes no reassessment; changed scope allows three reassessments before further selections are deferred with unresolved gaps. A new independent task starts a new budget. Preserve the previous result to keep the bound effective; do not reset it to work around a deferred result.
+
+The context builder writes `capability-selection.json` beside existing context artifacts, links it from synthesis input and appends scoped guidance to existing role packets. Reviewer lists/modes and task evidence are unchanged. No procedure body is loaded; all nine procedures currently have `availability: planned` and `executable: false`. This proves selection plumbing, not capability execution or measured agent benefit. Host workflow wiring beyond existing context-pack consumers is part of F0.3.

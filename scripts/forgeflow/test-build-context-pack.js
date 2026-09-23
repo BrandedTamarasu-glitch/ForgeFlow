@@ -663,7 +663,18 @@ const rawDigestPacket = Object.values(rawDigestSynthesis.agent_packets)
   .map((packet) => fs.readFileSync(path.join(repoRoot, packet), 'utf8'))
   .join('\n');
 
+const capabilityInputPath = path.join(fixtureHome, 'capability-input.json');
+fs.writeFileSync(capabilityInputPath, JSON.stringify({
+  phase: 'plan', task: 'Fix currency rounding', files: [],
+  overrides: { include: ['provider-compatibility'], exclude: ['money-calendar-correctness'] },
+}));
+const preDiffCapabilityResult = buildContextPack({
+  root: focusedRoot,
+  out: path.join(focusedRoot, '.forgeflow', 'Focused', 'context', 'capability-test'),
+  capabilityInputPath, memoryIndex: false, maxMemoryChars: 2000, maxDiffChars: 2000,
+});
 const route = JSON.parse(fs.readFileSync(path.join(outDir, 'route.json'), 'utf8'));
+const capabilitySelection = JSON.parse(fs.readFileSync(path.join(outDir, 'capability-selection.json'), 'utf8'));
 const manifest = JSON.parse(fs.readFileSync(path.join(outDir, 'file-manifest.json'), 'utf8'));
 const synthesis = JSON.parse(fs.readFileSync(path.join(outDir, 'synthesis-input.json'), 'utf8'));
 const telemetry = JSON.parse(fs.readFileSync(path.join(outDir, 'context-telemetry.json'), 'utf8'));
@@ -684,6 +695,13 @@ const codeMapHistoryPath = path.join(outDir, 'code-map-history.jsonl');
 const noisyManifest = JSON.parse(fs.readFileSync(path.join(noisyOutDir, 'file-manifest.json'), 'utf8'));
 const wardenPacket = fs.readFileSync(path.join(repoRoot, synthesis.agent_packets.guardian_reviewer), 'utf8');
 const checks = [
+  ['pre-diff capability input and overrides reach context', preDiffCapabilityResult.capability_selection.selected.join(',') === 'provider-compatibility' && preDiffCapabilityResult.capability_selection.phase === 'plan'],
+  ['pre-diff explicit file scope is reported', preDiffCapabilityResult.capability_selection.file_scope === 'explicit' && preDiffCapabilityResult.capability_selection.omitted_changed_files === null],
+  ['capabilities do not alter reviewer route shape', !Object.hasOwn(route, 'selected') && !Object.hasOwn(route, 'capabilities')],
+  ['capability selection artifact linked', synthesis.capability_selection_path.endsWith('capability-selection.json')],
+  ['all capabilities have explicit decisions', capabilitySelection.decisions.length === 9],
+  ['planned capabilities cannot claim execution', capabilitySelection.decisions.every(item => item.executable === false && item.availability === 'planned')],
+  ['packet explains capability boundary', wardenPacket.includes('Relevance selection only.') && wardenPacket.includes('## Capability selection')],
   ['result out dir', result.out_dir === outDir],
   ['deep mode for auth path', route.mode === 'deep-mode'],
   ['verifier included', route.agents.included.includes('verifier')],

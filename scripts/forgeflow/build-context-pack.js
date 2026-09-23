@@ -4,6 +4,7 @@ const { normalizeAgentId, normalizeAgentName, formatAgentLabel, roleActivityLabe
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { classify, readFiles } = require('./explain-review-route');
+const { selectCapabilities, renderSelection, readSelectionInput, LIMITS: CAPABILITY_LIMITS } = require('./select-capabilities');
 const { buildCodeTopology } = require('./build-code-topology');
 const {
   assertSafeDirectory,
@@ -46,7 +47,7 @@ function usage() {
   console.error([
     'Usage: build-context-pack.js [--root <dir>] [--out <dir>] [--files <path>] [--lines <n>]',
     '       [--tracked-lines <n>] [--untracked-lines <n>] [--mode skip|thin|full|deep]',
-    '       [--calibration <path>] [--task <text>]',
+    '       [--calibration <path>] [--task <text>] [--capability-input <json-file>]',
     '       [--max-memory-chars <n>] [--max-diff-chars <n>] [--no-memory-index] [--ci] [--json]',
   ].join('\n'));
 }
@@ -89,6 +90,10 @@ function parseArgs(argv) {
       opts.calibrationPath = argv[++i] || '';
     } else if (arg === '--task') {
       opts.task = argv[++i] || '';
+    } else if (arg === '--capability-input') {
+      const value = argv[++i];
+      if (!value || value.startsWith('--')) throw new Error('--capability-input requires a JSON file');
+      opts.capabilityInputPath = value;
     } else if (arg === '--max-memory-chars') {
       opts.maxMemoryChars = Number.parseInt(argv[++i] || `${DEFAULT_MAX_MEMORY_CHARS}`, 10);
     } else if (arg === '--max-diff-chars') {
@@ -130,6 +135,9 @@ function normalizePathOptions(opts) {
   }
   if (normalized.calibrationPath) {
     normalized.calibrationPath = path.isAbsolute(normalized.calibrationPath) ? normalized.calibrationPath : path.join(root, normalized.calibrationPath);
+  }
+  if (normalized.capabilityInputPath) {
+    normalized.capabilityInputPath = path.resolve(root, normalized.capabilityInputPath);
   }
   return normalized;
 }
@@ -1320,6 +1328,19 @@ function buildContextPack(opts) {
     calibration,
     ci: effectiveOpts.ci,
   });
+  let capabilityInput = effectiveOpts.capabilityInput || {};
+  if (effectiveOpts.capabilityInputPath) {
+    capabilityInput = readSelectionInput(effectiveOpts.capabilityInputPath);
+  }
+  if (!capabilityInput || typeof capabilityInput !== 'object' || Array.isArray(capabilityInput)) throw new Error('Expected capability input object');
+  if (!effectiveOpts.task && typeof capabilityInput.task === 'string') effectiveOpts.task = capabilityInput.task;
+  const capabilitySelection = selectCapabilities({
+    ...capabilityInput,
+    task: effectiveOpts.task || capabilityInput.task || '',
+    files: capabilityInput.files || route.files.slice(0, CAPABILITY_LIMITS.files),
+  });
+  capabilitySelection.file_scope = capabilityInput.files ? 'explicit' : 'changed-files';
+  capabilitySelection.omitted_changed_files = capabilityInput.files ? null : Math.max(0, route.files.length - CAPABILITY_LIMITS.files);
   const outDir = effectiveOpts.out || defaultOutDir(root);
   const packetDir = path.join(outDir, 'agent-packets');
   ensureDir(packetDir);
@@ -1375,7 +1396,8 @@ function buildContextPack(opts) {
   const contextContracts = Object.fromEntries(agents.map((agent) => [agent, contextContractForAgent(agent)]));
 
   for (const agent of agents) {
-    const content = packetMarkdown(agent, route, manifest, diffSummary, memoryHits, packetInsights, userProfile, projectOperatingModelMarkdown, architectureIntelligenceMarkdown, leanGuidanceMarkdown, latestFailure.markdown, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, contextContracts[agent], effectiveOpts.task);
+    const owner = (normalizeAgentId(agent) || '').replaceAll('_', '-');
+    const content = `${packetMarkdown(agent, route, manifest, diffSummary, memoryHits, packetInsights, userProfile, projectOperatingModelMarkdown, architectureIntelligenceMarkdown, leanGuidanceMarkdown, latestFailure.markdown, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, contextContracts[agent], effectiveOpts.task)}\n\n${renderSelection(capabilitySelection, owner)}\n`;
     const file = path.join(packetDir, `${agent}.md`);
     writeFileSafe(file, content);
     packets[agent] = path.relative(root, file);
@@ -1404,6 +1426,7 @@ function buildContextPack(opts) {
     repo_root: root,
     project_dir: defaultProjectDir(root),
     route_path: path.relative(root, path.join(outDir, 'route.json')),
+    capability_selection_path: path.relative(root, path.join(outDir, 'capability-selection.json')),
     diff_summary_path: path.relative(root, path.join(outDir, 'diff-summary.md')),
     memory_hits_path: path.relative(root, path.join(outDir, 'memory-hits.md')),
     latest_insights_path: path.relative(root, path.join(outDir, 'latest-insights.md')),
@@ -1474,6 +1497,7 @@ function buildContextPack(opts) {
   };
 
   writeJson(path.join(outDir, 'route.json'), route);
+  writeJson(path.join(outDir, 'capability-selection.json'), capabilitySelection);
   writeJson(path.join(outDir, 'file-manifest.json'), { schema_version: '1', files: manifest });
   writeFileSafe(path.join(outDir, 'diff-summary.md'), `${diffSummary}\n`);
   writeFileSafe(path.join(outDir, 'memory-hits.md'), `${memoryHits}\n`);
@@ -1511,6 +1535,7 @@ function buildContextPack(opts) {
     project_dir: defaultProjectDir(root),
     out_dir: outDir,
     route,
+    capability_selection: capabilitySelection,
     manifest,
     synthesis_input: synthesisInput,
     telemetry,
@@ -1540,6 +1565,7 @@ function jsonSummary(result) {
     project_dir: result.project_dir,
     out_dir: result.out_dir,
     mode: result.route.mode,
+    capability_selection: result.capability_selection,
     agents: result.route.agents.included,
     files: result.route.files,
     lines_changed: result.route.lines_changed,
