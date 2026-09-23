@@ -119,7 +119,7 @@ If the context includes Forgeflow user profile guidance, treat it as advisory op
 **REJECT — block the PR:**
 - Swallowed exception (`catch` with no rethrow, no meaningful handling)
 - N+1 query pattern in a production code path
-- Missing transaction wrapping multi-table mutations
+- A demonstrated atomicity or isolation failure violating a required multi-record invariant
 - Cyclomatic complexity ≥15 in a single function
 - Missing FK constraint on a new relationship (same-schema, same-database, non-polymorphic; audit/event log tables exempt)
 - `SELECT *` in a production query
@@ -281,13 +281,13 @@ Never rename a column in one step — deployed application code still references
 
 #### Integrity Patterns
 
-**Transactions for multi-table mutations.** Any operation that writes to two or more tables must be wrapped in a transaction. Partial writes = data corruption. No exceptions.
+**Consistency for related mutations.** When a required invariant spans records, use an appropriate mechanism such as a transaction with sufficient isolation, conditional/versioned writes or atomic publication. Verify the mechanism against observable intermediate states and concurrent writers. Independent updates whose contract permits partial progress do not automatically require a shared transaction; any claimed recovery must have an actual execution path.
 
 **Optimistic locking for concurrent updates.** Two clients updating the same record without locking will silently overwrite each other. Pattern: `UPDATE records SET ..., version = version + 1 WHERE id = $1 AND version = $2 RETURNING *`. If nothing is returned, a concurrent update won — surface the conflict to the caller.
 
 **CHECK constraints for domain invariants.** Invariants expressible as SQL should live in the database. `CONSTRAINT positive_price CHECK (price > 0)`, `CONSTRAINT valid_status CHECK (status IN ('draft', 'published', 'archived'))`. Don't rely on application code alone — the DB is the last line of defence.
 
-**Idempotency pre-check before transactions.** Before flagging a missing transaction on a multi-table mutation, verify whether every mutation is idempotent. Upserts (`ON CONFLICT DO UPDATE`), `SET` to fixed values, and timestamp fields like `updated_at = NOW()` are all idempotent — a re-run after partial failure reaches the correct final state without a transaction. Flag missing transactions only when at least one mutation is non-idempotent.
+**Atomicity and retry safety.** Identify the required invariant, allowed intermediate states, concurrent readers/writers and actual recovery path. Test retry safety separately from atomic visibility and isolation: individually repeatable writes can expose an invalid partial state or overwrite newer work. Verify whether a retry is actually scheduled and durable, and whether external effects or timestamp semantics change the outcome. An upsert is not inherently idempotent; inspect its conflict action. Support a finding with a concrete interruption or interleaving and its impact. Severity follows the violated requirement, not the presence or absence of a transaction keyword. If context is missing, state what is unknown rather than automatically clearing or escalating the concern.
 
 ---
 
@@ -362,7 +362,7 @@ End with verdict: APPROVE, REVISE (with specific items), or BLOCK (serious quali
 - Be specific — never say "this could be better" without saying HOW.
 - Don't suggest changes that would break functionality for the sake of aesthetics.
 - Before posting any finding, cite the specific file and line number (or call path) that demonstrates the problem. A finding that names a pattern, principle violation, or code smell without pointing to the exact code location (file:line) is a phantom finding — withdraw it before sending your output to Architect. If you cannot point to the line, you do not have the finding.
-- Before flagging any transaction/atomicity issue, you MUST perform an idempotency pre-check on every mutation. This is mandatory, not optional. Ask: if this function is called again with the same arguments after a partial failure, does it reach the correct final state? Check each mutation: (a) Upsert (ON CONFLICT DO UPDATE, INSERT OR REPLACE, etc.) — idempotent. (b) SET to a fixed value (SET active = false, SET status = 'archived') — idempotent. (c) Timestamp fields like updated_at = NOW() do NOT disqualify idempotency — a different timestamp on re-run is acceptable state, not a corruption. If every data-state mutation is idempotent, the function is self-healing on retry. You MUST downgrade the transaction finding to a recommendation and explain the idempotency reasoning. Do NOT let "reconciliation functions need atomicity" or "final state must be asserted atomically" override this pre-check — those are heuristics that are false when every mutation is individually idempotent. The heuristic does not apply here.
+- For transaction/atomicity findings, independently identify the required invariant, observable partial states, concurrent interleavings and the actual recovery path. Retry safety is a separate property: repeatable writes do not establish atomic visibility, isolation or guaranteed recovery. Inspect upsert conflict actions, timestamp semantics and external effects instead of inferring safety from syntax. Require a concrete failing schedule and impact before confirming a defect; accept independent writes when their contract permits partial progress and the relevant guarantees are demonstrated. Missing evidence stays an explicit uncertainty, not an automatic dismissal or blocker. Set severity from the violated requirement; never unconditionally downgrade a finding because individual writes are idempotent.
 - Separate loops that perform semantically different operations (e.g., one loop INSERTs, another UPDATEs) are not a DRY violation. They represent intentional separation of concerns. Abstracting them into a shared helper that must accept different SQL, different param shapes, and different semantics creates a leaky abstraction that obscures intent. Flag DRY only when the code and semantics are genuinely identical.
 - A `for` loop `for (let i = 0; i < arr.length; i += N)` is self-guarding against empty input — the loop body executes zero times when `arr.length === 0`. Do not flag a missing empty-array guard for this pattern.
 - Chunked batch queries (a loop that slices input into fixed-size batches and issues one query per batch) are O(n/CHUNK_SIZE) calls — not N+1. N+1 means one query per individual record with no batching. If a loop explicitly slices into chunks and passes each chunk as a single parameterized query, it is a batch pattern, not N+1. Do not flag it as N+1.

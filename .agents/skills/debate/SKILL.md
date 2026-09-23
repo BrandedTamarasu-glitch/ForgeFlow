@@ -17,7 +17,7 @@ Workflow:
 2. Never expose the answer key to the initial debating agents.
 3. Run Round 1 openings in parallel with `builder_reviewer`, `guardian_reviewer`, `designer_reviewer`, and `coordinator_reviewer`.
 4. In Round 1, require every debating agent to obey the mandatory pre-flights before raising a finding:
-   - transaction/idempotency
+   - transaction/atomicity: identify the required invariant and a concrete interruption or concurrent interleaving; assess retry safety, observable partial states, isolation and the actual recovery actor separately. Idempotency alone cannot clear a finding, and multiple writes alone cannot establish one. Missing context stays an explicit uncertainty; severity follows demonstrated impact.
    - loop or N+1 complexity
    - parameterization or injection
    - return-contract accuracy when relevant

@@ -54,16 +54,15 @@ pattern it refers to.
 
 Before stating any finding, complete these mandatory pre-flights:
 
-TRANSACTION PRE-FLIGHT — if you plan to flag a missing transaction wrapper:
-Trace each mutation in the function. For each INSERT, UPDATE, or DELETE: if the
-function is called again with identical inputs after a partial failure, does each
-mutation produce the same final database row state? A mutation is idempotent if:
-- It sets a column to a fixed value (SET is_active = false, SET status = 'done')
-- It upserts via INSERT ... ON CONFLICT DO UPDATE to a deterministic state
-If ALL mutations are idempotent, partial failure is recoverable by retrying — no
-transaction needed. State explicitly: what specific data inconsistency can occur
-that idempotency does NOT prevent? If you cannot identify one, do not flag missing
-transaction as a blocker.
+TRANSACTION PRE-FLIGHT — for a transaction/atomicity concern:
+Name the required invariant and trace an interruption or concurrent interleaving.
+Check retry safety, observable intermediate states, isolation and the actual recovery
+actor separately. Repeated writes can still expose invalid state or overwrite newer
+work; an upsert or timestamp assignment is not inherently harmless. Do not assume
+that a possible retry actually runs. Confirm only a concrete violation and its impact;
+accept independent partial progress when its contract permits it. If needed context
+is absent, report uncertainty rather than automatically clearing or escalating.
+Do not treat transaction syntax or idempotency alone as a verdict.
 
 LOOP/QUERY PATTERN PRE-FLIGHT — if you plan to flag inefficient looping or excessive
 db calls: Determine whether calls are per-item or per-batch. If a loop slices input
@@ -114,12 +113,15 @@ and the line or pattern it refers to.
 
 Before stating any finding, complete these mandatory pre-flights:
 
-TRANSACTION PRE-FLIGHT — if you plan to flag a missing transaction wrapper:
-Trace each mutation. For each: if the function retries after partial failure, does
-the mutation produce the same final row state? Idempotent mutations (fixed-value SET,
-INSERT ... ON CONFLICT DO UPDATE) self-heal on retry. State explicitly: what failure
-mode exists that idempotency does not recover from? If you cannot identify one,
-downgrade the transaction concern to a recommendation — not a blocker.
+TRANSACTION PRE-FLIGHT — for a transaction/atomicity concern:
+Name the required invariant and trace an interruption or concurrent interleaving.
+Check retry safety, observable intermediate states, isolation and the actual recovery
+actor separately. Repeated writes can still expose invalid state or overwrite newer
+work; an upsert or timestamp assignment is not inherently harmless. Do not assume
+that a possible retry actually runs. Confirm only a concrete violation and its impact;
+accept independent partial progress when its contract permits it. If needed context
+is absent, report uncertainty rather than automatically clearing or escalating.
+Do not treat transaction syntax or idempotency alone as a verdict.
 
 N+1 PRE-FLIGHT — if you plan to flag N+1 or excessive db calls:
 Count the actual call frequency. If a loop batches rows (one call per N-row chunk),
@@ -152,11 +154,15 @@ service integration health. State your findings clearly. Be specific.
 
 Before stating any finding, complete these mandatory pre-flights:
 
-TRANSACTION PRE-FLIGHT — if you plan to flag missing transaction wrapper:
-Determine idempotency for each mutation: if re-run after partial failure, does it
-reach the same database state? If yes for all mutations, partial failure is
-recoverable by retry. State what specific consistency guarantee a transaction
-provides here that retry does not. If you cannot, do not flag it.
+TRANSACTION PRE-FLIGHT — for a transaction/atomicity concern:
+Name the required invariant and trace an interruption or concurrent interleaving.
+Check retry safety, observable intermediate states, isolation and the actual recovery
+actor separately. Repeated writes can still expose invalid state or overwrite newer
+work; an upsert or timestamp assignment is not inherently harmless. Do not assume
+that a possible retry actually runs. Confirm only a concrete violation and its impact;
+accept independent partial progress when its contract permits it. If needed context
+is absent, report uncertainty rather than automatically clearing or escalating.
+Do not treat transaction syntax or idempotency alone as a verdict.
 
 BATCH PATTERN PRE-FLIGHT — if you plan to flag multiple db calls as inefficient:
 Verify call frequency. Per-batch calls are O(n/batch_size), not O(n). Separate
@@ -194,10 +200,15 @@ State your findings clearly.
 
 Before stating any finding, complete these mandatory pre-flights:
 
-TRANSACTION PRE-FLIGHT — if you plan to flag missing transaction wrapper as a risk:
-Determine if each mutation is idempotent — can the function safely retry after
-partial failure and reach a consistent state? If yes, the transaction concern
-disappears. State a concrete scenario where idempotency fails before raising this.
+TRANSACTION PRE-FLIGHT — for a transaction/atomicity concern:
+Name the required invariant and trace an interruption or concurrent interleaving.
+Check retry safety, observable intermediate states, isolation and the actual recovery
+actor separately. Repeated writes can still expose invalid state or overwrite newer
+work; an upsert or timestamp assignment is not inherently harmless. Do not assume
+that a possible retry actually runs. Confirm only a concrete violation and its impact;
+accept independent partial progress when its contract permits it. If needed context
+is absent, report uncertainty rather than automatically clearing or escalating.
+Do not treat transaction syntax or idempotency alone as a verdict.
 
 COMPLEXITY PRE-FLIGHT — if you plan to flag a dual-loop structure as unnecessary
 complexity: Verify whether the two loops perform the same SQL operation. If they
@@ -312,14 +323,15 @@ verdict, explain your reasoning.
 
 Before issuing your verdict on any finding, complete these mandatory pre-flights:
 
-TRANSACTION PRE-FLIGHT — if any agent flagged missing transaction wrapper:
-Answer explicitly: is each mutation idempotent? If every mutation produces the same
-database row state on re-run (fixed-value SET, INSERT ... ON CONFLICT DO UPDATE),
-the function self-heals on retry — the caller re-invokes and the function reaches
-a consistent state. Identify the specific failure mode that idempotency does NOT
-cover. If you cannot, clear the transaction finding. Do not let "atomicity is
-important" or "multiple mutations need coordination" override this check — those
-are heuristics that are false when all mutations are idempotent.
+TRANSACTION PRE-FLIGHT — for a transaction/atomicity concern:
+Name the required invariant and trace an interruption or concurrent interleaving.
+Check retry safety, observable intermediate states, isolation and the actual recovery
+actor separately. Repeated writes can still expose invalid state or overwrite newer
+work; an upsert or timestamp assignment is not inherently harmless. Do not assume
+that a possible retry actually runs. Confirm only a concrete violation and its impact;
+accept independent partial progress when its contract permits it. If needed context
+is absent, report uncertainty rather than automatically clearing or escalating.
+Do not treat transaction syntax or idempotency alone as a verdict.
 
 PARAMETERIZATION PRE-FLIGHT — if any agent flagged SQL injection on template literals:
 Trace the interpolated values. If all are parameter placeholder tokens or

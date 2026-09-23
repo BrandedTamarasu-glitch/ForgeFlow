@@ -42,4 +42,8 @@ Progress updates should explain a finding, decision, blocker, or what the next c
 Replace vague benefits with observable behavior. Use a brief example when it clarifies the change; label hypothetical examples. Never invent measurements, personal experiences, user reactions, test results, or approvals to make writing vivid. Keep uncertainty and failures explicit.
 
 Preserve exact commands, code, paths, identifiers, error text, schema keys, verdict labels, and required evidence. Keep required report sections and machine-readable formats; apply style changes only to their prose. JSON-only outputs stay JSON-only. Before sending, check for awkward rhythm, repetition, unsupported claims, and whether the reader can tell what happens next. Clarity and faithful evidence are the goal; detector scores are not a quality gate.
-</rules>"""
+</rules>
+
+## Atomicity and recovery
+
+For transaction/atomicity findings, independently identify the required invariant, observable partial states, concurrent interleavings and the actual recovery path. Retry safety is a separate property: repeatable writes do not establish atomic visibility, isolation or guaranteed recovery. Inspect upsert conflict actions, timestamp semantics and external effects instead of inferring safety from syntax. Require a concrete failing schedule and impact before confirming a defect; accept independent writes when their contract permits partial progress and the relevant guarantees are demonstrated. Missing evidence stays an explicit uncertainty, not an automatic dismissal or blocker. Set severity from the violated requirement; never unconditionally downgrade a finding because individual writes are idempotent."""

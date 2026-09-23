@@ -1,0 +1,49 @@
+{
+  "schema_version": "1",
+  "provenance": "New synthetic examples authored for this repository under its license. No project or personal data copied.",
+  "observation_kind": "deterministic-state-machine",
+  "cases": [
+    {
+      "id": "publication-interruption",
+      "operation": "publishSeparate",
+      "requirement": "Every observer must see matching primary and index generations.",
+      "expected": "violation",
+      "mechanism": "An observer at the checkpoint sees mixed generations. A crash preserves the mismatch, and later retry cannot undo the earlier invalid observation."
+    },
+    {
+      "id": "snapshot-publication",
+      "operation": "publishSnapshot",
+      "requirement": "Every observer must see matching primary and index generations; a pre-publication failure leaves the old generation valid.",
+      "expected": "satisfied",
+      "mechanism": "A complete next snapshot is prepared before the model's atomic reference replacement. Readers see old or new coherent state."
+    },
+    {
+      "id": "concurrent-increments",
+      "operation": "prepareIncrement",
+      "requirement": "Two distinct accepted increments must increase the count by two.",
+      "expected": "violation",
+      "mechanism": "Two prepared writers read zero and both assign one. Each prepared write is repeatable, but one increment is lost; an older writer can also erase later work."
+    },
+    {
+      "id": "conditional-increments",
+      "operation": "prepareConditionalIncrement",
+      "requirement": "Two distinct accepted increments must increase the count by two; a rejected stale attempt is retried from a fresh read.",
+      "expected": "satisfied",
+      "mechanism": "The modeled compare-and-replace rejects a stale version. The explicit retry uses a fresh observation and preserves both increments."
+    },
+    {
+      "id": "independent-hints",
+      "operation": "setIndependentHints",
+      "requirement": "Both hints are independent booleans; partial completion is allowed. The test caller retries a failed attempt before declaring both complete.",
+      "expected": "satisfied",
+      "mechanism": "Intermediate states meet the contract, and a demonstrated retry completes both writes without a shared transaction."
+    },
+    {
+      "id": "upsert-replay",
+      "operation": "upsertVisit",
+      "requirement": "Replaying a delivery of the same visit must count that visit only once.",
+      "expected": "violation",
+      "mechanism": "The modeled upsert conflict action increments on each call; the upsert label does not establish idempotency."
+    }
+  ]
+}

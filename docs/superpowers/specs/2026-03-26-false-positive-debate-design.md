@@ -1,5 +1,7 @@
 # False Positive Stress Test — Debate Design
 
+Historical record: the transaction/idempotency conclusions below describe earlier experiments, not current review policy. Current guidance separates retry safety, observable atomicity, concurrency and actual recovery; see the [executable atomicity examples](../../../fixtures/atomicity/README.md). Original experiment outcomes have not been re-evaluated here.
+
 **Date:** 2026-03-26
 **Scenario:** #2 of structured debate series
 **Purpose:** Validate that Forgeflow agents can independently identify concerns in code, engage in genuine cross-agent rebuttal, and self-correct false positives through structured debate — without being told what to look for.

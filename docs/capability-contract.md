@@ -1,6 +1,6 @@
 # Capability contract and integration map
 
-Status: F0.1 contract, F0.2 selector/context integration and F0.3 managed-host packaging implemented. Procedure bodies remain planned. Discovery declarations are checked; live client discovery after restart is not claimed. See [the roadmap](../ROADMAP.md).
+Status: F0.1 contract, F0.2 selector/context integration, F0.3 managed-host packaging and F0.4 atomicity-guidance correction implemented. Procedure bodies remain planned. Discovery declarations are checked; live client discovery after restart is not claimed. See [the roadmap](../ROADMAP.md).
 
 ## Contract version 1
 
@@ -151,7 +151,7 @@ The Claude manifest recognizes flat pattern Markdown; Codex source filtering als
 
 F0.1 completes when the nine identifiers, homes, inherited and specific contract fields, evidence mapping and integration decisions above are checked against current source. This document does not establish automatic activation or installation success.
 
-F0.2 implements selection and its relevant/irrelevant/ambiguous/mixed-domain/scope-change tests. F0.3 verifies managed packaging and discovery declarations. Procedure implementation and model-benefit evidence follow their roadmap phases. F0.4 corrects atomicity guidance independently; this contract does not itself change active review instructions.
+F0.2 implements selection and its relevant/irrelevant/ambiguous/mixed-domain/scope-change tests. F0.3 verifies managed packaging and discovery declarations. F0.4 corrects canonical review and debate guidance, backed by [six executable atomicity examples](../fixtures/atomicity/README.md) and synchronized Codex definitions. Procedure implementation and model-benefit evidence follow their roadmap phases; deterministic examples do not establish measured review improvement.
 
 ## Selector usage and limits
 

@@ -1,5 +1,7 @@
 # False Positive Debate Calibration — Methodology & Research
 
+Historical record: the transaction/idempotency conclusions below describe earlier experiments, not current review policy. Current guidance separates retry safety, observable atomicity, concurrency and actual recovery; see the [executable atomicity examples](../../../fixtures/atomicity/README.md). Original experiment outcomes have not been re-evaluated here.
+
 **Date:** 2026-03-27
 **Scenario:** Structured multi-agent debate, Scenario #2
 **Outcome:** PASS — 7/7 expected false positives correctly cleared, 0 phantom claims, 11 runs

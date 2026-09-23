@@ -100,7 +100,7 @@ description: Canonical Craft Intelligence reference for builder agents. Not an a
 **REJECT — block the PR:**
 - Swallowed exception (`catch` with no rethrow, no meaningful handling)
 - N+1 query pattern in a production code path
-- Missing transaction wrapping multi-table mutations
+- A demonstrated atomicity or isolation failure violating a required multi-record invariant
 - Cyclomatic complexity ≥15 in a single function
 - Missing FK constraint on a new relationship (same-schema, same-database, non-polymorphic; audit/event log tables exempt)
 - `SELECT *` in a production query
@@ -262,13 +262,13 @@ Never rename a column in one step — deployed application code still references
 
 #### Integrity Patterns
 
-**Transactions for multi-table mutations.** Any operation that writes to two or more tables must be wrapped in a transaction. Partial writes = data corruption. No exceptions.
+**Consistency for related mutations.** When a required invariant spans records, use an appropriate mechanism such as a transaction with sufficient isolation, conditional/versioned writes or atomic publication. Verify the mechanism against observable intermediate states and concurrent writers. Independent updates whose contract permits partial progress do not automatically require a shared transaction; any claimed recovery must have an actual execution path.
 
 **Optimistic locking for concurrent updates.** Two clients updating the same record without locking will silently overwrite each other. Pattern: `UPDATE records SET ..., version = version + 1 WHERE id = $1 AND version = $2 RETURNING *`. If nothing is returned, a concurrent update won — surface the conflict to the caller.
 
 **CHECK constraints for domain invariants.** Invariants expressible as SQL should live in the database. `CONSTRAINT positive_price CHECK (price > 0)`, `CONSTRAINT valid_status CHECK (status IN ('draft', 'published', 'archived'))`. Don't rely on application code alone — the DB is the last line of defence.
 
-**Idempotency pre-check before transactions.** Before flagging a missing transaction on a multi-table mutation, verify whether every mutation is idempotent. Upserts (`ON CONFLICT DO UPDATE`), `SET` to fixed values, and timestamp fields like `updated_at = NOW()` are all idempotent — a re-run after partial failure reaches the correct final state without a transaction. Flag missing transactions only when at least one mutation is non-idempotent.
+**Atomicity and retry safety.** Identify the required invariant, allowed intermediate states, concurrent readers/writers and actual recovery path. Test retry safety separately from atomic visibility and isolation: individually repeatable writes can expose an invalid partial state or overwrite newer work. Verify whether a retry is actually scheduled and durable, and whether external effects or timestamp semantics change the outcome. An upsert is not inherently idempotent; inspect its conflict action. Support a finding with a concrete interruption or interleaving and its impact. Severity follows the violated requirement, not the presence or absence of a transaction keyword. If context is missing, state what is unknown rather than automatically clearing or escalating the concern.
 
 ---
 

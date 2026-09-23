@@ -1,5 +1,7 @@
 # False Positive Debate — Validation Run Implementation Plan
 
+Historical record: the transaction/idempotency conclusions below describe earlier experiments, not current review policy. Current guidance separates retry safety, observable atomicity, concurrency and actual recovery; see the [executable atomicity examples](../../../fixtures/atomicity/README.md). Original experiment outcomes have not been re-evaluated here.
+
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build a `/debate-false-positive` slash command that runs a 3-round structured debate stress-testing agent false positive calibration, then execute it and verify the report is saved correctly.
