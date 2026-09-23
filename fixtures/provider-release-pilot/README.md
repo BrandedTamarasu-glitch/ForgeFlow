@@ -1,6 +1,6 @@
 # Provider and release pilot preparation
 
-F3.4 is **incomplete: 34 completed responses, one usage-limit interruption and one unstarted slot**. Three independent control reviews and bounded rechecks are complete. The protocol was frozen after resolving findings and before model responses. See [method and current results](../../docs/provider-release-pilot-results.md).
+F3.4 is **reported: 35 completed responses and one preserved usage-limit interruption across 36 scheduled slots**. Three independent control reviews and bounded rechecks are complete. The protocol was frozen after resolving findings and before model responses. See [method and current results](../../docs/provider-release-pilot-results.md).
 
 This authored synthetic MIT corpus has three repository tasks, each with defective and candidate-control versions: provider refresh/cache behavior, served-artifact HTTP qualification, and an installed Node command startup gate that restores disposable profile state. It compares baseline, short checklist and full canonical procedure snapshots, twice per version: 36 authorized fresh-context trials. These are six underlying versions, not 36 independent domains. Order rotates across arms; each position is balanced over the full corpus, not within each two-repeat case. No model benefit is claimed.
 
@@ -16,4 +16,4 @@ Limits: provider transports are controlled promises; web requests are actual loc
 
 Preparation observation: the initial native oracle mislabeled a missing installed JavaScript file as unavailable launch evidence. Node itself starts and exits nonzero for the missing module, so the documented contract requires launch failure. This expectation was corrected before independent review or any model trials.
 
-The frozen primary scores remain unchanged. A separate `diagnostic-304.js` probe makes the bodyless 304 response MIME agree with the manifest; all 12 submitted web modules pass it. See the results report for the unresolved MIME/status precedence ambiguity and partial CLI usage measurements. Resume only the unstarted slot when the same runner/model is available; do not replace the interrupted attempt.
+The frozen primary scores remain unchanged. A separate `diagnostic-304.js` probe makes the bodyless 304 response MIME agree with the manifest; all 12 submitted web modules pass it. See the results report for the unresolved MIME/status precedence ambiguity and available CLI usage measurements. No slots remain unstarted. Do not replace the interrupted attempt.

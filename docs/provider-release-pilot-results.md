@@ -1,6 +1,6 @@
 # Provider and release task pilot
 
-Date: 2026-09-23. **Incomplete: 34 completed trials, one interrupted attempt and one unstarted slot. No measured accuracy gain is established.** The [protocol](../fixtures/provider-release-pilot/protocol.json) and task/oracle/treatment hashes were frozen after independent control review and before the first model response. Previous Phase 1, Phase 2 and revised recovery results remain unchanged.
+Date: 2026-09-23. **All 36 slots accounted for: 35 completed responses and one interrupted attempt retained as unsuccessful. No measured accuracy gain is established.** The [protocol](../fixtures/provider-release-pilot/protocol.json) and task/oracle/treatment hashes were frozen after independent control review and before the first model response. Previous Phase 1, Phase 2 and revised recovery results remain unchanged.
 
 ## Method and control qualification
 
@@ -14,7 +14,7 @@ The primary outcome is complete acceptance of every frozen check, with initially
 
 ## Outcomes
 
-The CLI reported an account usage limit during slot 35 (native checklist control), after tool work but before a completed response. The supervisor stopped, preserving that unsuccessful attempt. Slot 36 (native full-procedure control) has not started. Neither slot is counted as an acceptance pass, and the interrupted slot must not be replaced. F3.4 remains unchecked until the remaining authorized slot can run and reporting is finalized.
+The CLI reported an account usage limit during slot 35 (native checklist control), after tool work but before a completed response. The supervisor stopped, preserving that unsuccessful attempt. Slot 36 (native full-procedure control) subsequently completed and passed all 16 checks without changing source. The interrupted slot remains unsuccessful and was not replaced. F3.4 reporting is complete; this does not qualify model benefit or resolve the contract ambiguity.
 
 Every denominator below is the two scheduled repetitions. Failed and missing attempts remain included.
 
@@ -28,9 +28,9 @@ Every denominator below is the two scheduled repetitions. Failed and missing att
 | Web | Full | 2/2 | 2/2 | 0 / 0 |
 | Installed command | Baseline | 2/2 | 2/2 | 0 / 0 |
 | Installed command | Checklist | 2/2 | 1/2 | 1 / 0 |
-| Installed command | Full | 2/2 | 1/2 | 0 / 1 |
+| Installed command | Full | 2/2 | 2/2 | 0 / 0 |
 
-All 18 defective-repair responses completed. Baseline and full procedure each repaired 6/6; checklist repaired 4/6 under the frozen oracle. Its two web submissions each passed 14/15 checks, failing only `bodyless-cache`. No initially passing check regressed in completed trials. Of 16 completed control responses, all passed every check. One native checklist control added `killSignal: 'SIGKILL'` to the child-process timeout; this source edit alone is not a false-positive finding. The interrupted control source was unchanged. All 35 attempted workspaces passed the recorded fixed-file/addition audit, and all had distinct thread IDs. The largest observed tool-event count was seven; completed final responses were at most 186 whitespace-delimited words. These event and file checks do not constitute a complete filesystem-access audit.
+All 18 defective-repair responses completed. Baseline and full procedure each repaired 6/6; checklist repaired 4/6 under the frozen oracle. Its two web submissions each passed 14/15 checks, failing only `bodyless-cache`. No initially passing check regressed in completed trials. Of 17 completed control responses, all passed every check. One native checklist control added `killSignal: 'SIGKILL'` to the child-process timeout; this source edit alone is not a false-positive finding. The interrupted control source was unchanged. All 36 attempted workspaces passed the recorded fixed-file/addition audit, and all had distinct thread IDs. The largest observed tool-event count was seven; completed final responses were at most 186 whitespace-delimited words. These event and file checks do not constitute a complete filesystem-access audit.
 
 ### Post-freeze contract ambiguity
 
@@ -40,11 +40,11 @@ A separate [diagnostic](../fixtures/provider-release-pilot/diagnostic-304.js) ch
 
 ### Available execution measurements
 
-The 34 completed CLI turns report aggregate usage of 3,180,021 input tokens (including 2,549,248 cached input tokens), 83,694 output tokens and 7,144 reasoning-output tokens. These are the runner's reported fields; repeated context is included, and reasoning tokens are not added to output totals here. Usage for the interrupted attempt is unavailable. Review and coordination overhead is excluded.
+The 35 completed CLI turns report aggregate usage of 3,260,322 input tokens (including 2,620,672 cached input tokens), 86,072 output tokens and 7,364 reasoning-output tokens. These are the runner's reported fields; repeated context is included, and reasoning tokens are not added to output totals here. Usage for the interrupted attempt is unavailable. Review and coordination overhead is excluded.
 
-Mean elapsed process time was 88.3 seconds for 12 baseline attempts, 96.4 seconds for 12 checklist attempts (including the interruption), and 90.1 seconds for 11 full-procedure attempts. These incomplete, unequal samples include startup, tools and model waits, so they are not pure model latency or an efficiency comparison. Exact resolved backend, monetary cost and correction time remain unavailable. The frozen scorer's null measurement placeholders are supplemented by these separate CLI observations; the scorer was not changed after freeze.
+Mean elapsed process time was 88.3 seconds for 12 baseline attempts, 96.4 seconds for 12 checklist attempts (including the interruption), and 89.4 seconds for 12 full-procedure attempts. These small samples include startup, tools and model waits, so they are not pure model latency or an efficiency comparison. Exact resolved backend, monetary cost and correction time remain unavailable. The frozen scorer's null measurement placeholders are supplemented by these separate CLI observations; the scorer was not changed after freeze.
 
-No broader retest is triggered: full procedure ties baseline on all defective tasks, the checklist difference is contract-sensitive, execution is incomplete and one attempt failed operationally. Earlier pilot results are preserved. No activation qualification follows from these observations.
+No broader retest is triggered: full procedure ties baseline on all defective tasks, the checklist difference is contract-sensitive, one attempt failed operationally, and the web validity limitation remains unresolved. Earlier pilot results are preserved. No activation qualification follows from these observations.
 
 ## Scope of evidence
 
@@ -53,3 +53,5 @@ Provider checks use controlled promises, web gates use real local HTTP with an i
 The exploratory retest trigger requires at least two additional complete defective repairs out of six over baseline, all six treatment control trials passing, no initially passing check regressions and no unresolved control-validity issue. Operational failures and fixed-file boundary issues block automatic triggering. A valid improvement triggers retesting all four previously trialed capabilities, including the earlier Phase 1 pair; it does not establish activation qualification.
 
 Validation at this checkpoint: `npm run test:provider-release-pilot` passes all control, seeded-failure, ten mutation, preparation/balance and scoring checks. Diagnostic syntax and documentation links pass. The preparation test only validates fixture behavior; its unobserved model records are separate from the actual outcomes above.
+
+Interpretation: the baseline performed strongly on these bounded tasks. These comparisons do not establish the effectiveness of the whole ForgeFlow workflow, nor prove that added procedures cannot help on broader work. Across the completed pilots, no accuracy gain has been demonstrated. Working verification tools expand the available functionality; an improvement in end-to-end task outcomes remains unproven.
