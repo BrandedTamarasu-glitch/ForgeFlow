@@ -61,6 +61,16 @@ try {
     assert.equal(releaseDecision.decision, 'selected');
     assert.equal(releaseDecision.availability, 'evaluation');
     assert.equal(releaseDecision.executable, false);
+    const cadProcedure = entry('forgeflow-patterns/capability-cad-fabrication-acceptance.md');
+    assert.equal(fs.readFileSync(cadProcedure, 'utf8'), fs.readFileSync(path.join(root, 'forgeflow-patterns/capability-cad-fabrication-acceptance.md'), 'utf8'));
+    const cadSelection = run(selector, ['--stdin'], JSON.stringify({ task: 'Design a controller cradle with physical retention', phase: 'plan' }));
+    assert.equal(cadSelection.status, 0, cadSelection.stderr);
+    const cadDecision = JSON.parse(cadSelection.stdout).decisions.find(item => item.id === 'cad-fabrication-acceptance');
+    assert.equal(cadDecision.decision, 'selected');
+    assert.equal(cadDecision.availability, 'evaluation');
+    assert.equal(cadDecision.executable, false);
+    const moneyProcedure = entry('forgeflow-patterns/capability-money-calendar-correctness.md');
+    assert.equal(fs.readFileSync(moneyProcedure, 'utf8'), fs.readFileSync(path.join(root, 'forgeflow-patterns/capability-money-calendar-correctness.md'), 'utf8'));
     const benchmarkProcedure = entry('forgeflow-patterns/capability-benchmark-verification.md');
     assert.equal(fs.readFileSync(benchmarkProcedure, 'utf8'), fs.readFileSync(path.join(root, 'forgeflow-patterns/capability-benchmark-verification.md'), 'utf8'));
     const benchmarkSelection = run(selector, ['--stdin'], JSON.stringify({ task: 'Measure accelerator throughput', phase: 'research' }));
@@ -108,7 +118,8 @@ try {
     assert.equal(selection.status, 0, selection.stderr);
     const parsed = JSON.parse(selection.stdout);
     assert.deepEqual(parsed.selected, ['money-calendar-correctness']);
-    assert.ok(parsed.decisions.every(item => !item.executable), 'packaging cannot make planned procedures executable');
+    assert.equal(parsed.decisions.find(item => item.id === 'money-calendar-correctness').availability, 'evaluation');
+    assert.ok(parsed.decisions.every(item => !item.executable), 'packaging cannot make unqualified procedures executable');
     assert.deepEqual(fs.readdirSync(caller), [], 'stdin selection and guide lookup must not write project state');
     const propagationRoot = path.join(temporary, `propagation-${target}`);
     fs.mkdirSync(propagationRoot);
@@ -130,7 +141,7 @@ try {
 
     // A simulated older local installation is updated, then restored exactly.
     const originals = new Map();
-    for (const file of [selector, pattern, procedure, visualProcedure, recoveryProcedure, calibrationProcedure, providerProcedure, releaseProcedure, benchmarkProcedure, entry('scripts/forgeflow/score-review-calibration.js'), wrapper]) {
+    for (const file of [selector, pattern, procedure, visualProcedure, recoveryProcedure, calibrationProcedure, providerProcedure, releaseProcedure, benchmarkProcedure, moneyProcedure, cadProcedure, entry('scripts/forgeflow/score-review-calibration.js'), wrapper]) {
       const suffix = file.endsWith('.js') ? '\n// previous local fixture version\n' : '\nPrevious local fixture version.\n';
       fs.appendFileSync(file, suffix);
       originals.set(file, fs.readFileSync(file));

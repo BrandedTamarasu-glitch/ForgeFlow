@@ -1,0 +1,15 @@
+{
+  "units": "mm",
+  "outer": [80, 60],
+  "opening": [62, 42],
+  "height": 8,
+  "object": [60, 40],
+  "openingTolerance": 0.3,
+  "objectTolerance": 0.3,
+  "minimumPerSideClearance": 0.5,
+  "minimumWall": 2,
+  "plate": [220, 220, 250],
+  "placement": [10, 10, 0],
+  "provenance": "All dimensions and bilateral tolerances are synthetic assumptions, not measurements.",
+  "material": "Unspecified; no shrinkage, strength, friction or printer calibration established."
+}

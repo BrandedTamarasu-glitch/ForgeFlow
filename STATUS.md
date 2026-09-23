@@ -2,10 +2,16 @@
 
 Last updated: 2026-09-23
 
-Phase 4 and the four-capability retest are complete. **Next: F5.1 money/calendar correctness.** No trials are running or scheduled. The latest benchmark comparison favored baseline: 10 verified occurrences across four distinct problems versus seven across three with the added procedure. Earlier recovery/visual gains and calibration ties remain preserved. Normal activation stays gated. [ROADMAP.md](ROADMAP.md) owns scope and acceptance; the [benchmark report](docs/benchmark-cpu-pilot.md) records the latest evidence and limits.
+Phases 0 through 5 and the four-capability retest are complete. **Next: F6.1 controlled-comparison consolidation.** No trials are running or additionally scheduled. The latest domain comparison showed no added-procedure benefit: primary money finding 3/3 baseline versus 1/3 enhanced; a separate concurrency finding 3/3 per arm; no CAD claims in either arm. Earlier recovery/visual gains, calibration ties and the baseline-favoring benchmark result remain preserved. Normal activation stays gated. [ROADMAP.md](ROADMAP.md) owns scope and acceptance; [domain results](docs/domain-pilot-results.md) record the latest evidence and limits.
 
 
 ## Completed checkpoint
+
+- F5.3: all twelve real-project reviews and both independent verification passes completed. Ten claims confirmed as two money mechanisms; primary representation defect 3/3 baseline versus 1/3 enhanced, separate stale-write issue 3/3 each. All six CAD reviews reported no defects and kept slicing/physical observations pending. Sources, JSON format and word limits passed; timing/tool counts remain incompletely instrumented. No added benefit. See [results](docs/domain-pilot-results.md) and [preflight](fixtures/domain-pilot/README.md).
+
+- F5.2: CAD/fabrication procedure added with dimension provenance, tolerances, current-mesh artifacts and written insertion/pickup/control/retention/stability tests. Three clean configurations, 24 seeded failures, literal volume/bounds and three mesh sections passed. Selector, context-pack, manifest and disposable Claude/Codex install/update/rollback passed. Actual slicing, physical fit and model benefit remain unverified. See [assumptions and limits](fixtures/cad-fabrication-acceptance/README.md).
+
+- F5.1: explicit amount/rounding/conservation and civil-date recurrence procedure added. 17 amount cases, 15 recurrence examples, 256 seeded properties, 2,412 target months, nine defective alternatives and locale/timezone/no-write checks passed. An initial offset-range bug was corrected; timezone subprocess checks required host execution. Selection, context-pack, manifest and disposable Claude/Codex install/update/rollback passed. No new model trials; actual application correctness, timestamp/DST and benefit remain unverified. See [policies and limits](fixtures/money-calendar-correctness/README.md).
 
 - F4.2: actual CPU sample and controls passed. Twelve fresh reviews of published ledger/NPU performance changes completed; blinded independent verification confirmed four introduced mechanisms. Baseline/enhanced found 10/7 occurrences and 4/3 distinct mechanisms. No added-procedure advantage, no observed source/format/budget failures, and no accelerator qualification. Supplied-claim trial candidates were withdrawn before execution. See [results](docs/benchmark-cpu-pilot.md).
 
@@ -27,7 +33,7 @@ Phase 4 and the four-capability retest are complete. **Next: F5.1 money/calendar
 - `d0c5b68`: contextual visual acceptance and browser fixtures; 38 Chromium checks passed.
 - `c99cd88`: 32 independent skill-enabled/disabled trials, frozen inputs and scoring checks. Both arms interpreted every supplied-evidence case correctly, with zero missed defects or false findings. Enabled prompts were larger; no measured benefit was established.
 
-Seven capabilities have evaluation implementations, including both release qualification branches. The other two procedures remain planned. Earlier pilot token and timing measurements remain unavailable. The F3.4 report includes CLI usage and process timing; exact backend identity, cost and correction time remain unavailable. See [pilot results and limitations](docs/capability-pilot-results.md). This source milestone does not change the packaged release version or establish live client activation.
+All nine capabilities have evaluation implementations, including both release qualification branches. Normal automatic execution remains gated. Earlier pilot token and timing measurements remain unavailable. The F3.4 report includes CLI usage and process timing; exact backend identity, cost and correction time remain unavailable. See [pilot results and limitations](docs/capability-pilot-results.md). This source milestone does not change the packaged release version or establish live client activation.
 
 The pilot, legacy evaluation and skill evaluation checks passed. Implementation-specific validation and remaining accessibility/platform gaps are recorded in the roadmap. Raw responses and session evidence remain local; the published protocol, fixtures and aggregate results provide the portable checkpoint.
 
@@ -35,12 +41,14 @@ Previous source milestone validation: the full regression sweep initially passed
 
 Phase 4 validation: benchmark controls, CPU correctness/aggregation, selection, context-pack, manifest and disposable Claude/Codex install/update/rollback checks passed. Publication checks resolved 179 local documentation links and found no whitespace errors or private session state in the staged source milestone. The full regression suite was not rerun for this milestone.
 
+Phase 5 publication validation: both domain fixture suites, domain routing, selection/context-pack, manifest and disposable Claude/Codex install/update/rollback passed. Full-suite integration remains part of F6.3.
+
 ## Resume on another computer
 
 1. Fetch `origin`, inspect the current branch and working tree, and preserve any local work. Update a clean `main` checkout with `git pull --ff-only origin main`; resolve any divergence before continuing. For a fresh checkout, clone the repository's default branch.
-2. Read `AGENTS.md`, this file, and `ROADMAP.md`. Confirm the checkout includes F4.2 and the four-capability retest; This source milestone includes Phase 4.
-3. Preserve all original and revised evaluations. The earlier twelve-review study found complementary discoveries; the completed [24-review retest](docs/capability-retest-results.md) adds limited, repeatable case-specific signals. No trial process is running, and no further model run is scheduled.
-4. Continue **F5.1 money/calendar correctness**. Preserve the completed benchmark comparison and its baseline-favoring result; accelerator performance remains unverified. Do not rerun completed trials merely to resume. Calibration's severity key remains frozen despite unanimous disagreement; independently review it before any future version. F3.4's interrupted attempt remains unsuccessful and its separate 304 diagnostic remains post-freeze evidence. Detailed execution evidence remains local-only.
-5. Validate the item, update roadmap/status and commit locally. Push at explicitly requested milestones. This source milestone includes completed work through F4.2 and the four-capability retest. The packaged release version is unchanged.
+2. Read `AGENTS.md`, this file, and `ROADMAP.md`. Confirm the checkout includes completed Phase 5 and the four-capability retest. This source milestone includes the Phase 5 procedures, fixtures and completed domain comparison.
+3. Preserve all original and revised evaluations. The earlier twelve-review study found complementary discoveries; the completed [24-review retest](docs/capability-retest-results.md) adds limited, repeatable case-specific signals. All twelve F5.3 reviews and two verification passes are complete; no further trial is scheduled.
+4. Continue **F6.1 controlled-comparison consolidation**. Start by consolidating completed evidence and remaining gaps before proposing more trials. Preserve the money/benchmark baseline-favoring results, CAD/calibration ties and earlier case-specific gains. Keep physical and accelerator qualification pending. Do not rerun completed trials merely to resume. Any new model trials need a concrete protocol and authorization; current approval covered the completed F5.3 run. Detailed execution evidence remains local-only.
+5. Validate the item and update roadmap/status. Commit and push only when explicitly requested. This source milestone includes completed work through Phase 5 and the four-capability retest. The packaged release version is unchanged.
 
 The requested retest across all four earlier capabilities is complete. Future benefit qualification needs more varied new tasks and independently challenged controls. The observed discovery gains do not establish general superiority, production durability or full calibration-workflow benefit. No preview server is needed for this handoff.

@@ -1,6 +1,6 @@
 # Capability contract and integration map
 
-Status: Phase 0 foundation implemented. Change propagation, visual acceptance, persistence recovery, review calibration, provider compatibility, release qualification and benchmark verification have evaluation-cohort procedures; the other two procedure bodies remain planned. Discovery declarations are checked; live client discovery after restart is not claimed. See [the roadmap](../ROADMAP.md).
+Status: Phase 0 foundation implemented. Change propagation, visual acceptance, persistence recovery, review calibration, provider compatibility, release qualification, benchmark verification, money/calendar correctness and CAD/fabrication acceptance have evaluation-cohort procedures. Discovery declarations are checked; live client discovery after restart is not claimed. See [the roadmap](../ROADMAP.md).
 
 ## Contract version 1
 
@@ -33,7 +33,7 @@ Each procedure must define ordered steps, scope/termination bounds, expected evi
 
 ## Canonical inventory
 
-Use flat canonical files `forgeflow-patterns/capability-<id>.md`. Change propagation, visual acceptance, persistence recovery, review calibration, provider compatibility, release qualification and benchmark verification exist; the remaining paths are future implementation destinations. Flat Markdown fits both current managed-pattern installation paths; nested pattern directories do not currently have equivalent Claude coverage.
+Use flat canonical files `forgeflow-patterns/capability-<id>.md`. Change propagation, visual acceptance, persistence recovery, review calibration, provider compatibility, release qualification, benchmark verification and money/calendar correctness exist; the remaining paths are future implementation destinations. Flat Markdown fits both current managed-pattern installation paths; nested pattern directories do not currently have equivalent Claude coverage.
 
 ### change-propagation
 
@@ -114,6 +114,8 @@ Implemented for evaluation: [canonical procedure](../forgeflow-patterns/capabili
 
 ### money-calendar-correctness
 
+Implemented for evaluation: [canonical procedure](../forgeflow-patterns/capability-money-calendar-correctness.md) and [synthetic policies and fixtures](../fixtures/money-calendar-correctness/README.md). Exact amount/recurrence cases, bounded generated invariants, locale/timezone checks and modeled no-write boundaries pass. A completed [real-project pilot](domain-pilot-results.md) found the same representation defect less consistently with the added procedure (1/3 versus 3/3 baseline). No added benefit; broader application correctness and timestamp/DST behavior remain unverified.
+
 - **Trigger/exclusion:** currency representation, rounding, recurrence or calendar arithmetic; exclude spelling edits in financial applications and display-only changes without semantic effects.
 - **Phases/owner:** plan, implement, review; Builder executes, Product Lead defines product policies, Guardian checks persistence interactions.
 - **Inputs/tools/cost:** unit/rounding/date/timezone policies, supported ranges and synthetic examples; deterministic test harness; medium, bounded generated cases with saved seeds.
@@ -122,6 +124,8 @@ Implemented for evaluation: [canonical procedure](../forgeflow-patterns/capabili
 - **Fallback/cleanup:** missing business policy is a substantive clarification, not an invitation to invent rounding rules; use no real ledgers; remove disposable stores.
 
 ### cad-fabrication-acceptance
+
+Implemented for evaluation: [canonical procedure](../forgeflow-patterns/capability-cad-fabrication-acceptance.md) and [synthetic geometry checks](../fixtures/cad-fabrication-acceptance/README.md). Three clean configurations and 24 seeded failures pass, including export/preview identity, topology, worst-case clearance and plate boundaries. Mesh cross-sections are analytic. A completed [real-project pilot](domain-pilot-results.md) produced no CAD defect claims in either arm; all reviews preserved the physical-evidence boundary. No added benefit, fresh slicing or physical-fit qualification.
 
 - **Trigger/exclusion:** physical geometry, fit, clearance or retention requirements; exclude anvil-logo illustration work with no physical model and unrelated CAD documentation edits.
 - **Phases/owner:** plan, implement, review; Designer and Builder develop digital checks, Product Lead defines physical acceptance.
@@ -199,7 +203,7 @@ The initial selector uses conservative behavioral patterns to shortlist/select c
 
 The output includes one decision per capability, selected IDs, up to three inspection requests and the scope fingerprint. Pass the previous result as `previous` after meaningful discoveries. An unchanged normalized scope consumes no reassessment; changed scope allows three reassessments before further selections are deferred with unresolved gaps. A new independent task starts a new budget. Preserve the previous result to keep the bound effective; do not reset it to work around a deferred result.
 
-The context builder writes `capability-selection.json` beside existing context artifacts, links it from synthesis input and appends scoped guidance to existing role packets. Reviewer lists/modes and task evidence are unchanged. No procedure body is loaded; change propagation, visual acceptance, persistence recovery, review calibration, provider compatibility, release qualification and benchmark verification have `availability: evaluation`, the other two have `availability: planned`, and all have `executable: false` in normal routing pending qualification. This proves selection plumbing, not capability execution or measured agent benefit.
+The context builder writes `capability-selection.json` beside existing context artifacts, links it from synthesis input and appends scoped guidance to existing role packets. Reviewer lists/modes and task evidence are unchanged. No procedure body is loaded; change propagation, visual acceptance, persistence recovery, review calibration, provider compatibility, release qualification, benchmark verification, money/calendar correctness and CAD/fabrication acceptance have `availability: evaluation`, and all have `executable: false` in normal routing pending qualification. This proves selection plumbing, not capability execution or measured agent benefit.
 
 ## Host entry points and packaging
 

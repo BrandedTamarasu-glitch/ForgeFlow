@@ -14,11 +14,11 @@ Turn an idea into a scoped brief, working code, an evidence-backed review, and a
 
 *Workshop screenshot uses illustrative example data.*
 
-## Intelligent capabilities: Phases 0 through 4 complete
+## Intelligent capabilities: nine procedures implemented
 
 ForgeFlow can select specialized procedures from task intent, affected code and workflow phase. Selection supports mixed-domain tasks, explicit overrides and bounded reassessment. Managed Claude Code and Codex workflows include the selection entry points.
 
-Seven of nine planned capabilities are implemented for controlled evaluation:
+All nine planned capabilities are implemented for controlled evaluation:
 
 | Capability | What it checks |
 |---|---|
@@ -29,14 +29,20 @@ Seven of nine planned capabilities are implemented for controlled evaluation:
 | [Provider compatibility](forgeflow-patterns/capability-provider-compatibility.md) | Response drift, partial failures, cancellation and stale data |
 | [Release qualification](forgeflow-patterns/capability-release-qualification.md) | Served web artifacts and native installation, restart, update and rollback |
 | [Benchmark verification](forgeflow-patterns/capability-benchmark-verification.md) | Executing backend, effective controls, correctness and separate performance metrics |
+| [Money/calendar correctness](forgeflow-patterns/capability-money-calendar-correctness.md) | Amount units, rounding, conservation, recurrence anchors, missing data and read-only behavior |
+| [CAD/fabrication acceptance](forgeflow-patterns/capability-cad-fabrication-acceptance.md) | Dimension provenance, tolerances, current meshes, exports, clearance and separate physical acceptance |
 
-Money/calendar correctness and CAD/fabrication acceptance remain planned. **Next: F5.1 money/calendar correctness.** Selection does not execute an unavailable procedure.
+**F5.3 domain pilots are complete:** [twelve real-project reviews](docs/domain-pilot-results.md) showed no added-procedure benefit on these cases. Baseline found the primary money defect in 3/3 runs versus 1/3 enhanced; CAD reported no defects in either arm. **Next: F6.1 controlled-comparison consolidation.** All nine procedures remain in evaluation; normal automatic execution awaits qualification.
 
 The benchmark procedure has deterministic fixture coverage for backend attribution and measurement rules. Its initial fixtures use synthetic timings. A [bounded CPU example and twelve-review real-project comparison](docs/benchmark-cpu-pilot.md) are now complete; the added procedure showed no discovery advantage, and accelerator performance remains unverified.
 
+The money/calendar procedure has synthetic coverage for explicit rounding and recurrence policies, range boundaries, missing-versus-zero values, locale presentation and no-write behavior. [Fixture results and limits](fixtures/money-calendar-correctness/README.md) do not establish application correctness or model benefit; the separate real-project comparison is reported above.
+
+The CAD procedure has synthetic mesh, clearance, plate and export/preview checks, with 24 seeded failures detected. [Coverage and limits](fixtures/cad-fabrication-acceptance/README.md) distinguish digital checks from actual slicing and physical fit, which remain pending.
+
 ### What the evaluations show
 
-The latest [benchmark-verification comparison](docs/benchmark-cpu-pilot.md) reviewed published WarmLedger and NPU-tooling changes twelve times. Baseline found **10 verified occurrences across four distinct problems**, versus **seven occurrences across three problems** with the added procedure. Both arms repeatedly caught an unmatched-workload performance claim. Occurrences count repeat discoveries across reviews, not additional distinct bugs. This study favors baseline on these cases; benchmark verification stays in evaluation.
+The earlier [benchmark-verification comparison](docs/benchmark-cpu-pilot.md) reviewed published WarmLedger and NPU-tooling changes twelve times. Baseline found **10 verified occurrences across four distinct problems**, versus **seven occurrences across three problems** with the added procedure. Both arms repeatedly caught an unmatched-workload performance claim. Occurrences count repeat discoveries across reviews, not additional distinct bugs. This study favors baseline on these cases; benchmark verification stays in evaluation.
 
 An earlier [24-review real-project retest](docs/capability-retest-results.md) found limited, concrete discovery gains:
 

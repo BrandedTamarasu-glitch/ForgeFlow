@@ -1,0 +1,14 @@
+[
+  {"name":"amount units", "input":{"task":"Check cents conversion and rounding", "phase":"review"}, "domains":["money-calendar-correctness"]},
+  {"name":"recurrence", "input":{"task":"Fix recurring month-end scheduling", "phase":"implement"}, "domains":["money-calendar-correctness"]},
+  {"name":"physical clearance", "input":{"task":"Check physical fit and clearance of the controller cradle", "phase":"plan"}, "domains":["cad-fabrication-acceptance"]},
+  {"name":"export", "input":{"task":"Verify mesh export before fabrication", "phase":"review"}, "domains":["cad-fabrication-acceptance"]},
+  {"name":"mixed task", "input":{"task":"Check currency rounding and physical fit for a fabrication order", "phase":"review"}, "domains":["money-calendar-correctness","cad-fabrication-acceptance"]},
+  {"name":"money spelling", "input":{"task":"Fix a typo in currency documentation", "files":["js/currency.js"]}, "domains":[]},
+  {"name":"CAD spelling", "input":{"task":"Correct README spelling", "project":"CAD fabrication", "files":["README.md"]}, "domains":[]},
+  {"name":"logo only", "input":{"task":"Update the anvil logo illustration"}, "domains":[]},
+  {"name":"calendar filename only", "input":{"task":"Inspect this change", "files":["js/calendar.js"]}, "domains":[], "inspect":"money-calendar-correctness"},
+  {"name":"mesh filename only", "input":{"task":"Inspect this change", "files":["part.stl"]}, "domains":[], "inspect":"cad-fabrication-acceptance"},
+  {"name":"declared CAD irrelevance", "input":{"task":"Update CAD documentation links", "assessments":[{"id":"cad-fabrication-acceptance","relevance":"irrelevant","reason":"Only documentation links changed; no physical geometry or acceptance requirement.","evidence":"README.md"}]}, "domains":[]},
+  {"name":"declared money relevance", "input":{"task":"Check a conversion", "assessments":[{"id":"money-calendar-correctness","relevance":"relevant","reason":"Changed conversion feeds integer minor units to ledger totals.","evidence":"js/data-schema.js"}]}, "domains":["money-calendar-correctness"]}
+]

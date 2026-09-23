@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "status": "frozen-inputs-awaiting-trial-authorization",
+  "planned_reviews": 12,
+  "verification_passes": 2,
+  "arms": [
+    "baseline",
+    "enhanced"
+  ],
+  "repetitions_per_case_arm": 3,
+  "order": "baseline/enhanced, enhanced/baseline, baseline/enhanced within each case",
+  "model": "session model inherited by fresh independent agents; no requested model or reasoning override",
+  "settings": {
+    "history": "none",
+    "concurrency": 2,
+    "max_tool_calls": 48,
+    "seconds": 480,
+    "response_words": 2000,
+    "limits": "instruction-based bounds with coordinator monitoring; report breaches, not OS-enforced quotas",
+    "network": "forbidden by instruction",
+    "source_writes": "forbidden; probes restricted to assigned .evaluation directory",
+    "isolation": "separate copied inputs and fresh contexts; filesystem read isolation is instruction-based"
+  },
+  "cases": [
+    {
+      "id": "money",
+      "capability": "money-calendar-correctness",
+      "head": "5aadc772dffcd09a75499b30a537623387458a29",
+      "base": "7f53480a7485a68428f5ed7b6d047808cfc248c9",
+      "scope": "Exact-money migration; this case does not qualify real recurrence/DST behavior."
+    },
+    {
+      "id": "cad",
+      "capability": "cad-fabrication-acceptance",
+      "head": "Steam Controller cradle generation two",
+      "base": "Steam Controller stand generation one",
+      "identity": "File-hashed local project snapshots; no Git history or PR claim."
+    }
+  ],
+  "source_set_sha256": "0682b2041a463a23b92d94f52f214aa0fb98a6ab7ca459d5dc36cfb3b9de1dd8",
+  "treatments_sha256": {
+    "cad-fabrication-acceptance.md": "4fc8ffc87689364f14d1fb4ce3e549d81c34b60f5b94b1c274cdc11074b0ee7c",
+    "money-calendar-correctness.md": "da5f4e2d33f8762737f754026f8415e200f1c7f8a2432ae477091ef3f5af307a"
+  },
+  "common_prompt_sha256": "be9c731f59fc35e114ff959115a18e04f332936f724015b85508f46be2b78206",
+  "scoring": {
+    "primary": "Per-case verified introduced domain defects, occurrences and distinct mechanisms; all three paired results retained. Money primary covers representation/conversion/rounding/missing-data paths; CAD primary covers geometry/artifact/acceptance defects. Report other findings separately.",
+    "verification": "Collect all outputs, remove arm labels and procedure references, freeze anonymized claims, then independently reproduce against base and head before unsealing the arm mapping. Two fresh verification passes, one per case. Preserve unresolved and unsupported claims.",
+    "known_findings": "Documented first-generation fit failure and previously verified mechanisms may be rediscovered but are not historically new discoveries. Verify overlap with earlier reports after blind adjudication.",
+    "false_findings": "Unsupported claims and invalid blockers counted separately; no exhaustive ground truth, so no total recall or overall accuracy claim. Clean seeded controls and routing are deterministic acceptance only.",
+    "missing_evidence": "Slicer and physical claims require actual observations. No pending check may become pass from digital evidence.",
+    "failure": "Every launched slot stays in the denominator. Preserve timeouts, source mutations, budget/format failures and interruptions; never silently replace. Stop to inspect repeated infrastructure failure.",
+    "benefit": "Exploratory case-specific comparison only; ties and regressions preserved. No automatic activation or broad benefit qualification."
+  },
+  "preflight": {
+    "routing_cases_passed": 12,
+    "money_head_tests_passed": 80,
+    "money_base_tests_passed": 60,
+    "cad_exports_compared": 4,
+    "cad_existing_manifest_mismatches": 0,
+    "synthetic_domain_checks": "pass; money timezone subprocess initially EPERM, passed host retry",
+    "oracle_correction": "Rounded-coordinate set equality rejected near rounding boundaries; replaced before trials with ordered coordinate tolerance, maximum observed delta about 0.0000005 mm."
+  },
+  "limitations": [
+    "Two underlying real cases; repeated reviews do not broaden project coverage.",
+    "CAD numpy/trimesh/manifold3d unavailable; generation and mesh-kernel checks not rerun.",
+    "Existing CAD slicing summaries are historical; no new slicing or physical tests.",
+    "Actual money recurrence and timestamp/DST behavior outside this case.",
+    "No full defect inventory; missing-defect counts and accuracy cannot be inferred.",
+    "Read boundaries and tool/time budgets instruction-based; disclose any observed breach.",
+    "Prompt size differs by intended procedure treatment; backend sampling and billing may be unavailable.",
+    "Existing project tests and artifact comparisons are preflight evidence, not model-benefit results."
+  ]
+}
