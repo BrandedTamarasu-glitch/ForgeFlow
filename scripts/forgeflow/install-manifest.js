@@ -12,6 +12,7 @@ const STATIC_FILES = new Set([
   'forgeflow-patterns/capability-visual-acceptance.md',
   'forgeflow-patterns/capability-persistence-recovery.md',
   'forgeflow-patterns/capability-review-calibration.md',
+  'forgeflow-patterns/capability-provider-compatibility.md',
   'commands/forgeflow-capabilities.md',
   'skills/forgeflow-capabilities/SKILL.md',
   'scripts/forgeflow/agent-identity.d.ts',

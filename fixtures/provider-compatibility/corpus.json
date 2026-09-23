@@ -1,0 +1,17 @@
+{
+  "schema_version": "1",
+  "provenance": "New fictional readings protocol authored for ForgeFlow under repository MIT license; no captured service data or credentials.",
+  "contract": "v1 uses value/observedAt; v2 uses reading/sampled_at. Values are finite numbers and timestamps are nonnegative epoch milliseconds no later than the local model clock. Unknown versions, explicit incomplete flags and invalid required fields fail. Optional envelope fields are ignored.",
+  "cases": [
+    {"id":"v1", "payload":{"version":1,"value":12,"observedAt":900}, "expected":{"value":12,"observed_at":900}},
+    {"id":"v2", "payload":{"version":2,"reading":15,"sampled_at":950}, "expected":{"value":15,"observed_at":950}},
+    {"id":"additive", "payload":{"version":1,"value":0,"observedAt":0,"metadata":{"optional":true}}, "expected":{"value":0,"observed_at":0}},
+    {"id":"unsupported", "payload":{"version":3,"value":12,"observedAt":900}, "expected":null},
+    {"id":"partial", "payload":{"version":1,"value":12,"observedAt":900,"complete":false}, "expected":null},
+    {"id":"missing", "payload":{"version":2,"reading":15}, "expected":null},
+    {"id":"wrong-type", "payload":{"version":1,"value":"12","observedAt":900}, "expected":null},
+    {"id":"null", "payload":null, "expected":null},
+    {"id":"future", "payload":{"version":1,"value":12,"observedAt":1001}, "expected":null},
+    {"id":"negative-time", "payload":{"version":1,"value":12,"observedAt":-1}, "expected":null}
+  ]
+}
