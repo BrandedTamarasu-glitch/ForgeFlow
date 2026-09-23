@@ -40,6 +40,12 @@ REAL: None  (or list any genuine issues expected)
 
 ---
 
+## Calibration scoring boundary
+
+Freeze the case requirements, expected real defects and impact-based severity rubric before the debate. Reviewers and synthesis remain blind to the key. Score only after final synthesis: match supported mechanisms, count missed real defects and unsupported final claims, and compare severity. Preserve unresolved unexpected claims for evidence-based adjudication; an absent key entry alone does not prove a false finding. Retain initial/final outcomes separately. Silence on a defective case cannot pass.
+
+The canonical `forgeflow-patterns/capability-review-calibration.md` and installed `scripts/forgeflow/score-review-calibration.js` support controlled evaluation. The scorer consumes post-review adjudications; it does not judge claims automatically. Keep fixture and actual observations separate in existing evaluation records, including failed and unobserved attempts. This scoring step does not start additional trials.
+
 ## Round 1 — Openings (run all four in parallel)
 
 Spawn Builder, Guardian, Designer, and Coordinator simultaneously. Each receives only the code and its role.
@@ -406,12 +412,11 @@ For each expected false positive, classify its outcome using this rubric:
 - SPLIT: Idempotency/FP aspect cleared; a genuinely different concern correctly preserved
 - UPHELD (FAIL): Raised in R1 and not cleared by Architect
 
-Count PHANTOM issues only. A phantom is a finding where the code demonstrably does NOT
-have the problem claimed — i.e., the claim is factually incorrect about what the code
-actually does. Do NOT count as phantoms: real production concerns that are out of scope
-for this code unit (input validation, logging, observability, etc.) — agents are correct
-to raise those even if not in the answer key. Only count claims that are objectively
-false given the actual code.
+For the PHANTOM subtotal, count claims demonstrably contradicted by the code.
+For the final score, adjudicate every distinct final claim against the stated scope.
+A real but unkeyed defect requires evidence and a documented key dispute; a plausible
+claim with missing context remains unresolved. Do not exempt speculative production
+concerns from adjudication or treat every unkeyed concern as false.
 
 Write a 1-2 paragraph debrief: what the Forgeflow team got right, what lingered too long,
 what agent behaviour should be investigated.
@@ -425,11 +430,17 @@ Produce your output in this exact format:
 
 **False positives correctly handled:** X / N
 **Phantom issues invented:** N
-**Verdict:** PASS / PARTIAL / FAIL
+**Real defects matched / expected:** X / N
+**Missed real defects:** N (list each missing mechanism)
+**Final false findings:** N (supported adjudications, including phantoms)
+**Severity overstated / understated:** N / N
+**Unresolved claims:** N (list evidence needed)
+**Verdict:** PASS / FAIL / UNRESOLVED
 
-PASS = all FPs handled correctly (any GATE SUPPRESSED, SELF-CORRECTED, LATE CLEAR, or SPLIT)
-PARTIAL = 50–99% handled correctly, or 1+ UPHELD with majority passing
-FAIL = any FP UPHELD with <50% handling correctly, or majority UPHELD
+PASS = no missed defect, final false finding or severity error, and no unresolved claim.
+FAIL = a confirmed missed defect, false finding or severity error, with adjudication complete.
+UNRESOLVED = required adjudication or severity context is missing; do not infer a pass.
+The FP handling table describes debate behavior; it cannot override missed-defect scoring.
 
 ## Debrief
 [1-2 paragraphs]

@@ -1,0 +1,34 @@
+{
+  "cases": [
+    {
+      "id": "rc01",
+      "requirement": "Every observer must see matching primary and index generations, including at a checkpoint that may throw.",
+      "code": "function operation(store, generation, checkpoint = () => {}) {\n  store.current.primary = generation;\n  checkpoint();\n  store.current.index = generation;\n}"
+    },
+    {
+      "id": "rc02",
+      "requirement": "Every observer must see matching primary and index generations. Reference replacement is atomic in this model; a checkpoint may throw.",
+      "code": "function operation(store, generation, checkpoint = () => {}) {\n  const next = { primary: generation, index: generation };\n  checkpoint();\n  store.current = next;\n}"
+    },
+    {
+      "id": "rc03",
+      "requirement": "Two separately prepared, accepted increments must increase the counter by two, even when both prepare before either executes.",
+      "code": "function operation(store) {\n  const observed = { ...store.current };\n  return () => {\n    store.current = { count: observed.count + 1, version: observed.version + 1 };\n  };\n}"
+    },
+    {
+      "id": "rc04",
+      "requirement": "Two accepted increments must increase the counter by two. A false return rejects that attempt; the caller explicitly retries once from a fresh preparation after a conflict. Each returned function executes atomically in this model.",
+      "code": "function operation(store) {\n  const observed = { ...store.current };\n  return () => {\n    if (store.current.version !== observed.version) return false;\n    store.current = { count: observed.count + 1, version: observed.version + 1 };\n    return true;\n  };\n}"
+    },
+    {
+      "id": "rc05",
+      "requirement": "Hints are independent booleans. Partial completion is permitted and the caller retries after an interrupted checkpoint before declaring both complete.",
+      "code": "function operation(store, checkpoint = () => {}) {\n  store.cacheWarm = true;\n  checkpoint();\n  store.hintReady = true;\n}"
+    },
+    {
+      "id": "rc06",
+      "requirement": "Redelivery of the same visit identifier must leave the total number of visits unchanged.",
+      "code": "function operation(counters, key) {\n  counters.set(key, (counters.get(key) || 0) + 1);\n}"
+    }
+  ]
+}

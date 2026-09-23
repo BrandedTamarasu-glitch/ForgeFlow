@@ -11,6 +11,7 @@ const STATIC_FILES = new Set([
   'forgeflow-patterns/capability-change-propagation.md',
   'forgeflow-patterns/capability-visual-acceptance.md',
   'forgeflow-patterns/capability-persistence-recovery.md',
+  'forgeflow-patterns/capability-review-calibration.md',
   'commands/forgeflow-capabilities.md',
   'skills/forgeflow-capabilities/SKILL.md',
   'scripts/forgeflow/agent-identity.d.ts',
@@ -36,6 +37,7 @@ const DASHBOARD_RUNTIME = new Set([
   'services/agent-chat/public/index.html', 'services/agent-chat/package.json', 'services/agent-chat/package-lock.json',
 ]);
 const RUNTIME_HELPERS = [
+  'scripts/forgeflow/score-review-calibration.js',
   'scripts/forgeflow/check-change-propagation.js',
   'scripts/forgeflow/capability-catalog.js',
   'scripts/forgeflow/select-capabilities.js',

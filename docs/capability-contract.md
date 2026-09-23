@@ -1,6 +1,6 @@
 # Capability contract and integration map
 
-Status: Phase 0 foundation implemented. Change propagation, visual acceptance and persistence recovery have evaluation-cohort procedures; the other six procedure bodies remain planned. Discovery declarations are checked; live client discovery after restart is not claimed. See [the roadmap](../ROADMAP.md).
+Status: Phase 0 foundation implemented. Change propagation, visual acceptance, persistence recovery and review calibration have evaluation-cohort procedures; the other five procedure bodies remain planned. Discovery declarations are checked; live client discovery after restart is not claimed. See [the roadmap](../ROADMAP.md).
 
 ## Contract version 1
 
@@ -33,7 +33,7 @@ Each procedure must define ordered steps, scope/termination bounds, expected evi
 
 ## Canonical inventory
 
-Use flat canonical files `forgeflow-patterns/capability-<id>.md`. Change propagation, visual acceptance and persistence recovery exist; the remaining paths are future implementation destinations. Flat Markdown fits both current managed-pattern installation paths; nested pattern directories do not currently have equivalent Claude coverage.
+Use flat canonical files `forgeflow-patterns/capability-<id>.md`. Change propagation, visual acceptance, persistence recovery and review calibration exist; the remaining paths are future implementation destinations. Flat Markdown fits both current managed-pattern installation paths; nested pattern directories do not currently have equivalent Claude coverage.
 
 ### change-propagation
 
@@ -69,6 +69,8 @@ Implemented for evaluation: [canonical procedure](../forgeflow-patterns/capabili
 - **Fallback/cleanup:** without a harness, provide a concrete unexecuted schedule; never use live user data; remove disposable stores after evidence capture.
 
 ### review-calibration
+
+Implemented for evaluation: [procedure](../forgeflow-patterns/capability-review-calibration.md), [post-review scorer](../scripts/forgeflow/score-review-calibration.js) and [executable cases](../fixtures/review-calibration/README.md). Adjudication remains evidence-based work; synthetic scorer checks are not actual reviewer observations.
 
 - **Trigger/exclusion:** review-rule changes or explicit quality evaluation; exclude ordinary application changes with no need to calibrate reviewer behavior.
 - **Phases/owner:** research, implement, review; Architect scopes the exercise, Verifier checks claims, Product Lead assesses outcomes.
@@ -191,7 +193,7 @@ The initial selector uses conservative behavioral patterns to shortlist/select c
 
 The output includes one decision per capability, selected IDs, up to three inspection requests and the scope fingerprint. Pass the previous result as `previous` after meaningful discoveries. An unchanged normalized scope consumes no reassessment; changed scope allows three reassessments before further selections are deferred with unresolved gaps. A new independent task starts a new budget. Preserve the previous result to keep the bound effective; do not reset it to work around a deferred result.
 
-The context builder writes `capability-selection.json` beside existing context artifacts, links it from synthesis input and appends scoped guidance to existing role packets. Reviewer lists/modes and task evidence are unchanged. No procedure body is loaded; change propagation, visual acceptance and persistence recovery have `availability: evaluation`, the other six have `availability: planned`, and all have `executable: false` in normal routing pending qualification. This proves selection plumbing, not capability execution or measured agent benefit.
+The context builder writes `capability-selection.json` beside existing context artifacts, links it from synthesis input and appends scoped guidance to existing role packets. Reviewer lists/modes and task evidence are unchanged. No procedure body is loaded; change propagation, visual acceptance, persistence recovery and review calibration have `availability: evaluation`, the other five have `availability: planned`, and all have `executable: false` in normal routing pending qualification. This proves selection plumbing, not capability execution or measured agent benefit.
 
 ## Host entry points and packaging
 

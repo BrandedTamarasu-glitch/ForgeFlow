@@ -27,7 +27,10 @@ Workflow:
 7. Run Round 3 with one falsifiable claim from each debating agent.
 8. Send the full transcript to `architect_debate_judge` for the final verdict.
 9. Only then send the answer key and full transcript to `product_lead_debate_validator`.
-10. Return the final verdict, false positives, misses, and calibration notes.
+10. Score final supported claims against the frozen key: real defects matched/missed, false findings, and severity overstatement/understatement. Preserve unexpected plausible claims as unresolved pending evidence; an absent key entry alone does not prove a false finding. Deduplicate mechanisms and retain initial-versus-final changes separately.
+11. Report a calibration outcome separately from the validator's CONFIRM/CHALLENGE judgment. Return PASS only with zero missed defects, false findings, severity errors and unresolved claims. Use FAIL for completed adjudication with errors, UNRESOLVED for missing adjudication/context. Silence on defective code fails. Keep failed/unobserved trials explicit and fixture observations separate from actual model results.
+
+For controlled evaluations, use the canonical `forgeflow-patterns/capability-review-calibration.md` and post-review `scripts/forgeflow/score-review-calibration.js` from the same managed runtime. The helper counts adjudicated claims; it does not replace evidence-based judgment or authorize another trial.
 
 Rules:
 - Treat the answer key as private validation data.

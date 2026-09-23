@@ -1,0 +1,9 @@
+# Review calibration cases
+
+Six cases adapt the existing executable atomicity examples, with neutral function names, three defects and three clean counterexamples. `inputs.json` contains code and requirements only. `prompts.js` builds reviewer prompts without loading the separate `answer-key.json`. The key records provenance, source hash and a scoped severity rubric. Do not give this README, key or tests to evaluated reviewers; provide only the result of `reviewInput(caseId)` and the selected procedure treatment.
+
+Run `node scripts/forgeflow/test-review-calibration.js` and `node scripts/forgeflow/test-atomicity-guidance.js`. The former executes the public snippets, checks their source provenance and exercises post-review scoring with synthetic adjudications. The latter preserves the underlying interruption/concurrency evidence. Neither runs models or establishes actual reviewer performance. Cases are newly adapted repository MIT examples, not copied private records.
+
+The scorer requires evidence-backed adjudication after review. Test findings deliberately include silence, false concerns, wrong severity, duplicate/invalid matches, unresolved claims and failed/unobserved runs. Unresolved claims keep completion and missed-defect counts null until adjudication is complete. Confirmed false/severity counts remain visible. Failed attempts never turn into perfect clean-case scores.
+
+Use existing `task-evaluation.js` schedules for F2.3: freeze these input/key/procedure hashes and the model configuration before collecting responses, isolate reviewer contexts from keys, retain all outcomes and separate fixture/actual observations. Store severity counts in the accompanying scoring report; copy only supported completion/missed/false fields into existing skill trial metrics. Do not change legacy workflow comparisons or reuse these synthetic test responses as model results.

@@ -1,0 +1,56 @@
+{
+  "provenance": {
+    "source": "fixtures/atomicity/operations.js",
+    "source_sha256": "a4b045707fb8f27b8197ab56291665922e3187b6bd0e784b80cca879a7d03d5e",
+    "license": "MIT (repository LICENSE)",
+    "derivation": "Existing synthetic functions renamed operation; no personal or project data."
+  },
+  "rubric": "high: violates committed/shared-state correctness; medium: duplicates an analytics visit; low: minor nonblocking defect; critical: catastrophic impact explicitly demonstrated. Scope is this single-threaded model, not a production system.",
+  "cases": [
+    {
+      "id": "rc01",
+      "operation": "publishSeparate",
+      "expected": [
+        {
+          "id": "defect-rc01",
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "id": "rc02",
+      "operation": "publishSnapshot",
+      "expected": []
+    },
+    {
+      "id": "rc03",
+      "operation": "prepareIncrement",
+      "expected": [
+        {
+          "id": "defect-rc03",
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "id": "rc04",
+      "operation": "prepareConditionalIncrement",
+      "expected": []
+    },
+    {
+      "id": "rc05",
+      "operation": "setIndependentHints",
+      "expected": []
+    },
+    {
+      "id": "rc06",
+      "operation": "upsertVisit",
+      "expected": [
+        {
+          "id": "defect-rc06",
+          "severity": "medium"
+        }
+      ]
+    }
+  ]
+}
