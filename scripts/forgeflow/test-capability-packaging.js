@@ -53,6 +53,14 @@ try {
     const selector = entry('scripts/forgeflow/select-capabilities.js');
     const pattern = entry('forgeflow-patterns/capability-selection.md');
     const procedure = entry('forgeflow-patterns/capability-change-propagation.md');
+    const recoveryProcedure = entry('forgeflow-patterns/capability-persistence-recovery.md');
+    assert.equal(fs.readFileSync(recoveryProcedure, 'utf8'), fs.readFileSync(path.join(root, 'forgeflow-patterns/capability-persistence-recovery.md'), 'utf8'));
+    const recoverySelection = run(selector, ['--stdin'], JSON.stringify({ task: 'Fix storage recovery after interrupted saves', phase: 'implement' }));
+    assert.equal(recoverySelection.status, 0, recoverySelection.stderr);
+    const recoveryDecision = JSON.parse(recoverySelection.stdout).decisions.find(item => item.id === 'persistence-recovery');
+    assert.equal(recoveryDecision.decision, 'selected');
+    assert.equal(recoveryDecision.availability, 'evaluation');
+    assert.equal(recoveryDecision.executable, false);
     const visualProcedure = entry('forgeflow-patterns/capability-visual-acceptance.md');
     assert.equal(fs.readFileSync(visualProcedure, 'utf8'), fs.readFileSync(path.join(root, 'forgeflow-patterns/capability-visual-acceptance.md'), 'utf8'));
     assert.equal(fs.readFileSync(procedure, 'utf8'), fs.readFileSync(path.join(root, 'forgeflow-patterns/capability-change-propagation.md'), 'utf8'));
@@ -94,7 +102,7 @@ try {
 
     // A simulated older local installation is updated, then restored exactly.
     const originals = new Map();
-    for (const file of [selector, pattern, procedure, visualProcedure, wrapper]) {
+    for (const file of [selector, pattern, procedure, visualProcedure, recoveryProcedure, wrapper]) {
       const suffix = file.endsWith('.js') ? '\n// previous local fixture version\n' : '\nPrevious local fixture version.\n';
       fs.appendFileSync(file, suffix);
       originals.set(file, fs.readFileSync(file));

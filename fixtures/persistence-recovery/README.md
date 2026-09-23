@@ -1,0 +1,9 @@
+# Persistence recovery fixtures
+
+Run `node scripts/forgeflow/test-persistence-recovery.js` from the checkout. Eleven deterministic schedules exercise serialized synthetic state, explicit interleavings and fresh reloads. The separate answer key identifies required invariants and intentional violations. Operations do not load the key. These are newly authored MIT-licensed examples, with no real project or financial records.
+
+The authoritative head selects one serialized generation. Staging is unpublished; publication is the modeled commit; acknowledgement may be lost afterward. Cleanup must protect the current generation, pending writers and pinned readers. Schema 1 uses `entries`; schema 2 uses `items`. Unknown schemas and invalid values are rejected without writes. Tests assert initial observations, faults, reloaded values and corrected variants, including lost updates and committed-data deletion.
+
+`operations.js` is a checkout-only test model, not another runtime store. Each operation is indivisible in a single-threaded schedule. In particular, conditional publication and protected deletion assume a shared exclusion mechanism. A real implementation must prove those guarantees for its backend; a check followed by an independently racing deletion is insufficient. Reader pins model one reader per generation; restart assumes all modeled actors terminate. Cross-process leases, retained backups and distributed readers require additional tests.
+
+The restart helper serializes stored bytes and discards volatile reader/writer state. It does not simulate kernel caches, actual quota exhaustion, process termination, disk flush ordering, power loss or a production migration. Removal and quota failures are injected. No application UI recovery or model trials ran. Successful fixtures do not qualify production durability or capability benefit. Use existing task/evaluation evidence for application-specific observations and future F2.3 trials.

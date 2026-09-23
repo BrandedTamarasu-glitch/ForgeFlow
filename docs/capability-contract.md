@@ -1,6 +1,6 @@
 # Capability contract and integration map
 
-Status: Phase 0 foundation implemented. Change propagation and visual acceptance have evaluation-cohort procedures; the other seven procedure bodies remain planned. Discovery declarations are checked; live client discovery after restart is not claimed. See [the roadmap](../ROADMAP.md).
+Status: Phase 0 foundation implemented. Change propagation, visual acceptance and persistence recovery have evaluation-cohort procedures; the other six procedure bodies remain planned. Discovery declarations are checked; live client discovery after restart is not claimed. See [the roadmap](../ROADMAP.md).
 
 ## Contract version 1
 
@@ -33,7 +33,7 @@ Each procedure must define ordered steps, scope/termination bounds, expected evi
 
 ## Canonical inventory
 
-Use flat canonical files `forgeflow-patterns/capability-<id>.md`. Change propagation and visual acceptance exist; the remaining paths are future implementation destinations. Flat Markdown fits both current managed-pattern installation paths; nested pattern directories do not currently have equivalent Claude coverage.
+Use flat canonical files `forgeflow-patterns/capability-<id>.md`. Change propagation, visual acceptance and persistence recovery exist; the remaining paths are future implementation destinations. Flat Markdown fits both current managed-pattern installation paths; nested pattern directories do not currently have equivalent Claude coverage.
 
 ### change-propagation
 
@@ -58,6 +58,8 @@ Implemented for evaluation: [canonical procedure](../forgeflow-patterns/capabili
 - **Fallback/cleanup:** source inspection without a browser is partial evidence; stop owned browser/server sessions and preserve captures.
 
 ### persistence-recovery
+
+Implemented for evaluation: [canonical procedure](../forgeflow-patterns/capability-persistence-recovery.md) and [synthetic recovery schedules](../fixtures/persistence-recovery/README.md). Deterministic reload/interleaving checks do not establish actual backend durability or model benefit.
 
 - **Trigger/exclusion:** save, migration, journal, cleanup or concurrency behavior changes; exclude read-only presentation changes without persistence effects.
 - **Phases/owner:** plan, implement, review; Builder executes, Guardian assesses boundaries, Verifier handles serious disputed findings.
@@ -189,7 +191,7 @@ The initial selector uses conservative behavioral patterns to shortlist/select c
 
 The output includes one decision per capability, selected IDs, up to three inspection requests and the scope fingerprint. Pass the previous result as `previous` after meaningful discoveries. An unchanged normalized scope consumes no reassessment; changed scope allows three reassessments before further selections are deferred with unresolved gaps. A new independent task starts a new budget. Preserve the previous result to keep the bound effective; do not reset it to work around a deferred result.
 
-The context builder writes `capability-selection.json` beside existing context artifacts, links it from synthesis input and appends scoped guidance to existing role packets. Reviewer lists/modes and task evidence are unchanged. No procedure body is loaded; change propagation and visual acceptance have `availability: evaluation`, the other seven have `availability: planned`, and all have `executable: false` in normal routing pending qualification. This proves selection plumbing, not capability execution or measured agent benefit.
+The context builder writes `capability-selection.json` beside existing context artifacts, links it from synthesis input and appends scoped guidance to existing role packets. Reviewer lists/modes and task evidence are unchanged. No procedure body is loaded; change propagation, visual acceptance and persistence recovery have `availability: evaluation`, the other six have `availability: planned`, and all have `executable: false` in normal routing pending qualification. This proves selection plumbing, not capability execution or measured agent benefit.
 
 ## Host entry points and packaging
 

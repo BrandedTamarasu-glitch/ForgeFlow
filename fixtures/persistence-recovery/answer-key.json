@@ -1,0 +1,16 @@
+{
+  "provenance": "New synthetic examples authored for ForgeFlow under the repository MIT license; no user data or copied project records.",
+  "cases": [
+    {"id":"direct-overwrite","expected":"violation","invariant":"Interrupted saves must not destroy the previous commit."},
+    {"id":"interrupted","expected":"satisfied","invariant":"Partial staging leaves committed data reloadable."},
+    {"id":"quota-exceeded","expected":"satisfied","invariant":"A failed write remains unpublished and preserves the previous commit."},
+    {"id":"publication-boundary","expected":"satisfied","invariant":"Staging is invisible; committed data survives a missing acknowledgement."},
+    {"id":"stale-writer-loss","expected":"violation","invariant":"Two accepted appends must not lose one operation."},
+    {"id":"stale-writer-rebase","expected":"satisfied","invariant":"Reject stale publication, then rebase from current state before a bounded retry."},
+    {"id":"committed-data-deletion","expected":"violation","invariant":"A stale cleanup list must not delete the now-current generation."},
+    {"id":"protected-cleanup","expected":"satisfied","invariant":"Revalidate and delete within one protected operation."},
+    {"id":"reader-and-removal-failure","expected":"satisfied","invariant":"Protect active readers/writers; deletion failures retain garbage without losing current data."},
+    {"id":"schema-migration","expected":"satisfied","invariant":"Preserve values across migration and reject stale old-format writers."},
+    {"id":"unsupported-no-write","expected":"satisfied","invariant":"Unknown or invalid formats fail without overwriting stored bytes."}
+  ]
+}
