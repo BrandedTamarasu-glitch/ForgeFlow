@@ -1,0 +1,57 @@
+{
+  "comparison": "skill",
+  "seed": "atomicity-foundation-v1",
+  "baseline": "sha256:a4b045707fb8f27b8197ab56291665922e3187b6bd0e784b80cca879a7d03d5e",
+  "repetitions": 4,
+  "skill": {
+    "id": "review-calibration",
+    "revision": "planned-v1-fixture-only"
+  },
+  "provenance": {
+    "source": "fixtures/atomicity/operations.js",
+    "source_revision": "a4b045707fb8f27b8197ab56291665922e3187b6bd0e784b80cca879a7d03d5e",
+    "license": "MIT (LICENSE)",
+    "derivation": "New synthetic state-machine examples authored for ForgeFlow. No copied project or personal data. Inputs select one exported function and its declared requirement.",
+    "answer_key_sha256": "5465b829ad14433898af6503cf36de7faaaca2d6680d8b0d11397741ac1ae4a9"
+  },
+  "criteria": "Score against the separate answer key after collecting responses. verified_completion: correct violation/satisfied classification with a concrete schedule or invariant justification. missed_defects: 1 for an unreported seeded violation, otherwise 0. false_findings: number of unsupported defect claims, including claims against satisfied cases. Count only scored outcomes; unavailable measurements remain null. Failed attempts stay in the schedule. No statistical superiority claim.",
+  "arms": {
+    "skill-disabled": {
+      "model": null,
+      "settings": null,
+      "budget": null
+    },
+    "skill-enabled": {
+      "model": null,
+      "settings": null,
+      "budget": null
+    }
+  },
+  "tasks": [
+    {
+      "id": "publication-interruption",
+      "input": "Review this synthetic single-threaded state-machine operation against the requirement. Checkpoints permit observation or interruption; separate prepared writers may run from the same starting state. Reference replacement and the conditional check plus replacement are indivisible in this model. Do not infer real database or filesystem guarantees. State whether the requirement is violated and justify with a schedule or invariant.\n\nRequirement: Every observer must see matching primary and index generations.\n\nfunction publishSeparate(store, generation, checkpoint = () => {}) {\n  store.current.primary = generation;\n  checkpoint();\n  store.current.index = generation;\n}\n"
+    },
+    {
+      "id": "snapshot-publication",
+      "input": "Review this synthetic single-threaded state-machine operation against the requirement. Checkpoints permit observation or interruption; separate prepared writers may run from the same starting state. Reference replacement and the conditional check plus replacement are indivisible in this model. Do not infer real database or filesystem guarantees. State whether the requirement is violated and justify with a schedule or invariant.\n\nRequirement: Every observer must see matching primary and index generations; a pre-publication failure leaves the old generation valid.\n\nfunction publishSnapshot(store, generation, checkpoint = () => {}) {\n  const next = { primary: generation, index: generation };\n  checkpoint();\n  store.current = next;\n}\n"
+    },
+    {
+      "id": "concurrent-increments",
+      "input": "Review this synthetic single-threaded state-machine operation against the requirement. Checkpoints permit observation or interruption; separate prepared writers may run from the same starting state. Reference replacement and the conditional check plus replacement are indivisible in this model. Do not infer real database or filesystem guarantees. State whether the requirement is violated and justify with a schedule or invariant.\n\nRequirement: Two distinct accepted increments must increase the count by two.\n\nfunction prepareIncrement(store) {\n  const observed = { ...store.current };\n  return () => {\n    store.current = { count: observed.count + 1, version: observed.version + 1 };\n  };\n}\n"
+    },
+    {
+      "id": "conditional-increments",
+      "input": "Review this synthetic single-threaded state-machine operation against the requirement. Checkpoints permit observation or interruption; separate prepared writers may run from the same starting state. Reference replacement and the conditional check plus replacement are indivisible in this model. Do not infer real database or filesystem guarantees. State whether the requirement is violated and justify with a schedule or invariant.\n\nRequirement: Two distinct accepted increments must increase the count by two; a rejected stale attempt is retried from a fresh read.\n\nfunction prepareConditionalIncrement(store) {\n  const observed = { ...store.current };\n  return () => {\n    if (store.current.version !== observed.version) return false;\n    store.current = { count: observed.count + 1, version: observed.version + 1 };\n    return true;\n  };\n}\n"
+    },
+    {
+      "id": "independent-hints",
+      "input": "Review this synthetic single-threaded state-machine operation against the requirement. Checkpoints permit observation or interruption; separate prepared writers may run from the same starting state. Reference replacement and the conditional check plus replacement are indivisible in this model. Do not infer real database or filesystem guarantees. State whether the requirement is violated and justify with a schedule or invariant.\n\nRequirement: Both hints are independent booleans; partial completion is allowed. The test caller retries a failed attempt before declaring both complete.\n\nfunction setIndependentHints(store, checkpoint = () => {}) {\n  store.cacheWarm = true;\n  checkpoint();\n  store.hintReady = true;\n}\n"
+    },
+    {
+      "id": "upsert-replay",
+      "input": "Review this synthetic single-threaded state-machine operation against the requirement. Checkpoints permit observation or interruption; separate prepared writers may run from the same starting state. Reference replacement and the conditional check plus replacement are indivisible in this model. Do not infer real database or filesystem guarantees. State whether the requirement is violated and justify with a schedule or invariant.\n\nRequirement: Replaying a delivery of the same visit must count that visit only once.\n\nfunction upsertVisit(counters, key) {\n  counters.set(key, (counters.get(key) || 0) + 1);\n}\n"
+    }
+  ],
+  "execution": "fixture-only"
+}

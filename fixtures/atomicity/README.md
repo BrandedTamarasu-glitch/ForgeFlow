@@ -4,6 +4,8 @@ These newly authored synthetic examples exercise the distinction between repeata
 
 Run `node scripts/forgeflow/test-atomicity-guidance.js` from the repository root.
 
+`evaluation-manifest.json` freezes prompt-only task inputs, source/key hashes, provenance and scoring criteria for the [skill comparison protocol](../../docs/skill-evaluation.md). Run `node scripts/forgeflow/test-skill-evaluation.js` to verify this corpus and the deterministic schedule. The example is fixture-only; no model trials have been run.
+
 `operations.js` contains the code models. `answer-key.json` contains requirements and expected outcomes. For future reviewer evaluations, provide only the selected operation and its requirement to the initial reviewer; keep expected outcomes, mechanisms and test assertions out of that input. These deterministic checks are not model trials or evidence of improved reviewer accuracy.
 
 The tests expose a reader between two writes and interrupt publication; replay stale writers in a fixed schedule; reject a stale conditional update and explicitly retry it; and permit independent writes whose contract tolerates partial progress. They also demonstrate a non-idempotent upsert conflict action.
