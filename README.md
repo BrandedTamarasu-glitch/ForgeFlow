@@ -4,9 +4,13 @@
 
 Turn an idea into a scoped brief, working code, an evidence-backed review, and a clear shipping handoff. ForgeFlow coordinates specialist agents, keeps useful project context, and makes reported work visible in a local dashboard with Ember, a small robot tending the forge.
 
-**Start here:** [Visual user guide](docs/user-guide.html) · [19-page PDF](docs/ForgeFlow-User-Guide.pdf) · [Documentation](docs/index.html) · [Install](#quick-start)
+**[Visit the ForgeFlow website](https://coryebert.com/ForgeFlow/)** · Built by [Cory Ebert](https://coryebert.com/)
 
-![ForgeFlow workshop showing Ember, project readiness, recorded review outcomes, weekly trends, and live workflow activity](docs/images/forgeflow-workshop.png)
+**Start here:** [Visual user guide](https://coryebert.com/ForgeFlow/user-guide.html) · [19-page PDF](docs/ForgeFlow-User-Guide.pdf) · [Documentation](https://coryebert.com/ForgeFlow/documentation.html) · [Install](#quick-start)
+
+![ForgeFlow workshop showing task evidence, Ember, project readiness, review outcomes, and activity](docs/images/forgeflow-workshop.png)
+
+*Workshop screenshot uses illustrative example data.*
 
 ## New in 4.6.3
 
@@ -58,7 +62,7 @@ Use the Claude Code equivalents from the table in that host. When you are ready 
 
 The illustrated guide takes a new user through installation, a first project, every delivery phase, the workshop dashboard, Ember’s states, context and memory, troubleshooting, and shipping.
 
-- **[Interactive HTML guide](docs/user-guide.html):** 18 chapters, annotated screenshots, examples for both hosts, copy controls, and a checklist saved in your browser. Download the HTML file from GitHub and open it in a browser. Images, styles, and scripts are embedded, so the guide works offline; linked reference documents need a connection.
+- **[Interactive HTML guide](https://coryebert.com/ForgeFlow/user-guide.html):** 18 chapters, annotated screenshots, examples for both hosts, copy controls, and a checklist saved in your browser. Read it on the website, or download [the standalone HTML file](docs/user-guide.html) from GitHub and open it in a browser. Images, styles, and scripts are embedded, so the guide works offline; linked reference documents need a connection.
 - **[Printable PDF guide](docs/ForgeFlow-User-Guide.pdf):** 19 pages with a linked contents page, both hosts’ examples, and the visual reference material. Ready to share with someone new to ForgeFlow.
 
 The guide identifies the source commit it describes. For the latest implementation details, use this README and the [workflow reference](docs/wiki/Workflow-Commands.md).

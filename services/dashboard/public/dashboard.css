@@ -4,7 +4,7 @@
   --line: #303a33;
   --text: #edf0e8;
   --muted: #a6b1a5;
-  --copper: #e4ac79;
+  --copper: #f2a366;
   --green: #9ccead;
   --yellow: #dfc783;
   --red: #ec9b90;
@@ -104,14 +104,11 @@ button:focus-visible,select:focus-visible,a:focus-visible,summary:focus-visible,
 }
 
 .brand-mark {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 34px;
-  background: var(--copper);
-  color: #24261e;
-  clip-path: polygon(15% 0,100% 0,100% 70%,70% 100%,0 100%,0 15%);
-  font: 800 24px Georgia,serif;
+  display: block;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 38px;
+  color: var(--copper);
 }
 
 .brand-divider {

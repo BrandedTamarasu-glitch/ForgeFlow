@@ -1,243 +1,35 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ForgeFlow Documentation</title>
-  <meta name="description" content="Forgeflow documentation for Claude Code and Codex workflows.">
-  <style>
-    :root {
-      color-scheme: light;
-      --ink: #17212b;
-      --muted: #5e6b78;
-      --line: #d7dee6;
-      --panel: #f7f9fb;
-      --accent: #1f6feb;
-      --accent-2: #0f766e;
-      --warn: #9a6700;
-      --bg: #ffffff;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--ink);
-      font: 16px/1.55 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-
-    header, main, footer {
-      width: min(1120px, calc(100% - 32px));
-      margin: 0 auto;
-    }
-
-    header {
-      padding: 56px 0 28px;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .eyebrow {
-      color: var(--accent-2);
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    h1 {
-      margin: 12px 0 14px;
-      max-width: 820px;
-      font-size: clamp(40px, 7vw, 72px);
-      line-height: 0.98;
-      letter-spacing: 0;
-    }
-
-    .lede {
-      max-width: 820px;
-      margin: 0;
-      color: var(--muted);
-      font-size: 20px;
-    }
-
-    .flow {
-      display: grid;
-      grid-template-columns: repeat(7, minmax(0, 1fr));
-      gap: 8px;
-      margin-top: 32px;
-    }
-
-    .flow span {
-      min-height: 54px;
-      display: grid;
-      place-items: center;
-      border: 1px solid var(--line);
-      background: var(--panel);
-      color: var(--ink);
-      font-size: 13px;
-      font-weight: 700;
-      text-align: center;
-    }
-
-    main { padding: 34px 0 52px; }
-
-    section {
-      margin-top: 34px;
-    }
-
-    h2 {
-      margin: 0 0 14px;
-      font-size: 24px;
-      letter-spacing: 0;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    a.card {
-      display: block;
-      min-height: 126px;
-      padding: 18px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      color: inherit;
-      text-decoration: none;
-      background: #fff;
-    }
-
-    a.card:hover {
-      border-color: var(--accent);
-      box-shadow: 0 8px 24px rgba(31, 111, 235, 0.08);
-    }
-
-    .card strong {
-      display: block;
-      margin-bottom: 8px;
-      color: var(--accent);
-      font-size: 17px;
-    }
-
-    .card span {
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .commands {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-      padding: 18px;
-      border: 1px solid var(--line);
-      background: var(--panel);
-    }
-
-    code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 13px;
-    }
-
-    .commands code {
-      display: block;
-      padding: 10px 12px;
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-    }
-
-    footer {
-      padding: 22px 0 40px;
-      border-top: 1px solid var(--line);
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    @media (max-width: 820px) {
-      header { padding-top: 34px; }
-      .flow, .grid, .commands {
-        grid-template-columns: 1fr;
-      }
-      .flow span {
-        min-height: 44px;
-        justify-content: start;
-        padding-left: 14px;
-      }
-    }
-  </style>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Your software delivery workshop. ForgeFlow brings focused AI agents, project memory, and evidence-based review to Claude Code and Codex.">
+<meta name="theme-color" content="#171413"><meta property="og:title" content="ForgeFlow | Built with care. Checked with evidence."><meta property="og:description" content="From the first idea to a reviewed, tested change. A software delivery workshop for Claude Code and Codex."><meta property="og:type" content="website">
+<link rel="canonical" href="https://coryebert.com/ForgeFlow/">
+<meta property="og:url" content="https://coryebert.com/ForgeFlow/">
+<title>ForgeFlow | Your software delivery workshop</title>
+<link rel="preload" href="./assets/fonts/barlow-semi-condensed-semibold.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="./site.css"><script src="./site.js" defer></script>
+<link rel="icon" type="image/png" sizes="32x32" href="./assets/forge-flame-icon-32.png">
+<link rel="icon" type="image/svg+xml" sizes="any" href="./assets/forge-flame-icon.svg">
 </head>
 <body>
-  <header>
-    <div class="eyebrow">ForgeFlow Documentation</div>
-    <h1>Your software delivery workshop.</h1>
-    <p class="lede">ForgeFlow brings specialist agents, useful project memory, and a live workshop with Ember to Claude Code and Codex. Start with one real task, then explore the reference material as you need it.</p>
-    <div class="flow" aria-label="Forgeflow lifecycle">
-      <span>Discuss</span>
-      <span>Research</span>
-      <span>Plan</span>
-      <span>Consult</span>
-      <span>Implement</span>
-      <span>Review</span>
-      <span>Ship</span>
-    </div>
-  </header>
-
-  <main>
-    <section aria-labelledby="visual-guide-title">
-      <h2 id="visual-guide-title">Start with the visual user guide</h2>
-      <p>A complete first-use path with annotated dashboard views, Ember’s state reference, copyable examples for both hosts, and a shipping checklist.</p>
-      <div class="grid">
-        <a class="card" href="./user-guide.html"><strong>Read the visual guide</strong><span>18 chapters, offline-ready HTML, host selector, and interactive checklist.</span></a>
-        <a class="card" href="./ForgeFlow-User-Guide.pdf"><strong>Download the PDF</strong><span>A printable edition to share with a new user.</span></a>
-      </div>
-    </section>
-    <section>
-      <h2>Get started</h2>
-      <div class="grid">
-        <a class="card" href="./wiki/Quick-Start.md"><strong>Quick Start</strong><span>Install into your host, enable the workshop, and complete one bounded task.</span></a>
-        <a class="card" href="./wiki/Codex-First-Run.md"><strong>Codex First Run</strong><span>Discover skills and agents, choose the correct home, and resolve host model availability.</span></a>
-        <a class="card" href="./wiki/Why-Forgeflow.md"><strong>Why ForgeFlow</strong><span>Understand the workflow, its benefits, and its evidence boundaries.</span></a>
-        <a class="card" href="./wiki/Dashboard.md"><strong>Dashboard and Ember</strong><span>Read live activity, readiness, review outcomes, and Ember’s animation states.</span></a>
-      </div>
-    </section>
-
-    <section>
-      <h2>Do the work</h2>
-      <p>Keep decisions in <a href="./wiki/Implementation-Notes.md">Implementation Notes</a> and carry durable patterns into <a href="./wiki/Project-Learnings.md">Project Learnings</a>.</p>
-      <div class="grid">
-        <a class="card" href="./wiki/User-Paths.md"><strong>User Paths</strong><span>Choose an entry point for a feature, review, failure, or shipping handoff.</span></a>
-        <a class="card" href="./wiki/Workflow-Commands.md"><strong>Workflow Commands</strong><span>Core commands for both hosts and the extended Claude reference.</span></a>
-        <a class="card" href="./wiki/Agent-Roles.md"><strong>Meet the Agents</strong><span>Responsibilities, synthesis, validation, and evidence-only verification.</span></a>
-        <a class="card" href="./wiki/Context-Intelligence.md"><strong>Context and Memory</strong><span>Understand project guidance, context budgets, and the limits of recorded evidence.</span></a>
-      </div>
-    </section>
-
-    <section>
-      <h2>Operate and maintain</h2>
-      <div class="grid">
-        <a class="card" href="./wiki/Settings-And-Recovery.md"><strong>Settings and Recovery</strong><span>Host setup, updates, manual settings, and supported repair paths.</span></a>
-        <a class="card" href="./wiki/Local-Data-And-Privacy.md"><strong>Local Data and Privacy</strong><span>What is stored locally and what your coding host or provider may process.</span></a>
-        <a class="card" href="./wiki/Release-Process.md"><strong>Release Process</strong><span>Source validation, release checks, publishing, and install verification.</span></a>
-        <a class="card" href="./wiki/Maintaining-The-Wiki.md"><strong>Maintaining the Wiki</strong><span>Keep source documentation and the separate GitHub wiki in sync.</span></a>
-        <a class="card" href="./changelogs/v4.6.3.html"><strong>Release Notes</strong><span>Packaged version release notes; publication status is shown on GitHub.</span></a>
-      </div>
-    </section>
-
-    <section>
-      <h2>Explore the reference</h2>
-      <div class="grid">
-        <a class="card" href="./wiki/Home.md"><strong>All Wiki Topics</strong><span>Find every page, grouped into setup, workflows, evaluation, and maintenance.</span></a>
-        <a class="card" href="./wiki/Adoption-Pack.md"><strong>Team Evaluation</strong><span>Optional branch trials, observed outcomes, privacy, and adoption decisions.</span></a>
-        <a class="card" href="./wiki/Research-Divergence.md"><strong>Research Routes</strong><span>Normal and divergent research, experiments, and evaluation limits.</span></a>
-        <a class="card" href="./wiki/Lean-Quick-Path.md"><strong>Keep Work Proportional</strong><span>Reuse, focused validation, and explicit upgrade triggers.</span></a>
-      </div>
-    </section>
-
-  </main>
-
-  <footer>
-    ForgeFlow documentation. Markdown pages are maintained in the repository; the <a href="https://github.com/BrandedTamarasu-glitch/ForgeFlow/wiki">GitHub wiki</a> is a separate published copy. Download the visual HTML guide to use its embedded visuals offline.
-  </footer>
-</body>
-</html>
+<a class="skip" href="#main">Skip to content</a>
+<header class="header wrap"><a class="brand" href="./index.html" aria-label="ForgeFlow home"><img class="brand-mark" src="./assets/logos/forge-flame.svg" alt="" width="36" height="39">ForgeFlow<span class="brand-dot">_</span></a><nav aria-label="Main navigation"><a href="#workflow">The workflow</a><a href="#workshop">The workshop</a><a href="./documentation.html">Docs ↗</a></nav><a class="header-cta" href="https://github.com/BrandedTamarasu-glitch/ForgeFlow">GitHub ↗</a></header>
+<main id="main">
+<section class="hero wrap" aria-labelledby="hero-title"><div class="hero-copy"><p class="eyebrow"><span class="status-dot"></span>A WORKSHOP FOR AI SOFTWARE DELIVERY</p><h1 id="hero-title">Good ideas.<br>Careful craft.<br><em>Better software.</em></h1><p class="hero-description">Give your AI coding workflow a team, a memory, and a way to check its work.</p><p class="hero-detail">ForgeFlow brings focused agents together to plan, build, review, and prepare your next change for shipping.</p><div class="actions"><a class="button primary" href="#start">Enter the workshop ↗</a><a class="text-link" href="#workflow">See a feature take shape ↓</a></div><p class="compatibility">CLAUDE CODE <span>+</span> CODEX <span>/</span> OPEN SOURCE</p></div>
+<div class="blueprint" role="img" aria-label="A feature moves through planning, building, review, and shipping, with project memory connecting the stages."><div class="diagram-label"><span>THE DELIVERY ENGINE</span><span>FIG. 01</span></div><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><svg class="diagram-lines" viewBox="0 0 500 500" aria-hidden="true"><path d="M250 100 400 250 250 400 100 250Z"/><path class="inner-lines" d="M250 100V400M100 250H400"/></svg><div class="engine-core"><img class="core-mark" src="./assets/logos/forge-flame.svg" alt="" width="64" height="64"><small>FORGEFLOW</small></div><div class="engine-node node-plan"><span>01</span><strong>Plan</strong><small>Intent → brief</small></div><div class="engine-node node-build"><span>02</span><strong>Build</strong><small>Brief → code</small></div><div class="engine-node node-review"><span>03</span><strong>Review</strong><small>Code → evidence</small></div><div class="engine-node node-ship"><span>04</span><strong>Ship</strong><small>Evidence → handoff</small></div><div class="diagram-footer"><span class="status-dot"></span>SHARED CONTEXT. CLEAR HANDOFFS.</div></div></section>
+<div class="principles wrap" aria-label="Core principles"><p><span>01 /</span> Focused agents</p><p><span>02 /</span> Useful project memory</p><p><span>03 /</span> Evidence-based review</p></div>
+<section id="workflow" class="section wrap" aria-labelledby="workflow-title"><div class="section-heading"><div><p class="eyebrow">01 / FROM REQUEST TO RESULT</p><h2 id="workflow-title">One feature.<br>A considered path.</h2></div><p>Follow a recurring-expenses feature through the workshop. Each stage produces something you can inspect and steer.</p></div><div class="feature-request"><span class="eyebrow">THE REQUEST</span><p>“Add recurring expenses to my budgeting app.”</p><span class="example-badge">Illustrative walkthrough</span></div>
+<div class="walkthrough"><div class="stage-controls" role="group" aria-label="Choose a workflow stage" hidden><button type="button" aria-pressed="true" aria-controls="stage-plan" data-stage="plan"><span>01</span> Plan <span aria-hidden="true">↗</span></button><button type="button" aria-pressed="false" aria-controls="stage-build" data-stage="build"><span>02</span> Build <span aria-hidden="true">↗</span></button><button type="button" aria-pressed="false" aria-controls="stage-review" data-stage="review"><span>03</span> Review <span aria-hidden="true">↗</span></button><button type="button" aria-pressed="false" aria-controls="stage-ship" data-stage="ship"><span>04</span> Ship <span aria-hidden="true">↗</span></button></div><div class="stage-panels">
+<article id="stage-plan" class="stage-panel"><div class="stage-story"><p class="eyebrow">FIRST, MAKE THE INTENT CLEAR</p><h3>Resolve the edge cases<br>before they become code.</h3><p>What happens to a monthly expense scheduled for the 31st? Clarify the behavior, map the affected parts of the app, and produce an implementation brief.</p><p class="agent-credit">Product Lead · Product intent <span>/</span> Architect · Implementation brief</p></div><div class="artifact"><div class="artifact-heading"><span>IMPLEMENTATION BRIEF</span><span>01</span></div><h4>Recurring expenses</h4><ul><li><span>Rule</span>Use the last available day in shorter months.</li><li><span>Scope</span>Recurrence logic, storage, and expense editor.</li><li><span>Proof</span>Check February, leap years, and month boundaries.</li></ul><div class="artifact-note">A decision you can review before building.</div></div></article>
+<article id="stage-build" class="stage-panel"><div class="stage-story"><p class="eyebrow">GIVE EACH PART AN OWNER</p><h3>Build against<br>a shared brief.</h3><p>Keep the recurrence rules, data changes, and editing experience aligned. Record decisions and deviations so the next phase can see what actually changed.</p><p class="agent-credit">Builder · Backend craft <span>/</span> Designer · User experience</p></div><div class="artifact"><div class="artifact-heading"><span>IMPLEMENTATION NOTES</span><span>02</span></div><h4>Clear responsibilities</h4><ul><li><span>Logic</span>Calculate the next date using the agreed rule.</li><li><span>Interface</span>Explain the schedule in the expense editor.</li><li><span>Handoff</span>Record changes, tradeoffs, and validation notes.</li></ul><div class="artifact-note">Shared decisions travel with the work.</div></div></article>
+<article id="stage-review" class="stage-panel"><div class="stage-story"><p class="eyebrow">LOOK CLOSELY. ASK FOR EVIDENCE.</p><h3>Give the change<br>a second set of eyes.</h3><p>Specialists inspect the relevant risks. Validation checks the intended behavior, and high-risk findings can receive an evidence-only verification pass.</p><p class="agent-credit">Guardian · Security <span>/</span> Product Lead · Validation <span>/</span> Verifier · Verification</p></div><div class="artifact"><div class="artifact-heading"><span>REVIEW QUESTIONS</span><span>03</span></div><h4>Check the boundaries</h4><ul><li><span>Dates</span>Does January 31 advance correctly into February?</li><li><span>Data</span>Could repeating a job create duplicate expenses?</li><li><span>Access</span>Can the schedule be edited with a keyboard?</li></ul><div class="artifact-note">Questions to investigate, not claimed findings.</div></div></article>
+<article id="stage-ship" class="stage-panel"><div class="stage-story"><p class="eyebrow">MAKE THE HANDOFF REVIEWABLE</p><h3>Show what changed.<br>Show what was checked.</h3><p>Bring the behavior, validation results, and remaining limitations into a clear shipping handoff. You decide when to commit, publish, or deploy.</p><p class="agent-credit">Coordinator · Coordination <span>/</span> Product Lead · Final validation</p></div><div class="artifact"><div class="artifact-heading"><span>SHIPPING HANDOFF</span><span>04</span></div><h4>Ready for your decision</h4><ul><li><span>Change</span>Describe the recurring-expense behavior.</li><li><span>Evidence</span>Report the checks that actually ran and their results.</li><li><span>Limits</span>Make follow-ups and untested behavior visible.</li></ul><div class="artifact-note">The evidence stays attached to the handoff.</div></div></article>
+</div></div><div class="memory-note"><span class="memory-symbol" aria-hidden="true">↳</span><div><p class="eyebrow">THE NEXT TASK STARTS WITH CONTEXT</p><p>“Now add annual expenses.” <span>Project memory can carry forward the date rules, implementation decisions, and validation guidance.</span></p></div></div></section>
+<section id="workshop" class="workshop-section" aria-labelledby="workshop-title"><div class="wrap section"><div class="section-heading"><div><p class="eyebrow">02 / YOUR WORK, IN VIEW</p><h2 id="workshop-title">Meet your workshop.</h2></div><p>See reported activity, saved project readiness, and review outcomes in one local dashboard. Ember keeps you company along the way.</p></div><figure class="product-shot"><div class="window-bar"><span class="window-dots" aria-hidden="true">● ● ●</span><span>FORGEFLOW / LOCAL WORKSHOP</span><a href="./images/forgeflow-workshop.png">Full-size screenshot ↗</a></div><a href="./images/forgeflow-workshop.png" aria-label="Open full-size ForgeFlow workshop screenshot"><img src="./images/forgeflow-workshop.png" alt="ForgeFlow workshop dashboard with Ember reviewing, project health, recorded review outcomes, trends, and live activity." width="1440" height="1772" loading="lazy"></a><figcaption>Workshop screenshot with illustrative example data. This page does not display live project results.</figcaption></figure><div class="workshop-benefits"><div><span class="eyebrow">VISIBILITY</span><h3>Know what’s happening.</h3><p>Follow reported phases and agent activity as the work moves forward.</p></div><div><span class="eyebrow">CONTINUITY</span><h3>Keep the useful context.</h3><p>Carry implementation notes and project learnings into later work.</p></div><div><span class="eyebrow">PERSPECTIVE</span><h3>Inspect the evidence.</h3><p>Explore recorded outcomes and readiness details, including gaps in the available evidence.</p></div></div></div></section>
+<section id="start" class="section wrap" aria-labelledby="start-title"><div class="section-heading"><div><p class="eyebrow">03 / MAKE SOMETHING WORTH SHIPPING</p><h2 id="start-title">Start with one<br>real task.</h2></div><p>Bring a working Claude Code or Codex setup and a project you want to improve. Start small, inspect the results, and expand when it helps.</p></div><div class="start-grid"><div class="start-copy"><span class="pill">OPEN SOURCE · MIT LICENSE</span><h3>Your host.<br>Your project.<br>Your workshop.</h3><p>Clone ForgeFlow, install into your coding host, then restart it. The guide walks through prerequisites, project setup, and the optional dashboard.</p><a class="button primary" href="./user-guide.html">Read the visual guide ↗</a><a class="text-link" href="./wiki/Quick-Start.html">Full installation instructions ↗</a></div><div class="install"><div class="install-heading"><span class="eyebrow">01 / CLONE THE SOURCE</span><button type="button" class="copy-button" data-copy="clone-code" hidden>Copy</button></div><pre><code id="clone-code">git clone https://github.com/BrandedTamarasu-glitch/ForgeFlow.git
+cd ForgeFlow</code></pre><div class="install-heading"><label class="eyebrow" for="host">02 / INSTALL INTO YOUR HOST</label><select id="host"><option value="codex">Codex</option><option value="claude">Claude Code</option></select></div><pre><code id="install-code">node scripts/forgeflow/install-template.js --target codex --dry-run --json
+node scripts/forgeflow/install-template.js --target codex</code></pre><button type="button" class="copy-button" data-copy="install-code" hidden>Copy install commands</button><p class="install-note">Inspect the dry-run preview before running the installer. Restart your host after installing.</p><div class="first-task"><span class="eyebrow">03 / TRY A BOUNDED IMPROVEMENT</span><p><code id="first-command">$consult</code> Design a helpful empty state for the task list. Reuse the existing Create task action and include keyboard behavior.</p></div><p id="copy-status" role="status"></p><noscript><p>For Claude Code, replace <code>--target codex</code> with <code>--target claude</code> and use <code>/consult</code>.</p></noscript></div></div></section>
+<section class="resources wrap" aria-labelledby="resources-title"><div><p class="eyebrow">KEEP EXPLORING</p><h2 id="resources-title">A little guidance.<br>A lot of possibility.</h2></div><div class="resource-links"><a href="./documentation.html">Documentation <span>All guides and references ↗</span></a><a href="./user-guide.html">Visual user guide <span>Meet the workflow and workshop ↗</span></a><a href="./wiki/Agent-Roles.html">Meet the agents <span>Who does what ↗</span></a><a class="card" href="./changelogs/v4.6.3.html"><strong>Release Notes</strong><span>Current release notes ↗</span></a></div></section>
+</main><footer class="wrap"><div class="footer-top"><a class="brand" href="./index.html"><img class="brand-mark" src="./assets/logos/forge-flame.svg" alt="" width="36" height="39">ForgeFlow<span class="brand-dot">_</span></a><p>Built with care. Checked with evidence.</p></div><div class="footer-bottom"><span>Made by <a href="https://coryebert.com/">Cory Ebert ↗</a></span><div><a href="https://github.com/BrandedTamarasu-glitch/ForgeFlow">GitHub ↗</a><a href="https://github.com/BrandedTamarasu-glitch/ForgeFlow/blob/main/LICENSE">MIT License</a><a href="#main">Back to top ↑</a></div></div></footer>
+</body></html>

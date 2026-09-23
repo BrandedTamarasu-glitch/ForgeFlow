@@ -78,6 +78,7 @@ const shipCommand = readText('commands/ship.md');
 const handoffCommand = readText('commands/handoff.md');
 const readme = readText('README.md');
 const hostedDocs = readText('docs/index.html');
+const documentationHub = readText('docs/documentation.html');
 
 const semver = /^\d+\.\d+\.\d+$/;
 const changelogs = changelogCandidates(plugin.version);
@@ -106,7 +107,7 @@ const checks = [
   ['README links project learnings', readme.includes('docs/wiki/Project-Learnings.md')],
   ['README mentions project learnings check command', readme.includes('/forgeflow-learnings --project --check')],
   ['learnings command supports project check', learningsCommand.includes('--check') && learningsCommand.includes('show-project-learnings.js') && learningsCommand.includes('context-pack smoke')],
-  ['hosted docs links project learnings', hostedDocs.includes('./wiki/Project-Learnings.md')],
+  ['hosted docs links project learnings through the hub', hostedDocs.includes('./documentation.html') && documentationHub.includes('./wiki/Project-Learnings.html')],
   ['release process mentions plugin manifest', releaseProcess.includes('.claude-plugin/plugin.json')],
   ['release process mentions marketplace manifest', releaseProcess.includes('.claude-plugin/marketplace.json')],
   ['release process mentions changelog path', releaseProcess.includes('docs/changelogs/')],

@@ -34,6 +34,7 @@ const files = {
   docs: read('docs/wiki/Implementation-Notes.md'),
   home: read('docs/wiki/Home.md'),
   index: read('docs/index.html'),
+  documentation: read('docs/documentation.html'),
   privacy: read('docs/wiki/Local-Data-And-Privacy.md'),
   releaseCheck: read('commands/forgeflow-release-check.md'),
 };
@@ -234,7 +235,7 @@ const checks = [
   ['implementers emit candidates', ['smith', 'warden', 'lumen', 'compass'].every((name) => files[name].includes('Implementation Notes Candidates'))],
   ['docs page exists', files.docs.includes('# Implementation Notes') && files.docs.includes('.forgeflow/<project-name>/implementation-notes.md')],
   ['docs linked from home', files.home.includes('[Implementation Notes](Implementation-Notes.md)')],
-  ['docs linked from index', files.index.includes('./wiki/Implementation-Notes.md')],
+  ['docs reachable through documentation hub', files.index.includes('./documentation.html') && files.documentation.includes('./wiki/Implementation-Notes.html')],
   ['privacy docs mention notes', files.privacy.includes('implementation notes')],
   ['release check runs notes test', files.releaseCheck.includes('test-implementation-notes.js')],
   ...categories.map((category) => [`category ${category}`, Object.values(files).some((content) => content.includes(category))]),

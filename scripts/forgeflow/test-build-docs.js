@@ -13,6 +13,8 @@ for (const file of ['docs/documentation.html', 'docs/user-guide.html', ...pages.
   const html = fs.readFileSync(source, 'utf8');
   for (const [, href] of html.matchAll(/href="([^"]+)"/g)) {
     if (/^(?:https?:|mailto:)/.test(href)) continue;
+    // The standalone guide embeds favicon images to keep offline use intact.
+    if (/^data:image\/(?:png|svg\+xml);base64,[A-Za-z0-9+/]+=*$/.test(href)) continue;
     const [target, fragment] = href.split('#');
     const destination = target ? path.resolve(path.dirname(source), decodeURIComponent(target)) : source;
     assert.ok(fs.existsSync(destination), `${file}: missing ${href}`);

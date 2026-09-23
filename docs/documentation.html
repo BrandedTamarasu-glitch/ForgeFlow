@@ -6,16 +6,17 @@
   <title>ForgeFlow Documentation</title>
   <meta name="description" content="Forgeflow documentation for Claude Code and Codex workflows.">
   <style>
+@font-face{font-family:Plex;src:url("./assets/fonts/ibm-plex-sans-latin.woff2") format("woff2");font-weight:100 700;font-display:swap}@font-face{font-family:Barlow;src:url("./assets/fonts/barlow-semi-condensed-semibold.ttf") format("truetype");font-weight:600;font-display:swap}
     :root {
-      color-scheme: light;
-      --ink: #17212b;
-      --muted: #5e6b78;
-      --line: #d7dee6;
-      --panel: #f7f9fb;
-      --accent: #1f6feb;
-      --accent-2: #0f766e;
+      color-scheme: dark;
+      --ink: #f6efe6;
+      --muted: #bfb0a2;
+      --line: #493b32;
+      --panel: #241e1a;
+      --accent: #f2a366;
+      --accent-2: #f2a366;
       --warn: #9a6700;
-      --bg: #ffffff;
+      --bg: #171413;
     }
 
     * { box-sizing: border-box; }
@@ -24,7 +25,7 @@
       margin: 0;
       background: var(--bg);
       color: var(--ink);
-      font: 16px/1.55 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font: 16px/1.55 Plex, system-ui, sans-serif;
     }
 
     header, main, footer {
@@ -105,7 +106,7 @@
       border-radius: 8px;
       color: inherit;
       text-decoration: none;
-      background: #fff;
+      background: var(--panel);
     }
 
     a.card:hover {
@@ -142,7 +143,7 @@
     .commands code {
       display: block;
       padding: 10px 12px;
-      background: #fff;
+      background: var(--panel);
       border: 1px solid var(--line);
       border-radius: 6px;
     }
@@ -165,14 +166,17 @@
         padding-left: 14px;
       }
     }
-  </style>
+  h1,h2{font-family:Barlow,Plex,sans-serif;font-weight:600}.hub-logo{display:block;width:38px;height:42px;margin-bottom:18px}</style>
   <link rel="stylesheet" href="./guide.css">
-  <style>header{border-color:var(--line)}.card strong{color:var(--green)}a.card{background:var(--paper)}.card span,.lede{color:var(--muted)}.eyebrow{color:var(--copper)}.flow span,.commands{background:var(--paper)}h1{letter-spacing:-.025em}</style>
+  <style>
+@font-face{font-family:Plex;src:url("./assets/fonts/ibm-plex-sans-latin.woff2") format("woff2");font-weight:100 700;font-display:swap}@font-face{font-family:Barlow;src:url("./assets/fonts/barlow-semi-condensed-semibold.ttf") format("truetype");font-weight:600;font-display:swap}header{border-color:var(--line)}.card strong{color:var(--green)}a.card{background:var(--paper)}.card span,.lede{color:var(--muted)}.eyebrow{color:var(--copper)}.flow span,.commands{background:var(--paper)}h1{letter-spacing:-.025em}h1,h2{font-family:Barlow,Plex,sans-serif;font-weight:600}.hub-logo{display:block;width:38px;height:42px;margin-bottom:18px}</style>
+<link rel="icon" type="image/png" sizes="32x32" href="./assets/forge-flame-icon-32.png">
+<link rel="icon" type="image/svg+xml" sizes="any" href="./assets/forge-flame-icon.svg">
 </head>
 <body>
   <header>
     <p><a href="./index.html">← ForgeFlow home</a></p>
-    <div class="eyebrow">ForgeFlow Documentation</div>
+    <img class="hub-logo" src="./assets/logos/forge-flame.svg" alt="" width="38" height="42"><div class="eyebrow">ForgeFlow Documentation</div>
     <h1>Your software delivery workshop.</h1>
     <p class="lede">ForgeFlow brings specialist agents, useful project memory, and a live workshop with Ember to Claude Code and Codex. Start with one real task, then explore the reference material as you need it.</p>
     <div class="flow" aria-label="Forgeflow lifecycle">
@@ -223,7 +227,7 @@
         <a class="card" href="./wiki/Local-Data-And-Privacy.html"><strong>Local Data and Privacy</strong><span>What is stored locally and what your coding host or provider may process.</span></a>
         <a class="card" href="./wiki/Release-Process.html"><strong>Release Process</strong><span>Source validation, release checks, publishing, and install verification.</span></a>
         <a class="card" href="./wiki/Maintaining-The-Wiki.html"><strong>Maintaining the Wiki</strong><span>Keep source documentation and the separate GitHub wiki in sync.</span></a>
-        <a class="card" href="./changelogs/v4.6.3.html"><strong>Release Notes</strong><span>Latest tagged release notes; current source may include later changes.</span></a>
+        <a class="card" href="./changelogs/v4.6.3.html"><strong>Release Notes</strong><span>Packaged version release notes; publication status is shown on GitHub.</span></a>
       </div>
     </section>
 
