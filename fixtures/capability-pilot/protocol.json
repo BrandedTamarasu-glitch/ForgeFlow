@@ -1,0 +1,43 @@
+{
+  "schema_version": "1",
+  "seed": "phase-one-interpretation-v1",
+  "repetitions": 4,
+  "model": "inherited session model; exact provider identifier unavailable",
+  "settings": {
+    "context": "fresh fork_turns=none per trial",
+    "reasoning": "inherited unchanged",
+    "temperature": null,
+    "tools": "One read of supplied prompt file to load input; no other tool calls or filesystem access.",
+    "concurrency": "up to three unrelated cases; same-case trials dispatched in scheduled order"
+  },
+  "budget": {
+    "max_response_words": 180,
+    "enforcement": "instruction only",
+    "tool_calls": 1
+  },
+  "source_sha256": "235c867d594a49ef5ac2354ccd1048f8f7f7eacb4e636ccff1f653866241b1fc",
+  "answer_key_sha256": "38094241a308599b5444cd30046eeff6fa07b9661b28616ec58c3751d8628e7d",
+  "procedures": {
+    "change-propagation": {
+      "path": "procedures/change-propagation.md",
+      "sha256": "74923bcdc8f7273c22daaa64ab6070adff0d6ab14b9d43a3927301ea9d96aef3",
+      "canonical_source": "forgeflow-patterns/capability-change-propagation.md",
+      "source_revision": "d0c5b68"
+    },
+    "visual-acceptance": {
+      "path": "procedures/visual-acceptance.md",
+      "sha256": "d32ef85381e1e831e6b295b1408ae46d7290c91cb890c30c5bc9af62fc84a2f6",
+      "canonical_source": "forgeflow-patterns/capability-visual-acceptance.md",
+      "source_revision": "d0c5b68"
+    }
+  },
+  "prompt_format": "Enabled arm: Procedure guidance (subject to the task limits):\\n<procedure>\\nTask:\\n<task.input>. Disabled arm: <task.input>. No history or answer key.",
+  "measurement_limits": [
+    "Exact backend model and sampling settings are not exposed; both arms inherit the same session without overrides.",
+    "No tool execution allowed; filesystem isolation is instructional, not an OS isolation guarantee.",
+    "Tokens, cost and model latency are unavailable; report them as null. Prompt UTF-8 bytes and response words are deterministic overhead counts, not tokens.",
+    "Results measure supplied-evidence interpretation only. No independent discovery, repair or image inspection.",
+    "Repeat counterbalancing applies within each case; separate cases may overlap."
+  ],
+  "prompt_transport": "Read only the supplied trial-N.txt, then follow it and return JSON. The initial read loads the input; task prohibition applies after loading. Do not inspect other files, call other tools, edit files or contact other agents."
+}

@@ -1,0 +1,28 @@
+{
+  "schema_version": "1",
+  "cases": {
+    "p01": {
+      "findings": [
+        "assets/favicon.html",
+        "docs/guide.html",
+        "docs/workshop.html"
+      ],
+      "rationale": "Two active references retain the old logo; the unchanged screenshot path still has an old source receipt. Archive is intentional, external site unknown."
+    },
+    "p02": {
+      "findings": [],
+      "rationale": "Current source references and capture receipt agree. Historical identity and unavailable external checks are not defects."
+    },
+    "v01": {
+      "findings": [
+        "#beta"
+      ],
+      "rationale": "Second card exceeds intended width/height in the row and column width on narrow screens, causing overflow."
+    },
+    "v02": {
+      "findings": [],
+      "rationale": "The width ratio and stacked column widths satisfy the stated intent; height differences are allowed."
+    }
+  },
+  "scoring": "Count unique expected target IDs as detected. Count unexpected or duplicate findings as false findings. A valid answer requires JSON findings with nonempty reasons and limitations as an array. Verified completion requires all expected targets, zero false findings and manual confirmation that reasons match the supplied evidence without unsupported verification claims. Invalid or unscored responses leave outcomes null. Scope is evidence interpretation, not independent discovery, repair, browser use or accessibility certification."
+}

@@ -34,4 +34,4 @@ Score against the separate answer key after collecting the response. Failed exec
 
 The summary retains all scheduled records, inserts omitted ones as unobserved, counts failed attempts separately for actual and fixture observations, and rejects duplicate, foreign or altered trial metadata. It reports actual and fixture metrics separately. Differences use complete pairs of the same observation type and mean enabled minus disabled; lower is preferable for defect/overhead counts. Unknown metrics do not enter means. Failure counts and missing runs must accompany those means to avoid reading a partial result as overall success.
 
-No results from model pilots are included in this foundation. Tests use synthetic records even when exercising the parser's `actual` branch. Skill benefit and activation readiness remain later roadmap work.
+The foundation itself contains no model observations. The subsequent [Phase 1 pilot](capability-pilot-results.md) records 32 actual supplied-evidence responses separately. Tests use synthetic records even when exercising the parser's `actual` branch. Skill benefit and activation readiness remain later roadmap work.
