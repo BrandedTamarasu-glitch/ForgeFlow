@@ -16,7 +16,7 @@ const CAPABILITIES = Object.freeze(DEFINITIONS.map(([id, summary, owner, handoff
   triggers: Object.freeze([trigger]), exclusions: Object.freeze([exclusion]),
   inputs: Object.freeze(['Objective, acceptance criteria and current source identity', inputs]),
   requires: Object.freeze([]), procedure: `forgeflow-patterns/capability-${id}.md`,
-  prerequisites, cost, availability: ['change-propagation', 'visual-acceptance', 'persistence-recovery', 'review-calibration', 'provider-compatibility', 'release-qualification'].includes(id) ? 'evaluation' : 'planned',
+  prerequisites, cost, availability: ['change-propagation', 'visual-acceptance', 'persistence-recovery', 'review-calibration', 'provider-compatibility', 'release-qualification', 'benchmark-verification'].includes(id) ? 'evaluation' : 'planned',
 })));
 
 module.exports = { CAPABILITIES };

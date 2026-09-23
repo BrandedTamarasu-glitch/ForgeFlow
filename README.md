@@ -14,11 +14,11 @@ Turn an idea into a scoped brief, working code, an evidence-backed review, and a
 
 *Workshop screenshot uses illustrative example data.*
 
-## Intelligent capabilities: Phases 0 through 3 complete
+## Intelligent capabilities: Phases 0 through 4 complete
 
 ForgeFlow can select specialized procedures from task intent, affected code and workflow phase. Selection supports mixed-domain tasks, explicit overrides and bounded reassessment. Managed Claude Code and Codex workflows include the selection entry points.
 
-Six of nine planned capabilities are implemented for controlled evaluation:
+Seven of nine planned capabilities are implemented for controlled evaluation:
 
 | Capability | What it checks |
 |---|---|
@@ -28,12 +28,17 @@ Six of nine planned capabilities are implemented for controlled evaluation:
 | [Review calibration](forgeflow-patterns/capability-review-calibration.md) | Verified defects, missed defects, unsupported findings and severity |
 | [Provider compatibility](forgeflow-patterns/capability-provider-compatibility.md) | Response drift, partial failures, cancellation and stale data |
 | [Release qualification](forgeflow-patterns/capability-release-qualification.md) | Served web artifacts and native installation, restart, update and rollback |
+| [Benchmark verification](forgeflow-patterns/capability-benchmark-verification.md) | Executing backend, effective controls, correctness and separate performance metrics |
 
-Benchmark verification, money/calendar correctness and CAD/fabrication acceptance remain planned. **Next: F4.1 benchmark verification.** Selection does not execute an unavailable procedure.
+Money/calendar correctness and CAD/fabrication acceptance remain planned. **Next: F5.1 money/calendar correctness.** Selection does not execute an unavailable procedure.
+
+The benchmark procedure has deterministic fixture coverage for backend attribution and measurement rules. Its initial fixtures use synthetic timings. A [bounded CPU example and twelve-review real-project comparison](docs/benchmark-cpu-pilot.md) are now complete; the added procedure showed no discovery advantage, and accelerator performance remains unverified.
 
 ### What the evaluations show
 
-The latest [24-review real-project retest](docs/capability-retest-results.md) found limited, concrete discovery gains:
+The latest [benchmark-verification comparison](docs/benchmark-cpu-pilot.md) reviewed published WarmLedger and NPU-tooling changes twelve times. Baseline found **10 verified occurrences across four distinct problems**, versus **seven occurrences across three problems** with the added procedure. Both arms repeatedly caught an unmatched-workload performance claim. Occurrences count repeat discoveries across reviews, not additional distinct bugs. This study favors baseline on these cases; benchmark verification stays in evaluation.
+
+An earlier [24-review real-project retest](docs/capability-retest-results.md) found limited, concrete discovery gains:
 
 - Added procedures produced **21 verified finding occurrences versus 17 baseline**, covering **10 distinct defects versus 9** across three selected changes.
 - Visual acceptance found more verified issues in all three paired runs on one portfolio redesign. Recovery caught a second-migration failure in **3/3 enhanced runs versus 0/3 baseline**.

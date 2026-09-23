@@ -2,9 +2,14 @@
 
 Last updated: 2026-09-23
 
-F3.4 reporting and the four-capability retest are complete. **Next: F4.1 benchmark verification.** All 24 retest reviews completed and were adjudicated; no trials are running or additionally scheduled. Added procedures produced limited discovery gains with complementary misses, while calibration tied. Normal activation remains gated. [ROADMAP.md](ROADMAP.md) owns scope and acceptance; the [retest report](docs/capability-retest-results.md) records the evidence and limits.
+Phase 4 and the four-capability retest are complete. **Next: F5.1 money/calendar correctness.** No trials are running or scheduled. The latest benchmark comparison favored baseline: 10 verified occurrences across four distinct problems versus seven across three with the added procedure. Earlier recovery/visual gains and calibration ties remain preserved. Normal activation stays gated. [ROADMAP.md](ROADMAP.md) owns scope and acceptance; the [benchmark report](docs/benchmark-cpu-pilot.md) records the latest evidence and limits.
+
 
 ## Completed checkpoint
+
+- F4.2: actual CPU sample and controls passed. Twelve fresh reviews of published ledger/NPU performance changes completed; blinded independent verification confirmed four introduced mechanisms. Baseline/enhanced found 10/7 occurrences and 4/3 distinct mechanisms. No added-procedure advantage, no observed source/format/budget failures, and no accelerator qualification. Supplied-claim trial candidates were withdrawn before execution. See [results](docs/benchmark-cpu-pilot.md).
+
+- F4.1: benchmark procedure added to the evaluation cohort. A clean synthetic comparison and 23 invalid-evidence cases pass, including wrong-backend attribution, ineffective controls, output correctness, schedule and timing errors. Latency and throughput remain separate; memory, power and energy stay unknown. Selection, context-pack, manifest and disposable Claude/Codex install/update/rollback checks passed. Timings and accelerator dispatch are simulated; no hardware or model-benefit claim. See [procedure](forgeflow-patterns/capability-benchmark-verification.md) and [fixture limits](fixtures/benchmark-verification/README.md).
 
 - Four-capability retest: 24/24 reviews completed, including eighteen discovery reviews. Enhanced/baseline produced 21/17 confirmed discovery occurrences and 10/9 distinct mechanisms. Visual counts were higher in all three paired repetitions on one redesign. Recovery found a second-migration defect in 3/3 enhanced versus 0/3 baseline, while baseline found a different recovery defect in 2/3 versus 0/3 enhanced. Calibration dispositions were 12/12 per arm with six identical severity-key disagreements per arm. All inputs, boundaries and budgets checked; no general accuracy or rollout claim. See [results](docs/capability-retest-results.md).
 
@@ -22,18 +27,20 @@ F3.4 reporting and the four-capability retest are complete. **Next: F4.1 benchma
 - `d0c5b68`: contextual visual acceptance and browser fixtures; 38 Chromium checks passed.
 - `c99cd88`: 32 independent skill-enabled/disabled trials, frozen inputs and scoring checks. Both arms interpreted every supplied-evidence case correctly, with zero missed defects or false findings. Enabled prompts were larger; no measured benefit was established.
 
-Six capabilities have evaluation implementations, including both release qualification branches. The other three procedures remain planned. Earlier pilot token and timing measurements remain unavailable. The F3.4 report includes CLI usage and process timing; exact backend identity, cost and correction time remain unavailable. See [pilot results and limitations](docs/capability-pilot-results.md). This source milestone does not change the packaged release version or establish live client activation.
+Seven capabilities have evaluation implementations, including both release qualification branches. The other two procedures remain planned. Earlier pilot token and timing measurements remain unavailable. The F3.4 report includes CLI usage and process timing; exact backend identity, cost and correction time remain unavailable. See [pilot results and limitations](docs/capability-pilot-results.md). This source milestone does not change the packaged release version or establish live client activation.
 
 The pilot, legacy evaluation and skill evaluation checks passed. Implementation-specific validation and remaining accessibility/platform gaps are recorded in the roadmap. Raw responses and session evidence remain local; the published protocol, fixtures and aggregate results provide the portable checkpoint.
 
-Publication validation: the full regression sweep initially passed 211 of 214 commands. The three failures identified missing capability entries in the health fallback inventory. After adding the capability command and five runtime helpers, all three failed checks and the related health check passed. Documentation link and whitespace checks also passed.
+Previous source milestone validation: the full regression sweep initially passed 211 of 214 commands. The three failures identified missing capability entries in the health fallback inventory. After adding the capability command and five runtime helpers, all three failed checks and the related health check passed. Documentation link and whitespace checks also passed.
+
+Phase 4 validation: benchmark controls, CPU correctness/aggregation, selection, context-pack, manifest and disposable Claude/Codex install/update/rollback checks passed. Publication checks resolved 179 local documentation links and found no whitespace errors or private session state in the staged source milestone. The full regression suite was not rerun for this milestone.
 
 ## Resume on another computer
 
 1. Fetch `origin`, inspect the current branch and working tree, and preserve any local work. Update a clean `main` checkout with `git pull --ff-only origin main`; resolve any divergence before continuing. For a fresh checkout, clone the repository's default branch.
-2. Read `AGENTS.md`, this file, and `ROADMAP.md`. Confirm the checkout includes completed work through F3.4 and the four-capability retest.
+2. Read `AGENTS.md`, this file, and `ROADMAP.md`. Confirm the checkout includes F4.2 and the four-capability retest; This source milestone includes Phase 4.
 3. Preserve all original and revised evaluations. The earlier twelve-review study found complementary discoveries; the completed [24-review retest](docs/capability-retest-results.md) adds limited, repeatable case-specific signals. No trial process is running, and no further model run is scheduled.
-4. Continue **F4.1 benchmark verification**. Do not rerun completed trials merely to resume. Calibration's severity key remains frozen despite unanimous disagreement; independently review it before any future version. F3.4's interrupted attempt remains unsuccessful and its separate 304 diagnostic remains post-freeze evidence. Detailed execution evidence remains local-only.
-5. Validate the item, update roadmap/status and commit locally. Push at explicitly requested milestones. This source milestone includes completed work through F3.4 and the four-capability retest. The packaged release version is unchanged.
+4. Continue **F5.1 money/calendar correctness**. Preserve the completed benchmark comparison and its baseline-favoring result; accelerator performance remains unverified. Do not rerun completed trials merely to resume. Calibration's severity key remains frozen despite unanimous disagreement; independently review it before any future version. F3.4's interrupted attempt remains unsuccessful and its separate 304 diagnostic remains post-freeze evidence. Detailed execution evidence remains local-only.
+5. Validate the item, update roadmap/status and commit locally. Push at explicitly requested milestones. This source milestone includes completed work through F4.2 and the four-capability retest. The packaged release version is unchanged.
 
 The requested retest across all four earlier capabilities is complete. Future benefit qualification needs more varied new tasks and independently challenged controls. The observed discovery gains do not establish general superiority, production durability or full calibration-workflow benefit. No preview server is needed for this handoff.

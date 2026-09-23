@@ -61,6 +61,14 @@ try {
     assert.equal(releaseDecision.decision, 'selected');
     assert.equal(releaseDecision.availability, 'evaluation');
     assert.equal(releaseDecision.executable, false);
+    const benchmarkProcedure = entry('forgeflow-patterns/capability-benchmark-verification.md');
+    assert.equal(fs.readFileSync(benchmarkProcedure, 'utf8'), fs.readFileSync(path.join(root, 'forgeflow-patterns/capability-benchmark-verification.md'), 'utf8'));
+    const benchmarkSelection = run(selector, ['--stdin'], JSON.stringify({ task: 'Measure accelerator throughput', phase: 'research' }));
+    assert.equal(benchmarkSelection.status, 0, benchmarkSelection.stderr);
+    const benchmarkDecision = JSON.parse(benchmarkSelection.stdout).decisions.find(item => item.id === 'benchmark-verification');
+    assert.equal(benchmarkDecision.decision, 'selected');
+    assert.equal(benchmarkDecision.availability, 'evaluation');
+    assert.equal(benchmarkDecision.executable, false);
     const providerProcedure = entry('forgeflow-patterns/capability-provider-compatibility.md');
     assert.equal(fs.readFileSync(providerProcedure, 'utf8'), fs.readFileSync(path.join(root, 'forgeflow-patterns/capability-provider-compatibility.md'), 'utf8'));
     const providerSelection = run(selector, ['--stdin'], JSON.stringify({ task: 'Fix external API response parsing', phase: 'implement' }));
@@ -122,7 +130,7 @@ try {
 
     // A simulated older local installation is updated, then restored exactly.
     const originals = new Map();
-    for (const file of [selector, pattern, procedure, visualProcedure, recoveryProcedure, calibrationProcedure, providerProcedure, releaseProcedure, entry('scripts/forgeflow/score-review-calibration.js'), wrapper]) {
+    for (const file of [selector, pattern, procedure, visualProcedure, recoveryProcedure, calibrationProcedure, providerProcedure, releaseProcedure, benchmarkProcedure, entry('scripts/forgeflow/score-review-calibration.js'), wrapper]) {
       const suffix = file.endsWith('.js') ? '\n// previous local fixture version\n' : '\nPrevious local fixture version.\n';
       fs.appendFileSync(file, suffix);
       originals.set(file, fs.readFileSync(file));
