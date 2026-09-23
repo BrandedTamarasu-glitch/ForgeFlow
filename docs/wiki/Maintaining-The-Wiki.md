@@ -8,6 +8,18 @@ Edit the source pages first. Keep current setup and workflow instructions separa
 
 The local exporter converts page links to GitHub wiki routes and repository assets to absolute GitHub URLs. Images use raw image URLs. HTML guides and changelogs link to their GitHub file pages, where readers can download them. GitHub Pages is not assumed to be enabled.
 
+## Build The Visual Reference
+
+The documentation hub and visual guide link to styled HTML reference pages. Keep `.md` links in the source; the builder converts links between wiki topics to `.html` and preserves section anchors. The HTML shares `docs/guide.css` with the documentation hub and works from a local checkout without a server.
+
+```bash
+npm ci
+npm run docs:build
+npm run docs:check
+```
+
+Regenerate the pages after editing Markdown or the builder, and include the generated HTML with the source change. Review a setup page and a table-heavy page at desktop and mobile widths. Repository implementation references remain links to GitHub source. The separate GitHub wiki export remains Markdown.
+
 ## Prepare A Local Export
 
 From the ForgeFlow source checkout:

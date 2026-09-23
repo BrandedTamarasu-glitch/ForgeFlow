@@ -6,6 +6,7 @@
     "@playwright/test": "^1.59.1",
     "@types/node": "^24.0.0",
     "@types/ws": "^8.5.10",
+    "marked": "18.0.14",
     "tsx": "^4.20.0",
     "typescript": "^5.9.0"
   },
@@ -16,6 +17,8 @@
     "test": "node scripts/run-tests.js",
     "test:helpers": "node scripts/run-tests.js --helpers",
     "test:services": "node scripts/run-tests.js --services",
-    "typecheck": "tsc -p services/chat-bridge/tsconfig.json --noEmit"
+    "typecheck": "tsc -p services/chat-bridge/tsconfig.json --noEmit",
+    "docs:build": "node scripts/build-docs.mjs",
+    "docs:check": "node scripts/build-docs.mjs --check"
   }
 }
