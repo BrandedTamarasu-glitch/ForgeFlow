@@ -1,0 +1,44 @@
+{
+  "scoring": "Score mechanism-supported final defects after unblinded evidence adjudication, using scoreReview. Expected target alone is insufficient. Deduplicate claims; preserve unresolved plausible claims. Completion requires zero missed/false/severity errors, valid output, limitations array, and exact reload status/items on recovery cases; review reload must be null. Invalid JSON/schema is a failed attempt with null metrics. Report predictions separately from executed simulated observations. Never drop scheduled trials.",
+  "cases": {
+    "rr01": {
+      "expected": [
+        {
+          "id": "cleanup-current",
+          "target": "collect",
+          "severity": "high",
+          "mechanism": "Stale candidate list deletes g1 after checkpoint publishes it, removing committed data."
+        }
+      ],
+      "reload": {
+        "status": "recovery-required",
+        "items": []
+      }
+    },
+    "rr02": {
+      "expected": [],
+      "reload": {
+        "status": "ready",
+        "items": [
+          "old",
+          "accepted"
+        ]
+      }
+    },
+    "rr03": {
+      "expected": [
+        {
+          "id": "lost-increment",
+          "target": "prepare",
+          "severity": "high",
+          "mechanism": "Two prepared assignments publish count 1 and lose one accepted increment; repeatable writes do not preserve concurrency."
+        }
+      ],
+      "reload": null
+    },
+    "rr04": {
+      "expected": [],
+      "reload": null
+    }
+  }
+}

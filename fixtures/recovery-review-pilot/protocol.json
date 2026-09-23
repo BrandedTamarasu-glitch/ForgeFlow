@@ -1,0 +1,43 @@
+{
+  "schema_version": "1",
+  "seed": "phase-two-code-review-v1",
+  "repetitions": 4,
+  "model": "inherited session model; exact provider identifier unavailable",
+  "settings": {
+    "context": "fresh fork_turns=none per trial",
+    "reasoning": "inherited unchanged",
+    "temperature": null,
+    "tools": "One initial prompt-file read only; no tools after input loading.",
+    "concurrency": "sequential scheduled order"
+  },
+  "budget": {
+    "max_response_words": 250,
+    "enforcement": "instruction only",
+    "tool_calls": 1
+  },
+  "source_sha256": "1c1f48b8c27523874e02cee457fa2d4be4006005c0f12c73769e2140edb76a9d",
+  "answer_key_sha256": "daba5b39993553feaea8b59f01df74c89e950dc60918c0847f2d27fec4cad0dd",
+  "procedures": {
+    "persistence-recovery": {
+      "path": "procedures/persistence-recovery.md",
+      "sha256": "a4ec5c8537b7010a56e68fe5eea715a9e45da3353f15797a660a7bafcb09a611",
+      "canonical_source": "forgeflow-patterns/capability-persistence-recovery.md",
+      "source_revision": "f12974e"
+    },
+    "review-calibration": {
+      "path": "procedures/review-calibration.md",
+      "sha256": "69e24856718a085b40be93262b866dd753746f3025053afd384e68eb9130ddab",
+      "canonical_source": "forgeflow-patterns/capability-review-calibration.md",
+      "source_revision": "f12974e"
+    }
+  },
+  "prompt_format": "Enabled: Procedure guidance (subject to task limits):\n<procedure>\nTask:\n<input>. Disabled: <input>.",
+  "measurement_limits": [
+    "Exact provider model/sampling metadata, tokens, cost, latency and correction time unavailable; null metrics.",
+    "Prompt UTF-8 bytes and response whitespace units are size counts, not tokens or billing estimates.",
+    "Instructional file access restrictions, not OS isolation; tool adherence not independently audited.",
+    "Code inspection and predicted reload behavior only; executed recovery checks are single-threaded simulations, not real storage or UI qualification.",
+    "Small explicit cases adapted from prior fixtures may have ceiling effects; no independent repair or general benefit inference."
+  ],
+  "provenance": "Synthetic recovery example and adaptations of fixtures/atomicity/operations.js from f12974e, MIT repository license; no user data."
+}

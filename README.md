@@ -14,7 +14,7 @@ Turn an idea into a scoped brief, working code, an evidence-backed review, and a
 
 *Workshop screenshot uses illustrative example data.*
 
-## Intelligent capabilities: Phases 0 and 1 complete
+## Intelligent capabilities: Phases 0, 1 and 2 complete
 
 The source checkout now includes the foundation for automatically selecting specialized procedures based on task intent, affected code and workflow phase. Selection supports mixed-domain tasks, explicit overrides and bounded reassessment. Managed Claude Code and Codex workflows include the selection entry points.
 
@@ -26,7 +26,7 @@ This milestone adds:
 
 **Change propagation, visual acceptance, persistence recovery and review calibration are implemented for controlled evaluation; the other five procedures remain planned.** Selection does not execute an unavailable procedure. A [32-trial supplied-evidence pilot](docs/capability-pilot-results.md) found equal results with and without the change-propagation and visual-acceptance procedures; no measured improvement is claimed. Managed installation and packaging checks pass; live client activation remains unverified, and the lean Codex plugin does not expose the capability entry point. This source milestone does not change the packaged release version.
 
-The [change-propagation procedure](forgeflow-patterns/capability-change-propagation.md) maps sources to consumers, records freshness evidence and includes a read-only text-reference checker. The [visual-acceptance procedure](forgeflow-patterns/capability-visual-acceptance.md) adds surrounding-page, responsive and accessibility checks to UI iteration. Normal automatic execution awaits qualification. The [persistence-recovery procedure](forgeflow-patterns/capability-persistence-recovery.md) adds 11 synthetic fault/reload schedules; actual backend durability and model benefit remain unverified. The [review-calibration procedure](forgeflow-patterns/capability-review-calibration.md) adds defect, false-finding and severity scoring with six executable cases. Next is **F2.3: recovery/review pilot**. Follow the [roadmap](ROADMAP.md), [capability contracts and host support](docs/capability-contract.md), and [evaluation protocol](docs/skill-evaluation.md).
+The [change-propagation procedure](forgeflow-patterns/capability-change-propagation.md) maps sources to consumers, records freshness evidence and includes a read-only text-reference checker. The [visual-acceptance procedure](forgeflow-patterns/capability-visual-acceptance.md) adds surrounding-page, responsive and accessibility checks to UI iteration. Normal automatic execution awaits qualification. The [persistence-recovery procedure](forgeflow-patterns/capability-persistence-recovery.md) adds 11 synthetic fault/reload schedules; actual backend durability and model benefit remain unverified. The [review-calibration procedure](forgeflow-patterns/capability-review-calibration.md) adds defect, false-finding and severity scoring with six executable cases. A [32-trial recovery/review pilot](docs/recovery-review-pilot-results.md) found equal perfect scores in both arms, with no measured accuracy benefit. Next is **F3.1: provider compatibility**. Follow the [roadmap](ROADMAP.md), [capability contracts and host support](docs/capability-contract.md), and [evaluation protocol](docs/skill-evaluation.md).
 
 ## New in 4.6.3
 
