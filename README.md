@@ -8,6 +8,8 @@ Turn an idea into a scoped brief, working code, an evidence-backed review, and a
 
 **Start here:** [Visual user guide](https://coryebert.com/ForgeFlow/user-guide.html) · [19-page PDF](docs/ForgeFlow-User-Guide.pdf) · [Documentation](https://coryebert.com/ForgeFlow/documentation.html) · [Install](#quick-start)
 
+**Development:** [Roadmap and implementation progress](ROADMAP.md)
+
 ![ForgeFlow workshop showing task evidence, Ember, project readiness, review outcomes, and activity](docs/images/forgeflow-workshop.png)
 
 *Workshop screenshot uses illustrative example data.*

@@ -21,6 +21,13 @@ These instructions translate the durable project rules from the Claude setup int
 - Before reporting a service as running, verify it responds with `curl` or an equivalent request.
 - Verify required environment variables and generated/compiled dependencies before starting services.
 
+## Roadmap Continuity
+
+- Read `ROADMAP.md` before work on its planned capabilities. Use its stable item IDs to identify scope and the next action across devices.
+- When a roadmap item progresses, update its checkbox only after its acceptance checks pass. Update Current focus, the date, validation summary, limitations and next action in the same change. Keep partially completed or blocked items unchecked.
+- Keep roadmap entries portable and suitable for publication: repository-relative references and factual engineering results only. Never copy local session records, private data or review attribution into the roadmap.
+- A roadmap update does not authorize a commit, push or release. Follow the existing Git and publication instructions.
+
 ## Code Quality
 
 - Make the smallest defensible change that solves the requested problem.
