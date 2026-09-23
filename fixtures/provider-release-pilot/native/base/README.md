@@ -1,0 +1,9 @@
+# Installed command gate
+
+Repair only `src/check.js` when justified; preserve its API. `check({ built, installed, profile, expectedVersion })` checks a synthetic installed Node CLI application on the current host. Trusted inputs name an intended build file, installed executable JS file and existing disposable profile directory. Built/installed files have no adjacent dependencies. The profile may contain `state.txt`. No network, administrator access or real installations are allowed.
+
+Return `{ identity, launch, qualification }` with pass/fail/unverified. Identity compares SHA256 of intended build and installed bytes, never a version string alone. Missing/unreadable artifact is unverified. Attempt a launch even if identity fails: execute the installed file via `process.execPath` with the profile path as its sole argument, from the installed file's directory, with a 1000ms timeout. Never execute the build file. Successful launch must exit zero and emit a JSON object `{ version: expectedVersion, executable: absoluteInstalledPath, state: 'ready' }`. Extra fields are allowed. Nonzero exit, invalid JSON or mismatched fields fail; spawn error/signal/timeout is unverified.
+
+The check must restore exactly the original profile state.txt bytes after every attempted launch, or remove that file if it did not originally exist. Do not copy/reset/remove the profile directory or touch other files; preserve unrelated state. Profile read/snapshot or restore failure makes launch unverified (known identity failure still fails overall). Overall qualification is fail if either dimension fails, otherwise unverified if either is unverified, otherwise pass. This gate samples startup; it does not implement a production installer or qualify graphical accessibility, restart/update/uninstall or other operating systems. Preserve those limits in your report.
+
+Use Node's built-in test runner for tests you add. No dependency package is needed.

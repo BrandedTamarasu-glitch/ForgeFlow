@@ -1,0 +1,134 @@
+{
+  "version": 1,
+  "status": "candidate-awaiting-independent-control-review",
+  "families": [
+    {
+      "id": "provider",
+      "module": "src/cache.js"
+    },
+    {
+      "id": "web",
+      "module": "src/qualify.js"
+    },
+    {
+      "id": "native",
+      "module": "src/check.js"
+    }
+  ],
+  "arms": [
+    "baseline",
+    "checklist",
+    "full"
+  ],
+  "repetitions": 2,
+  "proposed_trials": 36,
+  "settings": {
+    "fresh_context": true,
+    "model": "inherited session model; no overrides",
+    "execution": "sequential",
+    "tool_calls": 16,
+    "response_words": 200,
+    "enforcement": "instruction only",
+    "oracle_process_timeout_ms": 30000
+  },
+  "scoring": {
+    "primary": "all frozen checks pass; missing/failed/timed-out attempts retained as unsuccessful",
+    "control_edits": "report separately; not false positives without independent defect evidence",
+    "trigger": "treatment has >=2 additional complete defective repairs out of 6 versus baseline, all 6 control trials pass, no initially passing check regresses, and no unresolved control-validity issue; trigger retests of all four previously trialed capabilities, not activation"
+  },
+  "review": {
+    "required_families": [
+      "provider",
+      "web",
+      "native"
+    ],
+    "completed": []
+  },
+  "hashes": {
+    "acceptance.js": "b4366d8fd393a9eb93583b61f862cf89066b1839957da4ef28ceb701dd5d010c",
+    "native/base/README.md": "ad1740d00a0088a006c78909f0a8600663bbdc2acb31cbc08deaad1a1c6c21bd",
+    "native/base/src/check.js": "b63fdc251bedb1071211d898dd37854a455a0967685dbc46b0612d23c6abc964",
+    "native/control.js": "0440aedcf3a9ca89d10c3b7f0f2ef12fe1d849aa3504a35fdd0385b1ac2e2d67",
+    "prepare.js": "6032d7c55bc2e9ee4c7817dc8e56df4d37a4a4af1cbde99cc6557403ad937fde",
+    "provider/base/README.md": "4863ae975e71693bf6b8227a2be4ac00ee7a1034b3869eaea6d893f3a17d8593",
+    "provider/base/src/cache.js": "32f054368005a99ced8cbbd58c293966ecc174df991ab375e7c01752dad417da",
+    "provider/control.js": "cbd11c6cdc03e10659e68170a55e1ff906d36dc46ddd1d0d61b230b40e184400",
+    "score.js": "8bce989c41a6945b597889f933c6057ef202cd997f120078624334fca6b1b611",
+    "task-template.txt": "8b413325b371f06b5c06f5e8f97bf5b9203c39ac26b4e99137cc9c1f2cd4bc29",
+    "treatments/native-checklist.md": "2563dc96e61f1d11c89f664694bc08b6771cb1b5fa55be2b5f494c4658ff8e6f",
+    "treatments/native-full.md": "8fe4b3944bf32d448bfbee51842bc89735ec12403ce6f702f92a5d736eea8adf",
+    "treatments/provider-checklist.md": "9d406f3052851984eb84081dd41582c820de2ce8c4d9c3a5d8f3e4c2688299e0",
+    "treatments/provider-full.md": "842d51466b6e63161a7f0cf85b55e747ba5d83cf208d934efcac74d0de19e62a",
+    "treatments/web-checklist.md": "ccd48be8c449501f0f0e0912412d94f8d5e21f8a82e5d9430af4d08ae43ed320",
+    "treatments/web-full.md": "8fe4b3944bf32d448bfbee51842bc89735ec12403ce6f702f92a5d736eea8adf",
+    "web/base/README.md": "b76b86e462d07f8d7abf4adaed0a15c941fcb865a4dbf5ed99bf860ac7607cb4",
+    "web/base/src/qualify.js": "7014e42aa0247c3d7d4d0ced95d85ecac313f10d221839372d935bf638f0db1d",
+    "web/control.js": "71e6dc76bc7fd9d8848d695b2de38a5bbbde492a9393cdaba82b0c16bcc686d5"
+  },
+  "checks": {
+    "provider": [
+      "freshness-detached-and-zero",
+      "cross-provider-out-of-order",
+      "superseded-success",
+      "superseded-error",
+      "failed-refresh-retention-and-redaction",
+      "malformed-version-timestamp-and-extra-fields",
+      "latest-failure-suppresses-old-success"
+    ],
+    "web": [
+      "clean",
+      "stale-despite-version-header",
+      "html-script-fallback",
+      "missing-resource",
+      "redirect-no-target-contact",
+      "bodyless-cache",
+      "known-failure-before-unavailable",
+      "unknown-before-known-failure",
+      "matching-bytes-broken-interaction",
+      "unknown-identity-broken-interaction",
+      "unobserved-interaction",
+      "throwing-interaction"
+    ],
+    "native": [
+      "clean-existing",
+      "clean-absent",
+      "clean-empty",
+      "stale-installed",
+      "installed-invalid-output",
+      "matching-invalid-output",
+      "nonzero-exit",
+      "wrong-executing-path",
+      "timeout-restores-profile",
+      "missing-installed"
+    ]
+  },
+  "initial_failures": {
+    "provider": [
+      "cross-provider-out-of-order",
+      "superseded-error",
+      "failed-refresh-retention-and-redaction",
+      "malformed-version-timestamp-and-extra-fields",
+      "latest-failure-suppresses-old-success"
+    ],
+    "web": [
+      "stale-despite-version-header",
+      "html-script-fallback",
+      "missing-resource",
+      "redirect-no-target-contact",
+      "bodyless-cache",
+      "known-failure-before-unavailable",
+      "unknown-before-known-failure",
+      "unknown-identity-broken-interaction",
+      "unobserved-interaction"
+    ],
+    "native": [
+      "stale-installed",
+      "installed-invalid-output",
+      "matching-invalid-output",
+      "nonzero-exit",
+      "wrong-executing-path",
+      "timeout-restores-profile",
+      "missing-installed"
+    ]
+  }
+}

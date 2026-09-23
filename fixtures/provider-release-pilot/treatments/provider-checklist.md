@@ -1,0 +1,1 @@
+Trace each provider independently through request ordering, validation, accepted cache and visible freshness/error. Check late success and error, another provider, stale retained values and malformed payloads. Preserve observation time and return detached sanitized output. Validate behavior with controlled promises; do not add live calls or a new manager.

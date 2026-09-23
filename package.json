@@ -17,6 +17,7 @@
     "test": "node scripts/run-tests.js",
     "test:helpers": "node scripts/run-tests.js --helpers",
     "test:visual-capabilities": "playwright test --config playwright.visual.config.ts",
+    "test:provider-release-pilot": "node tests/provider-release-pilot/preparation.cjs",
     "test:native-release": "node tests/native-release/qualification.cjs",
     "test:web-release": "playwright test --config playwright.release.config.ts",
     "test:services": "node scripts/run-tests.js --services",
