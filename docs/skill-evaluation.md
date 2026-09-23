@@ -37,3 +37,5 @@ The summary retains all scheduled records, inserts omitted ones as unobserved, c
 The foundation itself contains no model observations. The subsequent [Phase 1 pilot](capability-pilot-results.md) records 32 actual supplied-evidence responses separately. Tests use synthetic records even when exercising the parser's `actual` branch. Skill benefit and activation readiness remain later roadmap work.
 
 The subsequent [Phase 2 recovery/review pilot](recovery-review-pilot-results.md) adds 32 actual code-inspection responses and separate executed simulation checks. Equal outcomes do not establish benefit or activation readiness.
+
+The [repository-repair follow-up](recovery-workbench-results.md) uses a separate three-arm exploratory protocol, preserving the existing workflow and two-arm skill schemas. Its control-validity gap and post-freeze diagnostic are reported separately from the frozen acceptance scores.

@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "kind": "exploratory-three-arm-repository-repair",
+  "repetitions": 3,
+  "arms": [
+    "baseline",
+    "checklist",
+    "full"
+  ],
+  "cases": [
+    "defective",
+    "clean"
+  ],
+  "model": "inherited session model; exact backend identifier unavailable",
+  "settings": {
+    "fresh_context": true,
+    "overrides": false,
+    "execution": "sequential",
+    "max_tool_calls": 12,
+    "response_words": 200,
+    "enforcement": "instruction only"
+  },
+  "scoring": {
+    "completion": "All eight frozen hidden acceptance checks pass; execution failure/timeout retained as failure. Adapter is frozen outside trial workspace.",
+    "clean_edits": "Report changed source files/bytes separately; preservation of clean source is required for improvement trigger.",
+    "trigger": "A treatment produces at least two more complete defective-case repairs out of three than baseline, all three clean controls complete without source edits, and no formerly passing hidden check regresses. If triggered, retest all previously trialed capabilities under revised task-based protocols; this is exploratory evidence, not activation qualification."
+  },
+  "hashes": {
+    "base/README.md": "6b59c6deee7292b4709c7cfbb4ce295c16e4751991e950d4d863f0a23afcadac",
+    "base/package.json": "16fe8490736c3948383fdfbbe0f14be0d40d3b256952cda0990df83637b87694",
+    "base/src/backend.js": "78ce9e1bd02f32843fe5a11c374616d676b4ee01afec6b2b63cdbfd99d5c547b",
+    "base/src/format.js": "5e5aea7da6853524a73a7a40308f038591356ac0add654cd423f50636608b79c",
+    "base/src/shelf.js": "388e135dc0af143bc1fc30591b0efc637f00f4b26f2cb434da2f43d51fc99f7a",
+    "base/test/smoke.test.js": "5d69dc628d1fdda80fda42917f47975c68776d2db4e84c75cf7eaa66be6faed8",
+    "corrected-shelf.js": "35d1dc47d139b5c9ed211a497a385b0911c89db91e90ceff62b0a44b85697ebd",
+    "acceptance.js": "382ad26ae4e3324e2c0738ab2d693c3ade66edebc60e791b446fe25954c7ae54",
+    "treatments/checklist.md": "ce3d3f1421abb94cca81ca3952c91e4c22e12a8b39cb106e363c6340d845e23b",
+    "treatments/full.md": "a4ec5c8537b7010a56e68fe5eea715a9e45da3353f15797a660a7bafcb09a611"
+  },
+  "limitations": [
+    "Synthetic multi-file repository, not production recovery.",
+    "File access restrictions are instructions, not OS isolation; no independent access audit.",
+    "Unknown tokens, cost, exact sampling and backend identity.",
+    "Only two underlying cases; repeats measure variability, not broad task coverage.",
+    "Hidden checks are task-specific and not an exhaustive storage proof."
+  ]
+}
