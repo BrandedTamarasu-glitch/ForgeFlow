@@ -149,16 +149,43 @@ function readSelectionInput(file) {
   return JSON.parse(content);
 }
 
+function readSelectionGuide() {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const { safeReadTextFile } = require('./file-safety');
+  // Checkout/Codex runtime first; Claude's patterns sit outside its runtime root.
+  for (const relative of ['../../forgeflow-patterns/capability-selection.md', '../../../forgeflow-patterns/capability-selection.md']) {
+    const file = path.resolve(__dirname, relative);
+    if (fs.existsSync(file)) return safeReadTextFile(file).content;
+  }
+  throw new Error('Canonical capability selection guide is unavailable; repair the ForgeFlow installation');
+}
+
 function main(argv) {
   let input = {};
-  if (argv.length === 2 && argv[0] === '--input') {
+  if (argv.length === 1 && argv[0] === '--guide') {
+    process.stdout.write(readSelectionGuide());
+    return;
+  } else if (argv.length === 1 && argv[0] === '--stdin') {
+    const fs = require('node:fs');
+    const chunks = [];
+    const buffer = Buffer.alloc(4096);
+    let size = 0;
+    let read;
+    while ((read = fs.readSync(0, buffer, 0, buffer.length, null)) > 0) {
+      size += read;
+      if (size > 100000) throw new Error('Selection input too large');
+      chunks.push(Buffer.from(buffer.subarray(0, read)));
+    }
+    input = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  } else if (argv.length === 2 && argv[0] === '--input') {
     input = readSelectionInput(argv[1]);
   } else if (argv.length === 2 && argv[0] === '--task') input.task = argv[1];
-  else throw new Error('Usage: select-capabilities.js --input <json-file> | --task <objective>');
+  else throw new Error('Usage: select-capabilities.js --input <json-file> | --task <objective> | --stdin | --guide');
   process.stdout.write(`${JSON.stringify(selectCapabilities(input), null, 2)}\n`);
 }
 
 if (require.main === module) {
   try { main(process.argv.slice(2)); } catch (error) { console.error(error.message); process.exitCode = 1; }
 }
-module.exports = { selectCapabilities, renderSelection, readSelectionInput, LIMITS };
+module.exports = { selectCapabilities, renderSelection, readSelectionInput, readSelectionGuide, LIMITS };

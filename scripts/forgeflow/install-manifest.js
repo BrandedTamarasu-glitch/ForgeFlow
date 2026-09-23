@@ -7,6 +7,9 @@ const CODEX_INVENTORY_SOURCE = 'scripts/forgeflow/installed-codex-inventory.json
 
 const SCRIPT_EXTENSIONS = new Set(['.js', '.sh']);
 const STATIC_FILES = new Set([
+  'forgeflow-patterns/capability-selection.md',
+  'commands/forgeflow-capabilities.md',
+  'skills/forgeflow-capabilities/SKILL.md',
   'scripts/forgeflow/agent-identity.d.ts',
   'scripts/forgeflow/vendor/js-yaml/js-yaml.js',
   'scripts/forgeflow/vendor/js-yaml/LICENSE',
@@ -30,6 +33,9 @@ const DASHBOARD_RUNTIME = new Set([
   'services/agent-chat/public/index.html', 'services/agent-chat/package.json', 'services/agent-chat/package-lock.json',
 ]);
 const RUNTIME_HELPERS = [
+  'scripts/forgeflow/capability-catalog.js',
+  'scripts/forgeflow/select-capabilities.js',
+  'scripts/forgeflow/render-capability-entrypoints.js',
   'scripts/forgeflow/agent-identity.js',
   'scripts/forgeflow/ember-setup.js',
   'scripts/forgeflow/rtk-setup.js',
@@ -224,7 +230,7 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/user-profile.js',
 ];
 
-const CLAUDE_SOURCE_DIRS = ['agents', 'commands', 'forgeflow-patterns', 'hooks', 'project-rules', 'scripts/forgeflow', 'templates', 'services/dashboard', 'services/agent-chat'];
+const CLAUDE_SOURCE_DIRS = ['agents', 'commands', 'skills/forgeflow-capabilities', 'forgeflow-patterns', 'hooks', 'project-rules', 'scripts/forgeflow', 'templates', 'services/dashboard', 'services/agent-chat'];
 const CODEX_SOURCE_DIRS = ['.codex/agents', '.agents/skills', 'scripts/forgeflow', 'templates', 'forgeflow-patterns', 'services/agent-chat', 'services/dashboard'];
 
 

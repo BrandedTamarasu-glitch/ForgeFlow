@@ -6,9 +6,9 @@ Last updated: 2026-09-22
 
 **Intelligent skill selection:** give the existing agents nine specialized procedures and automatically select the smallest useful combination for each task.
 
-Implementation status: **F0.1 and F0.2 complete**. Capability contracts, a bounded selector and context-pack integration are implemented. Procedures remain unavailable until their implementation and qualification phases.
+Implementation status: **F0.1 through F0.3 complete**. Contracts, bounded selection, context integration and managed-host entry points are implemented. Domain procedures remain unavailable until their implementation and qualification phases.
 
-**Next item: F0.3.** Verify host packaging, discovery and workflow entry points for the [capability selector](docs/capability-contract.md#selector-usage-and-limits), including managed installations and plugin-specific differences.
+**Next item: F0.4.** Correct unconditional atomicity dismissals in canonical and generated guidance, with unsafe intermediate-state/concurrency cases and clean counterexamples.
 
 This file is the portable source of truth for scope, progress and the next action. It is product planning documentation, not a copy of local session records. A checked item means its acceptance criteria were verified; it does not imply the change has been released.
 
@@ -54,7 +54,7 @@ Dependencies: none.
 
 - [x] **F0.1 — Capability contract and integration map.** Define identifiers, triggers/exclusions, inputs, ownership, bounded procedures, evidence, prerequisites, cleanup and fallback behavior. Identify canonical sources and host entry points. Acceptance: all nine capabilities have a defined home; no duplicate task store or orchestrator is introduced. Delivered in [the capability contract](docs/capability-contract.md); validation is recorded below.
 - [x] **F0.2 — Automatic selection.** Integrate a small catalog into existing routing/context paths. Support pre-diff intent, structural signals, bounded inspection, mixed-domain selection, overrides and reassessment. Acceptance: relevant, irrelevant, ambiguous and scope-change fixtures exercise selection; dependency deduplication and lazy loading work; selecting a skill adds no confirmation prompt. Version 1 has no hard capability dependencies; selected IDs are unique. Ambiguity uses bounded workflow assessments, not user skill selection.
-- [ ] **F0.3 — Host packaging.** Wire Claude Code and Codex discovery, installation and generated definitions to canonical procedures. Acceptance: targeted drift, manifest and disposable-install checks pass; unsupported host behavior is documented.
+- [x] **F0.3 — Host packaging.** Wire Claude Code and Codex discovery, installation and generated definitions to canonical procedures. Acceptance: targeted drift, manifest and disposable-install checks pass; unsupported host behavior is documented. The shared selection guide and generated workflow references are delivered now; domain procedure bodies remain scheduled for later phases. Managed installs and discovery declarations are tested, not live client activation.
 - [ ] **F0.4 — Atomicity guidance correction.** Replace unconditional dismissal of atomicity concerns for individually repeatable writes with analysis of intermediate visibility, concurrency and recovery guarantees. Acceptance: unsafe intermediate-state and lost-update examples remain detectable; safe independent operations and correct atomic implementations are represented; generated counterparts match.
 - [ ] **F0.5 — Evaluation foundation.** Add synthetic fixture provenance and skill-on/off metadata using existing evaluation machinery. Acceptance: existing workflow comparison semantics remain compatible; frozen baselines and separate answer keys exist; fixture, actual-model and unobserved outcomes remain distinguishable.
 
@@ -126,10 +126,11 @@ Dependencies: all packages above; hardware/physical/platform limitations may rem
 | 2026-09-22 | Roadmap established | Nine capabilities, automatic selection, phases and acceptance criteria documented. Implementation and benefit measurements remain pending. | This file |
 | 2026-09-22 | F0.1 | Checked nine complete capability contracts and 13 resolving local links. Read-only manifest checks confirmed an existing flat pattern is included for both managed hosts. Routing/context/evidence/generation paths inspected; no runtime behavior changed. | `b765215`; [contract and integration map](docs/capability-contract.md) |
 | 2026-09-22 | F0.2 | Selector, context-pack integration, context-wave, existing reviewer routing and installer-manifest tests passed. Covers mixed-domain/pre-diff intent, exclusions, overrides, bounded inspection/reassessment, lazy loading and invalid inputs. Planned procedures remain unavailable; no measured agent benefit claimed. | [Selector tests](scripts/forgeflow/test-select-capabilities.js), [context tests](scripts/forgeflow/test-build-context-pack.js) |
+| 2026-09-22 | F0.3 | Disposable Claude/Codex installs resolve the shared guide from unrelated directories, run selection, update and restore exact prior files on rollback. Unchanged reinstall preserves recovery. Packaging, selector, manifest, installer, updater, command index, skill generation and agent-drift checks passed. New skill frontmatter validated with the repository YAML parser; the Python validator lacked PyYAML. | [Packaging tests](scripts/forgeflow/test-capability-packaging.js), [host support and limits](docs/capability-contract.md#host-entry-points-and-packaging) |
 
 ## Known limits and blockers
 
-- No blocker to starting F0.3 is currently identified.
-- Canonical procedures will use flat pattern files because nested pattern delivery differs between managed hosts. Plugin discovery and full installation parity remain F0.3 work; the contract does not establish either.
+- No blocker to starting F0.4 is currently identified.
+- Canonical procedures use flat pattern files because nested pattern delivery differs between managed hosts. Live client discovery after restart and real plugin activation remain unverified. The current Codex lean plugin does not expose the capability entry point; managed Codex installation does.
 - Actual accelerator, additional operating-system and printed-part qualification depend on access to those environments. These limit claims, not the ability to implement synthetic fixtures and procedures.
 - Selection uses bounded behavioral heuristics and reasoned workflow assessments, not unrestricted language understanding. All nine procedure implementations and measured-benefit qualification remain future work. No release has been published for these changes.

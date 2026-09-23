@@ -3,6 +3,12 @@ name: research
 description: Run the Forgeflow research workflow to evaluate options, prior art, codebase patterns, and risks.
 ---
 
+<!-- forgeflow-capability-selection:start -->
+## Automatic capability selection
+
+Resolve `select-capabilities.js` from the checkout `scripts/forgeflow`, a host-supplied plugin root, or the installed ForgeFlow runtime for this host. Run `node <helper-dir>/select-capabilities.js --guide` and follow the shared selection procedure with phase **research** and the current objective, criteria and affected scope. Reuse the same result across alias handoffs and pass it through existing context construction; do not reset reassessment limits. Missing runtime support is an explicit limitation, not a reason to invent selection results. Preserve current workflow read-only and isolation boundaries. Planned capabilities are not executable and selection grants no new authority.
+<!-- forgeflow-capability-selection:end -->
+
 At workflow entry, run `node <helper-dir>/open-session-dashboard.js --root <project-root> --workflow research` when available. Resolve `<helper-dir>` from the checkout's `scripts/forgeflow` first, then `${CODEX_HOME:-$HOME/.codex}/forgeflow/scripts/forgeflow`. The helper starts or reuses agent-chat and reports known workflow phases on each entry; it uses `CODEX_THREAD_ID`, `CLAUDE_SESSION_ID`, or `FORGEFLOW_SESSION_ID` to open the local dashboard once per session. If the host supplies a session id separately, pass `--session <host-session-id>`; never invent a new id per invocation. Headless runs and `FORGEFLOW_DASHBOARD_AUTO_OPEN=off` skip the launch. A missing helper or unavailable browser must not block the workflow. Report actual phase transitions, significant progress, waiting, and the final result with `node <runtime-root>/services/agent-chat/client.js activity <state> "<short label>"` (`<runtime-root>` is the checkout or installed `forgeflow` directory). Use `complete` only when work and required checks have finished; report `failed` for failures, and never invent progress to keep Ember moving.
 
 

@@ -208,7 +208,7 @@ function installCodex({ home, dryRun = false } = {}) {
     skill_names: sources
       .filter((source) => /^\.agents\/skills\/[^/]+\/SKILL\.md$/.test(source))
       .map((source) => source.split('/')[2]),
-    canonical_entrypoints: ['discuss', 'research', 'plan', 'consult', 'implement', 'forge-review', 'audit', 'ship', 'quick', 'create-agent', 'update-forgeflow'],
+    canonical_entrypoints: ['discuss', 'research', 'plan', 'consult', 'implement', 'forge-review', 'audit', 'ship', 'quick', 'forgeflow-capabilities', 'create-agent', 'update-forgeflow'],
     manual_steps: [
       'Restart Codex so copied agents and skills are discovered.',
       'Forgeflow runtime helpers are installed under CODEX_HOME/forgeflow for use outside the source checkout.',
