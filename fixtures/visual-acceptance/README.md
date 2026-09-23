@@ -1,0 +1,11 @@
+# Visual acceptance fixture
+
+`paired-cards.html` is a newly authored synthetic page under the repository MIT license. `answer-key.json` freezes its SHA256 identity and intended layout relationships separately. The browser test creates balanced, accidentally oversized and intentionally featured variants, with short or long content. Future model pilots must receive only a frozen variant and objective, without variant labels, tests or the answer key.
+
+Run `npm run test:visual-capabilities` from the checkout with its existing Playwright dependency and a compatible Chromium installed. If using an already installed alternative Chromium, set `FORGEFLOW_CHROMIUM_PATH` to its executable and retain the recorded browser version. The runner does not download dependencies, start a server or use the dashboard config; it opens the local fixture and closes its browser. Missing browsers fail explicitly. The ordinary helper suite remains independent of browser availability.
+
+The 38 checks cover three variants at 1440, 768 and 390 CSS pixels in light/dark modes with normal/long content, plus CSS 200% text enlargement and a 320-pixel reflow probe. Balanced cases require equal dimensions in a row and equal widths when stacked. Featured cases intentionally have a wider first card in rows. Oversized cases must trigger the layout/overflow detector, so a passing test for that case means the seeded defect was detected.
+
+Context and component screenshots plus JSON observations are retained in a unique temporary directory printed at completion. Measurements include bounding boxes, overflow, system-font readiness, text/background contrast, keyboard order, accessible names, focus-outline contrast, button activation and reduced-motion behavior. Compare and inspect the images as well as the measurements. Source identity and browser version accompany the main matrix observations.
+
+Limits: these are local Chromium fixture results, not model trials or public application qualification. Contrast checks assume the fixture's opaque inherited colors. No axe scan, custom webfont loading, screen-reader test or actual browser zoom is performed. CSS text enlargement and narrow viewport reflow are labeled probes. These checks do not establish complete accessibility compliance. Captures remain local and are not committed.

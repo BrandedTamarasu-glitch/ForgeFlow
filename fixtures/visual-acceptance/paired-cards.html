@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project workshop</title>
+<style>
+  :root { font-family: system-ui, sans-serif; color: #202020; background: #ffffff; }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  main { max-width: 72rem; margin: auto; padding: 1.5rem; }
+  header, footer { padding-block: 1rem; }
+  .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+  article { min-width: 0; padding: 1.5rem; border: 2px solid currentColor; border-radius: .5rem; overflow-wrap: anywhere; }
+  h1 { font-size: 2rem; } h2 { font-size: 1.4rem; }
+  p { line-height: 1.6; }
+  a, button { color: inherit; font: inherit; }
+  button { padding: .75rem; background: transparent; border: 2px solid currentColor; cursor: pointer; }
+  :focus-visible { outline: 3px solid currentColor; outline-offset: 4px; }
+  #marker { display: inline-block; animation: pulse 1s infinite alternate; }
+  @keyframes pulse { to { transform: translateY(-2px); } }
+  @media (prefers-reduced-motion: reduce) { #marker { animation: none; } }
+  @media (prefers-color-scheme: dark) { :root { color: #f5f5f5; background: #181818; } }
+  [data-variant="mismatch"] .cards { align-items: start; }
+  [data-variant="mismatch"] article:last-child { width: calc(100% + 32px); min-height: 28rem; }
+  [data-variant="featured"] .cards { grid-template-columns: 2fr 1fr; }
+  @media (max-width: 40rem) { .cards, [data-variant="featured"] .cards { grid-template-columns: 1fr; } }
+</style>
+<body data-variant="balanced">
+<main>
+  <header><h1>Project workshop <span id="marker" aria-hidden="true">◆</span></h1><p>Explore two projects and their recent work.</p></header>
+  <section class="cards" aria-label="Projects">
+    <article><h2>Field notes</h2><p class="description">A place to record observations and turn them into useful ideas.</p><a href="#details">Read field notes</a></article>
+    <article><h2>New horizons</h2><p class="description">A place to explore new possibilities.</p><a href="#details">Explore new horizons</a></article>
+  </section>
+  <footer><button type="button" aria-expanded="false" aria-controls="details">Show project details</button><p id="details" hidden>Both projects are ready to explore.</p></footer>
+</main>
+<script>
+  document.querySelector('button').addEventListener('click', event => {
+    const expanded = event.currentTarget.getAttribute('aria-expanded') === 'true';
+    event.currentTarget.setAttribute('aria-expanded', String(!expanded));
+    document.querySelector('#details').hidden = expanded;
+  });
+</script>
+</body>
+</html>

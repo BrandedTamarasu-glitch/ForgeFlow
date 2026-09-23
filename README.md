@@ -24,9 +24,9 @@ This milestone adds:
 - Corrected atomicity guidance backed by six executable synthetic examples covering intermediate visibility, concurrent updates and retry behavior.
 - Skill-enabled/disabled evaluation with frozen inputs, separate answer keys and explicit actual, fixture and unobserved results. Existing workflow comparisons retain their original meaning.
 
-**Change propagation is now implemented for controlled evaluation; the other eight procedures remain planned.** Selection does not execute an unavailable procedure, and no model trials or measured improvement are claimed. Managed installation and packaging checks pass; live client activation remains unverified, and the lean Codex plugin does not expose the capability entry point. This source milestone does not change the packaged release version.
+**Change propagation and visual acceptance are implemented for controlled evaluation; the other seven procedures remain planned.** Selection does not execute an unavailable procedure, and no model trials or measured improvement are claimed. Managed installation and packaging checks pass; live client activation remains unverified, and the lean Codex plugin does not expose the capability entry point. This source milestone does not change the packaged release version.
 
-The [change-propagation procedure](forgeflow-patterns/capability-change-propagation.md) maps sources to consumers, records freshness evidence and includes a read-only text-reference checker. Normal automatic execution awaits qualification. Next is **F1.2: visual acceptance**. Follow the [roadmap](ROADMAP.md), [capability contracts and host support](docs/capability-contract.md), and [evaluation protocol](docs/skill-evaluation.md).
+The [change-propagation procedure](forgeflow-patterns/capability-change-propagation.md) maps sources to consumers, records freshness evidence and includes a read-only text-reference checker. The [visual-acceptance procedure](forgeflow-patterns/capability-visual-acceptance.md) adds surrounding-page, responsive and accessibility checks to UI iteration. Normal automatic execution awaits qualification. Next is **F1.3: controlled skill comparisons**. Follow the [roadmap](ROADMAP.md), [capability contracts and host support](docs/capability-contract.md), and [evaluation protocol](docs/skill-evaluation.md).
 
 ## New in 4.6.3
 

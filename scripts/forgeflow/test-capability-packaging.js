@@ -53,6 +53,8 @@ try {
     const selector = entry('scripts/forgeflow/select-capabilities.js');
     const pattern = entry('forgeflow-patterns/capability-selection.md');
     const procedure = entry('forgeflow-patterns/capability-change-propagation.md');
+    const visualProcedure = entry('forgeflow-patterns/capability-visual-acceptance.md');
+    assert.equal(fs.readFileSync(visualProcedure, 'utf8'), fs.readFileSync(path.join(root, 'forgeflow-patterns/capability-visual-acceptance.md'), 'utf8'));
     assert.equal(fs.readFileSync(procedure, 'utf8'), fs.readFileSync(path.join(root, 'forgeflow-patterns/capability-change-propagation.md'), 'utf8'));
     assert.ok(fs.existsSync(entry('scripts/forgeflow/check-change-propagation.js')));
     const wrapperSource = target === 'codex' ? '.agents/skills/forgeflow-capabilities/SKILL.md' : 'skills/forgeflow-capabilities/SKILL.md';
@@ -92,7 +94,7 @@ try {
 
     // A simulated older local installation is updated, then restored exactly.
     const originals = new Map();
-    for (const file of [selector, pattern, procedure, wrapper]) {
+    for (const file of [selector, pattern, procedure, visualProcedure, wrapper]) {
       const suffix = file.endsWith('.js') ? '\n// previous local fixture version\n' : '\nPrevious local fixture version.\n';
       fs.appendFileSync(file, suffix);
       originals.set(file, fs.readFileSync(file));

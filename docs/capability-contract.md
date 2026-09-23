@@ -1,6 +1,6 @@
 # Capability contract and integration map
 
-Status: Phase 0 foundation implemented. F1.1 change propagation has an evaluation-cohort procedure and a read-only text-reference checker; the other eight procedure bodies remain planned. Discovery declarations are checked; live client discovery after restart is not claimed. See [the roadmap](../ROADMAP.md).
+Status: Phase 0 foundation implemented. Change propagation and visual acceptance have evaluation-cohort procedures; the other seven procedure bodies remain planned. Discovery declarations are checked; live client discovery after restart is not claimed. See [the roadmap](../ROADMAP.md).
 
 ## Contract version 1
 
@@ -33,7 +33,7 @@ Each procedure must define ordered steps, scope/termination bounds, expected evi
 
 ## Canonical inventory
 
-Use flat canonical files `forgeflow-patterns/capability-<id>.md`. Change propagation exists; the remaining paths are future implementation destinations. Flat Markdown fits both current managed-pattern installation paths; nested pattern directories do not currently have equivalent Claude coverage.
+Use flat canonical files `forgeflow-patterns/capability-<id>.md`. Change propagation and visual acceptance exist; the remaining paths are future implementation destinations. Flat Markdown fits both current managed-pattern installation paths; nested pattern directories do not currently have equivalent Claude coverage.
 
 ### change-propagation
 
@@ -47,6 +47,8 @@ Implemented for evaluation: [canonical procedure](../forgeflow-patterns/capabili
 - **Fallback/cleanup:** missing generator or related checkout leaves freshness unverified; retain the manifest, clean only owned temporary outputs.
 
 ### visual-acceptance
+
+Implemented for evaluation: [canonical procedure](../forgeflow-patterns/capability-visual-acceptance.md), contextual acceptance in [UI iteration](../commands/ui-iterate.md), and [local browser fixtures](../fixtures/visual-acceptance/README.md). Required failures are excluded from cosmetic ranking. Chromium fixture observations do not establish model benefit, full accessibility compliance or live application qualification.
 
 - **Trigger/exclusion:** layout, typography, theme, component or interaction change; exclude nonvisual edits and intentional asymmetry that satisfies the brief.
 - **Phases/owner:** implement, review, ship; Designer executes, Product Lead checks user acceptance.
@@ -187,7 +189,7 @@ The initial selector uses conservative behavioral patterns to shortlist/select c
 
 The output includes one decision per capability, selected IDs, up to three inspection requests and the scope fingerprint. Pass the previous result as `previous` after meaningful discoveries. An unchanged normalized scope consumes no reassessment; changed scope allows three reassessments before further selections are deferred with unresolved gaps. A new independent task starts a new budget. Preserve the previous result to keep the bound effective; do not reset it to work around a deferred result.
 
-The context builder writes `capability-selection.json` beside existing context artifacts, links it from synthesis input and appends scoped guidance to existing role packets. Reviewer lists/modes and task evidence are unchanged. No procedure body is loaded; change propagation has `availability: evaluation`, the other eight have `availability: planned`, and all have `executable: false` in normal routing pending qualification. This proves selection plumbing, not capability execution or measured agent benefit.
+The context builder writes `capability-selection.json` beside existing context artifacts, links it from synthesis input and appends scoped guidance to existing role packets. Reviewer lists/modes and task evidence are unchanged. No procedure body is loaded; change propagation and visual acceptance have `availability: evaluation`, the other seven have `availability: planned`, and all have `executable: false` in normal routing pending qualification. This proves selection plumbing, not capability execution or measured agent benefit.
 
 ## Host entry points and packaging
 

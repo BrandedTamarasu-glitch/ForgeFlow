@@ -1,0 +1,20 @@
+{
+  "schema_version": "1",
+  "provenance": {
+    "source": "paired-cards.html",
+    "source_revision": "b7176817539e18b405251d9168a68a90d81079f2e50f8f320ac00a18f70bc096",
+    "license": "MIT (repository LICENSE)",
+    "derivation": "New synthetic two-card page authored for ForgeFlow; no copied project or personal data."
+  },
+  "layout_failure": {
+    "balanced": false,
+    "mismatch": true,
+    "featured": false
+  },
+  "requirements": {
+    "balanced": "Equal widths and heights when side by side; equal widths when stacked.",
+    "mismatch": "Same requirements as balanced; oversized second card is a seeded violation.",
+    "featured": "Featured card is intentionally wider in rows; equal widths when stacked.",
+    "all": "No horizontal page overflow. Keyboard names, focus, activation and readable foreground/background contrast in both themes."
+  }
+}

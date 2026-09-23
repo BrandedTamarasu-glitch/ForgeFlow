@@ -700,7 +700,7 @@ const checks = [
   ['capabilities do not alter reviewer route shape', !Object.hasOwn(route, 'selected') && !Object.hasOwn(route, 'capabilities')],
   ['capability selection artifact linked', synthesis.capability_selection_path.endsWith('capability-selection.json')],
   ['all capabilities have explicit decisions', capabilitySelection.decisions.length === 9],
-  ['unqualified capabilities cannot claim execution', capabilitySelection.decisions.every(item => item.executable === false && item.availability === (item.id === 'change-propagation' ? 'evaluation' : 'planned'))],
+  ['unqualified capabilities cannot claim execution', capabilitySelection.decisions.every(item => item.executable === false && item.availability === (['change-propagation', 'visual-acceptance'].includes(item.id) ? 'evaluation' : 'planned'))],
   ['packet explains capability boundary', wardenPacket.includes('Relevance selection only.') && wardenPacket.includes('## Capability selection')],
   ['result out dir', result.out_dir === outDir],
   ['deep mode for auth path', route.mode === 'deep-mode'],
