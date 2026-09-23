@@ -40,6 +40,17 @@ async function evaluate(family, modulePath) {
       await work[0];
       assert.deepEqual(c.view('a'), { value: 8, observedAt: 10, freshness: 'fresh', error: null });
     });
+    for (const olderFails of [false, true]) await check(`superseded-${olderFails ? 'error' : 'success'}-while-newest-pending`, async () => {
+      const c = subject.createCache(() => 10, 5), old = deferred(), recent = deferred();
+      await c.refresh('a', async () => reading(3));
+      const work = [c.refresh('a', () => old.promise), c.refresh('a', () => recent.promise)];
+      if (olderFails) old.reject(new Error('fake-private-sentinel')); else old.resolve(reading(9));
+      await work[0];
+      const intermediate = c.view('a');
+      recent.reject(new Error('latest failed')); await work[1];
+      assert.deepEqual(intermediate, { value: 3, observedAt: 10, freshness: 'fresh', error: null });
+      assert.deepEqual(c.view('a'), { value: 3, observedAt: 10, freshness: 'fresh', error: 'refresh-failed' });
+    });
     await check('failed-refresh-retention-and-redaction', async () => {
       let now = 10; const c = subject.createCache(() => now, 5);
       await c.refresh('a', async () => reading(6)); now = 20;
@@ -72,7 +83,8 @@ async function evaluate(family, modulePath) {
       if (req.url === '/redirect-target') redirectedHits++;
       const entry = responses[req.url] || { status: 404, body: '' };
       if (entry.disconnect) { req.socket.destroy(); return; }
-      res.writeHead(entry.status || 200, { 'Content-Type': entry.type || 'text/plain', 'X-Release': 'current', ...(entry.location ? { Location: entry.location } : {}) });
+      res.writeHead(entry.status || 200, { 'Content-Type': entry.type || 'text/plain', 'X-Release': 'current', ...(entry.location ? { Location: entry.location } : {}),
+        ...(entry.invalidEncoding ? { 'Content-Encoding': 'gzip' } : {}) });
       res.end(entry.body || '');
     });
     try {
@@ -89,6 +101,9 @@ async function evaluate(family, modulePath) {
         ['bodyless-cache', { '/script': { status: 304 } }, true, 'unverified', 'pass'],
         ['known-failure-before-unavailable', { '/page': { status: 404 }, '/script': { disconnect: true } }, null, 'fail', 'unverified'],
         ['unknown-before-known-failure', { '/page': { disconnect: true }, '/script': { status: 404 } }, true, 'fail', 'pass'],
+        ['body-read-failure', { '/script': { body: 'not gzip', type: 'text/javascript', invalidEncoding: true } }, true, 'unverified', 'pass'],
+        ['known-failure-before-body-read-failure', { '/page': { status: 404 }, '/script': { body: 'not gzip', type: 'text/javascript', invalidEncoding: true } }, true, 'fail', 'pass'],
+        ['mime-failure-before-body-read-failure', { '/script': { body: 'not gzip', type: 'text/html', invalidEncoding: true } }, true, 'fail', 'pass'],
         ['matching-bytes-broken-interaction', {}, false, 'pass', 'fail'],
         ['unknown-identity-broken-interaction', { '/page': { disconnect: true } }, false, 'unverified', 'fail'],
         ['unobserved-interaction', {}, null, 'pass', 'unverified'],
@@ -107,32 +122,47 @@ async function evaluate(family, modulePath) {
   } else if (family === 'native') {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'installed-gate-oracle-'));
     try {
-      const program = (mode = 'ready', version = 2) => `const fs=require('node:fs'),path=require('node:path');fs.writeFileSync(path.join(process.argv[2],'state.txt'),'changed');${mode === 'timeout' ? 'setTimeout(()=>{},2000);' : mode === 'invalid' ? "console.log('invalid');" : `console.log(JSON.stringify({version:${version},executable:${mode === 'wrong-path' ? "'/wrong'" : '__filename'},state:'ready'}));${mode === 'exit' ? 'process.exitCode=3;' : ''}`}`;
+      const program = (mode = 'ready', version = 2) => `const fs=require('node:fs'),path=require('node:path');fs.writeFileSync(path.join(process.argv[2],'state.txt'),'changed');${mode === 'timeout' ? 'setTimeout(()=>{},2000);' : mode === 'invalid' ? "console.log('invalid');" : `console.log(JSON.stringify({version:${version},executable:${mode === 'wrong-path' ? "'/wrong'" : '__filename'},state:${mode === 'wrong-state' ? "'broken'" : "'ready'"}}));${mode === 'exit' ? 'process.exitCode=3;' : ''}${mode === 'cwd' ? 'if(process.cwd()!==path.dirname(__filename))process.exitCode=4;' : ''}${mode === 'restore-error' ? "fs.unlinkSync(path.join(process.argv[2],'state.txt'));fs.mkdirSync(path.join(process.argv[2],'state.txt'));" : ''}`}`;
       const scenarios = [
         ['clean-existing', 'ready', 'ready', 'original', 'pass', 'pass'],
         ['clean-absent', 'ready', 'ready', null, 'pass', 'pass'],
         ['clean-empty', 'ready', 'ready', '', 'pass', 'pass'],
+        ['clean-binary-profile', 'ready', 'ready', Buffer.from([0, 255, 254, 128]), 'pass', 'pass'],
+        ['relative-paths', 'ready', 'ready', 'original', 'pass', 'pass'],
+        ['installed-working-directory', 'cwd', 'cwd', 'original', 'pass', 'pass'],
         ['stale-installed', 'ready', 'older', 'original', 'fail', 'fail'],
         ['installed-invalid-output', 'ready', 'invalid', 'original', 'fail', 'fail'],
         ['matching-invalid-output', 'invalid', 'invalid', 'original', 'pass', 'fail'],
         ['nonzero-exit', 'exit', 'exit', 'original', 'pass', 'fail'],
         ['wrong-executing-path', 'wrong-path', 'wrong-path', 'original', 'pass', 'fail'],
+        ['wrong-state-output', 'wrong-state', 'wrong-state', 'original', 'pass', 'fail'],
+        ['restore-failure', 'restore-error', 'restore-error', 'original', 'pass', 'unverified'],
+        ['snapshot-read-failure', 'ready', 'ready', 'directory', 'pass', 'unverified'],
         ['timeout-restores-profile', 'timeout', 'timeout', 'original', 'pass', 'unverified'],
         ['missing-installed', 'ready', null, 'original', 'unverified', 'fail'],
       ];
       for (const [id, builtMode, installedMode, original, identity, launch] of scenarios) await check(id, () => {
         const dir = fs.mkdtempSync(path.join(root, 'case-')), profile = path.join(dir, 'profile'); fs.mkdirSync(profile);
-        const built = path.join(dir, 'built.js'), installed = path.join(dir, 'installed.js'), state = path.join(profile, 'state.txt');
+        fs.mkdirSync(path.join(dir, 'build')); fs.mkdirSync(path.join(dir, 'install'));
+        const built = path.join(dir, 'build/app.js'), installed = path.join(dir, 'install/app.js'), state = path.join(profile, 'state.txt');
         fs.writeFileSync(built, program(builtMode));
         if (installedMode !== null) fs.writeFileSync(installed, program(installedMode === 'older' ? 'ready' : installedMode, installedMode === 'older' ? 1 : 2));
-        if (original !== null) fs.writeFileSync(state, original);
+        if (id === 'snapshot-read-failure') fs.mkdirSync(state);
+        else if (original !== null) fs.writeFileSync(state, original);
         fs.writeFileSync(path.join(profile, 'unrelated.txt'), 'keep');
-        const actual = subject.check({ built, installed, profile, expectedVersion: 2 });
+        const caller = process.cwd();
+        let actual;
+        try {
+          if (id === 'relative-paths') process.chdir(dir);
+          const inputPath = value => id === 'relative-paths' ? path.relative(process.cwd(), value) : value;
+          actual = subject.check({ built: inputPath(built), installed: inputPath(installed), profile: inputPath(profile), expectedVersion: 2 });
+        } finally { process.chdir(caller); }
         const qualification = identity === 'fail' || launch === 'fail' ? 'fail' : identity === 'unverified' || launch === 'unverified' ? 'unverified' : 'pass';
         assert.deepEqual(actual, { identity, launch, qualification });
         assert.equal(fs.readFileSync(path.join(profile, 'unrelated.txt'), 'utf8'), 'keep');
         assert.equal(fs.existsSync(state), original !== null);
-        if (original !== null) assert.equal(fs.readFileSync(state, 'utf8'), original);
+        if (id === 'snapshot-read-failure' || id === 'restore-failure') assert.equal(fs.statSync(state).isDirectory(), true);
+        else if (original !== null) assert.deepEqual(fs.readFileSync(state), Buffer.isBuffer(original) ? original : Buffer.from(original));
       });
     } finally { fs.rmSync(root, { recursive: true, force: true }); }
   } else throw new Error('Unknown family');

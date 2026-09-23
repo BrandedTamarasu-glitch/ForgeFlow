@@ -5,6 +5,7 @@ const { spawnSync } = require('node:child_process');
 const hash = file => createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 const combine = values => values.includes('fail') ? 'fail' : values.includes('unverified') ? 'unverified' : 'pass';
 function check({ built, installed, profile, expectedVersion }) {
+  built = path.resolve(built); installed = path.resolve(installed); profile = path.resolve(profile);
   let identity = 'unverified', launch = 'unverified';
   try { identity = hash(built) === hash(installed) ? 'pass' : 'fail'; } catch {}
   const state = path.join(profile, 'state.txt');

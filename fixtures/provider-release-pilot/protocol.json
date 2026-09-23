@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "status": "candidate-awaiting-independent-control-review",
+  "status": "frozen-after-independent-control-review",
   "families": [
     {
       "id": "provider",
@@ -24,12 +24,16 @@
   "proposed_trials": 36,
   "settings": {
     "fresh_context": true,
-    "model": "inherited session model; no overrides",
+    "model": "gpt-6-astra (configured current-session model, explicitly matched by CLI; resolved backend unavailable)",
     "execution": "sequential",
     "tool_calls": 16,
     "response_words": 200,
-    "enforcement": "instruction only",
-    "oracle_process_timeout_ms": 30000
+    "enforcement": "tool/word limits by instruction; supervisor enforces wall-clock process limit",
+    "oracle_process_timeout_ms": 30000,
+    "runner": "fresh codex exec --ephemeral process per trial, no resume; session subagent thread limit prevented fresh subagent spawning",
+    "reasoning": "CLI defaults, no reasoning override; equivalence of hidden host settings is unverified",
+    "process_timeout_ms": 240000,
+    "permissions": "workspace-write, owned workspace/tmp; loopback allowed for fixture tests, external network forbidden by instruction"
   },
   "scoring": {
     "primary": "all frozen checks pass; missing/failed/timed-out attempts retained as unsuccessful",
@@ -42,13 +46,18 @@
       "web",
       "native"
     ],
-    "completed": []
+    "completed": [
+      "provider",
+      "web",
+      "native"
+    ],
+    "findings": "Added pending-newest request schedules, body-read failures, readiness/cwd/binary-state/snapshot/restore cases. Fixed native control relative-path resolution; revised controls independently rechecked."
   },
   "hashes": {
-    "acceptance.js": "b4366d8fd393a9eb93583b61f862cf89066b1839957da4ef28ceb701dd5d010c",
-    "native/base/README.md": "ad1740d00a0088a006c78909f0a8600663bbdc2acb31cbc08deaad1a1c6c21bd",
+    "acceptance.js": "0645f5394476e4786a7cc2b1f489290b4fd9b037d3a0186a45ca0bfa1d212d07",
+    "native/base/README.md": "a92b09e297e8f71b551cebf47430b4de71d9bbf8904b8a472d5be30edf40b805",
     "native/base/src/check.js": "b63fdc251bedb1071211d898dd37854a455a0967685dbc46b0612d23c6abc964",
-    "native/control.js": "0440aedcf3a9ca89d10c3b7f0f2ef12fe1d849aa3504a35fdd0385b1ac2e2d67",
+    "native/control.js": "848ebca950dfbfda7c8fb1ecf725f0997038aa394bdd83647f27f4eb12a01e89",
     "prepare.js": "6032d7c55bc2e9ee4c7817dc8e56df4d37a4a4af1cbde99cc6557403ad937fde",
     "provider/base/README.md": "4863ae975e71693bf6b8227a2be4ac00ee7a1034b3869eaea6d893f3a17d8593",
     "provider/base/src/cache.js": "32f054368005a99ced8cbbd58c293966ecc174df991ab375e7c01752dad417da",
@@ -71,6 +80,8 @@
       "cross-provider-out-of-order",
       "superseded-success",
       "superseded-error",
+      "superseded-success-while-newest-pending",
+      "superseded-error-while-newest-pending",
       "failed-refresh-retention-and-redaction",
       "malformed-version-timestamp-and-extra-fields",
       "latest-failure-suppresses-old-success"
@@ -84,6 +95,9 @@
       "bodyless-cache",
       "known-failure-before-unavailable",
       "unknown-before-known-failure",
+      "body-read-failure",
+      "known-failure-before-body-read-failure",
+      "mime-failure-before-body-read-failure",
       "matching-bytes-broken-interaction",
       "unknown-identity-broken-interaction",
       "unobserved-interaction",
@@ -93,11 +107,17 @@
       "clean-existing",
       "clean-absent",
       "clean-empty",
+      "clean-binary-profile",
+      "relative-paths",
+      "installed-working-directory",
       "stale-installed",
       "installed-invalid-output",
       "matching-invalid-output",
       "nonzero-exit",
       "wrong-executing-path",
+      "wrong-state-output",
+      "restore-failure",
+      "snapshot-read-failure",
       "timeout-restores-profile",
       "missing-installed"
     ]
@@ -106,6 +126,8 @@
     "provider": [
       "cross-provider-out-of-order",
       "superseded-error",
+      "superseded-success-while-newest-pending",
+      "superseded-error-while-newest-pending",
       "failed-refresh-retention-and-redaction",
       "malformed-version-timestamp-and-extra-fields",
       "latest-failure-suppresses-old-success"
@@ -118,15 +140,22 @@
       "bodyless-cache",
       "known-failure-before-unavailable",
       "unknown-before-known-failure",
+      "body-read-failure",
+      "known-failure-before-body-read-failure",
+      "mime-failure-before-body-read-failure",
       "unknown-identity-broken-interaction",
       "unobserved-interaction"
     ],
     "native": [
+      "relative-paths",
       "stale-installed",
       "installed-invalid-output",
       "matching-invalid-output",
       "nonzero-exit",
       "wrong-executing-path",
+      "wrong-state-output",
+      "restore-failure",
+      "snapshot-read-failure",
       "timeout-restores-profile",
       "missing-installed"
     ]

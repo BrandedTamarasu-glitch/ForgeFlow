@@ -7,17 +7,14 @@ const fixture = path.resolve(__dirname, '../../fixtures/provider-release-pilot')
 const { prepare, verifyHashes } = require(path.join(fixture, 'prepare'));
 const { score } = require(path.join(fixture, 'score'));
 const protocol = require(path.join(fixture, 'protocol.json'));
-const initialFailures = {
-  provider: ['cross-provider-out-of-order', 'superseded-error', 'failed-refresh-retention-and-redaction', 'malformed-version-timestamp-and-extra-fields', 'latest-failure-suppresses-old-success'],
-  web: ['stale-despite-version-header', 'html-script-fallback', 'missing-resource', 'redirect-no-target-contact', 'bodyless-cache', 'known-failure-before-unavailable', 'unknown-before-known-failure', 'unknown-identity-broken-interaction', 'unobserved-interaction'],
-  native: ['stale-installed', 'installed-invalid-output', 'matching-invalid-output', 'nonzero-exit', 'wrong-executing-path', 'timeout-restores-profile', 'missing-installed'],
-};
+const initialFailures = protocol.initial_failures;
 function evaluate(family, module) {
   const result = spawnSync(process.execPath, [path.join(fixture, 'acceptance.js'), family, module], { encoding: 'utf8', timeout: 30000 });
   assert.ifError(result.error);
   assert.ok([0, 1].includes(result.status), result.stderr);
   const checks = JSON.parse(result.stdout);
-  assert.equal(checks.length, { provider: 7, web: 12, native: 10 }[family]);
+  assert.equal(checks.length, protocol.checks[family].length);
+  assert.deepEqual(checks.map(check => check.id), protocol.checks[family]);
   return checks;
 }
 verifyHashes();
@@ -39,12 +36,20 @@ try {
     ['web', 'follow-redirect', "redirect: 'manual'", "redirect: 'follow'", 'redirect-no-target-contact'],
     ['native', 'execute-build', '[installed, profile]', '[built, profile]', 'clean-existing'],
     ['native', 'omit-restoration', 'if (original !== null) fs.writeFileSync(state, original);', 'if (original !== null) {}', 'clean-existing'],
+    ['provider', 'completion-order', 'id === sequences.get(key)', 'mayPublish(key, id)', 'superseded-success-while-newest-pending'],
+    ['web', 'body-read-as-empty', 'await response.arrayBuffer()', 'await response.arrayBuffer().catch(() => new ArrayBuffer(0))', 'body-read-failure'],
+    ['native', 'wrong-state-accepted', " && value.state === 'ready'", '', 'wrong-state-output'],
+    ['native', 'caller-working-directory', 'cwd: path.dirname(installed)', 'cwd: process.cwd()', 'installed-working-directory'],
+    ['native', 'lossy-profile-bytes', 'fs.writeFileSync(state, original)', "fs.writeFileSync(state, original.toString('utf8'))", 'clean-binary-profile'],
+    ['native', 'unnormalized-paths', 'built = path.resolve(built); installed = path.resolve(installed); profile = path.resolve(profile);', '', 'relative-paths'],
   ];
   for (const [family, name, before, after, expectedFailure] of mutations) {
     const source = fs.readFileSync(path.join(fixture, family, 'control.js'), 'utf8');
     assert.ok(source.includes(before));
     const mutant = path.join(temporary, `${name}.js`);
-    fs.writeFileSync(mutant, source.replaceAll(before, after));
+    let changed = source.replaceAll(before, after);
+    if (name === 'completion-order') changed = changed.replace('const sequences = new Map();', 'const sequences = new Map(); const completed = new Map(); const mayPublish = (key, id) => { if (id < (completed.get(key) || 0)) return false; completed.set(key, id); return true; };');
+    fs.writeFileSync(mutant, changed);
     assert.equal(evaluate(family, mutant).find(check => check.id === expectedFailure).pass, false, name);
     console.log(`Oracle sensitivity: ${name} detected`);
   }
