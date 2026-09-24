@@ -1,6 +1,6 @@
 # ForgeFlow roadmap
 
-Last updated: 2026-09-23
+Last updated: 2026-09-24
 
 ## Current focus
 
@@ -110,6 +110,18 @@ Dependencies: all packages above; hardware/physical/platform limitations may rem
 - [ ] **F6.2 — Activation readiness.** Review each skill's actual benefit and regressions. Acceptance: no unexplained new false blocker or critical seeded regression; normal automatic activation is supported by observed benefit. Inconclusive skills are revised/retested or retained in the evaluation cohort, not quietly presented as proven.
 - [ ] **F6.3 — Integration and documentation.** Complete discovery, examples, overrides and disable/update/rollback guidance. Acceptance: targeted checks and the local full suite pass, generated sources agree, and primary-host install/update/rollback is verified. No hosted CI workflow is added.
 - [ ] **F6.4 — Release preparation.** Prepare an accurate summary of available capabilities and evidence limits; inspect outgoing content. Acceptance: no local session state, private fixture data or unsupported performance/platform claims are included. Publication remains a separately authorized action.
+
+## Queued after current work: review and execution evolution
+
+**Status: queued, not started. F6.1 remains the next action.** This track does not change capability completion, activation status, or current rollout priorities. Select it after Phase 6 or an explicit reprioritization. The [phased plan](docs/wiki/Review-And-Execution-Evolution.md) combines explicit decision/evidence contracts, focused specialist work, and deterministic preparation inspired by Jive.
+
+- [ ] **E1 — Pilot cases and decision contracts.** Reuse existing calibration cases, real-project results and skill comparison tooling. Define consequential claims, assumptions, missing evidence and a small frozen baseline for this adaptation. Acceptance: relevant cases and clean lookalikes are reproducible, answer exposure is controlled, and quality/overhead criteria are fixed before observing candidate results.
+- [ ] **E2 — Immutable review evidence.** After E1, bind packets and results to run identity, source state and hashes, with bounded previews and full retrieval. Acceptance: later or concurrent packet builds cannot replace earlier evidence; omissions, stale inputs and interrupted runs remain explicit. Reuse existing task-store freshness checks.
+- [ ] **E3 — Focused specialist questions and bounded follow-up.** After E2, route missing-evidence requests through the orchestrator and challenge selected consequential premises before exposing peer verdicts. Acceptance: targeted unsupported assumptions are caught, correct lookalikes remain unflagged, exhausted requests remain unresolved, and required specialist coverage is preserved within the declared overhead budget.
+- [ ] **E4 — Deterministic review preparation.** After E2, connect existing scope, packet, budget and wave helpers through the normal review entrypoint. Acceptance: correct readiness on small and over-budget scopes, named dependency failures, preserved independent results, safe interruption reconciliation and measured preparation savings without lost proof. Native dispatch and authorization retain their existing owners.
+- [ ] **E5 — Compare and adopt selectively.** After candidate items, use the existing skill comparison and Phase 6 evaluation findings to decide each change independently. Acceptance: predeclared correctness, cost and host-compatibility criteria pass; inconclusive changes stay experimental. Bounded model-decision trials require a measured repetitive workload and include escalation/mistake costs.
+
+No implementation or model trials were performed for this addition. Existing operational and comparative evidence is the baseline; the track does not restart completed capability evaluation. General graph-runtime replacement, eager streamed execution and a new model-provider dependency remain deferred. Validation for this documentation update: documentation links, generated guide freshness and whitespace checks; implementation acceptance remains pending.
 
 ## Validation and execution policy
 
