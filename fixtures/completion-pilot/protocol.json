@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "status": "frozen-awaiting-workflow-trial-authorization",
+  "kind": "known-real-project-repair-through-implementation-workflow",
+  "source_commit": "2bbb198b7a5852cd64fc243a1392cda56f517640",
+  "source_project": "Baa-ton",
+  "variants": [
+    "defective",
+    "corrected-control"
+  ],
+  "arms": [
+    "normal-workflow",
+    "selected-procedures-evaluation"
+  ],
+  "repetitions_per_variant_arm": 3,
+  "planned_workflow_trials": 12,
+  "planned_control_reviews": 2,
+  "worker_contexts_per_trial": 3,
+  "maximum_correction_cycles": 1,
+  "workflow": {
+    "entrypoint": ".agents/skills/forgeflow-implement/SKILL.md",
+    "stages": [
+      "implementation",
+      "validation",
+      "integration",
+      "coordinator-acceptance"
+    ],
+    "configuration": "Same frozen brief, supported helper/runtime snapshot, canonical role instructions and headless configuration in both arms. Reuse each trial's three worker contexts only within its one allowed correction cycle. Different trials always use fresh contexts.",
+    "normal-workflow": "Run the supported selector and context steps; honor executable=false and do not load evaluation procedures.",
+    "selected-procedures-evaluation": "Run the same selector without forced includes. Use the maintained capability-selection guide's roadmap-controlled evaluation exception to load only selected catalog procedures and pass them to their existing owners. Do not add workers or change review mode.",
+    "activation": "Normal availability/executable gates remain unchanged. This is controlled evaluation execution, not proof of normal automatic activation or the whole consult-to-ship lifecycle.",
+    "dispatch": "Coordinator dispatches the maintained implementation, validation and integration instructions through fresh host workers. Any required compatibility fallback must be identical in both arms and reported; native client discovery is not assumed.",
+    "ownership": "Implementation owns packages/controller/controller.mjs; validation owns new test/completion-pilot/ files; integration is read-only. Existing tests and other source files remain immutable.",
+    "scope_preparation": "Twelve isolated PR workspaces have separate Git roots and identical initial brief/selection/file-list context. Helpers are preflighted in a thirteenth disposable copy; runtime helpers execute afresh after each trial start. The withdrawn WarmLedger queue cannot run.",
+    "packet_sizes_words": {
+      "normal": {
+        "implementation": 4895,
+        "validation": 2263,
+        "integration": 3315
+      },
+      "enhanced": {
+        "implementation": 5641,
+        "validation": 2263,
+        "integration": 3315
+      },
+      "excludes": "dynamic helper artifacts, prior-stage reports, correction feedback and model output"
+    }
+  },
+  "selection": {
+    "task": "Repair durable completion notification delivery for the correctly mapped owning session while preserving identity vetoes and no-replay guarantees",
+    "criteria": [
+      "Valid owner receives durable notification after becoming ready",
+      "Incorrect session is rejected",
+      "Sending, uncertain and delivered receipts are not replayed"
+    ],
+    "files": [
+      "packages/controller/controller.mjs"
+    ],
+    "phase": "implement",
+    "overrides": {},
+    "assessments": [
+      {
+        "id": "persistence-recovery",
+        "relevance": "relevant",
+        "reason": "Durable notification receipts transition from pending to sending before the external prompt; reload must not replay ambiguous delivery.",
+        "evidence": "packages/controller/controller.mjs:2585"
+      }
+    ]
+  },
+  "budget": {
+    "concurrent_trials": 2,
+    "initial_workflow_seconds": 600,
+    "correction_workflow_seconds": 360,
+    "initial_tool_calls_per_worker": 24,
+    "correction_tool_calls_per_worker": 12,
+    "final_words_per_worker": 800,
+    "acceptance_timeout_seconds": 30,
+    "enforcement": "Coordinator monotonic deadline monitoring and host worker interruption. Final report words checked directly. No hard OS isolation; tool counts advisory only.",
+    "tool_count_policy": "Advisory counts only: record audited host events if exposed; otherwise null/unobserved. Self-reports are not verified counts. Tool counts are not primary eligibility criteria."
+  },
+  "primary": "All frozen PR-specific external acceptance checks and required existing tests pass on final source within recorded time and final-word limits, without source-boundary violation or unverified mandatory criterion. Tool counts are advisory and unavailable counts remain null.",
+  "correction_feedback": "On first acceptance failure, record validation_failed and give the same failing check IDs/messages in both arms. One correction cycle using the same three trial contexts. Record correction_submission and rerun the same frozen acceptance. A second failure is terminal, not replaced.",
+  "measurements": {
+    "initial_submission_seconds": "Coordinator start before workflow preparation to first final submission, using one boot's monotonic clock.",
+    "verified_completion_seconds": "Coordinator start to passing external validation; includes preparation, orchestration and validation waits.",
+    "correction_seconds": "First external validation failure to first passing resubmission validation. Includes feedback delivery and workflow correction waits; not isolated human or model latency.",
+    "missingness": "First-pass success => not_applicable/null correction; missing observation => unobserved/null; failed or interrupted correction => censored/null. Never assign zero to an unperformed correction.",
+    "resources": "Record observed host tool events and usage when exposed. Missing exact backend, sampling, token usage or billing stays unknown. Do not use file timestamps for elapsed review time."
+  },
+  "scoring": {
+    "controls": "Count valid clean-case completion and any regressions; edits alone are not false findings. Count claimed blockers only after independent verification.",
+    "failures": "Retain every launched trial, timeout, interruption and failed correction in its scheduled denominator. Never substitute a later unplanned attempt.",
+    "novelty": "This uses a previously confirmed defect and an authored corrected control. It measures repair/completion, not new discovery or historical missed-review novelty.",
+    "conclusion": "Report per-variant paired completion and time first, preserving ties and regressions. No activation qualification or pooled accuracy claim from one known task. If all initial submissions pass, correction remains not_applicable rather than fabricating a correction exercise."
+  },
+  "freeze_requirements": [
+    "Two independent control reviews challenge acceptance, clean control, mutations and workflow/timing boundaries",
+    "Any resulting correction is retested and independently rechecked before freezing",
+    "Hash source variants, canonical workflow/runtime, brief, role instructions, selected procedures, acceptance, measurement and queue before any trial",
+    "Verify actual selector output without forced overrides and headless workflow helper compatibility",
+    "Authoritative trial queue remains unlaunched until authorization and all preflight requirements pass",
+    "Freeze PR-specific acceptance, exact stage packets, handoffs and selected-procedure owner mapping; do not launch the withdrawn commit-only queue"
+  ],
+  "source_base": "51c9d599bd20bddfbcba6f4d5d86cae54f86d329",
+  "source_pr": "https://github.com/zachristmas/baa-ton/pull/6",
+  "supersedes": "Withdrawn WarmLedger commit-only candidate; zero launched trials.",
+  "selection_status": "Initial wording-only selection skipped all capabilities. Explicit source-grounded assessment selects persistence recovery without forced includes; recorded as a routing limitation, not automatic-selection success.",
+  "dispatch_contract": {
+    "context": "Fresh independent context per stage with fork_turns=none and identical generic-worker/canonical-instruction fallback in both arms. No inherited experiment outcomes.",
+    "order": "Implementation then validation then integration, strictly sequential. Prior reports passed verbatim with no coordinator hints. No extra internal repair loop.",
+    "packets": "Freeze exact brief, canonical instructions, helper output, scope, budgets, prior-stage handoffs and procedure-to-owner mapping before launch.",
+    "treatment": "Persistence recovery is executed only by the existing implementation owner. Validation/integration receive its concrete evidence through the same verbatim report handoffs; their prompts have no additional procedure text. Shared coordinator performs no procedure reasoning.",
+    "acceptance": "All three workers idle before coordinator hashes final source and runs hidden acceptance.",
+    "correction": "At most one cycle, same contexts and same stage order. Fixed failing IDs/messages sent verbatim; no suggested fix. Second external failure terminal.",
+    "packet_templates": "Private frozen implementation/validation/integration templates embed maintained canonical instructions. Only workspace/task paths, current helper artifacts and prior verbatim reports vary. Correction template contains exact external IDs/messages, no hints."
+  },
+  "acceptance": {
+    "entrypoint": "fixtures/completion-pilot/acceptance.mjs",
+    "checks": 21,
+    "existing_tests": "node --test packages/controller/test/controller.test.mjs",
+    "observed_head_passed": 19,
+    "observed_control_passed": 21,
+    "observed_incomplete_fix_passed": 20,
+    "observed_control_existing_tests_passed": 55,
+    "limits": "Synthetic native API and session files; Unix-socket test access required equally for both arms. Not live native delivery or full application suite.",
+    "new_tests": "Run added test/completion-pilot/ files as well as the existing controller suite; failures remain mandatory. No added tests is permitted if existing/external checks suffice."
+  },
+  "preflight_remaining": [
+    "authorize twelve workflow trials"
+  ],
+  "freeze_date": "2026-09-24",
+  "preflight_qualification": "Independent actual-PR control review and final workflow/setup recheck qualified; zero workflow trials launched."
+}

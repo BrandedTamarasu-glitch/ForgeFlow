@@ -1,0 +1,414 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-24",
+  "status": "complete-with-execution-limitations",
+  "unit": "Three-stage repair/completion workflow, not single-review response",
+  "pr": "https://github.com/zachristmas/baa-ton/pull/6",
+  "head": "2bbb198b7a5852cd64fc243a1392cda56f517640",
+  "base": "51c9d599bd20bddfbcba6f4d5d86cae54f86d329",
+  "capability": "persistence-recovery",
+  "accounting": {
+    "scheduled": 12,
+    "launched": 12,
+    "verified_within_budget": 1,
+    "timeouts": 11,
+    "contexts_planned_maximum": 36,
+    "contexts_launched": 28,
+    "contexts_with_saved_final_reports": 24
+  },
+  "audit": {
+    "immutable_shared_files_checked": 843,
+    "immutable_mismatches": 0,
+    "final_boundary_violations": 0,
+    "limitation": "Final hashes and Git state do not establish read isolation or absence of transient writes."
+  },
+  "trials": [
+    {
+      "index": 0,
+      "variant": "defective",
+      "arm": "normal-workflow",
+      "repetition": 1,
+      "contexts_launched": 3,
+      "final_reports_received": 3,
+      "external_acceptance": [
+        {
+          "attempt": "initial",
+          "passed": false,
+          "violations": []
+        }
+      ],
+      "timing": {
+        "budget_exceeded": [
+          "correction-workflow"
+        ],
+        "qualifies_within_budget": false,
+        "outcome": "timeout",
+        "initial_submission_seconds": 599.13033527,
+        "verified_completion_seconds": null,
+        "correction": {
+          "status": "censored",
+          "seconds": null
+        },
+        "observation_window_seconds": 983.881977252
+      },
+      "source_changed": true,
+      "final_boundary_violations": [],
+      "report_word_counts": {
+        "implementation": 289,
+        "validation": 556,
+        "integration": 371
+      },
+      "tool_calls": null
+    },
+    {
+      "index": 1,
+      "variant": "defective",
+      "arm": "selected-procedures-evaluation",
+      "repetition": 1,
+      "contexts_launched": 3,
+      "final_reports_received": 3,
+      "external_acceptance": [
+        {
+          "attempt": "initial",
+          "passed": false,
+          "violations": []
+        }
+      ],
+      "timing": {
+        "budget_exceeded": [
+          "initial-workflow",
+          "correction-workflow"
+        ],
+        "qualifies_within_budget": false,
+        "outcome": "timeout",
+        "initial_submission_seconds": 623.455987496,
+        "verified_completion_seconds": null,
+        "correction": {
+          "status": "censored",
+          "seconds": null
+        },
+        "observation_window_seconds": 1042.161472241
+      },
+      "source_changed": true,
+      "final_boundary_violations": [],
+      "report_word_counts": {
+        "implementation": 283,
+        "validation": 439,
+        "integration": 385
+      },
+      "tool_calls": null
+    },
+    {
+      "index": 2,
+      "variant": "defective",
+      "arm": "selected-procedures-evaluation",
+      "repetition": 2,
+      "contexts_launched": 3,
+      "final_reports_received": 2,
+      "external_acceptance": [],
+      "timing": {
+        "budget_exceeded": [
+          "initial-workflow"
+        ],
+        "qualifies_within_budget": false,
+        "outcome": "timeout",
+        "initial_submission_seconds": null,
+        "verified_completion_seconds": null,
+        "correction": {
+          "status": "unobserved",
+          "seconds": null
+        },
+        "observation_window_seconds": 611.811806165
+      },
+      "source_changed": true,
+      "final_boundary_violations": [],
+      "report_word_counts": {
+        "implementation": 362,
+        "validation": 468
+      },
+      "tool_calls": null
+    },
+    {
+      "index": 3,
+      "variant": "defective",
+      "arm": "normal-workflow",
+      "repetition": 2,
+      "contexts_launched": 2,
+      "final_reports_received": 2,
+      "external_acceptance": [],
+      "timing": {
+        "budget_exceeded": [
+          "initial-workflow"
+        ],
+        "qualifies_within_budget": false,
+        "outcome": "timeout",
+        "initial_submission_seconds": null,
+        "verified_completion_seconds": null,
+        "correction": {
+          "status": "unobserved",
+          "seconds": null
+        },
+        "observation_window_seconds": 628.587686125
+      },
+      "source_changed": true,
+      "final_boundary_violations": [],
+      "report_word_counts": {
+        "implementation": 312,
+        "validation": 460
+      },
+      "tool_calls": null
+    },
+    {
+      "index": 4,
+      "variant": "defective",
+      "arm": "normal-workflow",
+      "repetition": 3,
+      "contexts_launched": 1,
+      "final_reports_received": 0,
+      "external_acceptance": [],
+      "timing": {
+        "budget_exceeded": [
+          "initial-workflow"
+        ],
+        "qualifies_within_budget": false,
+        "outcome": "timeout",
+        "initial_submission_seconds": null,
+        "verified_completion_seconds": null,
+        "correction": {
+          "status": "unobserved",
+          "seconds": null
+        },
+        "observation_window_seconds": 630.203937364
+      },
+      "source_changed": true,
+      "final_boundary_violations": [],
+      "report_word_counts": {},
+      "tool_calls": null
+    },
+    {
+      "index": 5,
+      "variant": "defective",
+      "arm": "selected-procedures-evaluation",
+      "repetition": 3,
+      "contexts_launched": 1,
+      "final_reports_received": 1,
+      "external_acceptance": [],
+      "timing": {
+        "budget_exceeded": [
+          "initial-workflow"
+        ],
+        "qualifies_within_budget": false,
+        "outcome": "timeout",
+        "initial_submission_seconds": null,
+        "verified_completion_seconds": null,
+        "correction": {
+          "status": "unobserved",
+          "seconds": null
+        },
+        "observation_window_seconds": 623.942830256
+      },
+      "source_changed": true,
+      "final_boundary_violations": [],
+      "report_word_counts": {
+        "implementation": 370
+      },
+      "tool_calls": null
+    },
+    {
+      "index": 6,
+      "variant": "corrected-control",
+      "arm": "selected-procedures-evaluation",
+      "repetition": 1,
+      "contexts_launched": 3,
+      "final_reports_received": 3,
+      "external_acceptance": [],
+      "timing": {
+        "budget_exceeded": [
+          "initial-workflow"
+        ],
+        "qualifies_within_budget": false,
+        "outcome": "timeout",
+        "initial_submission_seconds": null,
+        "verified_completion_seconds": null,
+        "correction": {
+          "status": "unobserved",
+          "seconds": null
+        },
+        "observation_window_seconds": 627.166406849
+      },
+      "source_changed": false,
+      "final_boundary_violations": [],
+      "report_word_counts": {
+        "implementation": 336,
+        "validation": 463,
+        "integration": 404
+      },
+      "tool_calls": null
+    },
+    {
+      "index": 7,
+      "variant": "corrected-control",
+      "arm": "normal-workflow",
+      "repetition": 1,
+      "contexts_launched": 3,
+      "final_reports_received": 3,
+      "external_acceptance": [
+        {
+          "attempt": "initial",
+          "passed": true,
+          "violations": []
+        }
+      ],
+      "timing": {
+        "budget_exceeded": [],
+        "qualifies_within_budget": true,
+        "outcome": "passed",
+        "initial_submission_seconds": 550.142648781,
+        "verified_completion_seconds": 560.706552657,
+        "correction": {
+          "status": "not_applicable",
+          "seconds": null
+        },
+        "observation_window_seconds": 560.706552657
+      },
+      "source_changed": false,
+      "final_boundary_violations": [],
+      "report_word_counts": {
+        "implementation": 238,
+        "validation": 466,
+        "integration": 357
+      },
+      "tool_calls": null
+    },
+    {
+      "index": 8,
+      "variant": "corrected-control",
+      "arm": "normal-workflow",
+      "repetition": 2,
+      "contexts_launched": 2,
+      "final_reports_received": 2,
+      "external_acceptance": [],
+      "timing": {
+        "budget_exceeded": [
+          "initial-workflow"
+        ],
+        "qualifies_within_budget": false,
+        "outcome": "timeout",
+        "initial_submission_seconds": null,
+        "verified_completion_seconds": null,
+        "correction": {
+          "status": "unobserved",
+          "seconds": null
+        },
+        "observation_window_seconds": 769.418968835
+      },
+      "source_changed": false,
+      "final_boundary_violations": [],
+      "report_word_counts": {
+        "implementation": 273,
+        "validation": 516
+      },
+      "tool_calls": null
+    },
+    {
+      "index": 9,
+      "variant": "corrected-control",
+      "arm": "selected-procedures-evaluation",
+      "repetition": 2,
+      "contexts_launched": 2,
+      "final_reports_received": 1,
+      "external_acceptance": [],
+      "timing": {
+        "budget_exceeded": [
+          "initial-workflow"
+        ],
+        "qualifies_within_budget": false,
+        "outcome": "timeout",
+        "initial_submission_seconds": null,
+        "verified_completion_seconds": null,
+        "correction": {
+          "status": "unobserved",
+          "seconds": null
+        },
+        "observation_window_seconds": 769.184690837
+      },
+      "source_changed": false,
+      "final_boundary_violations": [],
+      "report_word_counts": {
+        "implementation": 347
+      },
+      "tool_calls": null
+    },
+    {
+      "index": 10,
+      "variant": "corrected-control",
+      "arm": "selected-procedures-evaluation",
+      "repetition": 3,
+      "contexts_launched": 3,
+      "final_reports_received": 2,
+      "external_acceptance": [],
+      "timing": {
+        "budget_exceeded": [
+          "initial-workflow"
+        ],
+        "qualifies_within_budget": false,
+        "outcome": "timeout",
+        "initial_submission_seconds": null,
+        "verified_completion_seconds": null,
+        "correction": {
+          "status": "unobserved",
+          "seconds": null
+        },
+        "observation_window_seconds": 639.921455636
+      },
+      "source_changed": false,
+      "final_boundary_violations": [],
+      "report_word_counts": {
+        "implementation": 274,
+        "validation": 567
+      },
+      "tool_calls": null
+    },
+    {
+      "index": 11,
+      "variant": "corrected-control",
+      "arm": "normal-workflow",
+      "repetition": 3,
+      "contexts_launched": 2,
+      "final_reports_received": 2,
+      "external_acceptance": [],
+      "timing": {
+        "budget_exceeded": [
+          "initial-workflow"
+        ],
+        "qualifies_within_budget": false,
+        "outcome": "timeout",
+        "initial_submission_seconds": null,
+        "verified_completion_seconds": null,
+        "correction": {
+          "status": "unobserved",
+          "seconds": null
+        },
+        "observation_window_seconds": 639.688572442
+      },
+      "source_changed": false,
+      "final_boundary_violations": [],
+      "report_word_counts": {
+        "implementation": 294,
+        "validation": 508
+      },
+      "tool_calls": null
+    }
+  ],
+  "limitations": [
+    "Heavy manual coordination and host-permission friction; timing is not pure model latency.",
+    "Late deadline observations and inconsistent treatment of one late initial submission.",
+    "Scope clarifications needed for disposable Unix-socket fixtures and permitted source reads.",
+    "Known repair on one PR; synthetic native API; not native deployment qualification.",
+    "Successful correction time unobserved; failed correction durations censored."
+  ],
+  "input_tokens": null,
+  "output_tokens": null,
+  "cost": null,
+  "normal_automatic_activation_qualified": false
+}

@@ -1,0 +1,621 @@
+{
+  "version": 2,
+  "date": "2026-09-30",
+  "unit": "multi-stage workflow",
+  "initial_execution_date": "2026-09-24",
+  "continuation_date": "2026-09-30",
+  "status": "complete",
+  "scheduled": 12,
+  "outcomes": {
+    "passed": 9,
+    "timeout": 2,
+    "infrastructure_failed": 1
+  },
+  "verified": 9,
+  "configuration": "Frozen CLI default without model/reasoning overrides; resolved backend unverified",
+  "audit": {
+    "shared_hashes_checked": 341,
+    "shared_mismatches": 0,
+    "distinct_contexts": 36,
+    "cross_trial_context_reuse": false,
+    "final_boundary_violations": 0
+  },
+  "recorded_model_aliases": [
+    "gpt-6-astra"
+  ],
+  "model_metadata_contexts_observed": 36,
+  "usage_policy": "Keep the latest cumulative counters once per context; do not sum initial and resumed totals. Incomplete contexts remain lower bounds. Cached input is a subset of input; reasoning is not added to output. Monetary cost unknown.",
+  "cost": null,
+  "control_validity": {
+    "status": "post-observation gap reproduced",
+    "cases": [
+      "Pi id whose value equals the recorded path bypasses UUID validation",
+      "Canonical native path alias is rejected"
+    ],
+    "primary_scores_changed": false,
+    "control_edits_measure_false_positives": false,
+    "false_positive_rate": null,
+    "diagnostic": "fixtures/completion-auto/control-diagnostic.mjs"
+  },
+  "timing_policy": "Per-workflow monotonic intervals only. Initial submission excludes its acceptance check; verified completion includes it. correction_seconds includes successful verification; correction_submission_seconds ends at the passing resubmission. Administrative gaps between batches are excluded.",
+  "administrative_pause": {
+    "reason": "usage_limit",
+    "included_in_test_timing": false,
+    "capability_failure": false
+  },
+  "normal_automatic_activation_qualified": false,
+  "post_observation_control_diagnostic": [
+    {
+      "index": 6,
+      "exit": 1,
+      "passed": 22,
+      "total": 23,
+      "failed_ids": [
+        "canonical-native-path-alias"
+      ]
+    },
+    {
+      "index": 7,
+      "exit": 1,
+      "passed": 21,
+      "total": 23,
+      "failed_ids": [
+        "mistagged-path-id-rejected",
+        "canonical-native-path-alias"
+      ]
+    },
+    {
+      "index": 8,
+      "exit": 1,
+      "passed": 21,
+      "total": 23,
+      "failed_ids": [
+        "mistagged-path-id-rejected",
+        "canonical-native-path-alias"
+      ]
+    },
+    {
+      "index": 9,
+      "exit": 1,
+      "passed": 21,
+      "total": 23,
+      "failed_ids": [
+        "mistagged-path-id-rejected",
+        "canonical-native-path-alias"
+      ]
+    },
+    {
+      "index": 10,
+      "exit": 1,
+      "passed": 21,
+      "total": 23,
+      "failed_ids": [
+        "mistagged-path-id-rejected",
+        "canonical-native-path-alias"
+      ]
+    },
+    {
+      "index": 11,
+      "exit": 0,
+      "passed": 23,
+      "total": 23,
+      "failed_ids": []
+    }
+  ],
+  "trials": [
+    {
+      "index": 0,
+      "variant": "defective",
+      "arm": "normal-workflow",
+      "repetition": 1,
+      "status": "passed",
+      "verified": true,
+      "interruption_reason": null,
+      "initial_submission_seconds": 506.64676812000107,
+      "verified_completion_seconds": 781.5189410999956,
+      "observation_seconds": 781.5189410999956,
+      "correction_status": "observed",
+      "correction_seconds": 264.15769565600203,
+      "correction_submission_seconds": 253.34540615199512,
+      "contexts_launched": 3,
+      "completed_stage_responses": 6,
+      "stage_words": [
+        197,
+        207,
+        318,
+        203,
+        223,
+        360
+      ],
+      "tool_events": 63,
+      "usage_observed_context_totals": {
+        "input_tokens": 2250948,
+        "cached_input_tokens": 2019840,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 20679,
+        "reasoning_output_tokens": 2190
+      },
+      "usage_incomplete": false,
+      "acceptance": [
+        {
+          "external_passed": 20,
+          "external_total": 21,
+          "failed_ids": [
+            "legacy-id-binding"
+          ],
+          "commands_passed": false
+        },
+        {
+          "external_passed": 21,
+          "external_total": 21,
+          "failed_ids": [],
+          "commands_passed": true
+        }
+      ],
+      "audit_violations": [],
+      "application_source_changed": true
+    },
+    {
+      "index": 1,
+      "variant": "defective",
+      "arm": "selected-procedures-evaluation",
+      "repetition": 1,
+      "status": "timeout",
+      "verified": false,
+      "interruption_reason": null,
+      "initial_submission_seconds": null,
+      "verified_completion_seconds": null,
+      "observation_seconds": 600.0203902630019,
+      "correction_status": "unobserved",
+      "correction_seconds": null,
+      "correction_submission_seconds": null,
+      "contexts_launched": 3,
+      "completed_stage_responses": 2,
+      "stage_words": [
+        282,
+        200,
+        null
+      ],
+      "tool_events": 38,
+      "usage_observed_context_totals": {
+        "input_tokens": 1135399,
+        "cached_input_tokens": 1031296,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 14959,
+        "reasoning_output_tokens": 1620
+      },
+      "usage_incomplete": true,
+      "acceptance": [],
+      "audit_violations": [],
+      "application_source_changed": true
+    },
+    {
+      "index": 2,
+      "variant": "defective",
+      "arm": "selected-procedures-evaluation",
+      "repetition": 2,
+      "status": "infrastructure_failed",
+      "verified": false,
+      "interruption_reason": "usage_limit",
+      "initial_submission_seconds": 591.542232550004,
+      "verified_completion_seconds": null,
+      "observation_seconds": 652.9005783309985,
+      "correction_status": "censored",
+      "correction_seconds": null,
+      "correction_submission_seconds": null,
+      "contexts_launched": 3,
+      "completed_stage_responses": 3,
+      "stage_words": [
+        341,
+        241,
+        296,
+        null
+      ],
+      "tool_events": 38,
+      "usage_observed_context_totals": {
+        "input_tokens": 1257402,
+        "cached_input_tokens": 1123072,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 16471,
+        "reasoning_output_tokens": 1596
+      },
+      "usage_incomplete": true,
+      "acceptance": [
+        {
+          "external_passed": 20,
+          "external_total": 21,
+          "failed_ids": [
+            "legacy-id-binding"
+          ],
+          "commands_passed": false
+        }
+      ],
+      "audit_violations": [],
+      "application_source_changed": true
+    },
+    {
+      "index": 3,
+      "variant": "defective",
+      "arm": "normal-workflow",
+      "repetition": 2,
+      "status": "passed",
+      "verified": true,
+      "interruption_reason": null,
+      "initial_submission_seconds": 484.47970178299875,
+      "verified_completion_seconds": 495.1443117550007,
+      "observation_seconds": 495.1443117550007,
+      "correction_status": "not_applicable",
+      "correction_seconds": null,
+      "correction_submission_seconds": null,
+      "contexts_launched": 3,
+      "completed_stage_responses": 3,
+      "stage_words": [
+        225,
+        91,
+        279
+      ],
+      "tool_events": 32,
+      "usage_observed_context_totals": {
+        "input_tokens": 1285868,
+        "cached_input_tokens": 1155968,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 12976,
+        "reasoning_output_tokens": 1496
+      },
+      "usage_incomplete": false,
+      "acceptance": [
+        {
+          "external_passed": 21,
+          "external_total": 21,
+          "failed_ids": [],
+          "commands_passed": true
+        }
+      ],
+      "audit_violations": [],
+      "application_source_changed": true
+    },
+    {
+      "index": 4,
+      "variant": "defective",
+      "arm": "normal-workflow",
+      "repetition": 3,
+      "status": "passed",
+      "verified": true,
+      "interruption_reason": null,
+      "initial_submission_seconds": 507.01343013800215,
+      "verified_completion_seconds": 802.5194638539979,
+      "observation_seconds": 802.5194638539979,
+      "correction_status": "observed",
+      "correction_seconds": 284.8292908860021,
+      "correction_submission_seconds": 274.00057581700094,
+      "contexts_launched": 3,
+      "completed_stage_responses": 6,
+      "stage_words": [
+        267,
+        199,
+        246,
+        247,
+        162,
+        348
+      ],
+      "tool_events": 49,
+      "usage_observed_context_totals": {
+        "input_tokens": 2244351,
+        "cached_input_tokens": 2032128,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 21229,
+        "reasoning_output_tokens": 2121
+      },
+      "usage_incomplete": false,
+      "acceptance": [
+        {
+          "external_passed": 20,
+          "external_total": 21,
+          "failed_ids": [
+            "legacy-id-binding"
+          ],
+          "commands_passed": false
+        },
+        {
+          "external_passed": 21,
+          "external_total": 21,
+          "failed_ids": [],
+          "commands_passed": true
+        }
+      ],
+      "audit_violations": [],
+      "application_source_changed": true
+    },
+    {
+      "index": 5,
+      "variant": "defective",
+      "arm": "selected-procedures-evaluation",
+      "repetition": 3,
+      "status": "timeout",
+      "verified": false,
+      "interruption_reason": null,
+      "initial_submission_seconds": null,
+      "verified_completion_seconds": null,
+      "observation_seconds": 600.0208803300047,
+      "correction_status": "unobserved",
+      "correction_seconds": null,
+      "correction_submission_seconds": null,
+      "contexts_launched": 3,
+      "completed_stage_responses": 2,
+      "stage_words": [
+        252,
+        233,
+        null
+      ],
+      "tool_events": 38,
+      "usage_observed_context_totals": {
+        "input_tokens": 1437739,
+        "cached_input_tokens": 1300224,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 14898,
+        "reasoning_output_tokens": 1866
+      },
+      "usage_incomplete": true,
+      "acceptance": [],
+      "audit_violations": [],
+      "application_source_changed": true
+    },
+    {
+      "index": 6,
+      "variant": "corrected-control",
+      "arm": "selected-procedures-evaluation",
+      "repetition": 1,
+      "status": "passed",
+      "verified": true,
+      "interruption_reason": null,
+      "initial_submission_seconds": 590.5233542240021,
+      "verified_completion_seconds": 929.7015368060092,
+      "observation_seconds": 929.7015368060092,
+      "correction_status": "observed",
+      "correction_seconds": 328.5362914419966,
+      "correction_submission_seconds": 317.8518062459916,
+      "contexts_launched": 3,
+      "completed_stage_responses": 6,
+      "stage_words": [
+        293,
+        217,
+        302,
+        260,
+        214,
+        337
+      ],
+      "tool_events": 59,
+      "usage_observed_context_totals": {
+        "input_tokens": 2458452,
+        "cached_input_tokens": 2284800,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 24406,
+        "reasoning_output_tokens": 2886
+      },
+      "usage_incomplete": false,
+      "acceptance": [
+        {
+          "external_passed": 20,
+          "external_total": 21,
+          "failed_ids": [
+            "legacy-id-binding"
+          ],
+          "commands_passed": false
+        },
+        {
+          "external_passed": 21,
+          "external_total": 21,
+          "failed_ids": [],
+          "commands_passed": true
+        }
+      ],
+      "audit_violations": [],
+      "application_source_changed": true
+    },
+    {
+      "index": 7,
+      "variant": "corrected-control",
+      "arm": "normal-workflow",
+      "repetition": 1,
+      "status": "passed",
+      "verified": true,
+      "interruption_reason": null,
+      "initial_submission_seconds": 478.5931772879994,
+      "verified_completion_seconds": 489.18063153800904,
+      "observation_seconds": 489.18063153800904,
+      "correction_status": "not_applicable",
+      "correction_seconds": null,
+      "correction_submission_seconds": null,
+      "contexts_launched": 3,
+      "completed_stage_responses": 3,
+      "stage_words": [
+        248,
+        217,
+        319
+      ],
+      "tool_events": 35,
+      "usage_observed_context_totals": {
+        "input_tokens": 1292213,
+        "cached_input_tokens": 1157760,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 12366,
+        "reasoning_output_tokens": 683
+      },
+      "usage_incomplete": false,
+      "acceptance": [
+        {
+          "external_passed": 21,
+          "external_total": 21,
+          "failed_ids": [],
+          "commands_passed": true
+        }
+      ],
+      "audit_violations": [],
+      "application_source_changed": false
+    },
+    {
+      "index": 8,
+      "variant": "corrected-control",
+      "arm": "normal-workflow",
+      "repetition": 2,
+      "status": "passed",
+      "verified": true,
+      "interruption_reason": null,
+      "initial_submission_seconds": 457.0259531729971,
+      "verified_completion_seconds": 467.7410936249944,
+      "observation_seconds": 467.7410936249944,
+      "correction_status": "not_applicable",
+      "correction_seconds": null,
+      "correction_submission_seconds": null,
+      "contexts_launched": 3,
+      "completed_stage_responses": 3,
+      "stage_words": [
+        205,
+        186,
+        116
+      ],
+      "tool_events": 37,
+      "usage_observed_context_totals": {
+        "input_tokens": 1197441,
+        "cached_input_tokens": 1053824,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 12554,
+        "reasoning_output_tokens": 673
+      },
+      "usage_incomplete": false,
+      "acceptance": [
+        {
+          "external_passed": 21,
+          "external_total": 21,
+          "failed_ids": [],
+          "commands_passed": true
+        }
+      ],
+      "audit_violations": [],
+      "application_source_changed": false
+    },
+    {
+      "index": 9,
+      "variant": "corrected-control",
+      "arm": "selected-procedures-evaluation",
+      "repetition": 2,
+      "status": "passed",
+      "verified": true,
+      "interruption_reason": null,
+      "initial_submission_seconds": 560.4537692349986,
+      "verified_completion_seconds": 571.1896192900022,
+      "observation_seconds": 571.1896192900022,
+      "correction_status": "not_applicable",
+      "correction_seconds": null,
+      "correction_submission_seconds": null,
+      "contexts_launched": 3,
+      "completed_stage_responses": 3,
+      "stage_words": [
+        256,
+        130,
+        111
+      ],
+      "tool_events": 37,
+      "usage_observed_context_totals": {
+        "input_tokens": 1379449,
+        "cached_input_tokens": 1220608,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 15299,
+        "reasoning_output_tokens": 906
+      },
+      "usage_incomplete": false,
+      "acceptance": [
+        {
+          "external_passed": 21,
+          "external_total": 21,
+          "failed_ids": [],
+          "commands_passed": true
+        }
+      ],
+      "audit_violations": [],
+      "application_source_changed": false
+    },
+    {
+      "index": 10,
+      "variant": "corrected-control",
+      "arm": "selected-procedures-evaluation",
+      "repetition": 3,
+      "status": "passed",
+      "verified": true,
+      "interruption_reason": null,
+      "initial_submission_seconds": 574.3251867609943,
+      "verified_completion_seconds": 584.9641308300052,
+      "observation_seconds": 584.9641308300052,
+      "correction_status": "not_applicable",
+      "correction_seconds": null,
+      "correction_submission_seconds": null,
+      "contexts_launched": 3,
+      "completed_stage_responses": 3,
+      "stage_words": [
+        269,
+        186,
+        284
+      ],
+      "tool_events": 42,
+      "usage_observed_context_totals": {
+        "input_tokens": 1654214,
+        "cached_input_tokens": 1487872,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 16138,
+        "reasoning_output_tokens": 1331
+      },
+      "usage_incomplete": false,
+      "acceptance": [
+        {
+          "external_passed": 21,
+          "external_total": 21,
+          "failed_ids": [],
+          "commands_passed": true
+        }
+      ],
+      "audit_violations": [],
+      "application_source_changed": false
+    },
+    {
+      "index": 11,
+      "variant": "corrected-control",
+      "arm": "normal-workflow",
+      "repetition": 3,
+      "status": "passed",
+      "verified": true,
+      "interruption_reason": null,
+      "initial_submission_seconds": 497.7116193260008,
+      "verified_completion_seconds": 508.4311986880057,
+      "observation_seconds": 508.4311986880057,
+      "correction_status": "not_applicable",
+      "correction_seconds": null,
+      "correction_submission_seconds": null,
+      "contexts_launched": 3,
+      "completed_stage_responses": 3,
+      "stage_words": [
+        231,
+        271,
+        212
+      ],
+      "tool_events": 40,
+      "usage_observed_context_totals": {
+        "input_tokens": 1222505,
+        "cached_input_tokens": 1081472,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 13241,
+        "reasoning_output_tokens": 1487
+      },
+      "usage_incomplete": false,
+      "acceptance": [
+        {
+          "external_passed": 21,
+          "external_total": 21,
+          "failed_ids": [],
+          "commands_passed": true
+        }
+      ],
+      "audit_violations": [],
+      "application_source_changed": true
+    }
+  ]
+}

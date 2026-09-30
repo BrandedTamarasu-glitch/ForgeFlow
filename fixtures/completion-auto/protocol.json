@@ -1,0 +1,131 @@
+{
+  "version": 2,
+  "date": "2026-09-24",
+  "status": "frozen-authorized",
+  "previous_report": "docs/completion-pilot-results.md",
+  "planned_workflows": 12,
+  "stages_per_workflow": 3,
+  "repetitions_per_arm_variant": 3,
+  "concurrent_workflows": 2,
+  "maximum_correction_cycles": 1,
+  "budget": {
+    "initial": 600,
+    "correction": 360,
+    "acceptance": 30,
+    "words": 800
+  },
+  "source_pr": "https://github.com/zachristmas/baa-ton/pull/6",
+  "source_head": "2bbb198b7a5852cd64fc243a1392cda56f517640",
+  "source_base": "51c9d599bd20bddfbcba6f4d5d86cae54f86d329",
+  "command": [
+    "codex",
+    "exec",
+    "--ignore-user-config",
+    "--ignore-rules",
+    "-c",
+    "approval_policy=\"never\"",
+    "-c",
+    "sandbox_mode=\"workspace-write\"",
+    "-c",
+    "sandbox_workspace_write.network_access=true"
+  ],
+  "backend": "CLI default; no model/reasoning override; resolved identity/settings unknown",
+  "permission_scope": "Workspace sandbox with local socket support; no persistent servers, external requests or live native prompts authorized for trial workers",
+  "runner": "scripts/forgeflow/run-completion-workflows.py",
+  "runner_sha256": "43c01803f37a9b7565b8a0dca57fe8295b3c711b7046d0860334384044c17483",
+  "acceptance": "fixtures/completion-pilot/acceptance.mjs",
+  "acceptance_sha256": "210a505f86221f91988fed79b38e3ee8b56dc7fd48b56d6fdc18778528da1dda",
+  "private_schedule_sha256": "7689a3f28aa8130570dab08cec8760e19ed2105b07a95cb7c21829baddd6589c",
+  "order": [
+    {
+      "index": 0,
+      "variant": "defective",
+      "arm": "normal-workflow",
+      "repetition": 1
+    },
+    {
+      "index": 1,
+      "variant": "defective",
+      "arm": "selected-procedures-evaluation",
+      "repetition": 1
+    },
+    {
+      "index": 2,
+      "variant": "defective",
+      "arm": "selected-procedures-evaluation",
+      "repetition": 2
+    },
+    {
+      "index": 3,
+      "variant": "defective",
+      "arm": "normal-workflow",
+      "repetition": 2
+    },
+    {
+      "index": 4,
+      "variant": "defective",
+      "arm": "normal-workflow",
+      "repetition": 3
+    },
+    {
+      "index": 5,
+      "variant": "defective",
+      "arm": "selected-procedures-evaluation",
+      "repetition": 3
+    },
+    {
+      "index": 6,
+      "variant": "corrected-control",
+      "arm": "selected-procedures-evaluation",
+      "repetition": 1
+    },
+    {
+      "index": 7,
+      "variant": "corrected-control",
+      "arm": "normal-workflow",
+      "repetition": 1
+    },
+    {
+      "index": 8,
+      "variant": "corrected-control",
+      "arm": "normal-workflow",
+      "repetition": 2
+    },
+    {
+      "index": 9,
+      "variant": "corrected-control",
+      "arm": "selected-procedures-evaluation",
+      "repetition": 2
+    },
+    {
+      "index": 10,
+      "variant": "corrected-control",
+      "arm": "selected-procedures-evaluation",
+      "repetition": 3
+    },
+    {
+      "index": 11,
+      "variant": "corrected-control",
+      "arm": "normal-workflow",
+      "repetition": 3
+    }
+  ],
+  "preflight": {
+    "deterministic_tests": 9,
+    "full_smoke_status": "passed",
+    "full_smoke_seconds": 451.58566221599904,
+    "full_smoke_existing_tests": 55,
+    "full_smoke_external_checks": 21,
+    "resume_same_context": true,
+    "resume_tools": 0,
+    "post_smoke_changes": "Final Git audit now respects acceptance deadline; timeout behavior revalidated deterministically. Source-only Git preparation excludes setup templates. These changes precede this freeze."
+  },
+  "primary": "All three stages complete within workflow budget, all21external checks plus existing/new tests pass within acceptance budget, source/Git/report boundaries pass. Retain every scheduled slot, timeout, failed correction and unlaunched remainder.",
+  "correction": "Same three exact context IDs, identical failing check IDs/messages, at most one cycle. No failure => not_applicable/null; unsuccessful correction => censored/null.",
+  "limitations": [
+    "Known defect and authored corrected control on one PR; not discovery or live-native qualification.",
+    "Source-grounded selection assessment remains an evaluation treatment, not automatic activation success.",
+    "Fresh CLI dispatch differs from original in-session pilot; do not pool or infer a pure before/after latency improvement.",
+    "Source hashes and shell-event audit do not establish complete filesystem/read isolation."
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "date": "2026-09-24",
+  "status": "frozen-awaiting-authorization",
+  "manifest_sha256": "5a842a1d87034eaacc39847f08e8191b75dea3c2af09fdba61e9967534369f36",
+  "hashed_files": 2307,
+  "planned_workflow_trials": 12,
+  "worker_contexts_per_trial": 3,
+  "maximum_correction_cycles": 1,
+  "completed_preflight_reviews": 2,
+  "workflow_trials_launched": 0,
+  "checks": {
+    "independent_controls": "qualified",
+    "independent_workflow_setup": "qualified",
+    "isolated_workspaces": 12,
+    "rendered_stage_packets": 36,
+    "helpers_passed": 6,
+    "selected_procedures": [
+      "persistence-recovery"
+    ]
+  }
+}

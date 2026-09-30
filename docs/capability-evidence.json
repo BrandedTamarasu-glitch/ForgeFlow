@@ -1,0 +1,341 @@
+{
+  "schema_version": 1,
+  "updated": "2026-09-30",
+  "scope": "Completed Phase 1\u20135 capability model studies; not all historical ForgeFlow evaluations.",
+  "status": "F6.1 consolidation complete; acceptance gaps remain.",
+  "accounting": {
+    "studies": 8,
+    "scheduled": 178,
+    "completed_responses": 177,
+    "unsuccessful": 1,
+    "unstarted": 0,
+    "excluded": "Withdrawn proposals, post-freeze rescoring of existing submissions, deterministic fixtures, CPU samples, preflight/verification passes and older unrelated evaluations.",
+    "interpretation": "Response accounting only; not a pooled accuracy or verified task-completion rate."
+  },
+  "studies": [
+    {
+      "id": "phase1",
+      "report": "docs/capability-pilot-results.md",
+      "kind": "supplied-evidence",
+      "capabilities": [
+        "change-propagation",
+        "visual-acceptance"
+      ],
+      "scheduled": 32,
+      "completed": 32,
+      "unsuccessful": 0,
+      "repeats_per_arm_case": 4,
+      "arms": [
+        "disabled",
+        "enabled"
+      ],
+      "outcome": "Each capability: 8/8 correct per arm; zero keyed missed or false findings. Interpretation only, not discovery.",
+      "limitations": [
+        "Explicit observations bypass consumer discovery and browser use.",
+        "Unblinded explanation adjudication; instructional access and word limits."
+      ],
+      "order": "Each arm occupies each position twice per case.",
+      "configuration": "Inherited session configuration; exact model/sampling unavailable.",
+      "budget": "180 instructed response words; prompt read only.",
+      "completion": "Correct supplied-snapshot interpretation.",
+      "missed_defects": "Zero against the frozen supplied key only.",
+      "false_findings": "Zero against the frozen supplied key only.",
+      "wall_time": "unobserved",
+      "input_tokens": null,
+      "cached_input_tokens": null,
+      "output_tokens": null,
+      "correction_time_seconds": null,
+      "monetary_cost": null,
+      "source_report_sha256": "df93ccdadcbc25c48e933763921828849536d04f2b12a64726ab5acfe793fa7b"
+    },
+    {
+      "id": "phase2",
+      "report": "docs/recovery-review-pilot-results.md",
+      "kind": "supplied-evidence",
+      "capabilities": [
+        "persistence-recovery",
+        "review-calibration"
+      ],
+      "scheduled": 32,
+      "completed": 32,
+      "unsuccessful": 0,
+      "repeats_per_arm_case": 4,
+      "arms": [
+        "disabled",
+        "enabled"
+      ],
+      "outcome": "Each capability: 8/8 correct per arm; zero keyed misses, false findings or severity errors.",
+      "limitations": [
+        "Explicit code/contracts and known schedules; no independent repair or backend execution.",
+        "Unblinded adjudication; instructional access and word limits."
+      ],
+      "order": "Each arm occupies each position twice per case.",
+      "configuration": "Inherited session configuration; exact model/sampling unavailable.",
+      "budget": "250 instructed response words; prompt read only.",
+      "completion": "Correct supplied-code judgment and schedule prediction.",
+      "missed_defects": "Zero against the frozen supplied key only.",
+      "false_findings": "Zero against the frozen supplied key only.",
+      "wall_time": "unobserved",
+      "input_tokens": null,
+      "cached_input_tokens": null,
+      "output_tokens": null,
+      "correction_time_seconds": null,
+      "monetary_cost": null,
+      "source_report_sha256": "37ca7f6822cbc50404c0d1832a3c9725c9bfd2148629f0aa557a3259ae83d6b3"
+    },
+    {
+      "id": "recovery_workbench",
+      "report": "docs/recovery-workbench-results.md",
+      "kind": "synthetic-repository-repair",
+      "capabilities": [
+        "persistence-recovery"
+      ],
+      "scheduled": 18,
+      "completed": 18,
+      "unsuccessful": 0,
+      "repeats_per_arm_case": 3,
+      "arms": [
+        "baseline",
+        "checklist",
+        "full"
+      ],
+      "outcome": "All arms: 3/3 defective repairs and 3/3 intended controls pass all eight frozen checks.",
+      "limitations": [
+        "Intended clean control had an uncovered read/reclamation race; source edits cannot score false positives.",
+        "Separate post-freeze diagnostic: baseline/full 5/6, checklist 4/6; not replacement primary scores."
+      ],
+      "order": "Each arm occupies each position once per version.",
+      "configuration": "Inherited session configuration; exact model/sampling unavailable.",
+      "budget": "12 task tool calls plus prompt read; 200 response words, instruction limits.",
+      "completion": "All eight frozen repair checks pass; control oracle later shown incomplete.",
+      "missed_defects": "Full defect inventory unavailable; post-freeze read race separate.",
+      "false_findings": "Unmeasured; control edits invalid as proxy.",
+      "wall_time": "unobserved",
+      "input_tokens": null,
+      "cached_input_tokens": null,
+      "output_tokens": null,
+      "correction_time_seconds": null,
+      "monetary_cost": null,
+      "source_report_sha256": "73decc584cbdf57a4b2aa8d2758e42faf90489758b02468942849035e2cadf43"
+    },
+    {
+      "id": "provider_release",
+      "report": "docs/provider-release-pilot-results.md",
+      "kind": "synthetic-repository-repair",
+      "capabilities": [
+        "provider-compatibility",
+        "release-qualification"
+      ],
+      "scheduled": 36,
+      "completed": 35,
+      "unsuccessful": 1,
+      "repeats_per_arm_case": 2,
+      "arms": [
+        "baseline",
+        "checklist",
+        "full"
+      ],
+      "outcome": "Baseline/full each repair 6/6 defective tasks; checklist 4/6 under ambiguous 304/MIME oracle. One checklist control interrupted by usage limit.",
+      "limitations": [
+        "Only two repeats per case/arm; positions balanced over corpus.",
+        "304 plus conflicting MIME has unspecified precedence; checklist failures do not establish inferiority.",
+        "Post-freeze matching-MIME diagnostic passes all 12 web submissions; frozen failures retained."
+      ],
+      "order": "Balanced over corpus, not within each two-repeat case.",
+      "configuration": "CLI configured gpt-6-astra/default reasoning; resolved backend/sampling unknown.",
+      "budget": "16 instructed tools and 200 words; supervisor 240-second process and 30-second oracle limits.",
+      "completion": "35 completed responses; 33 of 36 slots pass full frozen acceptance; two ambiguous failures and one interruption retained.",
+      "missed_defects": "Frozen-check regressions absent in completed attempts; no exhaustive defect inventory.",
+      "false_findings": "Unmeasured; clean-source edits are not findings.",
+      "wall_time": "Reported mean process seconds baseline/checklist/full 88.3/96.4/89.4; includes interruption and tools.",
+      "input_tokens": 3260322,
+      "cached_input_tokens": 2620672,
+      "output_tokens": 86072,
+      "correction_time_seconds": null,
+      "monetary_cost": null,
+      "source_report_sha256": "83db00ad86aa9ccb8fad451fd452f8270392420a2ea18768a343744433988846"
+    },
+    {
+      "id": "real_project_initial",
+      "report": "docs/real-project-review-results.md",
+      "kind": "real-project-discovery",
+      "capabilities": [
+        "persistence-recovery",
+        "change-propagation",
+        "visual-acceptance"
+      ],
+      "scheduled": 12,
+      "completed": 12,
+      "unsuccessful": 0,
+      "repeats_per_arm_case": 2,
+      "arms": [
+        "baseline",
+        "enhanced"
+      ],
+      "outcome": "Each arm: five verified occurrences, three distinct mechanisms; union four confirmed mechanisms. One distinct exclusive finding per arm, neither replicated.",
+      "limitations": [
+        "Two repeats; mixed three-procedure treatment on ledger cannot attribute its finding to one procedure.",
+        "Seven claims in two mechanisms unresolved; cannot treat these as zero false alarms.",
+        "Historical saved-audit comparison is separate from controlled benefit."
+      ],
+      "order": "Arm order alternates within case; actual concurrent starts can differ.",
+      "configuration": "CLI configured gpt-6-astra/default reasoning; resolved backend/sampling unknown.",
+      "budget": "48 instructed tools, 2000 words; 480 seconds for two PR cases, 720 for ledger.",
+      "completion": "Complete discovery reports, not repaired or deployed applications.",
+      "missed_defects": "Unknown: no exhaustive discovery key.",
+      "false_findings": "No demonstrably unsupported claims; seven unresolved claims retained.",
+      "wall_time": "Reported per-case baseline/enhanced process means 171.4/247.2, 126.4/149.2, 246.9/307.9 seconds.",
+      "input_tokens": 12433363,
+      "cached_input_tokens": 11403648,
+      "output_tokens": 65574,
+      "correction_time_seconds": null,
+      "monetary_cost": null,
+      "source_report_sha256": "1a77facad9d07ea6d031be99a9719d321da9f6d56a22dcafd1749d09689070ba"
+    },
+    {
+      "id": "four_capability_retest",
+      "report": "docs/capability-retest-results.md",
+      "kind": "real-project-discovery-and-keyed-calibration",
+      "capabilities": [
+        "persistence-recovery",
+        "change-propagation",
+        "visual-acceptance",
+        "review-calibration"
+      ],
+      "scheduled": 24,
+      "completed": 24,
+      "unsuccessful": 0,
+      "repeats_per_arm_case": 3,
+      "arms": [
+        "baseline",
+        "enhanced"
+      ],
+      "outcome": "18 discovery reviews: baseline17/enhanced21 verified occurrences, 9/10 distinct, union12. Six calibration reviews: 12/12 dispositions per arm and six severity-key disagreements per arm.",
+      "limitations": [
+        "Visual gain on one redesign; recovery has complementary misses and equal total occurrence counts.",
+        "Calibration supplies known claims, tests one review pass and disputes frozen severity key.",
+        "No complete selected-workflow comparison or exhaustive discovery key."
+      ],
+      "order": "Alternating paired order, balanced across cases.",
+      "configuration": "CLI configured gpt-6-astra/default reasoning; resolved backend/sampling unknown.",
+      "budget": "48 tools, 2000 words; 480 seconds recovery/propagation, 720 visual/calibration.",
+      "completion": "Complete discovery reports and keyed claim judgments; not end-to-end task completion.",
+      "missed_defects": "Discovery unknown; calibration zero keyed misses.",
+      "false_findings": "No unsupported/unresolved submitted claims; severity overstatements six per arm under frozen key.",
+      "wall_time": "Reported per-case baseline/enhanced process means 217.7/246.5,187.6/213.6,343.4/403.7,228.3/196.7 seconds.",
+      "input_tokens": 23909391,
+      "cached_input_tokens": 22006528,
+      "output_tokens": 161530,
+      "correction_time_seconds": null,
+      "monetary_cost": null,
+      "source_report_sha256": "c955d92e213b952214bf5a94f37f530ac4ddf603e96b3ac2721729f829272d54"
+    },
+    {
+      "id": "benchmark",
+      "report": "docs/benchmark-cpu-pilot.md",
+      "kind": "real-project-discovery",
+      "capabilities": [
+        "benchmark-verification"
+      ],
+      "scheduled": 12,
+      "completed": 12,
+      "unsuccessful": 0,
+      "repeats_per_arm_case": 3,
+      "arms": [
+        "baseline",
+        "enhanced"
+      ],
+      "outcome": "Baseline10/enhanced7 verified occurrences and 4/3 distinct mechanisms; favors baseline on selected cases.",
+      "limitations": [
+        "Related ledger history; only two underlying changes.",
+        "CPU implementation timing is separate engineering evidence, not model benefit.",
+        "No accelerator qualification or exhaustive discovery key."
+      ],
+      "order": "Alternating paired order balanced across cases.",
+      "configuration": "CLI configured gpt-6-astra/default reasoning per execution record; resolved backend/sampling unknown.",
+      "budget": "48 tools, 2000 words, 480 seconds per review.",
+      "completion": "Twelve complete discovery reviews; no corrective work measured.",
+      "missed_defects": "Unknown: no exhaustive discovery key.",
+      "false_findings": "Zero unsupported/unresolved primary mechanisms.",
+      "wall_time": "Reported baseline/enhanced mean process seconds 198.1/195.6; not isolated model latency.",
+      "input_tokens": 6461586,
+      "cached_input_tokens": 5801856,
+      "output_tokens": 65110,
+      "correction_time_seconds": null,
+      "monetary_cost": null,
+      "source_report_sha256": "fa395697b642b7c777c3dc8078c51c159f08ead441a972c104c883d5c7db9874"
+    },
+    {
+      "id": "domain",
+      "report": "docs/domain-pilot-results.md",
+      "kind": "real-project-discovery",
+      "capabilities": [
+        "money-calendar-correctness",
+        "cad-fabrication-acceptance"
+      ],
+      "scheduled": 12,
+      "completed": 12,
+      "unsuccessful": 0,
+      "repeats_per_arm_case": 3,
+      "arms": [
+        "baseline",
+        "enhanced"
+      ],
+      "outcome": "Primary money mechanism baseline3/enhanced1 occurrences; other concurrency mechanism3/3 each. CAD no claims or improper physical/slicer passes in either arm.",
+      "limitations": [
+        "CAD zero claims does not establish clean source or sensitivity; shared evidence rules overlap treatment.",
+        "No real recurrence/DST trial, CAD regeneration, fresh slicing or physical fit.",
+        "Tool counts self-reported; most timing unavailable; filesystem-atime duration excluded."
+      ],
+      "order": "Baseline/enhanced, enhanced/baseline, baseline/enhanced in each case.",
+      "configuration": "Inherited session model; no override; backend/sampling unavailable.",
+      "budget": "48 tools, 2000 words, 480 seconds by instruction and monitoring; no complete execution trace.",
+      "completion": "Twelve complete discovery reviews; physical acceptance pending.",
+      "missed_defects": "Unknown: no exhaustive discovery key.",
+      "false_findings": "All ten money claims confirmed; no CAD claims. No improper physical/slicing claims in six reviews.",
+      "wall_time": "Incomplete/self-reported; no verified latency comparison.",
+      "input_tokens": null,
+      "cached_input_tokens": null,
+      "output_tokens": null,
+      "correction_time_seconds": null,
+      "monetary_cost": null,
+      "source_report_sha256": "20497951b05acbd76f5133959ee8b5e6836d0e778cfddf1646cb94341590aaa3"
+    }
+  ],
+  "unresolved_acceptance": [
+    "No measured correction time in these eight studies.",
+    "No comparison of the full automatically selected workflow through verified completion.",
+    "Open-ended discovery has no exhaustive missed-defect denominator.",
+    "Two studies use only two repeats per case; backend/settings and read isolation are incompletely observed.",
+    "Control validity and calibration severity-key disputes remain explicitly unresolved."
+  ],
+  "normal_automatic_activation_qualified": false,
+  "source_revision": "0e30f03d0d2145777e7e43742458e821e7365214",
+  "completion_followup": {
+    "report": "docs/completion-pilot-results.md",
+    "structured_report": "docs/completion-pilot-results.json",
+    "scheduled_workflows": 12,
+    "verified_within_budget": 1,
+    "timeouts": 11,
+    "pooled_into_historical_response_accounting": false,
+    "interpretation": "Execution-limited known-PR repair pilot; does not qualify general benefit or automatic activation.",
+    "source_report_sha256": "d1fb30ea39c8d784b445a430314efb5eb2171dafb8bfa134fbc6c4dd9ac00660"
+  },
+  "automated_completion_followup": {
+    "report": "docs/completion-auto-results.md",
+    "structured_report": "docs/completion-auto-results.json",
+    "scheduled_workflows": 12,
+    "verified_within_budget": 9,
+    "baseline_verified": 6,
+    "added_recovery_verified": 3,
+    "timeouts": 2,
+    "usage_limit_interruptions": 1,
+    "usage_interruption_is_capability_failure": false,
+    "administrative_pause_in_test_timing": false,
+    "successful_corrections": 3,
+    "control_validity": "Two post-observation gaps reproduced; primary scores unchanged; control edits cannot measure false positives.",
+    "pooled_into_historical_response_accounting": false,
+    "normal_automatic_activation_qualified": false,
+    "source_report_sha256": "cc8d637bc54f915f3c3a6552498c4edd6e8a3db100b1f279dcfdad86044d2743"
+  }
+}

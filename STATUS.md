@@ -1,11 +1,21 @@
 # ForgeFlow development status
 
-Last updated: 2026-09-23
+Last updated: 2026-09-30
 
-Phases 0 through 5 and the four-capability retest are complete. **Next: F6.1 controlled-comparison consolidation.** No trials are running or additionally scheduled. The latest domain comparison showed no added-procedure benefit: primary money finding 3/3 baseline versus 1/3 enhanced; a separate concurrency finding 3/3 per arm; no CAD claims in either arm. Earlier recovery/visual gains, calibration ties and the baseline-favoring benchmark result remain preserved. Normal activation stays gated. [ROADMAP.md](ROADMAP.md) owns scope and acceptance; [domain results](docs/domain-pilot-results.md) record the latest evidence and limits.
+**F6.1 automated comparison complete; acceptance remains open.** All twelve [actual-PR workflows](docs/completion-auto-results.md) are accounted for: baseline 6/6 verified, added recovery 3/6 verified with two timeouts and one usage-limit interruption. Three successful corrections were measured. The six-day usage pause is excluded from all test timings; the interruption is not a capability failure. Separate diagnostics found two gaps in the authored control. No trial is running or scheduled, and all nine capabilities remain in evaluation.
 
+Phases 0 through 5 and the four-capability retest are complete. F6.1 reporting is current, but control validity and normal automatic-workflow qualification remain open. The next action is to address the known control gaps, make legacy compatibility explicit and review recovery work within the stage budget. Preserve every original outcome and post-observation diagnostic. This checkpoint includes the completed comparison and reproducible diagnostics; the packaged release version is unchanged.
+
+
+**Current roadblock:** the authored control omits malformed-ID rejection and canonical path aliases. Prepare a separately versioned, challenged control that also preserves legacy UUID compatibility; review recovery work within the time budget and verify normal workflow selection. Existing scores stay frozen, and no new trials are queued. See [roadmap blockers](ROADMAP.md#known-limits-and-blockers).
 
 ## Completed checkpoint
+
+- F6.1 automated follow-up: all twelve workflows terminal; nine passed the frozen checks, two timed out and one correction was interrupted by usage exhaustion. Baseline6/6 versus added recovery3/6 is not a general accuracy result. The control is incomplete: both arms found a malformed-ID case, and baseline also repaired canonical path aliases. Primary scores are unchanged. Three successful corrections measured 264.2, 284.8 and 328.5 seconds through verification. [Results and limits](docs/completion-auto-results.md).
+
+- Original F6.1 completion pilot: All twelve actual-PR workflows are accounted for: 1 verified completion within budget and 11 timeouts. Execution and permission friction prevent a clean capability comparison. Both defective initial submissions that reached external acceptance broke legacy-ID compatibility; successful correction time was unobserved in that pilot. Inputs and final write boundaries were audited. Preserve all outcomes and the withdrawn WarmLedger preparation. [Method, complete accounting and limitations](docs/completion-pilot-results.md).
+
+- F6.1 consolidation: eight completed studies reconcile 178 scheduled trials, 177 completed responses and one retained interruption. All nine procedures have an evidence assessment; positive, tied, baseline-favoring and invalid-control results remain separate. These eight studies did not measure correction time or full selected-workflow completion. The later completion pilot is reported separately; F6.1 remains unchecked and activation is unchanged. See [consolidation](docs/capability-evidence.md) and [structured ledger](docs/capability-evidence.json).
 
 - F5.3: all twelve real-project reviews and both independent verification passes completed. Ten claims confirmed as two money mechanisms; primary representation defect 3/3 baseline versus 1/3 enhanced, separate stale-write issue 3/3 each. All six CAD reviews reported no defects and kept slicing/physical observations pending. Sources, JSON format and word limits passed; timing/tool counts remain incompletely instrumented. No added benefit. See [results](docs/domain-pilot-results.md) and [preflight](fixtures/domain-pilot/README.md).
 
@@ -43,12 +53,16 @@ Phase 4 validation: benchmark controls, CPU correctness/aggregation, selection, 
 
 Phase 5 publication validation: both domain fixture suites, domain routing, selection/context-pack, manifest and disposable Claude/Codex install/update/rollback passed. Full-suite integration remains part of F6.3.
 
+Original F6.1 pilot audit: all twelve outcomes reconcile; 843 immutable shared hashes and twelve final source/Git boundaries pass. All 28 saved reports meet the word limit, 188 local documentation links resolve, and eight historical report hashes remain unchanged. Whitespace checks pass. No trial processes remain. Full-suite integration remains F6.3.
+
+Automated follow-up audit: 341 shared hashes, frozen runner/schedule/oracle, twelve source/Git boundaries, 36 distinct contexts, exact correction resumes and 43 saved-report limits pass. The runner's nine deterministic checks and complete smoke workflow passed before launch. Separate 22/23-check diagnostics reproduced control gaps and distinguish final repairs. No trial processes remain. The six-day administrative usage pause contributes no test time; full repository integration remains F6.3.
+
 ## Resume on another computer
 
 1. Fetch `origin`, inspect the current branch and working tree, and preserve any local work. Update a clean `main` checkout with `git pull --ff-only origin main`; resolve any divergence before continuing. For a fresh checkout, clone the repository's default branch.
 2. Read `AGENTS.md`, this file, and `ROADMAP.md`. Confirm the checkout includes completed Phase 5 and the four-capability retest. This source milestone includes the Phase 5 procedures, fixtures and completed domain comparison.
 3. Preserve all original and revised evaluations. The earlier twelve-review study found complementary discoveries; the completed [24-review retest](docs/capability-retest-results.md) adds limited, repeatable case-specific signals. All twelve F5.3 reviews and two verification passes are complete; no further trial is scheduled.
-4. Continue **F6.1 controlled-comparison consolidation**. Start by consolidating completed evidence and remaining gaps before proposing more trials. Preserve the money/benchmark baseline-favoring results, CAD/calibration ties and earlier case-specific gains. Keep physical and accelerator qualification pending. Do not rerun completed trials merely to resume. Any new model trials need a concrete protocol and authorization; current approval covered the completed F5.3 run. Detailed execution evidence remains local-only.
-5. Validate the item and update roadmap/status. Commit and push only when explicitly requested. This source milestone includes completed work through Phase 5 and the four-capability retest. The packaged release version is unchanged.
+4. Continue **F6.1 qualification work** from the [automated comparison](docs/completion-auto-results.md). All twelve workflows and final audits are complete; no trial is queued. Address the known control gaps, explicitly preserve legacy compatibility and review recovery work within the stage budget before proposing another separately frozen comparison. Preserve the original pilot, all twelve new outcomes and separate diagnostics; do not restart any completed queue or the withdrawn WarmLedger candidate. Keep all nine capabilities in evaluation.
+5. Validate the item and update roadmap/status. Commit and push only when explicitly requested. This checkpoint includes Phase 5, the four-capability retest, F6.1 consolidation and both completed pilots; F6.1 acceptance remains incomplete. The packaged release version is unchanged.
 
 The requested retest across all four earlier capabilities is complete. Future benefit qualification needs more varied new tasks and independently challenged controls. The observed discovery gains do not establish general superiority, production durability or full calibration-workflow benefit. No preview server is needed for this handoff.
