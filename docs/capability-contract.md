@@ -220,8 +220,54 @@ The [entry-point generator](../scripts/forgeflow/render-capability-entrypoints.j
 | Current Codex lean plugin | Existing lean behavior retained | Its `.openclaw/skills/` surface does not expose this capability entry point; use the managed Codex installation |
 | Other hosts/adapters | No additional parity claim | No new capability discovery integration in this item |
 
-The nine domain procedure paths remain future implementation destinations. Packaging installs the selection guide and catalog now; it does not create empty procedures or mark them qualified.
+All nine canonical procedure files are implemented and installed on both managed host paths. Their catalog status remains `evaluation`; installation and discovery do not qualify normal execution. The [activation-readiness assessment](capability-readiness.md) retains all nine in that cohort.
 
 For source maintenance, run `node scripts/forgeflow/render-capability-entrypoints.js --write` after changing generated entry-point guidance; run without `--write` to detect drift. The generator preserves content outside its marked blocks. It is a source-checkout maintenance command, not an installed-runtime repair command. Keep the usual agent canonical-map checks when agent definitions change.
 
 Validation: `test-capability-packaging.js` covers generated drift/repair, managed discovery files, invocation from an unrelated directory, stdin without project writes, missing-guide errors, generated Codex inventory, update, unchanged reinstall and exact rollback restoration in disposable homes. Existing manifest, template, updater and agent-drift checks remain applicable. These tests do not measure agent benefit or establish live host/plugin discovery.
+
+
+## Overrides, disabling and managed lifecycle
+
+Use ordinary task intent first. For example, “Repair retry of durable completion notifications” in the implement phase selects persistence recovery; a currency migration may select propagation, recovery and money/calendar together. These are relevance decisions. Each remains `executable: false` under the current evaluation gate.
+
+An explicit preference can exclude a procedure for this task:
+
+```json
+{
+  "task": "Repair retry of durable completion notifications",
+  "phase": "implement",
+  "overrides": {"exclude": ["persistence-recovery"]}
+}
+```
+
+The result records `excluded`; required retry, identity and no-replay checks remain acceptance obligations. An explicit `overrides.include` can select a relevant procedure but cannot enable execution or waive missing prerequisites. An ID in both lists, an unknown ID or an unsupported version is rejected.
+
+To disable all capability suggestions for a task, put all nine catalog IDs in `overrides.exclude`. There is no separate persistent global-disable setting in this selector. Reuse the same structured input when building context packs and carry its `previous` selection on scope changes. Exclusion affects these extra procedures, not the existing workflow, required validation or evidence rules. Do not delete managed procedure files to express a preference; that creates an incomplete installation.
+
+For Codex managed installation, preview and install from the intended source checkout:
+
+```sh
+node scripts/forgeflow/install-template.js --target codex --dry-run --json
+node scripts/forgeflow/install-template.js --target codex
+```
+
+The installer honors `CODEX_HOME`; use `--codex-home /path/to/disposable-codex-home` for isolated installation checks. The updater uses `--home` for that same destination. Restart the client to refresh discovery. The managed capability skill and workflow references are distinct from the lean Codex plugin, which does not expose the capability entry point.
+
+For an existing managed installation, inspect update or repair before applying it:
+
+```sh
+node scripts/forgeflow/update-forgeflow.js --target codex --dry-run --json
+node scripts/forgeflow/update-forgeflow.js --target codex --repair --dry-run --json
+```
+
+Run the selected command without `--dry-run` when authorized. The updater contacts its source repository; selection itself authorizes no update. For rollback, use the source-checkout updater with the same host target and home:
+
+```sh
+node scripts/forgeflow/update-forgeflow.js --target codex --rollback --dry-run --json
+node scripts/forgeflow/update-forgeflow.js --target codex --rollback
+```
+
+Rollback restores the previous managed-file snapshot when available. An unchanged reinstall preserves that snapshot. Review missing snapshots or partial restoration rather than assuming rollback succeeded. These commands also accept `--target claude`; consult [settings and recovery](wiki/Settings-And-Recovery.md) for the host lifecycle and [source migration](role-migration-upgrade.md) before upgrading legacy role installations. Do not use an old installed updater for that migration.
+
+Disposable packaging checks exercise install, update, unchanged reinstall and exact rollback on both managed paths. They do not establish live client discovery after restart, plugin activation, real model benefit or production release qualification.

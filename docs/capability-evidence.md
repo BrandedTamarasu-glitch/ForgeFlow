@@ -58,7 +58,7 @@ Every study tests incremental help over its stated baseline, not “ForgeFlow ve
 
 Published CLI usage is available in the provider/release, initial real-project, four-capability retest and benchmark reports. Cached input is a subset of reported input and must not be added again; reasoning output must not be added again to total output. These totals exclude preparation and verification. No aggregate cost or efficiency winner is computed. The domain pilot's file-access-time-derived elapsed value remains excluded, not replaced with an invented duration.
 
-The remaining acceptance gap is substantive. F6.1 stays unchecked. The later [F6.2 readiness assessment](capability-readiness.md) retains all nine capabilities in evaluation; F6.3 integration is next and F6.4 remains unstarted. No catalog availability or automatic-execution flag changes follow from this document.
+The remaining acceptance gap is substantive. F6.1 stays unchecked. The later [F6.2 readiness assessment](capability-readiness.md) retains all nine capabilities in evaluation; The later [F6.3 integration verification](capability-integration.md) is complete for the evaluation cohort; F6.4 release preparation is next. No catalog availability or automatic-execution flag changes follow from this document.
 
 ## Requirements used for the completion follow-up
 

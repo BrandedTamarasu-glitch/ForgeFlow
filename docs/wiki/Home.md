@@ -77,6 +77,7 @@ Record observed results. Missing optional evidence is not a failed installation,
 - [Release Process](Release-Process.md), [Release Gate](Release-Gate.md), [Clean Checkout Install Verification](Clean-Checkout-Install-Verification.md)
 - [Maintaining the Wiki](Maintaining-The-Wiki.md)
 - [Roadmap](Roadmap.md)
+- [Review and execution evolution](Review-And-Execution-Evolution.md)
 - [Historical 4.3.0 release brief](Forgeflow-4.3-Release-Brief.md)
 
 The editable source for these pages lives in [docs/wiki in the repository](https://github.com/BrandedTamarasu-glitch/ForgeFlow/tree/main/docs/wiki). The GitHub wiki is a separate published copy. Use the [documentation entry](../index.html) for a compact navigation page, or the [README](../../README.md) for the project overview.

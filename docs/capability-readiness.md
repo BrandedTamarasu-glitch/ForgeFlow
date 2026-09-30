@@ -35,3 +35,5 @@ Current selector and context-pack regression suites pass, including durable comp
 ## Next item
 
 Proceed to **F6.3 integration and documentation** for the evaluation cohort: verify discovery, examples, overrides, disable/update/rollback guidance, generated sources, the local full suite and disposable primary-host installation lifecycle. Installed behavior and live host activation must remain distinct. F6.1 qualification stays open; F6.4 release preparation follows verified integration, and publishing still requires authorization.
+
+Follow-up: [F6.3 integration and documentation](capability-integration.md) is complete for the evaluation cohort, with all 222 local test commands passing and disposable managed lifecycle checks. F6.4 release preparation is next; no activation decision changes.
