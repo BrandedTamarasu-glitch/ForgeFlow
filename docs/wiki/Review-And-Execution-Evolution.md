@@ -1,6 +1,6 @@
 # Review And Execution Evolution
 
-Status: queued, not started. The [portable roadmap](../../ROADMAP.md) tracks these phases as E1–E5; F6.1 remains the current next action. This plan follows the existing [roadmap priorities](Roadmap.md) after Phase 6 or an explicit reprioritization. It does not replace work already underway or assign release dates.
+Status: E1 ready to begin; implementation not started. The [portable roadmap](../../ROADMAP.md) tracks these phases as E1–E5; the separate [F6.1 final checks](../completion-workflow-qualification.md) are complete. This plan follows the existing [roadmap priorities](Roadmap.md) after Phase 6 or an explicit reprioritization. It does not replace work already underway or assign release dates.
 
 ## Purpose
 

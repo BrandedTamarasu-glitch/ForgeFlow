@@ -1,5 +1,7 @@
 # Capability evidence consolidation
 
+Later checkpoint: [F6.1 final checks](completion-workflow-qualification.md) close bounded measurement and supported-workflow qualification. The open acceptance conclusions below describe this eight-study checkpoint; its ledger, scores and limits remain unchanged. All nine capabilities remain in evaluation.
+
 Updated 2026-09-30. **Eight completed Phase 1–5 studies account for 178 scheduled trials: 177 completed responses and one retained interruption.** This is response accounting, not an accuracy rate. The [structured ledger](capability-evidence.json) links every study to its source report and preserves unmeasured values as null. Each source report is pinned by SHA-256 to the published `0e30f03` checkpoint.
 
 F6.1 consolidation is complete, but **F6.1 acceptance remains open**. None of these eight studies measured correction time or compared the full automatically selected workflow through verified completion. All nine procedures remain in evaluation. Historical protocols, scores, severity keys and activation settings are unchanged. The separate [actual-PR completion follow-up](completion-pilot-results.md) records the later multi-stage workflows; its counts are not pooled into this ledger.

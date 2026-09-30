@@ -1,6 +1,6 @@
 # Capability activation readiness
 
-Updated 2026-09-30. **F6.2 assessment complete: retain all nine capabilities in evaluation; promote none.** This decision follows the roadmap's explicit path for inconclusive capabilities. It does not close F6.1, qualify normal execution, or establish that no unknown defects exist.
+Updated 2026-09-30. **F6.2 assessment complete: retain all nine capabilities in evaluation; promote none.** This decision follows the roadmap's explicit path for inconclusive capabilities. The separate [F6.1 final checks](completion-workflow-qualification.md) complete bounded measurement and supported Codex lifecycle validation. This readiness decision does not qualify normal execution or establish that no unknown defects exist.
 
 ## Decision by capability
 
@@ -34,6 +34,4 @@ Current selector and context-pack regression suites pass, including durable comp
 
 ## Next item
 
-Proceed to **F6.3 integration and documentation** for the evaluation cohort: verify discovery, examples, overrides, disable/update/rollback guidance, generated sources, the local full suite and disposable primary-host installation lifecycle. Installed behavior and live host activation must remain distinct. F6.1 qualification stays open; F6.4 release preparation follows verified integration, and publishing still requires authorization.
-
-Follow-up: [F6.3 integration and documentation](capability-integration.md) is complete for the evaluation cohort, with all 222 local test commands passing and disposable managed lifecycle checks. F6.4 release preparation is next; no activation decision changes.
+F6.3 integration and F6.4 source-release preparation are complete. F6.1's separate final checks now verify the retained receipt clean controls, matching original requested model/settings, completed claim adjudication and one supported Codex lifecycle. This evidence does not change any promotion decision. Begin E1 from the portable roadmap; broad benefit and live host activation remain unqualified, and packaged release requires its separate gates and authorization.

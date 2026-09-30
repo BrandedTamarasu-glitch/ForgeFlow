@@ -1,5 +1,7 @@
 # Automated actual-PR completion comparison
 
+Later checkpoint: [F6.1 final checks](completion-workflow-qualification.md) close bounded measurement and supported-workflow qualification. This historical study's outcomes, original control limits and correction measurements remain unchanged; no normal activation follows.
+
 Updated 2026-09-30. **All twelve workflows are accounted for: nine verified completions under the frozen checks, two timeouts and one usage-limit interruption. Baseline completed 6/6; added recovery completed 3/6.** The smoke workflow, original pilot and earlier eight-study ledger remain separate. [Structured results](completion-auto-results.json).
 
 ## Frozen scope

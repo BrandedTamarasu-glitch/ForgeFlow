@@ -1,5 +1,7 @@
 # Actual-PR completion pilot
 
+Later checkpoint: [F6.1 final checks](completion-workflow-qualification.md) close bounded measurement and supported-workflow qualification. This historical study's outcomes, original control limits and correction measurements remain unchanged; no normal activation follows.
+
 Updated 2026-09-24. **All twelve workflows are accounted for: one verified completion within budget and eleven timeouts. This execution-limited run is inconclusive about incremental capability.** This is a separate follow-up to the [eight-study assessment](capability-evidence.md). Those 178 historical trial slots are not pooled with this pilot's twelve multi-stage workflows.
 
 ## Case and method

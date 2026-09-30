@@ -33,7 +33,7 @@ Each procedure must define ordered steps, scope/termination bounds, expected evi
 
 ## Canonical inventory
 
-Use flat canonical files `forgeflow-patterns/capability-<id>.md`. Change propagation, visual acceptance, persistence recovery, review calibration, provider compatibility, release qualification, benchmark verification and money/calendar correctness exist; the remaining paths are future implementation destinations. Flat Markdown fits both current managed-pattern installation paths; nested pattern directories do not currently have equivalent Claude coverage.
+Use flat canonical files `forgeflow-patterns/capability-<id>.md`. Change propagation, visual acceptance, persistence recovery, review calibration, provider compatibility, release qualification, benchmark verification, money/calendar correctness and CAD/fabrication acceptance all exist in evaluation; normal execution remains gated. Flat Markdown fits both current managed-pattern installation paths; nested pattern directories do not currently have equivalent Claude coverage.
 
 ### change-propagation
 
