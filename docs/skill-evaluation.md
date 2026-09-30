@@ -39,3 +39,5 @@ The foundation itself contains no model observations. The subsequent [Phase 1 pi
 The subsequent [Phase 2 recovery/review pilot](recovery-review-pilot-results.md) adds 32 actual code-inspection responses and separate executed simulation checks. Equal outcomes do not establish benefit or activation readiness.
 
 The [repository-repair follow-up](recovery-workbench-results.md) uses a separate three-arm exploratory protocol, preserving the existing workflow and two-arm skill schemas. Its control-validity gap and post-freeze diagnostic are reported separately from the frozen acceptance scores.
+
+The [E1 decision contract](review-decision-contract.md) reuses schema 2 for prospective procedure comparisons. Its seven-case corpus and answer material stay local; preparation performs no model dispatch. Shared host/runtime identity fits frozen settings, while distinct per-arm runtime variants and additional process metrics require a later explicit contract. Consequential claims belong in a separate sidecar, not added mutable trial fields.

@@ -1,6 +1,6 @@
 # Review And Execution Evolution
 
-Status: E1 ready to begin; implementation not started. The [portable roadmap](../../ROADMAP.md) tracks these phases as E1–E5; the separate [F6.1 final checks](../completion-workflow-qualification.md) are complete. This plan follows the existing [roadmap priorities](Roadmap.md) after Phase 6 or an explicit reprioritization. It does not replace work already underway or assign release dates.
+Status: E1 contract and local corpus preparation complete; E2 runtime implementation ready to begin. The [portable roadmap](../../ROADMAP.md) tracks these phases as E1–E5; the separate [F6.1 final checks](../completion-workflow-qualification.md) are complete. This plan follows the existing [roadmap priorities](Roadmap.md) after Phase 6 or an explicit reprioritization. It does not replace work already underway or assign release dates.
 
 ## Purpose
 
@@ -19,6 +19,8 @@ The first runtime scope is review preparation and review handoffs. Validation an
 Every new contract must have a named caller and compatible behavior in Claude Code and Codex. Keep implementation in shared helpers where practical; host adapters retain native dispatch and authorization. Unsupported host capabilities produce an explicit limitation.
 
 ## Phase 1: Pilot Cases And Decision Contracts
+
+**Status:** Complete. [Frozen decision contract and local qualification](../review-decision-contract.md) record seven cases, answer separation, historical baseline limits and predeclared criteria. No candidate model trials or production defaults changed.
 
 **Dependencies:** Existing work reaches a suitable stopping point and this phase is selected. Relative effort: small.
 
