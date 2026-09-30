@@ -33,6 +33,10 @@ assert.deepEqual(selected({ task: 'Measure accelerator throughput' }), ['benchma
 assert.deepEqual(selected({ task: 'Evaluate reviewer quality and false findings' }), ['review-calibration']);
 assert.deepEqual(selected({ task: 'Fix external API response parsing' }), ['provider-compatibility']);
 assert.deepEqual(selected({ task: 'Fix the journal cleanup', criteria: ['Prevent data loss after interrupted saves'] }), ['persistence-recovery']);
+assert.deepEqual(selected({ task: 'Verify and repair durable completion notification delivery', phase: 'implement' }), ['persistence-recovery']);
+assert.deepEqual(selected({ task: 'Repair durable outbox delivery', phase: 'review' }), ['persistence-recovery']);
+assert.deepEqual(selected({ task: 'Correct durable completion notification spelling' }), []);
+assert.deepEqual(selected({ task: 'Do not change durable completion receipt delivery' }), []);
 assert.deepEqual(selected({ task: 'Migrate currency schema and verify storage recovery' }), ['change-propagation', 'persistence-recovery', 'money-calendar-correctness']);
 assert.deepEqual(selected({ task: 'Fix recurrence', phase: 'ship' }), []);
 assert.deepEqual(selected({ task: 'Fix recurrence', phase: 'consult' }), ['money-calendar-correctness']);

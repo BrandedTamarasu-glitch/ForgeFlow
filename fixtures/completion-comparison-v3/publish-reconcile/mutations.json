@@ -1,0 +1,6 @@
+[
+  { "id": "skip-reconciliation", "find": "if (durable) return resolve(durable);", "replace": "if (durable) throw error;", "expectedFailedChecks": ["lost-ack-reconciled", "concurrent-identical-retry"] },
+  { "id": "skip-conflict", "find": "if (!isDeepStrictEqual(existing.payload, record.payload)) throw new Error('payload conflict');", "replace": "// Accept any existing payload.", "expectedFailedChecks": ["conflicting-retry"] },
+  { "id": "retain-caller-payload", "find": "const record = { id: key, payload: structuredClone(payload) };", "replace": "const record = { id: key, payload };", "expectedFailedChecks": ["payload-captured-before-barrier"] },
+  { "id": "json-order-comparison", "find": "!isDeepStrictEqual(existing.payload, record.payload)", "replace": "JSON.stringify(existing.payload) !== JSON.stringify(record.payload)", "expectedFailedChecks": ["object-order-compatibility", "nested-collection-compatibility-and-conflict", "cyclic-detached-retry"] }
+]

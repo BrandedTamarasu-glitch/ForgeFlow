@@ -1,0 +1,64 @@
+diff --git a/packages/controller/controller.mjs b/packages/controller/controller.mjs
+index d8bf578..6b2ca38 100644
+--- a/packages/controller/controller.mjs
++++ b/packages/controller/controller.mjs
+@@ -7,8 +7,11 @@
+  * supplied exclusively by Herdr through HERDR_PLUGIN_STATE_DIR.
+  */
+ import { createHash, randomUUID } from "node:crypto";
++import { constants } from "node:fs";
+ import {
+   lstat,
++  open,
++  realpath,
+   mkdir,
+   readFile,
+   rename,
+@@ -1798,6 +1801,38 @@ async function classifyEvent(event, mapping, herdr, workflow) {
+   }
+ }
+ 
++// Reconcile a durable binding with native metadata without inferring identity
++// from a transcript filename. Legacy bindings may store a UUID directly.
++async function completionSessionMatches(agent, bound) {
++  const native = agent.agent_session;
++  if (!native || !["id", "path"].includes(native.kind) ||
++      typeof native.value !== "string" || !native.value ||
++      /[\u0000-\u001f\u007f]/.test(native.value)) return false;
++  if (agent.agent !== "pi") return native.value === bound;
++  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
++  try {
++    if (native.kind === "path") {
++      if (native.value === bound) return true;
++      if (!isAbsolute(native.value) || !isAbsolute(bound)) return false;
++      return await realpath(native.value) === await realpath(bound) &&
++        (await lstat(await realpath(bound))).isFile();
++    }
++    if (!uuid.test(native.value)) return false;
++    if (uuid.test(bound)) return native.value === bound;
++    if (!isAbsolute(bound)) return false;
++    const file = await open(bound, constants.O_RDONLY | constants.O_NONBLOCK);
++    try {
++      if (!(await file.stat()).isFile()) return false;
++      const buffer = Buffer.alloc(64 * 1024);
++      const { bytesRead } = await file.read(buffer, 0, buffer.length, 0);
++      const newline = buffer.subarray(0, bytesRead).indexOf(10);
++      if (newline < 0) return false;
++      const header = JSON.parse(buffer.subarray(0, newline).toString("utf8"));
++      return header.type === "session" && header.id === native.value;
++    } finally { await file.close(); }
++  } catch { return false; }
++}
++
+ function rootAgent(result, root) {
+   if (
+     !isRecord(result) ||
+@@ -2575,7 +2610,7 @@ export async function runSupervisorTick({
+             : !["idle", "done"].includes(agent.agent_status) ? "root-busy"
+             : agent.interactive_ready === false ? "root-not-interactive"
+             : agent.launch_pending ? "root-launch-pending"
+-            : agent.agent_session?.value !== binding.rootSessionPath || !["path", "id"].includes(agent.agent_session?.kind) ? "root-session-mismatch"
++            : !(await completionSessionMatches(agent, binding.rootSessionPath)) ? "root-session-mismatch"
+             : goal?.supervisor?.rootTurn?.state === "active" ? "root-turn-active" : null;
+           if (reason) {
+             diagnose({ ...receiptContext, status: "pending", reason, rootStatus: agent?.agent_status,

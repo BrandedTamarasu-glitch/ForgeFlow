@@ -1,0 +1,71 @@
+{
+  "version": 3,
+  "date": "2026-09-30",
+  "status": "frozen",
+  "planned_workflows": 36,
+  "cases": [
+    {
+      "id": "receipt-identity",
+      "provenance": "Reused actual submitted PR with separately revised control v2; not held out",
+      "source_head": "2bbb198b7a5852cd64fc243a1392cda56f517640"
+    },
+    {
+      "id": "publish-reconcile",
+      "provenance": "New authored synthetic task, held out from earlier studies; disposable in-memory backend"
+    },
+    {
+      "id": "migration-fence",
+      "provenance": "New authored synthetic task, held out from earlier studies; disposable in-memory backend"
+    }
+  ],
+  "variants": [
+    "defective",
+    "clean"
+  ],
+  "arms": [
+    "baseline",
+    "selected-recovery-evaluation"
+  ],
+  "repetitions_per_case_variant_arm": 3,
+  "concurrent_workflows": 2,
+  "stages": [
+    "implementation",
+    "validation",
+    "integration"
+  ],
+  "budget": {
+    "initial": 600,
+    "correction": 360,
+    "acceptance": 30,
+    "words": 800
+  },
+  "stage_budget": "Shared monotonic initial or correction deadline, with remaining seconds supplied to each stage; no independent per-stage cap. Acceptance has a separate shared deadline for oracle, regression tests and final source/Git audit. Preparation packets direct implementation and validation to use at most half the remaining time, reserving subsequent stages; this is guidance, not an enforced independent deadline.",
+  "correction": "At most one cycle, same exact three context IDs, identical failing check IDs/messages. First-pass correction is not_applicable/null; unsuccessful correction is censored/null.",
+  "order": "Cases in declared order; repetitions 1 through 3; defective then clean. Arms within each pair reverse when (case_index + repetition + variant_index) is odd. Nine pairs begin with each arm; paired sources/tasks/commands/budgets are identical.",
+  "runner": "scripts/forgeflow/run-completion-comparison.py",
+  "historical_runner": "scripts/forgeflow/run-completion-workflows.py",
+  "preparer": "scripts/forgeflow/prepare-completion-comparison.py",
+  "dispatch": "Same installed Codex CLI default for both arms, user configuration and execution rules excluded, no model or reasoning override. Exact resolved backend/settings must be reported or remain unknown; invocation equality is not proof of backend identity.",
+  "treatment": "Ordinary selector receives task, phase implement and affected files, without include overrides or relevance assessments. Only the selected evaluation recovery procedure is appended to implementation. Validation and integration receive verbatim reports. Normal execution stays gated.",
+  "primary": "Verified three-stage completion within the frozen deadlines; every exact external check identity/status present, all public and newly added tests passed, context/report/source/Git boundaries valid. Report every scheduled slot, including failed, interrupted, timed-out and unlaunched attempts. Report each case and variant separately; no pooling with historical studies.",
+  "secondary": [
+    "First submission and verified completion monotonic intervals, correction through verification, per-stage duration, observed CLI usage/tool events",
+    "Remaining failed behavioral check IDs; do not reinterpret these as distinct missed defects without independent adjudication",
+    "Clean-source edit rate separately from verified completion; an edit alone is not proof of a false defect claim",
+    "Blinded independent adjudication of consequential claims against frozen source, task and controls before arm mapping; false findings, missed defects, compatibility regressions and unresolved claims remain distinct",
+    "Unexposed backend identity, monetary cost and unobserved measurements remain null"
+  ],
+  "adoption": "Preparation, clean controls and synthetic pass counts do not qualify activation. Retain case-specific positive, tied and baseline-favoring results. Normal activation requires replicated verified completion benefit on varied real tasks, no compatible clean-control regressions, supported workflow evidence and a separate decision. This study cannot by itself qualify all nine capabilities.",
+  "smoke": "Before freeze, validate a separate workflow on the reused receipt-identity clean source, isolated from the 36 scheduled contexts. It is excluded from comparison outcomes. Deterministic fake-CLI checks qualify runner mechanics only; actual dispatch/environment qualification must be explicit. Common prompts were tuned using repeated prefreeze observations on the reused receipt clean case in the selected arm. This case is not independent prospective evidence. An eventual pass establishes feasibility, not reliable completion within the budget; after freeze prompts and outcomes remain unchanged.",
+  "historical_boundary": "Original pilot, automated comparison, oracles, frozen runner, scores and post-observation diagnostics remain unchanged. No completed queue is rerun.",
+  "limitations": [
+    "Two authored synthetic cases and one reused actual PR are not three unseen production PRs or independent discovery.",
+    "In-memory stores and synthetic native metadata do not establish disk durability, live native behavior or production exploitability.",
+    "Filesystem/read isolation is instructional and sandbox-dependent. Content hashes omit permissions, Git metadata and local handoff state; final audits check HEAD and staging, not complete security containment.",
+    "Three sequential evaluation stages are not the complete production consult-to-ship entrypoint. Ordinary selection/context plumbing and full lifecycle qualification remain separate.",
+    "Small samples, default backend identity/settings and capability-wide qualification remain limitations even if every scheduled attempt passes."
+  ],
+  "stage_ownership": "Implementation may change only declared source files and new scoped tests; validation may add/refine those new tests; fixed source/backend/public tests stay read-only outside implementation; integration is read-only.",
+  "runtime": "Each attempt owns a short temporary directory for Unix socket fixtures, removed after recording its outcome. Required runtime environment, Node executable and supplied libraries are hashed. The launch PATH is recorded. Scratch files are confined by instruction to handoff state or the owned /tmp directory. Sandbox network access is enabled for local Unix-socket fixtures; external network calls are prohibited by instruction, not contained by the sandbox.",
+  "qualification": "Five separate prefreeze dispatch attempts retained: one session initialization failure, two boundary failures with environment defects, one600-second integration timeout, then one verified three-stage completion in597.53 seconds plus10.50 seconds external acceptance. The successful smoke is feasibility evidence on the reused clean case only, excluded from the36 comparison slots."
+}

@@ -673,6 +673,16 @@ const preDiffCapabilityResult = buildContextPack({
   out: path.join(focusedRoot, '.forgeflow', 'Focused', 'context', 'capability-test'),
   capabilityInputPath, memoryIndex: false, maxMemoryChars: 2000, maxDiffChars: 2000,
 });
+fs.writeFileSync(capabilityInputPath, JSON.stringify({
+  phase: 'implement',
+  task: fs.readFileSync(path.join(repoRoot, 'fixtures/completion-pilot/task.md'), 'utf8'),
+  files: ['packages/controller/controller.mjs'],
+}));
+const completionCapabilityResult = buildContextPack({
+  root: focusedRoot,
+  out: path.join(focusedRoot, '.forgeflow', 'Focused', 'context', 'completion-capability-test'),
+  capabilityInputPath, memoryIndex: false, maxMemoryChars: 2000, maxDiffChars: 2000,
+});
 const route = JSON.parse(fs.readFileSync(path.join(outDir, 'route.json'), 'utf8'));
 const capabilitySelection = JSON.parse(fs.readFileSync(path.join(outDir, 'capability-selection.json'), 'utf8'));
 const manifest = JSON.parse(fs.readFileSync(path.join(outDir, 'file-manifest.json'), 'utf8'));
@@ -696,6 +706,7 @@ const noisyManifest = JSON.parse(fs.readFileSync(path.join(noisyOutDir, 'file-ma
 const wardenPacket = fs.readFileSync(path.join(repoRoot, synthesis.agent_packets.guardian_reviewer), 'utf8');
 const checks = [
   ['pre-diff capability input and overrides reach context', preDiffCapabilityResult.capability_selection.selected.join(',') === 'provider-compatibility' && preDiffCapabilityResult.capability_selection.phase === 'plan'],
+  ['completion task selects recovery through ordinary context preparation', completionCapabilityResult.capability_selection.selected.join(',') === 'persistence-recovery' && completionCapabilityResult.capability_selection.phase === 'implement'],
   ['pre-diff explicit file scope is reported', preDiffCapabilityResult.capability_selection.file_scope === 'explicit' && preDiffCapabilityResult.capability_selection.omitted_changed_files === null],
   ['capabilities do not alter reviewer route shape', !Object.hasOwn(route, 'selected') && !Object.hasOwn(route, 'capabilities')],
   ['capability selection artifact linked', synthesis.capability_selection_path.endsWith('capability-selection.json')],

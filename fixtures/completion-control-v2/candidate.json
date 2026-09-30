@@ -1,0 +1,33 @@
+{
+  "version": 2,
+  "date": "2026-09-30",
+  "status": "prepared-challenged-not-frozen",
+  "source_revision": "2bbb198b7a5852cd64fc243a1392cda56f517640",
+  "platform": "linux",
+  "candidate_sha256": {
+    "acceptance.mjs": "69d7f6cce86928ad51b5dcf1f730b5c87275b2d48deb87eebbd3911b0c337107",
+    "control.patch": "7e0a39f8607d290f2039f4588d68da46eb1e17e0740c835c0d83b29d87c3bfc4",
+    "validate.mjs": "b31aa5cf45116aef7eebda136a85a16aa4a1bde0770e31a3c372406f6cfc382c"
+  },
+  "historical_acceptance_sha256": "210a505f86221f91988fed79b38e3ee8b56dc7fd48b56d6fdc18778528da1dda",
+  "validation": {
+    "candidate_checks": 33,
+    "historical_checks": 21,
+    "controller_tests": 55,
+    "rejected_mutations": 5,
+    "independent_challenge": "FIFO hang reproduced; nonblocking fix independently rechecked; no remaining blockers in reviewed scope"
+  },
+  "workflow_selection": {
+    "ordinary_selector": "passed",
+    "context_preparation": "passed",
+    "availability": "evaluation",
+    "executable": false
+  },
+  "trial_schedule": null,
+  "limitations": [
+    "Synthetic session metadata and local disposable files.",
+    "No crash, power-loss or cross-process delivery qualification.",
+    "No full selected-workflow completion or stage-budget benefit measurement.",
+    "No new comparison freeze, model trials or activation change."
+  ]
+}

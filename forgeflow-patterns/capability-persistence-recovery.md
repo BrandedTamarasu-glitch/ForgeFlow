@@ -20,6 +20,8 @@ Separate process interruption from power loss and remote replication. A rename, 
 
 ## Exercise bounded failure schedules
 
+Work within the existing stage deadline. Identify the affected mechanism and reuse the project's executable seam before adding schedules. Reserve time for existing regression checks and the handoff; do not spend the whole stage building a general failure harness. For durable notification delivery, prioritize identity and legacy compatibility, the persisted pre-send claim, readiness retry, and no replay after an uncertain send. Expand to other storage boundaries only when the changed source affects them. Report an unrun schedule as pending when the remaining budget cannot support it; a deadline never waives an acceptance criterion. This scoping guidance has no measured completion-benefit claim.
+
 Use synthetic data in an owned disposable store and the project's existing test seam. For each relevant boundary, freeze the starting bytes, ordered operations, fault, expected invariant and reload result before running. Start with one defect and one valid counterexample for the affected mechanism, expanding only for distinct failure paths. Use explicit barriers/checkpoints rather than timing sleeps.
 
 - Interrupt before and after publication. Drop volatile state and reload through the normal reader. A staged generation is not committed just because it is newer. A committed save can survive even if acknowledgement or later cleanup fails; avoid blindly replaying external actions.

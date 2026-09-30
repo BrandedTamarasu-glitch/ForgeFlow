@@ -12,7 +12,7 @@ const BEHAVIOR = /\b(behavior|logic|calculation|algorithm|schema|migration|round
 const SIGNALS = {
   'change-propagation': /\b(logo|branding|palette|schema|migration|generated (?:artifact|document)|favicon|shared (?:concept|token)|design token)\b/i,
   'visual-acceptance': /\b(logo|layout|typography|theme|palette|responsive|alignment|overflow|keyboard|focus|card heights?|font|visual)\b/i,
-  'persistence-recovery': /\b(persistence|storage|journal|migration|save|saves|stale writer|concurrent (?:write|save)|data loss|reload recovery)\b/i,
+  'persistence-recovery': /\b(persistence|storage|journal|migration|save|saves|stale writer|concurrent (?:write|save)|data loss|reload recovery|durable completion (?:receipt|notification)|durable outbox)\b/i,
   'review-calibration': /\b(review(?:er)? (?:guidance|rules?|quality|calibration)|false positives?|false findings|missed defects|calibrat\w* review)\b/i,
   'provider-compatibility': /\b(provider|external (?:api|cli)|api adapter|response contract|response pars(?:e|er|ing)|protocol|freshness)\b/i,
   'release-qualification': /\b(deploy(?:ed|ment)?|published (?:site|artifact)|installed (?:app|artifact)|packaged (?:app|artifact)|release qualification|rollback|uninstall)\b/i,
