@@ -17,13 +17,13 @@ The core delivery phases, specialist agents, local project memory, and evidence-
 3. Reduce onboarding friction for Claude Code and Codex without broadening automation risk.
 4. Keep public docs and runtime behavior aligned.
 
-## Current Measurement Checkpoint
+## Retained Measurement Checkpoint
 
 Updated October 1, 2026. **F6.1 is complete as bounded measurement and supported-workflow qualification.** The [final checks](../completion-workflow-qualification.md) verify all six retained receipt clean controls, matching original requested model/settings across 45 stage/correction records, retained consequential claims and one complete supported Codex lifecycle. The 33 current acceptance checks, 21 historical checks, 55 unchanged controller tests, four focused tests and all five source-bound task criteria pass without waivers.
 
 The [original automated comparison](../completion-auto-results.md) remains baseline 6/6 versus recovery 3/6, with two timeouts and one usage interruption; its three correction intervals exclude the six-day administrative pause. The [stopped comparison](../completion-v3-partial-results.md) retains 22 finished, two interrupted and twelve unlaunched attempts. Historical scores and diagnostics are unchanged. Reused-case, synthetic/local and provider-default limits remain explicit; no general benefit follows.
 
-F6.2 retains all nine capabilities in evaluation, F6.3 passes 222 local test commands and managed integration checks, and F6.4 prepares the source-release summary. Normal activation and separately authorized packaged-release gates remain unqualified. [E1 case and decision-contract preparation](../review-decision-contract.md) is complete; [E2 immutable review evidence](../review-evidence.md) is complete, including seven evidence-flow observations on owned PR #33 and 67 scoped PR checks; **E3 — Focused specialist questions and bounded follow-up** is implemented with a bounded real-PR walkthrough; quality/independence and comparative overhead acceptance remain open. See the [checkpoint](../review-decision-contract.md#e3-implementation-and-real-pr-checkpoint). See the [portable roadmap](../../ROADMAP.md) and [resumption status](../../STATUS.md).
+F6.2 retains all nine capabilities in evaluation, F6.3 passes 222 local test commands and managed integration checks, and F6.4 prepares the source-release summary. At that checkpoint, normal activation and packaged publication remained pending. The 4.7.0 release and E6 assessed-use policy are described above. [E1 case and decision-contract preparation](../review-decision-contract.md) is complete; [E2 immutable review evidence](../review-evidence.md) is complete, including seven evidence-flow observations on owned PR #33 and 67 scoped PR checks; **E3 — Focused specialist questions and bounded follow-up** is implemented with a bounded real-PR walkthrough; quality/independence and comparative overhead acceptance remain open. See the [checkpoint](../review-decision-contract.md#e3-implementation-and-real-pr-checkpoint). See the [portable roadmap](../../ROADMAP.md) and [resumption status](../../STATUS.md).
 
 ## Active Work Themes
 
@@ -53,7 +53,7 @@ F6.2 retains all nine capabilities in evaluation, F6.3 passes 222 local test com
 
 ## Queued: Review And Execution Evolution
 
-Status: E1 contract and local cases and E2 immutable evidence complete; E3 runtime implementation has not started and no delivery dates are assigned. The [portable roadmap](../../ROADMAP.md) tracks this work as E1–E5; Phase 6 bounded measurement and evaluation-cohort preparation are complete. Existing activation and release gates retain precedence.
+Status: E1 and E2 are complete; E3 bounded follow-up is implemented with broader qualification held; E4 functional preparation, E5 scoped adoption decisions and E6 assessed on-demand authority are complete. The [portable roadmap](../../ROADMAP.md) tracks E1–E6. Existing permissions and required acceptance checks retain precedence.
 
 The [phased review and execution plan](Review-And-Execution-Evolution.md) draws on [Jive's execution and decision design](https://github.com/merijjeyn/jive/blob/a1644e0c4d6efacb1d7aa96d0695581b1219bbb2/DESIGN.md). It builds on ForgeFlow's existing PR experience, specialist reviews, routing, context packets, and source-bound task evidence.
 
