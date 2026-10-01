@@ -51,7 +51,7 @@ function usage() {
   console.error([
     'Usage: build-context-pack.js [--root <dir>] [--out <dir>] [--files <path>] [--lines <n>]',
     '       [--tracked-lines <n>] [--untracked-lines <n>] [--mode skip|thin|full|deep]',
-    '       [--calibration <path>] [--task <text>] [--capability-input <json-file>]',
+    '       [--calibration <path>] [--task <text>] [--capability-input <json-file>] [--review-assignments <json>]',
     '       [--max-memory-chars <n>] [--max-diff-chars <n>] [--no-memory-index] [--ci] [--json]',
   ].join('\n'));
 }
@@ -98,6 +98,10 @@ function parseArgs(argv) {
       const value = argv[++i];
       if (!value || value.startsWith('--')) throw new Error('--capability-input requires a JSON file');
       opts.capabilityInputPath = value;
+    } else if (arg === '--review-assignments') {
+      const value = argv[++i];
+      if (!value || value.startsWith('--')) throw new Error('--review-assignments requires a JSON file');
+      opts.reviewAssignmentsPath = value;
     } else if (arg === '--max-memory-chars') {
       opts.maxMemoryChars = Number.parseInt(argv[++i] || `${DEFAULT_MAX_MEMORY_CHARS}`, 10);
     } else if (arg === '--max-diff-chars') {
@@ -143,6 +147,7 @@ function normalizePathOptions(opts) {
   if (normalized.capabilityInputPath) {
     normalized.capabilityInputPath = path.resolve(root, normalized.capabilityInputPath);
   }
+  if (normalized.reviewAssignmentsPath) normalized.reviewAssignmentsPath = path.resolve(root, normalized.reviewAssignmentsPath);
   return normalized;
 }
 
@@ -1240,7 +1245,43 @@ function renderContextContract(contract) {
   ].join('\n');
 }
 
-function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, userProfile, projectOperatingModel, architectureIntelligence, leanGuidanceMarkdown, latestFailure, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, contextContract, task) {
+function sourceArtifactId(root, file) {
+  const relative = path.relative(root, path.resolve(root, file)).split(path.sep).join('/');
+  return `source-${createHash('sha256').update(relative).digest('hex')}`;
+}
+
+function reviewAssignmentsInput(bytes, requiredReviewers) {
+  if (bytes.length > 64 * 1024) throw new Error('Review assignments input exceeds 64 KiB');
+  const input = JSON.parse(bytes.toString('utf8'));
+  if (!input || typeof input !== 'object' || Array.isArray(input)
+      || Object.keys(input).some(key => !['schema_version', 'assignments'].includes(key))
+      || input.schema_version !== '1') throw new Error('Invalid review assignments input');
+  return require('./review-questions').validateAssignments({ requiredReviewers, assignments: input.assignments });
+}
+
+function renderReviewAssignment(assignment, artifacts) {
+  if (!assignment) return 'Focused questions: not_enabled. No bounded follow-up session is enforced by this packet.';
+  return [
+    `Assignment: ${assignment.assignment_id}`,
+    `Reviewer: ${assignment.reviewer}`,
+    `Question: ${assignment.question}`,
+    'Authorized artifact IDs:',
+    ...assignment.artifact_ids.map(id => {
+      const artifact = artifacts.find(item => item.id === id);
+      return `- ${id}: ${artifact.source_path || artifact.kind} (${artifact.coverage}, ${artifact.bytes} bytes)`;
+    }),
+    'Expected decisive evidence:',
+    ...assignment.expected_evidence.map(description => `- ${description}`),
+    'Preserve all ordinary domain responsibilities and independent discovery.',
+    'When decisive proof is absent, return a structured request with only schema_version, request_id, assignment_id, reviewer, artifact_id, extent and why_decisive.',
+    'Extent is {"mode":"full"} or {"mode":"lines","start_line":1,"end_line":1}; use actual positive bounds. One authorized artifact per request.',
+    'No paths, commands, live reads, replacement evidence refs or reviewer-supplied limits. The orchestrator binds this packet to the sealed evidence ref and supplies the session ref.',
+    'Denied, exhausted, unavailable or stale proof remains unresolved. A fulfilled request establishes delivery, not claim truth.',
+    'Retain the existing finding format and distinguish supported findings, rejected premises and unresolved questions.',
+  ].join('\n');
+}
+
+function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestInsights, userProfile, projectOperatingModel, architectureIntelligence, leanGuidanceMarkdown, latestFailure, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, contextContract, task, focusedReview = {}) {
   const relevant = relevantFilesForAgent(agent, manifest);
   const rules = rulePack(agent, route, manifest);
   return [
@@ -1254,6 +1295,9 @@ function packetMarkdown(agent, route, manifest, diffSummary, memoryHits, latestI
     `- verifier: ${route.verifier}`,
     `- reasons: ${(route.reasons || []).join('; ') || '(none)'}`,
     `- telemetry: ${(route.telemetry_hints || []).map((hint) => `${hint.type}:${hint.class}`).join(', ') || '(none)'}`,
+    '',
+    '## Focused Question And Evidence Requests',
+    renderReviewAssignment(focusedReview.assignment, focusedReview.artifacts),
     '',
     '## Relevant Files',
     ...relevant.map((file) => `- ${md(file.path)} (${file.kind}, ${file.exists ? `${file.size_bytes} bytes` : 'missing'})`),
@@ -1324,7 +1368,7 @@ function buildContextPack(opts) {
   const root = normalizedOpts.root ? repoRoot(normalizedOpts.root) : repoRoot();
   const effectiveOpts = { ...normalizedOpts, root };
   const optionBytes = new Map();
-  for (const file of [effectiveOpts.filesPath, effectiveOpts.calibrationPath, effectiveOpts.capabilityInputPath].filter(Boolean)) optionBytes.set(file, readInputFile({ path: file, root: path.dirname(file) }));
+  for (const file of [effectiveOpts.filesPath, effectiveOpts.calibrationPath, effectiveOpts.capabilityInputPath, effectiveOpts.reviewAssignmentsPath].filter(Boolean)) optionBytes.set(file, readInputFile({ path: file, root: path.dirname(file), maxBytes: file === effectiveOpts.reviewAssignmentsPath ? 64 * 1024 : undefined }));
   const files = readChangedFiles(effectiveOpts);
   const calibration = readJson(effectiveOpts.calibrationPath);
   const route = classify(files, {
@@ -1337,6 +1381,14 @@ function buildContextPack(opts) {
     calibration,
     ci: effectiveOpts.ci,
   });
+  // Deep review includes a dedicated audit in addition to the ordinary specialists.
+  if (route.mode === 'deep-mode' && !route.agents.included.includes('guardian_auditor')) {
+    route.agents.included.push('guardian_auditor');
+  }
+  const requiredReviewers = (route.agents.included || []).filter(agent => /^(builder|guardian|designer|coordinator)_(reviewer|auditor)$/.test(agent));
+  if (effectiveOpts.reviewAssignmentsPath && /^skip(?:-mode)?$/.test(route.mode)) throw new Error('Skip route does not support focused review assignments');
+  const assignments = effectiveOpts.reviewAssignmentsPath
+    ? reviewAssignmentsInput(optionBytes.get(effectiveOpts.reviewAssignmentsPath), requiredReviewers) : null;
   let capabilityInput = effectiveOpts.capabilityInput || {};
   if (effectiveOpts.capabilityInputPath) {
     capabilityInput = readSelectionInput(effectiveOpts.capabilityInputPath);
@@ -1379,8 +1431,9 @@ function buildContextPack(opts) {
       try { assertSafeDirectory(path.dirname(file)); } catch (error) { if (/symlink|not a directory/i.test(error.message)) unsafe = true; else throw error; }
       if (unsafe) { inputLimitations.push({ source_path: file, reason: 'Unsafe optional advisory excluded; no bytes consumed' }); return null; }
     }
-    const bytes = readInputFile({ path: file, root: kind === 'source' ? root : path.dirname(file) });
-    const record = captureInput(run, { id: `input-${captured.size + 1}`, bytes, kind, source_path: file });
+    const bytes = readInputFile({ path: file, root: kind === 'source' ? root : path.dirname(file), maxBytes: file === effectiveOpts.reviewAssignmentsPath ? 64 * 1024 : undefined });
+    const id = kind === 'source' ? sourceArtifactId(root, file) : `input-${captured.size + 1}`;
+    const record = captureInput(run, { id, bytes, kind, source_path: file });
     captured.set(file, { record, bytes, hash: createHash('sha256').update(bytes).digest('hex') });
     return bytes;
   };
@@ -1513,13 +1566,21 @@ function buildContextPack(opts) {
   const topology = topologyReport(topologyContext, root);
   const artifactManifest = packetArtifactManifest({ root, outDir, latestInsightsResult, latestFailure, topologyContext, projectCodeMapPath, userProfileResult, projectOperatingModel, architectureIntelligenceArtifacts, leanGuidance });
   const artifactManifestMarkdown = renderArtifactManifest(artifactManifest);
+  const authorizedEvidence = run.artifacts.filter(artifact => ['source', 'diff', 'contract'].includes(artifact.kind)).map(artifact => ({
+    id: artifact.id, kind: artifact.kind, source_path: artifact.provenance.source_path ? path.relative(root, artifact.provenance.source_path).split(path.sep).join('/') : null,
+    sha256: artifact.sha256, bytes: artifact.bytes, coverage: artifact.coverage,
+  }));
+  if (assignments) {
+    const allowed = new Set(authorizedEvidence.map(artifact => artifact.id));
+    for (const assignment of assignments) if (assignment.artifact_ids.some(id => !allowed.has(id))) throw new Error('Review assignment references an absent or unauthorized artifact');
+  }
   const agents = route.agents.included || [];
   const packets = {};
   const contextContracts = Object.fromEntries(agents.map((agent) => [agent, contextContractForAgent(agent)]));
 
   for (const agent of agents) {
     const owner = (normalizeAgentId(agent) || '').replaceAll('_', '-');
-    const content = `${packetMarkdown(agent, route, manifest, diffSummary, memoryHits, packetInsights, userProfile, projectOperatingModelMarkdown, architectureIntelligenceMarkdown, leanGuidanceMarkdown, latestFailure.markdown, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, contextContracts[agent], effectiveOpts.task)}\n\n${renderSelection(capabilitySelection, owner)}\n`;
+    const content = `${packetMarkdown(agent, route, manifest, diffSummary, memoryHits, packetInsights, userProfile, projectOperatingModelMarkdown, architectureIntelligenceMarkdown, leanGuidanceMarkdown, latestFailure.markdown, projectCodeMap, livingMapGuidance, topologySummary, artifactManifestMarkdown, contextContracts[agent], effectiveOpts.task, { assignment: assignments?.find(assignment => assignment.reviewer === agent), artifacts: authorizedEvidence })}\n\n${renderSelection(capabilitySelection, owner)}\n`;
     const file = path.join(packetDir, `${agent}.md`);
     writeFileSafe(file, content);
     packets[agent] = path.relative(root, file);
@@ -1545,6 +1606,10 @@ function buildContextPack(opts) {
   const synthesisInput = {
     schema_version: '1',
     generated_at: new Date().toISOString(),
+    focused_questions: assignments ? 'enabled' : 'not_enabled',
+    required_reviewers: requiredReviewers,
+    review_assignments: assignments || [],
+    authorized_evidence_artifacts: authorizedEvidence,
     repo_root: root,
     project_dir: defaultProjectDir(root),
     route_path: path.relative(root, path.join(outDir, 'route.json')),
@@ -1725,6 +1790,10 @@ function jsonSummary(result) {
     run_dir: result.run_dir,
     pinned_out_dir: result.pinned_out_dir,
     evidence_ref: result.evidence_ref,
+    focused_questions: result.synthesis_input.focused_questions,
+    required_reviewers: result.synthesis_input.required_reviewers,
+    review_assignments: result.synthesis_input.review_assignments,
+    authorized_evidence_artifacts: result.synthesis_input.authorized_evidence_artifacts,
     mode: result.route.mode,
     capability_selection: result.capability_selection,
     agents: result.route.agents.included,
@@ -1750,6 +1819,7 @@ if (require.main === module) {
 
 module.exports = {
   buildContextPack,
+  sourceArtifactId,
   buildLatestInsights,
   buildLatestInsightsResult,
   jsonSummary,

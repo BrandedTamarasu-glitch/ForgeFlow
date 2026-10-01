@@ -36,10 +36,10 @@ scripts/forgeflow/explain-review-route.js --json
 scripts/forgeflow/explain-review-route.js --json --calibration .forgeflow/Forgeflow/calibration-summary.json
 ```
 
-3. Build a local context pack using the resolved helper directory. Capture the successful JSON result; a build failure stops packet-backed review, without falling back to mutable latest:
+3. For route skip, stop without dispatch/session/challenge. For every other packet-backed route, prepare `REVIEW_ASSIGNMENTS_INPUT` with concrete questions as specified below before construction. Set `PROJECT_ROOT="$PWD"` and `REVIEW_MODE` to the already resolved route mode (`thin`, `full` or `deep`); never classify a second narrower scope for compilation. Build a local context pack using the resolved helper directory. Capture the successful JSON result; a build failure stops packet-backed review, without falling back to mutable latest:
 
 ```bash
-CONTEXT_BUILD_JSON=$(node "$FORGEFLOW_HELPER_DIR/build-context-pack.js" --json) || exit 1
+CONTEXT_BUILD_JSON=$(node "$FORGEFLOW_HELPER_DIR/build-context-pack.js" --root "$PROJECT_ROOT" --mode "$REVIEW_MODE" --review-assignments "$REVIEW_ASSIGNMENTS_INPUT" --json) || exit 1
 CONTEXT_PACK_DIR=$(printf '%s' "$CONTEXT_BUILD_JSON" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>{const r=JSON.parse(s);if(!r.run_dir || !r.evidence_ref?.manifest_sha256)process.exit(1);process.stdout.write(r.run_dir)})') || exit 1
 CONTEXT_EVIDENCE_REF=$(mktemp "${TMPDIR:-/tmp}/forgeflow-review-ref.XXXXXX") || exit 1
 printf '%s' "$CONTEXT_BUILD_JSON" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>process.stdout.write(JSON.stringify(JSON.parse(s).evidence_ref)))' > "$CONTEXT_EVIDENCE_REF" || exit 1
@@ -62,15 +62,15 @@ node "$FORGEFLOW_HELPER_DIR/advise-context.js" --root "$PWD" --file "$CONTEXT_PA
    - `guardian_reviewer`
    - `designer_reviewer`
    - `coordinator_reviewer`
-7. If the route is thin-mode, you may skip `designer_reviewer` and `coordinator_reviewer`.
-8. Before Architect synthesis, send high-risk findings through `verifier`:
+7. Preserve the route's unchanged required roster: thin uses its required reviewers; full retains all four; deep also retains its required dedicated audit identity. Never drop mandatory accessibility or security coverage. Resolve bounded requests and resume the relevant reviewer. Retain actual responses through the session.
+8. Prepare and retain the independent neutral challenge before peer exposure and before this existing claim-bearing verifier. Before Architect synthesis, send high-risk findings through `verifier`:
    - security
    - auth, session, permissions, tenant isolation
    - migration, schema, data loss
    - critical correctness
    - broad refactor regression
    - accessibility blocker
-9. Wait for reviewer and verifier outputs, then spawn `architect_reviewer` with the collected findings, verifier decisions, routing note, and the file list.
+9. Run `synthesis` for the pinned session and preserve current retained references, required coverage and unresolved statuses. Wait for reviewer, challenge and verifier outputs, then spawn `architect_reviewer` with the collected findings, verifier decisions, routing note, and the file list.
 10. Spawn `product_lead_reviewer` after Architect with:
    - Architect's verdict
    - reviewer outputs
@@ -93,9 +93,63 @@ Suggested prompts:
 
 ## Retain consequential proof when used
 
-For a consequential claim using retained evidence, use `review-evidence-cli.js retrieve --root <project-root> --ref "$CONTEXT_EVIDENCE_REF" --artifact <manifest-artifact-id>`; optional `--start-line`, `--end-line` and `--max-chars` return neighboring context with explicit omissions. Use `--raw-required` when complete proof is required; excerpts cannot silently satisfy it.
+Outside an enabled focused-question session only, for a consequential claim using retained evidence, use `review-evidence-cli.js retrieve --root <project-root> --ref "$CONTEXT_EVIDENCE_REF" --artifact <manifest-artifact-id>`; optional `--start-line`, `--end-line` and `--max-chars` return neighboring context with explicit omissions. Use `--raw-required` when complete proof is required; excerpts cannot silently satisfy it.
 
-After saving actual reviewer/tool result and actual decision bytes outside the sealed run, opt in to `review-evidence-cli.js record --root <project-root> --ref "$CONTEXT_EVIDENCE_REF" --id <unique-consumption-id> --kind review --result <saved-actual-result-path> --decision <saved-actual-decision-path> --artifacts <consumed-artifact-ids>`. Use `--kind synthesis` for synthesis. Preserve the returned sidecar reference in the local report and task evidence when applicable. Do not invent native identities or infer a decision from successful inspection; recording failure remains visible. This proof retention does not impose an E3 mandatory claim ledger on every observation.
+In legacy unenforced mode only, after saving actual reviewer/tool result and actual decision bytes outside the sealed run, opt in to `review-evidence-cli.js record --root <project-root> --ref "$CONTEXT_EVIDENCE_REF" --id <unique-consumption-id> --kind review --result <saved-actual-result-path> --decision <saved-actual-decision-path> --artifacts <consumed-artifact-ids>`. Use `--kind synthesis` for synthesis. Preserve the returned sidecar reference in the local report and task evidence when applicable. Do not invent native identities or infer a decision from successful inspection; recording failure remains visible. This proof retention does not impose an E3 mandatory claim ledger on every observation.
+
+## Focused questions and bounded follow-up
+
+For every non-skip packet-backed review, supply concrete questions before compilation with `--review-assignments "$REVIEW_ASSIGNMENTS_INPUT"`. The trusted local JSON input has `{schema_version:"1",assignments:[{assignment_id,reviewer,question,artifact_ids,expected_evidence}]}`. Use the unchanged canonical route roster, including required audit coverage, with exactly one falsifiable project question per required reviewer and nonempty expected-evidence descriptions. Authorized IDs name sealed source/diff/original-contract inputs, never peer reports, answer keys or advisory memory. Before construction use `source-<sha256(repository-relative normalized slash path)>` for source and `git-diff-full` for the diff; after seal inspect the actual `authorized_evidence_artifacts` inventory and confirm IDs/coverage. The returned `required_reviewers` and `review_assignments` must match the supplied contract. Questions focus attention while preserving independent discovery, security, accessibility and every ordinary domain duty. Do not invent generic role slogans or use question planning as another model wave. Missing helper, roster member or decisive evidence is a visible coverage gap; stop enforced dispatch and repair it. Skip has no dispatch, session or challenge. `--no-context-pack` is explicitly legacy unenforced behavior, unsupported for E3 immutable enforcement. A compiler call without assignments records `focused_questions: "not_enabled"` and cannot claim E3 enforcement.
+
+After successful compilation and current E2 inspection, the orchestrator prepares `REVIEW_SESSION_INPUT` outside the seal: `{schema_version:"1",evidence_ref:<exact returned ref>,required_reviewers:<unchanged canonical roster>,assignments:<same concrete assignments>,limits:{}}`. Missing limits use hard ceilings; values may only lower them, including zero. Persist the returned session reference in a unique trusted local file outside the seal, keep it across chunks/restarts/alias handoffs, and never choose a latest session:
+
+```bash
+REVIEW_SESSION_JSON=$(node "$FORGEFLOW_HELPER_DIR/review-questions-cli.js" start --root "$PROJECT_ROOT" --input "$REVIEW_SESSION_INPUT" --json) || exit 1
+REVIEW_SESSION_STATE_DIR="$PROJECT_ROOT/.forgeflow/$(basename "$PROJECT_ROOT")/review-session-inputs"
+[ ! -L "$REVIEW_SESSION_STATE_DIR" ] || exit 1
+mkdir -p -m 700 "$REVIEW_SESSION_STATE_DIR" || exit 1
+REVIEW_SESSION_REF=$(mktemp "$REVIEW_SESSION_STATE_DIR/session-ref.XXXXXX") || exit 1
+printf '%s' "$REVIEW_SESSION_JSON" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>{const r=JSON.parse(s);if(!r.session_ref)process.exit(1);process.stdout.write(JSON.stringify(r.session_ref))})' > "$REVIEW_SESSION_REF" || exit 1
+node "$FORGEFLOW_HELPER_DIR/review-questions-cli.js" inspect --root "$PROJECT_ROOT" --session "$REVIEW_SESSION_REF" --json || exit 1
+```
+
+In command hosts use `FORGEFLOW_HELPER_DIR="$HELPER_DIR"`; in skill hosts use the already resolved helper directory. Run from the project root. Input and session reference files are trusted orchestrator-owned files within the project's local `.forgeflow`, outside the seal; safe readers reject outside-root paths. Never let reviewer payloads select paths or overwrite references. The full review has at most **2 requests/reviewer, 4 requests/review, 64 KiB serialized response/request, 128 KiB/review and 2 independent challenges/review**, shared across all chunks, retries, denied attempts and resumed calls. Deep audit and mandatory accessibility coverage remain required; if the roster exceeds supported capacity, report unsupported coverage rather than dropping members. Freeze the union of required chunk reviewers before compilation, including any deep audit identity; never use the wave builder's thin override. Do not start a fresh session per chunk or silently refund/reset budgets. In incremental mode each changed source identity requires an explicitly new contract; never mix old judgments or reset a single review's allowance invisibly.
+
+### Request and resume
+
+Give each reviewer its concrete assignment and allowed artifact IDs. A reviewer needing decisive proof returns only `{schema_version:"1",request_id,assignment_id,reviewer,artifact_id,extent,why_decisive}`, where extent is `{mode:"full"}` or `{mode:"lines",start_line,end_line}`. No paths, refs, commands, tools, limits, counters or scope expansion. In enabled mode route all follow-up through the session, not direct mutable file reads or unaccounted E2 retrieval. The orchestrator saves the actual request as a trusted local input and resolves it:
+
+```bash
+node "$FORGEFLOW_HELPER_DIR/review-questions-cli.js" request --root "$PROJECT_ROOT" --session "$REVIEW_SESSION_REF" --input "$REVIEW_REQUEST_INPUT" --json
+```
+
+Resume only the relevant reviewer with the retained resolution and original assignment. Fulfilled delivery contains exact UTF-8 evidence or explicit line-context omissions; inspect status before using it. Denied, exhausted, unavailable, stale and interrupted requests leave decisive questions unresolved. Successful retrieval is execution state, not claim truth. Absent proof needs explicit new-run authorization and visibly reissued assignments; never automatic supplements or mixed evidence identities. Save complete actual resumed result and existing decision bytes outside the seal. The orchestrator records `{schema_version:"1",response_id,kind:"reviewer",subject_id:<assignment_id>,result_path,decision_path,artifact_ids}` with trusted project-relative result paths:
+
+```bash
+node "$FORGEFLOW_HELPER_DIR/review-questions-cli.js" response --root "$PROJECT_ROOT" --session "$REVIEW_SESSION_REF" --input "$REVIEW_RESPONSE_INPUT" --json || exit 1
+```
+
+Keep the existing public finding envelope, E1 claim sidecars and evaluator schemas. Retain complete actual responses, not a summary or inferred approval. Never turn request completion into a supported claim.
+
+### Independent challenge before peer exposure
+
+Before exposing any reviewer response to the challenger, and before existing claim-bearing high-risk verification, prepare a consequential neutral challenge from the original user contract and question. Input is exactly `{schema_version:"1",challenge_id,assignment_id,question,original_contract,artifact_ids,user_constraints}`; IDs must be a subset of authorized neutral inputs. Ask which alternatives fit the source and which distinguishing observation resolves them. Do not send the initial claim proposition/direction, peer identity, verdict, severity, repair, rationale, reviewer-derived facts, grader output or expected answer.
+
+```bash
+node "$FORGEFLOW_HELPER_DIR/review-questions-cli.js" challenge --root "$PROJECT_ROOT" --session "$REVIEW_SESSION_REF" --input "$REVIEW_CHALLENGE_INPUT" --json || exit 1
+```
+
+Inspect the exact prepared prompt/export inventory before dispatch. Use a fresh restricted case-only challenger with no full-history fork, sibling memory or peer reports. Record actual host/settings/isolation limits; prompt-only separation is labelled as such and is not OS isolation. Preparation consumes one of the two global challenge calls even if interrupted. Save complete actual challenge response and decision, then use the same `response` command with `kind:"challenge"` and `subject_id:<challenge_id>`. No universal extra reviewer wave. Challenge completion requires retained actual bytes; uncompleted reservations remain unresolved. Then retain the existing high-risk verifier gate with its claim-bearing inputs.
+
+### Current synthesis and unresolved coverage
+
+Before synthesis, prepare current proof from this same session:
+
+```bash
+node "$FORGEFLOW_HELPER_DIR/review-questions-cli.js" synthesis --root "$PROJECT_ROOT" --session "$REVIEW_SESSION_REF" --json || exit 1
+```
+
+Give synthesis and final acceptance the returned current retained references, unchanged roster coverage and unresolved statuses alongside original packets and ordinary reports. This command implements `prepareSynthesis`; it does not approve the review. Missing/exhausted evidence or missing required reviewer/challenge responses stay explicit unresolved questions, never supported findings or clean acceptance. Source/integrity failure stops current adjudication; historical intact bytes remain historical. Preserve normal full/deep/audit/accessibility duties, route skip behavior and final acceptance. Focused implementation tests support safety only; roadmap closure still requires observed real-PR behavior, independence and the frozen overhead gate.
 
 ## Change reflection
 

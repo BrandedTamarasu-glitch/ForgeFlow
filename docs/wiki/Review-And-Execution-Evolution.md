@@ -68,6 +68,8 @@ Every new contract must have a named caller and compatible behavior in Claude Co
 
 **Exit criteria:** The pilot catches the targeted unsupported assumption without flagging the correct lookalikes. Missing-context cases trigger a bounded request; exhausted or denied requests stay unresolved. Independent challenges are not preconditioned by prior verdicts. Small-change overhead stays within the Phase 1 budget.
 
+**Implementation checkpoint:** Concrete assignments, pinned artifact requests, durable cumulative limits, retained responses and current synthesis are implemented in both maintained host paths. A bounded owned PR #33 walkthrough preserves four required responses, a source challenge and explicit exhausted/denied uncertainty. The [decision contract checkpoint](../review-decision-contract.md#e3-implementation-and-real-pr-checkpoint) records exact revisions and input limitations. Quality/independence and comparative overhead remain unqualified; E3 stays unchecked.
+
 ## Phase 4: Deterministic Review Preparation
 
 **Dependencies:** Phases 1 and 2; Phase 3 supplies the review-quality comparison before broader adoption. Relative effort: medium.

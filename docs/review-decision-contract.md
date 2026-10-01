@@ -1,6 +1,6 @@
 # Consequential review decisions
 
-Status: E1 contract frozen for local pilot preparation. No production review defaults, evaluator schemas or host adapters change. [E2 runtime evidence storage](review-evidence.md) is implemented and locally verified; E3 owns focused question assignment and bounded follow-up. Use this record only for claims that can change a repair, blocker, acceptance or handoff decision.
+Status: E1 contract frozen for local pilot preparation. [E2 runtime evidence storage](review-evidence.md) is implemented and verified against a real owned PR. E3 focused questions and bounded follow-up are implemented; quality/independence and comparative overhead remain unqualified. Use this record only for claims that can change a repair, blocker, acceptance or handoff decision.
 
 ## Consumers and boundaries
 
@@ -62,7 +62,31 @@ Disconfirming results are `supports`, `contradicts`, `unresolved` or `not-run`. 
 
 Native evidence provenance keeps the adjacent adapter's existing names: `toolCallId`, `toolName`, `resultEntryId`, `resultSha256`, `isError` and `outputExcerpted`. Its submitted source joins unique call, result and audit records before accepting requirement assessments. `resultSha256` identifies the complete native message; `artifact_sha256` identifies independently frozen file bytes. An excerpt must not be hashed and presented as the complete result. Unknown native provenance stays null; no IDs or successful tool results are synthesized for imported file evidence. Saved verification, authorization and native execution status remain separate from claim judgment.
 
-This comparison uses preserved submitted adapter source, not a live adapter walkthrough. Claude Code and Codex can both carry the same JSON sidecar and text uncertainty through their existing dispatch/synthesis stages. Native call/result identity is available only when the host exposes it. Runtime enforcement, installed-host parity and immutable retrieval remain later work.
+This comparison uses preserved submitted adapter source, not a live adapter walkthrough. Claude Code and Codex can both carry the same JSON sidecar and text uncertainty through their existing dispatch/synthesis stages. Native call/result identity is available only when the host exposes it. E2 implements immutable file retrieval; E3 implements bounded requests and disposable installed-host parity. Live native-adapter enforcement remains unqualified.
+
+## Focused questions and bounded follow-up
+
+The E3 implementation uses the existing packet compiler and immutable E2 archive. Supply `--review-assignments <json>` with `{schema_version:"1",assignments:[{assignment_id,reviewer,question,artifact_ids,expected_evidence}]}`. Every required specialist receives one concrete project question while retaining ordinary review duties. The compiler exposes stable source artifact IDs and the authorized inventory. Missing assignments leave legacy compilation available with `focused_questions: "not_enabled"`; they do not establish E3 enforcement.
+
+The orchestrator starts `review-questions-cli.js` with the returned sealed evidence reference, unchanged required roster, assignments and limits. Keep the returned session reference across chunks and resumed work. Current evidence is required at session creation, request delivery, response retention and synthesis. A successful historical read cannot support a new current judgment.
+
+Reviewers return a missing-evidence request naming their assignment, authorized artifact ID, full or line extent and why the input is decisive. Requests cannot select a path, shell command, replacement run or larger budget. Full proof must fit without truncation; line requests report neighboring context and omissions. Files absent from the frozen inventory remain unresolved until the orchestrator explicitly authorizes new evidence and reissues the affected contract.
+
+Prospective ceilings are two requests per reviewer, four requests per review, 64 KiB per serialized response, 128 KiB total response bytes and two independent challenges. Denied and interrupted requests consume the shared allowance; restarting or rebuilding a packet does not reset it. Session records retain exact input identity, reservations and outcomes with integrity checks. Prior proof is preserved when storage limits require reconciliation.
+
+For selected consequential questions, prepare a neutral challenge from the original change contract and authorized source before exposing peer results. Exclude the initial claim direction, verdict, severity, repair, peer identity and grader answers. Retain the actual challenge response before synthesis. Fresh prompt input separation is not OS isolation. This step preserves the existing later high-risk verification and required security/accessibility coverage.
+
+Use the session's `response` operation to retain actual complete reviewer/challenge bytes with exact consumed artifacts, then `synthesis` to inspect current references and unresolved coverage. The helper never decides claim truth or approves a review. Missing responses, exhausted requests and decisive unknowns remain explicit. These runtime ceilings do not satisfy the frozen comparative overhead criterion; E3 stays open until the required real-PR quality and measurement evidence is complete.
+
+### E3 implementation and real-PR checkpoint
+
+The complete local integration suite passes 228/228 test commands after correcting two helper-inventory omissions. The implemented runtime passes 19 focused safety checks. Packet checks preserve legacy behavior and require the dedicated deep audit assignment. Both disposable installed-host walkthroughs execute the maintained request/challenge/response/synthesis pathway. These are implementation checks, distinct from observed review quality.
+
+The bounded real-PR walkthrough reuses owned [baa-ton-forge PR #33](https://github.com/BrandedTamarasu-glitch/baa-ton-forge/pull/33), original base `f9bb8700bab14ff31dd09059250e8eae7290bbf2` and submitted head `19fb7b220115fe392301ecb6179f7478c78cff83`; its exact 17-file submitted tree was verified. All four required responses and one source challenge were retained against that evidence. The complete diff exceeded the response ceiling and stayed exhausted. A narrowed request returned complete `acceptance.js`; a conflicting request-ID replay was rejected, and a malformed request was retained as denied. Three charged requests delivered 6,121 serialized bytes. Synthesis retained the unresolved exhausted/denied states despite every required response being present.
+
+Source review established cumulative final-phase selection for the current task and pending other-task criteria, without a reproduced selection defect or full-PR approval. Missing production wiring remained unresolved. One challenge raised a separate static confirmation-freshness question; it remains unverified and is not counted as a confirmed defect. Application source remained unchanged.
+
+The walkthrough used fresh prompt inputs without peer/grader results, not OS isolation. Its challenge included a conservative pending-status guardrail, so it does not establish unconditioned premise discovery. Two initial prompts omitted the complete request schema; their raw responses and protocol failure are preserved. No matched baseline elapsed/token measurement is available. E3's quality/independence and comparative overhead gates remain open; request ceilings and regression success do not waive them. No broad model batch or stopped comparison was resumed.
 
 ## Frozen E1 cases
 
