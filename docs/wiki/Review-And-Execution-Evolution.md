@@ -1,6 +1,6 @@
 # Review And Execution Evolution
 
-Status: E1 contract and local corpus preparation and E2 immutable evidence complete; E3 implemented with broader acceptance open; E4 bounded functional preparation complete; broader qualification remains separate. The [portable roadmap](../../ROADMAP.md) tracks these phases as E1–E5; the separate [F6.1 final checks](../completion-workflow-qualification.md) are complete. This plan follows the existing [roadmap priorities](Roadmap.md) after Phase 6 or an explicit reprioritization. It does not replace work already underway or assign release dates.
+Status: E1 contract and local corpus preparation and E2 immutable evidence complete; E3 implemented with broader acceptance open; E4 bounded functional preparation and E5 existing-evidence adoption assessment complete; E3 broader benefit remains experimental. The [portable roadmap](../../ROADMAP.md) tracks these phases as E1–E5; the separate [F6.1 final checks](../completion-workflow-qualification.md) are complete. This plan follows the existing [roadmap priorities](Roadmap.md) after Phase 6 or an explicit reprioritization. It does not replace work already underway or assign release dates.
 
 ## Purpose
 
@@ -94,6 +94,8 @@ A bounded helper walkthrough on owned [PR #33](https://github.com/BrandedTamaras
 
 **Dependencies:** Completed candidate phases and Phase 1 cases. Relative effort: small for adoption analysis; any model trial is separate and conditional.
 
+**Assessment scope:** Complete the independent adoption decisions below from retained evidence. This is the bounded next action selected after the E4 acceptance correction. The prospective comparison protocol remains available for separately requested qualification; it is not a requirement to restart completed or stopped studies. No new tests, PR walkthroughs or model calls are part of this assessment.
+
 **Deliverables:**
 
 - Compare current and candidate behavior on fresh copies of the same frozen cases. Record model, effort, settings, budget, host, source revision, and available configuration. Counterbalance order and repeat matched cases; retain failed attempts.
@@ -103,7 +105,25 @@ A bounded helper walkthrough on owned [PR #33](https://github.com/BrandedTamaras
 
 **Named consumers:** Existing review routing and evaluation reports. Optional decision trials feed a documented route decision; they do not automatically introduce Jev or change model defaults.
 
-**Exit criteria:** Predeclared correctness and overhead criteria pass on held-out cases, both supported hosts have validation evidence, and rollback behavior is documented. A cheaper decision route requires observed total benefit including retries, escalation, and mistakes. Otherwise it remains deferred.
+**Assessment exit criteria:** Every candidate receives an explicit scoped adoption, hold or deferral decision with evidence, host limits and a compatibility path. Functional adoption requires verified intended behavior and maintained-host support; claims of improved accuracy, lower overhead or cheaper model decisions require the original prospective comparison criteria. Missing benefit evidence results in a hold or deferral, not additional automatic validation. Completion of this assessment does not mean the prospective qualification gates passed.
+
+### E5 adoption decisions (2026-10-01)
+
+| Candidate | Decision | Evidence and boundary |
+| --- | --- | --- |
+| E2 immutable evidence | Retain the existing functional implementation in packet-backed reviews. | [Owned-PR evidence-flow acceptance](../review-evidence.md#real-pr-acceptance) verifies pinned bytes, complete retrieval, distinct concurrent runs and stale/interrupted handling. Maintained installed-host helpers work on both supported paths. No accuracy, throughput or live-client claim. |
+| E3 focused questions and bounded follow-up | Retain the implemented bounded controls; hold broader quality/cost adoption as experimental. | [Retained PR responses and neutral follow-up](../review-decision-contract.md#e3-implementation-and-real-pr-checkpoint) support scoped behavior and explicit uncertainty. The stopped comparison has one matched pair, insufficient for its frozen qualification. No new universal challenge stage, larger cohort, changed model defaults or performance promotion follows. |
+| E4 deterministic preparation | Retain the ordinary preparation entrypoint for its completed functional scope. | The Phase 4 checkpoint establishes ready-or-blocked preparation, exact references, unchanged roster/proof and safe recovery. Four helper operations become one operation; this establishes interface consolidation, not fewer model reasoning turns or lower latency. Reduced-budget PR split success remains optional qualification. |
+| Nine capability procedures | Retain evaluation status; promote none. | The [existing readiness assessment](../capability-readiness.md) records mixed or inconclusive comparative results and known controls/coverage limits. Catalog execution gates remain unchanged. |
+| Optional model decision interface | Defer; add no provider dependency or decision runtime. | No retained measurement isolates repetitive semantic decision overhead or demonstrates total savings including retry, escalation and mistakes. The prerequisite for a trial is absent. |
+
+The comparison's completed, interrupted and cancelled arms remain separate. A correct blocker does not become a false finding, an unresolved claim does not become verified, and interface consolidation is not recast as model benefit. The original PR base/head and qualification limits remain in their source reports. This assessment adds decisions, not trial observations.
+
+**Host and compatibility decision:** Retain the shared helper path and existing native dispatch/authorization owners. Disposable installed-host snippets qualify the maintained CLI integration; live client dispatch, additional platforms and prompt-only independence are distinct limits. Preserve skip/thin/full/deep coverage and session-wide follow-up limits across prepared waves.
+
+**Compatibility and rollback:** The original `build-context-pack.js`, `review-evidence-cli.js`, `check-context-budget.js` and wave helpers remain available; the preparation helper's advisory mode is unchanged. If preparation introduces a concrete regression, stop dispatch, inspect and reconcile pending actions, and preserve all retained evidence. Restore the previous host preparation sequence through those existing helpers, keeping exact immutable references and configured budget verification, and keep maintained/generated host instructions in agreement. Continue focused follow-up against its existing parent session; do not reset allowances or substitute mutable latest. Legacy `--no-context-pack` remains unenforced behavior and is not an equivalent rollback for evidence-backed review. No rollback or runtime change is performed by this assessment.
+
+**Completion:** E5's bounded adoption assessment is complete. E3 broader adoption remains on hold; additional performance, split-budget, native-host or model-decision qualification is deferred unless a concrete need and separate authorization arise. No new test, PR case, model call, capability activation, release or experiment is scheduled.
 
 ## Coordination And Validation
 
