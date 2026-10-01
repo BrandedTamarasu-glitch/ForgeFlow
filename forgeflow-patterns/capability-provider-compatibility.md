@@ -1,6 +1,6 @@
 # Provider compatibility
 
-Status: evaluation cohort, version 1. Use when external API/CLI adapters, protocol versions, response contracts or freshness behavior change. Internal edits with no provider effect need no provider trial. Normal automatic execution awaits measured qualification.
+Status: evaluation cohort, version 1. Use when external API/CLI adapters, protocol versions, response contracts or freshness behavior change. Internal edits with no provider effect need no provider trial. On-demand use requires the task owner’s relevance, scope, available-prerequisite and budget assessment; comparative benefit remains in evaluation.
 
 ## Map the external boundary
 

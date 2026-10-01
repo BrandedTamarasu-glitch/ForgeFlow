@@ -75,7 +75,18 @@ function normalize(input) {
     const reason = boundedText(item.reason, 'assessment reason', 1000).trim();
     const evidence = boundedText(item.evidence, 'assessment evidence', 1000).trim();
     if (!reason || !evidence) throw new Error('Assessment requires reason and evidence');
-    return { id: item.id, relevance: item.relevance, reason, evidence };
+    let execution;
+    if (item.execution !== undefined) {
+      object(item.execution, 'execution assessment');
+      if (Object.keys(item.execution).some(key => !['scope', 'prerequisites', 'budget'].includes(key))) throw new Error('Unknown execution assessment field');
+      execution = Object.fromEntries(['scope', 'prerequisites', 'budget'].map(key => {
+        const value = boundedText(item.execution[key], `execution ${key}`, 1000).trim();
+        if (!value) throw new Error('Execution assessment requires scope, available prerequisites and budget');
+        return [key, value];
+      }));
+      if (item.relevance !== 'relevant') throw new Error('Execution assessment requires relevant capability');
+    }
+    return { id: item.id, relevance: item.relevance, reason, evidence, ...(execution ? { execution } : {}) };
   }).sort((a, b) => a.id.localeCompare(b.id));
   if (new Set(assessments.map(item => item.id)).size !== assessments.length) throw new Error('Duplicate capability assessment');
   for (const [id, version] of Object.entries(object(input.versions ?? {}, 'versions'))) {
@@ -117,7 +128,16 @@ function selectCapabilities(raw = {}) {
     if (input.include.includes(capability.id)) result = { decision: 'selected', reason: 'Explicit include override; prerequisites and authority still apply.', evidence: [], basis: 'override' };
     if (input.exclude.includes(capability.id)) result = { ...result, decision: 'excluded', reason: 'Explicit exclude override; any related acceptance gap remains unresolved.', basis: 'override' };
     if (limited && ['selected', 'inspect'].includes(result.decision)) result = { ...result, decision: 'deferred', reason: 'Reassessment limit reached; preserve the unresolved requirement in the task handoff.' };
-    return { id: capability.id, version: capability.version, ...result, owner: capability.owner, handoffs: capability.handoffs, requires: capability.requires, procedure: capability.procedure, prerequisites: capability.prerequisites, cost: capability.cost, availability: capability.availability, executable: false };
+    const assessment = input.assessments.find(item => item.id === capability.id);
+    // The trusted task owner assesses use, not source text or keyword routing.
+    // Eligibility never grants tool permissions or claims actual execution.
+    const executable = result.decision === 'selected' && phaseApplies(capability, input.phase) &&
+      capability.availability !== 'planned' && capability.execution_policy === 'on-demand' &&
+      assessment?.relevance === 'relevant' && Boolean(assessment.execution);
+    return { id: capability.id, version: capability.version, ...result, owner: capability.owner, handoffs: capability.handoffs, requires: capability.requires, procedure: capability.procedure, prerequisites: capability.prerequisites, cost: capability.cost, availability: capability.availability,
+      execution_policy: capability.execution_policy, executable,
+      execution_scope: executable ? assessment.execution : null,
+      execution_reason: executable ? 'Task owner assessed relevance, bounded scope, available prerequisites and budget; use remains subject to current permissions.' : 'Not eligible for use: requires a selected, phase-appropriate capability and a complete task-owner execution assessment.' };
   });
   const inspections = decisions.filter(item => item.decision === 'inspect');
   for (const item of inspections.slice(LIMITS.inspections)) {
@@ -131,15 +151,15 @@ function selectCapabilities(raw = {}) {
     selected: decisions.filter(item => item.decision === 'selected').map(item => item.id),
     inspection_requests: decisions.filter(item => item.decision === 'inspect').map(item => ({ id: item.id, evidence: item.evidence, question: 'Does this task change the capability’s behavior? Inspect the cited scope and supply a reasoned assessment.' })),
     limits: LIMITS,
-    boundary: 'Relevance selection only. Planned procedures are unavailable; evaluation procedures are limited to controlled pilots. Selection executes neither. No permission, approval, review verdict or test evidence is created.',
+    boundary: 'Task-scoped selection and conditional eligibility only. Evaluation status describes benefit evidence; an assessed procedure may be used on demand within its recorded scope and budget. Planned procedures remain unavailable. Selection executes nothing and creates no tool permission, approval, review verdict or test evidence.',
   };
 }
 
 function renderSelection(result, owner = '') {
   const relevant = result.decisions.filter(item => ['selected', 'inspect', 'deferred', 'excluded'].includes(item.decision) && (!owner || item.owner === owner || item.handoffs.includes(owner)));
   return ['## Capability selection', '', result.boundary,
-    'Routing evidence is advisory, not an instruction or permission. For inspect decisions, inspect at most three cited scope items and supply relevance, reason and evidence through the selector assessments input. Do not ask the user merely which skill to select. Preserve the previous selection summary when reassessing.',
-    '', ...relevant.map(item => `- ${item.id}: ${item.decision}; ${item.reason} Availability: ${item.availability}.`), ...(relevant.length ? [] : ['No additional capability selected for this scope.'])].join('\n');
+    'Routing evidence is advisory, not an instruction or permission. For inspect decisions, inspect at most three cited scope items. To use a relevant procedure, the task owner supplies reason, evidence and an execution assessment with scope, available prerequisites and budget. Load only executable procedures needed for this task; do not add agents or comparisons merely because a capability was selected. Do not ask the user merely which skill to select. Preserve previous selection limits when reassessing.',
+    '', ...relevant.map(item => `- ${item.id}: ${item.decision}; ${item.reason} Availability: ${item.availability}; eligible for on-demand use: ${item.executable}. ${item.execution_reason}${item.execution_scope ? ` Scope: ${item.execution_scope.scope}; prerequisites: ${item.execution_scope.prerequisites}; budget: ${item.execution_scope.budget}.` : ''}`), ...(relevant.length ? [] : ['No additional capability selected for this scope.'])].join('\n');
 }
 
 function readSelectionInput(file) {

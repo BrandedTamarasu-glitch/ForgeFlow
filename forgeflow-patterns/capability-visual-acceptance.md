@@ -1,6 +1,6 @@
 # Visual acceptance
 
-Status: evaluation cohort, version 1. Use for layout, component, typography, theme or interaction changes. Normal automatic execution awaits the controlled pilot. Reuse the current UI iteration/browser session and its evidence rather than starting another scoring workflow.
+Status: evaluation cohort, version 1. Use for layout, component, typography, theme or interaction changes. On-demand use requires the task owner’s relevance, scope, available-prerequisite and budget assessment; comparative benefit remains in evaluation. Reuse the current UI iteration/browser session and its evidence rather than starting another scoring workflow.
 
 ## Define the intended relationship
 

@@ -1,6 +1,6 @@
 # Change propagation
 
-Status: evaluation cohort, version 1. Implemented for controlled evaluation; normal automatic execution awaits the roadmap pilot. Use when a shared concept, schema, identity or generated output changes. An isolated edit with no affected consumers after inspection needs no propagation work.
+Status: evaluation cohort, version 1. Available for on-demand use after the task owner records relevance, bounded scope, available prerequisites and budget. Evaluation status retains the comparative benefit limits. Use when a shared concept, schema, identity or generated output changes. An isolated edit with no affected consumers after inspection needs no propagation work.
 
 ## Map the change
 

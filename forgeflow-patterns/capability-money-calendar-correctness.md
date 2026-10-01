@@ -1,6 +1,6 @@
 # Money and calendar correctness
 
-Status: evaluation cohort, version 1. Select when currency representation, allocation, conversion, recurrence or calendar arithmetic changes. A financial project name, copy edit or unrelated UI change alone is insufficient. Normal automatic execution awaits benefit qualification. Use the application's existing domain model and test seam; this procedure is not a replacement ledger or a source of accounting policy.
+Status: evaluation cohort, version 1. Select when currency representation, allocation, conversion, recurrence or calendar arithmetic changes. A financial project name, copy edit or unrelated UI change alone is insufficient. On-demand use requires the task owner’s relevance, scope, available-prerequisite and budget assessment; comparative benefit remains in evaluation. Use the application's existing domain model and test seam; this procedure is not a replacement ledger or a source of accounting policy.
 
 ## Establish the product contract
 

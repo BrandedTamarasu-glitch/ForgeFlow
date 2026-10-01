@@ -119,7 +119,12 @@ try {
     const parsed = JSON.parse(selection.stdout);
     assert.deepEqual(parsed.selected, ['money-calendar-correctness']);
     assert.equal(parsed.decisions.find(item => item.id === 'money-calendar-correctness').availability, 'evaluation');
-    assert.ok(parsed.decisions.every(item => !item.executable), 'packaging cannot make unqualified procedures executable');
+    assert.ok(parsed.decisions.every(item => !item.executable), 'keyword-only selection cannot grant on-demand use');
+    const use = run(selector, ['--stdin'], JSON.stringify({ task: 'Check currency rounding', phase: 'review', assessments: [{ id: 'money-calendar-correctness', relevance: 'relevant', reason: 'The changed arithmetic needs conservation checks.', evidence: 'Affected currency source and declared units.', execution: { scope: 'Inspect only the changed arithmetic.', prerequisites: 'Source and deterministic harness available.', budget: 'One existing local check; no extra models.' } }] }));
+    assert.equal(use.status, 0, use.stderr);
+    const eligible = JSON.parse(use.stdout).decisions.find(item => item.id === 'money-calendar-correctness');
+    assert.equal(eligible.executable, true, `${target} installed selector preserves assessed eligibility`);
+    assert.equal(eligible.availability, 'evaluation', 'eligibility does not promote benefit status');
     assert.deepEqual(fs.readdirSync(caller), [], 'stdin selection and guide lookup must not write project state');
     const propagationRoot = path.join(temporary, `propagation-${target}`);
     fs.mkdirSync(propagationRoot);

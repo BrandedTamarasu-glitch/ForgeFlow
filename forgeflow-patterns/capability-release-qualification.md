@@ -1,6 +1,6 @@
 # Release qualification
 
-Status: evaluation cohort, version 1. Web and native lifecycle branches are implemented for F3.2/F3.3. A web result does not establish installed/native qualification. Normal automatic execution awaits measured qualification.
+Status: evaluation cohort, version 1. Web and native lifecycle branches are implemented for F3.2/F3.3. A web result does not establish installed/native qualification. On-demand use requires the task owner’s relevance, scope, available-prerequisite and budget assessment; comparative benefit remains in evaluation.
 
 Use for intended packaged, installed or published behavior. Source-only work without a release verification objective needs no release trial. Selection does not authorize deployment, installation, credential access or destructive actions. Reuse existing shipping evidence and the affected application's harness; do not create another release manager.
 

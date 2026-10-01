@@ -1,6 +1,6 @@
 # CAD and fabrication acceptance
 
-Status: evaluation cohort, version 1. Select for physical geometry, fit, clearance, retention or fabrication changes. Logo artwork and unrelated CAD documentation do not qualify. Normal automatic execution awaits benefit qualification. Work within the project's existing CAD/export pipeline; selection does not authorize print jobs, hardware operation or spending.
+Status: evaluation cohort, version 1. Select for physical geometry, fit, clearance, retention or fabrication changes. Logo artwork and unrelated CAD documentation do not qualify. On-demand use requires the task owner’s relevance, scope, available-prerequisite and budget assessment; comparative benefit remains in evaluation. Work within the project's existing CAD/export pipeline; selection does not authorize print jobs, hardware operation or spending.
 
 ## Establish dimensions and acceptance
 

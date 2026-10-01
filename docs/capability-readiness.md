@@ -1,6 +1,6 @@
 # Capability activation readiness
 
-Updated 2026-09-30. **F6.2 assessment complete: retain all nine capabilities in evaluation; promote none.** This decision follows the roadmap's explicit path for inconclusive capabilities. The separate [F6.1 final checks](completion-workflow-qualification.md) complete bounded measurement and supported Codex lifecycle validation. This readiness decision does not qualify normal execution or establish that no unknown defects exist.
+Updated 2026-10-01. **F6.2 assessment complete: retain all nine capabilities in evaluation; promote none.** This decision follows the roadmap's explicit path for inconclusive capabilities. The separate [F6.1 final checks](completion-workflow-qualification.md) complete bounded measurement and supported Codex lifecycle validation. This is a comparative-benefit assessment, not a claim that no unknown defects exist. A subsequent policy change allows agents to use relevant procedures on demand within an assessed scope and budget; it does not promote their benefit status.
 
 ## Decision by capability
 
@@ -22,13 +22,13 @@ The [evidence consolidation](capability-evidence.md) and its [structured ledger]
 
 The recovery workbench has an independently reproduced reader/reclamation gap in its intended control. The historical completion control omitted malformed-ID rejection and canonical aliases. Comparison v3 was [stopped with all slots accounted for](completion-v3-partial-results.md); its synthetic references have separate shared-buffer and overlapping-reload gaps. Missing acceptance output, stage-boundary failures and timeouts remain failures or unobserved behavior, not successful checks. Administrative interruptions are not assigned as capability defects. None of these observations is discarded to obtain a favorable result.
 
-Unknown discovery recall, incomplete clean-control coverage and unresolved claims cannot establish zero false blockers or absence of critical regressions. The review-calibration severity disagreement and release-oracle ambiguity also remain explicit blockers. The decision therefore authorizes no normal activation. These problems are accounted for; there is no unexplained failure being waived for promotion.
+Unknown discovery recall, incomplete clean-control coverage and unresolved claims cannot establish zero false blockers or absence of critical regressions. The review-calibration severity disagreement and release-oracle ambiguity also remain explicit blockers. The comparative assessment supports no unconditional automatic activation; later on-demand eligibility is a separately scoped task decision. These problems are accounted for; on-demand use does not erase them or waive them for benefit promotion.
 
 The [PR #33 review](pr33-validation.md) found no reproduced introduced defect and passed 67 targeted tests plus deterministic scope/provenance challenges. It validates the reviewed application paths. It is not a paired procedure comparison, a measured false-finding rate or live Pi/Herdr qualification, and does not change any capability's readiness decision.
 
 ## Enforcement and validation
 
-The canonical catalog declares exactly nine entries, all with `availability: evaluation`. Selection decisions have `executable: false`, including explicit includes; ordinary selection and context preparation do not authorize execution. The shared selection guide states this boundary. No catalog availability or execution flag changes were made.
+The canonical catalog retains exactly nine entries with `availability: evaluation` and now declares `execution_policy: on-demand`. The trusted task owner can make a relevant source-grounded assessment with a bounded use scope, checked available prerequisites and a task-compatible budget. The selector then reports `executable: true` only for selected, phase-appropriate procedures. Keywords, include overrides or relevance alone remain non-executable; exclusions, unavailable procedures and exhausted reassessments still prevent use. Native permissions and external-write/experiment authorization remain unchanged. This separates judgment-based use from general benefit promotion.
 
 Current selector and context-pack regression suites pass, including durable completion routing without overrides. Catalog coverage and decision checks confirm all nine remain in evaluation and none becomes executable. Existing historical study scores, answer keys and report hashes remain unchanged. No model trials were launched for this assessment.
 

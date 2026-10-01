@@ -55,10 +55,31 @@ const overrides = { include: ['cad-fabrication-acceptance', 'cad-fabrication-acc
 const forced = select({ task: 'Update logo', overrides });
 assert.deepEqual(forced.selected, ['change-propagation', 'cad-fabrication-acceptance']);
 assert.equal(forced.decisions.find(item => item.id === 'visual-acceptance').decision, 'excluded');
-for (const item of forced.decisions) assert.equal(item.executable, false, 'selection must not claim unavailable procedures executed');
-assert.match(renderSelection(forced), /Planned procedures are unavailable/);
+for (const item of forced.decisions) assert.equal(item.executable, false, 'keyword routing or include overrides cannot grant on-demand eligibility');
+assert.match(renderSelection(forced), /Planned procedures remain unavailable/);
 assert.match(renderSelection(forced, 'designer'), /cad-fabrication-acceptance/);
 assert.doesNotMatch(renderSelection(forced, 'guardian'), /cad-fabrication-acceptance/);
+
+// Task-owner use authority stays separate from relevance and tool execution.
+const useAssessment = { id: 'change-propagation', relevance: 'relevant', reason: 'Changed contract has a direct caller.', evidence: 'src/contract.js and src/caller.js',
+  execution: { scope: 'Trace the changed contract through its existing caller.', prerequisites: 'Pinned source and repository search are available.', budget: 'One scoped inspection; no extra models or network.' } };
+const useInput = { task: 'Review shared contract change', phase: 'review', assessments: [useAssessment] };
+const eligible = select(useInput);
+assert.equal(eligible.decisions.find(item => item.id === useAssessment.id).executable, true);
+assert.equal(eligible.decisions.filter(item => item.executable).length, 1);
+assert.deepEqual(eligible.decisions.find(item => item.id === useAssessment.id).execution_scope, useAssessment.execution);
+assert.match(renderSelection(eligible), /eligible for on-demand use: true/);
+assert.equal(select({ ...useInput, assessments: [{ ...useAssessment, execution: undefined }] }).decisions.find(item => item.id === useAssessment.id).executable, false);
+assert.equal(select({ ...useInput, phase: 'research', overrides: { include: [useAssessment.id] } }).decisions.find(item => item.id === useAssessment.id).executable, false, 'include cannot bypass phase eligibility');
+assert.equal(select({ ...useInput, overrides: { exclude: [useAssessment.id] } }).decisions.find(item => item.id === useAssessment.id).executable, false);
+assert.equal(select({ ...useInput, previous: eligible }).reassessment_count, 0);
+assert.equal(select({ ...useInput, assessments: [{ ...useAssessment, execution: { ...useAssessment.execution, budget: 'One existing local check.' } }], previous: eligible }).reassessment_count, 1, 'execution scope/budget changes participate in reassessment');
+let exhaustedUse = eligible;
+for (let i = 1; i <= LIMITS.reassessments; i++) exhaustedUse = select({ ...useInput, task: `Review shared contract ${i}`, previous: exhaustedUse });
+assert.equal(select({ ...useInput, task: 'Review another contract', previous: exhaustedUse }).decisions.some(item => item.executable), false, 'reassessment limit still prevents use');
+for (const execution of [{}, { scope: 'caller' }, { ...useAssessment.execution, budget: '' }, { ...useAssessment.execution, permission: 'all tools' }]) assert.throws(() => select({ ...useInput, assessments: [{ ...useAssessment, execution }] }));
+assert.throws(() => select({ ...useInput, assessments: [{ ...useAssessment, relevance: 'uncertain' }] }));
+assert.throws(() => select({ ...useInput, assessments: [{ ...useAssessment, relevance: 'irrelevant' }] }));
 
 const many = select({ files: ['src/providers/storage/migration/review/perf/calendar/model.stl', 'page.css'] });
 assert.equal(many.inspection_requests.length, LIMITS.inspections);

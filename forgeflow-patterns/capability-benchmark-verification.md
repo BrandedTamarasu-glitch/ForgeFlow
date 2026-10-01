@@ -1,6 +1,6 @@
 # Benchmark verification
 
-Status: evaluation cohort, version 1. Use for optimization, performance or hardware-offload claims. Ordinary edits without a performance objective do not need a benchmark. Normal automatic execution awaits measured qualification. Reuse the project's harness and task evidence; do not introduce a second benchmark service.
+Status: evaluation cohort, version 1. Use for optimization, performance or hardware-offload claims. Ordinary edits without a performance objective do not need a benchmark. On-demand use requires the task owner’s relevance, scope, available-prerequisite and budget assessment; comparative benefit remains in evaluation. Reuse the project's harness and task evidence; do not introduce a second benchmark service.
 
 ## Freeze the claim and comparison
 

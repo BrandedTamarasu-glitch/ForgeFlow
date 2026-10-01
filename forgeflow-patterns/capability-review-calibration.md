@@ -1,6 +1,6 @@
 # Review calibration
 
-Status: evaluation cohort, version 1. Use for changes to review guidance or an explicit review-quality experiment. Ordinary application reviews do not need a calibration trial. Normal automatic execution awaits measured benefit.
+Status: evaluation cohort, version 1. Use for changes to review guidance or an explicit review-quality experiment. Ordinary application reviews do not need a calibration trial. On-demand use requires the task owner’s relevance, scope, available-prerequisite and budget assessment; comparative benefit remains in evaluation.
 
 ## Freeze cases and scoring
 

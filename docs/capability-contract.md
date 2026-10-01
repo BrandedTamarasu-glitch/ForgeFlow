@@ -21,7 +21,8 @@ The compact catalog exposes the following fields without loading procedure bodie
 | `procedure` | Canonical relative reference, loaded only when selected |
 | `prerequisites` | Tools/environment needed for particular checks |
 | `cost` | Relative execution cost and the expensive operations to bound |
-| `availability` | `planned` means unavailable; `evaluation` means implemented for controlled pilots, pending normal automatic-use qualification |
+| `execution_policy` | `on-demand` permits task-owner assessed use within existing task scope and permissions; relevance alone is insufficient |
+| `availability` | `planned` means unavailable; `evaluation` describes implemented procedures whose comparative benefit is not generally qualified |
 
 Each procedure must define ordered steps, scope/termination bounds, expected evidence, acceptance criteria, unavailable-input/tool fallback and cleanup. The individual contracts below inherit these common rules:
 
@@ -33,7 +34,7 @@ Each procedure must define ordered steps, scope/termination bounds, expected evi
 
 ## Canonical inventory
 
-Use flat canonical files `forgeflow-patterns/capability-<id>.md`. Change propagation, visual acceptance, persistence recovery, review calibration, provider compatibility, release qualification, benchmark verification, money/calendar correctness and CAD/fabrication acceptance all exist in evaluation; normal execution remains gated. Flat Markdown fits both current managed-pattern installation paths; nested pattern directories do not currently have equivalent Claude coverage.
+Use flat canonical files `forgeflow-patterns/capability-<id>.md`. Change propagation, visual acceptance, persistence recovery, review calibration, provider compatibility, release qualification, benchmark verification, money/calendar correctness and CAD/fabrication acceptance all exist in evaluation and allow bounded on-demand use after a task-owner assessment. Flat Markdown fits both current managed-pattern installation paths; nested pattern directories do not currently have equivalent Claude coverage.
 
 ### change-propagation
 
@@ -203,7 +204,7 @@ The initial selector uses conservative behavioral patterns to shortlist/select c
 
 The output includes one decision per capability, selected IDs, up to three inspection requests and the scope fingerprint. Pass the previous result as `previous` after meaningful discoveries. An unchanged normalized scope consumes no reassessment; changed scope allows three reassessments before further selections are deferred with unresolved gaps. A new independent task starts a new budget. Preserve the previous result to keep the bound effective; do not reset it to work around a deferred result.
 
-The context builder writes `capability-selection.json` beside existing context artifacts, links it from synthesis input and appends scoped guidance to existing role packets. Reviewer lists/modes and task evidence are unchanged. No procedure body is loaded; change propagation, visual acceptance, persistence recovery, review calibration, provider compatibility, release qualification, benchmark verification, money/calendar correctness and CAD/fabrication acceptance have `availability: evaluation`, and all have `executable: false` in normal routing pending qualification. This proves selection plumbing, not capability execution or measured agent benefit.
+The context builder writes `capability-selection.json` beside existing context artifacts, links it from synthesis input and appends scoped guidance to existing role packets. Reviewer lists/modes and task evidence are unchanged. No procedure body is loaded; change propagation, visual acceptance, persistence recovery, review calibration, provider compatibility, release qualification, benchmark verification, money/calendar correctness and CAD/fabrication acceptance have `availability: evaluation`, and have `execution_policy: on-demand`. Keyword routing alone leaves `executable: false`; a relevant task-owner assessment with scope, available prerequisites and budget permits `executable: true` in a compatible phase, subject to exclusions and reassessment limits. This proves selection plumbing, not capability execution or measured agent benefit.
 
 ## Host entry points and packaging
 
@@ -220,7 +221,7 @@ The [entry-point generator](../scripts/forgeflow/render-capability-entrypoints.j
 | Current Codex lean plugin | Existing lean behavior retained | Its `.openclaw/skills/` surface does not expose this capability entry point; use the managed Codex installation |
 | Other hosts/adapters | No additional parity claim | No new capability discovery integration in this item |
 
-All nine canonical procedure files are implemented and installed on both managed host paths. Their catalog status remains `evaluation`; installation and discovery do not qualify normal execution. The [activation-readiness assessment](capability-readiness.md) retains all nine in that cohort.
+All nine canonical procedure files are implemented and installed on both managed host paths. Their catalog status remains `evaluation`; installation and discovery alone do not permit execution. The [readiness assessment](capability-readiness.md) retains benefit limits while the shared selector allows task-owner assessed on-demand use.
 
 For source maintenance, run `node scripts/forgeflow/render-capability-entrypoints.js --write` after changing generated entry-point guidance; run without `--write` to detect drift. The generator preserves content outside its marked blocks. It is a source-checkout maintenance command, not an installed-runtime repair command. Keep the usual agent canonical-map checks when agent definitions change.
 
@@ -229,7 +230,7 @@ Validation: `test-capability-packaging.js` covers generated drift/repair, manage
 
 ## Overrides, disabling and managed lifecycle
 
-Use ordinary task intent first. For example, “Repair retry of durable completion notifications” in the implement phase selects persistence recovery; a currency migration may select propagation, recovery and money/calendar together. These are relevance decisions. Each remains `executable: false` under the current evaluation gate.
+Use ordinary task intent first. For example, “Repair retry of durable completion notifications” in the implement phase selects persistence recovery; a currency migration may select propagation, recovery and money/calendar together. These are relevance decisions. Keyword routing remains `executable: false`. The trusted task owner may supply a relevant assessment and `execution: {scope, prerequisites, budget}` to permit bounded use without a separate activation question. This creates neither tool permissions nor proof that the procedure ran.
 
 An explicit preference can exclude a procedure for this task:
 

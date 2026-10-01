@@ -1,6 +1,6 @@
 # Persistence recovery
 
-Status: evaluation cohort, version 1. Use when saves, journals, migrations, concurrent writes or cleanup change. Read-only presentation changes without storage effects need no recovery exercise. Normal automatic execution awaits benefit qualification.
+Status: evaluation cohort, version 1. Use when saves, journals, migrations, concurrent writes or cleanup change. Read-only presentation changes without storage effects need no recovery exercise. On-demand use requires the task owner’s relevance, scope, available-prerequisite and budget assessment; comparative benefit remains in evaluation.
 
 ## Define authority and observable guarantees
 
