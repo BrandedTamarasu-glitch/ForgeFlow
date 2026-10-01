@@ -41,3 +41,23 @@ All run state, inputs, results and consumption sidecars remain local. Publicatio
 The complete local regression suite passes 225/225 test commands. Focused validation passes 13 independent acceptance checks and 16 storage checks. Acceptance includes exact 16 MiB and binary retrieval, interrupted inventory, decision sidecar tampering, complete Git diff bytes, immutable parent/child waves, unknown-source refusal, consumption-directory projection refusal, task-feedback proof and connected-vault input preservation. Both installed hosts execute their maintained preparation shell snippets successfully. Existing packet compatibility fixtures verify behavior rather than large-repository performance.
 
 Whole-repository freshness capture is conservative, and capacity accounting traverses retained files. Large-repository throughput and live client/model behavior remain unqualified; no benefit, normal capability activation or packaged release is inferred.
+
+## Real-PR acceptance
+
+The initial E2 source checkpoint completed regression validation before its real-PR acceptance gate. This follow-up supplies that missing gate and makes real-PR acceptance a standing roadmap requirement in `AGENTS.md`.
+
+Validation used owned [baa-ton-forge PR #33](https://github.com/BrandedTamarasu-glitch/baa-ton-forge/pull/33), “Scope acceptance validation by task and integration phase.” Original base and verified merge base: `f9bb8700bab14ff31dd09059250e8eae7290bbf2`; submitted head: `19fb7b220115fe392301ecb6179f7478c78cff83`. The submitted tree `f8a91f2d5fc0484ed41537687017fbe519f271e8` was verified across all 17 changed files in a disposable checkout. E2 runtime source was the committed `348da5a` implementation.
+
+Seven observations passed on that actual change:
+
+- PR ancestry, file scope and submitted tree match the pinned GitHub revisions.
+- The original PR's six focused test files pass 67/67 checks; complete command output is retained.
+- A subsequent pair of concurrent packet builds preserves the first run's exact sealed bytes and distinct identities.
+- Bounded source preview reports omissions; raw-required retrieval returns the exact submitted `acceptance.js` and complete base-to-head Git diff. An excerpt cannot satisfy raw-required retrieval.
+- The actual scoped source assessment and complete test output are retained separately with exact references to the consumed acceptance, verification-handoff and diff artifacts.
+- Interrupted capture retains original PR source without a successful seal.
+- Advancing Git identity to the submitted commit, without changing application bytes, makes prior proof stale for new decisions and waves while retaining intact historical retrieval.
+
+Source assessment follows the PR's original contract: pre-integration criteria remain cumulative at final verification, and other-task/later-phase criteria remain pending. No introduced violation was reproduced in the reviewed scope. Application source bytes remained unchanged, and the disposable checkout ended clean at the submitted head.
+
+This is one reused owned PR and a local evidence-flow qualification. It does not provide a new-case accuracy comparison, live native-host qualification or measured model/performance benefit. No new model batch, GitHub workflow, PR comment or application source push was performed. The prior regression results remain supporting engineering evidence; they do not substitute for this real-PR gate.

@@ -50,7 +50,7 @@ Every new contract must have a named caller and compatible behavior in Claude Co
 
 **Exit criteria:** Two concurrent runs cannot overwrite each other's evidence. A later packet build cannot change the inputs attributed to an earlier judgment. Missing, changed, stale, and excerpted evidence remain distinguishable. Focused retrieval can recover the full proof, and an interrupted run remains inspectable.
 
-**Implementation checkpoint:** E2 passes 225/225 local test commands, 13 independent acceptance checks and 16 storage checks, with both installed maintained host preparation paths verified. [Immutable review evidence](../review-evidence.md) documents exact references, complete retrieval, source freshness, interrupted inspection, bounded storage and explicit retention. This is local helper qualification; live client dispatch and performance remain unqualified.
+**Implementation checkpoint:** E2 passes 225/225 local test commands, 13 independent acceptance checks and 16 storage checks, with both installed maintained host preparation paths verified. The real-PR gate also passes seven evidence-flow observations on owned PR #33 and its 67 scoped checks. [Immutable review evidence](../review-evidence.md) documents exact references, complete retrieval, source freshness, interrupted inspection, bounded storage and explicit retention. This is local helper qualification; live client dispatch and performance remain unqualified.
 
 ## Phase 3: Focused Specialist Assignments And Evidence Requests
 
