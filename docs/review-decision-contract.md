@@ -1,6 +1,6 @@
 # Consequential review decisions
 
-Status: E1 contract frozen for local pilot preparation. [E2 runtime evidence storage](review-evidence.md) is implemented and verified against a real owned PR. E3 focused questions and bounded follow-up are implemented; quality/independence and comparative overhead remain unqualified. Use this record only for claims that can change a repair, blocker, acceptance or handoff decision.
+Status: E1 contract frozen for local pilot preparation. [E2 runtime evidence storage](review-evidence.md) is implemented and verified against a real owned PR. E3 focused questions and bounded follow-up are implemented; PR-scoped neutral challenge evidence is retained; general quality and comparative overhead remain unqualified. Use this record only for claims that can change a repair, blocker, acceptance or handoff decision.
 
 ## Consumers and boundaries
 
@@ -86,7 +86,9 @@ The bounded real-PR walkthrough reuses owned [baa-ton-forge PR #33](https://gith
 
 Source review established cumulative final-phase selection for the current task and pending other-task criteria, without a reproduced selection defect or full-PR approval. Missing production wiring remained unresolved. One challenge raised a separate static confirmation-freshness question; it remains unverified and is not counted as a confirmed defect. Application source remained unchanged.
 
-The walkthrough used fresh prompt inputs without peer/grader results, not OS isolation. Its challenge included a conservative pending-status guardrail, so it does not establish unconditioned premise discovery. Two initial prompts omitted the complete request schema; their raw responses and protocol failure are preserved. No matched baseline elapsed/token measurement is available. E3's quality/independence and comparative overhead gates remain open; request ceilings and regression success do not waive them. No broad model batch or stopped comparison was resumed.
+The original walkthrough used fresh prompt inputs without peer/grader results, not OS isolation. Its first challenge included a conservative pending-status guardrail and does not establish unconditioned premise discovery. A separately retained neutral follow-up received the original question, contract, complete source/test evidence and submitted diff without peer/grader conclusions or that guardrail. It independently distinguished current-task cumulative selection from pending other-task criteria, found no concrete selection defect and retained unknown native/global behavior. This supports PR-scoped independence and correct-lookalike handling; it does not qualify all frozen cases or OS isolation. Two initial protocol failures remain preserved.
+
+A subsequent comparison was stopped after three completed arms: one matched pair and one unmatched candidate. The first pair's candidate/baseline elapsed ratio was 1.0016 and token ratio 1.0132; the unmatched candidate used 5,876,131 tokens. An additional arm was interrupted and four unstarted arms were cancelled. This falls short of the planned four pairs and establishes no median overhead qualification or general benefit. Preserve partial observations separately; do not resume that queue on a generic continuation. E3 stays unchecked. E4 depends on E2 and can proceed independently with one bounded deterministic PR preparation walkthrough.
 
 ## Frozen E1 cases
 

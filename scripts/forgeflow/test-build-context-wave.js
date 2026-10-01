@@ -35,6 +35,7 @@ function makeContext(tokens) {
 
 const over = makeContext(12000);
 const built = buildContextWave({ root: over.root, contextDir: over.contextDir, targetTokens: 8000 });
+const full = buildContextWave({ root: over.root, contextDir: over.contextDir, targetTokens: 8000, modeOverride: 'full', requiredProofFiles: ['docs/readme.md'] });
 const markdown = renderMarkdown(built);
 const under = makeContext(4000);
 const currentOk = buildContextWave({ root: under.root, contextDir: under.contextDir, targetTokens: 8000 });
@@ -48,6 +49,7 @@ const checks = [
   ['writes wave file', fs.existsSync(path.join(over.contextDir, 'waves', 'risk-core-files.txt'))],
   ['writes focused packet', fs.existsSync(path.join(builtOut, 'synthesis-input.json')) && fs.existsSync(path.join(builtOut, 'file-manifest.json'))],
   ['uses a narrow reviewer packet', built.built_wave.mode === 'thin-mode' && built.built_wave.agents.length === 2],
+  ['explicit full wave retains its roster and cross-wave proof', full.built_wave.mode === 'full-mode' && full.built_wave.required_reviewers.length === 4 && full.built_wave.files.includes('docs/readme.md') && full.built_wave.file_list.endsWith('-proof-files.txt')],
   ['reports post-build budget', built.post_build_budget.status === built.built_wave.budget_status && Number.isFinite(built.post_build_budget.violation_count)],
   ['reports automation handoff', built.automation_handoff.status === 'focused-packet-ready' && built.automation_handoff.review_packet.wave === 'risk-core' && built.automation_handoff.verification_command.includes('check-context-budget.js')],
   ['does not build under-budget pack', currentOk.status === 'current-packet-ok' && !currentOk.built_wave],

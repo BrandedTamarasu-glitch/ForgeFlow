@@ -36,28 +36,26 @@ scripts/forgeflow/explain-review-route.js --json
 scripts/forgeflow/explain-review-route.js --json --calibration .forgeflow/Forgeflow/calibration-summary.json
 ```
 
-3. For route skip, stop without dispatch/session/challenge. For every other packet-backed route, prepare `REVIEW_ASSIGNMENTS_INPUT` with concrete questions as specified below before construction. Set `PROJECT_ROOT="$PWD"` and `REVIEW_MODE` to the already resolved route mode (`thin`, `full` or `deep`); never classify a second narrower scope for compilation. Build a local context pack using the resolved helper directory. Capture the successful JSON result; a build failure stops packet-backed review, without falling back to mutable latest:
+3. For route skip, stop without dispatch/session/challenge. For every other packet-backed route, prepare `REVIEW_ASSIGNMENTS_INPUT` with the concrete questions below and `REVIEW_FILES_UNIQUE` with the already resolved repository-relative file scope. Set `PROJECT_ROOT="$PWD"` and `REVIEW_MODE` to the already selected `thin`, `full` or `deep` route. Preserve `REVIEW_PREP_ID` across interruption rather than bypassing an unresolved attempt with a new identity:
 
 ```bash
-CONTEXT_BUILD_JSON=$(node "$FORGEFLOW_HELPER_DIR/build-context-pack.js" --root "$PROJECT_ROOT" --mode "$REVIEW_MODE" --review-assignments "$REVIEW_ASSIGNMENTS_INPUT" --json) || exit 1
-CONTEXT_PACK_DIR=$(printf '%s' "$CONTEXT_BUILD_JSON" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>{const r=JSON.parse(s);if(!r.run_dir || !r.evidence_ref?.manifest_sha256)process.exit(1);process.stdout.write(r.run_dir)})') || exit 1
-CONTEXT_EVIDENCE_REF=$(mktemp "${TMPDIR:-/tmp}/forgeflow-review-ref.XXXXXX") || exit 1
-printf '%s' "$CONTEXT_BUILD_JSON" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>process.stdout.write(JSON.stringify(JSON.parse(s).evidence_ref)))' > "$CONTEXT_EVIDENCE_REF" || exit 1
-node "$FORGEFLOW_HELPER_DIR/review-evidence-cli.js" inspect --root "$PWD" --ref "$CONTEXT_EVIDENCE_REF" --require-current || exit 1
+REVIEW_PREP_ID="${REVIEW_PREP_ID:-review-$(node -e 'process.stdout.write(require("crypto").randomBytes(12).toString("hex"))')}"
+CONTEXT_BUILD_JSON=$(node "$FORGEFLOW_HELPER_DIR/render-review-wave-prep.js" --prepare --prep-id "$REVIEW_PREP_ID" --root "$PROJECT_ROOT" --files "$REVIEW_FILES_UNIQUE" --mode "$REVIEW_MODE" --review-assignments "$REVIEW_ASSIGNMENTS_INPUT" --json) || { printf '%s\n' "$CONTEXT_BUILD_JSON" >&2; exit 1; }
+CONTEXT_PACK_DIR=$(printf '%s' "$CONTEXT_BUILD_JSON" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>{const r=JSON.parse(s);if(!r.review_ready || !r.run_dir || !r.evidence_ref?.manifest_sha256)process.exit(1);process.stdout.write(r.run_dir)})') || exit 1
+CONTEXT_EVIDENCE_REF=$(printf '%s' "$CONTEXT_BUILD_JSON" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>{const r=JSON.parse(s);if(!r.evidence_ref_file)process.exit(1);process.stdout.write(r.evidence_ref_file)})') || exit 1
 ```
 
-   Run from the project root. Pass `--files`, `--lines`, `--mode`, and `--calibration` when already resolved. Preserve the exact returned `run_dir` and reference, including expected manifest SHA-256 and source scope, across dispatch and synthesis. Use that run's `agent-packets/<agent>.md` and `synthesis-input.json`; never rediscover `context/latest`. Reinspect the same reference before synthesis. Missing, changed, incomplete, stale or unknown source proof stops current proof; explain the limitation and rebuild. Intact hashes do not prove claim truth.
-4. Run budget checks against the selected run only:
+   The operation collects scope, builds packets, checks configured budgets and verifies bounded waves when needed. Ready means preparation succeeded, not review approval. Missing helper, failed prerequisite, changed source/inputs or unresolved effects stop dispatch with a named blocker; never fall back to mutable latest or automatically retry. Inspect the returned `task_id` with `task.js status` and reconcile pending/unknown actions from observed effects before continuing. Keep the parent `run_dir`, `evidence_ref_file`, receipt and every verified `packets` entry. For waves, dispatch each listed packet/reference without reducing the selected roster or dropping proof, while keeping one parent focused-question session and cumulative request/challenge limits. Do not dispatch the over-budget parent packet. Reinspect exact parent/child references before evidence consumption and synthesis. Hash integrity, source freshness and claim truth remain separate.
+4. Preparation already measures budgets against the pinned runs. Keep optional advice and its history outside the seal:
 
 ```bash
-node "$FORGEFLOW_HELPER_DIR/check-context-budget.js" --root "$PWD" --file "$CONTEXT_PACK_DIR/context-telemetry.json" --warn-only --json
 REVIEW_ADVISORY_HISTORY="$PWD/.forgeflow/$(basename "$PWD")/review-advisory/context-advisor-history.jsonl"
 node "$FORGEFLOW_HELPER_DIR/advise-context.js" --root "$PWD" --file "$CONTEXT_PACK_DIR/context-telemetry.json" --history "$REVIEW_ADVISORY_HISTORY" --record --json
 ```
 
-   Surface warnings, trend deltas and trim recommendations. Keep history, lean advisory output, reviewer reports and later decisions outside the sealed run. Never write advisory files into it.
+   Surface budget outcomes and trim recommendations without weakening required evidence or reviewer coverage. Never write advisory files into a sealed run.
 5. Read only the files needed for that scope. Prefer exact files or `git diff --name-only`; avoid re-reading files already covered by the context pack unless exact source lines are needed.
-6. Spawn reviewer agents in parallel according to the route:
+6. Iterate the ready receipt’s `packets` entries sequentially. Before each dispatch, bind `ACTIVE_REVIEW_PACKET_DIR` and `ACTIVE_REVIEW_EVIDENCE_REF` to that entry’s `run_dir` and `evidence_ref_file`, inspect that exact reference with `--require-current`, and use its matching `agent-packets` contents. Preserve the parent `CONTEXT_PACK_DIR`/reference for the single session and final synthesis. Retain wave identities and one complete response per required reviewer covering its prepared waves; partial responses cannot establish full coverage. Within each entry spawn or resume the unchanged required reviewers in parallel according to the frozen route:
    - `builder_reviewer`
    - `guardian_reviewer`
    - `designer_reviewer`

@@ -4,7 +4,7 @@ const path = require('path');
 const { buildContextPack, jsonSummary } = require('./build-context-pack');
 const { buildContextWavePlan, pinContext } = require('./render-context-wave-plan');
 const { shellQuote } = require('./privacy-boundary');
-const { assertSafeDirectory, isPathInside } = require('./file-safety');
+const { assertSafeDirectory, isPathInside, writeFileSafe } = require('./file-safety');
 
 function usage() {
   console.error([
@@ -192,9 +192,24 @@ function buildContextWave(opts = {}) {
     writeWaveFiles: true,
   });
   const wave = selectWave(plan, opts.wave || '');
-  const waveFile = path.join(root, wave.wave_file);
+  let waveFile = path.join(root, wave.wave_file);
   if (!wave.wave_file || !fs.existsSync(waveFile)) {
     throw new Error(`Wave file was not written: ${wave.wave_file || '(missing)'}`);
+  }
+  // Focused assignment proof may cross a planned wave boundary. Keep it whole
+  // in every consuming child, then measure the actual budget rather than trim it.
+  if (opts.requiredProofFiles) {
+    if (!Array.isArray(opts.requiredProofFiles) || opts.requiredProofFiles.length > 500) throw new Error('Invalid required wave proof scope');
+    for (const file of opts.requiredProofFiles) {
+      require('./task-store').relativeFile(file);
+      if (require('./build-scope-manifest').deniedPath(file)) throw new Error('Denied required wave proof path');
+    }
+    wave.files = [...new Set([...wave.files, ...opts.requiredProofFiles])];
+    // Later child builders regenerate the advisory plan lists. Give the retained
+    // proof-inclusive input its own destination so another wave cannot change it.
+    waveFile = path.join(waveDir, `${wave.name}-proof-files.txt`);
+    wave.wave_file = path.relative(root, waveFile);
+    writeFileSafe(waveFile, `${wave.files.join('\n')}\n`);
   }
   const childOut = path.join(waveDir, wave.name, 'context-pack');
   assertSafeDirectory(path.dirname(childOut));
@@ -204,7 +219,8 @@ function buildContextWave(opts = {}) {
     inputContextDir: contextDir,
     parentEvidenceRef: selected.ref,
     filesPath: waveFile,
-    modeOverride: 'thin',
+    modeOverride: opts.modeOverride || 'thin',
+    reviewAssignmentsPath: opts.reviewAssignmentsPath,
     maxMemoryChars: Math.min(opts.maxMemoryChars || 4000, 1000),
     maxDiffChars: Math.min(opts.maxDiffChars || 9000, 1000),
     task: `Review context wave: ${wave.name}`,
@@ -236,6 +252,9 @@ function buildContextWave(opts = {}) {
       file_list: wave.wave_file,
       context_pack: path.relative(root, pack.run_dir),
       evidence_ref: pack.evidence_ref,
+      required_reviewers: packSummary.required_reviewers,
+      review_assignments: packSummary.review_assignments,
+      focused_questions: packSummary.focused_questions,
       agents: packSummary.agents,
     },
     stop_rule: postBuildBudget.status === 'pass'
@@ -256,6 +275,9 @@ function buildContextWave(opts = {}) {
       run_dir: pack.run_dir,
       pinned_out_dir: pack.pinned_out_dir,
       evidence_ref: pack.evidence_ref,
+      required_reviewers: packSummary.required_reviewers,
+      review_assignments: packSummary.review_assignments,
+      focused_questions: packSummary.focused_questions,
       packet_count: packSummary.packet_count,
       agents: packSummary.agents,
       mode: packSummary.mode,

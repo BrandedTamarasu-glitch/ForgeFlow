@@ -39,8 +39,8 @@ for (const target of ['claude', 'codex']) {
   const maintained = fs.readFileSync(path.join(root, maintainedPath), 'utf8');
   const blocks = [...maintained.matchAll(/```bash\n([\s\S]*?)```/g)].map(match => match[1]);
   const buildBlock = blocks.find(block => block.includes('CONTEXT_BUILD_JSON=$('));
-  const budgetBlock = blocks.find(block => block.includes('check-context-budget.js') && block.includes('CONTEXT_PACK_DIR'));
-  assert.ok(buildBlock && budgetBlock, `${maintainedPath} executable preparation blocks`);
+  assert.ok(buildBlock && buildBlock.includes('render-review-wave-prep.js'), `${maintainedPath} executable preparation block`);
+  const activeBlock = blocks.find(block => block.includes('ACTIVE_REVIEW_PACKET_DIR=$(')) || '';
   const fileList = path.join(project, '.forgeflow', 'files.txt');
   fs.mkdirSync(path.dirname(fileList), { recursive: true });
   fs.writeFileSync(fileList, 'source.js\n');
@@ -65,17 +65,18 @@ for (const target of ['claude', 'codex']) {
     'SAFE_ARGUMENTS="local evidence validation"',
     'LINES_CHANGED=2; TRACKED_LINES_CHANGED=2; UNTRACKED_LINES_CHANGED=0; ROUTE_ARGS=(--mode full); CI_MODE=false',
     buildBlock,
-    budgetBlock,
+    'REVIEW_PACKET_INDEX=0',
+    activeBlock,
     `printf '%s' "$CONTEXT_BUILD_JSON" > ${JSON.stringify(savedBuild)}`,
     `cp "$CONTEXT_EVIDENCE_REF" ${JSON.stringify(savedPinned)}`,
-    'rm "$CONTEXT_EVIDENCE_REF"',
   ].join('\n');
   const shellFile = path.join(work, target, 'maintained-preparation.sh');
   fs.writeFileSync(shellFile, shell);
   run('bash', [shellFile], project);
   const first = JSON.parse(fs.readFileSync(savedBuild, 'utf8'));
   assert.deepEqual(JSON.parse(fs.readFileSync(savedPinned, 'utf8')), first.evidence_ref);
-  assert.ok(first.run_dir && first.evidence_ref.manifest_sha256);
+  assert.ok(first.review_ready && first.receipt_path && first.run_dir && first.evidence_ref.manifest_sha256);
+  assert.equal(first.packets.length, 1);
   assert.equal(first.focused_questions, 'enabled');
   assert.deepEqual(first.required_reviewers, requiredReviewers);
   assert.deepEqual(first.review_assignments, assignments);
@@ -161,8 +162,8 @@ for (const file of ['commands/review.md', '.agents/skills/forgeflow-review/SKILL
   const body = fs.readFileSync(path.join(root, file), 'utf8');
   assert.ok(body.includes('CONTEXT_BUILD_JSON=$('));
   assert.ok(body.includes('r.run_dir') && body.includes('r.evidence_ref?.manifest_sha256'));
-  assert.ok(body.includes('--require-current || exit 1'));
-  assert.ok(body.includes('--file "${CONTEXT_PACK_DIR}/context-telemetry.json"') || body.includes('--file "$CONTEXT_PACK_DIR/context-telemetry.json"'));
+  assert.ok(body.includes('r.review_ready') && body.includes('render-review-wave-prep.js') && body.includes('--prepare --prep-id'));
+  assert.ok(body.includes('packets') && body.includes('parent') && body.includes('pending'));
   assert.ok(body.includes('--result <saved-actual-result-path>') && body.includes('--decision <saved-actual-decision-path>'));
   assert.ok(!body.includes('LEAN_REVIEW_MD="${CONTEXT_PACK_DIR}/lean-review.md"'));
 }

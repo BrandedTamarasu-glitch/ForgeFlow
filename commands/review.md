@@ -429,56 +429,38 @@ PROJECT_LEARNINGS_PATH="${FORGEFLOW_DIR}/project-learnings.md"
 
 If each path exists, read the file and store its contents as `plan_content`, `discussion_content`, `research_content`, `implementation_notes_content`, and `project_learnings_content` respectively. Pass the file contents (not the paths) to Product Lead's prompt. Treat implementation notes as context for decisions, spec gaps, tradeoffs, deviations, follow-ups, and validation notes; they are not proof that the implementation is correct. Treat project learnings as guidance for recurring pitfalls, stable decisions, risk areas, validation patterns, hot files/modules, repeated follow-ups, and recommended next approach; they are not proof and every finding still needs current evidence.
 
-## Step 3.4: Build local context pack
+## Step 3.4: Prepare bounded review inputs
 
-Prefer the local context compiler when available. It pre-computes route, file manifest, diff summary, indexed memory hits, latest project insights, and bounded per-agent packets so reviewer prompts do not need to carry the same full context repeatedly.
-
-Skip this step only for route skip or when `$ARGUMENTS` contains `--no-context-pack` (legacy unenforced). Prepare the trusted `REVIEW_ASSIGNMENTS_INPUT` with the concrete questions described below before this build. Set `FORGEFLOW_HELPER_DIR="$HELPER_DIR"` for the shared session commands.
+Use one deterministic preparation operation for every non-skip packet-backed route. Prepare the trusted `REVIEW_ASSIGNMENTS_INPUT` with the concrete questions below first. Set `FORGEFLOW_HELPER_DIR="$HELPER_DIR"`. Preserve `REVIEW_PREP_ID` and the returned receipt across interruption; do not generate a replacement ID to bypass a blocked attempt.
 
 ```bash
 CONTEXT_PACK_DIR=""
 CONTEXT_EVIDENCE_REF=""
 CONTEXT_PACK_ARG=""
 
-if [ "$ROUTING_MODE" != "skip-mode" ] && [ "$ROUTING_MODE" != "skip" ] && ! printf '%s\n' "$SAFE_ARGUMENTS" | grep -q -- '--no-context-pack' && [ -x "${HELPER_DIR}/build-context-pack.js" ]; then
+if [ "$ROUTING_MODE" != "skip-mode" ] && [ "$ROUTING_MODE" != "skip" ] && ! printf '%s\n' "$SAFE_ARGUMENTS" | grep -q -- '--no-context-pack'; then
+  [ -x "${HELPER_DIR}/render-review-wave-prep.js" ] || { echo "Review preparation helper missing; repair the runtime before review." >&2; exit 1; }
+  REVIEW_MODE="${ROUTING_MODE%-mode}"
+  REVIEW_PREP_ID="${REVIEW_PREP_ID:-review-$(node -e 'process.stdout.write(require("crypto").randomBytes(12).toString("hex"))')}"
   TASK_ARGS=()
   if [ -n "${SAFE_ARGUMENTS:-}" ]; then
     TASK_ARGS=(--task "$SAFE_ARGUMENTS")
   fi
-  CONTEXT_BUILD_JSON=$("${HELPER_DIR}/build-context-pack.js" \
-    --root "$PROJECT_ROOT" \
-    --files "$REVIEW_FILES_UNIQUE" \
+  CONTEXT_BUILD_JSON=$(node "${HELPER_DIR}/render-review-wave-prep.js" \
+    --prepare --prep-id "$REVIEW_PREP_ID" \
+    --root "$PROJECT_ROOT" --files "$REVIEW_FILES_UNIQUE" --mode "$REVIEW_MODE" \
     --review-assignments "$REVIEW_ASSIGNMENTS_INPUT" \
-    --lines "$LINES_CHANGED" \
-    --tracked-lines "$TRACKED_LINES_CHANGED" \
-    --untracked-lines "$UNTRACKED_LINES_CHANGED" \
-    "${ROUTE_ARGS[@]}" \
-    "${TASK_ARGS[@]}" \
-    --out "${FORGEFLOW_DIR}/context/latest" \
-    --json) || { echo "Context build failed; repair the reported error before review. No latest fallback." >&2; exit 1; }
-  CONTEXT_PACK_DIR=$(printf '%s' "$CONTEXT_BUILD_JSON" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>{const r=JSON.parse(s);if(!r.run_dir || !r.evidence_ref?.manifest_sha256)process.exit(1);process.stdout.write(r.run_dir)})') || exit 1
-  CONTEXT_EVIDENCE_REF=$(mktemp "${TMPDIR:-/tmp}/forgeflow-review-ref.XXXXXX") || exit 1
-  printf '%s' "$CONTEXT_BUILD_JSON" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>process.stdout.write(JSON.stringify(JSON.parse(s).evidence_ref)))' > "$CONTEXT_EVIDENCE_REF" || exit 1
-  node "${HELPER_DIR}/review-evidence-cli.js" inspect --root "$PROJECT_ROOT" --ref "$CONTEXT_EVIDENCE_REF" --require-current || exit 1
-  CONTEXT_PACK_ARG="Use the local Forgeflow context packet for this agent from ${CONTEXT_PACK_DIR}/agent-packets/ when present. Treat it as the primary context and request expanded context only when the packet cites an unresolved gap."
+    --lines "$LINES_CHANGED" --tracked-lines "$TRACKED_LINES_CHANGED" --untracked-lines "$UNTRACKED_LINES_CHANGED" \
+    "${TASK_ARGS[@]}" --json) || { printf '%s\n' "$CONTEXT_BUILD_JSON" >&2; echo "Preparation stopped; inspect its named blocker and task. No automatic retry or latest fallback." >&2; exit 1; }
+  CONTEXT_PACK_DIR=$(printf '%s' "$CONTEXT_BUILD_JSON" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>{const r=JSON.parse(s);if(!r.review_ready || !r.run_dir || !r.evidence_ref?.manifest_sha256)process.exit(1);process.stdout.write(r.run_dir)})') || exit 1
+  CONTEXT_EVIDENCE_REF=$(printf '%s' "$CONTEXT_BUILD_JSON" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>{const r=JSON.parse(s);if(!r.evidence_ref_file)process.exit(1);process.stdout.write(r.evidence_ref_file)})') || exit 1
+  CONTEXT_PACK_ARG="Use only the verified packets and immutable references listed in the preparation receipt. The parent evidence reference remains the session-wide authority."
 fi
 ```
 
-When `.forgeflow/${PROJECT_NAME}` exists, context pack generation builds `${CONTEXT_PACK_DIR}/memory-index.json` from captured advisory inputs and uses that run-private index before falling back to raw memory scans. It writes estimated context savings to `${CONTEXT_PACK_DIR}/context-telemetry.json`. Use `--no-memory-index` only when debugging index generation.
+Preparation collects the explicit review scope, builds the selected route's packets, checks configured budgets and verifies bounded waves when needed. A ready result means inputs are prepared, not that claims are true or the review is approved. A blocked result names its first failed prerequisite and retains completed results. Use `task.js status --root <project-root> --task <returned-task-id>` to inspect interrupted actions; reconcile actual observed effects before continuation. Never replay pending or unknown writes automatically. Changed source or preparation inputs require a separately identified fresh preparation after resolving the old attempt.
 
-If `${HELPER_DIR}/check-context-budget.js` exists, run it after context pack generation. It reads `.forgeflow-budget.json` from the repo root when present. In interactive mode, use `--warn-only`; in CI mode, omit `--warn-only` so over-budget packets fail fast:
-
-```bash
-if [ -n "$CONTEXT_PACK_DIR" ] && [ -x "${HELPER_DIR}/check-context-budget.js" ]; then
-  BUDGET_WARN_ARG="--warn-only"
-  if [ "$CI_MODE" = "true" ]; then
-    BUDGET_WARN_ARG=""
-  fi
-  "${HELPER_DIR}/check-context-budget.js" --root "$PROJECT_ROOT" --file "${CONTEXT_PACK_DIR}/context-telemetry.json" --max-compact-tokens 16000 $BUDGET_WARN_ARG --json
-fi
-```
-
-Keep the exact returned run directory and saved returned `evidence_ref` (including expected manifest SHA-256 and source scope) through reviewer dispatch and synthesis. Never rediscover `context/latest` later. Reinspect that same reference before synthesis; stale, changed, missing or incomplete evidence stops current proof and names rebuilding as the next action. A successful hash check alone does not establish claim truth. With `--no-context-pack`, use the existing injected context without claiming immutable evidence.
+Keep the exact returned parent `run_dir`, `evidence_ref_file`, receipt and every `packets` entry through dispatch and synthesis. For waves, use each entry's selected packets and exact reference while preserving the unchanged required reviewer roster, proof files and parent focused-question session. Do not create new request/challenge budgets per wave or send the over-budget parent packet as reviewer context. Reinspect the same parent and child references with `review-evidence-cli.js inspect --require-current` before consuming evidence and synthesis; never rediscover `context/latest`. Missing, stale or changed evidence stops current proof. Keep advice, history, reports and decisions outside the seals. With `--no-context-pack`, use legacy injected context without claiming immutable enforcement.
 
 Outside an enabled focused-question session only, for a consequential claim that consumes retained proof, retrieve the named artifact through `review-evidence-cli.js retrieve --root "$PROJECT_ROOT" --ref "$CONTEXT_EVIDENCE_REF" --artifact <artifact-id>`; request neighboring lines with `--start-line`/`--end-line`, or `--raw-required` for complete proof. Use artifact IDs from the selected manifest, not invented paths. In legacy unenforced mode only, save the actual reviewer/tool result bytes and actual decision bytes, then opt in to a separate consumption sidecar:
 
@@ -542,6 +524,16 @@ node "$FORGEFLOW_HELPER_DIR/review-questions-cli.js" synthesis --root "$PROJECT_
 
 Give synthesis and final acceptance the returned current retained references, unchanged roster coverage and unresolved statuses alongside original packets and ordinary reports. This command implements `prepareSynthesis`; it does not approve the review. Missing/exhausted evidence or missing required reviewer/challenge responses stay explicit unresolved questions, never supported findings or clean acceptance. Source/integrity failure stops current adjudication; historical intact bytes remain historical. Preserve normal full/deep/audit/accessibility duties, route skip behavior and final acceptance. Focused implementation tests support safety only; roadmap closure still requires observed real-PR behavior, independence and the frozen overhead gate.
 
+Before each prepared packet dispatch, set `REVIEW_PACKET_INDEX` to that entry's zero-based position in the receipt. Iterate every returned entry sequentially; within each entry use the unchanged returned `required_reviewers`. Keep `CONTEXT_PACK_DIR` and `CONTEXT_EVIDENCE_REF` as the parent authority for the single session and final synthesis. Bind the active reviewer context separately:
+
+```bash
+ACTIVE_REVIEW_PACKET_DIR=$(printf '%s' "$CONTEXT_BUILD_JSON" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>{const r=JSON.parse(s),p=r.packets?.[Number(process.argv[1])];if(!r.review_ready || !p?.run_dir)process.exit(1);process.stdout.write(p.run_dir)})' "$REVIEW_PACKET_INDEX") || exit 1
+ACTIVE_REVIEW_EVIDENCE_REF=$(printf '%s' "$CONTEXT_BUILD_JSON" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>{const r=JSON.parse(s),p=r.packets?.[Number(process.argv[1])];if(!r.review_ready || !p?.evidence_ref_file)process.exit(1);process.stdout.write(p.evidence_ref_file)})' "$REVIEW_PACKET_INDEX") || exit 1
+node "$HELPER_DIR/review-evidence-cli.js" inspect --root "$PROJECT_ROOT" --ref "$ACTIVE_REVIEW_EVIDENCE_REF" --require-current || exit 1
+```
+
+Retain wave identities with their observed findings and one complete response per required reviewer covering its prepared waves. Resume relevant reviewers through the existing native owner rather than spawning fresh budget sessions. Partial wave responses cannot establish complete review coverage.
+
 ## Step 3.4b: Automatic lean review advisory lane
 
 When the lean-review helper is available, run it automatically as a read-only advisory lane. This writes local artifacts only and must not affect correctness/security/accessibility/performance verdicts unless a reviewer independently confirms the same concern with current code evidence.
@@ -557,7 +549,7 @@ if [ -x "${HELPER_DIR}/render-lean-review.js" ]; then
 fi
 ```
 
-If the context pack exists, pass the matching `agent-packets/<agent>.md` file contents to each reviewer, `route.json` and `synthesis-input.json` to Architect, and `synthesis-input.json` plus Product Lead's phase artifacts to Product Lead. The packet includes a **Latest Insights** section from project learnings; agents may use it to anticipate recurring risks and validation patterns, but every finding still needs current evidence. If latest insights are blocked, read `latest-insights-report.json` for the gate status and top check issues. For JS/TS changes, packets also include a **Code Topology** section with static fan-in/fan-out, changed-file neighbor guidance, and code-map trend metadata, while `synthesis-input.json` exposes `code_topology_summary` for Architect and Product Lead. Treat topology as import-graph context, not runtime proof.
+If preparation is ready, pass the matching `agent-packets/<agent>.md` from the active verified packet to each reviewer, `route.json` and `synthesis-input.json` to Architect, and `synthesis-input.json` plus Product Lead's phase artifacts to Product Lead. The packet includes a **Latest Insights** section from project learnings; agents may use it to anticipate recurring risks and validation patterns, but every finding still needs current evidence. If latest insights are blocked, read `latest-insights-report.json` for the gate status and top check issues. For JS/TS changes, packets also include a **Code Topology** section with static fan-in/fan-out, changed-file neighbor guidance, and code-map trend metadata, while `synthesis-input.json` exposes `code_topology_summary` for Architect and Product Lead. Treat topology as import-graph context, not runtime proof.
 If `lean-review.md` or `lean-review.json` exists, pass it as a separate **Lean Review Advisory** lane to Architect and Product Lead. It is over-engineering guidance only: it cannot block approval, change review routing, apply fixes, delete code, remove dependencies, shrink validation, or override current evidence by itself.
 
 ## Step 3.5: Context Pre-Loading
@@ -686,7 +678,7 @@ Routing note:
 
 ### Step 4 behavior under chunking
 
-If `CHUNKED=false`: spawn the roster once on the full file set (existing behavior).
+For packet-backed preparation, iterate the returned verified `packets` entries using the active binding above and keep the frozen required roster. A single entry needs one roster dispatch. The following legacy chunk rules apply only without a preparation receipt.
 
 If `CHUNKED=true`:
 - Iterate chunks SEQUENTIALLY (not all chunks in parallel — 4 × 8 = 32 concurrent agents is too many).
@@ -700,7 +692,7 @@ Each agent prompt must include:
 - The complete list of files to review
 - Working directory path
 - Brief context on what the changes are for (from git log or user description)
-- The matching context packet from `${CONTEXT_PACK_DIR}/agent-packets/{agent}.md` when present; otherwise the assembled `<injected-context>` block from Step 3.5 (with `agent="{agent-name}"` filled in for each agent)
+- The matching context packet from `${ACTIVE_REVIEW_PACKET_DIR}/agent-packets/{agent}.md` and its `${ACTIVE_REVIEW_EVIDENCE_REF}` when preparation is ready; otherwise the assembled `<injected-context>` block from Step 3.5 (with `agent="{agent-name}"` filled in for each agent)
 - In enabled focused-question sessions, the session request boundary takes precedence over the legacy direct-read permission in the file-scope block; initial packet inputs remain unchanged.
 - A `<file-scope>` block hard-constraining the agent to the changed files:
 

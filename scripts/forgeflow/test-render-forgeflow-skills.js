@@ -17,7 +17,7 @@ const checks = [
   ['core skills current', result.status === 'pass' && result.skills.length === SKILLS.length],
   ['review skill present', result.skills.some((item) => item.name === 'forgeflow-review' && item.command === '/review')],
   ['review skill avoids Codex built-in collision', skillText(SKILLS.find((item) => item.name === 'forgeflow-review')).includes('do not invoke `/review`, which is a Codex built-in')],
-  ['generated review pins immutable evidence', ['run_dir', 'evidence_ref.manifest_sha256', '--require-current', '--file <run_dir>/context-telemetry.json', 'never fall back to context/latest', '--result <actual-result-path>', '--decision <actual-decision-path>'].every((text) => skillText(SKILLS.find((item) => item.name === 'forgeflow-review')).includes(text))],
+  ['generated review pins immutable evidence', ['render-review-wave-prep.js --prepare', '--prep-id <stable-preparation-id>', '--files <resolved-files>', 'review_ready:true', 'run_dir/evidence_ref_file', '--require-current', 'no automatic retries or latest fallback', '--result <actual-result-path>', '--decision <actual-decision-path>'].every((text) => skillText(SKILLS.find((item) => item.name === 'forgeflow-review')).includes(text))],
   ['skill body carries boundary', skillText(SKILLS[0]).includes('Do not commit, push')],
   ['renders markdown', markdown.includes('# Forgeflow Skills') && markdown.includes('read-only unless --write')],
   ['parses args', opts.root === root && opts.write && opts.json],
