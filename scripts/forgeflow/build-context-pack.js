@@ -5,7 +5,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { classify, readFiles } = require('./explain-review-route');
 const { selectCapabilities, renderSelection, readSelectionInput, LIMITS: CAPABILITY_LIMITS } = require('./select-capabilities');
-const { buildCodeTopology } = require('./build-code-topology');
+const { buildCodeTopology, deniedPath } = require('./build-code-topology');
 const {
   assertSafeDirectory,
   safeReadTextFile,
@@ -16,7 +16,11 @@ const { buildMemoryIndex, indexJsonl, indexMarkdown } = require('./index-memory'
 const { selectMemoryRecords, renderMemorySelection, sourceClass } = require('./memory-retrieval');
 const { showProjectLearnings } = require('./show-project-learnings');
 const { checkProjectLearnings } = require('./check-project-learnings');
-const { compactUserProfile } = require('./user-profile');
+const { compactUserProfile, profileFiles } = require('./user-profile');
+const { beginRun, captureInput, captureOutput, writeOutput, sealRun, failRun, inspectRun, publishProjection, readInputFile } = require('./review-evidence');
+const { createHash } = require('crypto');
+const { relativeFile } = require('./task-store');
+const { readConnection, readVaultMemory } = require('./vault-memory');
 const { classifyFailureDigest } = require('./failure-digest-triage');
 const { failureDigestFreshness, parseFailureDigest } = require('./show-project-trends');
 const {
@@ -251,7 +255,7 @@ function buildDiffSummary(files, root, opts) {
   if (stat) {
     parts.push('## Stat', '', fenced(stat), '');
   }
-  return truncate(parts.join('\n'), opts.maxDiffChars);
+  return parts.join('\n');
 }
 
 function fenced(value) {
@@ -297,6 +301,7 @@ function memoryFiles(root) {
     'review-history.md',
     'learnings.jsonl',
     'project-learning-candidates.jsonl',
+    'task-memory-feedback.jsonl',
   ].map((name) => path.join(defaultProjectDir(root), name));
 }
 
@@ -466,7 +471,7 @@ function currentGitState(root) {
 }
 
 function buildLatestInsightsResult(root, maxChars = 3000, opts = {}) {
-  const projectDir = defaultProjectDir(root);
+  const projectDir = opts.projectDir || defaultProjectDir(root);
   if (!fs.existsSync(projectDir)) {
     return {
       markdown: '',
@@ -581,7 +586,7 @@ function compactCodeMapFromSummary(summary) {
   return lines.join('\n');
 }
 
-function projectCodeMapFromTopology(root, topologyResult, maxChars = 4500) {
+function projectCodeMapFromTopology(root, topologyResult, maxChars = 4500, writer) {
   if (!topologyResult || !topologyResult.topology) return '(none)';
   const artifacts = {
     graph: path.relative(root, topologyResult.out),
@@ -589,7 +594,7 @@ function projectCodeMapFromTopology(root, topologyResult, maxChars = 4500) {
     telemetry: path.relative(root, topologyResult.telemetry_path),
   };
   const summary = projectCodeMapSummary(topologyResult.topology, artifacts, { maxHotspots: 5 });
-  topologyResult.code_map_history = attachCodeMapHistory(root, summary, historyPathForTopologyOut(topologyResult.out));
+  topologyResult.code_map_history = attachCodeMapHistory(root, summary, historyPathForTopologyOut(topologyResult.out), { writer });
   topologyResult.project_code_map_summary = summary;
   return truncate(compactCodeMapFromSummary(summary), maxChars);
 }
@@ -655,17 +660,17 @@ function truncate(text, maxChars) {
   return `${clipped.slice(0, boundary).trimEnd()}\n\n[truncated to ${maxChars} chars]`;
 }
 
-function writeTempFile(dir, name, lines) {
+function writeTempFile(dir, name, lines, writer = writeFileSafe) {
   const file = path.join(dir, name);
-  writeFileSafe(file, `${lines.join('\n')}\n`);
+  writer(file, `${lines.join('\n')}\n`);
   return file;
 }
 
-function buildTopologyContext(root, outDir, files) {
+function buildTopologyContext(root, outDir, files, writer = writeFileSafe) {
   const sourceFiles = files.filter((file) => /\.(js|jsx|ts|tsx)$/i.test(file));
   if (sourceFiles.length === 0) return null;
   try {
-    const filesPath = writeTempFile(outDir, 'topology-files.txt', sourceFiles);
+    const filesPath = writeTempFile(outDir, 'topology-files.txt', sourceFiles, writer);
     return buildCodeTopology({
       root,
       filesPath,
@@ -675,8 +680,10 @@ function buildTopologyContext(root, outDir, files) {
       maxHotspots: 8,
       compact: true,
       source: 'build-context-pack',
+      writer,
     });
   } catch (_err) {
+    if (/Evidence|evidence|capacity|limit reached/.test(_err.message)) throw _err;
     return null;
   }
 }
@@ -1316,6 +1323,8 @@ function buildContextPack(opts) {
   const normalizedOpts = normalizePathOptions(opts || {});
   const root = normalizedOpts.root ? repoRoot(normalizedOpts.root) : repoRoot();
   const effectiveOpts = { ...normalizedOpts, root };
+  const optionBytes = new Map();
+  for (const file of [effectiveOpts.filesPath, effectiveOpts.calibrationPath, effectiveOpts.capabilityInputPath].filter(Boolean)) optionBytes.set(file, readInputFile({ path: file, root: path.dirname(file) }));
   const files = readChangedFiles(effectiveOpts);
   const calibration = readJson(effectiveOpts.calibrationPath);
   const route = classify(files, {
@@ -1341,17 +1350,130 @@ function buildContextPack(opts) {
   });
   capabilitySelection.file_scope = capabilityInput.files ? 'explicit' : 'changed-files';
   capabilitySelection.omitted_changed_files = capabilityInput.files ? null : Math.max(0, route.files.length - CAPABILITY_LIMITS.files);
-  const outDir = effectiveOpts.out || defaultOutDir(root);
+  const projectionDir = effectiveOpts.out || defaultOutDir(root);
+  const inputContextDir = effectiveOpts.inputContextDir || projectionDir;
+  const run = beginRun({ root, outDir: projectionDir, scope: [], limits: effectiveOpts.evidenceLimits, allowUnknownSource: true });
+  const validateParent = () => {
+    if (!effectiveOpts.parentEvidenceRef) return;
+    const parent = inspectRun({ root, ref: effectiveOpts.parentEvidenceRef });
+    if (parent.build_state !== 'complete' || parent.integrity !== 'current' || parent.source !== 'current') throw new Error('Parent evidence is no longer current; rebuild before creating child evidence');
+  };
+  try {
+  validateParent();
+  const outDir = run.run_dir;
+  const writeFileSafe = (file, content) => writeOutput(run, file, content);
+  const writeJson = (file, value) => writeFileSafe(file, `${JSON.stringify(value, null, 2)}\n`);
+  const captured = new Map();
+  const inputLimitations = [];
+  const missingInputs = new Set();
+  const captureFile = (file, kind = 'advisory', required = false) => {
+    if (captured.has(file)) return captured.get(file).bytes;
+    if (!fs.existsSync(file)) {
+      if (required) throw new Error('Required evidence input is missing; rebuild the context pack.');
+      missingInputs.add(file);
+      return null;
+    }
+    if (kind === 'advisory' && !required) {
+      const stat = fs.lstatSync(file);
+      let unsafe = !stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1;
+      try { assertSafeDirectory(path.dirname(file)); } catch (error) { if (/symlink|not a directory/i.test(error.message)) unsafe = true; else throw error; }
+      if (unsafe) { inputLimitations.push({ source_path: file, reason: 'Unsafe optional advisory excluded; no bytes consumed' }); return null; }
+    }
+    const bytes = readInputFile({ path: file, root: kind === 'source' ? root : path.dirname(file) });
+    const record = captureInput(run, { id: `input-${captured.size + 1}`, bytes, kind, source_path: file });
+    captured.set(file, { record, bytes, hash: createHash('sha256').update(bytes).digest('hex') });
+    return bytes;
+  };
+  captureInput(run, { id: 'build-options', bytes: Buffer.from(JSON.stringify(effectiveOpts)), kind: 'options' });
+  for (const [file, bytes] of optionBytes) {
+    const current = captureFile(file, 'options', true);
+    if (!bytes.equals(current)) throw new Error('Input options changed while building; rebuild the context pack.');
+  }
+  for (const file of route.files) { if (!deniedPath(file)) captureFile(path.resolve(root, file), 'source'); }
+  const advisoryProject = path.join(outDir, 'advisory-project');
+  for (const file of [...memoryFiles(root), path.join(defaultProjectDir(root), 'review-outcomes.jsonl'), path.join(defaultProjectDir(root), 'ship', 'ship-summary.json')]) {
+    const bytes = captureFile(file);
+    if (bytes) writeFileSafe(path.join(advisoryProject, path.relative(defaultProjectDir(root), file)), bytes);
+  }
+  for (const name of ['architecture.json', 'ownership-map.json', 'invocation-hints.json', 'project-operating-model.json', 'lean-decision.json', 'lean-policy.json', 'lean-report.json', 'code-map-history.jsonl']) captureFile(path.join(defaultProjectDir(root), 'context', name));
+  const profiles = profileFiles({ root, projectDir: defaultProjectDir(root) });
+  for (const file of [profiles.global, profiles.project, defaultConfigPath(root)]) captureFile(file);
+  const originalDigestPath = path.join(inputContextDir, 'failure-digest.md');
+  let originalDigest = null;
+  try { originalDigest = captureFile(originalDigestPath); } catch (err) {
+    if (!/symlink|hardlink|non-regular|outside|unsafe/i.test(err.message)) throw err;
+  }
+  if (originalDigest) {
+    writeFileSafe(path.join(outDir, 'failure-digest.md'), originalDigest);
+    const parsed = parseFailureDigest(originalDigest.toString('utf8'), originalDigestPath);
+    for (const ref of parsed.refs || []) {
+      const name = ref.replace(/^-\s*/, '').replace(/:\d+(?::\d+)?$/, '');
+      const file = path.resolve(root, name);
+      if (name && name !== '(none detected)' && fs.existsSync(file)) captureFile(file, 'source');
+    }
+  }
+  if (route.files.some(file => /\.(js|jsx|ts|tsx)$/i.test(file))) {
+    const known = git(['ls-files', '-z', '--cached', '--others', '--exclude-standard'], root).split('\0').filter(Boolean);
+    const visit = (dir) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const abs = path.join(dir, entry.name);
+        const rel = path.relative(root, abs);
+        if (deniedPath(entry.isDirectory() ? `${rel}/` : rel)) continue;
+        if (entry.isDirectory()) visit(abs);
+        else known.push(rel);
+      }
+    };
+    if (!known.length) visit(root);
+    for (const file of [...new Set(known)]) {
+      if (!deniedPath(file) && /\.(?:[cm]?[jt]sx?|md|mdx|json)$/i.test(file)) captureFile(path.resolve(root, file), 'source');
+    }
+  }
+  const candidateBytes = captured.get(path.join(defaultProjectDir(root), 'project-learning-candidates.jsonl'))?.bytes;
+  for (const line of candidateBytes?.toString('utf8').split(/\r?\n/) || []) {
+    let candidate;
+    try { candidate = JSON.parse(line); } catch (_) { continue; }
+    for (const artifact of candidate.provenance?.evidence || []) {
+      let relative;
+      try { relative = relativeFile(artifact.path); } catch (_) { continue; }
+      captureFile(path.join(root, relative));
+    }
+  }
+  const vaultConnectionFile = path.join(root, '.forgeflow', 'vault.json');
+  captureFile(vaultConnectionFile);
+  let vaultDirectory = null, vaultNames = [];
+  try {
+    const connection = readConnection(root);
+    if (connection) {
+      vaultDirectory = path.join(connection.vault, 'Forgeflow', 'Projects', connection.project_id, 'Memories');
+      assertSafeDirectory(vaultDirectory);
+      if (fs.existsSync(vaultDirectory)) vaultNames = fs.readdirSync(vaultDirectory).filter(name => name.endsWith('.md')).sort();
+    }
+  } catch (error) { inputLimitations.push({ reason: 'Vault unavailable; shared guidance remains unavailable' }); }
+  for (const name of vaultNames) captureFile(path.join(vaultDirectory, name));
+  const vaultMemory = readVaultMemory(root);
+  captureInput(run, { id: 'vault-memory-state', bytes: Buffer.from(JSON.stringify(vaultMemory)), kind: 'advisory' });
   const packetDir = path.join(outDir, 'agent-packets');
   ensureDir(packetDir);
 
   const manifest = buildFileManifest(route.files, root);
-  const diffSummary = buildDiffSummary(route.files, root, effectiveOpts);
-  const memoryIndexPath = ensureMemoryIndex(root, effectiveOpts.memoryIndex !== false);
+  const fullDiffSummary = buildDiffSummary(route.files, root, effectiveOpts);
+  captureInput(run, { id: 'diff-summary-full', bytes: Buffer.from(fullDiffSummary), kind: 'diff' });
+  const diffFiles = route.files.filter(file => !deniedPath(file));
+  const diffResult = diffFiles.length ? spawnSync('git', ['diff', '--binary', '--no-ext-diff', 'HEAD', '--', ...diffFiles], { cwd: root, maxBuffer: run.limits.artifactBytes + 1, timeout: 15000 }) : { status: 0, stdout: Buffer.alloc(0) };
+  if (diffResult.error || (diffResult.status !== 0 && run.source)) throw new Error(`Full Git diff capture failed: ${diffResult.error?.message || 'Git command failed'}`);
+  const fullDiff = diffResult.status === 0 ? diffResult.stdout : Buffer.alloc(0);
+  captureInput(run, { id: 'git-diff-full', bytes: fullDiff, kind: 'diff' });
+  const diffSummary = truncate(fullDiffSummary, effectiveOpts.maxDiffChars);
+  // A run owns its index, avoiding shared-index replacement during parallel builds.
+  const memoryIndexPath = effectiveOpts.memoryIndex !== false && fs.existsSync(defaultProjectDir(root))
+    ? buildMemoryIndex({ root, projectDir: advisoryProject, out: path.join(outDir, 'memory-index.json'), writer: writeFileSafe, vaultMemory }).out : null;
+  if (memoryIndexPath) captureFile(memoryIndexPath);
   const memoryHits = buildMemoryHits(root, route.files, route, effectiveOpts.task, effectiveOpts.maxMemoryChars, memoryIndexPath);
   const memoryRetrieval = memoryRetrievalDiagnostics(root, memoryIndexPath, route.files, route, effectiveOpts.task);
-  const topologyContext = buildTopologyContext(root, outDir, route.files);
-  const latestInsightsResult = buildLatestInsightsResult(root, 5000, { codeMap: topologyContext ? topologyContext.topology : undefined });
+  const topologyContext = buildTopologyContext(root, outDir, route.files, writeFileSafe);
+  const historyBytes = captured.get(path.join(defaultProjectDir(root), 'context', 'code-map-history.jsonl'));
+  if (historyBytes) writeFileSafe(path.join(advisoryProject, 'context', 'code-map-history.jsonl'), readInputFile({ path: path.join(defaultProjectDir(root), 'context', 'code-map-history.jsonl'), root }));
+  const latestInsightsResult = buildLatestInsightsResult(root, 5000, { projectDir: advisoryProject, codeMap: topologyContext ? topologyContext.topology : undefined });
   const latestInsights = latestInsightsResult.markdown;
   // The rollup is project-wide. Focused packets already retrieve matching memory;
   // retain the full rollup as an artifact instead of injecting unrelated history.
@@ -1381,9 +1503,9 @@ function buildContextPack(opts) {
     projectOperatingModel,
   });
   const leanGuidanceMarkdown = leanGuidance.injected ? compactLeanGuidance(leanGuidance) : '';
-  const latestFailure = latestFailureDigest(outDir, root);
+  const latestFailure = latestFailureDigest(originalDigest ? outDir : inputContextDir, root);
   const latestFailurePath = path.join(outDir, 'failure-digest.md');
-  const projectCodeMap = projectCodeMapFromTopology(root, topologyContext);
+  const projectCodeMap = projectCodeMapFromTopology(root, topologyContext, 4500, writeFileSafe);
   const projectCodeMapPath = path.join(outDir, 'project-code-map.md');
   const livingMapSummary = topologyContext ? topologyContext.project_code_map_summary : null;
   const livingMapGuidance = livingMapReviewGuidance(livingMapSummary);
@@ -1512,7 +1634,7 @@ function buildContextPack(opts) {
   writeFileSafe(path.join(outDir, 'packet-artifacts.md'), `${artifactManifestMarkdown}\n`);
   writeJson(path.join(outDir, 'agent-context-contract.json'), { schema_version: '1', generated_at: new Date().toISOString(), agents: contextContracts });
   const telemetryPath = path.join(outDir, 'context-telemetry.json');
-  writeTelemetry(telemetryPath, telemetry);
+  writeJson(telemetryPath, telemetry);
   writeJson(path.join(outDir, 'synthesis-input.json'), synthesisInput);
   const budgetConfigPath = defaultConfigPath(root);
   const budget = checkBudget([telemetryPath], applyConfig({
@@ -1530,10 +1652,42 @@ function buildContextPack(opts) {
     throw new Error(`Context pack budget exceeded: ${detail}`);
   }
 
+  for (const file of missingInputs) {
+    if (fs.existsSync(file)) throw new Error('Previously missing evidence input appeared during capture; rebuild');
+  }
+  for (const [file, prior] of captured) {
+    const bytes = readInputFile({ path: file, root: path.dirname(file) });
+    if (createHash('sha256').update(bytes).digest('hex') !== prior.hash) throw new Error('Evidence input changed during capture; rebuild the context pack.');
+  }
+  captureInput(run, { id: 'input-limitations', bytes: Buffer.from(JSON.stringify(inputLimitations)), kind: 'metadata' });
+  const outputs = [];
+  const collectOutputs = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.name === 'artifacts' || ['run.json', 'manifest.json', 'evidence-ref.json'].includes(entry.name)) continue;
+      const file = path.join(dir, entry.name);
+      if (entry.isDirectory()) collectOutputs(file);
+      else if (entry.isFile()) {
+        const rel = path.relative(outDir, file);
+        captureOutput(run, { id: `output-${outputs.length + 1}`, path: file, kind: 'output', coverage: /agent-packets|diff-summary\.md|memory-hits\.md/.test(rel) ? 'excerpted' : 'full' });
+        outputs.push({ source: rel, destination: rel });
+      }
+    }
+  };
+  collectOutputs(outDir);
+  if (vaultDirectory) {
+    const names = fs.existsSync(vaultDirectory) ? fs.readdirSync(vaultDirectory).filter(name => name.endsWith('.md')).sort() : [];
+    if (JSON.stringify(names) !== JSON.stringify(vaultNames)) throw new Error('Vault note inventory changed during capture; rebuild');
+  }
+  validateParent();
+  const evidenceRef = sealRun(run);
+  publishProjection(run, { files: outputs });
   return {
     root,
     project_dir: defaultProjectDir(root),
-    out_dir: outDir,
+    out_dir: projectionDir,
+    run_dir: outDir,
+    pinned_out_dir: outDir,
+    evidence_ref: evidenceRef,
     route,
     capability_selection: capabilitySelection,
     manifest,
@@ -1542,6 +1696,10 @@ function buildContextPack(opts) {
     topology,
     budget,
   };
+  } catch (error) {
+    if (!fs.existsSync(path.join(run.run_dir, 'manifest.json'))) { try { failRun(run, { message: String(error.message).slice(0, 2000) }); } catch (_) { /* Preserve the original build failure. */ } }
+    throw error;
+  }
 }
 
 function main() {
@@ -1564,6 +1722,9 @@ function jsonSummary(result) {
     root: result.root,
     project_dir: result.project_dir,
     out_dir: result.out_dir,
+    run_dir: result.run_dir,
+    pinned_out_dir: result.pinned_out_dir,
+    evidence_ref: result.evidence_ref,
     mode: result.route.mode,
     capability_selection: result.capability_selection,
     agents: result.route.agents.included,

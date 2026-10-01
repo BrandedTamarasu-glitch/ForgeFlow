@@ -46,6 +46,11 @@ assert.throws(() => assertSafeDestination(path.join(dangling, 'child'), safeHome
 assert.equal(manifestEntry('.agents/skills/audit/../../outside', safeHome, 'codex'), null);
 
 const checks = [
+  ...['claude', 'codex'].flatMap((target) => ['review-evidence.js', 'review-evidence-cli.js'].map((name) => {
+    const source = `scripts/forgeflow/${name}`;
+    const entry = manifestEntry(source, home, target);
+    return [`${target} installs ${name}`, RUNTIME_HELPERS.includes(source) && Boolean(entry) && entry.destination.endsWith(`/forgeflow/scripts/forgeflow/${name}`)];
+  })),
   ...['claude', 'codex'].flatMap((target) => ['js', 'd.ts'].map((extension) => {
     const source = `scripts/forgeflow/agent-identity.${extension}`;
     const entry = manifestEntry(source, home, target);

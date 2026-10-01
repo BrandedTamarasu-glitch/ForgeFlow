@@ -22,6 +22,12 @@ function parseArgs(argv) {
     } else if (arg === '--context-dir') {
       opts.contextDir = path.resolve(requireValue(argv, arg, i));
       i += 1;
+    } else if (arg === '--evidence-ref') {
+      opts.evidenceRef = path.resolve(requireValue(argv, arg, i));
+      i += 1;
+    } else if (arg === '--wave-dir') {
+      opts.waveDir = path.resolve(requireValue(argv, arg, i));
+      i += 1;
     } else if (arg === '--target-tokens') {
       opts.targetTokens = Math.max(1000, Number.parseInt(requireValue(argv, arg, i), 10) || 16000);
       i += 1;
@@ -83,6 +89,8 @@ function buildReviewWavePrep(opts = {}) {
     status: incomplete ? 'context-incomplete' : (needsNarrowerScope ? 'manual-scope-needed' : (splitRecommended ? 'split-before-review' : 'current-packet-ok')),
     root: wavePlan.root,
     context_dir: wavePlan.context_dir,
+    evidence_ref: wavePlan.evidence_ref,
+    source_status: wavePlan.source_status,
     current_compact_tokens: wavePlan.current_compact_tokens,
     target_compact_tokens: wavePlan.target_compact_tokens,
     over_by_tokens: wavePlan.over_by_tokens,

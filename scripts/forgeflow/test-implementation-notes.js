@@ -206,7 +206,7 @@ const checks = [
   ['implement refreshes project learnings after notes', files.implement.includes('show-project-learnings.js --project-dir') && files.implement.includes('PROJECT_LEARNINGS_PATH')],
   ['review consumes notes as context', files.review.includes('NOTES_PATH="${FORGEFLOW_DIR}/implementation-notes.md"') && files.review.includes('not proof')],
   ['review consumes project learnings as guidance', files.review.includes('PROJECT_LEARNINGS_PATH="${FORGEFLOW_DIR}/project-learnings.md"') && files.review.includes('project_learnings_content')],
-  ['review auto-runs lean advisory lane', files.review.includes('Step 3.4b: Automatic lean review advisory lane') && files.review.includes('LEAN_REVIEW_JSON="${CONTEXT_PACK_DIR}/lean-review.json"') && files.review.includes('Lean Review Advisory')],
+  ['review auto-runs lean advisory lane', files.review.includes('Step 3.4b: Automatic lean review advisory lane') && files.review.includes('LEAN_REVIEW_JSON="${LEAN_REVIEW_DIR}/lean-review.json"') && files.review.includes('Lean Review Advisory')],
   ['ship summarizes notes', files.ship.includes('"implementation_notes"') && files.ship.includes('do not dump raw notes')],
   ['ship refreshes project learnings', files.ship.includes('show-project-learnings.js') && files.ship.includes('PROJECT_LEARNINGS_PATH="${FORGEFLOW_DIR}/project-learnings.md"')],
   ['ship warns on lean readiness gaps', files.ship.includes('Lean readiness warning') && files.ship.includes('LEAN_DECISION_JSON_PATH') && files.ship.includes('LEAN_REPORT_JSON_PATH')],

@@ -26,6 +26,7 @@ try {
     for (const packet of packets) {
       assert(!fs.readFileSync(path.resolve(root, packet), 'utf8').includes(original.learning), 'rejected or retired guidance must not appear in complete packets');
     }
+    return pack;
   }
   recordProjectLearning({ projectDir, inputEntries: [original] });
   const id = projectLearningId(original);
@@ -66,8 +67,9 @@ try {
     const hits = buildMemoryHits(root, [], { reasons: [] }, 'health smoke focused validation', 12000);
     assert(!hits.includes(original.learning));
     assert(hits.includes('Run focused validation'));
-    assertSafePackets(memoryIndex, 'retired');
-    assert(!fs.readFileSync(rollup.out, 'utf8').includes(original.learning), 'inactive examples must stay out of injected Markdown');
+    const pack = assertSafePackets(memoryIndex, 'retired');
+    assert(!fs.readFileSync(path.join(pack.run_dir, 'latest-insights.md'), 'utf8').includes(original.learning), 'inactive examples must stay out of injected Markdown');
+    assert.strictEqual(fs.readFileSync(rollup.out, 'utf8'), staleMarkdown, 'run-private guidance must preserve original consumed inputs');
   }
   assert(!buildMemoryHits(root, [], { reasons: [] }, 'health smoke', 12000, staleIndex).includes(original.learning), 'retirement must override cached active metadata');
   const restored = selectMemoryRecords(buildMemoryIndex({ projectDir }).index.records, 'focused validation');

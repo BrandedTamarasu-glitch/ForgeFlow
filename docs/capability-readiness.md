@@ -34,4 +34,4 @@ Current selector and context-pack regression suites pass, including durable comp
 
 ## Next item
 
-F6.3 integration and F6.4 source-release preparation are complete. F6.1's separate final checks now verify the retained receipt clean controls, matching original requested model/settings, completed claim adjudication and one supported Codex lifecycle. This evidence does not change any promotion decision. E1 local case/contract preparation is complete; begin E2 from the portable roadmap; broad benefit and live host activation remain unqualified, and packaged release requires its separate gates and authorization.
+F6.3 integration and F6.4 source-release preparation are complete. F6.1's separate final checks now verify the retained receipt clean controls, matching original requested model/settings, completed claim adjudication and one supported Codex lifecycle. This evidence does not change any promotion decision. E1 local case/contract preparation and E2 immutable evidence are complete; begin E3 from the portable roadmap; broad benefit and live host activation remain unqualified, and packaged release requires its separate gates and authorization.

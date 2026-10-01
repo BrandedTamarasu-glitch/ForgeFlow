@@ -1,6 +1,6 @@
 # Review And Execution Evolution
 
-Status: E1 contract and local corpus preparation complete; E2 runtime implementation ready to begin. The [portable roadmap](../../ROADMAP.md) tracks these phases as E1–E5; the separate [F6.1 final checks](../completion-workflow-qualification.md) are complete. This plan follows the existing [roadmap priorities](Roadmap.md) after Phase 6 or an explicit reprioritization. It does not replace work already underway or assign release dates.
+Status: E1 contract and local corpus preparation and E2 immutable evidence complete; E3 implementation ready to begin. The [portable roadmap](../../ROADMAP.md) tracks these phases as E1–E5; the separate [F6.1 final checks](../completion-workflow-qualification.md) are complete. This plan follows the existing [roadmap priorities](Roadmap.md) after Phase 6 or an explicit reprioritization. It does not replace work already underway or assign release dates.
 
 ## Purpose
 
@@ -49,6 +49,8 @@ Every new contract must have a named caller and compatible behavior in Claude Co
 **Named consumers:** Context-packet generation, specialist handoff, review synthesis, and existing task inspection. Main seams are `build-context-pack.js`, `build-context-wave.js`, and `task-store.js` under `scripts/forgeflow/`.
 
 **Exit criteria:** Two concurrent runs cannot overwrite each other's evidence. A later packet build cannot change the inputs attributed to an earlier judgment. Missing, changed, stale, and excerpted evidence remain distinguishable. Focused retrieval can recover the full proof, and an interrupted run remains inspectable.
+
+**Implementation checkpoint:** E2 passes 225/225 local test commands, 13 independent acceptance checks and 16 storage checks, with both installed maintained host preparation paths verified. [Immutable review evidence](../review-evidence.md) documents exact references, complete retrieval, source freshness, interrupted inspection, bounded storage and explicit retention. This is local helper qualification; live client dispatch and performance remain unqualified.
 
 ## Phase 3: Focused Specialist Assignments And Evidence Requests
 

@@ -2,7 +2,8 @@
 const fs = require('fs');
 const path = require('path');
 const { buildContextPack, jsonSummary } = require('./build-context-pack');
-const { buildContextWavePlan } = require('./render-context-wave-plan');
+const { buildContextWavePlan, pinContext } = require('./render-context-wave-plan');
+const { shellQuote } = require('./privacy-boundary');
 const { assertSafeDirectory, isPathInside } = require('./file-safety');
 
 function usage() {
@@ -35,6 +36,12 @@ function parseArgs(argv) {
       i += 1;
     } else if (arg === '--context-dir') {
       opts.contextDir = path.resolve(requireValue(argv, arg, i));
+      i += 1;
+    } else if (arg === '--wave-dir') {
+      opts.waveDir = path.resolve(requireValue(argv, arg, i));
+      i += 1;
+    } else if (arg === '--evidence-ref') {
+      opts.evidenceRef = path.resolve(requireValue(argv, arg, i));
       i += 1;
     } else if (arg === '--target-tokens') {
       opts.targetTokens = Math.max(1000, Number.parseInt(requireValue(argv, arg, i), 10) || 16000);
@@ -80,10 +87,14 @@ function selectWave(plan, requestedName) {
 
 function buildContextWave(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
-  const contextDir = path.resolve(opts.contextDir || defaultContextDir(root));
+  const selected = pinContext(root, path.resolve(opts.contextDir || defaultContextDir(root)), opts.evidenceRef);
+  const contextDir = selected.contextDir;
+  const waveDir = opts.waveDir || (selected.ref ? path.join(root, '.forgeflow', path.basename(root), 'context', 'waves', selected.ref.run_id) : path.join(contextDir, 'waves'));
   const readOnlyPlan = buildContextWavePlan({
     root,
     contextDir,
+    evidenceRef: selected.ref,
+    waveDir,
     targetTokens: opts.targetTokens || 16000,
     writeWaveFiles: false,
   });
@@ -100,7 +111,7 @@ function buildContextWave(opts = {}) {
         status: 'blocked-context-incomplete',
         write_boundary: 'none',
         next_command: 'node scripts/forgeflow/build-context-pack.js --json',
-        verification_command: 'node scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json',
+        verification_command: `node scripts/forgeflow/check-context-budget.js --root ${shellQuote(root)} --file ${shellQuote(path.join(contextDir, 'context-telemetry.json'))} --warn-only --json`,
         stop_rule: 'Do not write wave files or spawn reviewers until the latest context pack has files, telemetry, and synthesis input.',
       },
       next: 'Rebuild the latest context pack before building a review wave.',
@@ -142,7 +153,7 @@ function buildContextWave(opts = {}) {
         status: 'current-packet-ready',
         write_boundary: 'none',
         next_command: 'Use the current context pack for review.',
-        verification_command: 'node scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json',
+        verification_command: `node scripts/forgeflow/check-context-budget.js --root ${shellQuote(root)} --file ${shellQuote(path.join(contextDir, 'context-telemetry.json'))} --warn-only --json`,
         stop_rule: 'Do not split or rebuild packets unless a fresh budget check says the current packet is over target.',
       },
       next: 'Use the current context pack for review.',
@@ -175,6 +186,8 @@ function buildContextWave(opts = {}) {
   const plan = buildContextWavePlan({
     root,
     contextDir,
+    evidenceRef: selected.ref,
+    waveDir,
     targetTokens: opts.targetTokens || 16000,
     writeWaveFiles: true,
   });
@@ -183,10 +196,13 @@ function buildContextWave(opts = {}) {
   if (!wave.wave_file || !fs.existsSync(waveFile)) {
     throw new Error(`Wave file was not written: ${wave.wave_file || '(missing)'}`);
   }
-  const outDir = waveOutputDir(root, contextDir, wave.name);
+  const childOut = path.join(waveDir, wave.name, 'context-pack');
+  assertSafeDirectory(path.dirname(childOut));
   const pack = buildContextPack({
     root,
-    out: outDir,
+    out: childOut,
+    inputContextDir: contextDir,
+    parentEvidenceRef: selected.ref,
     filesPath: waveFile,
     modeOverride: 'thin',
     maxMemoryChars: Math.min(opts.maxMemoryChars || 4000, 1000),
@@ -212,13 +228,14 @@ function buildContextWave(opts = {}) {
     status: postBuildBudget.status === 'pass' ? 'focused-packet-ready' : 'focused-packet-over-budget',
     write_boundary: 'writes local wave file lists and one focused context pack under .forgeflow only',
     next_command: postBuildBudget.status === 'pass'
-      ? `Use ${path.relative(root, outDir)} as the focused context pack for the first review wave.`
+      ? `Use ${path.relative(root, pack.run_dir)} as the focused context pack for the first review wave.`
       : postBuildBudget.next,
-    verification_command: 'node scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json',
+    verification_command: `node scripts/forgeflow/check-context-budget.js --root ${shellQuote(root)} --file ${shellQuote(path.join(pack.run_dir, 'context-telemetry.json'))} --warn-only --json`,
     review_packet: {
       wave: wave.name,
       file_list: wave.wave_file,
-      context_pack: path.relative(root, outDir),
+      context_pack: path.relative(root, pack.run_dir),
+      evidence_ref: pack.evidence_ref,
       agents: packSummary.agents,
     },
     stop_rule: postBuildBudget.status === 'pass'
@@ -235,7 +252,10 @@ function buildContextWave(opts = {}) {
       name: wave.name,
       files: wave.files,
       file_list: wave.wave_file,
-      out_dir: path.relative(root, outDir),
+      out_dir: path.relative(root, childOut),
+      run_dir: pack.run_dir,
+      pinned_out_dir: pack.pinned_out_dir,
+      evidence_ref: pack.evidence_ref,
       packet_count: packSummary.packet_count,
       agents: packSummary.agents,
       mode: packSummary.mode,
@@ -247,7 +267,7 @@ function buildContextWave(opts = {}) {
     automation_handoff: automationHandoff,
     wave_plan: plan,
     next: postBuildBudget.status === 'pass'
-      ? `Use ${path.relative(root, outDir)} as the focused context pack for the first review wave.`
+      ? `Use ${path.relative(root, pack.run_dir)} as the focused context pack for the first review wave.`
       : postBuildBudget.next,
     next_reason: postBuildBudget.status === 'pass'
       ? 'The broad context pack was split and the selected wave packet was rebuilt from an explicit file list.'
@@ -270,7 +290,8 @@ function renderMarkdown(result) {
     lines.push(`- Name: ${result.built_wave.name}`);
     lines.push(`- Files: ${result.built_wave.files.length}`);
     lines.push(`- File list: ${result.built_wave.file_list}`);
-    lines.push(`- Context pack: ${result.built_wave.out_dir}`);
+    lines.push(`- Context pack: ${result.built_wave.run_dir}`);
+    lines.push(`- Compatibility projection: ${result.built_wave.out_dir}`);
     lines.push(`- Agents: ${result.built_wave.agents.join(', ') || '(none)'}`);
     lines.push(`- Mode: ${result.built_wave.mode}`);
     lines.push(`- Budget: ${result.built_wave.budget_status}`);

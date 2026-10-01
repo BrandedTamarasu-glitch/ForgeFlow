@@ -66,6 +66,8 @@ const RUNTIME_HELPERS = [
   'scripts/forgeflow/build-failure-digest.js',
   'scripts/forgeflow/build-code-topology.js',
   'scripts/forgeflow/build-context-pack.js',
+  'scripts/forgeflow/review-evidence.js',
+  'scripts/forgeflow/review-evidence-cli.js',
   'scripts/forgeflow/build-context-wave.js',
   'scripts/forgeflow/build-memory-context.js',
   'scripts/forgeflow/build-project-intelligence.js',

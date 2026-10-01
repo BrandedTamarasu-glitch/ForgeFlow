@@ -19,7 +19,7 @@ Updated September 30, 2026. **F6.1 is complete as bounded measurement and suppor
 
 The [original automated comparison](../completion-auto-results.md) remains baseline 6/6 versus recovery 3/6, with two timeouts and one usage interruption; its three correction intervals exclude the six-day administrative pause. The [stopped comparison](../completion-v3-partial-results.md) retains 22 finished, two interrupted and twelve unlaunched attempts. Historical scores and diagnostics are unchanged. Reused-case, synthetic/local and provider-default limits remain explicit; no general benefit follows.
 
-F6.2 retains all nine capabilities in evaluation, F6.3 passes 222 local test commands and managed integration checks, and F6.4 prepares the source-release summary. Normal activation and separately authorized packaged-release gates remain unqualified. [E1 case and decision-contract preparation](../review-decision-contract.md) is complete; **E2 — Immutable review evidence** is the next implementation item. See the [portable roadmap](../../ROADMAP.md) and [resumption status](../../STATUS.md).
+F6.2 retains all nine capabilities in evaluation, F6.3 passes 222 local test commands and managed integration checks, and F6.4 prepares the source-release summary. Normal activation and separately authorized packaged-release gates remain unqualified. [E1 case and decision-contract preparation](../review-decision-contract.md) is complete; [E2 immutable review evidence](../review-evidence.md) is complete; **E3 — Focused specialist questions and bounded follow-up** is the next implementation item. See the [portable roadmap](../../ROADMAP.md) and [resumption status](../../STATUS.md).
 
 ## Active Work Themes
 
@@ -49,7 +49,7 @@ F6.2 retains all nine capabilities in evaluation, F6.3 passes 222 local test com
 
 ## Queued: Review And Execution Evolution
 
-Status: E1 contract and local cases complete; E2 runtime implementation has not started and no delivery dates are assigned. The [portable roadmap](../../ROADMAP.md) tracks this work as E1–E5; Phase 6 bounded measurement and evaluation-cohort preparation are complete. Existing activation and release gates retain precedence.
+Status: E1 contract and local cases and E2 immutable evidence complete; E3 runtime implementation has not started and no delivery dates are assigned. The [portable roadmap](../../ROADMAP.md) tracks this work as E1–E5; Phase 6 bounded measurement and evaluation-cohort preparation are complete. Existing activation and release gates retain precedence.
 
 The [phased review and execution plan](Review-And-Execution-Evolution.md) draws on [Jive's execution and decision design](https://github.com/merijjeyn/jive/blob/a1644e0c4d6efacb1d7aa96d0695581b1219bbb2/DESIGN.md). It builds on ForgeFlow's existing PR experience, specialist reviews, routing, context packets, and source-bound task evidence.
 

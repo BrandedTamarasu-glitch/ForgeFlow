@@ -436,7 +436,8 @@ Prefer the local context compiler when available. It pre-computes route, file ma
 Skip this step only when `$ARGUMENTS` contains `--no-context-pack`.
 
 ```bash
-CONTEXT_PACK_DIR="${FORGEFLOW_DIR}/context/latest"
+CONTEXT_PACK_DIR=""
+CONTEXT_EVIDENCE_REF=""
 CONTEXT_PACK_ARG=""
 
 if ! printf '%s\n' "$SAFE_ARGUMENTS" | grep -q -- '--no-context-pack' && [ -x "${HELPER_DIR}/build-context-pack.js" ]; then
@@ -444,7 +445,7 @@ if ! printf '%s\n' "$SAFE_ARGUMENTS" | grep -q -- '--no-context-pack' && [ -x "$
   if [ -n "${SAFE_ARGUMENTS:-}" ]; then
     TASK_ARGS=(--task "$SAFE_ARGUMENTS")
   fi
-  "${HELPER_DIR}/build-context-pack.js" \
+  CONTEXT_BUILD_JSON=$("${HELPER_DIR}/build-context-pack.js" \
     --root "$PROJECT_ROOT" \
     --files "$REVIEW_FILES_UNIQUE" \
     --lines "$LINES_CHANGED" \
@@ -452,35 +453,50 @@ if ! printf '%s\n' "$SAFE_ARGUMENTS" | grep -q -- '--no-context-pack' && [ -x "$
     --untracked-lines "$UNTRACKED_LINES_CHANGED" \
     "${ROUTE_ARGS[@]}" \
     "${TASK_ARGS[@]}" \
-    --out "$CONTEXT_PACK_DIR" \
-    --json
+    --out "${FORGEFLOW_DIR}/context/latest" \
+    --json) || { echo "Context build failed; repair the reported error before review. No latest fallback." >&2; exit 1; }
+  CONTEXT_PACK_DIR=$(printf '%s' "$CONTEXT_BUILD_JSON" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>{const r=JSON.parse(s);if(!r.run_dir || !r.evidence_ref?.manifest_sha256)process.exit(1);process.stdout.write(r.run_dir)})') || exit 1
+  CONTEXT_EVIDENCE_REF=$(mktemp "${TMPDIR:-/tmp}/forgeflow-review-ref.XXXXXX") || exit 1
+  printf '%s' "$CONTEXT_BUILD_JSON" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>process.stdout.write(JSON.stringify(JSON.parse(s).evidence_ref)))' > "$CONTEXT_EVIDENCE_REF" || exit 1
+  node "${HELPER_DIR}/review-evidence-cli.js" inspect --root "$PROJECT_ROOT" --ref "$CONTEXT_EVIDENCE_REF" --require-current || exit 1
   CONTEXT_PACK_ARG="Use the local Forgeflow context packet for this agent from ${CONTEXT_PACK_DIR}/agent-packets/ when present. Treat it as the primary context and request expanded context only when the packet cites an unresolved gap."
 fi
 ```
 
-When `.forgeflow/${PROJECT_NAME}` exists, context pack generation also refreshes `.forgeflow/${PROJECT_NAME}/index/memory-index.json` and uses that local index before falling back to raw memory scans. It writes estimated context savings to `${CONTEXT_PACK_DIR}/context-telemetry.json`. Use `--no-memory-index` only when debugging index generation.
+When `.forgeflow/${PROJECT_NAME}` exists, context pack generation builds `${CONTEXT_PACK_DIR}/memory-index.json` from captured advisory inputs and uses that run-private index before falling back to raw memory scans. It writes estimated context savings to `${CONTEXT_PACK_DIR}/context-telemetry.json`. Use `--no-memory-index` only when debugging index generation.
 
 If `${HELPER_DIR}/check-context-budget.js` exists, run it after context pack generation. It reads `.forgeflow-budget.json` from the repo root when present. In interactive mode, use `--warn-only`; in CI mode, omit `--warn-only` so over-budget packets fail fast:
 
 ```bash
-if [ -x "${HELPER_DIR}/check-context-budget.js" ]; then
+if [ -n "$CONTEXT_PACK_DIR" ] && [ -x "${HELPER_DIR}/check-context-budget.js" ]; then
   BUDGET_WARN_ARG="--warn-only"
   if [ "$CI_MODE" = "true" ]; then
     BUDGET_WARN_ARG=""
   fi
-  "${HELPER_DIR}/check-context-budget.js" --root "$FORGEFLOW_DIR" --max-compact-tokens 16000 $BUDGET_WARN_ARG --json
+  "${HELPER_DIR}/check-context-budget.js" --root "$PROJECT_ROOT" --file "${CONTEXT_PACK_DIR}/context-telemetry.json" --max-compact-tokens 16000 $BUDGET_WARN_ARG --json
 fi
 ```
+
+Keep the exact returned run directory and saved returned `evidence_ref` (including expected manifest SHA-256 and source scope) through reviewer dispatch and synthesis. Never rediscover `context/latest` later. Reinspect that same reference before synthesis; stale, changed, missing or incomplete evidence stops current proof and names rebuilding as the next action. A successful hash check alone does not establish claim truth. With `--no-context-pack`, use the existing injected context without claiming immutable evidence.
+
+For a consequential claim that consumes retained proof, retrieve the named artifact through `review-evidence-cli.js retrieve --root "$PROJECT_ROOT" --ref "$CONTEXT_EVIDENCE_REF" --artifact <artifact-id>`; request neighboring lines with `--start-line`/`--end-line`, or `--raw-required` for complete proof. Use artifact IDs from the selected manifest, not invented paths. Save the actual reviewer/tool result bytes and actual decision bytes, then opt in to a separate consumption sidecar:
+
+```bash
+node "${HELPER_DIR}/review-evidence-cli.js" record --root "$PROJECT_ROOT" --ref "$CONTEXT_EVIDENCE_REF" --id <unique-consumption-id> --kind review --result <saved-actual-result-path> --decision <saved-actual-decision-path> --artifacts <consumed-artifact-ids>
+```
+
+Use `--kind synthesis` for synthesis consumption. Never fabricate native result identities or a decision from successful inspection. Preserve the returned sidecar reference in the local review report (and task evidence when applicable). Recording failure remains visible; it does not turn a claim into verified proof. This is opt-in proof retention, not an E3 mandatory claim ledger. Writes and later reports stay outside the sealed run.
 
 ## Step 3.4b: Automatic lean review advisory lane
 
 When the lean-review helper is available, run it automatically as a read-only advisory lane. This writes local artifacts only and must not affect correctness/security/accessibility/performance verdicts unless a reviewer independently confirms the same concern with current code evidence.
 
 ```bash
-LEAN_REVIEW_MD="${CONTEXT_PACK_DIR}/lean-review.md"
-LEAN_REVIEW_JSON="${CONTEXT_PACK_DIR}/lean-review.json"
+LEAN_REVIEW_DIR="${FORGEFLOW_DIR}/review-advisory"
+LEAN_REVIEW_MD="${LEAN_REVIEW_DIR}/lean-review.md"
+LEAN_REVIEW_JSON="${LEAN_REVIEW_DIR}/lean-review.json"
 if [ -x "${HELPER_DIR}/render-lean-review.js" ]; then
-  mkdir -p "$CONTEXT_PACK_DIR"
+  mkdir -p "$LEAN_REVIEW_DIR"
   "${HELPER_DIR}/render-lean-review.js" --root "$PROJECT_ROOT" --project-dir "$FORGEFLOW_DIR" > "$LEAN_REVIEW_MD" || true
   "${HELPER_DIR}/render-lean-review.js" --root "$PROJECT_ROOT" --project-dir "$FORGEFLOW_DIR" --json > "$LEAN_REVIEW_JSON" || true
 fi

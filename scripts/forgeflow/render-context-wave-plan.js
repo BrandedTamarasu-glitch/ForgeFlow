@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { assertSafeDirectory, isPathInside, safeReadTextFile, writeFileSafe } = require('./file-safety');
+const { readProjectionReference, resolveReference, inspectRun } = require('./review-evidence');
 const { shellQuote } = require('./privacy-boundary');
 
 function usage() {
@@ -23,6 +24,9 @@ function parseArgs(argv) {
       i += 1;
     } else if (arg === '--context-dir') {
       opts.contextDir = path.resolve(requireValue(argv, arg, i));
+      i += 1;
+    } else if (arg === '--evidence-ref') {
+      opts.evidenceRef = path.resolve(requireValue(argv, arg, i));
       i += 1;
     } else if (arg === '--target-tokens') {
       opts.targetTokens = Math.max(1000, Number.parseInt(requireValue(argv, arg, i), 10) || 16000);
@@ -131,10 +135,16 @@ function safeWaveDir(root, contextDir, waveDir) {
   return dir;
 }
 
-function waveCommand(root, name, file) {
-  const wave = shellQuote(name);
-  const context = file ? ` --context-dir ${shellQuote(path.relative(root, path.dirname(path.dirname(file))))}` : '';
-  return `node scripts/forgeflow/build-context-wave.js --wave ${wave}${context} --json`;
+function waveCommand(root, name, contextDir, waveDir) {
+  return `node scripts/forgeflow/build-context-wave.js --wave ${shellQuote(name)} --context-dir ${shellQuote(contextDir)}${waveDir ? ` --wave-dir ${shellQuote(waveDir)}` : ''} --json`;
+}
+
+function pinContext(root, contextDir, evidenceRef) {
+  const ref = evidenceRef ? resolveReference({ root, ref: evidenceRef }) : (fs.existsSync(path.join(contextDir, 'evidence-ref.json')) ? readProjectionReference({ root, outDir: contextDir }) : null);
+  if (!ref) return { contextDir, ref: null, source: 'unknown' };
+  const inspection = inspectRun({ root, ref });
+  if (inspection.build_state !== 'complete' || inspection.integrity !== 'current' || inspection.source !== 'current') throw new Error('Selected review evidence is incomplete, changed, stale or source unknown; rebuild the context pack.');
+  return { contextDir: ref.run_dir, ref, source: inspection.source };
 }
 
 function writeWaveFile(file, files) {
@@ -203,7 +213,8 @@ function proofContract(slice) {
 
 function buildContextWavePlan(opts = {}) {
   const root = path.resolve(opts.root || process.cwd());
-  const contextDir = path.resolve(opts.contextDir || defaultContextDir(root));
+  const selected = pinContext(root, path.resolve(opts.contextDir || defaultContextDir(root)), opts.evidenceRef);
+  const contextDir = selected.contextDir;
   const manifest = readJson(path.join(contextDir, 'file-manifest.json'), contextDir) || { files: [] };
   const telemetry = readJson(path.join(contextDir, 'context-telemetry.json'), contextDir) || {};
   const synthesis = readJson(path.join(contextDir, 'synthesis-input.json'), contextDir) || {};
@@ -215,7 +226,9 @@ function buildContextWavePlan(opts = {}) {
     .map((item) => enrichFile(item, topologyScores))
     .sort((a, b) => b.priority_score - a.priority_score || riskRank(a.kind) - riskRank(b.kind) || String(a.path).localeCompare(String(b.path))), currentTokens, 2);
   const waves = [];
-  const waveDir = opts.writeWaveFiles ? safeWaveDir(root, contextDir, opts.waveDir) : '';
+  const defaultWaveDir = selected.ref ? path.join(root, '.forgeflow', path.basename(root), 'context', 'waves', selected.ref.run_id) : path.join(contextDir, 'waves');
+  const waveDir = opts.writeWaveFiles ? safeWaveDir(root, contextDir, opts.waveDir || defaultWaveDir) : '';
+  if (selected.ref && waveDir && isPathInside(contextDir, waveDir)) throw new Error('Wave lists must be outside sealed review evidence.');
   for (const packed of packWaves(files, targetTokens)) {
     const slice = packed.files;
     const name = waveName(waves.length);
@@ -236,8 +249,8 @@ function buildContextWavePlan(opts = {}) {
       estimation_basis: 'Current compact-token telemetry allocated by manifest byte share with a 2x focused-packet safety margin. Forecast only; rebuild and check the focused packet before review.',
       budget_status: budget,
       wave_file: waveFile ? path.relative(root, waveFile) : '',
-      command: waveCommand(root, name, waveFile),
-      verification_command: 'node scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json',
+      command: waveCommand(root, name, contextDir, waveDir),
+      verification_command: `node scripts/forgeflow/check-context-budget.js --root ${shellQuote(root)} --file ${shellQuote(path.join(contextDir, 'context-telemetry.json'))} --warn-only --json`,
     });
   }
   const overBy = Math.max(0, currentTokens - targetTokens);
@@ -251,6 +264,8 @@ function buildContextWavePlan(opts = {}) {
     status: incomplete ? 'incomplete' : (files.some((item) => item.estimated_compact_tokens > targetTokens) ? 'needs-narrower-scope' : (currentTokens > targetTokens ? 'split-recommended' : 'within-budget')),
     root,
     context_dir: contextDir,
+    evidence_ref: selected.ref,
+    source_status: selected.source,
     current_compact_tokens: currentTokens,
     target_compact_tokens: targetTokens,
     over_by_tokens: overBy,
@@ -326,4 +341,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { buildContextWavePlan, parseArgs, renderMarkdown };
+module.exports = { buildContextWavePlan, pinContext, parseArgs, renderMarkdown };

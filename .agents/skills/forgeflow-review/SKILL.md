@@ -36,14 +36,26 @@ scripts/forgeflow/explain-review-route.js --json
 scripts/forgeflow/explain-review-route.js --json --calibration .forgeflow/Forgeflow/calibration-summary.json
 ```
 
-3. Build a local context pack when the helper exists:
+3. Build a local context pack using the resolved helper directory. Capture the successful JSON result; a build failure stops packet-backed review, without falling back to mutable latest:
 
 ```bash
-scripts/forgeflow/build-context-pack.js --json
+CONTEXT_BUILD_JSON=$(node "$FORGEFLOW_HELPER_DIR/build-context-pack.js" --json) || exit 1
+CONTEXT_PACK_DIR=$(printf '%s' "$CONTEXT_BUILD_JSON" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>{const r=JSON.parse(s);if(!r.run_dir || !r.evidence_ref?.manifest_sha256)process.exit(1);process.stdout.write(r.run_dir)})') || exit 1
+CONTEXT_EVIDENCE_REF=$(mktemp "${TMPDIR:-/tmp}/forgeflow-review-ref.XXXXXX") || exit 1
+printf '%s' "$CONTEXT_BUILD_JSON" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>process.stdout.write(JSON.stringify(JSON.parse(s).evidence_ref)))' > "$CONTEXT_EVIDENCE_REF" || exit 1
+node "$FORGEFLOW_HELPER_DIR/review-evidence-cli.js" inspect --root "$PWD" --ref "$CONTEXT_EVIDENCE_REF" --require-current || exit 1
 ```
 
-   Pass `--files`, `--lines`, `--mode`, and `--calibration` when those values were already resolved. This also refreshes `.forgeflow/<project>/index/memory-index.json` when local memory exists. Use the generated `agent-packets/<agent>.md` as the primary reviewer context and `synthesis-input.json` for Architect/Product Lead.
-4. Run `scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json` and `scripts/forgeflow/advise-context.js --root .forgeflow --record --json` when available. Surface budget warnings, trend deltas, and trim recommendations before spawning reviewers.
+   Run from the project root. Pass `--files`, `--lines`, `--mode`, and `--calibration` when already resolved. Preserve the exact returned `run_dir` and reference, including expected manifest SHA-256 and source scope, across dispatch and synthesis. Use that run's `agent-packets/<agent>.md` and `synthesis-input.json`; never rediscover `context/latest`. Reinspect the same reference before synthesis. Missing, changed, incomplete, stale or unknown source proof stops current proof; explain the limitation and rebuild. Intact hashes do not prove claim truth.
+4. Run budget checks against the selected run only:
+
+```bash
+node "$FORGEFLOW_HELPER_DIR/check-context-budget.js" --root "$PWD" --file "$CONTEXT_PACK_DIR/context-telemetry.json" --warn-only --json
+REVIEW_ADVISORY_HISTORY="$PWD/.forgeflow/$(basename "$PWD")/review-advisory/context-advisor-history.jsonl"
+node "$FORGEFLOW_HELPER_DIR/advise-context.js" --root "$PWD" --file "$CONTEXT_PACK_DIR/context-telemetry.json" --history "$REVIEW_ADVISORY_HISTORY" --record --json
+```
+
+   Surface warnings, trend deltas and trim recommendations. Keep history, lean advisory output, reviewer reports and later decisions outside the sealed run. Never write advisory files into it.
 5. Read only the files needed for that scope. Prefer exact files or `git diff --name-only`; avoid re-reading files already covered by the context pack unless exact source lines are needed.
 6. Spawn reviewer agents in parallel according to the route:
    - `builder_reviewer`
@@ -78,6 +90,12 @@ Rules:
 Suggested prompts:
 - `$forgeflow-review review this branch against main`
 - `$forgeflow-review review src/auth.ts and src/routes/session.ts`
+
+## Retain consequential proof when used
+
+For a consequential claim using retained evidence, use `review-evidence-cli.js retrieve --root <project-root> --ref "$CONTEXT_EVIDENCE_REF" --artifact <manifest-artifact-id>`; optional `--start-line`, `--end-line` and `--max-chars` return neighboring context with explicit omissions. Use `--raw-required` when complete proof is required; excerpts cannot silently satisfy it.
+
+After saving actual reviewer/tool result and actual decision bytes outside the sealed run, opt in to `review-evidence-cli.js record --root <project-root> --ref "$CONTEXT_EVIDENCE_REF" --id <unique-consumption-id> --kind review --result <saved-actual-result-path> --decision <saved-actual-decision-path> --artifacts <consumed-artifact-ids>`. Use `--kind synthesis` for synthesis. Preserve the returned sidecar reference in the local report and task evidence when applicable. Do not invent native identities or infer a decision from successful inspection; recording failure remains visible. This proof retention does not impose an E3 mandatory claim ledger on every observation.
 
 ## Change reflection
 

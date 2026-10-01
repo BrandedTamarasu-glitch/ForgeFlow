@@ -76,7 +76,7 @@ const checks = [
   ['prioritizes security first', result.waves[0].files[0] === 'src/auth.ts'],
   ['adds priority reasons', result.waves[0].priority_reasons.includes('security-sensitive-path') && result.waves[0].priority_reasons.includes('changed-neighborhood')],
   ['tracks proof files', result.proof_file_count === 1 && result.waves.some((wave) => wave.proof_files.includes('docs/readme.md'))],
-  ['adds wave budget status', result.waves.every((wave) => wave.budget_status && wave.budget_status.target_compact_tokens === 8000 && wave.verification_command === 'node scripts/forgeflow/check-context-budget.js --root .forgeflow --warn-only --json')],
+  ['adds wave budget status', result.waves.every((wave) => wave.budget_status && wave.budget_status.target_compact_tokens === 8000 && wave.verification_command.includes(`--file '${path.join(contextDir, 'context-telemetry.json')}'`) && wave.verification_command.endsWith('--warn-only --json'))],
   ['packs by token forecast, not file count', skewed.waves.length === 2 && skewed.waves[0].files[0] === 'src/auth.ts' && skewed.waves.every((wave) => wave.budget_status.estimated_compact_tokens <= 8000)],
   ['labels forecasts and requires measurement', skewed.waves.every((wave) => wave.estimation_basis.includes('Forecast only') && wave.budget_status.post_build_verification_required === true)],
   ['flags an oversized single file', oversized.status === 'needs-narrower-scope' && oversized.waves[0].budget_status.status === 'needs-narrower-scope' && oversized.next.includes('Manually narrow')],

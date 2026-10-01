@@ -48,7 +48,7 @@ for (const index of [null, focusedIndex]) {
   assert(hits.includes('parser must reject missing values before writing output.'), 'task-relevant memory must remain');
   assert(!hits.includes('unrelated deployment history'), 'directory names and route boilerplate must not select unrelated memory');
 }
-const tracked = spawnSync('git', ['ls-files', '-z'], { cwd: sourceRoot, encoding: 'utf8' }).stdout.split('\0').filter(Boolean);
+const tracked = spawnSync('git', ['ls-files', '-z'], { cwd: sourceRoot, encoding: 'utf8' }).stdout.split('\0').filter(file => file && (file.startsWith('fixtures/context-pack/') || file.startsWith('fixtures/review-route/') || file.startsWith('fixtures/completion-pilot/') || ['README.md', 'commands/review.md', 'commands/update-forgeflow.md', 'scripts/forgeflow/build-context-pack.js', 'scripts/forgeflow/explain-review-route.js'].includes(file)));
 for (const file of tracked) {
   if (file.startsWith('.forgeflow/')) continue;
   const source = path.join(sourceRoot, file);
@@ -505,6 +505,7 @@ try {
 } finally {
   process.chdir(previousCwd);
 }
+assert.strictEqual(symlinkMemoryCli.status, 0, symlinkMemoryCli.stderr);
 const symlinkMemorySynthesis = JSON.parse(fs.readFileSync(path.join(symlinkMemoryOut, 'synthesis-input.json'), 'utf8'));
 const symlinkMemoryHits = fs.readFileSync(path.join(symlinkMemoryOut, 'memory-hits.md'), 'utf8');
 const symlinkMemoryPackets = Object.values(symlinkMemorySynthesis.agent_packets)
@@ -760,7 +761,7 @@ const checks = [
   ['packet artifact manifest covers architecture intelligence', artifactManifest.artifacts.some((item) => item.name === 'architecture-intelligence' && item.decision === 'included' && item.reason === 'architecture-intelligence-3-of-3-present')],
   ['packet artifact manifest covers lean guidance', artifactManifest.artifacts.some((item) => item.name === 'lean-guidance' && item.decision === 'included' && item.reason === 'lean-guidance-quality-gates-passing')],
   ['packet artifact manifest covers topology provenance', artifactManifest.artifacts.some((item) => item.name === 'code-topology' && item.decision === 'included' && item.provenance && item.provenance.source === 'build-context-pack')],
-  ['project code map linked to current pack', synthesis.project_code_map_path === path.relative(repoRoot, path.join(outDir, 'project-code-map.md'))],
+  ['project code map linked to current pack', synthesis.project_code_map_path === path.relative(repoRoot, path.join(result.run_dir, 'project-code-map.md'))],
   ['project code topology linked to current pack', synthesis.project_code_topology_path === synthesis.code_topology_path],
   ['code topology linked', synthesis.code_topology_path.endsWith('code-topology.json')],
   ['code topology review focus linked', synthesis.code_topology_review_focus_path.endsWith('code-topology-review-focus.md')],
@@ -824,10 +825,10 @@ const checks = [
   ['untracked file included in diff summary', untrackedCli.status === 0 && untrackedDiffSummary.includes('?? untracked-helper.js')],
   ['ci budget violation fails predictably', budgetCli.status === 1 && budgetCli.stderr.includes('Context pack budget exceeded')],
   ['symlink context pack destination blocked', symlinkPackBlocked && fs.readFileSync(outsideDiff, 'utf8') === 'do not overwrite\n'],
-  ['symlink memory fallback does not leak', symlinkMemoryCli.status === 0 && !symlinkMemoryHits.includes('TOP_SECRET_MARKER') && !symlinkMemoryPackets.includes('TOP_SECRET_MARKER') && symlinkMemorySynthesis.memory_index_path === null && symlinkMemoryResult.route && symlinkMemoryResult.route.mode],
+  ['symlink memory fallback does not leak', symlinkMemoryCli.status === 0 && !symlinkMemoryHits.includes('TOP_SECRET_MARKER') && !symlinkMemoryPackets.includes('TOP_SECRET_MARKER') && symlinkMemorySynthesis.memory_index_path.startsWith(path.relative(symlinkMemoryRoot, symlinkMemoryResult.run_dir)) && symlinkMemoryResult.route && symlinkMemoryResult.route.mode],
   ['symlink memory index does not leak', symlinkIndexCli.status === 0 && !symlinkIndexHits.includes('TOP_SECRET_INDEX_MARKER')],
-  ['symlink project root latest insights does not leak', symlinkProjectCli.status === 0 && !symlinkProjectLatest.includes('TOP_SECRET_PROJECT_ROOT_MARKER')],
-  ['symlink project root memory does not leak', symlinkProjectCli.status === 0 && !symlinkProjectHits.includes('TOP_SECRET_PROJECT_ROOT_MARKER') && !symlinkProjectPackets.includes('TOP_SECRET_PROJECT_ROOT_MARKER')],
+  ['symlink project archive root refused without insights leakage', symlinkProjectCli.status === 1 && /symlink/.test(symlinkProjectCli.stderr) && !symlinkProjectLatest.includes('TOP_SECRET_PROJECT_ROOT_MARKER')],
+  ['symlink project archive root refused without memory leakage', symlinkProjectCli.status === 1 && /symlink/.test(symlinkProjectCli.stderr) && !symlinkProjectHits.includes('TOP_SECRET_PROJECT_ROOT_MARKER') && !symlinkProjectPackets.includes('TOP_SECRET_PROJECT_ROOT_MARKER')],
   ['symlink out ancestor blocked', symlinkOutCli.status === 1 && symlinkOutCli.stderr.includes('symlinked directory')],
   ['invalid failure digest triage linked', invalidDigestSynthesis.latest_failure_digest_triage && invalidDigestSynthesis.latest_failure_digest_triage.state === 'invalid' && invalidDigestSynthesis.latest_failure_digest_triage.usefulness === 'not-usable'],
   ['invalid failure digest artifact metadata-only', invalidDigestSynthesis.packet_artifacts.some((item) => item.name === 'latest-failure-digest' && item.decision === 'metadata-only' && item.reason === 'digest-invalid')],

@@ -3,6 +3,8 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { adviseContext, renderMarkdown } = require('./advise-context');
+const { spawnSync } = require('child_process');
+const assert = require('assert/strict');
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'forgeflow-context-advisor-'));
 const contextDir = path.join(root, 'Forgeflow', 'context');
@@ -378,6 +380,15 @@ const checks = [
   ['symlink history blocked', symlinkHistoryBlocked],
   ['outside history blocked', outsideHistoryBlocked],
 ];
+
+// Selected-run advisory must exclude other retained telemetry and global history.
+const selectedCli = spawnSync(process.execPath, [path.join(__dirname, 'advise-context.js'), '--root', root, '--file', telemetryFile, '--history', path.join(root, 'selected-history.jsonl'), '--record', '--json'], { encoding: 'utf8' });
+assert.equal(selectedCli.status, 0, selectedCli.error?.message || selectedCli.stderr);
+const selected = JSON.parse(selectedCli.stdout);
+assert.deepEqual(selected.files, [telemetryFile]);
+assert.equal(selected.summary.files, 1);
+assert.equal(selected.code_map_trends.files, 0);
+assert.equal(selected.history.recorded, true);
 
 let failed = 0;
 for (const [name, ok] of checks) {

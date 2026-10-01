@@ -1,6 +1,6 @@
 # Consequential review decisions
 
-Status: E1 contract frozen for local pilot preparation. No production review defaults, evaluator schemas or host adapters change. E2 owns runtime evidence storage; E3 owns dispatch adoption. Use this record only for claims that can change a repair, blocker, acceptance or handoff decision.
+Status: E1 contract frozen for local pilot preparation. No production review defaults, evaluator schemas or host adapters change. [E2 runtime evidence storage](review-evidence.md) is implemented and locally verified; E3 owns focused question assignment and bounded follow-up. Use this record only for claims that can change a repair, blocker, acceptance or handoff decision.
 
 ## Consumers and boundaries
 

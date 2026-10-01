@@ -214,8 +214,8 @@ function buildMemoryIndex(opts = {}) {
     records.push(...indexed);
   }
 
-  const vault = path.resolve(projectDir) === defaultProjectDir(root)
-    ? readVaultMemory(root) : { status: 'disconnected', records: [] };
+  const vault = opts.vaultMemory || (path.resolve(projectDir) === defaultProjectDir(root)
+    ? readVaultMemory(root) : { status: 'disconnected', records: [] });
   records.push(...vault.records);
   for (const record of vault.records) sources.push({ path: record.source, bytes: Buffer.byteLength(record.text), mtime_ms: record.source_mtime_ms, source_class: record.source_class });
   const index = {
@@ -228,7 +228,8 @@ function buildMemoryIndex(opts = {}) {
   };
 
   fs.mkdirSync(path.dirname(out), { recursive: true });
-  writeJsonSafe(out, index);
+  if (opts.writer) opts.writer(out, `${JSON.stringify(index, null, 2)}\n`);
+  else writeJsonSafe(out, index);
   return { out, index };
 }
 

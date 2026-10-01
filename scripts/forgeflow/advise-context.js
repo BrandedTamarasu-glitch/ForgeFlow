@@ -18,7 +18,7 @@ const { appendFileSafe, isPathInside, safeReadTextFile } = require('./file-safet
 function usage() {
   console.error([
     'Usage: advise-context.js [--root <dir>] [--config <json>] [--json] [--record]',
-    '       [--history <jsonl>] [--max-compact-tokens <n>] [--max-kind <kind=n>]',
+    '       [--history <jsonl>] [--file <telemetry-json>] [--max-compact-tokens <n>] [--max-kind <kind=n>]',
   ].join('\n'));
 }
 
@@ -40,6 +40,12 @@ function parseArgs(argv) {
     const arg = argv[i];
     if (arg === '--root') {
       opts.root = path.resolve(argv[++i] || '');
+    } else if (arg === '--file') {
+      if (!opts.files) opts.files = [];
+      const file = argv[++i];
+      if (!file || file.startsWith('--')) throw new Error('Missing --file');
+      opts.files.push(path.resolve(file));
+      opts.codeMapHistoryFiles = [];
     } else if (arg === '--config') {
       opts.config = path.resolve(argv[++i] || '');
     } else if (arg === '--max-compact-tokens') {

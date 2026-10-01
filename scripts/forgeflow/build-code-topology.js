@@ -1093,9 +1093,9 @@ function buildCodeTopology(opts = {}) {
   const markdown = renderMarkdown(topology);
   const topologyJson = opts.compact ? JSON.stringify(topology) : JSON.stringify(topology, null, 2);
   fs.mkdirSync(path.dirname(out), { recursive: true });
-  fs.writeFileSync(out, `${topologyJson}\n`);
+  (opts.writer || fs.writeFileSync)(out, `${topologyJson}\n`);
   fs.mkdirSync(path.dirname(markdownOut), { recursive: true });
-  fs.writeFileSync(markdownOut, markdown);
+  (opts.writer || fs.writeFileSync)(markdownOut, markdown);
   const telemetry = contextTelemetry('code-topology', {
     baseline_chars: sum(sourceFiles.map((file) => fileChars(path.join(root, file)))),
     compact_chars: textChars(topologyJson) + textChars(markdown),
@@ -1104,7 +1104,8 @@ function buildCodeTopology(opts = {}) {
       provenance: topology.provenance,
     },
   });
-  writeTelemetry(telemetryOut, telemetry);
+  if (opts.writer) opts.writer(telemetryOut, `${JSON.stringify(telemetry, null, 2)}\n`);
+  else writeTelemetry(telemetryOut, telemetry);
   return { out, markdown_out: markdownOut, telemetry_path: telemetryOut, topology, markdown, telemetry };
 }
 

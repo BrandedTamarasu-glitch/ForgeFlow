@@ -790,7 +790,8 @@ function attachCodeMapHistory(root, summary, historyPath, opts = {}) {
   summary.living_project_map = livingProjectMapFromTrend(trend);
   if (opts.record !== false) {
     const retainedHistory = compactCodeMapHistory([...history, record], opts.limit);
-    writeCodeMapHistory(historyPath, retainedHistory);
+    if (opts.writer) opts.writer(historyPath, retainedHistory.map(item => JSON.stringify(item)).join('\n') + (retainedHistory.length ? '\n' : ''));
+    else writeCodeMapHistory(historyPath, retainedHistory);
     summary.history.recorded = true;
     summary.history.retained_runs = retainedHistory.length;
     summary.history.retention_limit = Number.isFinite(opts.limit) && opts.limit > 0 ? opts.limit : DEFAULT_HISTORY_LIMIT;
