@@ -43,6 +43,7 @@ These instructions translate the durable project rules from the Claude setup int
 - Roadmap acceptance requires a bounded validation against real GitHub pull requests from projects we own or have pushed from this device. Pin the PR base and submitted head, follow the original change contract, and exercise the relevant Forgeflow behavior on that actual change.
 - Automated unit, fixture and regression checks support implementation safety; they do not replace real-PR validation or justify roadmap closure by themselves. Record the selected PR, pinned revisions, observed behavior and remaining limits before marking an item complete.
 - Reuse a small relevant PR scope and focused checks. Do not launch broad synthetic workflow or model-comparison batches unless the user explicitly authorizes them.
+- Keep feature validation proportional: default to one bounded owned-PR walkthrough and the smallest relevant safety checks. A generic instruction to continue or finish checks does not authorize repeated full review comparisons. Treat multi-arm model benchmarks and repeated review cohorts as separate work requiring an explicit request for that experiment; a minimum-repetition rule in an evaluation contract is not authorization to run it.
 - Before invoking Forgeflow or asking for review, re-read the changed files.
 - Run relevant typecheck, lint, and tests for non-trivial changes.
 - Report validation commands and failures plainly.
