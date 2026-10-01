@@ -32,31 +32,25 @@ All nine planned capabilities are implemented for controlled evaluation:
 | [Money/calendar correctness](forgeflow-patterns/capability-money-calendar-correctness.md) | Amount units, rounding, conservation, recurrence anchors, missing data and read-only behavior |
 | [CAD/fabrication acceptance](forgeflow-patterns/capability-cad-fabrication-acceptance.md) | Dimension provenance, tolerances, current meshes, exports, clearance and separate physical acceptance |
 
-**Phases 0–5 are implemented in evaluation.** The [eight-study assessment](docs/capability-evidence.md) preserves mixed, case-specific results. The new [automated actual-PR comparison](docs/completion-auto-results.md) is complete: baseline 6/6 verified completions; added recovery 3/6, two timeouts and one usage interruption. Three successful corrections were measured. Separate diagnostics exposed two gaps in the authored control; no general accuracy or activation claim follows. The six-day usage pause is excluded from test timings. The [F6.1 final checks](docs/completion-workflow-qualification.md) now complete bounded clean-control, historical-settings and supported Codex lifecycle qualification; all nine procedures remain in evaluation. The [original execution-limited pilot](docs/completion-pilot-results.md) is preserved separately. The [F6.2 readiness assessment](docs/capability-readiness.md) retains all nine in evaluation.
+### Use capabilities when the task needs them
 
-The benchmark procedure has deterministic fixture coverage for backend attribution and measurement rules. Its initial fixtures use synthetic timings. A [bounded CPU example and twelve-review real-project comparison](docs/benchmark-cpu-pilot.md) are now complete; the added procedure showed no discovery advantage, and accelerator performance remains unverified.
+The task owner can pull a relevant procedure on demand after recording a grounded reason, bounded scope, available prerequisites and a budget within the authorized task. Keywords and include overrides alone do not activate a procedure. Existing permissions, explicit exclusions and required acceptance checks still apply. Reuse current agents and evidence; selecting a procedure does not start a benchmark or another review cohort.
 
-The money/calendar procedure has synthetic coverage for explicit rounding and recurrence policies, range boundaries, missing-versus-zero values, locale presentation and no-write behavior. [Fixture results and limits](fixtures/money-calendar-correctness/README.md) do not establish application correctness or model benefit; the separate real-project comparison is reported above.
+All nine procedures retain **evaluation** benefit labels. Existing studies report mixed, case-specific outcomes; they establish no general accuracy, speed or cost advantage. Managed Claude Code and Codex installations support assessed selection. The lean Codex plugin does not expose the managed capability entry point. Live client discovery, additional platforms, live providers and physical fabrication remain separate qualification work.
 
-The CAD procedure has synthetic mesh, clearance, plate and export/preview checks, with 24 seeded failures detected. [Coverage and limits](fixtures/cad-fabrication-acceptance/README.md) distinguish digital checks from actual slicing and physical fit, which remain pending.
+See the [selection policy](forgeflow-patterns/capability-selection.md), [capability contract and host support](docs/capability-contract.md), [readiness assessment](docs/capability-readiness.md) and [historical evidence](docs/capability-evidence.md).
 
-### What the evaluations show
+## New in 4.7.0
 
-The earlier [benchmark-verification comparison](docs/benchmark-cpu-pilot.md) reviewed published WarmLedger and NPU-tooling changes twelve times. Baseline found **10 verified occurrences across four distinct problems**, versus **seven occurrences across three problems** with the added procedure. Both arms repeatedly caught an unmatched-workload performance claim. Occurrences count repeat discoveries across reviews, not additional distinct bugs. This study favors baseline on these cases; benchmark verification stays in evaluation.
+- **Immutable review evidence:** pin complete source bytes and review inputs, retrieve exact references, and detect stale or interrupted evidence.
+- **Bounded specialist follow-up:** preserve focused assignments and cumulative request limits; denied or exhausted requests remain explicit uncertainty.
+- **One review preparation operation:** collect scope, compile packets, measure budgets and prepare bounded waves. Return ready inputs or a named blocker while preserving required coverage and proof. Reuse completed preparation only when its inputs and source still match.
+- **On-demand capability use:** let the task owner choose procedures within the existing task authority and budget.
+- **Proportional validation:** use one relevant owned-PR walkthrough and focused safety checks for ordinary feature work. Comparative benefit studies require a separate request.
 
-An earlier [24-review real-project retest](docs/capability-retest-results.md) found limited, concrete discovery gains:
+The [GitHub release](https://github.com/BrandedTamarasu-glitch/ForgeFlow/releases/tag/v4.7.0) includes a managed-runtime archive and SHA-256 checksums. It omits evaluation fixtures and completion study runners; use the source checkout for research reproduction.
 
-- Added procedures produced **21 verified finding occurrences versus 17 baseline**, covering **10 distinct defects versus 9** across three selected changes.
-- Visual acceptance found more verified issues in all three paired runs on one portfolio redesign. Recovery caught a second-migration failure in **3/3 enhanced runs versus 0/3 baseline**.
-- Baseline caught other recovery defects that enhanced missed. Calibration judgments tied, including equal disagreement with the frozen severity key. These results do not establish general accuracy or rollout readiness.
-
-Earlier [Phase 1](docs/capability-pilot-results.md), [Phase 2](docs/recovery-review-pilot-results.md), [repository-repair](docs/recovery-workbench-results.md) and [provider/release](docs/provider-release-pilot-results.md) pilots established no measured accuracy gain. The initial [12-review real-project comparison](docs/real-project-review-results.md) found complementary discoveries without a net advantage. All earlier results and their limitations remain preserved.
-
-See the [prepared source-release summary](docs/capability-release-preparation.md), [capability integration checks](docs/capability-integration.md) and [capability contract](docs/capability-contract.md#overrides-disabling-and-managed-lifecycle) for task examples, explicit includes/exclusions and managed install/update/rollback. Excluding a procedure leaves acceptance checks required.
-
-**Normal automatic execution remains gated on qualification.** Managed installation and packaging checks pass; live client activation remains unverified, and the lean Codex plugin does not expose the capability entry point. Native qualification covers a disposable Linux CLI fixture with simulated installation; production packages, desktop accessibility and other operating systems remain unverified. Public web delivery and live provider qualification also remain unverified. This source milestone does not change the packaged release version.
-
-The foundation includes nine capability contracts, corrected atomicity guidance with executable examples, and evaluations that distinguish actual model results from fixture checks and unobserved outcomes. Follow the [roadmap](ROADMAP.md), [current status](STATUS.md), [capability contracts and host support](docs/capability-contract.md), and [evaluation protocol](docs/skill-evaluation.md).
+Read the [4.7.0 release notes](docs/changelogs/v4.7.0.html) and [review and execution guide](docs/wiki/Review-And-Execution-Evolution.md). Update managed installations and restart host sessions to load the new instructions. The illustrated guide remains a source-edition walkthrough; this README and wiki describe the current release.
 
 ## New in 4.6.3
 

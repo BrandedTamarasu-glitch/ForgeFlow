@@ -1,10 +1,10 @@
 # Capability release preparation
 
-Updated 2026-09-30. **F6.4 source summary and outgoing-content preparation complete. Packaged release publication remains pending.** The packaged version is unchanged at 4.6.3. This document is prepared release content, not evidence that a new release exists or that activation is qualified.
+Updated 2026-10-01. **4.7.0 release scope.** The authorized release packages the completed source work with synchronized metadata, a runtime archive and updated README/wiki. See the [release notes](changelogs/v4.7.0.html) and GitHub release for publication state and the final clean Node 24 gate. The earlier F6.4 preparation and its evidence remain historical below; publication does not establish comparative benefit or live-host qualification.
 
 ## Prepared public summary
 
-ForgeFlow implements nine specialized procedures and selects relevant ones from task intent, affected code and workflow phase. Managed Claude Code and Codex workflows include selection entry points, explicit includes/exclusions and bounded reassessment. All nine procedures remain in evaluation; selection returns `executable: false` for ordinary workflows. The lean Codex plugin does not expose the managed capability entry point.
+ForgeFlow implements nine specialized procedures and selects relevant ones from task intent, affected code and workflow phase. Managed Claude Code and Codex workflows include selection entry points, explicit includes/exclusions and bounded reassessment. All nine procedures retain evaluation benefit labels. Under E6, grounded task-owner assessment can permit bounded on-demand use after recording scope, available prerequisites and budget. Keywords/include overrides alone remain insufficient; current permissions and exclusions apply. The lean Codex plugin does not expose the managed capability entry point.
 
 | Procedure | Implemented scope | Evidence boundary |
 | --- | --- | --- |
@@ -30,7 +30,7 @@ The synthetic publication and migration cases are authored examples. The receipt
 
 The summary makes no general accuracy, speed, cost, accelerator, cross-platform, live-provider, public-deployment or physical-fit claim. Platform and workflow gaps remain explicit. The filename/content inspection is not a claim of exhaustive secret detection or legal clearance.
 
-## Remaining packaged-release gates
+## Historical F6.4 packaged-release gates
 
 - Choose and synchronize an authorized semver, changelog, tag and packaged metadata before publication. The current 4.6.3 metadata remains consistent; no version bump or tag was made for this preparation.
 - Run the [release gate](wiki/Release-Gate.md) from a clean checkout with Node 24, starting with `npm ci --ignore-scripts`. The completed 222-command run used Linux and Node 26.10.0; it does not substitute for that declared Node 24 gate.
@@ -38,4 +38,4 @@ The summary makes no general accuracy, speed, cost, accelerator, cross-platform,
 - Verify live client restart/discovery, settings and required release smoke evidence, or record remaining limits accurately. Disposable installation is not live-host verification.
 - Inspect the final staged and outgoing release content again, then publish only as part of a separately authorized release. Perform tag/artifact/install verification after publication; those outcomes are currently unobserved.
 
-The [F6.1 final checks](completion-workflow-qualification.md) complete bounded clean-control, historical-settings and supported Codex lifecycle qualification without changing any promotion decision. F6.1–F6.4 are complete as measurement, readiness, evaluation-cohort integration and source-release preparation. E1 local case/contract preparation and E2 immutable evidence are complete; E3 is the next implementation item. The packaged-release gates above remain pending; no new model study is scheduled.
+The [F6.1 final checks](completion-workflow-qualification.md) complete bounded clean-control, historical-settings and supported Codex lifecycle qualification without changing any promotion decision. F6.1–F6.4 are complete as measurement, readiness, evaluation-cohort integration and source-release preparation. E1 local case/contract preparation and E2 immutable evidence are complete; E3 is implemented with broader qualification held; E4, E5 and E6 are complete for their recorded bounded scope. The list above records the original preparation gates, not a fresh validation queue. The 4.7.0 release uses one clean Node 24 gate and existing functional PR evidence; no new model study is scheduled. Live discovery, manual settings and additional platform qualification remain explicit deferrals. The runtime artifact excludes evaluation fixtures and completion study runners; GitHub automatic source archives still expose the historical source tree. No upstream redistribution clearance is claimed.

@@ -1,5 +1,9 @@
 # ForgeFlow roadmap
 
+## Release 4.7.0
+
+The authorized release packages the implemented capability foundation, immutable review evidence, bounded follow-up and deterministic preparation, and assessed on-demand procedure use. See the [release notes](docs/changelogs/v4.7.0.html) and GitHub release for publication state and final Node 24 gate results. Historical qualification checkpoints below retain their original results; references to the unchanged 4.6.3 version describe those earlier checkpoints. Broader benefit and live-host/platform qualification remain separate work. No stopped comparison is restarted.
+
 Last updated: 2026-10-01
 
 **F6.1 complete: bounded comparisons, valid clean-control assessment and supported Codex lifecycle verified.** The [final checks](docs/completion-workflow-qualification.md) recover matching historical model/settings across 45 stage/correction records, verify all six retained clean controls and complete one source-bound consult-to-local-ship workflow within its frozen limit. Historical outcomes and the stopped study remain unchanged. All nine capabilities remain in evaluation; no normal activation or packaged release follows.

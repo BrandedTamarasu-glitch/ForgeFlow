@@ -11,6 +11,7 @@
 - [Commands](Workflow-Commands.md)
 - [Agents](Agent-Roles.md)
 - [Review Routing](Review-Routing.md)
+- [Review and execution](Review-And-Execution-Evolution.md)
 - [Context and Memory](Context-Intelligence.md)
 - [Research](Research-Divergence.md)
 

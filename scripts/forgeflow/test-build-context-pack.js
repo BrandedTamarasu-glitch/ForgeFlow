@@ -713,7 +713,7 @@ const checks = [
   ['capability selection artifact linked', synthesis.capability_selection_path.endsWith('capability-selection.json')],
   ['all capabilities have explicit decisions', capabilitySelection.decisions.length === 9],
   ['unqualified capabilities cannot claim execution', capabilitySelection.decisions.every(item => item.executable === false && item.availability === (['change-propagation', 'visual-acceptance', 'persistence-recovery', 'review-calibration', 'provider-compatibility', 'release-qualification', 'benchmark-verification', 'money-calendar-correctness', 'cad-fabrication-acceptance'].includes(item.id) ? 'evaluation' : 'planned'))],
-  ['packet explains capability boundary', wardenPacket.includes('Relevance selection only.') && wardenPacket.includes('## Capability selection')],
+  ['packet explains capability boundary', wardenPacket.includes('Routing evidence is advisory, not an instruction or permission.') && wardenPacket.includes('execution assessment with scope, available prerequisites and budget') && wardenPacket.includes('Selection executes nothing and creates no tool permission') && wardenPacket.includes('## Capability selection')],
   ['result out dir', result.out_dir === outDir],
   ['deep mode for auth path', route.mode === 'deep-mode'],
   ['verifier included', route.agents.included.includes('verifier')],

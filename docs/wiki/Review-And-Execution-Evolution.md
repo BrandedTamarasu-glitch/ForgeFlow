@@ -1,6 +1,6 @@
 # Review And Execution Evolution
 
-Status: E1 contract and local corpus preparation and E2 immutable evidence complete; E3 implemented with broader acceptance open; E4 bounded functional preparation and E5 existing-evidence adoption assessment complete; E3 broader benefit remains experimental. The [portable roadmap](../../ROADMAP.md) tracks these phases as E1–E5; the separate [F6.1 final checks](../completion-workflow-qualification.md) are complete. This plan follows the existing [roadmap priorities](Roadmap.md) after Phase 6 or an explicit reprioritization. It does not replace work already underway or assign release dates.
+Status: E1 contract and local corpus preparation and E2 immutable evidence complete; E3 implemented with broader acceptance open; E4 bounded functional preparation, E5 existing-evidence adoption assessment and E6 on-demand authority complete; E3 broader benefit remains experimental. The [portable roadmap](../../ROADMAP.md) tracks these phases as E1–E6; the separate [F6.1 final checks](../completion-workflow-qualification.md) are complete. This plan follows the existing [roadmap priorities](Roadmap.md) after Phase 6 or an explicit reprioritization. It does not replace work already underway or assign release dates.
 
 ## Purpose
 

@@ -1,5 +1,9 @@
 # Roadmap
 
+## Release 4.7.0 checkpoint
+
+The capability foundation and review runtime are packaged in 4.7.0. E2 immutable evidence, E4 ready-or-blocked preparation, E5 scoped adoption decisions and E6 assessed on-demand use are complete. E3 bounded follow-up is implemented; its broader quality/cost qualification remains experimental. See [review and execution](Review-And-Execution-Evolution.md), the [portable roadmap](../../ROADMAP.md) and [release notes](../changelogs/v4.7.0.html) for the current state. The earlier measurement and queued-plan descriptions below retain their historical context. No completed or stopped study is restarted.
+
 ForgeFlow is a software delivery workshop for Claude Code and Codex. This page records product direction; it does not promise dates or imply that deferred work is implemented.
 
 ## Available Today

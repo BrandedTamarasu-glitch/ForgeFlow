@@ -13,7 +13,13 @@ ForgeFlow helps turn an idea into a scoped brief, working code, an evidence-back
 3. **[User Paths](User-Paths.md)**: choose a workflow for the outcome you need.
 4. **[Dashboard and Ember](Dashboard.md)**: understand current activity, readiness, evidence, and empty states.
 
-[Why ForgeFlow](Why-Forgeflow.md) explains the approach. [4.6.3 release notes](../changelogs/v4.6.3.html) describe the packaged version. This wiki follows the current source. The visual guide identifies its own source edition.
+[Why ForgeFlow](Why-Forgeflow.md) explains the approach. [4.7.0 release notes](../changelogs/v4.7.0.html) describe the packaged version. This wiki follows the current source. The visual guide identifies its own source edition.
+
+## New in 4.7.0
+
+[Review and execution](Review-And-Execution-Evolution.md) now preserves immutable evidence, supports bounded follow-up requests and prepares review packets through one ready-or-blocked operation. The task owner can choose relevant capability procedures on demand after recording the need, scope, prerequisites and budget. Existing authorization and exclusions still apply; comparative benefit labels remain evaluation.
+
+Use one relevant owned-PR walkthrough and focused checks for ordinary feature acceptance. Benchmarks and repeated review cohorts require a separate request. Update managed installations and restart host sessions; live discovery and broad platform benefit are separate qualification.
 
 ## New in 4.6.2
 
